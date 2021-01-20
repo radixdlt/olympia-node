@@ -583,17 +583,6 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkConsensusAllProposalsHaveDirectParents() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.DIRECT_PARENTS)
-				TestInvariant directParentsInvariant() {
-					return new AllProposalsHaveDirectParentsInvariant();
-				}
-			});
-			return this;
-		}
-
 		public Builder checkConsensusNoneCommitted() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap

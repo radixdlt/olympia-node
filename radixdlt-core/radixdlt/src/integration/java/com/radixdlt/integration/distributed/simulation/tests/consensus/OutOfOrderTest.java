@@ -69,9 +69,9 @@ public final class OutOfOrderTest {
 			.pacemakerTimeout(5000)
 			.addTestModules(
 				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS)
-			)
-			.checkConsensusAllProposalsHaveDirectParents();
+				ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
+				ConsensusMonitors.directParents()
+			);
 	}
 
 	@Test

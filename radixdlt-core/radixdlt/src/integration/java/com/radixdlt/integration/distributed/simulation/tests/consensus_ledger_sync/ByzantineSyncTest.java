@@ -71,9 +71,9 @@ public class ByzantineSyncTest {
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.noTimeouts()
+				ConsensusMonitors.noTimeouts(),
+				ConsensusMonitors.directParents()
 			)
-			.checkConsensusAllProposalsHaveDirectParents()
 			.checkLedgerInOrder()
 			.checkLedgerProcessesConsensusCommitted();
 	}

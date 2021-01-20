@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
@@ -70,6 +71,16 @@ public final class ConsensusMonitors {
             @MonitorKey(Monitor.NO_TIMEOUTS)
             TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
                 return new NoTimeoutsInvariant(nodeEvents);
+            }
+        };
+    }
+
+    public static Module directParents() {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.DIRECT_PARENTS)
+            TestInvariant directParentsInvariant() {
+                return new AllProposalsHaveDirectParentsInvariant();
             }
         };
     }

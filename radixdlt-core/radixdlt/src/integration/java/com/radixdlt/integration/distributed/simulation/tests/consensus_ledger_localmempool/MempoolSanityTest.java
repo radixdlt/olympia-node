@@ -48,9 +48,9 @@ public class MempoolSanityTest {
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts()
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
 		)
-		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addMempoolSubmissionsSteadyState(new IncrementalBytes())

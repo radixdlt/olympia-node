@@ -43,9 +43,9 @@ public class SanityTest {
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts()
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
 		)
-		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())

@@ -48,14 +48,14 @@ public class RandomValidatorsTest {
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect(View.of(100))
-		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
 			ConsensusMonitors.timestampChecker(),
-			ConsensusMonitors.noTimeouts()
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {

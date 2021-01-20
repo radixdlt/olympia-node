@@ -39,9 +39,9 @@ public class MovingWindowValidatorsTest {
 		)
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.noTimeouts()
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
 		)
-		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted();
 

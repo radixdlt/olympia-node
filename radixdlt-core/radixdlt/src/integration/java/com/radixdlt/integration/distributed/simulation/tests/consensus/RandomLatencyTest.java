@@ -55,9 +55,9 @@ public class RandomLatencyTest {
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
-			ConsensusMonitors.noTimeouts()
-		)
-		.checkConsensusAllProposalsHaveDirectParents();
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
+		);
 
 	/**
 	 * Tests a static configuration of 3 nodes with random, high variance in latency
