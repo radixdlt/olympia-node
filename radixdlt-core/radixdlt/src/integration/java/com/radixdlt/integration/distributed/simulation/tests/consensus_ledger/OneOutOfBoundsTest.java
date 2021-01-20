@@ -44,8 +44,10 @@ public class OneOutOfBoundsTest {
 		)
 		.ledger()
 		.pacemakerTimeout(1000)
-		.testModules(ConsensusMonitors.liveness(4, TimeUnit.SECONDS))
-		.checkConsensusSafety()
+		.addTestModules(
+	        ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(4, TimeUnit.SECONDS)
+		)
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted();
 

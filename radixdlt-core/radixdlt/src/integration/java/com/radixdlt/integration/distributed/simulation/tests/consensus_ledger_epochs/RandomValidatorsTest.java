@@ -48,12 +48,12 @@ public class RandomValidatorsTest {
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect(View.of(100))
-		.checkConsensusSafety()
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.testModules(
+		.addTestModules(
+			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
 			ConsensusMonitors.timestampChecker()
 		);

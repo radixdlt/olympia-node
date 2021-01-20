@@ -41,9 +41,11 @@ public class OneOutOfBoundsTest {
 			NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
 		)
 		.pacemakerTimeout(synchronousTimeout)
-		// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
-		.testModules(ConsensusMonitors.liveness(4 * synchronousTimeout, TimeUnit.MILLISECONDS))
-		.checkConsensusSafety();
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
+			ConsensusMonitors.liveness(4 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		);
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

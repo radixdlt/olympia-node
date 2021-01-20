@@ -494,7 +494,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder testModules(Module... modules) {
+		public Builder addTestModules(Module... modules) {
 			this.testModules.add(modules);
 			return this;
 		}
@@ -585,17 +585,6 @@ public class SimulationTest {
 				}
 			});
 
-			return this;
-		}
-
-		public Builder checkConsensusSafety() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.SAFETY)
-				TestInvariant safetyInvariant(NodeEvents nodeEvents) {
-					return new SafetyInvariant(nodeEvents);
-				}
-			});
 			return this;
 		}
 

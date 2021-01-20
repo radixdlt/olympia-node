@@ -45,8 +45,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
 		)
 		.ledger()
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(20, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(20, TimeUnit.SECONDS)
+		)
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted();
 

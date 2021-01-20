@@ -41,8 +41,8 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledger()
-		.checkConsensusSafety()
-		.testModules(
+		.addTestModules(
+			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
 		)
 		.checkConsensusNoTimeouts()

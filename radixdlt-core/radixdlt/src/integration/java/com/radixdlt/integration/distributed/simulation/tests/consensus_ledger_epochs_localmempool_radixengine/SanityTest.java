@@ -40,8 +40,10 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(1, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
+		)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()

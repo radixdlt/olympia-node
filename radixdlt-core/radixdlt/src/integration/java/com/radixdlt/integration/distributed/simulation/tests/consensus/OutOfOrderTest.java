@@ -67,8 +67,10 @@ public final class OutOfOrderTest {
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)
-			.testModules(ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS))
-			.checkConsensusSafety()
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS)
+			)
 			.checkConsensusAllProposalsHaveDirectParents();
 	}
 

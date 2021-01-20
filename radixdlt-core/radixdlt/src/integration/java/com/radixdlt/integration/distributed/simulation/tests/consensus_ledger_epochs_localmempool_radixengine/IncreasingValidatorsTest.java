@@ -40,8 +40,10 @@ public class IncreasingValidatorsTest {
 		)
 		.numNodes(50, 2, 50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(1, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
+		)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()

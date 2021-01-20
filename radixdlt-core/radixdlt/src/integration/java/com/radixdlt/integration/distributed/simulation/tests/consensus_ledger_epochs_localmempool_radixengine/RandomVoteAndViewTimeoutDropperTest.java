@@ -46,8 +46,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(20, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(20, TimeUnit.SECONDS)
+		)
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();

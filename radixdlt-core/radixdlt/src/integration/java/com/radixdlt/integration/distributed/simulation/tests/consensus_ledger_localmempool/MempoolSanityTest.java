@@ -45,8 +45,10 @@ public class MempoolSanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndMempool()
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(1, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
+		)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()

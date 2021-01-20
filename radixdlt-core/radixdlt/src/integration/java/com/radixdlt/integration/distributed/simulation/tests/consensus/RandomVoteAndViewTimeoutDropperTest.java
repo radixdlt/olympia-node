@@ -44,8 +44,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
 		)
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(20, TimeUnit.SECONDS));
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(20, TimeUnit.SECONDS)
+		);
 
 	/**
 	 * Tests a configuration of 4 nodes with a dropping proposal adversary

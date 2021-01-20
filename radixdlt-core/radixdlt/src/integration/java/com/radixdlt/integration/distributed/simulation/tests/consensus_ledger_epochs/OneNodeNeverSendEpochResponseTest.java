@@ -55,10 +55,10 @@ public class OneNodeNeverSendEpochResponseTest {
 		.pacemakerTimeout(1000)
 		.numNodes(numNodes, 4)
 		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
-		.checkConsensusSafety()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.testModules(
+		.addTestModules(
+			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 			ConsensusMonitors.timestampChecker(Duration.ofSeconds(2))
 		);

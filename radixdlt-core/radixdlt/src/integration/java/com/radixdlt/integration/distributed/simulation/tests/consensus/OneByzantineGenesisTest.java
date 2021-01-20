@@ -42,7 +42,7 @@ public class OneByzantineGenesisTest {
 			NetworkLatencies.fixed()
 		)
 		.pacemakerTimeout(1000)
-		.checkConsensusSafety();
+		.addTestModules(ConsensusMonitors.safety());
 
 	@Test
 	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
@@ -72,7 +72,7 @@ public class OneByzantineGenesisTest {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
 			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.testModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
+			.addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
 			.build();
 
 		TestResults results = bftTest.run();

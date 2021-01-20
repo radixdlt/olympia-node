@@ -68,8 +68,10 @@ public class ByzantineSyncTest {
 			})
 			.pacemakerTimeout(5000)
 			.ledgerAndSync(50)
-			.checkConsensusSafety()
-			.testModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS)
+			)
 			.checkConsensusNoTimeouts()
 			.checkConsensusAllProposalsHaveDirectParents()
 			.checkLedgerInOrder()

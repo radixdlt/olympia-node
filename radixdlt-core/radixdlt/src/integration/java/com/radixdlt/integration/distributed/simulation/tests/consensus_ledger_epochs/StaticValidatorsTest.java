@@ -28,7 +28,6 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -40,8 +39,10 @@ public class StaticValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.numNodes(4, 2)
-		.checkConsensusSafety()
-		.testModules(ConsensusMonitors.liveness(1, TimeUnit.SECONDS))
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
+		)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
@@ -64,7 +65,7 @@ public class StaticValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect(View.of(99))
-			.testModules(ConsensusMonitors.timestampChecker())
+			.addTestModules(ConsensusMonitors.timestampChecker())
 			.build();
 
 		TestResults results = bftTest.run();
@@ -79,7 +80,7 @@ public class StaticValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect(View.of(100))
-			.testModules(ConsensusMonitors.timestampChecker())
+			.addTestModules(ConsensusMonitors.timestampChecker())
 			.build();
 
 		TestResults results = bftTest.run();

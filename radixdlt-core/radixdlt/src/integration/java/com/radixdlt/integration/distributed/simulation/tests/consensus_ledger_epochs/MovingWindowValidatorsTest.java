@@ -37,7 +37,7 @@ public class MovingWindowValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.checkConsensusSafety()
+		.addTestModules(ConsensusMonitors.safety())
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
@@ -54,7 +54,7 @@ public class MovingWindowValidatorsTest {
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
 			.checkEpochsHighViewCorrect(View.of(100))
-			.testModules(
+			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 				ConsensusMonitors.timestampChecker()
 			)
@@ -70,7 +70,7 @@ public class MovingWindowValidatorsTest {
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
 			.checkEpochsHighViewCorrect(View.of(100))
-			.testModules(
+			.addTestModules(
 				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
 				ConsensusMonitors.timestampChecker()
 			)
@@ -86,7 +86,7 @@ public class MovingWindowValidatorsTest {
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
 			.checkEpochsHighViewCorrect(View.of(100))
-			.testModules(
+			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS), // High timeout to make Travis happy
 				ConsensusMonitors.timestampChecker()
 			)
@@ -102,7 +102,7 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.testModules(
+			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy
 			)
 			.checkEpochsHighViewCorrect(View.of(1))

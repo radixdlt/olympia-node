@@ -5,7 +5,9 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 
@@ -50,5 +52,29 @@ public final class ConsensusMonitors {
                 return new LivenessInvariant(nodeEvents, duration, timeUnit);
             }
         };
+    }
+
+    public static Module safety() {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.SAFETY)
+            TestInvariant safetyInvariant(NodeEvents nodeEvents) {
+                return new SafetyInvariant(nodeEvents);
+            }
+        };
+    }
+
+    public static Module noTimeouts() {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.NO_TIMEOUTS)
+            TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
+                return new NoTimeoutsInvariant(nodeEvents);
+            }
+        };
+    }
+
+    private ConsensusMonitors() {
+        throw new IllegalStateException("Cannot instantiate.");
     }
 }

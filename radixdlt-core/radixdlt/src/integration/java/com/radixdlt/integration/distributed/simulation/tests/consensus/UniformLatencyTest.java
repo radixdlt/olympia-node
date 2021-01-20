@@ -49,8 +49,10 @@ public class UniformLatencyTest {
 				NetworkLatencies.fixed()
 			)
 			.numNodes(4)
-			.checkConsensusSafety()
-			.testModules(ConsensusMonitors.liveness())
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness()
+			)
 			.checkConsensusNoTimeouts()
 			.checkConsensusAllProposalsHaveDirectParents()
 			.build();
