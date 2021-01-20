@@ -21,7 +21,7 @@ public class SHA256HasherTest {
         HashCode hash = hasher.hash(atom);
         assertIsNotRawDSON(hash);
         String hashHex = hash.toString();
-        assertEquals("b0aace23265c295eb13464b5b97cf57d1a227a02c4c7042ab7daae1df1eb6e6a", hashHex);
+        assertEquals("fd208580f27bd833992afa0369d43f001ac1599743a22f7b8111f9544712f47e", hashHex);
     }
 
     @Test

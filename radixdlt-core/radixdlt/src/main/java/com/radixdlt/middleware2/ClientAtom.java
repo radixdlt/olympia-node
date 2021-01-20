@@ -48,7 +48,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,13 +63,9 @@ public final class ClientAtom implements LedgerAtom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("metadata")
+	@JsonProperty("message")
 	@DsonOutput({Output.ALL})
-	private final ImmutableMap<String, String> metaData;
-
-	@JsonProperty("group_metadata")
-	@DsonOutput({Output.ALL})
-	private final ImmutableList<Map<String, String>> perGroupMetadata;
+	private final String message;
 
 	@JsonProperty("signatures")
 	@DsonOutput({Output.ALL})
@@ -89,24 +84,21 @@ public final class ClientAtom implements LedgerAtom {
 	@JsonCreator
 	private ClientAtom(
 		@JsonProperty("aid") AID aid,
-		@JsonProperty("group_metadata") ImmutableList<Map<String, String>> perGroupMetadata,
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("witness") HashCode witness,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures,
-		@JsonProperty("metadata") ImmutableMap<String, String> metaData
+		@JsonProperty("message") String message
 	) {
 		this.aid = aid;
 		this.witness = witness;
 		this.instructions = toInstructions(byteInstructions);
 		this.signatures = signatures == null ? ImmutableMap.of() : signatures;
-		this.metaData = metaData == null ? ImmutableMap.of() : metaData;
-		this.perGroupMetadata = perGroupMetadata == null ? ImmutableList.of() : perGroupMetadata;
+		this.message = message;
 	}
 
 	private ClientAtom() {
 		// Serializer only
-		this.metaData = null;
-		this.perGroupMetadata = null;
+		this.message = null;
 		this.signatures = null;
 		this.instructions = null;
 		this.aid = null;
@@ -118,13 +110,11 @@ public final class ClientAtom implements LedgerAtom {
 		HashCode witness,
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
-		ImmutableMap<String, String> metaData,
-		ImmutableList<Map<String, String>> perGroupMetadata
+		String message
 	) {
 		this.aid = Objects.requireNonNull(aid);
 		this.witness = Objects.requireNonNull(witness);
-		this.metaData = Objects.requireNonNull(metaData);
-		this.perGroupMetadata = Objects.requireNonNull(perGroupMetadata);
+		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
@@ -142,11 +132,7 @@ public final class ClientAtom implements LedgerAtom {
 			witness,
 			instructions,
 			ImmutableMap.of(),
-			ImmutableMap.of(),
-			instructions.stream()
-				.filter(i -> i.getMicroOp() == CMMicroOp.PARTICLE_GROUP)
-				.map(i -> ImmutableMap.<String, String>of())
-				.collect(ImmutableList.toImmutableList())
+			null
 		);
 	}
 
@@ -229,8 +215,8 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@Override
-	public ImmutableMap<String, String> getMetaData() {
-		return metaData;
+	public String getMessage() {
+		return this.message;
 	}
 
 	@Override
@@ -249,16 +235,12 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	static List<ParticleGroup> toParticleGroups(
-		ImmutableList<CMMicroInstruction> instructions,
-		ImmutableList<Map<String, String>> perGroupMetadata
+		ImmutableList<CMMicroInstruction> instructions
 	) {
 		List<ParticleGroup> pgs = new ArrayList<>();
-		int groupIndex = 0;
 		ParticleGroupBuilder curPg = ParticleGroup.builder();
 		for (CMMicroInstruction instruction : instructions) {
 			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				perGroupMetadata.get(groupIndex).forEach(curPg::addMetaData);
-				groupIndex++;
 				ParticleGroup pg = curPg.build();
 				pgs.add(pg);
 				curPg = ParticleGroup.builder();
@@ -291,8 +273,8 @@ public final class ClientAtom implements LedgerAtom {
 	 * @return an api atom
 	 */
 	public static Atom convertToApiAtom(ClientAtom atom) {
-		List<ParticleGroup> pgs = toParticleGroups(atom.instructions, atom.perGroupMetadata);
-		return new Atom(pgs, atom.signatures, atom.metaData);
+		List<ParticleGroup> pgs = toParticleGroups(atom.instructions);
+		return new Atom(pgs, atom.signatures, atom.message);
 	}
 
 	/**
@@ -303,16 +285,12 @@ public final class ClientAtom implements LedgerAtom {
 	 */
 	public static ClientAtom convertFromApiAtom(Atom atom, Hasher hasher) {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
-		final ImmutableList<Map<String, String>> perGroupMetadata = atom.getParticleGroups().stream()
-			.map(ParticleGroup::getMetaData)
-			.collect(ImmutableList.toImmutableList());
 		return new ClientAtom(
 			Atom.aidOf(atom, hasher),
 			hasher.hash(atom),
 			instructions,
 			ImmutableMap.copyOf(atom.getSignatures()),
-			ImmutableMap.copyOf(atom.getMetaData()),
-			perGroupMetadata
+			atom.getMessage()
 		);
 	}
 
