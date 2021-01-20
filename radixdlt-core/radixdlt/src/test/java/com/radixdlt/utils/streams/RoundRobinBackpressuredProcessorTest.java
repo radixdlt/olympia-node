@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 public class RoundRobinBackpressuredProcessorTest {
 
     @Test
-    public void test_messages_delivered_in_round_robin_manner() throws InterruptedException {
+    public void test_messages_delivered_in_round_robin_manner() {
         final var publisher1 = PublishSubject.<String>create();
         final var publisher2 = PublishSubject.<String>create();
         final var publisher3 = PublishSubject.<String>create();

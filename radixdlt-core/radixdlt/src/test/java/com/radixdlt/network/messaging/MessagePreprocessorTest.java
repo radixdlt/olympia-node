@@ -134,8 +134,8 @@ public class MessagePreprocessorTest extends RadixTest {
 		addressBook = mock(AddressBook.class);
 		when(addressBook.addOrUpdatePeer(any(), eq(system1), any())).thenReturn(peer1);
 		when(addressBook.addOrUpdatePeer(any(), eq(system2), any())).thenReturn(peer2);
-		when(addressBook.peer(eq(transportInfo1))).thenReturn(Optional.of(peer1));
-		when(addressBook.peer(eq(transportInfo2))).thenReturn(Optional.of(peer2));
+		when(addressBook.peer(transportInfo1)).thenReturn(Optional.of(peer1));
+		when(addressBook.peer(transportInfo2)).thenReturn(Optional.of(peer2));
 
 		counters = mock(SystemCounters.class);
 		messagePreprocessor = new MessagePreprocessor(

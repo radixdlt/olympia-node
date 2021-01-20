@@ -110,8 +110,10 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
             }
         };
 
-        this.downstreamSubscribers.put(subscriberId, subscriber);
-        subscriber.onSubscribe(downstreamSubscription);
+        synchronized (lock) {
+            this.downstreamSubscribers.put(subscriberId, subscriber);
+            subscriber.onSubscribe(downstreamSubscription);
+        }
     }
 
     private void handleSubscribe(int subscriptionId, Subscription subscription) {
@@ -126,8 +128,8 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
         if (minDownstreamDemand() > 0) {
             reduceDemandForAll(1L);
             this.lastUsedSubscriptionId = subscriptionId;
-            this.downstreamSubscribers.values().forEach(s -> s.onNext(el));
             this.requestedSubscriptions.add(subscriptionId);
+            this.downstreamSubscribers.values().forEach(s -> s.onNext(el));
             this.upstreamSubscriptions.get(subscriptionId).request(1);
         } else {
             if (this.buffer.containsKey(subscriptionId)) {
@@ -179,18 +181,18 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
 
         reduceDemandForAll(messagesToForward.size());
 
-        messagesToForward.forEach(el -> {
-            this.lastUsedSubscriptionId = el.getKey();
-            this.buffer.remove(el.getKey());
-            this.downstreamSubscribers.values().forEach(s -> s.onNext(el.getValue()));
-        });
-
         final var subscriptionsToRequest =
             new HashSet<>(Sets.difference(
                 this.upstreamSubscriptions.keySet(),
                 Sets.union(this.requestedSubscriptions, this.buffer.keySet())));
 
         this.requestedSubscriptions.addAll(subscriptionsToRequest);
+
+        messagesToForward.forEach(el -> {
+            this.lastUsedSubscriptionId = el.getKey();
+            this.buffer.remove(el.getKey());
+            this.downstreamSubscribers.values().forEach(s -> s.onNext(el.getValue()));
+        });
 
         subscriptionsToRequest.stream()
             .map(this.upstreamSubscriptions::get)

@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
@@ -47,8 +49,10 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.universe.Universe;
+
 import java.util.Optional;
 
+import com.radixdlt.utils.RandomHasher;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,7 +75,7 @@ public class MessageCentralValidatorSyncTest {
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.hasher = mock(Hasher.class);
+		this.hasher = new RandomHasher();
 		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
 	}
 
@@ -151,6 +155,47 @@ public class MessageCentralValidatorSyncTest {
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));
 		testObserver.assertValueAt(1, v -> v.getVertexId().equals(vertexId1));
+	}
+
+	@Test
+	public void when_subscribed_to_rpc_responses__then_should_receive_responses() {
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		UnverifiedVertex vertex1 = mock(UnverifiedVertex.class);
+
+		TestSubscriber<GetVerticesResponse> testObserver = sync.responses().test();
+		messageCentral.send(peer, new GetVerticesResponseMessage(0, ImmutableList.of(vertex1)));
+		messageCentral.send(peer, new GetVerticesResponseMessage(0, ImmutableList.of()));
+
+		testObserver.awaitCount(2);
+		testObserver.assertValueAt(0, v -> v.getVertices().size() == 1);
+		testObserver.assertValueAt(1, v -> v.getVertices().isEmpty());
+	}
+
+	@Test
+	public void when_subscribed_to_rpc_error_responses__then_should_receive_error_responses() {
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		final var highQc1 = mock(HighQC.class);
+		final var highQc2 = mock(HighQC.class);
+
+		TestSubscriber<GetVerticesErrorResponse> testObserver = sync.errorResponses().test();
+		messageCentral.send(peer, new GetVerticesErrorResponseMessage(0, highQc1));
+		messageCentral.send(peer, new GetVerticesErrorResponseMessage(0, highQc2));
+
+		testObserver.awaitCount(2);
+		testObserver.assertValueAt(0, v -> v.highQC().equals(highQc1));
+		testObserver.assertValueAt(1, v -> v.highQC().equals(highQc2));
 	}
 
 	@Test
