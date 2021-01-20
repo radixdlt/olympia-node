@@ -17,10 +17,14 @@
 
 package com.radixdlt.atommodel.system;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
@@ -44,10 +48,14 @@ public final class SystemParticle extends Particle {
 		@JsonProperty("view") long view,
 		@JsonProperty("timestamp") long timestamp
 	) {
-		super();
 		this.epoch = epoch;
 		this.view = view;
 		this.timestamp = timestamp;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of();
 	}
 
 	public long getEpoch() {

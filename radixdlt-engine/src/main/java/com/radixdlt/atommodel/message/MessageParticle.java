@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
@@ -64,12 +65,9 @@ public final class MessageParticle extends Particle {
 
 	MessageParticle() {
 		// Serializer only
-		super(ImmutableSet.of());
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, long nonce) {
-		super(ImmutableSet.of(from.euid(), to.euid()));
-
 		this.from = Objects.requireNonNull(from);
 		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
@@ -77,8 +75,6 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes) {
-		super(ImmutableSet.of(from.euid(), to.euid()));
-
 		this.from = Objects.requireNonNull(from);
 		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
@@ -86,13 +82,16 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, String contentType) {
-		super(ImmutableSet.of(from.euid(), to.euid()));
-
 		this.from = Objects.requireNonNull(from);
 		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.metaData.put("contentType", contentType);
 		this.nonce = System.nanoTime();
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.from.euid(), this.to.euid());
 	}
 
 	Set<RadixAddress> getAddresses() {
@@ -138,13 +137,12 @@ public final class MessageParticle extends Particle {
 				&& Objects.equals(from, that.from)
 				&& Objects.equals(to, that.to)
 				&& Objects.equals(metaData, that.metaData)
-				&& Arrays.equals(bytes, that.bytes)
-				&& Objects.equals(getDestinations(), that.getDestinations());
+				&& Arrays.equals(bytes, that.bytes);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(from, to, metaData, nonce, getDestinations());
+		int result = Objects.hash(from, to, metaData, nonce);
 		result = 31 * result + Arrays.hashCode(bytes);
 		return result;
 	}

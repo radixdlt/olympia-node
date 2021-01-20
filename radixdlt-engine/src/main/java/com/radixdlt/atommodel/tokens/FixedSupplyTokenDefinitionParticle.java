@@ -18,7 +18,9 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -26,6 +28,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Particle representing a fixed supply token definition
@@ -74,8 +77,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 		String iconUrl,
 		String url
 	) {
-		super(rri.getAddress().euid());
-
 		this.rri = rri;
 		this.name = name;
 		this.description = description;
@@ -83,6 +84,11 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRRI() {
@@ -136,12 +142,11 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 				&& Objects.equals(supply, that.supply)
 				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(iconUrl, that.iconUrl)
-				&& Objects.equals(url, that.url)
-				&& Objects.equals(getDestinations(), that.getDestinations());
+				&& Objects.equals(url, that.url);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, supply, granularity, iconUrl, url, getDestinations());
+		return Objects.hash(rri, name, description, supply, granularity, iconUrl, url);
 	}
 }

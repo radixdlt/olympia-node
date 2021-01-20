@@ -18,7 +18,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
@@ -38,31 +37,16 @@ import java.util.Set;
 @SerializerId2("radix.particle")
 @SerializeWithHid
 public abstract class Particle {
-	// TODO: Move this out and up to Atom level
-	@JsonProperty("destinations")
-	@DsonOutput(Output.ALL)
-	private ImmutableSet<EUID> destinations;
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	public Particle() {
-		this.destinations = ImmutableSet.of();
+		// Nothing for now
 	}
 
-	public Particle(EUID destination) {
-		this.destinations = ImmutableSet.of(destination);
-	}
-
-	public Particle(ImmutableSet<EUID> destinations) {
-		this.destinations = destinations;
-	}
-
-	public Set<EUID> getDestinations() {
-		return destinations;
-	}
+	public abstract Set<EUID> getDestinations();
 
 	public static EUID euidOf(Particle particle, Hasher hasher) {
 		return EUID.fromHash(hasher.hash(particle));
