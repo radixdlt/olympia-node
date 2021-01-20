@@ -24,6 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -53,15 +54,15 @@ public class RandomValidatorsTest {
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 			ConsensusMonitors.vertexRequestRate(50), // Conservative check
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
-			ConsensusMonitors.epochCeilingView(View.of(100))
+			ConsensusMonitors.epochCeilingView(View.of(100)),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {

@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -47,15 +48,15 @@ public class RandomValidatorsTest {
 		)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
 			ConsensusMonitors.timestampChecker(),
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
-			ConsensusMonitors.epochCeilingView(View.of(100))
+			ConsensusMonitors.epochCeilingView(View.of(100)),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {

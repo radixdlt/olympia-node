@@ -94,14 +94,9 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
-import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -580,28 +575,6 @@ public class SimulationTest {
 				}
 			});
 
-			return this;
-		}
-
-		public Builder checkLedgerProcessesConsensusCommitted() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.CONSENSUS_TO_LEDGER_PROCESSED)
-				TestInvariant ledgerProcessedInvariant(NodeEvents nodeEvents) {
-					return new ConsensusToLedgerCommittedInvariant(nodeEvents);
-				}
-			});
-			return this;
-		}
-
-		public Builder checkLedgerInOrder() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.LEDGER_IN_ORDER)
-				TestInvariant ledgerInOrderInvariant() {
-					return new LedgerInOrderInvariant();
-				}
-			});
 			return this;
 		}
 

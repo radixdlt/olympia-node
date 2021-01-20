@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -46,10 +47,10 @@ public class OneOutOfBoundsTest {
 		.pacemakerTimeout(1000)
 		.addTestModules(
 	        ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(4, TimeUnit.SECONDS)
-		)
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted();
+			ConsensusMonitors.liveness(4, TimeUnit.SECONDS),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		);
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

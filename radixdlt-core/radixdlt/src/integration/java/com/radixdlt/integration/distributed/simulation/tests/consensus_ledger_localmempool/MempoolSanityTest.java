@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -49,10 +50,10 @@ public class MempoolSanityTest {
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
 			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents()
+			ConsensusMonitors.directParents(),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
 		)
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted()
 		.addMempoolSubmissionsSteadyState(new IncrementalBytes())
 		.addMempoolCommittedChecker();
 

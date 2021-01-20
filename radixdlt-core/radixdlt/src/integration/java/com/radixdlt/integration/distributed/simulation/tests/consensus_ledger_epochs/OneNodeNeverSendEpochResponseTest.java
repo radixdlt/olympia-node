@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -55,12 +56,12 @@ public class OneNodeNeverSendEpochResponseTest {
 		.pacemakerTimeout(1000)
 		.numNodes(numNodes, 4)
 		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-			ConsensusMonitors.timestampChecker(Duration.ofSeconds(2))
+			ConsensusMonitors.timestampChecker(Duration.ofSeconds(2)),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper() {

@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -44,10 +45,10 @@ public class SanityTest {
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
 			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents()
+			ConsensusMonitors.directParents(),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
 		)
-		.checkLedgerInOrder()
-		.checkLedgerProcessesConsensusCommitted()
 		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())
 		.addMempoolCommittedChecker();
 

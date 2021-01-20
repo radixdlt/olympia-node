@@ -26,6 +26,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -72,10 +73,10 @@ public class ByzantineSyncTest {
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 				ConsensusMonitors.noTimeouts(),
-				ConsensusMonitors.directParents()
-			)
-			.checkLedgerInOrder()
-			.checkLedgerProcessesConsensusCommitted();
+				ConsensusMonitors.directParents(),
+				LedgerMonitors.consensusToLedger(),
+				LedgerMonitors.ordered()
+			);
 	}
 
 	@Test
