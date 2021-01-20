@@ -3,13 +3,16 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 
 import java.time.Duration;
@@ -81,6 +84,26 @@ public final class ConsensusMonitors {
             @MonitorKey(Monitor.DIRECT_PARENTS)
             TestInvariant directParentsInvariant() {
                 return new AllProposalsHaveDirectParentsInvariant();
+            }
+        };
+    }
+
+    public static Module noneCommitted() {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.NONE_COMMITTED)
+            TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
+                return new NoneCommittedInvariant(nodeEvents);
+            }
+        };
+    }
+
+    public static Module epochCeilingView(View epochCeilingView) {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.EPOCH_CEILING_VIEW)
+            TestInvariant epochHighViewInvariant(NodeEvents nodeEvents) {
+                return new EpochViewInvariant(epochCeilingView, nodeEvents);
             }
         };
     }

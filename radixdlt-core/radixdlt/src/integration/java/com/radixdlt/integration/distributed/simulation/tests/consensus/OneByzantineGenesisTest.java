@@ -49,7 +49,7 @@ public class OneByzantineGenesisTest {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
 			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.checkConsensusNoneCommitted()
+			.addTestModules(ConsensusMonitors.noneCommitted())
 			.build();
 
 		TestResults results = bftTest.run();
@@ -60,7 +60,7 @@ public class OneByzantineGenesisTest {
 	public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.checkConsensusNoneCommitted()
+			.addTestModules(ConsensusMonitors.noneCommitted())
 			.build();
 
 		TestResults results = bftTest.run();

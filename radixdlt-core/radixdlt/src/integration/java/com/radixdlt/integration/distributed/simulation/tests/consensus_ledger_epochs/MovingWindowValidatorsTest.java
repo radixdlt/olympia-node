@@ -55,10 +55,10 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
-			.checkEpochsHighViewCorrect(View.of(100))
 			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.timestampChecker()
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();
 		TestResults results = bftTest.run();
@@ -71,10 +71,10 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
-			.checkEpochsHighViewCorrect(View.of(100))
 			.addTestModules(
 				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-				ConsensusMonitors.timestampChecker()
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();
 		TestResults results = bftTest.run();
@@ -87,10 +87,10 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkEpochsHighViewCorrect(View.of(100))
 			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS), // High timeout to make Travis happy
-				ConsensusMonitors.timestampChecker()
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();
 
@@ -105,9 +105,9 @@ public class MovingWindowValidatorsTest {
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
 			.addTestModules(
+				ConsensusMonitors.epochCeilingView(View.of(1)),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy
 			)
-			.checkEpochsHighViewCorrect(View.of(1))
 			.build();
 
 		TestResults results = bftTest.run();

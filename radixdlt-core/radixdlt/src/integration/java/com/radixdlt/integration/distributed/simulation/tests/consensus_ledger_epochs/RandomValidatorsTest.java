@@ -47,7 +47,6 @@ public class RandomValidatorsTest {
 		)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkEpochsHighViewCorrect(View.of(100))
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
@@ -55,7 +54,8 @@ public class RandomValidatorsTest {
 			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
 			ConsensusMonitors.timestampChecker(),
 			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents()
+			ConsensusMonitors.directParents(),
+			ConsensusMonitors.epochCeilingView(View.of(100))
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {

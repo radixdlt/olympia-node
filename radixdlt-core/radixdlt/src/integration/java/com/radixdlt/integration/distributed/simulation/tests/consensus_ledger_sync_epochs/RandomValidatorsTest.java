@@ -53,7 +53,6 @@ public class RandomValidatorsTest {
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkEpochsHighViewCorrect(View.of(100))
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
 		.addTestModules(
@@ -61,7 +60,8 @@ public class RandomValidatorsTest {
 			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
 			ConsensusMonitors.vertexRequestRate(50), // Conservative check
 			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents()
+			ConsensusMonitors.directParents(),
+			ConsensusMonitors.epochCeilingView(View.of(100))
 		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {

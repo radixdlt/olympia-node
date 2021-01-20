@@ -53,7 +53,7 @@ public class StaticValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect(View.of(1))
+			.addTestModules(ConsensusMonitors.epochCeilingView(View.of(1)))
 			.build();
 
 		TestResults results = bftTest.run();
@@ -64,8 +64,10 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect(View.of(99))
-			.addTestModules(ConsensusMonitors.timestampChecker())
+			.addTestModules(
+				ConsensusMonitors.epochCeilingView(View.of(99)),
+				ConsensusMonitors.timestampChecker()
+			)
 			.build();
 
 		TestResults results = bftTest.run();
@@ -79,8 +81,10 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect(View.of(100))
-			.addTestModules(ConsensusMonitors.timestampChecker())
+			.addTestModules(
+				ConsensusMonitors.epochCeilingView(View.of(100)),
+				ConsensusMonitors.timestampChecker()
+			)
 			.build();
 
 		TestResults results = bftTest.run();

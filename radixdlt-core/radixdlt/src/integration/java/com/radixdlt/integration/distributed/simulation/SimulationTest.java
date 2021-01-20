@@ -583,18 +583,6 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkConsensusNoneCommitted() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.NONE_COMMITTED)
-				TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
-					return new NoneCommittedInvariant(nodeEvents);
-				}
-			});
-
-			return this;
-		}
-
 		public Builder checkLedgerProcessesConsensusCommitted() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
@@ -612,17 +600,6 @@ public class SimulationTest {
 				@MonitorKey(Monitor.LEDGER_IN_ORDER)
 				TestInvariant ledgerInOrderInvariant() {
 					return new LedgerInOrderInvariant();
-				}
-			});
-			return this;
-		}
-
-		public Builder checkEpochsHighViewCorrect(View epochHighView) {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.EPOCH_CEILING_VIEW)
-				TestInvariant epochHighViewInvariant(NodeEvents nodeEvents) {
-					return new EpochViewInvariant(epochHighView, nodeEvents);
 				}
 			});
 			return this;
