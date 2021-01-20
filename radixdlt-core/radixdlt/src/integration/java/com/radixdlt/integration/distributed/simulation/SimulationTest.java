@@ -511,14 +511,6 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(CommandGenerator commandGenerator) {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
-
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
@@ -565,14 +557,6 @@ public class SimulationTest {
 		}
 
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissionsAndCommitCheck() {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
-
 			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
@@ -602,14 +586,6 @@ public class SimulationTest {
 		}
 
 		public Builder addRadixEngineValidatorRegisterMempoolSubmissions() {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
-
 			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
@@ -648,14 +624,6 @@ public class SimulationTest {
 		}
 
 		public Builder checkVertexRequestRate(int permitsPerSecond) {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<GetVerticesRequest> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, GetVerticesRequest.class);
-				}
-			});
-
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("vertex_request_rate")
@@ -740,14 +708,6 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoneCommitted() {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
-
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("none_committed")
@@ -760,13 +720,6 @@ public class SimulationTest {
 		}
 
 		public Builder checkLedgerProcessesConsensusCommitted() {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("ledger_processed")
@@ -789,13 +742,6 @@ public class SimulationTest {
 		}
 
 		public Builder checkEpochsHighViewCorrect(View epochHighView) {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("epoch_high_view")
@@ -815,6 +761,12 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<GetVerticesRequest> requestProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, GetVerticesRequest.class);
 				}
 
 				@ProvidesIntoSet
