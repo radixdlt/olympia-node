@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.sleepycat.je.Transaction;
+import com.radixdlt.store.Transaction;
 
 /**
  * Store which saves the Vertex Store State for recovery

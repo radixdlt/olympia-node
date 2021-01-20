@@ -22,7 +22,7 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.store.Transaction;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
 

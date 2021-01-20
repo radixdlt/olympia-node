@@ -34,7 +34,6 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -139,7 +138,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 		final var start = System.nanoTime();
 
-		final Transaction transaction =
+		final com.sleepycat.je.Transaction transaction =
 			dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);

@@ -45,7 +45,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 import java.util.stream.Stream;

@@ -30,7 +30,6 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
 import org.apache.logging.log4j.LogManager;
@@ -73,7 +72,7 @@ public class AddressBookPersistence implements PeerPersistence {
 	}
 
 	public void reset() {
-		Transaction transaction = null;
+		com.sleepycat.je.Transaction transaction = null;
 
 		try {
 			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));

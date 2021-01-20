@@ -15,20 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
-
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.NextCommittedLimitReachedException;
-import java.util.Optional;
+package com.radixdlt.store;
 
 /**
- * Reader of committed commands
+ * Indicates that the maximum number of committed atoms to retrieve has been exceeded
+ * based on some predetermined limit.
  */
-public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
-		throws NextCommittedLimitReachedException;
-
-	Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch);
+public class NextCommittedLimitReachedException extends Exception {
+	public NextCommittedLimitReachedException(int limit) {
+		super("Greater than " + limit + " atoms required to get to next proof.");
+	}
 }

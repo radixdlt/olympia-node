@@ -25,7 +25,6 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.radix.database.DatabaseEnvironment;
@@ -45,7 +44,7 @@ public class BerkeleySafetyStateStoreTest {
         final var db = mock(Database.class);
         final var env = mock(Environment.class);
         final var dbEnv = mock(DatabaseEnvironment.class);
-        final var tx = mock(Transaction.class);
+        final var tx = mock(com.sleepycat.je.Transaction.class);
         when(dbEnv.getEnvironment()).thenReturn(env);
         when(env.openDatabase(any(), any(), any())).thenReturn(db);
 
