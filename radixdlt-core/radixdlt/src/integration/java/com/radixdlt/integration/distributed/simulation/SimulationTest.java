@@ -31,7 +31,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.multibindings.StringMapKey;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -502,7 +501,7 @@ public class SimulationTest {
 		public Builder addTimestampChecker(Duration maxDelay) {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("timestamps")
+                @MonitorKey(Monitor.TIMESTAMP_CHECK)
 				public TestInvariant timestampsInvariant() {
 					return new TimestampChecker(maxDelay);
 				}
@@ -558,7 +557,7 @@ public class SimulationTest {
 		public Builder addMempoolCommittedChecker() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("mempool_committed")
+				@MonitorKey(Monitor.MEMPOOL_COMMITTED)
 				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
 					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
 				}
@@ -590,7 +589,7 @@ public class SimulationTest {
 				}
 
 				@ProvidesIntoMap
-				@StringMapKey("epoch_change")
+				@MonitorKey(Monitor.VALIDATOR_REGISTERED)
 				TestInvariant registeredValidator(RadixEngineValidatorRegistrator validatorRegistrator) {
 					return new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions());
 				}
@@ -602,7 +601,7 @@ public class SimulationTest {
 		public Builder checkVertexRequestRate(int permitsPerSecond) {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("vertex_request_rate")
+				@MonitorKey(Monitor.VERTEX_REQUEST_RATE)
 				TestInvariant vertexRequestRateInvariant(NodeEvents nodeEvents) {
 					return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
 				}
@@ -614,7 +613,7 @@ public class SimulationTest {
 		public Builder checkConsensusLiveness() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("liveness")
+				@MonitorKey(Monitor.LIVENESS)
 				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
 					return new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS);
 				}
@@ -626,7 +625,7 @@ public class SimulationTest {
 		public Builder checkConsensusLiveness(long duration, TimeUnit timeUnit) {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("liveness")
+				@MonitorKey(Monitor.LIVENESS)
 				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
 					return new LivenessInvariant(nodeEvents, duration, timeUnit);
 				}
@@ -637,7 +636,7 @@ public class SimulationTest {
 		public Builder checkConsensusSafety() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("safety")
+				@MonitorKey(Monitor.SAFETY)
 				TestInvariant safetyInvariant(NodeEvents nodeEvents) {
 					return new SafetyInvariant(nodeEvents);
 				}
@@ -648,7 +647,7 @@ public class SimulationTest {
 		public Builder checkConsensusNoTimeouts() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("no_timeouts")
+				@MonitorKey(Monitor.NO_TIMEOUTS)
 				TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
 					return new NoTimeoutsInvariant(nodeEvents);
 				}
@@ -660,7 +659,7 @@ public class SimulationTest {
 		public Builder checkConsensusAllProposalsHaveDirectParents() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("direct_parents")
+				@MonitorKey(Monitor.DIRECT_PARENTS)
 				TestInvariant directParentsInvariant() {
 					return new AllProposalsHaveDirectParentsInvariant();
 				}
@@ -671,7 +670,7 @@ public class SimulationTest {
 		public Builder checkConsensusNoneCommitted() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("none_committed")
+				@MonitorKey(Monitor.NONE_COMMITTED)
 				TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
 					return new NoneCommittedInvariant(nodeEvents);
 				}
@@ -683,7 +682,7 @@ public class SimulationTest {
 		public Builder checkLedgerProcessesConsensusCommitted() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("ledger_processed")
+				@MonitorKey(Monitor.CONSENSUS_TO_LEDGER_PROCESSED)
 				TestInvariant ledgerProcessedInvariant(NodeEvents nodeEvents) {
 					return new ConsensusToLedgerCommittedInvariant(nodeEvents);
 				}
@@ -694,7 +693,7 @@ public class SimulationTest {
 		public Builder checkLedgerInOrder() {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("ledger_in_order")
+				@MonitorKey(Monitor.LEDGER_IN_ORDER)
 				TestInvariant ledgerInOrderInvariant() {
 					return new LedgerInOrderInvariant();
 				}
@@ -705,7 +704,7 @@ public class SimulationTest {
 		public Builder checkEpochsHighViewCorrect(View epochHighView) {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
-				@StringMapKey("epoch_high_view")
+				@MonitorKey(Monitor.EPOCH_CEILING_VIEW)
 				TestInvariant epochHighViewInvariant(NodeEvents nodeEvents) {
 					return new EpochViewInvariant(epochHighView, nodeEvents);
 				}
@@ -811,13 +810,13 @@ public class SimulationTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(
+	private Observable<Pair<Monitor, Optional<TestInvariantError>>> runChecks(
 		Set<SimulationNetworkActor> runners,
-		Map<String, TestInvariant> checkers,
+		Map<Monitor, TestInvariant> checkers,
 		RunningNetwork runningNetwork,
 		Duration duration
 	) {
-		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = checkers.keySet().stream()
+		List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions = checkers.keySet().stream()
 			.map(name -> {
 				TestInvariant check = checkers.get(name);
 				return
@@ -828,11 +827,11 @@ public class SimulationTest {
 			})
 			.collect(Collectors.toList());
 
-		Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+		Single<Monitor> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
 			.firstOrError()
 			.map(Pair::getFirst);
 
-		List<Single<Pair<String, Optional<TestInvariantError>>>> results = assertions.stream()
+		List<Single<Pair<Monitor, Optional<TestInvariantError>>>> results = assertions.stream()
 			.map(assertion -> assertion.getSecond()
 				.takeUntil(firstErrorSignal.flatMapObservable(name ->
 					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
@@ -848,18 +847,18 @@ public class SimulationTest {
 	}
 
 	public static class TestResults {
-		private final Map<String, Optional<TestInvariantError>> checkResults;
+		private final Map<Monitor, Optional<TestInvariantError>> checkResults;
 		private final RunningNetwork network;
 
 		private TestResults(
-			Map<String, Optional<TestInvariantError>> checkResults,
+			Map<Monitor, Optional<TestInvariantError>> checkResults,
 			RunningNetwork network
 		) {
 			this.checkResults = checkResults;
 			this.network = network;
 		}
 
-		public Map<String, Optional<TestInvariantError>> getCheckResults() {
+		public Map<Monitor, Optional<TestInvariantError>> getCheckResults() {
 			return checkResults;
 		}
 
@@ -900,7 +899,7 @@ public class SimulationTest {
 	public TestResults run(Duration duration) {
 	    Injector testInjector = Guice.createInjector(testModule);
 	    var runners = testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() { }));
-		var checkers = testInjector.getInstance(Key.get(new TypeLiteral<Map<String, TestInvariant>>() { }));
+		var checkers = testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() { }));
 
 		SimulationNodes bftNetwork = new SimulationNodes(
 			nodes,
@@ -911,7 +910,7 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
-		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
+		Map<Monitor, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
 			.doFinally(() -> {
 				runners.forEach(SimulationNetworkActor::stop);
 				bftNetwork.stop();

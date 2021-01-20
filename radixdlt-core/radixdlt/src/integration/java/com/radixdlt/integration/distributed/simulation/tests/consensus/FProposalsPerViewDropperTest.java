@@ -25,6 +25,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -86,7 +87,10 @@ public class FProposalsPerViewDropperTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("no_timeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.NO_TIMEOUTS,
+			error -> assertThat(error).isPresent()
+		);
 	}
 
 	/**
@@ -122,6 +126,6 @@ public class FProposalsPerViewDropperTest {
 			})
 			.build();
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("no_timeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(Monitor.NO_TIMEOUTS, error -> assertThat(error).isPresent());
 	}
 }

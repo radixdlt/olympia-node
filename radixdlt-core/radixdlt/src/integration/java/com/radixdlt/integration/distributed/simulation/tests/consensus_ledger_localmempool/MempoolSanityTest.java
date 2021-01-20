@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -67,7 +68,10 @@ public class MempoolSanityTest {
 			.build();
 
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("mempool_committed", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.MEMPOOL_COMMITTED,
+			error -> assertThat(error).isPresent()
+		);
 	}
 
 	@Test

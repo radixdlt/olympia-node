@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -103,6 +104,9 @@ public class ByzantineSyncTest {
 			.summaryStatistics();
 
 		logger.info("{}", statistics);
-		assertThat(results.getCheckResults()).hasEntrySatisfying("ledger_in_order", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.LEDGER_IN_ORDER,
+			error -> assertThat(error).isPresent()
+		);
 	}
 }

@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -64,7 +65,10 @@ public class StaticValidatorsTest {
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("epoch_high_view", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.EPOCH_CEILING_VIEW,
+			error -> assertThat(error).isPresent()
+		);
 	}
 
 	@Test
