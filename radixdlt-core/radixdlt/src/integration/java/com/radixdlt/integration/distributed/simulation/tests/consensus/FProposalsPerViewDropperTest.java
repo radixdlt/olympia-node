@@ -67,10 +67,10 @@ public class FProposalsPerViewDropperTest {
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)
-			.checkConsensusNoTimeouts()
 			.addTestModules(
 				ConsensusMonitors.safety(),
-				ConsensusMonitors.vertexRequestRate(50) // Conservative check
+				ConsensusMonitors.vertexRequestRate(50), // Conservative check
+				ConsensusMonitors.noTimeouts()
 			);
 	}
 

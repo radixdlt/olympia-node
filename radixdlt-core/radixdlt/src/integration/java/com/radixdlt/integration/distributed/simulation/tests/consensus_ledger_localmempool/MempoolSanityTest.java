@@ -47,9 +47,9 @@ public class MempoolSanityTest {
 		.ledgerAndMempool()
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS)
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.noTimeouts()
 		)
-		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()

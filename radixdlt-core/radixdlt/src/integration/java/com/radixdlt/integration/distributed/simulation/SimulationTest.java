@@ -93,9 +93,7 @@ import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
-import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
@@ -103,10 +101,7 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerI
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -582,18 +577,6 @@ public class SimulationTest {
 				@MonitorKey(Monitor.VALIDATOR_REGISTERED)
 				TestInvariant registeredValidator(RadixEngineValidatorRegistrator validatorRegistrator) {
 					return new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions());
-				}
-			});
-
-			return this;
-		}
-
-		public Builder checkConsensusNoTimeouts() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.NO_TIMEOUTS)
-				TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
-					return new NoTimeoutsInvariant(nodeEvents);
 				}
 			});
 

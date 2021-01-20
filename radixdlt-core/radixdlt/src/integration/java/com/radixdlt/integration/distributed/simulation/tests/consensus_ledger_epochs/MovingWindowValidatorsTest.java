@@ -37,8 +37,10 @@ public class MovingWindowValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.addTestModules(ConsensusMonitors.safety())
-		.checkConsensusNoTimeouts()
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.noTimeouts()
+		)
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted();

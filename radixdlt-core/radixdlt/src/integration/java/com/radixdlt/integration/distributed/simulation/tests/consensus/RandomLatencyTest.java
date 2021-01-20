@@ -54,10 +54,10 @@ public class RandomLatencyTest {
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS)
+			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
+			ConsensusMonitors.noTimeouts()
 		)
-		.checkConsensusAllProposalsHaveDirectParents()
-		.checkConsensusNoTimeouts();
+		.checkConsensusAllProposalsHaveDirectParents();
 
 	/**
 	 * Tests a static configuration of 3 nodes with random, high variance in latency

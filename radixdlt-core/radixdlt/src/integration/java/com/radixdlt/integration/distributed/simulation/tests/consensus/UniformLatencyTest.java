@@ -51,9 +51,9 @@ public class UniformLatencyTest {
 			.numNodes(4)
 			.addTestModules(
 				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness()
+				ConsensusMonitors.liveness(),
+				ConsensusMonitors.noTimeouts()
 			)
-			.checkConsensusNoTimeouts()
 			.checkConsensusAllProposalsHaveDirectParents()
 			.build();
 		TestResults results = bftTest.run();
