@@ -299,13 +299,13 @@ public class SimulationTest {
 		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
-		private NodeEvents nodeEvents = new NodeEvents();
 		private Module initialNodesModule;
 		private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
 		private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
 		private Module networkModule;
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
+
 		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
 		private final int minValidators = 2;
@@ -530,7 +530,7 @@ public class SimulationTest {
 
 				@ProvidesIntoMap
 				@StringMapKey("mempool_committed")
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
 					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
 				}
 			});
@@ -577,7 +577,7 @@ public class SimulationTest {
 
 				@ProvidesIntoMap
 				@StringMapKey("mempool_committed")
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
 					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
 				}
 			});
@@ -609,7 +609,7 @@ public class SimulationTest {
 
 				@ProvidesIntoMap
 				@StringMapKey("mempool_committed")
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
 					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
 				}
 
@@ -627,7 +627,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("vertex_request_rate")
-				TestInvariant vertexRequestRateInvariant() {
+				TestInvariant vertexRequestRateInvariant(NodeEvents nodeEvents) {
 					return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
 				}
 			});
@@ -639,7 +639,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("liveness")
-				TestInvariant livenessInvariant() {
+				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
 					return new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS);
 				}
 			});
@@ -651,7 +651,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("liveness")
-				TestInvariant livenessInvariant() {
+				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
 					return new LivenessInvariant(nodeEvents, duration, timeUnit);
 				}
 			});
@@ -662,7 +662,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("safety")
-				TestInvariant safetyInvariant() {
+				TestInvariant safetyInvariant(NodeEvents nodeEvents) {
 					return new SafetyInvariant(nodeEvents);
 				}
 			});
@@ -670,25 +670,10 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoTimeouts() {
-			// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
-			this.modules.add(new AbstractModule() {
-				@ProcessOnDispatch
-				@ProvidesIntoSet
-				private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
-				}
-
-				@ProcessOnDispatch
-				@ProvidesIntoSet
-				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
-				}
-			});
-
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("no_timeouts")
-				TestInvariant noTimeoutsInvariant() {
+				TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
 					return new NoTimeoutsInvariant(nodeEvents);
 				}
 			});
@@ -711,7 +696,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("none_committed")
-				TestInvariant noneCommittedInvariant() {
+				TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
 					return new NoneCommittedInvariant(nodeEvents);
 				}
 			});
@@ -723,7 +708,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("ledger_processed")
-				TestInvariant ledgerProcessedInvariant() {
+				TestInvariant ledgerProcessedInvariant(NodeEvents nodeEvents) {
 					return new ConsensusToLedgerCommittedInvariant(nodeEvents);
 				}
 			});
@@ -745,7 +730,7 @@ public class SimulationTest {
 			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("epoch_high_view")
-				TestInvariant epochHighViewInvariant() {
+				TestInvariant epochHighViewInvariant(NodeEvents nodeEvents) {
 					return new EpochViewInvariant(epochHighView, nodeEvents);
 				}
 			});
@@ -753,6 +738,8 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
+			final NodeEvents nodeEvents = new NodeEvents();
+
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
@@ -761,23 +748,52 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
+                    bind(NodeEvents.class).toInstance(nodeEvents);
+				}
+
+				// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
+				@ProcessOnDispatch
+				@ProvidesIntoSet
+				private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(
+					@Self BFTNode node,
+					NodeEvents nodeEvents
+				) {
+					return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
+				}
+
+				@ProcessOnDispatch
+				@ProvidesIntoSet
+				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(
+					@Self BFTNode node,
+					NodeEvents nodeEvents
+				) {
+					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
 				}
 
 				@ProvidesIntoSet
 				@ProcessOnDispatch
-				private EventProcessor<GetVerticesRequest> requestProcessor(@Self BFTNode node) {
+				private EventProcessor<GetVerticesRequest> requestProcessor(
+					@Self BFTNode node,
+					NodeEvents nodeEvents
+				) {
 					return nodeEvents.processor(node, GetVerticesRequest.class);
 				}
 
 				@ProvidesIntoSet
 				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(
+					@Self BFTNode node,
+					NodeEvents nodeEvents
+				) {
 					return nodeEvents.processor(node, BFTCommittedUpdate.class);
 				}
 
 				@ProvidesIntoSet
 				@ProcessOnDispatch
-				private EventProcessor<BFTHighQCUpdate> highQCProcessor(@Self BFTNode node) {
+				private EventProcessor<BFTHighQCUpdate> highQCProcessor(
+					@Self BFTNode node,
+					NodeEvents nodeEvents
+				) {
 					return nodeEvents.processor(node, BFTHighQCUpdate.class);
 				}
 			});
@@ -800,6 +816,7 @@ public class SimulationTest {
 				protected void configure() {
 					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
 					bind(Key.get(new TypeLiteral<List<ECKeyPair>>() { })).toInstance(nodes);
+					bind(NodeEvents.class).toInstance(nodeEvents);
 				}
 			});
 
