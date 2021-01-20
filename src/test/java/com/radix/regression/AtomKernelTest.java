@@ -1,12 +1,13 @@
 package com.radix.regression;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
@@ -19,6 +20,9 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+
 import io.reactivex.observers.TestObserver;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
@@ -32,8 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AtomKernelTest {
-	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 	private RadixIdentity identity;
+	private RadixAddress address;
 	private RadixJsonRpcClient jsonRpcClient;
 	private WebSocketClient webSocketClient;
 
@@ -41,6 +45,7 @@ public class AtomKernelTest {
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
+		this.address = api.getAddress();
 		api.discoverNodes();
 		RadixNode node = api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())
@@ -65,12 +70,13 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		TestObserver<?> observer = submitAtom(null, true, SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[1 << 20])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
+		final var rri = RRI.of(this.address, "toobig");
+		TestObserver<?> observer = submitAtom(
+			1 << 20,
+			true,
+			SpunParticle.down(new RRIParticle(rri)),
+			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+		);
 
 		observer.awaitTerminalEvent();
 		observer.assertError(RuntimeException.class);
@@ -79,12 +85,13 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(null, false, SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
+		final var rri = RRI.of(this.address, "nofee");
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
+			10,
+			false,
+			SpunParticle.down(new RRIParticle(rri)),
+			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+		);
 		observer.awaitCount(1);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
@@ -92,23 +99,24 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomEmpty() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(null, false);
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(0, false);
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
-		String message,
+		int messageSize,
 		boolean addFee,
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
+		String message = Strings.repeat("X", messageSize);
 		if (addFee) {
 			// FIXME: not really a fee
-			message = "magic:0xdeadbeef";
+			message = "magic:0xdeadbeef" + message;
 		}
 
 		Atom unsignedAtom = Atom.create(particleGroups, message);
@@ -133,16 +141,18 @@ public class AtomKernelTest {
 	}
 
 	private TestObserver<?> submitAtom(
-		String message,
+		int messageSize,
 		boolean addFee,
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
+		String message = Strings.repeat("X", messageSize);
+		System.err.println(message.length());
 		if (addFee) {
 			// FIXME: not really a fee
-			message = "magic:0xdeadbeef";
+			message = "magic:0xdeadbeef" + message;
 		}
 
 		Atom unsignedAtom = Atom.create(particleGroups, message);
