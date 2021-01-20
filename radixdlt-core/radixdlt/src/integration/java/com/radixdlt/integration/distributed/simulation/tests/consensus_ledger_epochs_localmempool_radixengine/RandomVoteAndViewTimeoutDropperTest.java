@@ -45,10 +45,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.checkConsensusSafety()
+		.checkConsensusLiveness(20, TimeUnit.SECONDS)
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
 		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();
 
 	@Test

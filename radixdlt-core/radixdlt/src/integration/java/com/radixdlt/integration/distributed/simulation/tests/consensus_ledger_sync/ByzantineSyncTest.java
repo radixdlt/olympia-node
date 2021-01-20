@@ -66,12 +66,12 @@ public class ByzantineSyncTest {
 			})
 			.pacemakerTimeout(5000)
 			.ledgerAndSync(50)
-			.checkConsensusSafety("safety")
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkConsensusNoTimeouts("noTimeouts")
-			.checkConsensusAllProposalsHaveDirectParents("directParents")
-			.checkLedgerInOrder("ledgerInOrder")
-			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+			.checkConsensusSafety()
+			.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
+			.checkConsensusNoTimeouts()
+			.checkConsensusAllProposalsHaveDirectParents()
+			.checkLedgerInOrder()
+			.checkLedgerProcessesConsensusCommitted();
 	}
 
 	@Test
@@ -103,6 +103,6 @@ public class ByzantineSyncTest {
 			.summaryStatistics();
 
 		logger.info("{}", statistics);
-		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("ledger_in_order", error -> assertThat(error).isPresent());
 	}
 }

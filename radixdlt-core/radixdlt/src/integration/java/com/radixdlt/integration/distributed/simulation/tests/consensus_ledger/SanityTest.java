@@ -40,12 +40,12 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledger()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted();
 
 	@Test
 	public void sanity_tests_should_pass() {

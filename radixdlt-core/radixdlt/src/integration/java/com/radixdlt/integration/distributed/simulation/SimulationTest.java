@@ -19,14 +19,19 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.StringMapKey;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -124,8 +129,8 @@ import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -151,8 +156,7 @@ public class SimulationTest {
 
 	private final ImmutableList<ECKeyPair> nodes;
 	private final SimulationNetwork simulationNetwork;
-	private final ImmutableSet<SimulationNetworkActor> runners;
-	private final ImmutableMap<String, TestInvariant> checks;
+	private final Module testModule;
 	private final Module baseNodeModule;
 	private final Module overrideModule;
 	private final Map<ECKeyPair, Module> byzantineNodeModules;
@@ -163,16 +167,14 @@ public class SimulationTest {
 		Module baseNodeModule,
 		Module overrideModule,
 		Map<ECKeyPair, Module> byzantineNodeModules,
-		ImmutableMap<String, TestInvariant> checks,
-		ImmutableSet<SimulationNetworkActor> runners
+        Module testModule
 	) {
 		this.nodes = nodes;
 		this.simulationNetwork = simulationNetwork;
 		this.baseNodeModule = baseNodeModule;
 		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
-		this.checks = checks;
-		this.runners = runners;
+		this.testModule = testModule;
 	}
 
 	public static class Builder {
@@ -293,16 +295,14 @@ public class SimulationTest {
 			}
 		}
 
-		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
-		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
-
 		private NodeEvents nodeEvents = new NodeEvents();
 		private Module initialNodesModule;
-		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
+		private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
+		private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
 		private Module networkModule;
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
@@ -495,17 +495,22 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addTimestampChecker(String invariantName) {
-			return addTimestampChecker(invariantName, Duration.ofSeconds(1));
+		public Builder addTimestampChecker() {
+			return addTimestampChecker(Duration.ofSeconds(1));
 		}
 
-		public Builder addTimestampChecker(String invariantName, Duration maxDelay) {
-			TimestampChecker timestampChecker = new TimestampChecker(maxDelay);
-			this.checksBuilder.put(invariantName, nodes -> timestampChecker);
+		public Builder addTimestampChecker(Duration maxDelay) {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("timestamps")
+				public TestInvariant timestampsInvariant() {
+					return new TimestampChecker(maxDelay);
+				}
+			});
 			return this;
 		}
 
-		public Builder addMempoolSubmissionsSteadyState(String invariantName, CommandGenerator commandGenerator) {
+		public Builder addMempoolSubmissionsSteadyState(CommandGenerator commandGenerator) {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -515,28 +520,51 @@ public class SimulationTest {
 			});
 
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-			LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(
-				commandGenerator,
-				nodeSelector
-			);
-			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
-			this.runnableBuilder.add(nodes -> mempoolSubmitter);
-			this.checksBuilder.put(invariantName, nodes -> committedChecker);
+			this.testModules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
+					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+				}
+
+				@Provides
+				@Singleton
+				LocalMempoolPeriodicSubmitter mempoolSubmittor() {
+					return new LocalMempoolPeriodicSubmitter(
+						commandGenerator,
+						nodeSelector
+					);
+				}
+
+				@ProvidesIntoMap
+				@StringMapKey("mempool_committed")
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
+				}
+			});
 
 			return this;
 		}
 
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
-			this.runnableBuilder.add(nodes -> {
-				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-					new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
-				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				return new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
+			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+			this.testModules.add(new AbstractModule() {
+
+				@ProvidesIntoSet
+				SimulationNetworkActor mempoolSubmittor(List<ECKeyPair> nodes) {
+					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
+							new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+					return new LocalMempoolPeriodicSubmitter(
+						randomValidatorSubmitter,
+						nodeSelector
+					);
+				}
 			});
+
 			return this;
 		}
 
-		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions(String submittedInvariantName) {
+		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissionsAndCommitCheck() {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -545,21 +573,35 @@ public class SimulationTest {
 				}
 			});
 
-			this.runnableBuilder.add(nodes -> {
-				var randomValidatorSubmitter = new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
-				var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				var mempoolSubmitter = new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
-				// TODO: Fix hack, hack required due to lack of Guice
-				this.checksBuilder.put(
-					submittedInvariantName,
-					nodes2 -> new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents)
-				);
-				return mempoolSubmitter;
+			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+			this.testModules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
+					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+				}
+
+				@Provides
+				LocalMempoolPeriodicSubmitter mempoolSubmittor(List<ECKeyPair> nodes) {
+					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
+							new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+					return new LocalMempoolPeriodicSubmitter(
+							randomValidatorSubmitter,
+							nodeSelector
+					);
+				}
+
+				@ProvidesIntoMap
+				@StringMapKey("mempool_committed")
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
+				}
 			});
+
 			return this;
 		}
 
-		public Builder addRadixEngineValidatorRegisterMempoolSubmissions(String submittedInvariantName, String registeredInvariantName) {
+		public Builder addRadixEngineValidatorRegisterMempoolSubmissions() {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -568,25 +610,44 @@ public class SimulationTest {
 				}
 			});
 
-			this.runnableBuilder.add(nodes -> {
-				var validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
-				var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				var mempoolSubmitter = new LocalMempoolPeriodicSubmitter(validatorRegistrator, nodeSelector);
-				// TODO: Fix hack, hack required due to lack of Guice
-				this.checksBuilder.put(
-					submittedInvariantName,
-					nodes2 -> new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents)
-				);
-				this.checksBuilder.put(
-					registeredInvariantName,
-					nodes2 -> new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions())
-				);
-				return mempoolSubmitter;
+			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+			this.testModules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
+					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+				}
+
+				@Provides
+				RadixEngineValidatorRegistrator radixEngineValidatorRegistrator(List<ECKeyPair> nodes) {
+					return new RadixEngineValidatorRegistrator(nodes);
+				}
+
+				@Provides
+				LocalMempoolPeriodicSubmitter mempoolSubmittor(RadixEngineValidatorRegistrator validatorRegistrator) {
+					return new LocalMempoolPeriodicSubmitter(
+						validatorRegistrator,
+						nodeSelector
+					);
+				}
+
+				@ProvidesIntoMap
+				@StringMapKey("mempool_committed")
+				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter) {
+					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
+				}
+
+				@ProvidesIntoMap
+				@StringMapKey("epoch_change")
+				TestInvariant registeredValidator(RadixEngineValidatorRegistrator validatorRegistrator) {
+					return new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions());
+				}
 			});
+
 			return this;
 		}
 
-		public Builder checkVertexRequestRate(String invariantName, int permitsPerSecond) {
+		public Builder checkVertexRequestRate(int permitsPerSecond) {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -594,32 +655,53 @@ public class SimulationTest {
 					return nodeEvents.processor(node, GetVerticesRequest.class);
 				}
 			});
-			this.checksBuilder.put(
-				invariantName,
-				nodes -> new VertexRequestRateInvariant(nodeEvents, permitsPerSecond)
-			);
+
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("vertex_request_rate")
+				TestInvariant vertexRequestRateInvariant() {
+					return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
+				}
+			});
+
 			return this;
 		}
 
-		public Builder checkConsensusLiveness(String invariantName) {
-			this.checksBuilder.put(
-				invariantName,
-				nodes -> new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS)
-			);
+		public Builder checkConsensusLiveness() {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("liveness")
+				TestInvariant livenessInvariant() {
+					return new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS);
+				}
+			});
+
 			return this;
 		}
 
-		public Builder checkConsensusLiveness(String invariantName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(nodeEvents, duration, timeUnit));
+		public Builder checkConsensusLiveness(long duration, TimeUnit timeUnit) {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("liveness")
+				TestInvariant livenessInvariant() {
+					return new LivenessInvariant(nodeEvents, duration, timeUnit);
+				}
+			});
 			return this;
 		}
 
-		public Builder checkConsensusSafety(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant(nodeEvents));
+		public Builder checkConsensusSafety() {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("safety")
+				TestInvariant safetyInvariant() {
+					return new SafetyInvariant(nodeEvents);
+				}
+			});
 			return this;
 		}
 
-		public Builder checkConsensusNoTimeouts(String invariantName) {
+		public Builder checkConsensusNoTimeouts() {
 			// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
 			this.modules.add(new AbstractModule() {
 				@ProcessOnDispatch
@@ -635,16 +717,29 @@ public class SimulationTest {
 				}
 			});
 
-			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeEvents));
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("no_timeouts")
+				TestInvariant noTimeoutsInvariant() {
+					return new NoTimeoutsInvariant(nodeEvents);
+				}
+			});
+
 			return this;
 		}
 
-		public Builder checkConsensusAllProposalsHaveDirectParents(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new AllProposalsHaveDirectParentsInvariant());
+		public Builder checkConsensusAllProposalsHaveDirectParents() {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("direct_parents")
+				TestInvariant directParentsInvariant() {
+					return new AllProposalsHaveDirectParentsInvariant();
+				}
+			});
 			return this;
 		}
 
-		public Builder checkConsensusNoneCommitted(String invariantName) {
+		public Builder checkConsensusNoneCommitted() {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -652,11 +747,19 @@ public class SimulationTest {
 					return nodeEvents.processor(node, BFTCommittedUpdate.class);
 				}
 			});
-			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant(nodeEvents));
+
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("none_committed")
+				TestInvariant noneCommittedInvariant() {
+					return new NoneCommittedInvariant(nodeEvents);
+				}
+			});
+
 			return this;
 		}
 
-		public Builder checkLedgerProcessesConsensusCommitted(String invariantName) {
+		public Builder checkLedgerProcessesConsensusCommitted() {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -664,16 +767,28 @@ public class SimulationTest {
 					return nodeEvents.processor(node, BFTCommittedUpdate.class);
 				}
 			});
-			this.checksBuilder.put(invariantName, nodes -> new ConsensusToLedgerCommittedInvariant(nodeEvents));
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("ledger_processed")
+				TestInvariant ledgerProcessedInvariant() {
+					return new ConsensusToLedgerCommittedInvariant(nodeEvents);
+				}
+			});
 			return this;
 		}
 
-		public Builder checkLedgerInOrder(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new LedgerInOrderInvariant());
+		public Builder checkLedgerInOrder() {
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("ledger_in_order")
+				TestInvariant ledgerInOrderInvariant() {
+					return new LedgerInOrderInvariant();
+				}
+			});
 			return this;
 		}
 
-		public Builder checkEpochsHighViewCorrect(String invariantName, View epochHighView) {
+		public Builder checkEpochsHighViewCorrect(View epochHighView) {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -681,7 +796,13 @@ public class SimulationTest {
 					return nodeEvents.processor(node, BFTCommittedUpdate.class);
 				}
 			});
-			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView, nodeEvents));
+			this.testModules.add(new AbstractModule() {
+				@ProvidesIntoMap
+				@StringMapKey("epoch_high_view")
+				TestInvariant epochHighViewInvariant() {
+					return new EpochViewInvariant(epochHighView, nodeEvents);
+				}
+			});
 			return this;
 		}
 
@@ -716,23 +837,19 @@ public class SimulationTest {
 			modules.add(new MockedRecoveryModule());
 			modules.add(ledgerType.getCoreModule());
 
-			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
-				.map(f -> f.apply(nodes))
-				.collect(ImmutableSet.toImmutableSet());
-			ImmutableMap<String, TestInvariant> checks = this.checksBuilder.build().entrySet()
-				.stream()
-				.collect(
-					ImmutableMap.toImmutableMap(
-						Entry::getKey,
-						e -> e.getValue().apply(nodes)
-					)
-				);
-
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
 				initialNodesModule,
 				new SimulationNetworkModule(),
 				networkModule
 			).getInstance(SimulationNetwork.class);
+
+			testModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
+					bind(Key.get(new TypeLiteral<List<ECKeyPair>>() { })).toInstance(nodes);
+				}
+			});
 
 			return new SimulationTest(
 				nodes,
@@ -740,8 +857,7 @@ public class SimulationTest {
 				Modules.combine(modules.build()),
 				overrideModule,
 				byzantineModuleCreator.apply(this.nodes),
-				checks,
-				runners
+				Modules.combine(testModules.build())
 			);
 		}
 	}
@@ -750,10 +866,15 @@ public class SimulationTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, Duration duration) {
-		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = this.checks.keySet().stream()
+	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(
+		Set<SimulationNetworkActor> runners,
+		Map<String, TestInvariant> checkers,
+		RunningNetwork runningNetwork,
+		Duration duration
+	) {
+		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = checkers.keySet().stream()
 			.map(name -> {
-				TestInvariant check = this.checks.get(name);
+				TestInvariant check = checkers.get(name);
 				return
 					Pair.of(
 						name,
@@ -832,6 +953,10 @@ public class SimulationTest {
 	 * @return test results
 	 */
 	public TestResults run(Duration duration) {
+	    Injector testInjector = Guice.createInjector(testModule);
+	    var runners = testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() { }));
+		var checkers = testInjector.getInstance(Key.get(new TypeLiteral<Map<String, TestInvariant>>() { }));
+
 		SimulationNodes bftNetwork = new SimulationNodes(
 			nodes,
 			simulationNetwork,
@@ -841,7 +966,7 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
-		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runningNetwork, duration)
+		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
 			.doFinally(() -> {
 				runners.forEach(SimulationNetworkActor::stop);
 				bftNetwork.stop();

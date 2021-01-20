@@ -39,13 +39,13 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addMempoolSubmissionsSteadyState("mempool", new RadixEngineUniqueGenerator());
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
 
 	@Test
 	public void sanity_tests_should_pass() {

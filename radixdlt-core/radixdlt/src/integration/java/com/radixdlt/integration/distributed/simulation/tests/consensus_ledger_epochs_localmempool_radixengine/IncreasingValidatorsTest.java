@@ -39,13 +39,13 @@ public class IncreasingValidatorsTest {
 		)
 		.numNodes(50, 2, 50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addRadixEngineValidatorRegisterMempoolSubmissions();
 
 	@Test
 	public void when_increasing_validators__then_they_should_be_getting_registered() {

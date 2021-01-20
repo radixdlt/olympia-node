@@ -54,11 +54,11 @@ public class OneNodeNeverSendEpochResponseTest {
 		.pacemakerTimeout(1000)
 		.numNodes(numNodes, 4)
 		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addTimestampChecker("timestamps", Duration.ofSeconds(2));
+		.checkConsensusSafety()
+		.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addTimestampChecker(Duration.ofSeconds(2));
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper() {
 		return epoch -> {

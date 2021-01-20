@@ -48,10 +48,10 @@ public class UniformLatencyTest {
 				NetworkLatencies.fixed()
 			)
 			.numNodes(4)
-			.checkConsensusSafety("safety")
-			.checkConsensusLiveness("liveness")
-			.checkConsensusNoTimeouts("noTimeouts")
-			.checkConsensusAllProposalsHaveDirectParents("directParents")
+			.checkConsensusSafety()
+			.checkConsensusLiveness()
+			.checkConsensusNoTimeouts()
+			.checkConsensusAllProposalsHaveDirectParents()
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());

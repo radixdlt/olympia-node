@@ -48,11 +48,11 @@ public class OneNodeFallingBehindTest {
 		)
 		.pacemakerTimeout(1000)
 		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 30, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+		.checkConsensusSafety()
+		.checkConsensusLiveness(30, TimeUnit.SECONDS)
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.checkVertexRequestRate(50); // Conservative check
 
 	@Test
 	public void sanity_test() {

@@ -36,19 +36,19 @@ public class StaticValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.numNodes(4, 2)
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted();
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
+			.checkEpochsHighViewCorrect(View.of(1))
 			.build();
 
 		TestResults results = bftTest.run();
@@ -59,20 +59,20 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect("epochHighView", View.of(99))
-			.addTimestampChecker("timestamps")
+			.checkEpochsHighViewCorrect(View.of(99))
+			.addTimestampChecker()
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("epoch_high_view", error -> assertThat(error).isPresent());
 	}
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
+			.checkEpochsHighViewCorrect(View.of(100))
+			.addTimestampChecker()
 			.build();
 
 		TestResults results = bftTest.run();

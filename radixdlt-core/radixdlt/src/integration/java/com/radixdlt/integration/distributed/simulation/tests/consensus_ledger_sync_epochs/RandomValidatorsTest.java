@@ -52,14 +52,14 @@ public class RandomValidatorsTest {
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+		.checkEpochsHighViewCorrect(View.of(100))
+		.checkConsensusSafety()
+		.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.checkVertexRequestRate(50); // Conservative check
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

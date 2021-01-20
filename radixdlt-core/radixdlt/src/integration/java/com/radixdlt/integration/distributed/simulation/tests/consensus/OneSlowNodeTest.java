@@ -44,8 +44,8 @@ public class OneSlowNodeTest {
 			NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency)
 		)
 		.pacemakerTimeout(synchronousTimeout)
-		.checkConsensusSafety("safety")
-		.checkConsensusAllProposalsHaveDirectParents("directParents");
+		.checkConsensusSafety()
+		.checkConsensusAllProposalsHaveDirectParents();
 
 	/**
 	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.

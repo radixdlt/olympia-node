@@ -46,14 +46,14 @@ public class RandomValidatorsTest {
 		)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
-		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addTimestampChecker("timestamps");
+		.checkEpochsHighViewCorrect(View.of(100))
+		.checkConsensusSafety()
+		.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addTimestampChecker();
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

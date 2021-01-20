@@ -51,10 +51,10 @@ public class RandomLatencyTest {
 			NetworkDroppers.bftSyncMessagesDropped()
 		)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkConsensusSafety("safety")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkConsensusNoTimeouts("noTimeouts");
+		.checkConsensusLiveness(synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkConsensusSafety()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkConsensusNoTimeouts();
 
 	/**
 	 * Tests a static configuration of 3 nodes with random, high variance in latency

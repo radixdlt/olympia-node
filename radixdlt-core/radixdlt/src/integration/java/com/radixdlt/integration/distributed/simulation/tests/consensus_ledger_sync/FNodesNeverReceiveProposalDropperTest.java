@@ -60,12 +60,12 @@ public class FNodesNeverReceiveProposalDropperTest {
 			)
 			.pacemakerTimeout(5000)
 			.ledgerAndSync(50)
-			.checkConsensusSafety("safety")
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkConsensusAllProposalsHaveDirectParents("directParents")
-			.checkLedgerInOrder("ledgerInOrder")
-			.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-			.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+			.checkConsensusSafety()
+			.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
+			.checkConsensusAllProposalsHaveDirectParents()
+			.checkLedgerInOrder()
+			.checkLedgerProcessesConsensusCommitted()
+			.checkVertexRequestRate(50); // Conservative check
 	}
 
 	@Test

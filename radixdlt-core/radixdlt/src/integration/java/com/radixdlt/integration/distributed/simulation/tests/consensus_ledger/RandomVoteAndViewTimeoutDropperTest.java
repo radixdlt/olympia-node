@@ -44,10 +44,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
 		)
 		.ledger()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkConsensusSafety()
+		.checkConsensusLiveness(20, TimeUnit.SECONDS)
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted();
 
 	/**
 	 * Tests a configuration of 4 nodes with a dropping proposal adversary

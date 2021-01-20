@@ -41,8 +41,8 @@ public class OneOutOfBoundsTest {
 		)
 		.pacemakerTimeout(synchronousTimeout)
 		// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
-		.checkConsensusLiveness("liveness", 4 * synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkConsensusSafety("safety");
+		.checkConsensusLiveness(4 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkConsensusSafety();
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

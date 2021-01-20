@@ -43,10 +43,10 @@ public class OneOutOfBoundsTest {
 		)
 		.ledger()
 		.pacemakerTimeout(1000)
-		.checkConsensusLiveness("liveness", 4 * 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusSafety("safety")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkConsensusLiveness(4 * 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusSafety()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted();
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

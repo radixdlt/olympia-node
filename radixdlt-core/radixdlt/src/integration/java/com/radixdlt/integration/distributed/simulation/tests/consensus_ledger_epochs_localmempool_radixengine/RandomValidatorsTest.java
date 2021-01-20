@@ -40,13 +40,13 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissionsAndCommitCheck();
 
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {

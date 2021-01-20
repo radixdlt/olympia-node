@@ -65,9 +65,9 @@ public class FProposalsPerViewDropperTest {
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)
-			.checkConsensusSafety("safety")
-			.checkConsensusNoTimeouts("noTimeouts")
-			.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+			.checkConsensusSafety()
+			.checkConsensusNoTimeouts()
+			.checkVertexRequestRate(50); // Conservative check
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class FProposalsPerViewDropperTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("no_timeouts", error -> assertThat(error).isPresent());
 	}
 
 	/**
@@ -122,6 +122,6 @@ public class FProposalsPerViewDropperTest {
 			})
 			.build();
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("no_timeouts", error -> assertThat(error).isPresent());
 	}
 }

@@ -43,13 +43,13 @@ public class MempoolSanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndMempool()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addMempoolSubmissionsSteadyState("mempool", new IncrementalBytes());
+		.checkConsensusSafety()
+		.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts()
+		.checkConsensusAllProposalsHaveDirectParents()
+		.checkLedgerInOrder()
+		.checkLedgerProcessesConsensusCommitted()
+		.addMempoolSubmissionsSteadyState(new IncrementalBytes());
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else
@@ -66,7 +66,7 @@ public class MempoolSanityTest {
 			.build();
 
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("mempool_committed", error -> assertThat(error).isPresent());
 	}
 
 	@Test

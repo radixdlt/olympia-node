@@ -40,14 +40,14 @@ public class OneByzantineGenesisTest {
 			NetworkLatencies.fixed()
 		)
 		.pacemakerTimeout(1000)
-		.checkConsensusSafety("safety");
+		.checkConsensusSafety();
 
 	@Test
 	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
 			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.checkConsensusNoneCommitted("noneCommitted")
+			.checkConsensusNoneCommitted()
 			.build();
 
 		TestResults results = bftTest.run();
@@ -58,11 +58,11 @@ public class OneByzantineGenesisTest {
 	public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.checkConsensusNoneCommitted("noneCommitted")
+			.checkConsensusNoneCommitted()
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying("none_committed", error -> assertThat(error).isPresent());
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public class OneByzantineGenesisTest {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
 			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
+			.checkConsensusLiveness(5, TimeUnit.SECONDS)
 			.build();
 
 		TestResults results = bftTest.run();
