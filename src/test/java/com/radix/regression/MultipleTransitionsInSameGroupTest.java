@@ -32,9 +32,7 @@ import org.junit.Test;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MultipleTransitionsInSameGroupTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
@@ -233,12 +231,8 @@ public class MultipleTransitionsInSameGroupTest {
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
-		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
-		// FIXME: not really a fee
-		atomMetaData.put("magic", "0xdeadbeef");
-
-		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
+		// Warning: fake fee using magic
+		Atom unsignedAtom = Atom.create(particleGroups, "magic:0xdeadbeef");
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 

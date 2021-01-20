@@ -2,6 +2,8 @@ package com.radix.regression;
 
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.identifiers.RRI;
+
 import io.reactivex.disposables.Disposable;
 import java.util.concurrent.TimeUnit;
 
@@ -10,8 +12,10 @@ import org.junit.Test;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.PlaintextMessage;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
@@ -42,7 +46,10 @@ public class UnsubscribeTest {
 		networkListener.awaitTerminalEvent();
 
 		// When I send a message to myself to completion
-		Result result = normalApi.sendMessage(new byte[] {0}, false);
+		final var rri = RRI.of(normalApi.getAddress(), "test");
+		Transaction t = normalApi.createTransaction();
+		t.stage(PutUniqueIdAction.create(rri));
+		Result result = t.commitAndPush();
 		TestObserver<Object> completion = TestObserver.create(Util.loggingObserver("MessageSent"));
 		result.toCompletable().subscribe(completion);
 		completion.awaitTerminalEvent();
@@ -57,7 +64,7 @@ public class UnsubscribeTest {
 	public void given_i_am_connected_to_a_node_and_subscribed_once__when_i_dispose_of_the_lone_subscriber__then_i_can_observe_all_network_connections_being_closed() throws Exception {
 		// Given I am connected to a node and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
+		TestObserver<PlaintextMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
 		Observable<RadixNetworkState> networkStatus = normalApi
@@ -82,8 +89,8 @@ public class UnsubscribeTest {
 	public void given_i_am_connected_to_a_node_and_subscribed_twice__when_i_dispose_of_one_subscriber__then_i_can_observe_a_network_connection_still_open() {
 		// Given I am connected to a node and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		TestObserver<DecryptedMessage> messageListener1 = TestObserver.create(Util.loggingObserver("MessageListener1"));
-		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
+		TestObserver<PlaintextMessage> messageListener1 = TestObserver.create(Util.loggingObserver("MessageListener1"));
+		TestObserver<PlaintextMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
 		normalApi.observeMessages().subscribe(messageListener1);
 		normalApi.observeMessages().subscribe(messageListener2);
 		Disposable d = normalApi.pull();

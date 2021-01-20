@@ -12,6 +12,8 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.Observable;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +22,9 @@ import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.HttpClients;
@@ -154,7 +158,7 @@ public class UnsubscribeAccount {
 	@When("the client sends a message to himself$")
 	public void the_client_sends_a_message_to_himself() {
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
+		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test1")));
 		Atom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
 
@@ -180,7 +184,7 @@ public class UnsubscribeAccount {
 	public void the_client_sends_another_message_to_himself() throws InterruptedException {
 		Thread.sleep(2000); // Might be a slight delay between websocket and API, so let API catch up so fees don't fail
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1, 2}, false));
+		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test2")));
 		Atom unsignedAtom = transaction.buildAtom();
 		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
@@ -205,7 +209,12 @@ public class UnsubscribeAccount {
 	@When("the client sends a message to the other account$")
 	public void the_client_sends_a_message_to_the_other_account() {
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.otherAccount, new byte[]{3}, false));
+		// Fake a message to the other account with a transfer, so that it has both addresses
+		transaction.stage(
+			TransferTokensAction.create(
+				this.api.getNativeTokenRef(), this.api.getAddress(), this.otherAccount, BigDecimal.valueOf(1)
+			)
+		);
 		Atom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
 
