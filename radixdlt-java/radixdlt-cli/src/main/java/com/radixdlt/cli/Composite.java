@@ -23,23 +23,33 @@
 package com.radixdlt.cli;
 
 import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 import static com.radixdlt.cli.Utils.println;
 
 public class Composite {
 	public static class Encrypted {
-		@CommandLine.Option(names = {"-k", "--keystore"}, paramLabel = "KEYSTORE", description = "location of keystore file.", required = true)
+		@Option(
+			names = {"-k", "--keystore"},
+			paramLabel = "KEYSTORE",
+			description = "location of keystore file.", required = true
+		)
 		private String keyStore;
 
-		@CommandLine.Option(names = {"-p", "--password"}, paramLabel = "PASSWORD", description = "keystore password", required = true)
+		@Option(
+			names = {"-p", "--password"},
+			paramLabel = "PASSWORD",
+			description = "keystore password", required = true
+		)
 		private String password;
 
-		@CommandLine.Option(
-				names = {"-n", "--keypair-name"},
-				paramLabel = "KEYPAIR_NAME",
-				description = "name of keypair to use",
-				required = true,
-				defaultValue = "node")
+		@Option(
+			names = {"-n", "--keypair-name"},
+			paramLabel = "KEYPAIR_NAME",
+			description = "name of keypair to use",
+			required = true,
+			defaultValue = "node"
+		)
 		private String keypair;
 
 		boolean isInvalid() {
@@ -76,7 +86,7 @@ public class Composite {
 		@CommandLine.ArgGroup(exclusive = false)
 		private Encrypted encrypted;
 
-		@CommandLine.Option(
+		@Option(
 				names = {"-u", "--unencryptedkeyfile"},
 				paramLabel = "UNENCRYPTED_KEYFILE",
 				description = "location of unencrypted keyfile."

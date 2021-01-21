@@ -207,7 +207,6 @@ public final class DeterministicTest {
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
 			modules.add(new LedgerLocalMempoolModule(10));
-			modules.add(new DeterministicMempoolModule());
 			modules.add(new DispatcherModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {

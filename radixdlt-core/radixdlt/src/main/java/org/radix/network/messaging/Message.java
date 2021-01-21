@@ -30,13 +30,14 @@ import org.xerial.snappy.Snappy;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class Message extends BasicContainer
-{
+public abstract class Message extends BasicContainer {
 	@Override
-	public short VERSION() { return 100; }
+	public short version() {
+		return 100;
+	}
 
 	private static final AtomicLong instances = new AtomicLong();
-	public static final int MAX_MESSAGE_SIZE = (4096*1024);
+	public static final int MAX_MESSAGE_SIZE = (4096 * 1024);
 
 	private long instance = Message.instances.incrementAndGet();
 
@@ -78,6 +79,6 @@ public abstract class Message extends BasicContainer
 
 	@Override
 	public String toString() {
-		return this.instance+" -> "+this.getClass().getSimpleName()+":"+this.hashCode()+" @ "+this.getTimestamp();
+		return this.instance + " -> " + this.getClass().getSimpleName() + ":" + this.hashCode() + " @ " + this.getTimestamp();
 	}
 }

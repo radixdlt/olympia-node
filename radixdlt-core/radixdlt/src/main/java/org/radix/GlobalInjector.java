@@ -37,17 +37,17 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.LedgerRecoveryModule;
+import com.radixdlt.MempoolRelayModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.RecoveryModule;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
@@ -90,7 +90,8 @@ public class GlobalInjector {
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
-				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(properties.get("epochs.views_per_epoch", 10000L)));
+				bind(View.class).annotatedWith(EpochCeilingView.class)
+					.toInstance(View.of(properties.get("epochs.views_per_epoch", 10000L)));
 
 				// Default values mean that pacemakers will sync if they are within 5 views of each other.
 				// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
@@ -131,14 +132,15 @@ public class GlobalInjector {
 
 			// Ledger
 			new LedgerModule(),
-			new LedgerRxModule(),
 			new LedgerCommandGeneratorModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
+
+			// Mempool Relay
+			new MempoolRelayModule(),
 
 			// Sync
 			new SyncRunnerModule(),
 			new SyncServiceModule(),
-			new SyncMempoolServiceModule(),
 
 			// Epochs - Consensus
 			new EpochsConsensusModule(),
@@ -164,8 +166,8 @@ public class GlobalInjector {
 			new TokenFeeModule(),
 
 			new PersistenceModule(),
-
-			new RecoveryModule(),
+			new ConsensusRecoveryModule(),
+			new LedgerRecoveryModule(),
 
 			// System Info
 			new SystemInfoModule(),

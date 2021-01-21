@@ -58,7 +58,7 @@ public class ByzantineSyncTest {
 			.addByzantineModuleToAll(new AbstractModule() {
 				@Override
 				protected void configure() {
-					Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+					var committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 					committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 					bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 					bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);

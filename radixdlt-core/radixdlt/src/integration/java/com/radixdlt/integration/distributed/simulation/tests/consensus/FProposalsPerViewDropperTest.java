@@ -116,7 +116,8 @@ public class FProposalsPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance((request, millis) -> { });
+					bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
+						.toInstance((request, millis) -> { });
 				}
 			})
 			.build();

@@ -57,6 +57,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -64,6 +65,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -81,6 +84,7 @@ import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import java.util.stream.Stream;
@@ -143,6 +147,9 @@ public class RadixEngineStateComputerTest {
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 				bind(RadixEngineValidatorsComputer.class).toInstance(validatorsComputer);
 				bind(RadixEngineStakeComputer.class).toInstance(new ConstantStakeComputer(UInt256.ONE));
+				bind(Mempool.class).toInstance(mock(Mempool.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 			}
 		};
 	}

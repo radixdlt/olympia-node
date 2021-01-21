@@ -128,7 +128,10 @@ public final class LocalSyncServiceAccumulatorProcessor {
 			return;
 		}
 
-		systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, requestTargetHeader.getStateVersion() - this.currentHeader.getStateVersion());
+		systemCounters.set(
+			CounterType.SYNC_TARGET_CURRENT_DIFF,
+			requestTargetHeader.getStateVersion() - this.currentHeader.getStateVersion()
+		);
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		// TODO: remove thread local random

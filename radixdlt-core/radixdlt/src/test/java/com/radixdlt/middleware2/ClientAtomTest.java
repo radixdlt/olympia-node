@@ -44,7 +44,7 @@ public class ClientAtomTest {
 		EqualsVerifier
 			.forClass(ClientAtom.class)
 			// Only AID is compared.
-			.withIgnoredFields("metaData", "perGroupMetadata", "instructions", "signatures", "witness")
+			.withIgnoredFields("message", "instructions", "signatures", "witness")
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
@@ -70,7 +70,7 @@ public class ClientAtomTest {
 		Atom atom = createApiAtom();
 		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		assertThat(Atom.aidOf(atom, hasher)).isEqualTo(clientAtom.getAID());
-		assertThat(atom.getMetaData()).isEqualTo(clientAtom.getMetaData());
+		assertThat(atom.getMessage()).isEqualTo(clientAtom.getMessage());
 		assertThat(clientAtom.getCMInstruction()).isNotNull();
 	}
 

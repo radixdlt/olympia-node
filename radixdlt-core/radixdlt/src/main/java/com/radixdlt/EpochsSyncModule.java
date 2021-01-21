@@ -66,7 +66,9 @@ public class EpochsSyncModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@ProcessWithSyncRunner
-	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochsRemoteSyncResponseProcessor epochsRemoteSyncResponseProcessor) {
+	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(
+		EpochsRemoteSyncResponseProcessor epochsRemoteSyncResponseProcessor
+	) {
 		return epochsRemoteSyncResponseProcessor.epochsLedgerUpdateEventProcessor();
 	}
 

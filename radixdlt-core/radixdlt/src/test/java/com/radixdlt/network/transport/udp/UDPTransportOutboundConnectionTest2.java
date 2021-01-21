@@ -44,7 +44,7 @@ public class UDPTransportOutboundConnectionTest2 {
 		when(sourceAddress.getAddress()).thenReturn(new byte[4]);
 		NatHandler natHandler = mock(NatHandler.class);
 		when(natHandler.getAddress()).thenReturn(sourceAddress);
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
+		try (var udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 			byte[] data = new byte[UDPConstants.MAX_PACKET_LENGTH + 1];
 			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(data);
 

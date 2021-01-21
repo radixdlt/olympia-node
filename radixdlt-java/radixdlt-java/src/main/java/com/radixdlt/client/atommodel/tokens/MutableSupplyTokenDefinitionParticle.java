@@ -26,9 +26,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -36,6 +38,7 @@ import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 
 @SerializerId2("radix.particles.mutable_supply_token_definition")
@@ -97,7 +100,6 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		String iconUrl,
 		String url
 	) {
-		super(rri.getAddress().euid());
 		this.rri = rri;
 		this.name = name;
 		this.description = description;
@@ -105,6 +107,11 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 		this.iconUrl = iconUrl;
 		this.url = url;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	@Override
@@ -157,7 +164,8 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
+					e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");

@@ -34,7 +34,7 @@ public class RadixUniverseConfigsTestConfig {
 	public void createDevelopmentUniverseFromJson() {
 		RadixUniverseConfig betanet = RadixUniverseConfigs.getLocalnet();
 		assertNotNull(betanet);
-		assertEquals("852b5d7bf8d4e2cf149269a165e25f68ebcb5e5e8a53c189a2dc6c1860d3e50b", betanet.getHash().toString());
+		assertEquals("56def04b13580de8c0b1418b7060c6cce9784a4de424c9388756b44c05507c4a", betanet.getHash().toString());
 		assertFalse(betanet.euid().getValue().isZero());
 	}
 }

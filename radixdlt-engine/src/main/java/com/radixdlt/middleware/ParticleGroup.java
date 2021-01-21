@@ -32,7 +32,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,26 +50,14 @@ public final class ParticleGroup {
 	private ImmutableList<SpunParticle> particles;
 	private ImmutableMap<SpunParticle, Integer> indexByParticle;
 
-	/**
-	 * Metadata about the particle group, such as what the purpose of each group is in the app
-	 */
-	@JsonProperty("metaData")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableMap<String, String> metaData;
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	private ParticleGroup() {
 		this.particles = ImmutableList.of();
 		this.indexByParticle = ImmutableMap.of();
-		this.metaData = ImmutableMap.of();
 	}
 
 	private ParticleGroup(Iterable<SpunParticle> particles) {
@@ -78,25 +65,6 @@ public final class ParticleGroup {
 
 		this.particles = ImmutableList.copyOf(particles);
 		this.indexByParticle = index(this.particles);
-		this.metaData = ImmutableMap.of();
-	}
-
-	private ParticleGroup(Iterable<SpunParticle> particles, Map<String, String> metaData) {
-		Objects.requireNonNull(particles, "particles is required");
-		Objects.requireNonNull(metaData, "metaData is required");
-
-		this.particles = ImmutableList.copyOf(particles);
-		this.indexByParticle = index(this.particles);
-		this.metaData = ImmutableMap.copyOf(metaData);
-	}
-
-	private ParticleGroup(ImmutableList<SpunParticle> particles, Map<String, String> metaData) {
-		Objects.requireNonNull(particles, "particles is required");
-		Objects.requireNonNull(metaData, "metaData is required");
-
-		this.particles = particles;
-		this.indexByParticle = index(this.particles);
-		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
 	private ImmutableMap<SpunParticle, Integer> index(List<SpunParticle> particles) {
@@ -223,14 +191,6 @@ public final class ParticleGroup {
 		return this.indexByParticle.containsKey(spunParticle);
 	}
 
-	/**
-	 * Get the metadata associated with the particle group
-	 * @return an immutable map of the metadata
-	 */
-	public Map<String, String> getMetaData() {
-		return this.metaData;
-	}
-
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)
 	List<SpunParticle> getJsonParticles() {
@@ -248,14 +208,6 @@ public final class ParticleGroup {
 	 */
 	public static ParticleGroup of(Iterable<SpunParticle> particles) {
 		return new ParticleGroup(particles);
-	}
-
-
-	/**
-	 * Get a {@link ParticleGroup} consisting of the given particles
-	 */
-	public static ParticleGroup of(Iterable<SpunParticle> particles, Map<String, String> metaData) {
-		return new ParticleGroup(particles, metaData);
 	}
 
 	/**
@@ -282,14 +234,12 @@ public final class ParticleGroup {
 			return false;
 		}
 		ParticleGroup that = (ParticleGroup) o;
-		return version == that.version
-				&& Objects.equals(particles, that.particles)
-				&& Objects.equals(metaData, that.metaData);
+		return Objects.equals(particles, that.particles);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particles, metaData, version);
+		return Objects.hash(particles);
 	}
 
 	/**
@@ -297,7 +247,6 @@ public final class ParticleGroup {
 	 */
 	public static class ParticleGroupBuilder {
 		private List<SpunParticle> particles = new ArrayList<>();
-		private Map<String, String> metaData = new HashMap<>();
 
 		private ParticleGroupBuilder() {
 		}
@@ -320,23 +269,17 @@ public final class ParticleGroup {
 			return this;
 		}
 
-		public final ParticleGroupBuilder addMetaData(String key, String value) {
-			Objects.requireNonNull(key, "key is required");
-			Objects.requireNonNull(value, "value is required");
-
-			this.metaData.put(key, value);
-
-			return this;
-		}
-
 		public ParticleGroup build() {
-			return new ParticleGroup(ImmutableList.copyOf(this.particles), this.metaData);
+			return new ParticleGroup(ImmutableList.copyOf(this.particles));
 		}
 	}
 
 	@Override
 	public String toString() {
-		String particlesStr = (this.particles == null) ? "null" : particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+		var particlesStr = (this.particles == null)
+			? "null"
+		   	: particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+
 		return String.format("%s[%s]", getClass().getSimpleName(), particlesStr);
 	}
 }

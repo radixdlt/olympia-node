@@ -17,13 +17,13 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
 import java.util.Objects;
 
 import com.google.inject.Inject;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
+import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -31,28 +31,26 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Network glue for SubmissionControl.
  */
 public final class MempoolReceiver {
-	private static final Logger log = LogManager.getLogger();
-
-	private final MempoolNetworkRx mempoolRx;
-	private final SubmissionControl submissionControl;
+	private final Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands;
+	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
 
 	private final Object startLock = new Object();
 	private Disposable disposable;
 
 	@Inject
 	public MempoolReceiver(
-		MempoolNetworkRx mempoolRx,
-		SubmissionControl submissionControl
+		Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
+		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
 	) {
-		this.mempoolRx = Objects.requireNonNull(mempoolRx);
-		this.submissionControl = Objects.requireNonNull(submissionControl);
+		this.mempoolCommands = Objects.requireNonNull(mempoolCommands);
+		this.remoteEventProcessor = Objects.requireNonNull(remoteEventProcessor);
 	}
 
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
-				this.disposable = this.mempoolRx.commands()
-					.subscribe(this::processCommand);
+				this.disposable = this.mempoolCommands
+					.subscribe(e -> this.remoteEventProcessor.process(e.getOrigin(), e.getEvent()));
 			}
 		}
 	}
@@ -71,14 +69,6 @@ public final class MempoolReceiver {
 	boolean running() {
 		synchronized (this.startLock) {
 			return this.disposable != null;
-		}
-	}
-
-	private void processCommand(Command command) {
-		try {
-			this.submissionControl.submitCommand(command);
-		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected command %s: %s", command, ex.getMessage()));
 		}
 	}
 }

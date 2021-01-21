@@ -11,7 +11,6 @@ public class MutableSupplyTokenDefinitionParticleTest {
     public void equalsContract() {
         EqualsVerifier.forClass(MutableSupplyTokenDefinitionParticle.class)
                 .suppress(Warning.NONFINAL_FIELDS)
-                .withIgnoredFields("version")
                 .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
                 .verify();
     }

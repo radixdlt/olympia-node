@@ -18,16 +18,21 @@ package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Set;
+
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Local-only mempool.
@@ -44,24 +49,41 @@ public final class LocalMempool implements Mempool {
 
 	private final Hasher hasher;
 
-	public LocalMempool(int maxSize, Hasher hasher) {
+	private final EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher;
+
+	private final SystemCounters counters;
+
+	public LocalMempool(
+		int maxSize,
+		Hasher hasher,
+        SystemCounters counters,
+        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
+	) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}
 		this.maxSize = maxSize;
 		this.hasher = hasher;
+		this.mempoolAddedCommandEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	@Override
 	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
-				throw new MempoolFullException(command, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
+				throw new MempoolFullException(
+					command,
+					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				);
 			}
 			if (null != this.data.put(hasher.hash(command), command)) {
 				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", hasher.hash(command)));
 			}
 		}
+
+		updateCounts();
+		mempoolAddedCommandEventDispatcher.dispatch(MempoolAddSuccess.create(command));
 	}
 
 	@Override
@@ -69,6 +91,7 @@ public final class LocalMempool implements Mempool {
 		synchronized (this.lock) {
 			this.data.remove(cmdHash);
 		}
+		updateCounts();
 	}
 
 	@Override
@@ -106,9 +129,9 @@ public final class LocalMempool implements Mempool {
 		}
 	}
 
-	// Used by SharedMempool
-	int maxCount() {
-		return this.maxSize;
+	private void updateCounts() {
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, count());
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
 	}
 
 	@Override

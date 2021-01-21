@@ -360,8 +360,10 @@ public class UInt384Test {
 	@Test
 	public void when_converting_int256_to_byte_array__the_correct_values_are_returned() {
 		UInt128 bp0 = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
-		UInt256 bp1 = UInt256
-			.from(UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL), UInt128.from(0x2021_2223_2425_2627L, 0x2829_2A2B_2C2D_2E2FL));
+		UInt256 bp1 = UInt256.from(
+			UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL),
+			UInt128.from(0x2021_2223_2425_2627L, 0x2829_2A2B_2C2D_2E2FL)
+		);
 		UInt384 bitPattern = UInt384.from(bp0, bp1);
 		byte[] bytes2 = new byte[UInt384.BYTES * 3];
 		Arrays.fill(bytes2, (byte) -1);

@@ -180,7 +180,12 @@ public class JacksonCborMapper extends ObjectMapper {
 			@Override
 			public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
 				if (!key.startsWith(JacksonCodecConstants.AID_STR_VALUE)) {
-					throw new InvalidFormatException(ctxt.getParser(), "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE, key, AID.class);
+					throw new InvalidFormatException(
+						ctxt.getParser(),
+						"Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE,
+						key,
+						AID.class
+					);
 				}
 				return AID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
 			}

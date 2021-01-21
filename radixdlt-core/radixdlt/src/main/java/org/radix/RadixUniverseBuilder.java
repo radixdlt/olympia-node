@@ -140,7 +140,12 @@ public final class RadixUniverseBuilder {
 		final var name = nameOf(this.universeType);
 		final var description = descriptionOf(this.universeType);
 
-		final var universeMagic = (byte) Universe.computeMagic(this.universeKey.getPublicKey(), this.universeTimestamp, port, this.universeType);
+		final var universeMagic = (byte) Universe.computeMagic(
+			this.universeKey.getPublicKey(),
+			this.universeTimestamp,
+			port,
+			this.universeType
+		);
 		final var universeAtom = createGenesisAtom(
 			universeMagic,
 			this.selfIssuance,

@@ -23,9 +23,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.hash.HashCode;
@@ -53,26 +51,8 @@ public abstract class Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
-	@JsonProperty("destinations")
-	@DsonOutput(Output.ALL)
-	private ImmutableSet<EUID> destinations;
-
 	public Particle() {
-		this.destinations = ImmutableSet.of();
-	}
-
-	public Particle(EUID destination) {
-		Objects.requireNonNull(destination);
-		this.destinations = ImmutableSet.of(destination);
-	}
-
-	public Particle(Set<EUID> destinations) {
-		Objects.requireNonNull(destinations);
-		this.destinations = ImmutableSet.copyOf(destinations);
+		// Nothing for now
 	}
 
 	public final Set<RadixAddress> getShardables() {
@@ -103,9 +83,7 @@ public abstract class Particle {
 		return EUID.fromHash(this.getHash());
 	}
 
-	public Set<EUID> getDestinations() {
-		return destinations;
-	}
+	public abstract Set<EUID> getDestinations();
 
 	@Override
 	public boolean equals(Object o) {

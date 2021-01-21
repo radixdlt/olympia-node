@@ -18,19 +18,20 @@
 package org.radix.api.services;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.CommittedAtomsRx;
-import com.radixdlt.api.SubmissionErrorsRx;
-import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.SubmissionControl;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddFailure;
 
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
@@ -52,7 +53,8 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -86,30 +88,30 @@ public class AtomsService {
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
-	private final SubmissionControl submissionControl;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
 
-	private final SubmissionErrorsRx submissionErrorsRx;
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final CommittedAtomsRx committedAtomsRx;
+	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<BFTCommittedUpdate> committedUpdates;
 
 	private final Hasher hasher;
 
 	public AtomsService(
-		SubmissionErrorsRx submissionErrorsRx,
+		Observable<MempoolAddFailure> mempoolAddFailures,
 		CommittedAtomsRx committedAtomsRx,
 		Observable<BFTCommittedUpdate> committedUpdates,
 		LedgerEntryStore store,
-		SubmissionControl submissionControl,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Hasher hasher
 	) {
-		this.submissionErrorsRx = Objects.requireNonNull(submissionErrorsRx);
-		this.submissionControl = Objects.requireNonNull(submissionControl);
+		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
@@ -135,16 +137,21 @@ public class AtomsService {
 	}
 
 
-	private void processSubmissionFailure(SubmissionFailure e) {
-		final AID aid = e.getClientAtom().getAID();
-		removeSingleAtomListeners(aid).forEach(listener -> listener.onError(aid, e.getException()));
-		getAtomStatusListeners(aid).forEach(listener -> listener.onError(e.getException()));
-	}
+	private void processSubmissionFailure(MempoolAddFailure failure) {
+		ClientAtom clientAtom = failure.getCommand().map(payload -> {
+			try {
+				return serialization.fromDson(payload, ClientAtom.class);
+			} catch (DeserializeException e) {
+				return null;
+			}
+		});
+		if (clientAtom == null) {
+			return;
+		}
 
-	private void processDeserializationFailure(DeserializationFailure e) {
-		final AID aid = Atom.aidOf(e.getAtom(), this.hasher);
-		removeSingleAtomListeners(aid).forEach(listener -> listener.onError(aid, e.getException()));
-		getAtomStatusListeners(aid).forEach(listener -> listener.onError(e.getException()));
+		final AID aid = clientAtom.getAID();
+		removeSingleAtomListeners(aid).forEach(listener -> listener.onError(aid, failure.getException()));
+		getAtomStatusListeners(aid).forEach(listener -> listener.onError(failure.getException()));
 	}
 
 	public void start() {
@@ -168,43 +175,24 @@ public class AtomsService {
 				);
 		this.disposable.add(committedUpdatesDisposable);
 
-		var submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
+		var submissionFailuresDisposable = mempoolAddFailures
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
-
-		var deserializationFailures = submissionErrorsRx.deserializationFailures()
-			.observeOn(Schedulers.io())
-			.subscribe(this::processDeserializationFailure);
-		this.disposable.add(deserializationFailures);
 	}
 
 	public void stop() {
 		this.disposable.dispose();
 	}
 
-	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
-		AtomicReference<AID> aid = new AtomicReference<>();
-		try {
-			this.submissionControl.submitAtom(jsonAtom, atom -> {
-				aid.set(atom.getAID());
-				subscribeToSubmission(subscriber, atom);
-			});
-			return aid.get();
-		} catch (MempoolRejectedException e) {
-			if (subscriber != null) {
-				AID atomId = aid.get();
-				removeSingleAtomListener(atomId, subscriber);
-				subscriber.onError(atomId, e);
-			}
-			throw new IllegalStateException(e);
-		}
-	}
-
-	private void subscribeToSubmission(SingleAtomListener subscriber, ClientAtom atom) {
-		if (subscriber != null) {
-			addSingleAtomListener(atom.getAID(), subscriber);
-		}
+	public AID submitAtom(JSONObject jsonAtom) {
+		// TODO: remove all of the conversion mess here
+		final Atom rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
+		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
+		byte[] payload = serialization.toDson(atom, Output.ALL);
+		Command command = new Command(payload);
+		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+		return atom.getAID();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
@@ -214,7 +202,7 @@ public class AtomsService {
 
 	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher);
+			final AtomEventObserver atomEventObserver = createAtomObserver(atomQuery, observer);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -223,6 +211,12 @@ public class AtomsService {
 				atomEventObserver.cancel();
 			};
 		};
+	}
+
+	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
+		return new AtomEventObserver(
+			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
+		);
 	}
 
 	public long getWaitingCount() {
@@ -261,18 +255,6 @@ public class AtomsService {
 	private ImmutableList<SingleAtomListener> getSingleAtomListeners(AID aid) {
 		synchronized (this.deleteOnEventSingleAtomObserversLock) {
 			return getListeners(this.deleteOnEventSingleAtomObserversx, aid);
-		}
-	}
-
-	private void addSingleAtomListener(AID aid, SingleAtomListener listener) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			addListener(this.deleteOnEventSingleAtomObserversx, aid, listener);
-		}
-	}
-
-	private void removeSingleAtomListener(AID aid, SingleAtomListener listener) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			removeListener(this.deleteOnEventSingleAtomObserversx, aid, listener);
 		}
 	}
 

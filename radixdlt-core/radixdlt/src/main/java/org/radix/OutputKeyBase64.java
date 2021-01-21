@@ -34,19 +34,26 @@ import com.radixdlt.keys.Keys;
  * and prints out the key, base 64 encoded.  Used for setting up faucets.
  */
 public final class OutputKeyBase64 {
+	private OutputKeyBase64() { }
+
+	private static final String[] DEFAULT_FILES = {
+		"universe.ks"
+	};
 
 	/**
 	 * Print out the private keys from the provided files.
 	 *
 	 * @param args An array of file names.  If empty or null, the default "universe.ks" is used.
-	 * @throws IOException if there was a problem reading any of the files
-	 * @throws KeyStoreException if any of the key store files is invalid
-	 * @throws PublicKeyException if any of the public keys in store is invalid
+	 *
+	 * @throws IOException         if there was a problem reading any of the files
+	 * @throws KeyStoreException   if any of the key store files is invalid
+	 * @throws PublicKeyException  if any of the public keys in store is invalid
 	 * @throws PrivateKeyException if any of the private keys in store is invalid
 	 */
 	public static void main(String[] args)
-			throws IOException, PublicKeyException, PrivateKeyException, KeyStoreException {
-		final String[] files = (args == null || args.length == 0) ? new String[] { "universe.ks" } : args;
+		throws IOException, PublicKeyException, PrivateKeyException, KeyStoreException {
+
+		final String[] files = (args == null || args.length == 0) ? DEFAULT_FILES : args;
 
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 

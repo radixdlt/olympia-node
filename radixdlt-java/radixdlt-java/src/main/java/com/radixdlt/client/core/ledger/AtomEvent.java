@@ -39,10 +39,6 @@ public final class AtomEvent {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	public enum AtomEventType {
 		STORE, DELETE
 	}

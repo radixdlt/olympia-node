@@ -18,12 +18,12 @@
 package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.serialization.Serialization;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.base.Strings;
-import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import static org.junit.Assert.assertEquals;
@@ -40,10 +40,10 @@ public class TestParticleGroupSerialization {
 	public void testLargeStringSerialization() {
 		// "massive" must be greater length than (16000 / 4) - 4 = 3996
 		String massive = Strings.repeat("X", 4096);
-		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();
+		Atom atom = new Atom(massive);
 
-		byte[] particleGroupBytes = serialization.toDson(pg, Output.HASH);
+		byte[] particleGroupBytes = serialization.toDson(atom, Output.HASH);
 
-		assertEquals(4162, particleGroupBytes.length);
+		assertEquals(4131, particleGroupBytes.length);
 	}
 }

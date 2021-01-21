@@ -146,14 +146,17 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { })
+					.toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { })
+					.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
+					.toInstance(rmock(ScheduledEventDispatcher.class));
 
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));

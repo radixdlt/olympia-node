@@ -230,7 +230,7 @@ public final class ConstraintMachine {
 
 		validationState.setCurrentTransitionToken(transitionToken);
 
-		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionToken);
+		final var transitionProcedure = this.particleProcedures.apply(transitionToken);
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {
@@ -354,7 +354,12 @@ public final class ConstraintMachine {
 					final Particle nextParticle = cmMicroInstruction.getParticle();
 					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 					if (staticCheckResult.isError()) {
-						return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
+						return Optional.of(new CMError(
+							dp,
+							CMErrorCode.INVALID_PARTICLE,
+							validationState,
+							staticCheckResult.getErrorMessage()
+						));
 					}
 
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();

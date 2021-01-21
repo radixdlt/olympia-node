@@ -235,7 +235,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) throws NextCommittedLimitReachedException {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
+		throws NextCommittedLimitReachedException {
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		return this.getNextCommittedCommands(stateVersion, batchSize);

@@ -95,7 +95,12 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onClosing(WebSocket webSocket, int code, String reason) {
 					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Websocket {} closing ({}/{})", System.identityHashCode(WebSocketClient.this), code, reason);
+						LOGGER.debug(
+							"Websocket {} closing ({}/{})",
+							System.identityHashCode(WebSocketClient.this),
+							code,
+							reason
+						);
 					}
 					webSocket.close(1000, null);
 				}
@@ -103,7 +108,12 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onClosed(WebSocket webSocket, int code, String reason) {
 					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Websocket {} closed ({}/{})", System.identityHashCode(WebSocketClient.this), code, reason);
+						LOGGER.debug(
+							"Websocket {} closed ({}/{})",
+							System.identityHashCode(WebSocketClient.this),
+							code,
+							reason
+						);
 					}
 					synchronized (lock) {
 						WebSocketClient.this.state.onNext(WebSocketStatus.DISCONNECTED);
@@ -117,7 +127,7 @@ public class WebSocketClient implements PersistentChannel {
 						if (t instanceof SocketException && "Socket closed".equals(t.getMessage())) {
 							LOGGER.debug("Websocket {} failed (closed)", System.identityHashCode(WebSocketClient.this));
 						} else {
-							String msg = String.format("Websocket %s failed", System.identityHashCode(WebSocketClient.this));
+							var msg = String.format("Websocket %s failed", System.identityHashCode(WebSocketClient.this));
 							LOGGER.debug(msg, t);
 						}
 					}

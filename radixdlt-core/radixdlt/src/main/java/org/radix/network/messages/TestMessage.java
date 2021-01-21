@@ -28,6 +28,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 @SerializerId2("network.message.test")
 public final class TestMessage extends Message {
 	@JsonProperty("nonce")
@@ -95,3 +96,4 @@ public final class TestMessage extends Message {
 		return result;
 	}
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

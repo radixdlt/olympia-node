@@ -23,13 +23,16 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 
 import java.util.Objects;
+import java.util.Set;
 
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -94,8 +97,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		String iconUrl,
 		String url
 	) {
-		super(rri.getAddress().euid());
-
 		this.rri = rri;
 		this.name = name;
 		this.description = description;
@@ -103,6 +104,11 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	@Override

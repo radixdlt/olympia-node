@@ -24,11 +24,13 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 import java.util.Map;
@@ -75,8 +77,6 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(tokenDefinitionReference.getAddress().euid());
-
 		// Redundant null check added for completeness
 		Objects.requireNonNull(amount, "amount is required");
 		if (amount.isZero()) {
@@ -88,6 +88,11 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		this.nonce = nonce;
 		this.amount = amount;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.tokenDefinitionReference.getAddress().euid());
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -106,7 +111,8 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
+					e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");

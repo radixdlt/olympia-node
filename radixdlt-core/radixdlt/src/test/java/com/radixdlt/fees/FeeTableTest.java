@@ -74,7 +74,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 1".getBytes(StandardCharsets.UTF_8)))),
     		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 2".getBytes(StandardCharsets.UTF_8))))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(particleGroups, ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
@@ -83,7 +83,7 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
-    	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
@@ -101,7 +101,7 @@ public class FeeTableTest {
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
     		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 3".getBytes(StandardCharsets.UTF_8))))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(particleGroups, ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))

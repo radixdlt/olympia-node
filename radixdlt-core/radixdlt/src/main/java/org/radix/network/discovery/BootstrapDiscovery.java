@@ -47,8 +47,7 @@ import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
-public class BootstrapDiscovery
-{
+public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
 
@@ -69,13 +68,10 @@ public class BootstrapDiscovery
 	 *   https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
 	 */
 	@VisibleForTesting
-	static String toHost(byte[] buf, int len)
-	{
-		for (int i = 0; i < len; i++)
-		{
-			if ('0' <= buf[i] && '9' >= buf[i] || 'a' <= buf[i] && 'z' >= buf[i] ||
-				'A' <= buf[i] && 'Z' >= buf[i] || '.' == buf[i] || '-' == buf[i] || ':' == buf[i])
-			{
+	static String toHost(byte[] buf, int len) {
+		for (int i = 0; i < len; i++) {
+			if ('0' <= buf[i] && '9' >= buf[i] || 'a' <= buf[i] && 'z' >= buf[i]
+				|| 'A' <= buf[i] && 'Z' >= buf[i] || '.' == buf[i] || '-' == buf[i] || ':' == buf[i]) {
 				continue;
 			}
 			return null;
@@ -106,8 +102,7 @@ public class BootstrapDiscovery
 			if (unparsedURL.isEmpty()) {
 				continue;
 			}
-			try
-			{
+			try {
 				// if host is an URL - we should GET the node from the given URL
 				URL url = new URL(unparsedURL);
 				if (!url.getProtocol().equals("https")) {
@@ -150,12 +145,10 @@ public class BootstrapDiscovery
 	String getNextNode(URL nodeFinderURL, int retries, int cooldown, int connectionTimeout, int readTimeout) {
 		long attempt = 0;
 		byte[] buf = new byte[MAX_DNS_NAME_OCTETS];
-		while (attempt++ != retries)
-		{ // NOTE: -1 => infinite number of attempts (in practice)
+		while (attempt++ != retries) { // NOTE: -1 => infinite number of attempts (in practice)
 			String host = null;
 			BufferedInputStream input = null;
-			try
-			{
+			try {
 				// open connection
 				URLConnection conn = nodeFinderURL.openConnection();
 				// spoof User-Agents otherwise some CDNs do not let us through.
@@ -169,11 +162,9 @@ public class BootstrapDiscovery
 				// read data
 				input = new BufferedInputStream(conn.getInputStream());
 				int n = input.read(buf);
-				if (n > 0)
-				{
+				if (n > 0) {
 					host = toHost(buf, n);
-					if (host != null)
-					{
+					if (host != null) {
 						// FIXME - Disable broken connection testing now that we no longer
 						// use TCP for exchanging data.  Needs resolving when we have a
 						// workable mechanism for node connectivity checking.
@@ -181,20 +172,14 @@ public class BootstrapDiscovery
 						return host;
 					}
 				}
-			}
-			catch (IOException e)
-			{
+			} catch (IOException e) {
 				// rejected, offline, etc. - this is expected
 				log.info("host is not reachable", e);
-			}
-			catch (RuntimeException e)
-			{
+			} catch (RuntimeException e) {
 				// rejected, offline, etc. - this is expected
 				log.warn("invalid host returned by node finder: " + host, e);
 				break;
-			}
-			finally
-			{
+			} finally {
 				if (input != null) {
 					try {
 						input.close();
@@ -249,5 +234,4 @@ public class BootstrapDiscovery
 			return Optional.empty();
 		}
 	}
-
 }

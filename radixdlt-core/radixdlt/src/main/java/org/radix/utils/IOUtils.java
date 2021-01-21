@@ -61,7 +61,7 @@ public final class IOUtils {
 	 * @throws IOException If an I/O error occurs
 	 */
 	public static String toString(InputStream inputStream, Charset charset) throws IOException {
-		try (final Reader reader = new InputStreamReader(inputStream, charset)) {
+		try (Reader reader = new InputStreamReader(inputStream, charset)) {
 			return CharStreams.toString(reader);
 		}
 	}

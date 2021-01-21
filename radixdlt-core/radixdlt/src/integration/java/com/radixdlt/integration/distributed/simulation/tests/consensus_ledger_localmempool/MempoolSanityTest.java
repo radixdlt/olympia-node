@@ -25,6 +25,7 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,7 @@ public class MempoolSanityTest {
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addMempoolSubmissionsSteadyState("mempool");
+		.addMempoolSubmissionsSteadyState("mempool", new IncrementalBytes());
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else

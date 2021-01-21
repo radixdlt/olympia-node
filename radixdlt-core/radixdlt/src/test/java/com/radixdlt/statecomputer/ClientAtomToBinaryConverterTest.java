@@ -61,7 +61,7 @@ public class ClientAtomToBinaryConverterTest {
 		Atom atom = new Atom(
 			ImmutableList.of(particleGroup),
 			ImmutableMap.of(EUID.ONE, ecSignature),
-			ImmutableMap.of("timestamp", "0")
+			"test message"
 		);
 
 		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);

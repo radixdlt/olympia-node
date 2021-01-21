@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class PeerWithSystem extends Peer {
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 

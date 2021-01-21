@@ -26,16 +26,13 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializeWithHid
-public abstract class BasicContainer
-{
+public abstract class BasicContainer {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	protected BasicContainer()
-	{
-		super();
+	protected BasicContainer() {
 	}
 
 	@Override
@@ -43,5 +40,5 @@ public abstract class BasicContainer
 		return this.getClass().toString() + " " + this.hashCode();
 	}
 
-	public abstract short VERSION();
+	public abstract short version();
 }

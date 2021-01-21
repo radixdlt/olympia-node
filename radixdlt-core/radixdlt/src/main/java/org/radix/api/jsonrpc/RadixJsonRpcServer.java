@@ -19,32 +19,29 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.store.StoreIndex;
+import com.radixdlt.universe.Universe;
 import io.undertow.server.HttpServerExchange;
-
-import java.util.ArrayList;
-import java.util.Objects;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
-
-import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,7 +170,7 @@ public final class RadixJsonRpcServer {
 					break;
 				case "Ledger.getAtom":
 					if (!(paramsObject instanceof JSONObject)) {
-						return JsonRpcUtil.errorResponse(id, -32000, "params should be a JSONObject" , new JSONObject());
+						return JsonRpcUtil.errorResponse(id, -32000, "params should be a JSONObject", new JSONObject());
 					} else {
 						JSONObject params = (JSONObject) paramsObject;
 						if (!params.has("aid")) {
@@ -201,9 +198,12 @@ public final class RadixJsonRpcServer {
 						final String addressString = params.getString("address");
 						final RadixAddress address = RadixAddress.from(addressString);
 
-						StoreIndex index = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.euid().toByteArray());
+						var index = new StoreIndex(
+							EngineAtomIndices.IndexType.DESTINATION.getValue(),
+							address.euid().toByteArray()
+						);
 						List<AID> collectedAids = new ArrayList<>();
-						SearchCursor cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+						var cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {
 							collectedAids.add(cursor.get());
 							cursor = cursor.next();
@@ -234,7 +234,7 @@ public final class RadixJsonRpcServer {
 						return JsonRpcUtil.errorResponse(id, -32000, "No atom present", new JSONObject());
 					} else {
 						JSONObject jsonAtom = (JSONObject) paramsObject;
-						final AID atomId = atomsService.submitAtom(jsonAtom, null);
+						final AID atomId = atomsService.submitAtom(jsonAtom);
 						result = new JSONObject()
 							.put("status", AtomStatus.PENDING_CM_VERIFICATION)
 							.put("aid", atomId)
@@ -278,9 +278,9 @@ public final class RadixJsonRpcServer {
 
 		} catch (Exception e) {
 			if (jsonRpcRequest.has("params") && jsonRpcRequest.get("params") instanceof JSONObject) {
-				return JsonRpcUtil.errorResponse(id,-32000, e.getMessage(), jsonRpcRequest.getJSONObject("params"));
+				return JsonRpcUtil.errorResponse(id, -32000, e.getMessage(), jsonRpcRequest.getJSONObject("params"));
 			} else {
-				return JsonRpcUtil.errorResponse(id,-32000, e.getMessage());
+				return JsonRpcUtil.errorResponse(id, -32000, e.getMessage());
 			}
 		}
 	}

@@ -20,21 +20,20 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
@@ -47,13 +46,13 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiFunction;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
+
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * Network interface for syncing vertices using the MessageCentral
@@ -110,7 +109,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 
 	@Override
 	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
-		ImmutableList<UnverifiedVertex> rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
+		var rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
 			this.magic,
 			rawVertices

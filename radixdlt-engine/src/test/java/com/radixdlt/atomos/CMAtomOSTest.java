@@ -17,14 +17,17 @@
 
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
@@ -36,6 +39,11 @@ import static org.mockito.Mockito.mock;
 
 public class CMAtomOSTest {
 	private static final class TestParticle extends Particle {
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
+		}
+
 		@Override
 		public String toString() {
 			return "Test";
@@ -75,7 +83,8 @@ public class CMAtomOSTest {
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS();
-		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure = mock(TransitionProcedureTestParticle00.class);
+		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure =
+			mock(TransitionProcedureTestParticle00.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
 				.singleAddressMapper(x -> mock(RadixAddress.class))
@@ -90,7 +99,8 @@ public class CMAtomOSTest {
 				procedure
 			);
 		});
-		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 = mock(TransitionProcedureTestParticle10.class);
+		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 =
+			mock(TransitionProcedureTestParticle10.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, ParticleDefinition.<TestParticle>builder()

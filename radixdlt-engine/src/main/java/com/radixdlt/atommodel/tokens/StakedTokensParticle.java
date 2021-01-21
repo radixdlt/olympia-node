@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -79,8 +80,6 @@ public final class StakedTokensParticle extends Particle {
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(ImmutableSet.of(address.euid(), delegateAddress.euid()));
-
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
@@ -88,6 +87,11 @@ public final class StakedTokensParticle extends Particle {
 		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid(), this.delegateAddress.euid());
 	}
 
 	public RadixAddress getDelegateAddress() {
@@ -176,12 +180,19 @@ public final class StakedTokensParticle extends Particle {
 				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(amount, that.amount)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions)
-				&& Objects.equals(getDestinations(), that.getDestinations());
+				&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(delegateAddress, address, tokenDefinitionReference, granularity, nonce, amount, tokenPermissions, getDestinations());
+		return Objects.hash(
+			delegateAddress,
+			address,
+			tokenDefinitionReference,
+			granularity,
+			nonce,
+			amount,
+			tokenPermissions
+		);
 	}
 }

@@ -78,7 +78,10 @@ public class Serialization {
 		noneProvider = filterProviderFor(ImmutableMap.of());
 		Map<Class<?>, ImmutableSet<String>> allFields = availableOutputs.stream()
 				.flatMap(output -> policy.getIncludedFields(output).entrySet().stream())
-				.collect(Collectors.groupingBy(Map.Entry::getKey, flatMapping(e -> e.getValue().stream(), ImmutableSet.toImmutableSet())));
+				.collect(Collectors.groupingBy(
+					Map.Entry::getKey,
+					flatMapping(e -> e.getValue().stream(), ImmutableSet.toImmutableSet())
+				));
 		allProvider = filterProviderFor(ImmutableMap.copyOf(allFields));
 
 		ImmutableMap.Builder<Output, JacksonCborMapper> dsonBuilder = ImmutableMap.builder();
@@ -100,10 +103,17 @@ public class Serialization {
 
 		ImmutableMap.Builder<Output, JacksonJsonMapper> jsonBuilder = ImmutableMap.builder();
 
-		JacksonJsonMapper hashJsonMapper = JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.HASH)), false);
-
-		JacksonJsonMapper apiJsonMapper = JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.API)),
-				false, Optional.of(new ApiSerializationModifier(hashDsonMapper)));
+		var hashJsonMapper = JacksonJsonMapper.create(
+			idLookup,
+			filterProviderFor(policy.getIncludedFields(Output.HASH)),
+			false
+		);
+		var apiJsonMapper = JacksonJsonMapper.create(
+			idLookup,
+			filterProviderFor(policy.getIncludedFields(Output.API)),
+			false,
+			Optional.of(new ApiSerializationModifier(hashDsonMapper))
+		);
 
 		jsonBuilder.put(Output.HASH, hashJsonMapper);
 		jsonBuilder.put(Output.API, apiJsonMapper);

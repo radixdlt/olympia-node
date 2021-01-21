@@ -126,16 +126,23 @@ public class BIP39Tests {
 				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
 				"legal winner thank year wave sausage worth useful legal winner thank yellow yellow",
 				"letter advice cage absurd amount doctor acoustic avoid letter advice caged above",
-				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
-				"legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal will will will",
-				"letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter always.",
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon"
+					+ " abandon abandon abandon abandon",
+				"legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful "
+					+ "legal will will will",
+				"letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic"
+					+ " avoid letter always.",
 				"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo why",
-				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art art",
-				"legal winner thank year wave sausage worth useful legal winner thanks year wave worth useful legal winner thank year wave sausage worth title",
-				"letter advice cage absurd amount doctor acoustic avoid letters advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic bless",
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon"
+					+ " abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art art",
+				"legal winner thank year wave sausage worth useful legal winner thanks year wave worth useful legal winn"
+					+ "er thank year wave sausage worth title",
+				"letter advice cage absurd amount doctor acoustic avoid letters advice cage absurd amount doctor acoustic"
+					+ " avoid letter advice cage absurd amount doctor acoustic bless",
 				"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo voted",
 				"jello better achieve collect unaware mountain thought cargo oxygen act hood bridge",
-				"renew, stay, biology, evidence, goat, welcome, casual, join, adapt, armor, shuffle, fault, little, machine, walk, stumble, urge, swap",
+				"renew, stay, biology, evidence, goat, welcome, casual, join, adapt, armor, shuffle, fault, little, "
+					+ "machine, walk, stumble, urge, swap",
 				"dignity pass list indicate nasty");
 		//CHECKSTYLE:ON
 	}
@@ -158,8 +165,10 @@ public class BIP39Tests {
 		byte[] seedFromMnemonic = new byte[0];
 		byte[] seedFromCode = new byte[0];
 		try {
-			seedFromMnemonic = DefaultMnemonicToSeedConverter.seedFromMnemonicStringAndPassphrase(vector.mnemonicString(), passphrase);
-			seedFromCode = BitcoinJMnemonicToSeedConverter.seedFromEntropyAndPassphrase(Bytes.fromHexString(vector.entropyHex()), passphrase);
+			seedFromMnemonic =
+				DefaultMnemonicToSeedConverter.seedFromMnemonicStringAndPassphrase(vector.mnemonicString(), passphrase);
+			seedFromCode =
+				BitcoinJMnemonicToSeedConverter.seedFromEntropyAndPassphrase(Bytes.fromHexString(vector.entropyHex()), passphrase);
 		} catch (MnemonicException e) {
 			e.printStackTrace();
 		}
