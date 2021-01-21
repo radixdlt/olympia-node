@@ -149,4 +149,3 @@ public class AddressBookPersistence implements PeerPersistence {
 		this.systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_TOTAL);
 	}
 }
-
