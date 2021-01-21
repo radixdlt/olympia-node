@@ -20,9 +20,9 @@ Contributions are welcome, we simply ask to:
 When contributing to this repository, we recommend to discuss the change you wish to make via issue,
 email, or any other method with the owners of this repository before making a change. 
 
-Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
+Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interactions with the project.
 
 ## License
 
-radix-engine-library is released under the [Apache 2.0 License](LICENSE).
+radix-engine-library is released under the [Apache 2.0 License](../LICENSE).
 

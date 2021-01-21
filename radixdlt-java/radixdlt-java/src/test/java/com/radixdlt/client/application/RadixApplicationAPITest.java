@@ -60,8 +60,8 @@ import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.FeeProcessor;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.AtomToPlaintextMessageMapper;
+import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.test.util.TypedMocks;
@@ -136,7 +136,7 @@ public class RadixApplicationAPITest {
 		return createMockedAPI(controller, atomStore);
 	}
 
-	private void validateSuccessfulStoreDataResult(Result result) {
+	private void validateSuccessfulStoreAtomResult(Result result) {
 		TestObserver<?> completionObserver = TestObserver.create();
 		TestObserver<SubmitAtomAction> updatesObserver = TestObserver.create();
 		result.toCompletable().subscribe(completionObserver);
@@ -179,8 +179,9 @@ public class RadixApplicationAPITest {
 		when(api.getAddress()).thenReturn(address);
 		when(address.euid()).thenReturn(EUID.ONE);
 
-		Result result = api.sendMessage(address, new byte[0], false);
-		validateSuccessfulStoreDataResult(result);
+		final var rri = RRI.of(api.getAddress(), "TEST");
+		Result result = api.createMultiIssuanceToken(rri, "Test token");
+		validateSuccessfulStoreAtomResult(result);
 	}
 
 	@Test
@@ -195,7 +196,8 @@ public class RadixApplicationAPITest {
 		when(address.euid()).thenReturn(EUID.ONE);
 		when(api.getAddress()).thenReturn(address);
 
-		api.sendMessage(address, new byte[0], false);
+		final var rri = RRI.of(api.getAddress(), "TEST");
+		api.createMultiIssuanceToken(rri, "Test token");
 		verify(controller, times(1)).dispatch(any(SubmitAtomRequestAction.class));
 	}
 
@@ -210,7 +212,8 @@ public class RadixApplicationAPITest {
 		when(api.getAddress()).thenReturn(address);
 		when(address.euid()).thenReturn(EUID.ONE);
 
-		Result result = api.sendMessage(address, new byte[0], false);
+		final var rri = RRI.of(api.getAddress(), "TEST");
+		Result result = api.createMultiIssuanceToken(rri, "Test token");
 		Observable<?> observable = result.toObservable();
 		observable.subscribe();
 		observable.subscribe();
@@ -235,9 +238,9 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.feeProcessor(mock(FeeProcessor.class))
-			.addAtomMapper(new AtomToDecryptedMessageMapper())
+			.addAtomMapper(new AtomToPlaintextMessageMapper())
 			.build();
-		TestObserver<DecryptedMessage> observer = TestObserver.create();
+		TestObserver<PlaintextMessage> observer = TestObserver.create();
 		api.observeMessages(address).subscribe(observer);
 		observer.assertValueCount(0);
 		observer.assertComplete();

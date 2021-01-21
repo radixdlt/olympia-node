@@ -20,18 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.atommodel.message;
+package com.radixdlt.client.application.translate.data;
 
-import java.util.TreeMap;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-/**
- * Distinct type for metadata maps, as these need to be serialized
- * and deserialized differently.
- */
-public class MetadataMap extends TreeMap<String, String> {
+import org.junit.Test;
 
-	public MetadataMap() {
-		// Nothing to do here
+public class PlaintextMessageTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(PlaintextMessage.class)
+			.verify();
 	}
-
 }

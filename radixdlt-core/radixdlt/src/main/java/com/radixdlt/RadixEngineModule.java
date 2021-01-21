@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -110,7 +109,6 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
-		os.load(new MessageParticleConstraintScrypt());
 		os.load(new SystemConstraintScrypt());
 		return os;
 	}

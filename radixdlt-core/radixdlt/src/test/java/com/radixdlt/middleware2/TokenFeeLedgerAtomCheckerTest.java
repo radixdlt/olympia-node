@@ -21,12 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.ECKeyPair;
@@ -74,12 +74,17 @@ public class TokenFeeLedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() {
-		byte[] bytes = new byte[] {
-			0, 1
-		};
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		MessageParticle particle = new MessageParticle(address, address, bytes);
-		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
+		final var kp = ECKeyPair.generateNew();
+		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+		final var rri = RRI.of(address, "test");
+		final var rriParticle = new RRIParticle(rri);
+		List<ParticleGroup> particleGroups = ImmutableList.of(
+			ParticleGroup.of(
+				ImmutableList.of(
+					SpunParticle.down(rriParticle)
+				)
+			)
+		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();

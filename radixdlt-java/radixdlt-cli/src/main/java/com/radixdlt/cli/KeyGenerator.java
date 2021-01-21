@@ -56,16 +56,13 @@ public class KeyGenerator implements Runnable {
 			return;
 		}
 
-		PrintWriter writer = new PrintWriter(System.out);
-
-		try {
+		try (PrintWriter writer = new PrintWriter(System.out)) {
 			RadixIdentities.createNewEncryptedIdentity(writer, password);
+			writer.flush();
 		} catch (IOException | GeneralSecurityException | PrivateKeyException | PublicKeyException e) {
 			println("Unable to generate keys due to following error:\n" + e.getMessage());
 			return;
 		}
-		writer.flush();
-		writer.close();
 		println("Done");
 	}
 }

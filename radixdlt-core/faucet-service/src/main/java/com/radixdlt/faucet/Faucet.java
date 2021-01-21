@@ -161,9 +161,8 @@ public class Faucet {
 
 		FaucetHandler faucet = new FaucetHandler(api, tokenRRI, leakAmount, rateLimiter);
 		final Observable<Pair<RadixAddress, EUID>> apiSource = APITokenRequestSource.create(apiPort).requestSource();
-		final Observable<Pair<RadixAddress, EUID>> ledgerSource = LedgerTokenRequestSource.create(api).requestSource();
 
-		faucet.run(apiSource.mergeWith(ledgerSource));
+		faucet.run(apiSource);
 
 		// Wait for threads to start
 		try {

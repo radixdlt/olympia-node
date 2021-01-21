@@ -33,7 +33,6 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
@@ -41,7 +40,6 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.identifiers.RRI;
 
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware.ParticleGroup;
@@ -49,7 +47,6 @@ import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -236,8 +233,6 @@ public final class RadixUniverseBuilder {
 				);
 			}
 		});
-		final var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
-		final var helloUniverseMessage = createHelloMessage(universeAddress);
 		final var epochParticles = createEpochUpdate();
 		final var xrdParticles = createTokenDefinition(
 			magic,
@@ -257,8 +252,7 @@ public final class RadixUniverseBuilder {
 			xrdParticles
 		);
 
-		final var genesisAtom = new Atom();
-		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
+		final var genesisAtom = new Atom(helloMessage());
 		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
 		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
 		if (!validatorParticles.isEmpty()) {
@@ -289,8 +283,8 @@ public final class RadixUniverseBuilder {
 	/*
 	 * Create the 'hello' message particle at the given universes
 	 */
-	private static MessageParticle createHelloMessage(RadixAddress address) {
-		return new MessageParticle(address, address, "Radix... just imagine!".getBytes(RadixConstants.STANDARD_CHARSET));
+	private static String helloMessage() {
+		return "Radix... just imagine!";
 	}
 
 	/*
