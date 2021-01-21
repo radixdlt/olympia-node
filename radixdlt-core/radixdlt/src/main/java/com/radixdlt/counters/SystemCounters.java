@@ -1,3 +1,4 @@
+
 /*
  * (C) Copyright 2020 Radix DLT Ltd
  *
@@ -49,7 +50,6 @@ public interface SystemCounters {
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
 		// Count of database accesses
-		COUNT_BDB_ADDRESS_BOOK("count.bdb.address_book"),
 		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
 		COUNT_BDB_LEDGER_CREATE_TX("count.bdb.ledger.create_tx"),
 		COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
@@ -67,7 +67,18 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_SAVE_TX("count.bdb.ledger.save_tx"),
 		COUNT_BDB_LEDGER_SEARCH("count.bdb.ledger.search"),
 		COUNT_BDB_LEDGER_TOTAL("count.bdb.ledger.total"),
-		COUNT_BDB_SAFETY_STATE("count.bdb.safety_state"),
+		COUNT_BDB_LEDGER_BYTES_READ("count.bdb.ledger.bytes.read"),
+		COUNT_BDB_LEDGER_BYTES_WRITE("count.bdb.ledger.bytes.write"),
+		COUNT_BDB_LEDGER_DELETES("count.bdb.ledger.deletes"),
+
+		COUNT_BDB_ADDRESS_BOOK_TOTAL("count.bdb.address_book.total"),
+		COUNT_BDB_ADDRESS_BOOK_BYTES_READ("count.bdb.address_book.bytes.read"),
+		COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE("count.bdb.address_book.bytes.write"),
+		COUNT_BDB_ADDRESS_BOOK_DELETES("count.bdb.address_book.deletes"),
+
+		COUNT_BDB_SAFETY_STATE_TOTAL("count.bdb.safety_state.total"),
+		COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
+		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),

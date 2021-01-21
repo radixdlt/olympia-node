@@ -19,6 +19,7 @@ package org.radix.database;
 
 import com.google.inject.Inject;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.store.Transaction;
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
@@ -29,9 +30,6 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.radixdlt.store.Transaction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
 import java.io.File;
@@ -39,8 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class DatabaseEnvironment {
-	private static final Logger log = LogManager.getLogger();
-
 	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
 	private Environment environment = null;
@@ -121,14 +117,17 @@ public final class DatabaseEnvironment {
 	}
 
 	public OperationStatus put(Transaction transaction, String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0)
+		if (resource == null || resource.length() == 0) {
 			throw new IllegalArgumentException("Resource can not be null or empty");
+		}
 
-		if (key == null || key.getData() == null || key.getData().length == 0)
+		if (key == null || key.getData() == null || key.getData().length == 0) {
 			throw new IllegalArgumentException("Key can not be null or empty");
+		}
 
-		if (value == null || value.getData() == null || value.getData().length == 0)
+		if (value == null || value.getData() == null || value.getData().length == 0) {
 			throw new IllegalArgumentException("Value can not be null or empty");
+		}
 
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
@@ -139,8 +138,9 @@ public final class DatabaseEnvironment {
 	public byte[] get(String resource, String key) {
 		DatabaseEntry value = new DatabaseEntry();
 
-		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS)
+		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS) {
 			return value.getData();
+		}
 
 		return null;
 	}
@@ -150,14 +150,17 @@ public final class DatabaseEnvironment {
 	}
 
 	public OperationStatus get(String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0)
+		if (resource == null || resource.length() == 0) {
 			throw new IllegalArgumentException("Resource can not be null or empty");
+		}
 
-		if (key == null || key.getData() == null || key.getData().length == 0)
+		if (key == null || key.getData() == null || key.getData().length == 0) {
 			throw new IllegalArgumentException("Key can not be null or empty");
+		}
 
-		if (value == null)
+		if (value == null) {
 			throw new IllegalArgumentException("Value can not be null");
+		}
 
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));

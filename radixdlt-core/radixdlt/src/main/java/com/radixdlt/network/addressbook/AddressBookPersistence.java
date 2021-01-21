@@ -146,7 +146,7 @@ public class AddressBookPersistence implements PeerPersistence {
 	private void addTime(long start) {
 		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
 		this.systemCounters.add(CounterType.ELAPSED_BDB_ADDRESS_BOOK, elapsed);
-		this.systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK);
+		this.systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_TOTAL);
 	}
 }
 
