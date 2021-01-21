@@ -35,30 +35,25 @@ import com.radixdlt.utils.Bytes;
 
 public class UniverseValidationTest {
 
-//	@BeforeClass
-//	public static void startRadixTest() throws Exception {
-//		TestSetupUtils.installBouncyCastleProvider();
-//	}
-
 	@Test
-    public void testLoadingUniverse() throws Exception {
-        byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
-        Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-        UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
-    }
+	public void testLoadingUniverse() throws Exception {
+		byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
+		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
+		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
+	}
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testLoadingUniverseHasImmutableGenesis() throws Exception {
-        byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
-        Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-        universe.getGenesis().add(new Atom());
-    }
+	@Test(expected = UnsupportedOperationException.class)
+	public void testLoadingUniverseHasImmutableGenesis() throws Exception {
+		byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
+		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
+		universe.getGenesis().add(new Atom());
+	}
 
-    private RuntimeProperties loadProperties() throws ParseException, IOException {
+	private RuntimeProperties loadProperties() throws ParseException, IOException {
 		JSONObject runtimeConfigurationJSON = new JSONObject();
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
 		}
 		return new RuntimeProperties(runtimeConfigurationJSON, null);
-    }
+	}
 }
