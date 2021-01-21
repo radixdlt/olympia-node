@@ -136,7 +136,6 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
             // the message needs to be cached
             this.unprocessedMessages.offer(Pair.of(subscriptionId, el));
         } else {
-            this.requestedSubscriptions.remove(subscriptionId);
             this.isProcessing = true;
             processMessage(subscriptionId, el);
             this.isProcessing = false;
@@ -145,6 +144,8 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
     }
 
     private void processMessage(int subscriptionId, T el) {
+        this.requestedSubscriptions.remove(subscriptionId);
+
         if (minDownstreamDemand() > 0) {
             reduceDemandForAll(1L);
             this.lastUsedSubscriptionId = subscriptionId;
