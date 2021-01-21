@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunner<RadixHashingTestVector> {
 
+	@Override
 	public String testScenarioIdentifier() {
 		return "radix_hashing";
 	}
@@ -34,6 +35,7 @@ public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunn
 		return RadixHashingTestVector.class;
 	}
 
+	@Override
 	public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {
 		var hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
 

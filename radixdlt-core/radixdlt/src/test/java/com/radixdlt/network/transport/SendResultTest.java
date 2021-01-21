@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class SendResultTest {
 
@@ -30,7 +30,7 @@ public class SendResultTest {
 	public void testComplete() {
 		SendResult complete = SendResult.complete();
 
-		assertThat(complete.toString(), containsString("Complete"));
+		assertThat(complete.toString()).contains("Complete");
 		assertTrue(complete.isComplete());
 	}
 
@@ -38,7 +38,7 @@ public class SendResultTest {
 	public void testFailure() {
 		SendResult complete = SendResult.failure(new IOException());
 
-		assertThat(complete.toString(), containsString(IOException.class.getName()));
+		assertThat(complete.toString()).contains(IOException.class.getName());
 		assertFalse(complete.isComplete());
 	}
 
@@ -46,7 +46,7 @@ public class SendResultTest {
 	public void testGetException() {
 		SendResult complete = SendResult.failure(new IOException());
 
-		assertThat(complete.getThrowable(), notNullValue());
-		assertThat(complete.getThrowable().getClass().getName(), equalTo(IOException.class.getName()));
+		assertThat(complete.getThrowable()).isNotNull();
+		assertThat(complete.getThrowable().getClass().getName()).isEqualTo(IOException.class.getName());
 	}
 }

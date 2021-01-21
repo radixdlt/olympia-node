@@ -36,7 +36,7 @@ import com.radixdlt.network.transport.udp.UDPConstants;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PeerWithSystemTest {
 
@@ -59,9 +59,10 @@ public class PeerWithSystemTest {
 	public void testToString() {
 		String s = this.pws.toString();
 
-		assertThat(s, containsString("PeerWithSystem")); // class name
-		assertThat(s, containsString(this.nid.toString())); // nid
-		assertThat(s, containsString("{}"));
+		assertThat(s)
+			.contains("PeerWithSystem") // class name
+			.contains(this.nid.toString()) // nid
+			.contains("{}");
 
 		EUID localNid = EUID.TWO;
 		TransportInfo fakeUdp = TransportInfo.of(UDPConstants.NAME,
@@ -75,37 +76,38 @@ public class PeerWithSystemTest {
 		when(localSystem.getNID()).thenReturn(localNid);
 		PeerWithSystem localPws = new PeerWithSystem(localSystem);
 		String s2 = localPws.toString();
-		assertThat(s2, containsString("PeerWithSystem")); // class name
-		assertThat(s2, containsString(localNid.toString())); // nid
-		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_HOST)));
-		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_PORT)));
+		assertThat(s2)
+			.contains("PeerWithSystem") // class name
+			.contains(localNid.toString()) // nid
+			.contains(fakeUdp.metadata().get(UDPConstants.METADATA_HOST))
+			.contains(fakeUdp.metadata().get(UDPConstants.METADATA_PORT));
 	}
 
 	@Test
 	public void testGetNID() {
-		assertThat(this.pws.getNID(), is(this.nid));
+		assertThat(this.pws.getNID()).isEqualTo(this.nid);
 	}
 
 	@Test
 	public void testHasNID() {
-		assertThat(this.pws.hasNID(), is(true));
+		assertThat(this.pws.hasNID()).isTrue();
 	}
 
 	@Test
 	public void testSupportsTransport() {
-		assertThat(this.pws.supportsTransport("NONESUCH"), is(false));
-		assertThat(this.pws.supportsTransport(this.dummy.name()), is(true));
+		assertThat(this.pws.supportsTransport("NONESUCH")).isFalse();
+		assertThat(this.pws.supportsTransport(this.dummy.name())).isTrue();
 	}
 
 	@Test
 	public void testSupportedTransports() {
 		ImmutableList<TransportInfo> tis = this.pws.supportedTransports().collect(ImmutableList.toImmutableList());
-		assertThat(tis, contains(this.dummy));
+		assertThat(tis).contains(this.dummy);
 	}
 
 	@Test
 	public void testConnectionData() {
-		assertThat(this.pws.connectionData(this.dummy.name()), is(this.dummy.metadata()));
+		assertThat(this.pws.connectionData(this.dummy.name())).isEqualTo(this.dummy.metadata());
 	}
 
 	@Test(expected = TransportException.class)
@@ -116,12 +118,12 @@ public class PeerWithSystemTest {
 
 	@Test
 	public void testHasSystem() {
-		assertThat(this.pws.hasSystem(), is(true));
+		assertThat(this.pws.hasSystem()).isTrue();
 	}
 
 	@Test
 	public void testGetSystem() {
-		assertThat(this.pws.getSystem(), sameInstance(this.system));
+		assertThat(this.pws.getSystem()).isSameAs(this.system);
 	}
 
 	@Test

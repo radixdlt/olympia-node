@@ -17,8 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,13 +37,14 @@ import java.util.Optional;
 public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
+		final var verifiedVertex = mock(VerifiedVertex.class);
 		when(verifiedVertex.getView()).thenReturn(View.genesis());
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
-		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, highQC);
-		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));
+		final var qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
+		final var highQC = HighQC.from(qc, qc, Optional.empty());
+		final var failingRequest = new GetVerticesRequestMessage(0, HashUtils.zero256(), 3);
+		final var msg1 = new GetVerticesErrorResponseMessage(0, highQC, failingRequest);
+		final var s1 = msg1.toString();
+		assertThat(s1).contains(GetVerticesErrorResponseMessage.class.getSimpleName());
 	}
 
 	@Test

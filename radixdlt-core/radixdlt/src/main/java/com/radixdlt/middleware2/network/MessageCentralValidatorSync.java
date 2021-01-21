@@ -124,9 +124,10 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC);
-		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest failingRequest) {
+		final var failingRequestMessage = new GetVerticesRequestMessage(this.magic, failingRequest.getVertexId(), failingRequest.getCount());
+		final var response = new GetVerticesErrorResponseMessage(this.magic, highQC, failingRequestMessage);
+		final var peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
 			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesErrorResponse", this.self, node)
@@ -178,7 +179,9 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 
 				if (errorResponseRateLimiter.tryAcquire()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					return new GetVerticesErrorResponse(node, msg.highQC());
+					final var failingRequestMessage = msg.failingRequest();
+					final var failingRequest = new GetVerticesRequest(failingRequestMessage.getVertexId(), failingRequestMessage.getCount());
+					return new GetVerticesErrorResponse(node, msg.highQC(), failingRequest);
 				} else {
 					var counter = counters.increment(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES);
 

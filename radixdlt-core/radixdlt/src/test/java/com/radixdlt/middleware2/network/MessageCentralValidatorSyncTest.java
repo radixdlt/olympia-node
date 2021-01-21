@@ -42,6 +42,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -125,18 +126,19 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_send_error_response__then_message_central_will_send_error_response() {
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC highQC = mock(HighQC.class);
+		final var peer = mock(PeerWithSystem.class);
+		final var qc = mock(QuorumCertificate.class);
+		final var highQC = mock(HighQC.class);
 		when(highQC.highestQC()).thenReturn(qc);
 		when(highQC.highestCommittedQC()).thenReturn(qc);
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+		final var node = mock(BFTNode.class);
+		final var ecPublicKey = mock(ECPublicKey.class);
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
+		final var failingRequest = new GetVerticesRequest(HashUtils.random256(), 3);
 
-		sync.sendGetVerticesErrorResponse(node, highQC);
+		sync.sendGetVerticesErrorResponse(node, highQC, failingRequest);
 
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}

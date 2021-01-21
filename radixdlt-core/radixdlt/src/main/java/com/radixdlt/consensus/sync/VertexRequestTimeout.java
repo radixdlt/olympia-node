@@ -51,4 +51,9 @@ public final class VertexRequestTimeout {
 		VertexRequestTimeout other = (VertexRequestTimeout) o;
 		return Objects.equals(this.request, other.request);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), this.request);
+	}
 }

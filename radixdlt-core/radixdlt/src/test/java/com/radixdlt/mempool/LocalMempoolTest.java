@@ -31,7 +31,7 @@ import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalMempoolTest {
 	private LocalMempool mempool;
@@ -153,8 +153,9 @@ public class LocalMempoolTest {
 
 		String tostring = this.mempool.toString();
 
-		assertThat(tostring, containsString("1/2"));
-		assertThat(tostring, containsString(LocalMempool.class.getSimpleName()));
+		assertThat(tostring)
+			.contains("1/2")
+			.contains(LocalMempool.class.getSimpleName());
 	}
 
 	private static Command makeCommand(int n) {

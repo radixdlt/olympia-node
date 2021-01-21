@@ -42,5 +42,5 @@ public interface BFTSyncer {
 	 * @param author the original author of the qc
 	 * @return {@code SyncResult.SYNCED} if already synced
 	 */
-	SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author);
+	SyncResult syncToQC(String reason, HighQC highQC, @Nullable BFTNode author);
 }

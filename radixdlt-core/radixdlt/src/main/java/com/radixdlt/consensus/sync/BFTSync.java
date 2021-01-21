@@ -93,8 +93,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
+		private final int timeoutCount;
 
-		SyncState(HighQC highQC, BFTNode author) {
+		SyncState(HighQC highQC, BFTNode author, int timeoutCount) {
 			this.localSyncId = highQC.highestQC().getProposed().getVertexId();
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
@@ -103,6 +104,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			this.highQC = highQC;
 			this.author = author;
 			this.syncStage = SyncStage.PREPARING;
+			this.timeoutCount = timeoutCount;
 		}
 
 		void setSyncStage(SyncStage syncStage) {
@@ -119,6 +121,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 	}
 
+	// Maximum multiplier for request timeout linear backoff.
+	// Backoff multiplier starts at one and increases by one with each timeout.
+	private static final int MAX_TIMEOUT_BACKOFF = 10;
+
 	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
 	private final VertexStore vertexStore;
@@ -130,7 +136,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 	private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
 	private final Random random;
-	private final int bftSyncPatienceMillis;
+	private final long bftSyncPatienceMillis;
 	private final SystemCounters systemCounters;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
@@ -177,12 +183,16 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 				throw new IllegalArgumentException("Unknown voting result: " + viewQuorumReached.votingResult());
 			}
 
-			syncToQC(highQC, viewQuorumReached.lastAuthor());
+			syncToQC("view quorum reached", highQC, viewQuorumReached.lastAuthor());
 		};
 	}
 
 	@Override
-	public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
+	public SyncResult syncToQC(String reason, HighQC highQC, @Nullable BFTNode author) {
+		return syncToQC(reason, highQC, author, 0);
+	}
+
+	private SyncResult syncToQC(String reason, HighQC highQC, @Nullable BFTNode author, int timeoutCount) {
 		final QuorumCertificate qc = highQC.highestQC();
 		final HashCode vertexId = qc.getProposed().getVertexId();
 
@@ -220,7 +230,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			throw new IllegalStateException("Syncing required but author wasn't provided.");
 		}
 
-		startSync(highQC, author);
+		log.debug("syncToQC starting sync for {} ({} timeouts)", reason, timeoutCount);
+		startSync(highQC, author, timeoutCount);
 
 		return SyncResult.IN_PROGRESS;
 	}
@@ -235,17 +246,17 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		return false;
 	}
 
-	private void startSync(HighQC highQC, BFTNode author) {
-		final SyncState syncState = new SyncState(highQC, author);
+	private void startSync(HighQC highQC, BFTNode author, int timeoutCount) {
+		final SyncState syncState = new SyncState(highQC, author, timeoutCount);
 		syncing.put(syncState.localSyncId, syncState);
 		if (requiresLedgerSync(syncState)) {
-			this.doCommittedSync(syncState);
+			this.doCommittedSync(syncState, timeoutCount);
 		} else {
-			this.doQCSync(syncState);
+			this.doQCSync(syncState, timeoutCount);
 		}
 	}
 
-	private void doQCSync(SyncState syncState) {
+	private void doQCSync(SyncState syncState, int timeoutCount) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
 		ImmutableList<BFTNode> authors = Stream.concat(
@@ -253,10 +264,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			syncState.highQC().highestQC().getSigners().filter(n -> !n.equals(syncState.author))
 		).collect(ImmutableList.toImmutableList());
 
-		this.sendBFTSyncRequest(syncState.highQC().highestQC().getProposed().getVertexId(), 1, authors, syncState.localSyncId);
+		this.sendBFTSyncRequest(syncState.highQC().highestQC().getProposed().getVertexId(), 1, authors, syncState.localSyncId, timeoutCount);
 	}
 
-	private void doCommittedSync(SyncState syncState) {
+	private void doCommittedSync(SyncState syncState, int timeoutCount) {
 		final HashCode committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
@@ -267,7 +278,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			syncState.highQC().highestCommittedQC().getSigners().filter(n -> !n.equals(syncState.author))
 		).collect(ImmutableList.toImmutableList());
 
-		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
+		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId, timeoutCount);
 	}
 
 
@@ -282,20 +293,21 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 
 		var authors = syncRequestState.authors.stream()
-			.filter(author -> !author.equals(self)).collect(ImmutableList.toImmutableList());
+			.filter(author -> !author.equals(self))
+			.collect(ImmutableList.toImmutableList());
 
 		if (authors.isEmpty()) {
 			throw new IllegalStateException("Request contains no authors except ourselves");
 		}
 
-		var syncIds = syncRequestState.syncIds.stream()
-			.filter(syncing::containsKey).collect(Collectors.toList());
+		final var syncIds = syncRequestState.syncIds.stream()
+			.filter(this.syncing::containsKey)
+			.collect(Collectors.toList());
 
-		//noinspection UnstableApiUsage
-		for (var syncId : syncIds) {
+		for (final var syncId : syncIds) {
 			systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
 			SyncState syncState = syncing.remove(syncId);
-			syncToQC(syncState.highQC, randomFrom(authors));
+			syncToQC("get vertices local timeout", syncState.highQC, randomFrom(authors), syncState.timeoutCount + 1);
 		}
 	}
 
@@ -304,16 +316,20 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		return elements.get(nextIndex);
 	}
 
-	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
-		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
-		if (syncRequestState.syncIds.isEmpty()) {
-			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
-			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
-			this.requestSender.dispatch(authors.get(0), request);
-			this.bftSyncing.put(request, syncRequestState);
+	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId, int timeoutCount) {
+		if (timeoutCount < MAX_TIMEOUT_BACKOFF) {
+			final var request = new GetVerticesRequest(vertexId, count);
+			final var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
+			if (syncRequestState.syncIds.isEmpty()) {
+				final var scheduledTimeout = VertexRequestTimeout.create(request);
+				final var timeout = Math.min(MAX_TIMEOUT_BACKOFF, timeoutCount + 1) * this.bftSyncPatienceMillis;
+				log.debug("Scheduling sync request timeout for {}ms", timeout);
+				this.timeoutDispatcher.dispatch(scheduledTimeout, timeout);
+				this.requestSender.dispatch(authors.get(0), request);
+				this.bftSyncing.put(request, syncRequestState);
+			}
+			syncRequestState.syncIds.add(syncId);
 		}
-		syncRequestState.syncIds.add(syncId);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -342,7 +358,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		// At this point we are guaranteed to be in sync with the committed state
 		// Retry sync
 		this.syncing.remove(syncState.localSyncId);
-		this.syncToQC(syncState.highQC(), syncState.author);
+		this.syncToQC("rebuild and sync qc", syncState.highQC(), syncState.author, 0);
 	}
 
 	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
@@ -382,7 +398,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
-			this.syncToQC(syncState.highQC, syncState.author);
+			this.syncToQC("response for qc sync", syncState.highQC, syncState.author, 0);
 		} else {
 			log.debug("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
@@ -392,19 +408,24 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 				vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author))
 			).collect(ImmutableList.toImmutableList());
 
-			this.sendBFTSyncRequest(parentId, 1, authors, syncState.localSyncId);
+			this.sendBFTSyncRequest(parentId, 1, authors, syncState.localSyncId, 0);
 		}
 	}
 
 	@Override
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		// TODO: check response
-
-		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
-
-		if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
-			// error response indicates that the node has moved on from last sync so try and sync to a new sync
-			this.syncToQC(response.highQC(), response.getSender());
+		// Avoid DoS if this is not a response to a request we made
+		if (this.bftSyncing.containsKey(response.failingRequest())) {
+			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
+			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
+				// error response indicates that the node has moved on from last sync so try and sync to a new sync
+				// Remove this sync request so it doesn't retry, as we are going to add a new one
+				this.bftSyncing.remove(response.failingRequest());
+				this.syncToQC("get vertices error response", response.highQC(), response.getSender(), 0);
+			}
+		} else {
+			// Incorrect response from requestee, or we may have already synced with another node
+			log.debug("SYNC_VERTICES: Ignoring error response for {} from {}", response.failingRequest().getVertexId(), response.getSender());
 		}
 	}
 
@@ -437,6 +458,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 						throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
 				}
 			}
+		} else {
+			log.debug("SYNC_VERTICES: Ignoring unknown GetVerticesResponse {} from {}", firstVertex.getId(), response.getSender());
 		}
 	}
 

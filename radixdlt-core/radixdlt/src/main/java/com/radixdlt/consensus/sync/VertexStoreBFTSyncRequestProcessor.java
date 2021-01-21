@@ -53,7 +53,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 		 * @param node the node to send to
 		 * @param highQC sync info
 		 */
-		void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC);
+		void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest failingRequest);
 	}
 
 	@Inject
@@ -75,7 +75,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 			},
 			() -> {
 				log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
-				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(sender, vertexStore.highQC());
+				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(sender, vertexStore.highQC(), request);
 			}
 		);
 	}

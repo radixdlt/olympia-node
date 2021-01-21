@@ -23,9 +23,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class StaticTransportMetadataTest {
@@ -39,7 +37,7 @@ public class StaticTransportMetadataTest {
 	public void testEmpty() {
 		StaticTransportMetadata stm = StaticTransportMetadata.empty();
 
-		assertThat(stm.toString(), containsString("{}")); // The empty map
+		assertThat(stm.toString()).contains("{}"); // The empty map
 	}
 
 	@Test
@@ -48,8 +46,8 @@ public class StaticTransportMetadataTest {
 		metadata.put("a", "b");
 		StaticTransportMetadata stm = StaticTransportMetadata.from(metadata);
 
-		assertThat(stm.get("a"), equalTo("b"));
-		assertThat(stm.get("b"), nullValue());
+		assertThat(stm.get("a")).isEqualTo("b");
+		assertThat(stm.get("b")).isNull();
 	}
 
 	@Test
@@ -58,32 +56,32 @@ public class StaticTransportMetadataTest {
 			ImmutableMap.of("a", "b")
 		);
 
-		assertThat(stm.get("a"), equalTo("b"));
-		assertThat(stm.get("b"), nullValue());
+		assertThat(stm.get("a")).isEqualTo("b");
+		assertThat(stm.get("b")).isNull();
 	}
 
 	@Test
 	public void testOfTwoArgs() {
 		StaticTransportMetadata stm = StaticTransportMetadata.of("a", "b");
 
-		assertThat(stm.get("a"), equalTo("b"));
-		assertThat(stm.get("b"), nullValue());
+		assertThat(stm.get("a")).isEqualTo("b");
+		assertThat(stm.get("b")).isNull();
 	}
 
 	@Test
 	public void testOfFourArgs() {
 		StaticTransportMetadata stm = StaticTransportMetadata.of("a", "b", "c", "d");
 
-		assertThat(stm.get("a"), equalTo("b"));
-		assertThat(stm.get("c"), equalTo("d"));
-		assertThat(stm.get("e"), nullValue());
+		assertThat(stm.get("a")).isEqualTo("b");
+		assertThat(stm.get("c")).isEqualTo("d");
+		assertThat(stm.get("e")).isNull();
 	}
 
 	@Test
 	public void testToString() {
 		StaticTransportMetadata stm = StaticTransportMetadata.of("a", "b", "c", "d");
 
-		assertThat(stm.toString(), containsString("a=b"));
-		assertThat(stm.toString(), containsString("c=d"));
+		assertThat(stm.toString()).contains("a=b");
+		assertThat(stm.toString()).contains("c=d");
 	}
 }

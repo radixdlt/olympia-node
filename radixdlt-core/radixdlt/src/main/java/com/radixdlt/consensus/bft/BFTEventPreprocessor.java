@@ -177,6 +177,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (vote.getView().gte(currentView)) {
 			log.trace("Vote: PreProcessing {}", vote);
 			return syncUp(
+				"process vote",
 				vote.highQC(),
 				vote.getAuthor(),
 				() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
@@ -192,6 +193,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (proposal.getView().gte(currentView)) {
 			log.trace("Proposal: PreProcessing {}", proposal);
 			return syncUp(
+				"process proposal",
 				proposal.highQC(),
 				proposal.getAuthor(),
 				() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
@@ -214,8 +216,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		}
 	}
 
-	private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
-		SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
+	private boolean syncUp(String reason, HighQC highQC, BFTNode author, Runnable whenSynced) {
+		SyncResult syncResult = this.bftSyncer.syncToQC(reason, highQC, author);
 
 		switch (syncResult) {
 			case SYNCED:

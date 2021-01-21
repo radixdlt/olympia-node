@@ -217,7 +217,7 @@ public class ConsensusModuleTest {
 		QuorumCertificate parent = vertexStore.highQC().highestQC();
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-		bftSync.syncToQC(unsyncedHighQC, bftNode);
+		bftSync.syncToQC("on_sync_request_timeout_should_retry", unsyncedHighQC, bftNode);
 		GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getId(), 1);
 		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -237,7 +237,7 @@ public class ConsensusModuleTest {
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		Pair<QuorumCertificate, VerifiedVertex> nextNextVertex = createNextVertex(nextVertex.getFirst(), bftNode);
 		HighQC unsyncedHighQC = HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
-		bftSync.syncToQC(unsyncedHighQC, bftNode);
+		bftSync.syncToQC("on_synced_to_vertex_should_request_for_parent", unsyncedHighQC, bftNode);
 
 		// Act
 		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));

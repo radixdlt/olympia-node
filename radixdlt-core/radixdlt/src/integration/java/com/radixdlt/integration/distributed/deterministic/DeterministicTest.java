@@ -193,7 +193,7 @@ public final class DeterministicTest {
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
-					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
+					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					// Use constant timeout for now

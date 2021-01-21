@@ -32,11 +32,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BFTValidatorSetTest {
 
@@ -50,15 +49,16 @@ public class BFTValidatorSetTest {
 	public void sensibleToString() {
 		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE))).toString();
-		assertThat(s, containsString(BFTValidatorSet.class.getSimpleName()));
-		assertThat(s, containsString(node.getSimpleName()));
+		assertThat(s)
+			.contains(BFTValidatorSet.class.getSimpleName())
+			.contains(node.getSimpleName());
 	}
 
 	@Test
 	public void testStreamConstructor() {
 		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE)).stream()).toString();
-		assertThat(s, containsString(node.getSimpleName()));
+		assertThat(s).contains(node.getSimpleName());
 	}
 
 	@Test

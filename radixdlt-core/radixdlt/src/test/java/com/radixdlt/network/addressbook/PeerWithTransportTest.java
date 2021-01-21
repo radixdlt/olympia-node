@@ -31,7 +31,7 @@ import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 
 import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PeerWithTransportTest {
 
@@ -48,35 +48,36 @@ public class PeerWithTransportTest {
 	public void testToString() {
 		String s = this.pwt.toString();
 
-		assertThat(s, containsString("PeerWithTransport")); // class name
-		assertThat(s, containsString(this.dummy.name())); // transport name
+		assertThat(s)
+			.contains("PeerWithTransport") // class name
+			.contains(this.dummy.name()); // transport name
 	}
 
 	@Test
 	public void testGetNID() {
-		assertThat(this.pwt.getNID(), is(EUID.ZERO));
+		assertThat(this.pwt.getNID()).isEqualTo(EUID.ZERO);
 	}
 
 	@Test
 	public void testHasNID() {
-		assertThat(this.pwt.hasNID(), is(false));
+		assertThat(this.pwt.hasNID()).isFalse();
 	}
 
 	@Test
 	public void testSupportsTransport() {
-		assertThat(this.pwt.supportsTransport("NOTEXIST"), is(false));
-		assertThat(this.pwt.supportsTransport(this.dummy.name()), is(true));
+		assertThat(this.pwt.supportsTransport("NOTEXIST")).isFalse();
+		assertThat(this.pwt.supportsTransport(this.dummy.name())).isTrue();
 	}
 
 	@Test
 	public void testSupportedTransports() {
 		ImmutableList<TransportInfo> tis = this.pwt.supportedTransports().collect(ImmutableList.toImmutableList());
-		assertThat(tis, contains(this.dummy));
+		assertThat(tis).contains(this.dummy);
 	}
 
 	@Test
 	public void testConnectionData() {
-		assertThat(this.pwt.connectionData("DUMMY"), is(this.dummy.metadata()));
+		assertThat(this.pwt.connectionData("DUMMY")).isEqualTo(this.dummy.metadata());
 	}
 
 	@Test(expected = TransportException.class)
@@ -87,12 +88,12 @@ public class PeerWithTransportTest {
 
 	@Test
 	public void testHasSystem() {
-		assertThat(this.pwt.hasSystem(), is(false));
+		assertThat(this.pwt.hasSystem()).isFalse();
 	}
 
 	@Test
 	public void testGetSystem() {
-		assertThat(this.pwt.getSystem(), nullValue());
+		assertThat(this.pwt.getSystem()).isNull();
 	}
 
 	@Test
