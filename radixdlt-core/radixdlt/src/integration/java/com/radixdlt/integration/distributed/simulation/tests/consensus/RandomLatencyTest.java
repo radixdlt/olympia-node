@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -51,10 +52,12 @@ public class RandomLatencyTest {
 			NetworkDroppers.bftSyncMessagesDropped()
 		)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkConsensusSafety("safety")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkConsensusNoTimeouts("noTimeouts");
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents()
+		);
 
 	/**
 	 * Tests a static configuration of 3 nodes with random, high variance in latency

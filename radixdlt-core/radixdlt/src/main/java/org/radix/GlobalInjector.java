@@ -38,7 +38,8 @@ import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerRecoveryModule;
-import com.radixdlt.MempoolRelayModule;
+import com.radixdlt.MempoolRelayerModule;
+import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
@@ -136,7 +137,8 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// Mempool Relay
-			new MempoolRelayModule(),
+			new MempoolReceiverModule(),
+			new MempoolRelayerModule(),
 
 			// Sync
 			new SyncRunnerModule(),

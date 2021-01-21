@@ -20,6 +20,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -43,13 +46,16 @@ public class MempoolSanityTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndMempool()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addMempoolSubmissionsSteadyState("mempool", new IncrementalBytes());
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents(),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		)
+		.addMempoolSubmissionsSteadyState(new IncrementalBytes())
+		.addMempoolCommittedChecker();
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else
@@ -66,7 +72,10 @@ public class MempoolSanityTest {
 			.build();
 
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.MEMPOOL_COMMITTED,
+			error -> assertThat(error).isPresent()
+		);
 	}
 
 	@Test

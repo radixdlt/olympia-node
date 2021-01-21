@@ -21,6 +21,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -45,10 +47,12 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		)
 		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();
 
 	@Test

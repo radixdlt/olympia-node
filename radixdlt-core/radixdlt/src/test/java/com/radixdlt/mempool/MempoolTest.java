@@ -34,7 +34,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRecoveryModule;
-import com.radixdlt.MempoolRelayModule;
+import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
@@ -134,7 +134,7 @@ public class MempoolTest {
 			new LedgerCommandGeneratorModule(),
 
 			// Mempool
-			new MempoolRelayModule(),
+			new MempoolRelayerModule(),
 			new LedgerLocalMempoolModule(1),
 
 			// State Computer

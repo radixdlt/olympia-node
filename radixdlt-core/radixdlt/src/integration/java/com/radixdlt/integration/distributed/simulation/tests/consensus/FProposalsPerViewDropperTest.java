@@ -25,6 +25,8 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -65,9 +67,11 @@ public class FProposalsPerViewDropperTest {
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)
-			.checkConsensusSafety("safety")
-			.checkConsensusNoTimeouts("noTimeouts")
-			.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.vertexRequestRate(50), // Conservative check
+				ConsensusMonitors.noTimeouts()
+			);
 	}
 
 	/**
@@ -86,7 +90,10 @@ public class FProposalsPerViewDropperTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.NO_TIMEOUTS,
+			error -> assertThat(error).isPresent()
+		);
 	}
 
 	/**
@@ -122,6 +129,6 @@ public class FProposalsPerViewDropperTest {
 			})
 			.build();
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(Monitor.NO_TIMEOUTS, error -> assertThat(error).isPresent());
 	}
 }

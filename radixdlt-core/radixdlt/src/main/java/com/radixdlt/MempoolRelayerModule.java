@@ -32,7 +32,7 @@ import com.radixdlt.mempool.MempoolRelayer;
 /**
  * Module responsible for sending/receiving mempool messages to/from other nodes.
  */
-public final class MempoolRelayModule extends AbstractModule {
+public final class MempoolRelayerModule extends AbstractModule {
 
 	@Override
 	public void configure() {

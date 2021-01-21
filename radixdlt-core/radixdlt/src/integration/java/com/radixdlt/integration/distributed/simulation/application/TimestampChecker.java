@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -58,12 +59,17 @@ public final class TimestampChecker implements TestInvariant {
 		}
 	}
 
+	private static boolean isFirstView(LedgerUpdate ledgerUpdate) {
+		return ledgerUpdate.getTail().getEpoch() == 1 && ledgerUpdate.getTail().getView().equals(View.of(1));
+	}
+
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return network.ledgerUpdates()
 			.map(Pair::getSecond)
-			.distinct() // Test on only the first ledger update in the network
-			.filter(l -> !(l.getTail().getEpoch() == 1 && l.getTail().getView().equals(View.of(1))))
-			.flatMapMaybe(update -> this.checkCloseTimestamp(update));
+			// Test on only the first ledger update in the network
+			.distinct(update -> EpochView.of(update.getTail().getEpoch(), update.getTail().getView()))
+			.filter(l -> !isFirstView(l))
+			.flatMapMaybe(this::checkCloseTimestamp);
 	}
 }

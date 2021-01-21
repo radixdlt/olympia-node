@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -66,9 +67,11 @@ public final class OutOfOrderTest {
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkConsensusSafety("safety")
-			.checkConsensusAllProposalsHaveDirectParents("directParents");
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
+				ConsensusMonitors.directParents()
+			);
 	}
 
 	@Test
