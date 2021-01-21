@@ -106,7 +106,13 @@ public class AddressBookPersistence implements PeerPersistence {
 			DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
 			byte[] bytes = serialization.toDson(peer, Output.PERSIST);
 			DatabaseEntry value = new DatabaseEntry(bytes);
-			return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
+
+			if (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS) {
+				addBytesWrite(key.getSize() + value.getSize());
+				return true;
+			}
+
+			return false;
 		} finally {
 			addTime(start);
 		}
@@ -117,7 +123,12 @@ public class AddressBookPersistence implements PeerPersistence {
 		final var start = System.nanoTime();
 		try {
 			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-			return (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS);
+
+			if (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS) {
+				systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_DELETES);
+				return true;
+			}
+			return false;
 		} finally {
 			addTime(start);
 		}
@@ -132,6 +143,7 @@ public class AddressBookPersistence implements PeerPersistence {
 				DatabaseEntry value = new DatabaseEntry();
 
 				while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					addBytesRead(key.getSize() + value.getSize());
 					PeerWithSystem peer = this.serialization.fromDson(value.getData(), PeerWithSystem.class);
 					c.accept(peer);
 				}
@@ -147,5 +159,13 @@ public class AddressBookPersistence implements PeerPersistence {
 		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
 		this.systemCounters.add(CounterType.ELAPSED_BDB_ADDRESS_BOOK, elapsed);
 		this.systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_TOTAL);
+	}
+
+	private void addBytesRead(int bytesRead) {
+		this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_READ, bytesRead);
+	}
+
+	private void addBytesWrite(int bytesWrite) {
+		this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE, bytesWrite);
 	}
 }

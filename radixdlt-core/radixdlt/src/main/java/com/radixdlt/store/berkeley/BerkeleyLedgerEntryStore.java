@@ -446,10 +446,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			}
 		} catch (Exception e) {
 			fail(String.format("Failed getting conflicting atom for unique indices %s: '%s'",
-							   uniqueIndices.stream()
-								   .map(StoreIndex::toHexString)
-								   .collect(Collectors.joining(", ")),
-							   e.toString()), e);
+				uniqueIndices.stream()
+					.map(StoreIndex::toHexString)
+					.collect(Collectors.joining(", ")),
+				e.toString()), e);
 		}
 
 		return conflictingAtoms.build();
@@ -503,7 +503,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			long proofVersion = -1;
 			// when querying committed atoms, no need to worry about transaction as they aren't going away
 			try (Cursor atomCursor = this.atoms.openCursor(null, null);
-				 Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
+				Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
 				ImmutableList.Builder<LedgerEntry> ledgerEntries = ImmutableList.builder();
 				// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
 				DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
