@@ -309,11 +309,11 @@ public class PeerManager {
 	}
 
 	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
-		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		log.info("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
-			log.trace("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
+			log.info("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
 			messageCentral.send(peer, new PeerPongMessage(this.universeMagic, nonce, payload, localSystem));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
@@ -321,7 +321,7 @@ public class PeerManager {
 	}
 
 	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
-		log.trace("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		log.info("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			synchronized (this.probes) {
 				Long ourNonce = this.probes.get(peer);
@@ -330,7 +330,7 @@ public class PeerManager {
 					long rtt = System.nanoTime() - message.getPayload();
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
-						log.trace("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
+						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
 						if (nonce != 0L) {
 							log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
@@ -374,7 +374,7 @@ public class PeerManager {
 
 					this.probes.put(peer, nonce);
 					this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-					log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+					log.info("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 					messageCentral.send(peer, ping);
 					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
 					return true;
@@ -388,7 +388,7 @@ public class PeerManager {
 
 	private boolean nudge(TransportInfo transportInfo) {
 		try {
-			log.trace("Nudging {}", transportInfo);
+			log.info("Nudging {}", transportInfo);
 			final PeerPingMessage ping = new PeerPingMessage(this.universeMagic, 0L, System.nanoTime(), localSystem);
 			messageCentral.sendSystemMessage(transportInfo, ping);
 			return true;
