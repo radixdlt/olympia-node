@@ -59,13 +59,17 @@ public final class TimestampChecker implements TestInvariant {
 		}
 	}
 
+	private static boolean isFirstView(LedgerUpdate ledgerUpdate) {
+		return ledgerUpdate.getTail().getEpoch() == 1 && ledgerUpdate.getTail().getView().equals(View.of(1));
+	}
+
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return network.ledgerUpdates()
 			.map(Pair::getSecond)
 			// Test on only the first ledger update in the network
 			.distinct(update -> EpochView.of(update.getTail().getEpoch(), update.getTail().getView()))
-			.filter(l -> !(l.getTail().getEpoch() == 1 && l.getTail().getView().equals(View.of(1))))
-			.flatMapMaybe(update -> this.checkCloseTimestamp(update));
+			.filter(l -> !isFirstView(l))
+			.flatMapMaybe(this::checkCloseTimestamp);
 	}
 }
