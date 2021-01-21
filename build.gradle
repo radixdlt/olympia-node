@@ -49,7 +49,7 @@ subprojects {
 }
 
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:1.0-beta.22-feature~rpnv1-767-remove-message-particle-SNAPSHOT'
+    compile 'com.radixdlt:radixdlt-java:1.0-beta.22-rc~1.0-beta.23-SNAPSHOT'
     compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
     compile group: 'com.google.guava', name: 'guava', version: '27.1-jre'
     compile group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.12.11'
