@@ -22,14 +22,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -87,37 +85,8 @@ public final class JsonDeserializationTestScenarioRunner extends SanityTestScena
 		assertTrue(argsExtractor.isFinished());
 	}
 
-	private static void assertEqualModelMessageParticle(final Map<String, Object> arguments, final Object expectedObject) {
-		var expected = (MessageParticle) expectedObject;
-		var argsExtractor = ArgumentsExtractor.from(arguments);
-
-		ImmutableList.of(
-			Pair.of(
-				expected.getTo(),
-				argsExtractor.asRadixAddress("to")
-			),
-			Pair.of(
-				expected.getFrom(),
-				argsExtractor.asRadixAddress("from")
-			),
-			Pair.of(
-				new String(expected.getBytes(), StandardCharsets.UTF_8),
-				argsExtractor.asString("message")
-			),
-			Pair.of(
-				expected.getNonce(),
-				argsExtractor.asLong("nonce")
-			)
-		).forEach(
-			p -> assertEquals(p.getFirst(), p.getSecond())
-		);
-
-		assertTrue(argsExtractor.isFinished());
-	}
-
 	private static final Map<String, BiConsumer<Map<String, Object>, Object>> assertEqualsMap = ImmutableMap.of(
-		"radix.particles.transferrable_tokens", JsonDeserializationTestScenarioRunner::assertEqualModelTTP,
-		"radix.particles.message", JsonDeserializationTestScenarioRunner::assertEqualModelMessageParticle
+		"radix.particles.transferrable_tokens", JsonDeserializationTestScenarioRunner::assertEqualModelTTP
 	);
 
 	@Override

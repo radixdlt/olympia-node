@@ -17,13 +17,11 @@
 
 package com.radixdlt.fees;
 
-import java.nio.charset.StandardCharsets;
-
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -42,7 +40,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class FeeTableTest {
     private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
 	private static final ImmutableList<FeeEntry> FEE_ENTRIES = ImmutableList.of(
-		PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.THREE)
+		PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.THREE)
 	);
 
 	@Test
@@ -61,21 +59,11 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomNotMinimum() {
     	FeeTable ft = get();
-    	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	MessageParticle mp1 = MessageParticle.builder()
-    		.from(from)
-    		.to(to)
-    		.payload("test message 1".getBytes(StandardCharsets.UTF_8))
-    		.build();
-    	MessageParticle mp2 = MessageParticle.builder()
-    		.from(from)
-    		.to(to)
-    		.payload("test message 2".getBytes(StandardCharsets.UTF_8))
-    		.build();
+    	final var p1 = makeParticle("test message 1");
+    	final var p2 = makeParticle("test message 2");
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
-    		ParticleGroup.of(SpunParticle.up(mp1)),
-    		ParticleGroup.of(SpunParticle.up(mp2))
+    		ParticleGroup.of(SpunParticle.up(p1)),
+    		ParticleGroup.of(SpunParticle.up(p2))
     	);
     	Atom a = Atom.create(particleGroups);
     	UInt256 fee = ft.feeFor(a, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
@@ -93,18 +81,12 @@ public class FeeTableTest {
     @Test
     public void testFeeOverflow() {
     	ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.MAX_VALUE),
+			PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.MAX_VALUE),
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
     	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-    	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	MessageParticle mp3 = MessageParticle.builder()
-    		.from(from)
-    		.to(to)
-    		.payload("test message 3".getBytes(StandardCharsets.UTF_8))
-    		.build();
-    	Atom a = Atom.create(ParticleGroup.of(SpunParticle.up(mp3)));
+    	final var p3 = makeParticle("test message 3");
+    	Atom a = Atom.create(ParticleGroup.of(SpunParticle.up(p3)));
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(a, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)
@@ -120,5 +102,11 @@ public class FeeTableTest {
 
     private static FeeTable get() {
     	return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
+    }
+
+    private static UniqueParticle makeParticle(String message) {
+    	final var kp = ECKeyPair.generateNew();
+    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+    	return new UniqueParticle(address, message);
     }
 }

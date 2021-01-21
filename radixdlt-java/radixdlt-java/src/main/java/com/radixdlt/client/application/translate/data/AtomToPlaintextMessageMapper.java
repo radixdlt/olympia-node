@@ -22,48 +22,27 @@
 
 package com.radixdlt.client.application.translate.data;
 
-import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.RadixAddress;
-import java.util.Objects;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
+import com.radixdlt.client.core.atoms.Atom;
+
+import io.reactivex.Observable;
 
 /**
- * An Action object which sends a data transaction from one account to another.
+ * Maps an atom to it's message, if any.
  */
-public final class SendMessageAction implements Action {
-	private final RadixAddress from;
-	private final RadixAddress to;
-	private final byte[] data;
-	private final boolean encrypt;
-
-	private SendMessageAction(RadixAddress from, RadixAddress to, byte[] data, boolean encrypt) {
-		this.from = Objects.requireNonNull(from);
-		this.data = Objects.requireNonNull(data);
-		this.to = Objects.requireNonNull(to);
-		this.encrypt = encrypt;
-	}
-
-	public static SendMessageAction create(RadixAddress from, RadixAddress to, byte[] data, boolean encrypt) {
-		return new SendMessageAction(from, to, data, encrypt);
-	}
-
-	public boolean encrypt() {
-		return encrypt;
-	}
-
-	public byte[] getData() {
-		return data;
-	}
-
-	public RadixAddress getTo() {
-		return to;
-	}
-
-	public RadixAddress getFrom() {
-		return from;
+public class AtomToPlaintextMessageMapper implements AtomToExecutedActionsMapper<PlaintextMessage> {
+	@Override
+	public Class<PlaintextMessage> actionClass() {
+		return PlaintextMessage.class;
 	}
 
 	@Override
-	public String toString() {
-		return "SEND MESSAGE FROM " + from + " TO " + to;
+	public Observable<PlaintextMessage> map(Atom atom, RadixIdentity identity) {
+		final var message = atom.getMessage();
+		if (message == null) {
+			return Observable.empty();
+		}
+		return Observable.just(new PlaintextMessage(atom.getAid(), message));
 	}
 }

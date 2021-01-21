@@ -23,10 +23,11 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
@@ -50,10 +51,9 @@ public class ClientAtomTest {
 	}
 
 	private static Atom createApiAtom() {
-		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		atom.addParticleGroupWith(makeParticle("Hello"), Spin.UP);
 		return atom;
 	}
 
@@ -98,4 +98,10 @@ public class ClientAtomTest {
 			)
 		);
 	}
+
+    private static UniqueParticle makeParticle(String message) {
+    	final var kp = ECKeyPair.generateNew();
+    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+    	return new UniqueParticle(message, address, 0);
+    }
 }
