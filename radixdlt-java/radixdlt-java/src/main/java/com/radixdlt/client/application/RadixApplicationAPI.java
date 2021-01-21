@@ -25,7 +25,6 @@ package com.radixdlt.client.application;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -1326,19 +1325,19 @@ public class RadixApplicationAPI {
 	public final class Transaction {
 		private final String uuid;
 		private List<Action> workingArea = new ArrayList<>();
-		private Map<String, String> metadata = Maps.newHashMap();
+		private String message = null;
 
 		private Transaction() {
 			this.uuid = UUID.randomUUID().toString();
 		}
 
 		/**
-		 * Adds specified metadata to the constructed atom's metadata.
+		 * Sets the atom's message to the specified message.
 		 *
-		 * @param metadata The metadata to add to the atom
+		 * @param message The message to use for the atom
 		 */
-		public void addAtomMetadata(Map<String, String> metadata) {
-			this.metadata.putAll(metadata);
+		public void setMessage(String message) {
+			this.message = message;
 		}
 
 		/**
@@ -1432,14 +1431,14 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.metadata);
+			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);
-			this.metadata.clear();
+			String messageCopy = this.message;
+			this.message = null;
 
-			return Atom.create(particleGroups, metadataCopy);
+			return Atom.create(particleGroups, messageCopy);
 		}
 
 		/**

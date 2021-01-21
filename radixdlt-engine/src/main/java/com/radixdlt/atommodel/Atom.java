@@ -18,8 +18,6 @@
 package com.radixdlt.atommodel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -49,74 +47,54 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 @SerializerId2("radix.atom")
 @SerializeWithHid
 public final class Atom {
 
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	@DsonOutput(DsonOutput.Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	/**
 	 * The particle groups and their spin
 	 */
 	@JsonProperty("particleGroups")
 	@DsonOutput(DsonOutput.Output.ALL)
-	protected final List<ParticleGroup> particleGroups = new ArrayList<>();
+	private final List<ParticleGroup> particleGroups = new ArrayList<>();
+
+	/**
+	 * The particle groups and their spin
+	 */
+	@JsonProperty("message")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final String message;
 
 	/**
 	 * Contains signers and corresponding signatures of this Atom.
 	 */
-	protected final Map<EUID, ECDSASignature> signatures = new HashMap<>();
-
-	/**
-	 * Metadata about the atom, such as which app made it
-	 */
-	@JsonProperty("metaData")
-	@DsonOutput(DsonOutput.Output.ALL)
-	protected final ImmutableMap<String, String> metaData;
+	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
 	public Atom() {
-		this.metaData = ImmutableMap.of();
+		this(null);
 	}
 
-	public Atom(Map<String, String> metadata) {
-		this.metaData = ImmutableMap.<String, String>builder()
-			.putAll(metadata)
-			.build();
+	public Atom(@Nullable String message) {
+		this.message = message;
 	}
 
-	protected Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
+	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
 		this.particleGroups.addAll(particleGroups);
 		this.signatures.putAll(signatures);
-		this.metaData = ImmutableMap.of();
+		this.message = message;
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, Map<String, String> metaData) {
-		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(signatures, "signatures is required");
-		Objects.requireNonNull(metaData, "metaData is required");
-
-		this.particleGroups.addAll(particleGroups);
-		this.signatures.putAll(signatures);
-		this.metaData = ImmutableMap.copyOf(metaData);
-	}
-
-	// copied from legacy Atom.java, temporary hack that will be fixed when ImmutableAtom becomes ImmutableContent
-	public Atom copyExcludingMetadata(String... keysToExclude) {
-		Objects.requireNonNull(keysToExclude, "keysToRetain is required");
-
-		ImmutableSet<String> keysToExcludeSet = ImmutableSet.copyOf(keysToExclude);
-		Map<String, String> filteredMetaData = this.metaData.entrySet().stream()
-			.filter(metaDataEntry -> !keysToExcludeSet.contains(metaDataEntry.getKey()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new Atom(this.particleGroups, this.signatures, filteredMetaData);
+	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
+		this(particleGroups, signatures, null);
 	}
 
 	// Primarily used for excluding fee groups in fee calculations
@@ -125,7 +103,7 @@ public final class Atom {
 			.filter(pg -> !exclusions.test(pg))
 			.collect(Collectors.toList());
 
-		return new Atom(newParticleGroups, this.signatures, this.metaData);
+		return new Atom(newParticleGroups, this.signatures, this.message);
 	}
 
 	/**
@@ -229,6 +207,10 @@ public final class Atom {
 		return key.verify(hash, signature);
 	}
 
+	public String getMessage() {
+		return this.message;
+	}
+
 	public Map<EUID, ECDSASignature> getSignatures() {
 		return Collections.unmodifiableMap(this.signatures);
 	}
@@ -329,15 +311,6 @@ public final class Atom {
 			.findFirst().orElse(null);
 	}
 
-	/**
-	 * Get the metadata associated with the atom
-	 *
-	 * @return an immutable map of the metadata
-	 */
-	public Map<String, String> getMetaData() {
-		return this.metaData;
-	}
-
 	// Property Signatures: 1 getter, 1 setter
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
@@ -376,11 +349,11 @@ public final class Atom {
 		Atom atom = (Atom) o;
 		return Objects.equals(particleGroups, atom.particleGroups)
 				&& Objects.equals(signatures, atom.signatures)
-				&& Objects.equals(metaData, atom.metaData);
+				&& Objects.equals(message, atom.message);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particleGroups, signatures, metaData);
+		return Objects.hash(particleGroups, signatures, message);
 	}
 }

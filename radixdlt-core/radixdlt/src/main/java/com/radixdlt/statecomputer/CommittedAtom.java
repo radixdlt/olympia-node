@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -94,6 +93,11 @@ public final class CommittedAtom implements LedgerAtom {
 	}
 
 	@Override
+	public String getMessage() {
+		return clientAtom.getMessage();
+	}
+
+	@Override
 	public AID getAID() {
 		return clientAtom.getAID();
 	}
@@ -113,11 +117,6 @@ public final class CommittedAtom implements LedgerAtom {
 		return Objects.equals(other.clientAtom, this.clientAtom)
 			&& other.stateVersion == this.stateVersion
 			&& Objects.equals(other.proof, this.proof);
-	}
-
-	@Override
-	public ImmutableMap<String, String> getMetaData() {
-		return clientAtom.getMetaData();
 	}
 
 	@Override
