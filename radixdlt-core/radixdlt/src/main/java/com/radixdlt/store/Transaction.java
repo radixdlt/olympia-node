@@ -17,6 +17,9 @@
 
 package com.radixdlt.store;
 
+/**
+ * Opaque wrapper for implementation-specific transactions.
+ */
 public interface Transaction {
 	void commit();
 
