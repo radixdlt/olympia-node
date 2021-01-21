@@ -29,7 +29,7 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.store.Transaction;
 import org.bouncycastle.util.Arrays;
 
 import java.io.File;
