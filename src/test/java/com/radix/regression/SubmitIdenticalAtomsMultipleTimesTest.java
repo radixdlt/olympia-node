@@ -1,12 +1,12 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
@@ -21,15 +21,17 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.identifiers.RRI;
+
 import io.reactivex.observers.TestObserver;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
+
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class SubmitIdenticalAtomsMultipleTimesTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
@@ -67,22 +69,17 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	}
 
 	public void submitConflictingAtomXTimesConcurrently(int times) {
-		long startTime = System.currentTimeMillis();
-		long nonce = System.nanoTime(); // Same (sort of) random nonce for each message particle
 		List<TestObserver<AtomStatusEvent>> observers = Lists.newArrayList();
 		List<TestObserver<AtomStatusEvent>> submissions = Lists.newArrayList();
 
+		var counter = 1234L;
+
+		final var rri = RRI.of(this.universe.getAddressFrom(this.identity.getPublicKey()), "notunique");
+		final var rriParticle = new RRIParticle(rri);
+		final var uniqueParticle = new UniqueParticle(rri.getAddress(), rri.getName());
+
 		for (int i = 0; i < times; ++i) {
-			Atom atom = buildAtom(ImmutableMap.of(), true, startTime + "", SpunParticle.up(
-				new MessageParticle.MessageParticleBuilder()
-					.payload(new byte[10])
-					.metaData("application", "message")
-					.nonce(nonce)
-					.from(universe.getAddressFrom(this.identity.getPublicKey()))
-					.to(universe.getAddressFrom(this.identity.getPublicKey()))
-					.build()
-			));
-			startTime += 1; // slightly different atom next time
+			Atom atom = buildAtom(counter++, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
 
 			TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status " + i));
 			final String subscriberId = UUID.randomUUID().toString();
@@ -106,7 +103,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		});
 		for (int i = 0; i < times; ++i) {
 			TestObserver<AtomStatusEvent> observer = observers.get(i);
-			observer.awaitCount(1);
+			observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 			observer.assertValueCount(1);
 			AtomStatus expectedStatus = (i == 0) ? AtomStatus.STORED : AtomStatus.CONFLICT_LOSER;
 			observer.assertValueAt(0, notification -> notification.getAtomStatus() == expectedStatus);
@@ -122,21 +119,14 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		return observer;
 	}
 
-	private Atom buildAtom(Map<String, String> metaData, boolean addFee, String timestamp, SpunParticle... spunParticles) {
+	private Atom buildAtom(long counter, SpunParticle... spunParticles) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
+		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
+		// Warning: fake fee, plus counter to make AID different
+		String message = "magic:0xdeadbeef:" + counter;
 
-		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.putAll(metaData);
-		atomMetaData.put("timestamp", timestamp);
-
-		if (addFee) {
-			// FIXME: not really a fee
-			atomMetaData.put("magic", "0xdeadbeef");
-		}
-
-		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
+		Atom unsignedAtom = Atom.create(particleGroups, message);
 		// Sign and submit
 		return this.identity.addSignature(unsignedAtom).blockingGet();
 	}

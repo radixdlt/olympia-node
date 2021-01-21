@@ -18,7 +18,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,8 +29,9 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
+
 import static com.radixdlt.client.application.translate.tokens.TokenUnitConversions.unitsToSubunits;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -62,7 +62,7 @@ public class TokenFees {
 	public void i_submit_an_atom_without_any_fees() {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test1")));
 		t.commitAndPushWithFee(BigDecimal.ZERO)
 			.toObservable()
 			.doOnNext(this::printSubmitAtomAction)
@@ -78,7 +78,7 @@ public class TokenFees {
 	public void i_submit_an_atom_with_a_fee_that_is_too_small() {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test2")));
 		// Minimum fee assumed to be 40 millirads.  We will try to pay 39 millirads.
 		t.commitAndPushWithFee(BigDecimal.valueOf(39, 3)) // 39 x 10^{-3} rads
 			.toObservable()
@@ -90,7 +90,7 @@ public class TokenFees {
 	public void i_submit_an_atom_with_a_fee_that_equals_the_minimum_fee() {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test3")));
 		// Minimum fee assumed to be 40 millirads.
 		t.commitAndPushWithFee(BigDecimal.valueOf(40, 3)) // 40 x 10^{-3} rads
 			.toObservable()
@@ -107,7 +107,7 @@ public class TokenFees {
 	public void i_submit_an_atom_with_a_fee_that_exceeds_the_minimum_fee() {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test4")));
 		// Minimum fee assumed to be 40 millirads.
 		t.commitAndPushWithFee(BigDecimal.valueOf(80, 3)) // 80 x 10^{-3} rads
 			.toObservable()
@@ -119,7 +119,7 @@ public class TokenFees {
 	public void i_create_an_atom_with_a_size_smaller_than_3072_bytes() {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test5")));
 		t.commitAndPush() // Fee is computed for us
 			.toObservable()
 			.doOnNext(this::printSubmitAtomAction)
@@ -141,7 +141,8 @@ public class TokenFees {
 		RadixAddress address = this.api.getAddress();
 		Transaction t = this.api.createTransaction();
 		String bigMessage = Strings.repeat("X", 3072); // message size + other data will be greater than 3072 bytes
-		t.stage(SendMessageAction.create(address, address, bigMessage.getBytes(StandardCharsets.UTF_8), true));
+		t.setMessage(bigMessage);
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test6")));
 		t.commitAndPush() // Fee is computed for us
 			.toObservable()
 			.doOnNext(this::printSubmitAtomAction)
@@ -187,7 +188,7 @@ public class TokenFees {
 		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
 
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test7")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
@@ -217,7 +218,7 @@ public class TokenFees {
 		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
 
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test8")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
@@ -253,7 +254,7 @@ public class TokenFees {
 		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
 
-		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test9")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();

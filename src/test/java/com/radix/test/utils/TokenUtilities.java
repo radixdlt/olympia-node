@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -16,9 +15,6 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
-import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
@@ -27,8 +23,6 @@ import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.RadixConstants;
-
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,11 +53,11 @@ public final class TokenUtilities {
 		return !isFaucetAtomObservation(atomObs);
 	}
 
-	public static RadixAddress requestTokensFor(RadixIdentity identity) {
-		return requestTokensFor(RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity));
+	public static void requestTokensFor(RadixIdentity identity) {
+		requestTokensFor(RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity));
 	}
 
-	public static synchronized RadixAddress requestTokensFor(RadixApplicationAPI api) {
+	public static synchronized void requestTokensFor(RadixApplicationAPI api) {
 		// Ensure balances up to date
 		api.pullOnce(api.getAddress()).blockingAwait();
 		final RRI tokenRri = api.getNativeTokenRef();
@@ -88,21 +82,16 @@ public final class TokenUtilities {
 					.blockingFirst();
 
 				if (txAtom != dummyAtom) {
-					DecryptedMessage msg = decryptMessageFrom(txAtom, api.getIdentity());
-					if (msg != null && msg.getEncryptionState() == EncryptionState.DECRYPTED) {
-						String textMsg = new String(msg.getData(), RadixConstants.STANDARD_CHARSET);
-						if (textMsg.startsWith("Sent you ")) {
-							api.pullOnce(api.getAddress()).blockingAwait();
-							final BigDecimal finalBalance = api.getBalances().getOrDefault(tokenRri, BigDecimal.ZERO);
-							log.debug("RequestTokens: balance now {}", finalBalance);
-							assertThat(finalBalance).isGreaterThan(initialBalance);
-							return msg.getFrom();
-						}
-						// Probably a hasty message or faucet unsynced.  We need to back off here.
-						log.info("Got message {}->{} from faucet: {}", msg.getFrom(), msg.getTo(), textMsg);
-					} else {
-						log.error("Got no decryptable message in atom from faucet. Problem?");
+					String msg = getMessageFrom(txAtom);
+					if (msg != null && msg.startsWith("Sent you ")) {
+						api.pullOnce(api.getAddress()).blockingAwait();
+						final BigDecimal finalBalance = api.getBalances().getOrDefault(tokenRri, BigDecimal.ZERO);
+						log.debug("RequestTokens: balance now {}", finalBalance);
+						assertThat(finalBalance).isGreaterThan(initialBalance);
+						return;
 					}
+					// Probably a hasty message or faucet unsynced.  We need to back off here.
+					log.info("Got message from faucet: {}", msg);
 					delayForMs(waitDelayMs);
 				}
 				waitDelayMs += 1000L;
@@ -114,13 +103,8 @@ public final class TokenUtilities {
 		}
 	}
 
-	private static DecryptedMessage decryptMessageFrom(Atom txAtom, RadixIdentity identity) {
-		AtomToDecryptedMessageMapper mapper = new AtomToDecryptedMessageMapper();
-		try {
-			return mapper.map(txAtom, identity).blockingFirst();
-		} catch (NoSuchElementException e) {
-			return null;
-		}
+	private static String getMessageFrom(Atom txAtom) {
+		return txAtom.getMessage();
 	}
 
 	private static boolean hasTxId(Atom atom, EUID requestId) {

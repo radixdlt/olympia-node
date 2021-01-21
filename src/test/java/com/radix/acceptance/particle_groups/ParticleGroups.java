@@ -12,12 +12,12 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
@@ -188,8 +188,10 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), "Hello!".getBytes(), false),
-			new CreateEmptyGroupAction());
+		createAtomic(
+			PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "test1")),
+			new CreateEmptyGroupAction()
+		);
 	}
 
 	private void createTwoTokens(CreateTokenAction.TokenSupplyType tokenSupplyType) {

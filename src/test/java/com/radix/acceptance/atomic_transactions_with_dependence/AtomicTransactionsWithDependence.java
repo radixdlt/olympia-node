@@ -8,7 +8,6 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
@@ -99,7 +98,6 @@ public class AtomicTransactionsWithDependence {
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToTokenTransfersMapper())
-			.addAtomMapper(new AtomToDecryptedMessageMapper()) // Required for faucet
 			.identity(RadixIdentities.createNew())
 			.build();
 		TokenUtilities.requestTokensFor(api);

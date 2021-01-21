@@ -129,7 +129,7 @@ public class MultipleTransactions {
 	}
 
 	private void deferErrorDelivery() {
-		final var observer = new TestObserver<Object>();
+		final var observer = new TestObserver<>();
 		Single.just(createValidationError()).subscribe(observer);
 		observers.add(observer);
 	}
@@ -145,7 +145,7 @@ public class MultipleTransactions {
 
 	@When("^I submit atom which contains two transfers with different token types RPNV1A and RPNV1B$")
 	public void i_submit_atom_with_different_token_types() {
-		final var observer = new TestObserver<Object>();
+		final var observer = new TestObserver<>();
 		final var transaction = api.createTransaction();
 		final var from1 = sourceAddress1;
 		final var from2 = sourceAddress3;
@@ -204,7 +204,7 @@ public class MultipleTransactions {
 			final BigDecimal transferAmount1,
 			final BigDecimal transferAmount2
 	) {
-		final var observer = new TestObserver<Object>();
+		final var observer = new TestObserver<>();
 		final var transaction = api.createTransaction();
 		final var from1 = sourceAddress1;
 		final var from2 = sources == 1 ? sourceAddress1 : sourceAddress2;
