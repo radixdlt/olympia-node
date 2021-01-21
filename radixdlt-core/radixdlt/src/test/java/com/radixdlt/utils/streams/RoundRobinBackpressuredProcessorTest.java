@@ -28,11 +28,10 @@ public class RoundRobinBackpressuredProcessorTest {
         IntStream.range(0, 10).forEach(n -> publisher2.onNext("publisher2"));
         IntStream.range(0, 10).forEach(n -> publisher3.onNext("publisher3"));
 
-        // should receive 3 groups of messages from each publisher, starting at 2 (subscribed first)
-        for (int i = 0; i < 9; i += 3) {
-            subscriber.request(3);
-            subscriber.awaitCount(3 * (i + 1));
-            final var receivedMessages = subscriber.values();
+        subscriber.request(9);
+        subscriber.awaitCount(9);
+        final var receivedMessages = subscriber.values();
+        for (int i = 0; i < 9; i += 3) { // should get 3 groups of messages
             assertEquals("publisher2", receivedMessages.get(i));
             assertEquals("publisher1", receivedMessages.get(i + 1));
             assertEquals("publisher3", receivedMessages.get(i + 2));

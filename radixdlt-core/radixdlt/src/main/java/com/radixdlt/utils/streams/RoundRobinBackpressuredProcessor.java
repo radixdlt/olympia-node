@@ -18,13 +18,17 @@
 package com.radixdlt.utils.streams;
 
 import com.google.common.collect.Sets;
+import com.radixdlt.utils.Pair;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -55,6 +59,10 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
     private final Map<Integer, T> buffer = new HashMap<>();
 
     private int lastUsedSubscriptionId = -1;
+
+    private boolean isProcessing = false;
+    private final Queue<Pair<Integer, T>> unprocessedMessages = new LinkedList<>();
+    private final Queue<Pair<Integer, Long>> unprocessedDownstreamRequests = new LinkedList<>();
 
     public void subscribeTo(Publisher<T> publisher) {
         final int subscriptionId = upstreamSubscriptionIdCounter.getAndIncrement();
@@ -123,8 +131,20 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
     }
 
     private void handleNext(int subscriptionId, T el) {
-        this.requestedSubscriptions.remove(subscriptionId);
+        if (this.isProcessing) {
+            // onNext was called while other event is still being processed (possibly a recursive call)
+            // the message needs to be cached
+            this.unprocessedMessages.offer(Pair.of(subscriptionId, el));
+        } else {
+            this.requestedSubscriptions.remove(subscriptionId);
+            this.isProcessing = true;
+            processMessage(subscriptionId, el);
+            this.isProcessing = false;
+            processQueuedEvents();
+        }
+    }
 
+    private void processMessage(int subscriptionId, T el) {
         if (minDownstreamDemand() > 0) {
             reduceDemandForAll(1L);
             this.lastUsedSubscriptionId = subscriptionId;
@@ -160,6 +180,17 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
     }
 
     private void handleDownstreamRequest(int subscriberId, long n) {
+        if (this.isProcessing) {
+            this.unprocessedDownstreamRequests.offer(Pair.of(subscriberId, n));
+        } else {
+            this.isProcessing = true;
+            processDownstreamRequest(subscriberId, n);
+            this.isProcessing = false;
+            processQueuedEvents();
+        }
+    }
+
+    private void processDownstreamRequest(int subscriberId, long n) {
         this.downstreamDemand.put(subscriberId, this.downstreamDemand.getOrDefault(subscriberId, 0L) + n);
 
         /*
@@ -173,13 +204,19 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
                 } else if (fst.getKey() <= this.lastUsedSubscriptionId && snd.getKey() > this.lastUsedSubscriptionId) {
                     return 1;
                 } else {
-                  return fst.getKey() - snd.getKey();
+                    return fst.getKey() - snd.getKey();
                 }
             });
 
         final var messagesToForward = sortedBuffer.limit(minDownstreamDemand()).collect(Collectors.toList());
 
         reduceDemandForAll(messagesToForward.size());
+
+        messagesToForward.forEach(el -> {
+            this.lastUsedSubscriptionId = el.getKey();
+            this.buffer.remove(el.getKey());
+            this.downstreamSubscribers.values().forEach(s -> s.onNext(el.getValue()));
+        });
 
         final var subscriptionsToRequest =
             new HashSet<>(Sets.difference(
@@ -188,15 +225,27 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
 
         this.requestedSubscriptions.addAll(subscriptionsToRequest);
 
-        messagesToForward.forEach(el -> {
-            this.lastUsedSubscriptionId = el.getKey();
-            this.buffer.remove(el.getKey());
-            this.downstreamSubscribers.values().forEach(s -> s.onNext(el.getValue()));
-        });
-
         subscriptionsToRequest.stream()
             .map(this.upstreamSubscriptions::get)
             .forEach(s -> s.request(1));
+    }
+
+    private void processQueuedEvents() {
+        this.isProcessing = true;
+
+        final var messagesToProcess = new ArrayList<>(this.unprocessedMessages);
+        this.unprocessedMessages.clear();
+        messagesToProcess.forEach(m -> processMessage(m.getFirst(), m.getSecond()));
+
+        final var downstreamRequestsToProcess = new ArrayList<>(this.unprocessedDownstreamRequests);
+        this.unprocessedDownstreamRequests.clear();
+        downstreamRequestsToProcess.forEach(r -> processDownstreamRequest(r.getFirst(), r.getSecond()));
+
+        this.isProcessing = false;
+
+        if (!this.unprocessedMessages.isEmpty() || !this.unprocessedDownstreamRequests.isEmpty()) {
+            processQueuedEvents();
+        }
     }
 
     private void handleDownstreamCancel(int subscriberId) {
@@ -209,5 +258,4 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
             this.requestedSubscriptions.clear();
         }
     }
-
 }
