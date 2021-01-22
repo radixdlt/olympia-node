@@ -139,8 +139,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 		final var start = System.nanoTime();
 
-		final com.sleepycat.je.Transaction transaction =
-			dbEnv.getEnvironment().beginTransaction(null, null);
+		final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);
 
