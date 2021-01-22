@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
@@ -107,17 +108,12 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			networkRx.bftEvents().toObservable()
+			networkRx.localBftEvents().toObservable()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(e -> {
-					if (e instanceof Proposal) {
-						bftEventProcessor.processProposal((Proposal) e);
-					} else if (e instanceof Vote) {
-						bftEventProcessor.processVote((Vote) e);
-					} else {
-						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
-					}
-				}),
+				.doOnNext(this::processConsensusEvent),
+			networkRx.remoteBftEvents().toObservable()
+				.observeOn(singleThreadScheduler)
+				.doOnNext(this::processConsensusEvent),
 			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),
@@ -149,6 +145,16 @@ public class BFTRunner implements ModuleRunner {
 				System.exit(-1);
 			})
 			.publish();
+	}
+
+	private void processConsensusEvent(ConsensusEvent e) {
+		if (e instanceof Proposal) {
+			bftEventProcessor.processProposal((Proposal) e);
+		} else if (e instanceof Vote) {
+			bftEventProcessor.processVote((Vote) e);
+		} else {
+			throw new IllegalStateException(self + ": Unknown consensus event: " + e);
+		}
 	}
 
 	/**

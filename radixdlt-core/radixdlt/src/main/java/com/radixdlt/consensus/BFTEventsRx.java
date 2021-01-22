@@ -24,9 +24,15 @@ import io.reactivex.rxjava3.core.Flowable;
  */
 public interface BFTEventsRx {
     /**
+     * Accessor to the stream of consensus message events as they are received locally.
+     * @return observable of consensus message events
+     */
+
+    Flowable<ConsensusEvent> localBftEvents();
+    /**
      * Accessor to the stream of consensus message events as they are received
      * from the network.
      * @return observable of consensus message events
      */
-    Flowable<ConsensusEvent> bftEvents();
+    Flowable<ConsensusEvent> remoteBftEvents();
 }

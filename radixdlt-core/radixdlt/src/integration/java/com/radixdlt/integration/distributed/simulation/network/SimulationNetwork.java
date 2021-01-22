@@ -184,11 +184,13 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Flowable<ConsensusEvent> bftEvents() {
-			return Flowable.merge(
-				myMessages.ofType(ConsensusEvent.class),
-				remoteEvents(Vote.class).map(RemoteEvent::getEvent)
-			);
+		public Flowable<ConsensusEvent> localBftEvents() {
+			return myMessages.ofType(ConsensusEvent.class);
+		}
+
+		@Override
+		public Flowable<ConsensusEvent> remoteBftEvents() {
+			return remoteEvents(Vote.class).map(RemoteEvent::getEvent);
 		}
 
 		@Override

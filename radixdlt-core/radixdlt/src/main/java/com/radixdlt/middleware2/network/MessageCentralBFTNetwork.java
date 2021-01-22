@@ -24,13 +24,13 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
+
 import java.util.Objects;
 
 import java.util.Optional;
 import java.util.Set;
 
 import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.utils.streams.RoundRobinBackpressuredProcessor;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.apache.logging.log4j.LogManager;
@@ -57,8 +57,6 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final PublishProcessor<ConsensusEvent> localMessages;
-	private final RoundRobinBackpressuredProcessor<ConsensusEvent> messageProcessor =
-		new RoundRobinBackpressuredProcessor<>();
 
 	@Inject
 	public MessageCentralBFTNetwork(
@@ -72,18 +70,19 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localMessages = PublishProcessor.create();
-
-		messageProcessor.subscribeTo(this.messageCentral
-			.messagesOf(ConsensusEventMessage.class)
-			.map(MessageFromPeer::getMessage)
-			.map(ConsensusEventMessage::getConsensusMessage));
-
-		messageProcessor.subscribeTo(localMessages.onBackpressureBuffer(255, false, true /* unbounded */));
 	}
 
 	@Override
-	public Flowable<ConsensusEvent> bftEvents() {
-		return Flowable.fromPublisher(messageProcessor);
+	public Flowable<ConsensusEvent> localBftEvents() {
+		return localMessages.onBackpressureBuffer(255, false, true /* unbounded for local messages */);
+	}
+
+	@Override
+	public Flowable<ConsensusEvent> remoteBftEvents() {
+		return this.messageCentral
+			.messagesOf(ConsensusEventMessage.class)
+			.map(MessageFromPeer::getMessage)
+			.map(ConsensusEventMessage::getConsensusMessage);
 	}
 
 	@Override
