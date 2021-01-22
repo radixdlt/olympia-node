@@ -57,9 +57,9 @@ public final class SanityTestSuiteTestLoader {
 	}
 
 	private String calculateSuiteHash(SanityTestSuiteRoot sanityTest) {
-		var suiteBytes = JSONFormatter.sortPrettyPrintObject(sanityTest.suite)
-				.getBytes(StandardCharsets.UTF_8);
-
+		final var suiteStringRaw = JSONFormatter.sortPrettyPrintObject(sanityTest.suite);
+		final var suiteString = suiteStringRaw.replace("\r\n", "\n"); // Fix CRLF line ends
+		final var suiteBytes = suiteString.getBytes(StandardCharsets.UTF_8);
 		return Bytes.toHexString(sha256Hash(suiteBytes));
 	}
 
