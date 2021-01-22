@@ -27,7 +27,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;

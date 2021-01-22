@@ -20,8 +20,6 @@ package com.radixdlt.store;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.identifiers.AID;
 
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import com.sleepycat.je.Transaction;
 import java.util.Optional;
 
 /**

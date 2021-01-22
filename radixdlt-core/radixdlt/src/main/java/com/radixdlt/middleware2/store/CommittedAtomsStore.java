@@ -49,10 +49,10 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.store.Transaction;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;

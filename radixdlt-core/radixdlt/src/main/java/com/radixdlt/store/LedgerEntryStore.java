@@ -19,7 +19,6 @@ package com.radixdlt.store;
 
 import com.radixdlt.identifiers.AID;
 
-import com.sleepycat.je.Transaction;
 import java.util.Set;
 
 /**

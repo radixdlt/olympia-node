@@ -18,8 +18,11 @@
 package org.radix.database;
 
 import com.google.inject.Inject;
+
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.store.Transaction;
 import com.radixdlt.utils.RadixConstants;
+
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -29,7 +32,10 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.bouncycastle.util.Arrays;
 
 import java.io.File;
@@ -132,7 +138,7 @@ public final class DatabaseEnvironment {
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
 
-		return this.metaDatabase.put(transaction, key, value);
+		return this.metaDatabase.put((com.sleepycat.je.Transaction) transaction.unwrap(), key, value);
 	}
 
 	public byte[] get(String resource, String key) {

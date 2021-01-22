@@ -42,7 +42,7 @@ import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.function.BiFunction;

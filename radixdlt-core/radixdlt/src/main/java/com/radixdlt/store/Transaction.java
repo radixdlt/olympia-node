@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,20 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
-
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.NextCommittedLimitReachedException;
-import java.util.Optional;
+package com.radixdlt.store;
 
 /**
- * Reader of committed commands
+ * Opaque wrapper for implementation-specific transactions.
  */
-public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
-		throws NextCommittedLimitReachedException;
+public interface Transaction {
+	void commit();
 
-	Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch);
+	void abort();
+
+	Object unwrap();
 }

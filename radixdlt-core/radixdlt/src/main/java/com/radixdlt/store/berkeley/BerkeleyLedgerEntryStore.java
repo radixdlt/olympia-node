@@ -27,10 +27,12 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.store.Transaction;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -51,7 +53,6 @@ import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.SecondaryMultiKeyCreator;
-import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
@@ -159,7 +160,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	@Override
 	public void reset() {
 		dbEnv.withLock(() -> {
-			Transaction transaction = null;
+			com.sleepycat.je.Transaction transaction = null;
 			try {
 				// This SuppressWarnings here is valid, as ownership of the underlying
 				// resource is not changed here, the resource is just accessed.
@@ -254,7 +255,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	public Transaction createTransaction() {
 		final var start = System.nanoTime();
 		try {
-			return dbEnv.getEnvironment().beginTransaction(null, null);
+			return BerkeleyTransaction.wrap(dbEnv.getEnvironment().beginTransaction(null, null));
 		} finally {
 			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CREATE_TX, CounterType.COUNT_BDB_LEDGER_CREATE_TX);
 		}
@@ -272,7 +273,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 
 		try {
-			return doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, tx);
+			return doStore(atom.getStateVersion(), atom.getAID(), atomData, indices, unwrap(tx));
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Commit of atom failed", e);
 		} finally {
@@ -285,7 +286,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		final var start = System.nanoTime();
 		try {
 			// delete from pending and move to committed
-			Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+			var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 			try {
 				// TODO there must be a better way to change primary keys
 				DatabaseEntry pKey = new DatabaseEntry();
@@ -301,7 +302,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 				long logicalClock = lcFromPKey(pKey.getData());
 				// transaction is aborted in doStore in case of conflict
-				LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, logicalClock, aid, value.getData(), indices, transaction);
+				LedgerEntryStoreResult result = doStore(logicalClock, aid, value.getData(), indices, transaction);
 				if (result.isSuccess()) {
 					transaction.commit();
 				}
@@ -341,7 +342,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
 		final var start = System.nanoTime();
 		try {
-			doSave(transaction, vertexStoreState);
+			doSave((com.sleepycat.je.Transaction) transaction.unwrap(), vertexStoreState);
 		} finally {
 			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SAVE_TX, CounterType.COUNT_BDB_LEDGER_SAVE_TX);
 		}
@@ -351,7 +352,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	public void save(VerifiedVertexStoreState vertexStoreState) {
 		final var start = System.nanoTime();
 		try {
-			Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+			var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
 		} finally {
@@ -359,7 +360,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	private void doSave(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
+	private void doSave(
+		com.sleepycat.je.Transaction transaction,
+		VerifiedVertexStoreState vertexStoreState
+	) {
 		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
@@ -385,15 +389,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	private LedgerEntryStoreResult doStore(
-		byte prefix,
 		long logicalClock,
 		AID aid,
 		byte[] ledgerEntryData,
 		LedgerEntryIndices indices,
-		Transaction transaction
+		com.sleepycat.je.Transaction transaction
 	) throws DeserializeException {
 		try {
-			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
+			DatabaseEntry pKey = toPKey(BerkeleyLedgerEntryStore.PREFIX_COMMITTED, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(ledgerEntryData);
 
 			// put indices in temporary map for key creator to pick up
@@ -425,7 +428,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		return LedgerEntryStoreResult.success();
 	}
 
-	private ImmutableMap<StoreIndex, LedgerEntry> doGetConflictingAtoms(Set<StoreIndex> uniqueIndices, Transaction transaction) {
+	private ImmutableMap<StoreIndex, LedgerEntry> doGetConflictingAtoms(
+		Set<StoreIndex> uniqueIndices,
+		com.sleepycat.je.Transaction transaction
+	) {
 		ImmutableMap.Builder<StoreIndex, LedgerEntry> conflictingAtoms = ImmutableMap.builder();
 		try {
 			DatabaseEntry key = new DatabaseEntry();
@@ -449,7 +455,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		return conflictingAtoms.build();
 	}
 
-	private boolean doDelete(AID aid, Transaction transaction, DatabaseEntry pKey, LedgerEntryIndices indices) {
+	private boolean doDelete(
+		AID aid,
+		com.sleepycat.je.Transaction transaction,
+		DatabaseEntry pKey,
+		LedgerEntryIndices indices
+	) {
 		try {
 			OperationStatus status = atomIndices.delete(transaction, pKey);
 			if (status != OperationStatus.SUCCESS) {
@@ -464,7 +475,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	private LedgerEntryIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws DeserializeException {
+	private LedgerEntryIndices doGetIndices(
+		com.sleepycat.je.Transaction transaction,
+		AID aid,
+		DatabaseEntry pKey
+	) throws DeserializeException {
 		DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry value = new DatabaseEntry();
 
@@ -568,7 +583,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
 		Objects.requireNonNull(mode, "mode is required");
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(tx, type)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(unwrap(tx), type)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
 			if (mode == LedgerSearchMode.EXACT) {
@@ -691,7 +706,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	private SecondaryCursor toSecondaryCursor(Transaction tx, LedgerIndexType type) {
+	private SecondaryCursor toSecondaryCursor(com.sleepycat.je.Transaction tx, LedgerIndexType type) {
 		if (type.equals(StoreIndex.LedgerIndexType.UNIQUE)) {
 			return this.uniqueIndices.openCursor(tx, null);
 		} else if (type.equals(StoreIndex.LedgerIndexType.DUPLICATE)) {
@@ -788,5 +803,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 	private void addBytesWrite(int bytesWrite) {
 		this.systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, bytesWrite);
+	}
+
+	private com.sleepycat.je.Transaction unwrap(Transaction tx) {
+		return Optional.ofNullable(tx)
+			.map(wrapped -> (com.sleepycat.je.Transaction) tx.unwrap())
+			.orElse(null);
 	}
 }

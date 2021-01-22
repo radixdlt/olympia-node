@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.store;
 
 /**
  * Indicates that the maximum number of committed atoms to retrieve has been exceeded

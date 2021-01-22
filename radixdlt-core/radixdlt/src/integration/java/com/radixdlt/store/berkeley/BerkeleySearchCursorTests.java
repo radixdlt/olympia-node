@@ -23,7 +23,7 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.store.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.radix.integration.RadixTestWithStores;
