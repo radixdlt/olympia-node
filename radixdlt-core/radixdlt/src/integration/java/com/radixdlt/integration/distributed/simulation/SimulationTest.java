@@ -101,6 +101,8 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
+import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -250,6 +252,13 @@ public class SimulationTest {
 
 					if (!hasMempool) {
 						modules.add(new MockedCommandGeneratorModule());
+
+						// TODO: Remove once mempool fixed
+						modules.add(new AbstractModule() {
+							public void configure() {
+								bind(Mempool.class).to(EmptyMempool.class);
+							}
+						});
 
 						if (!hasEpochs) {
 							modules.add(new MockedStateComputerModule());
