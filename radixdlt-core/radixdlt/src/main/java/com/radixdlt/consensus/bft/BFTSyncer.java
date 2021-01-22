@@ -29,6 +29,7 @@ public interface BFTSyncer {
 	enum SyncResult {
 		SYNCED,
 		IN_PROGRESS,
+		STARTED,
 		INVALID
 	}
 

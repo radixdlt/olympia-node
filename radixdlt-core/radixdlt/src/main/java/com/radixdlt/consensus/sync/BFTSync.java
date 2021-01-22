@@ -222,7 +222,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 		startSync(highQC, author);
 
-		return SyncResult.IN_PROGRESS;
+		return SyncResult.STARTED;
 	}
 
 	private boolean requiresLedgerSync(SyncState syncState) {
@@ -312,7 +312,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
 			this.requestSender.dispatch(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
-			log.debug("Added vertex sync request for {}, current count {}", syncId, this.bftSyncing.size());
 		}
 		syncRequestState.syncIds.add(syncId);
 	}
@@ -401,21 +400,39 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
 		// TODO: check response
 		final var failedRequest = response.failedRequest();
-		if (this.bftSyncing.containsKey(failedRequest)) {
-			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
+		final var syncRequestState = this.bftSyncing.get(failedRequest);
 
-			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
-				// error response indicates that the node has moved on from last sync so try and sync to a new sync
-				this.bftSyncing.remove(failedRequest);
-				log.debug(
-					"Removed failed vertex sync request for {}, current count {}",
-					failedRequest.getVertexId(), this.bftSyncing.size()
-				);
-				this.syncToQC(response.highQC(), response.getSender());
-			}
-		} else {
+		if (syncRequestState == null) {
 			log.debug("SYNC_VERTICES: Ignoring error response for {} from {}", failedRequest.getVertexId(), response.getSender());
+			return;
 		}
+
+		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
+		final var responseHighView = response.highQC().highestQC().getView();
+		if (responseHighView.gt(vertexStore.highQC().highestQC().getView())) {
+			final var maxSyncView = maxSyncView(syncRequestState.syncIds);
+			final var syncResult = this.syncToQC(response.highQC(), response.getSender());
+			if (syncResult == SyncResult.STARTED) {
+				// If we started a new sync, we need to remove no longer required syncs
+				// so that we don't have exponential fan-out for sync messages.
+				// If the responder is ahead of all the outstanding sync requests here,
+				// just remove the old one and start a new one.
+				if (responseHighView.gte(maxSyncView)) {
+					if (this.bftSyncing.remove(failedRequest) != null) {
+						log.debug("Removed retried vertex sync request for {}}", failedRequest.getVertexId());
+					}
+				}
+			}
+		}
+	}
+
+	private View maxSyncView(List<HashCode> syncIds) {
+		return syncIds.stream()
+			.map(this.syncing::get)
+			.filter(Objects::nonNull)
+			.map(syncState -> syncState.highQC().highestQC().getView())
+			.max(View::compareTo)
+			.orElse(View.genesis());
 	}
 
 	public EventProcessor<GetVerticesResponse> responseProcessor() {
@@ -431,7 +448,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		GetVerticesRequest requestInfo = new GetVerticesRequest(firstVertex.getId(), response.getVertices().size());
 		SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
 		if (syncRequestState != null) {
-			log.debug("Removed successful vertex sync request for {}, current count {}", firstVertex.getId(), this.bftSyncing.size());
 			for (HashCode syncTo : syncRequestState.syncIds) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState == null) {

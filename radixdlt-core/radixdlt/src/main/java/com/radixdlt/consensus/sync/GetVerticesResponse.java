@@ -44,6 +44,6 @@ public final class GetVerticesResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
+		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), sender, vertices);
 	}
 }
