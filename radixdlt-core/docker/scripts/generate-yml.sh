@@ -6,16 +6,40 @@ set -e
 # Where we are run from
 scriptdir=$(dirname "$0")
 
-# Number of validators
-validators=${1:-1}
+while getopts fn:p: flag
+do
+  case "${flag}" in
+    f) force_delete=true;;
+    p) port_param=${OPTARG};;
+    n) validators=${OPTARG};;
+    *) echo "Invalid parameters … exiting"
+       exit 1;;
+  esac
+done
+
+# Being a bit strict. You need  port parameter and a node parameter to continue
+# and they both have to be numbers.
+re='^[0-9]+$'
+
+if ! [[ $port_param =~ $re ]] || ! [[ $validators =~ $re ]]; then
+  echo "Invalid parameter setting"
+  exit 1
+fi
 
 network_name="network_${validators}_nodes"
 file_name="${scriptdir}/../node-${validators}.yml"
 
-if [ -f "${file_name}" ]; then
-  echo "File ${file_name} already exist, aborting."
-  exit 1
+# Added -f flag that will force the node file to be overwritten without checking it exists first.
+if ! [ $force_delete ]; then
+
+   if  [ -f "${file_name}" ]; then
+    echo "File ${file_name} already exist, aborting."
+    exit 1
+  fi
+
 fi
+
+
 
 echo "version: '2.1'" >${file_name}
 echo "services:" >>${file_name}
@@ -53,7 +77,7 @@ do
     echo "    networks:">>${file_name}
     echo "      - $network_name">>${file_name}
     echo "    ports:">>${file_name}
-    echo "      - \"80${p0}:8080\"">>${file_name}
+    echo "      - \"${port_param}${p0}:8080\"">>${file_name}
     echo "      - \"90${p1}:9011\"">>${file_name}
     echo "      - \"505${p2}:50505\"">>${file_name}
 
