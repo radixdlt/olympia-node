@@ -50,6 +50,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 
 	private final PublishProcessor<Pair<InetSocketAddress, ByteBuf>> rawMessageSink = PublishProcessor.create();
 
+	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
 	private final SystemCounters counters;
@@ -66,7 +67,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				this.bufferSize,
 				() -> {
 					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-					if (logRateLimiter.tryAcquire()) {
+					if (droppedMessagesRateLimiter.tryAcquire()) {
 						log.warn("TCP msg buffer overflow, dropping msg");
 					}
 				},

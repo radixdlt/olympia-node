@@ -46,6 +46,7 @@ import io.netty.channel.socket.DatagramPacket;
 final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private static final Logger log = LogManager.getLogger();
 
+	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
 	private final SystemCounters counters;
@@ -67,7 +68,7 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 				this.bufferSize,
 				() -> {
 					this.counters.increment(SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES);
-					if (logRateLimiter.tryAcquire()) {
+					if (droppedMessagesRateLimiter.tryAcquire()) {
 						log.warn("UDP msg buffer overflow, dropping msg");
 					}
 				},
