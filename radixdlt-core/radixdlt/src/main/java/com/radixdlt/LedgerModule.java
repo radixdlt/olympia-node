@@ -26,6 +26,8 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.AccumulatorState;
@@ -34,6 +36,8 @@ import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.utils.Pair;
 import java.util.Comparator;
 
 /**
@@ -64,5 +68,18 @@ public class LedgerModule extends AbstractModule {
 	@ProcessOnDispatch
 	private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(StateComputerLedger stateComputerLedger) {
 		return stateComputerLedger.bftCommittedUpdateEventProcessor();
+	}
+
+
+	// TODO: This is a temporary fix until Mempool is fixed
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<BFTCommittedUpdate> mempoolCommittor(Mempool mempool, Hasher hasher) {
+		return e ->
+			e.getCommitted().stream()
+				.flatMap(PreparedVertex::errorCommands)
+				.map(Pair::getFirst)
+				.map(hasher::hash)
+				.forEach(mempool::removeRejected);
 	}
 }
