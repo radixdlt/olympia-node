@@ -119,7 +119,7 @@ public final class BFTBuilder {
 	}
 
 	public BFTEventProcessor build() {
-		if (!validatorSet.containsNode(self)) {
+		if (validatorSet == null || !validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
 		final PendingVotes pendingVotes = new PendingVotes(hasher);
