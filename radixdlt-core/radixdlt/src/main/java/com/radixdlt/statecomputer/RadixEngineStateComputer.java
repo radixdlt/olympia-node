@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
@@ -36,7 +35,6 @@ import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
@@ -59,7 +57,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -67,18 +64,6 @@ import java.util.stream.Collectors;
  */
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
-
-	// TODO: Refactor committed command when commit logic is re-written
-	// TODO: as currently it's mostly loosely coupled logic
-	public interface CommittedAtomWithResult {
-		CommittedAtom getCommittedAtom();
-		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
-	}
-
-	// TODO: Remove this temporary interface
-	public interface CommittedAtomSender {
-		void sendCommittedAtom(CommittedAtomWithResult committedAtomWithResult);
-	}
 
 	private final Mempool mempool;
 	private final Serialization serialization;

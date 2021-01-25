@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -36,10 +37,10 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
@@ -95,7 +96,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private CommittedAtomsStore committedAtomsStore(
-		CommittedAtomSender committedAtomSender,
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -103,17 +103,18 @@ public class RadixEngineStoreModule extends AbstractModule {
 		AtomIndexer atomIndexer,
 		Serialization serialization,
 		Hasher hasher,
+		EventDispatcher<AtomCommittedToLedger> committedDispatcher,
 		VerifiedCommandsAndProof genesisCheckpoint
 	) throws NextCommittedLimitReachedException, DeserializeException {
 		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
-			committedAtomSender,
 			store,
 			persistentVertexStore,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,
 			serialization,
-			hasher
+			hasher,
+			committedDispatcher
 		);
 
 		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1, 1) == null) {

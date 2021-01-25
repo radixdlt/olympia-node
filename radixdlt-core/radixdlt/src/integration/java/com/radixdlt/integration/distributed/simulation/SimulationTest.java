@@ -46,7 +46,6 @@ import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
-import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;
@@ -274,7 +273,6 @@ public class SimulationTest {
 						} else {
 							modules.add(new NoFeeModule());
 							modules.add(new RadixEngineModule());
-							modules.add(new RadixEngineRxModule());
 							modules.add(new MockedRadixEngineStoreModule());
 							modules.add(new SimulationValidatorComputersModule());
 						}

@@ -88,7 +88,6 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.List;
 import org.apache.commons.cli.ParseException;
@@ -122,10 +121,6 @@ public class MempoolTest {
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-					// TODO: Move these into DeterministicSender
-					bind(CommittedAtomSender.class).toInstance(atom -> {
-					});
 				}
 			},
 			new MockedCheckpointModule(),

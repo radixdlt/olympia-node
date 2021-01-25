@@ -18,7 +18,6 @@
 package org.radix.api.services;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
@@ -31,7 +30,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -89,14 +88,14 @@ public class AtomsService {
 	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final CommittedAtomsRx committedAtomsRx;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
+	private final Observable<AtomCommittedToLedger> ledgerCommitted;
 
 	private final Hasher hasher;
 
 	public AtomsService(
 		Observable<MempoolAddFailure> mempoolAddFailures,
-		CommittedAtomsRx committedAtomsRx,
+		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -109,17 +108,15 @@ public class AtomsService {
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
-		this.committedAtomsRx = committedAtomsRx;
+		this.ledgerCommitted = ledgerCommitted;
 		this.hasher = hasher;
 	}
 
-	private void processExecutedCommand(CommittedAtomWithResult committedAtomWithResult) {
-		committedAtomWithResult.ifSuccess(indicies -> {
-			final CommittedAtom committedAtom = committedAtomWithResult.getCommittedAtom();
-			final AID aid = committedAtom.getAID();
-			this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));
-			getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
-		});
+	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
+		final CommittedAtom committedAtom = atomCommittedToLedger.getAtom();
+		final AID aid = committedAtom.getAID();
+		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
+		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
@@ -139,7 +136,7 @@ public class AtomsService {
 	}
 
 	public void start() {
-		var lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
+		var lastStoredAtomDisposable = ledgerCommitted
 			.observeOn(Schedulers.io())
 			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);

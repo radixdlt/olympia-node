@@ -55,7 +55,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 
 /**
@@ -88,10 +87,6 @@ public final class ModuleForRecoveryTests {
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-					// TODO: Move these into DeterministicSender
-					bind(CommittedAtomSender.class).toInstance(atom -> {
-					});
 				}
 			},
 			new MockedCheckpointModule(),

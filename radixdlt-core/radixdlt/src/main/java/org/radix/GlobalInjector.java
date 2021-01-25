@@ -42,7 +42,6 @@ import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
-import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.RxEnvironmentModule;
@@ -155,7 +154,6 @@ public class GlobalInjector {
 			// State Computer
 			new RadixEngineModule(),
 			new RadixEngineValidatorComputersModule(),
-			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(),
 
 			// Checkpoints
