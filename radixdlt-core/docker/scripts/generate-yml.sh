@@ -1,21 +1,47 @@
 #!/bin/bash
 
+function help() {
+
+  echo
+  echo "-----------------------------------------"
+  echo "usage: generate-yml.sh -n node_number -p port_prefix [-fh]"
+  echo
+  echo "-n node_number   – the node file numbers that will be generated (mandatory)"
+  echo "-p port_prefix   – the first two digits of the port number (mandatory)"
+  echo "-f               – this flag will force the configuration file to be overwritten without deleting it first"
+  echo "-h               – this displays the help, which you're looking at now."
+  echo
+  echo "example: generate-yml.sh -n 2 -p 88 -f"
+  echo "This will generate the configuration for 2 nodes using port numbers starting with 88."
+  echo "The files will be overwritten without you having to delete them first."
+  echo "-----------------------------------------"
+  echo
+}
+
 # Fail on error
 set -e
 
 # Where we are run from
 scriptdir=$(dirname "$0")
 
-while getopts fn:p: flag
+while getopts fhn:p: flag
 do
   case "${flag}" in
     f) force_delete=true;;
-    p) port_param=${OPTARG};;
+    h) requesting_help=true;;
     n) validators=${OPTARG};;
-    *) echo "Invalid parameters … exiting"
+    p) port_param=${OPTARG};;
+    *) help
        exit 1;;
   esac
 done
+
+# If help is requested then show the help page and exit, regardless of other options.
+if [ $requesting_help ]; then
+  help
+  exit 0
+fi
+
 
 # Being a bit strict. You need  port parameter and a node parameter to continue
 # and they both have to be numbers.
@@ -23,6 +49,7 @@ re='^[0-9]+$'
 
 if ! [[ $port_param =~ $re ]] || ! [[ $validators =~ $re ]]; then
   echo "Invalid parameter setting"
+  help
   exit 1
 fi
 
@@ -97,4 +124,3 @@ echo "    networks:">>${file_name}
 echo "      - $network_name">>${file_name}
 echo "networks:">>${file_name}
 echo "  $network_name:">>${file_name}
-
