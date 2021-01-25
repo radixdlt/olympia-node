@@ -21,9 +21,6 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
@@ -94,14 +91,12 @@ public class AtomsService {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final CommittedAtomsRx committedAtomsRx;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
-	private final Observable<BFTCommittedUpdate> committedUpdates;
 
 	private final Hasher hasher;
 
 	public AtomsService(
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		CommittedAtomsRx committedAtomsRx,
-		Observable<BFTCommittedUpdate> committedUpdates,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -115,7 +110,6 @@ public class AtomsService {
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
 		this.committedAtomsRx = committedAtomsRx;
-		this.committedUpdates = Objects.requireNonNull(committedUpdates);
 		this.hasher = hasher;
 	}
 
@@ -127,11 +121,6 @@ public class AtomsService {
 			getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 		});
 	}
-
-	private void processExecutionFailure(ClientAtom atom, RadixEngineException e) {
-		getAtomStatusListeners(atom.getAID()).forEach(listener -> listener.onStoredFailure(e));
-	}
-
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
 		ClientAtom clientAtom = failure.getCommand().map(payload -> {
@@ -154,21 +143,6 @@ public class AtomsService {
 			.observeOn(Schedulers.io())
 			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);
-
-		var committedUpdatesDisposable = committedUpdates
-			.observeOn(Schedulers.io())
-			.subscribe(update ->
-				update.getCommitted().stream()
-					.flatMap(PreparedVertex::errorCommands)
-					.forEach(cmdErr -> {
-						ClientAtom clientAtom = cmdErr.getFirst().map(clientAtomToBinaryConverter::toAtom);
-						Exception e = cmdErr.getSecond();
-						if (e instanceof RadixEngineException) {
-							this.processExecutionFailure(clientAtom, (RadixEngineException) e);
-						}
-					})
-				);
-		this.disposable.add(committedUpdatesDisposable);
 
 		var submissionFailuresDisposable = mempoolAddFailures
 			.observeOn(Schedulers.io())

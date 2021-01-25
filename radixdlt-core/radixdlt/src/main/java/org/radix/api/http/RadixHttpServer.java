@@ -105,7 +105,6 @@ public final class RadixHttpServer {
 		InMemorySystemInfo inMemorySystemInfo,
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		CommittedAtomsRx committedAtomsRx,
-		Observable<BFTCommittedUpdate> committedUpdates,
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
@@ -128,7 +127,6 @@ public final class RadixHttpServer {
 		this.atomsService = new AtomsService(
 			mempoolAddFailures,
 			committedAtomsRx,
-			committedUpdates,
 			store,
 			mempoolAddEventDispatcher,
 			commandToBinaryConverter,
