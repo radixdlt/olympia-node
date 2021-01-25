@@ -60,9 +60,8 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -76,18 +75,19 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.List;
@@ -99,6 +99,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MempoolTest {
 	public static Module create() {
@@ -141,7 +142,7 @@ public class MempoolTest {
 
 			// Mempool
 			new MempoolRelayerModule(),
-			new LedgerLocalMempoolModule(1),
+			new LedgerLocalMempoolModule(2),
 
 			// State Computer
 			new RadixEngineModule(),
@@ -208,16 +209,19 @@ public class MempoolTest {
 		);
 	}
 
-	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce) {
+	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, nonce);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, nonce + 1);
-		ParticleGroup particleGroup = ParticleGroup.builder()
+		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
+		for (int i = 0; i < numParticles; i++) {
+			RRI rri = RRI.of(address, "test" + i);
+			RRIParticle rriParticle = new RRIParticle(rri, nonce);
+			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
+			builder
 				.addParticle(rriParticle, Spin.DOWN)
-				.addParticle(uniqueParticle, Spin.UP)
-				.build();
+				.addParticle(uniqueParticle, Spin.UP);
+		}
+		ParticleGroup particleGroup = builder.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
 		try {
@@ -228,18 +232,20 @@ public class MempoolTest {
 		}
 	}
 
-	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher) {
-	    return createAtom(keyPair, hasher, 0);
-    }
+	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
+		ClientAtom atom = createAtom(keyPair, hasher, 0, numParticles);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return new Command(payload);
+	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
-	    ClientAtom atom = createAtom(keyPair, hasher);
+	    ClientAtom atom = createAtom(keyPair, hasher, 0, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce) {
-		ClientAtom atom = createAtom(keyPair, hasher, nonce);
+		ClientAtom atom = createAtom(keyPair, hasher, nonce, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
@@ -282,6 +288,27 @@ public class MempoolTest {
 	}
 
 	@Test
+	public void add_conflicting_commands_to_mempool() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher, 0, 2);
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Act
+		Command command2 = createCommand(keyPair, hasher, 0, 1);
+		MempoolAddSuccess mempoolAddSuccess2 = MempoolAddSuccess.create(command2);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess2);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(2);
+	}
+
+	@Test
 	public void add_bad_command_to_mempool() {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);
@@ -316,21 +343,46 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void replay_command_to_mempool() throws RadixEngineException {
+	public void replay_command_to_mempool() {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);
 		Hasher hasher = injector.getInstance(Hasher.class);
 		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		ClientAtom atom = createAtom(keyPair, hasher);
-		CommittedAtom committedAtom = new CommittedAtom(atom, 1, mock(VerifiedLedgerHeaderAndProof.class));
-		RadixEngine<LedgerAtom> radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
-		radixEngine.checkAndStore(committedAtom);
+		Command command = createCommand(keyPair, hasher);
+		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
+		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
+		radixEngineStateComputer.commit(commandsAndProof, null);
 
 		// Act
-		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+	}
+
+	@Test
+	public void mempool_removes_conflicts_on_commit() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher, 0, 2);
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Act
+		Command command2 = createCommand(keyPair, hasher, 0, 1);
+		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
+		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
+		radixEngineStateComputer.commit(commandsAndProof, null);
 
 		// Assert
 		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);

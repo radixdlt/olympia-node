@@ -111,7 +111,7 @@ public final class LocalMempool implements Mempool {
 				Iterator<Command> i = this.data.values().iterator();
 				while (commands.size() < size && i.hasNext()) {
 					Command a = i.next();
-					if (seen.add(hasher.hash(a))) {
+					if (!seen.contains(hasher.hash(a))) {
 						commands.add(a);
 					}
 				}

@@ -398,6 +398,29 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 		atomicCommitManager.commitTransaction();
 
+		// TODO: refactor mempool to be less generic and make this more efficient
 		verifiedCommandsAndProof.getCommands().forEach(cmd -> this.mempool.removeCommitted(hasher.hash(cmd)));
+		List<Command> mempoolCommands = mempool.getCommands(Integer.MAX_VALUE, Set.of());
+		for (Command command : mempoolCommands) {
+			ClientAtom clientAtom = command.map(payload -> {
+				try {
+					return serialization.fromDson(payload, ClientAtom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			});
+
+			try {
+				RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
+				checker.checkAndStore(clientAtom);
+			} catch (RadixEngineException e) {
+				if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
+				    mempool.removeRejected(hasher.hash(command));
+					return;
+				}
+			} finally {
+				radixEngine.deleteBranches();
+			}
+		}
 	}
 }
