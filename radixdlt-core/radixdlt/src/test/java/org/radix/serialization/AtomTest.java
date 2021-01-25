@@ -22,7 +22,6 @@
 
 package org.radix.serialization;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atomos.RRIParticle;
@@ -41,11 +40,11 @@ public class AtomTest {
 
 	@Test
 	public void hash_test_atom() {
-		Atom atom = new Atom(ImmutableMap.of());
+		Atom atom = new Atom();
 		HashCode hash = hasher.hash(atom);
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("311964d6688530d47baba551393b9a51a5e6a22504133597e3f7c2af5f83a2ce", hashHex);
+		assertEquals("fd208580f27bd833992afa0369d43f001ac1599743a22f7b8111f9544712f47e", hashHex);
 	}
 
 	@Test
@@ -56,7 +55,7 @@ public class AtomTest {
 		HashCode hash = hasher.hash(particle);
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("a29e3505d9736f4de2a576b2fee1b6a449e56f6b3cbaa86b8388e39a1557c53a", hashHex);
+		assertEquals("ea6096c4c181078114de3f609a97e7b97b8ff5f182e74e5168d68bc2a1ff702f", hashHex);
 	}
 
 	private void assertIsNotRawDSON(HashCode hash) {

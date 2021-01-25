@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "45648c4ad69554b49ff3df094cbd5652c8cc9c284413789df4b8759c91e312c4",
+		"hashOfSuite": "d59f9b138f58195a26f11784dc767c8ebd30289e67b2569de960185ca1cd7d87",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -378,7 +378,7 @@
 					"vectors": [
 						{
 							"expected": {
-								"jsonPrettyPrinted": "{\n  \"address\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"amount\": \":u20:960000000000000000\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\"\n  ],\n  \"granularity\": \":u20:1\",\n  \"nonce\": 12345678,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD\",\n  \"version\": 100\n}"
+								"jsonPrettyPrinted": "{\n  \"address\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"amount\": \":u20:960000000000000000\",\n  \"granularity\": \":u20:1\",\n  \"nonce\": 12345678,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD\"\n}"
 							},
 							"input": {
 								"typeSerialization": "radix.particles.transferrable_tokens",
@@ -394,21 +394,7 @@
 									}
 								}
 							}
-						}, 
-						{
-							"expected": {
-								"jsonPrettyPrinted": "{\n  \"bytes\": \":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\",\n    \":uid:dfd7c486570a7ad40eb948c80cb89376\"\n  ],\n  \"from\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"nonce\": 156115453148799,\n  \"serializer\": \"radix.particles.message\",\n  \"to\": \":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF\",\n  \"version\": 100\n}"
-							},
-							"input": {
-								"typeSerialization": "radix.particles.message",
-								"arguments": {
-									"message": "Hello Bob, this is your friend Alice.",
-									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"nonce": "156115453148799"
-								}
-							}
-						}
+						} 
 					]
 				}
 			},
@@ -445,9 +431,6 @@
 								"json": {
 									"address": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
 									"amount": ":u20:960000000000000000",
-									"destinations": [
-										":uid:e45e72925767ee14d7368fec2a141768"
-									],
 									"granularity": ":u20:1",
 									"nonce": 12345678,
 									"permissions": {
@@ -455,33 +438,7 @@
 										"mint": ":str:token_owner_only"
 									},
 									"serializer": "radix.particles.transferrable_tokens",
-									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
-									"version": 100
-								}
-							}
-						},
-						{
-							"expected": {
-								"arguments": {
-									"message": "Hello Bob, this is your friend Alice.",
-									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"nonce": "156115453148799"
-								}
-							},
-							"input": {
-								"typeSerialization": "radix.particles.message",
-								"json": {
-									"bytes": ":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==",
-									"destinations": [
-										":uid:e45e72925767ee14d7368fec2a141768",
-										":uid:dfd7c486570a7ad40eb948c80cb89376"
-									],
-									"from": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"nonce": 156115453148799,
-									"serializer": "radix.particles.message",
-									"to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"version": 100
+									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD"
 								}
 							}
 						}

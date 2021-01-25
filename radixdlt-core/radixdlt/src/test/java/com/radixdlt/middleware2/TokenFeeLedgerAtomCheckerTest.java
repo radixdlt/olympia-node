@@ -21,12 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.ECKeyPair;
@@ -74,13 +74,18 @@ public class TokenFeeLedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() {
-		byte[] bytes = new byte[] {
-			0, 1
-		};
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		MessageParticle particle = new MessageParticle(address, address, bytes);
-		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		final var kp = ECKeyPair.generateNew();
+		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+		final var rri = RRI.of(address, "test");
+		final var rriParticle = new RRIParticle(rri);
+		List<ParticleGroup> particleGroups = ImmutableList.of(
+			ParticleGroup.of(
+				ImmutableList.of(
+					SpunParticle.down(rriParticle)
+				)
+			)
+		);
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
@@ -93,7 +98,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
-		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("instructions");
@@ -104,7 +108,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
@@ -128,7 +132,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle),
 					SpunParticle.up(tokenOutputParticle)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
@@ -149,7 +153,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle)
 			))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
@@ -171,7 +175,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle),
 					SpunParticle.up(extraFeeGroupParticle)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
@@ -195,7 +199,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle),
 					SpunParticle.up(tokenOutputParticle)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
@@ -216,26 +220,9 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_validating_atom_with_fee_and_metadata__result_has_error() {
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
-		UnallocatedTokensParticle particle2 = new UnallocatedTokensParticle(
-				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2)), ImmutableMap.of("foo", "bar"))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
-			.contains("less than required minimum");
 	}
 }

@@ -24,33 +24,48 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.utils.RadixConstants;
 
-public class MessagesExample {
-	private MessagesExample() { }
+/**
+ * Example showing how a message might be submitted to the ledger.
+ * <p>
+ * Note that this example is not currently completely functional,
+ * as it creates a fresh identity which does not have any native
+ * tokens required to pay fees for atom submission.
+ */
+public final class MessagesExample {
+	private MessagesExample() {
+		throw new IllegalStateException("Can't construct");
+	}
+
 	public static void main(String[] args) {
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
 
 		// Initialize api layer
-		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
+		final RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
 
 		// Sync with network
 		api.pull();
 
-		System.out.println("My address: " + api.getAddress());
+		System.out.println("My address:    " + api.getAddress());
 		System.out.println("My public key: " + api.getPublicKey());
 
 		// Print out all past and future messages
 		api.observeMessages().subscribe(System.out::println);
 
-		// Send a message to an address
-		RadixAddress toAddress = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
-		Result result = api.sendMessage(toAddress, "Hello".getBytes(RadixConstants.STANDARD_CHARSET), true);
+		// Send a message in an atom.  Note that the atom must not be empty,
+		// so we include a random unique to make sure this isn't the case.
+		final RRI rri = RRI.of(api.getAddress(), "test message");
+		final Transaction t = api.createTransaction();
+		t.setMessage("Hello!");
+		t.stage(PutUniqueIdAction.create(rri));
+		final Result result = t.commitAndPush();
 		result.blockUntilComplete();
 	}
 }

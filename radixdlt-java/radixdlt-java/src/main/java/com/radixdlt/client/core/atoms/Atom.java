@@ -54,13 +54,11 @@ import java.util.stream.Stream;
  */
 @SerializerId2("radix.atom")
 public final class Atom {
-	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
-	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	public static Atom create(ParticleGroup particleGroup) {
 		return new Atom(
 			ImmutableList.of(particleGroup),
-			ImmutableMap.of(),
+			null,
 			ImmutableMap.of()
 		);
 	}
@@ -68,15 +66,15 @@ public final class Atom {
 	public static Atom create(List<ParticleGroup> particleGroups) {
 		return new Atom(
 			ImmutableList.copyOf(particleGroups),
-			ImmutableMap.of(),
+			null,
 			ImmutableMap.of()
 		);
 	}
 
-	public static Atom create(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
+	public static Atom create(List<ParticleGroup> particleGroups, String message) {
 		return new Atom(
 			ImmutableList.copyOf(particleGroups),
-			ImmutableMap.copyOf(metaData),
+			message,
 			ImmutableMap.of()
 		);
 	}
@@ -89,37 +87,32 @@ public final class Atom {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private final ImmutableMap<String, ECDSASignature> signatures;
 
-	@JsonProperty("metaData")
+	@JsonProperty("message")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableMap<String, String> metaData;
-
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
+	private final String message;
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	// TODO serializer id for atoms is temporarily excluded from hash for compatibility with abstract atom
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	private Atom() {
-		this.metaData = null;
+		this.message = null;
 		this.signatures = null;
 		this.particleGroups = null;
 	}
 
 	private Atom(
 		ImmutableList<ParticleGroup> particleGroups,
-		ImmutableMap<String, String> metaData,
+		String message,
 		ImmutableMap<String, ECDSASignature> signatures
 	) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(metaData, "metaData is required");
 		Objects.requireNonNull(signatures, "signatures are required");
 
 		this.particleGroups = particleGroups;
-		this.metaData = metaData;
+		this.message = message;
 		this.signatures = signatures;
 	}
 
@@ -135,7 +128,7 @@ public final class Atom {
 
 		return new Atom(
 			this.particleGroups,
-			this.metaData,
+			this.message,
 			builder.build()
 		);
 	}
@@ -182,12 +175,12 @@ public final class Atom {
 	}
 
 	/**
-	 * Get the metadata associated with the atom
+	 * Get the message associated with the atom
 	 *
-	 * @return an immutable map of the meta data
+	 * @return the message, or {@code null} if no message
 	 */
-	public Map<String, String> getMetaData() {
-		return this.metaData;
+	public String getMessage() {
+		return this.message;
 	}
 
 	@Override

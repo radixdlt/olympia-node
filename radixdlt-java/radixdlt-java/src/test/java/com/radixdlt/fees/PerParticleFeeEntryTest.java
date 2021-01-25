@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
@@ -36,7 +36,7 @@ import org.assertj.core.util.Sets;
 import org.junit.Test;
 
 public class PerParticleFeeEntryTest {
-	private static final Class<? extends Particle> TYPE = MessageParticle.class;
+	private static final Class<? extends Particle> TYPE = UniqueParticle.class;
 	private static final int THRESHOLD = 1;
     private static final UInt256 FEE = UInt256.ONE;
 
@@ -58,14 +58,13 @@ public class PerParticleFeeEntryTest {
     public void testFeeForAtom() {
     	PerParticleFeeEntry f = get();
     	Set<Particle> outputs = Sets.newHashSet();
-    	RadixAddress addr = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(MessageParticle.builder().from(addr).to(addr).payload("Particle 1".getBytes()).build());
+    	outputs.add(makeParticle("Particle 1"));
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(MessageParticle.builder().from(addr).to(addr).payload("Particle 2".getBytes()).build());
+    	outputs.add(makeParticle("Particle 2"));
     	assertEquals(FEE, f.feeFor(null, 0, outputs));
-    	outputs.add(MessageParticle.builder().from(addr).to(addr).payload("Particle 3".getBytes()).build());
+    	outputs.add(makeParticle("Particle 3"));
     	assertEquals(FEE.multiply(UInt256.TWO), f.feeFor(null, 0, outputs));
     }
 
@@ -78,10 +77,9 @@ public class PerParticleFeeEntryTest {
 
     	// Fee overflow
     	PerParticleFeeEntry f = PerParticleFeeEntry.of(TYPE, 0, UInt256.MAX_VALUE);
-    	RadixAddress addr = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	ImmutableSet<Particle> outputs = ImmutableSet.of(
-			MessageParticle.builder().from(addr).to(addr).payload("Particle 1".getBytes()).build(),
-			MessageParticle.builder().from(addr).to(addr).payload("Particle 2".getBytes()).build()
+			makeParticle("Particle 1"),
+			makeParticle("Particle 2")
     	);
     	assertThatThrownBy(() -> f.feeFor(null, 2, outputs))
     		.isInstanceOf(ArithmeticException.class)
@@ -97,5 +95,11 @@ public class PerParticleFeeEntryTest {
 
     private static PerParticleFeeEntry get() {
     	return PerParticleFeeEntry.of(TYPE, THRESHOLD, FEE);
+    }
+
+    private static UniqueParticle makeParticle(String message) {
+    	final var kp = ECKeyPair.generateNew();
+    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+    	return new UniqueParticle(address, message);
     }
 }

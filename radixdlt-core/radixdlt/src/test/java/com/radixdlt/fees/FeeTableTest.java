@@ -17,8 +17,6 @@
 
 package com.radixdlt.fees;
 
-import java.nio.charset.StandardCharsets;
-
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import org.junit.Test;
@@ -27,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -49,7 +47,7 @@ public class FeeTableTest {
 
 	private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
 	private static final ImmutableList<FeeEntry> FEE_ENTRIES = ImmutableList.of(
-		PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.THREE)
+		PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.THREE)
 	);
 
 	@Test
@@ -68,13 +66,11 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomNotMinimum() {
     	FeeTable ft = get();
-    	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
-    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 1".getBytes(StandardCharsets.UTF_8)))),
-    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 2".getBytes(StandardCharsets.UTF_8))))
+    		ParticleGroup.of(SpunParticle.up(makeParticle("test message 1"))),
+    		ParticleGroup.of(SpunParticle.up(makeParticle("test message 2")))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(particleGroups, ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
@@ -83,7 +79,7 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
-    	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
@@ -92,16 +88,14 @@ public class FeeTableTest {
     @Test
     public void testFeeOverflow() {
     	ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.MAX_VALUE),
+			PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.MAX_VALUE),
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
     	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-    	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-    	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
-    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 3".getBytes(StandardCharsets.UTF_8))))
+    		ParticleGroup.of(SpunParticle.up(makeParticle("test message 3")))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+    	Atom a = new Atom(particleGroups, ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
@@ -118,5 +112,11 @@ public class FeeTableTest {
 
     private static FeeTable get() {
     	return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
+    }
+
+    private static UniqueParticle makeParticle(String message) {
+    	final var kp = ECKeyPair.generateNew();
+    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+    	return new UniqueParticle(message, address, 0);
     }
 }

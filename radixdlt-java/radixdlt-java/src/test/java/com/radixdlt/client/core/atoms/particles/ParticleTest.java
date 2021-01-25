@@ -1,6 +1,11 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import java.util.Set;
+
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.identifiers.EUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -8,6 +13,10 @@ import static org.junit.Assert.assertFalse;
 public class ParticleTest {
 
     private static class DummyParticle extends Particle {
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
+		}
     }
 
     @Test

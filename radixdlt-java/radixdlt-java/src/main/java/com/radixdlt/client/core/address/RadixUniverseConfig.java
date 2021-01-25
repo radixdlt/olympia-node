@@ -55,10 +55,6 @@ public class RadixUniverseConfig {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
 	private long magic;

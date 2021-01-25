@@ -89,7 +89,7 @@ public class TokenFeeModuleTest {
 					)
 				);
 			}
-			Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+			Atom atom = new Atom(particleGroups, ImmutableMap.of());
 			when(universe.getGenesis()).thenReturn(ImmutableList.of(atom));
 			bind(Universe.class).toInstance(universe);
 		}

@@ -25,12 +25,13 @@ package com.radixdlt.client.application;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
+import com.radixdlt.client.application.translate.data.AtomToPlaintextMessageMapper;
+import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
@@ -43,10 +44,6 @@ import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.TokenFeeProcessor;
-import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
@@ -85,7 +82,6 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
@@ -157,10 +153,6 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
 			.defaultFeeProcessor()
-			.addStatelessParticlesMapper(
-				SendMessageAction.class,
-				new SendMessageToParticleGroupsMapper(ECKeyPair::generateNew)
-			)
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addStatefulParticlesMapper(MintTokensAction.class, new MintTokensActionMapper())
@@ -173,7 +165,7 @@ public class RadixApplicationAPI {
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToDecryptedMessageMapper())
+			.addAtomMapper(new AtomToPlaintextMessageMapper())
 			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
@@ -422,7 +414,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the messages at the current address
 	 */
-	public Observable<DecryptedMessage> observeMessages() {
+	public Observable<PlaintextMessage> observeMessages() {
 		return observeMessages(this.getAddress());
 	}
 
@@ -433,33 +425,9 @@ public class RadixApplicationAPI {
 	 * @param address the address to retrieve the messages from
 	 * @return a cold observable of the messages at the given address
 	 */
-	public Observable<DecryptedMessage> observeMessages(RadixAddress address) {
+	public Observable<PlaintextMessage> observeMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return observeActions(DecryptedMessage.class, address);
-	}
-
-	/**
-	 * Sends a message to one's self
-	 *
-	 * @param data    the message to send
-	 * @param encrypt if true, encrypts the message with a encrypted private key
-	 * @return result of the send message execution
-	 */
-	public Result sendMessage(byte[] data, boolean encrypt) {
-		return this.sendMessage(getAddress(), data, encrypt);
-	}
-
-	/**
-	 * Sends a message from the current address to another address
-	 *
-	 * @param toAddress the address to send the message to
-	 * @param data      the message to send
-	 * @param encrypt   if true, encrypts the message with an encrypted private key
-	 * @return result of the send message execution
-	 */
-	public Result sendMessage(RadixAddress toAddress, byte[] data, boolean encrypt) {
-		SendMessageAction sendMessageAction = SendMessageAction.create(getAddress(), toAddress, data, encrypt);
-		return execute(sendMessageAction);
+		return observeActions(PlaintextMessage.class, address);
 	}
 
 	/**
@@ -1326,19 +1294,19 @@ public class RadixApplicationAPI {
 	public final class Transaction {
 		private final String uuid;
 		private List<Action> workingArea = new ArrayList<>();
-		private Map<String, String> metadata = Maps.newHashMap();
+		private String message = null;
 
 		private Transaction() {
 			this.uuid = UUID.randomUUID().toString();
 		}
 
 		/**
-		 * Adds specified metadata to the constructed atom's metadata.
+		 * Sets the atom's message to the specified message.
 		 *
-		 * @param metadata The metadata to add to the atom
+		 * @param message The message to use for the atom
 		 */
-		public void addAtomMetadata(Map<String, String> metadata) {
-			this.metadata.putAll(metadata);
+		public void setMessage(String message) {
+			this.message = message;
 		}
 
 		/**
@@ -1432,14 +1400,14 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.metadata);
+			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);
-			this.metadata.clear();
+			String messageCopy = this.message;
+			this.message = null;
 
-			return Atom.create(particleGroups, metadataCopy);
+			return Atom.create(particleGroups, messageCopy);
 		}
 
 		/**

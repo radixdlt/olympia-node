@@ -38,10 +38,6 @@ public class RadixSystem {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	RadixSystem() {
 		// No-arg constructor for serializer
 	}

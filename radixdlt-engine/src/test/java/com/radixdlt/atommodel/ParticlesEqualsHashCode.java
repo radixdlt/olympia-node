@@ -33,7 +33,6 @@ import java.util.Set;
 
 public class ParticlesEqualsHashCode {
 	private static final ImmutableMap<Class<?>, ImmutableList<String>> ignoredFieldsByClass = ImmutableMap.of(
-		Particle.class, ImmutableList.of("version")
 	);
 
 	@Test

@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.identifiers.RadixAddress;
@@ -41,8 +40,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.RadixConstants;
-
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
@@ -121,13 +118,12 @@ final class FaucetHandler {
 		if (!this.rateLimiter.tryAcquire()) {
 			log.info("Rate limiting requests from {}", recipient);
 			Transaction hastyMsg = this.api.createTransaction();
-			hastyMsg.stage(SendMessageAction.create(
-				api.getAddress(),
-				recipient,
-				String.format("Don't be hasty! Only %s requests per minute accepted.", this.rateLimiter.getRate() * 60.0)
-					.getBytes(RadixConstants.STANDARD_CHARSET),
-				true
-			));
+			hastyMsg.setMessage(
+				String.format(
+					"Don't be hasty! Only %s requests per minute accepted.",
+					this.rateLimiter.getRate() * 60.0
+				)
+			);
 			hastyMsg.stage(PutUniqueIdAction.create(mutexAcquire));
 			hastyMsg.commitAndPush().toObservable().subscribe(
 				saa -> log.debug("Rate limit {} for {}: {}", recipient, actionId, saa),
@@ -139,15 +135,8 @@ final class FaucetHandler {
 		log.info("Sending tokens to {}", recipient);
 		long start = System.currentTimeMillis();
 		Transaction transaction = this.api.createTransaction();
+		transaction.setMessage(String.format("Sent you %s %s", amountToSend, tokenRRI.getName()));
 		transaction.stage(TransferTokensAction.create(tokenRRI, api.getAddress(), recipient, amountToSend));
-		transaction.stage(
-			SendMessageAction.create(
-				api.getAddress(),
-				recipient,
-				messageBytes("Sent you %s %s", amountToSend, tokenRRI.getName()),
-				true
-			)
-		);
 		transaction.stage(PutUniqueIdAction.create(mutexAcquire));
 		long now1 = System.currentTimeMillis() - start;
 		log.info("Built transaction in {}ms", now1);
@@ -159,14 +148,7 @@ final class FaucetHandler {
 			e -> {
 				log.info("Error sending tokens", e);
 				Transaction sentRadsMsg = this.api.createTransaction();
-				sentRadsMsg.stage(
-					SendMessageAction.create(
-						api.getAddress(),
-						recipient,
-						messageBytes("Could not send you any (Reason: %s)", e.getMessage()),
-						true
-					)
-				);
+				sentRadsMsg.setMessage(String.format("Could not send you any (Reason: %s)", e.getMessage()));
 				sentRadsMsg.stage(PutUniqueIdAction.create(mutexAcquire));
 				sentRadsMsg.commitAndPush().toObservable().subscribe(
 					saa -> log.debug("Send tokens error message to {} for {}: {}", recipient, actionId, saa),
@@ -177,11 +159,6 @@ final class FaucetHandler {
 		} catch (Exception e) {
 			log.error("While sending tokens", e);
 		}
-	}
-
-	private static byte[] messageBytes(String fmt, Object... args) {
-		String s = String.format(fmt, args);
-		return s.getBytes(RadixConstants.STANDARD_CHARSET);
 	}
 
 	private void logBalance(AtomicReference<BigDecimal> currentBalance, BigDecimal balance) {
