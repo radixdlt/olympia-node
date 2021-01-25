@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
@@ -46,6 +47,7 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -59,6 +61,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -75,10 +79,12 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -202,34 +208,50 @@ public class MempoolTest {
 		);
 	}
 
+	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce) {
+		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+
+		RRI rri = RRI.of(address, "test");
+		RRIParticle rriParticle = new RRIParticle(rri, nonce);
+		UniqueParticle uniqueParticle = new UniqueParticle("test", address, nonce + 1);
+		ParticleGroup particleGroup = ParticleGroup.builder()
+				.addParticle(rriParticle, Spin.DOWN)
+				.addParticle(uniqueParticle, Spin.UP)
+				.build();
+		Atom atom = new Atom();
+		atom.addParticleGroup(particleGroup);
+		try {
+			atom.sign(keyPair, hasher);
+			return ClientAtom.convertFromApiAtom(atom, hasher);
+		} catch (AtomAlreadySignedException e) {
+			throw new RuntimeException();
+		}
+	}
+
+	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher) {
+	    return createAtom(keyPair, hasher, 0);
+    }
+
+	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
+	    ClientAtom atom = createAtom(keyPair, hasher);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return new Command(payload);
+	}
+
+	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce) {
+		ClientAtom atom = createAtom(keyPair, hasher, nonce);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return new Command(payload);
+	}
+
 	@Test
 	public void add_command_to_mempool() {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);
 		Hasher hasher = injector.getInstance(Hasher.class);
 		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
-
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, 1);
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(rriParticle, Spin.DOWN)
-			.addParticle(uniqueParticle, Spin.UP)
-			.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		final Command command;
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
-			command = new Command(payload);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		Command command = createCommand(keyPair, hasher);
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -246,28 +268,8 @@ public class MempoolTest {
 		Injector injector = getInjector(ecKeyPair);
 		Hasher hasher = injector.getInstance(Hasher.class);
 		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
-
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, 1);
-		ParticleGroup particleGroup = ParticleGroup.builder()
-				.addParticle(rriParticle, Spin.DOWN)
-				.addParticle(uniqueParticle, Spin.UP)
-				.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		final Command command;
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
-			command = new Command(payload);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
@@ -284,10 +286,49 @@ public class MempoolTest {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);
 		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
-
 		final Command command = new Command(new byte[0]);
 
 		// Act
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+	}
+
+	@Test
+	public void missing_dependency_to_mempool() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher, 1);
+
+		// Act
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+	}
+
+	@Test
+	public void replay_command_to_mempool() throws RadixEngineException {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		ClientAtom atom = createAtom(keyPair, hasher);
+		CommittedAtom committedAtom = new CommittedAtom(atom, 1, mock(VerifiedLedgerHeaderAndProof.class));
+		RadixEngine<LedgerAtom> radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+		radixEngine.checkAndStore(committedAtom);
+
+		// Act
+		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 

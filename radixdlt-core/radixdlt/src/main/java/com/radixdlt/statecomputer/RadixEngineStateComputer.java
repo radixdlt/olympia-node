@@ -33,6 +33,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
+import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.EUID;
@@ -180,9 +181,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		try {
-			radixEngine.staticCheck(clientAtom);
+			RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
+			checker.checkAndStore(clientAtom);
+		} catch (RadixEngineException e) {
+		    if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
+				mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+				return;
+			}
+		} finally {
+			radixEngine.deleteBranches();
+		}
+
+		try {
 			mempool.add(command);
-		} catch (RadixEngineException | MempoolFullException e) {
+		} catch (MempoolFullException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
