@@ -83,8 +83,6 @@ public class AtomsService {
 	private final Set<AtomEventObserver> atomEventObservers = Sets.newConcurrentHashSet();
 	private final Object singleAtomObserversLock = new Object();
 	private final Map<AID, List<AtomStatusListener>> singleAtomObserversx = Maps.newHashMap();
-	private final Object deleteOnEventSingleAtomObserversLock = new Object();
-	private final Map<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObserversx = Maps.newHashMap();
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
@@ -126,13 +124,11 @@ public class AtomsService {
 			final CommittedAtom committedAtom = committedAtomWithResult.getCommittedAtom();
 			final AID aid = committedAtom.getAID();
 			this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));
-			getSingleAtomListeners(aid).forEach(SingleAtomListener::onStored);
 			getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 		});
 	}
 
 	private void processExecutionFailure(ClientAtom atom, RadixEngineException e) {
-		getSingleAtomListeners(atom.getAID()).forEach(listener -> listener.onStoredFailure(e));
 		getAtomStatusListeners(atom.getAID()).forEach(listener -> listener.onStoredFailure(e));
 	}
 
@@ -150,7 +146,6 @@ public class AtomsService {
 		}
 
 		final AID aid = clientAtom.getAID();
-		removeSingleAtomListeners(aid).forEach(listener -> listener.onError(aid, failure.getException()));
 		getAtomStatusListeners(aid).forEach(listener -> listener.onError(failure.getException()));
 	}
 
@@ -249,19 +244,6 @@ public class AtomsService {
 	private void removeAtomStatusListener(AID aid, AtomStatusListener listener) {
 		synchronized (this.singleAtomObserversLock) {
 			removeListener(this.singleAtomObserversx, aid, listener);
-		}
-	}
-
-	private ImmutableList<SingleAtomListener> getSingleAtomListeners(AID aid) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			return getListeners(this.deleteOnEventSingleAtomObserversx, aid);
-		}
-	}
-
-	private List<SingleAtomListener> removeSingleAtomListeners(AID aid) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			List<SingleAtomListener> listeners = this.deleteOnEventSingleAtomObserversx.remove(aid);
-			return (listeners == null) ? List.of() : listeners; // No need to make copy - removed
 		}
 	}
 
