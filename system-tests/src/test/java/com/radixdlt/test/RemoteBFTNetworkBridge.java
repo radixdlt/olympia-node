@@ -21,18 +21,22 @@ package com.radixdlt.test;
 import com.radixdlt.client.core.network.HttpClients;
 import io.reactivex.Completable;
 import io.reactivex.Single;
-import io.reactivex.subjects.SingleSubject;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -40,10 +44,15 @@ import java.util.stream.Collectors;
  * providing utility methods to operate on remote networks while abstracting away the details of the network.
  */
 public final class RemoteBFTNetworkBridge {
+	private static final Logger log = LogManager.getLogger();
+	private static final AtomicInteger requestId = new AtomicInteger();
+
 	private final RemoteBFTNetwork network;
+	private final OkHttpClient client;
 
 	private RemoteBFTNetworkBridge(RemoteBFTNetwork network) {
 		this.network = network;
+		this.client = HttpClients.getSslAllTrustingClient();
 	}
 
 	/**
@@ -53,11 +62,15 @@ public final class RemoteBFTNetworkBridge {
 	 * @return The cold {@link Single} that will contain the response body if successful or error if failure
 	 */
 	private Single<String> makeRequest(Request request) {
+		final var newRequestId = requestId.incrementAndGet();
+		final var newRequestTime = System.currentTimeMillis();
+		log.info("Request {}: {}", newRequestId, request);
 		return Single.create(emitter -> {
-			Call call = HttpClients.getSslAllTrustingClient().newCall(request);
+			Call call = this.client.newCall(request);
 			call.enqueue(new Callback() {
 				@Override
 				public void onFailure(Call call, IOException e) {
+					logRequestFailed(newRequestId, newRequestTime, e);
 					emitter.onError(e);
 				}
 
@@ -66,22 +79,42 @@ public final class RemoteBFTNetworkBridge {
 					if (response.isSuccessful()) {
 						try {
 							String responseString = response.body().string();
+							logRequestSuccessful(newRequestId, newRequestTime, responseString);
 							emitter.onSuccess(responseString);
 						} catch (IOException e) {
+							logRequestFailed(newRequestId, newRequestTime, e);
 							emitter.onError(new IllegalArgumentException(String.format(
 								"Request %s failed, cannot parse response: %s",
 								request, response.body().string()
 							), e));
 						}
 					} else {
+						final var code = response.code();
+						final var body = response.body().string();
+						logRequestFailed(newRequestId, newRequestTime, code, body);
 						emitter.onError(new IllegalArgumentException(String.format(
 							"Request %s failed with code %d: %s",
-							request, response.code(), response.body().string()
+							request, code, body
 						)));
 					}
 				}
 			});
 		});
+	}
+
+	private void logRequestSuccessful(int requestId, long requestTime, String body) {
+		final var requestDuration = System.currentTimeMillis() - requestTime;
+		log.info("Request {} ({}ms): successful {}", requestId, requestDuration, body);
+	}
+
+	private void logRequestFailed(int requestId, long requestTime, int code, String body) {
+		final var requestDuration = System.currentTimeMillis() - requestTime;
+		log.error("Request {} ({}ms): failed with code {} ({})", requestId, requestDuration, code, body);
+	}
+
+	private void logRequestFailed(int requestId, long requestTime, IOException e) {
+		final var requestDuration = System.currentTimeMillis() - requestTime;
+		log.error(String.format("Request %s (%sms): failed with exception", requestId, requestDuration), e);
 	}
 
 	/**
