@@ -4,15 +4,15 @@ function help() {
 
   echo
   echo "-----------------------------------------"
-  echo "usage: generate-yml.sh -n node_number -p port_prefix [-fh]"
+  echo "usage: generate-yml.sh -n node_number -p port_number [-fh]"
   echo
   echo "-n node_number   – the node file numbers that will be generated (mandatory)"
-  echo "-p port_prefix   – the first two digits of the port number (mandatory)"
+  echo "-p port_number   – the first port number to allocate (mandatory)"
   echo "-f               – this flag will force the configuration file to be overwritten without deleting it first"
   echo "-h               – this displays the help, which you're looking at now."
   echo
-  echo "example: generate-yml.sh -n 2 -p 88 -f"
-  echo "This will generate the configuration for 2 nodes using port numbers starting with 88."
+  echo "example: generate-yml.sh -n 2 -p 8990 -f"
+  echo "This will generate the configuration for 2 nodes using port numbers starting with 8990."
   echo "The files will be overwritten without you having to delete them first."
   echo "-----------------------------------------"
   echo
@@ -74,7 +74,7 @@ echo "services:" >>${file_name}
 for ((i=0;i<$validators;i++));
 do
     nodelist=''
-    p0=$(printf "%02d" $(( 80+i )))
+    p0=$(printf "%04d" $(( port_param+i )))
     p1=$(printf "%02d" $(( 11+i )))
     p2=$(printf "%02d" $(( 5+i )))
 
@@ -104,7 +104,7 @@ do
     echo "    networks:">>${file_name}
     echo "      - $network_name">>${file_name}
     echo "    ports:">>${file_name}
-    echo "      - \"${port_param}${p0}:8080\"">>${file_name}
+    echo "      - \"${p0}:8080\"">>${file_name}
     echo "      - \"90${p1}:9011\"">>${file_name}
     echo "      - \"505${p2}:50505\"">>${file_name}
 
