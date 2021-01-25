@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
@@ -203,7 +204,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
+		Set<HashCode> exclude = prepared.stream().map(PreparedCommand::hash).collect(Collectors.toSet());
+
+		// TODO: only return commands which will not cause a missing dependency error
 		final List<Command> commands = mempool.getCommands(1, exclude);
 		return !commands.isEmpty() ? commands.get(0) : null;
 	}

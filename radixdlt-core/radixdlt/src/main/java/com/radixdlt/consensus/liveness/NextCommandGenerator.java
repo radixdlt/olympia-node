@@ -17,10 +17,11 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
-import java.util.Set;
+
+import java.util.List;
 
 /**
  * Generates a new proposed command for a given view
@@ -31,8 +32,8 @@ public interface NextCommandGenerator {
 	 * Generates a valid command for the given view
 	 * TODO: Update interface to return an error if already generated a command for a given view
 	 * @param view the view to create the vertex for
-	 * @param prepared the ids of atoms which are currently in the prepared stage
-	 * @return new vertex to extend with
+	 * @param prepared vertices with commands which have already been prepared
+	 * @return new command to execute next
 	 */
-	Command generateNextCommand(View view, Set<HashCode> prepared);
+	Command generateNextCommand(View view, List<PreparedVertex> prepared);
 }

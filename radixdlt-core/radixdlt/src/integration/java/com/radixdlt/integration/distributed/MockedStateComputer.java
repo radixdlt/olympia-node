@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -30,7 +29,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import java.util.Objects;
-import java.util.Set;
 
 public final class MockedStateComputer implements StateComputer {
 	private final Hasher hasher;
@@ -46,7 +44,7 @@ public final class MockedStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+	public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
 		return null;
 	}
 
