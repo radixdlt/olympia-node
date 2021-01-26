@@ -60,8 +60,8 @@ public final class LocalMempool implements Mempool {
 	public LocalMempool(
 		int maxSize,
 		Hasher hasher,
-        SystemCounters counters,
-        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
+		SystemCounters counters,
+		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		Random random
 	) {
 		if (maxSize <= 0) {
@@ -114,8 +114,6 @@ public final class LocalMempool implements Mempool {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
 				List<Command> commands = Lists.newArrayList();
-
-				// T
 				var values = new ArrayList<>(this.data.values());
 				Collections.shuffle(values, random);
 
