@@ -404,6 +404,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 				checker.checkAndStore(clientAtom);
 			} catch (RadixEngineException e) {
 				if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
+					// TODO: Create more specific AtomRemovedFromMempool event
+					mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 				    mempool.removeRejected(hasher.hash(command));
 					return;
 				}

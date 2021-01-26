@@ -154,4 +154,9 @@ public class RxEnvironmentModule extends AbstractModule {
 	public Observable<ViewUpdate> viewUpdates(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(ViewUpdate.class);
 	}
+
+	@Provides
+	public Observable<AtomCommittedToLedger> commits(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(AtomCommittedToLedger.class);
+	}
 }
