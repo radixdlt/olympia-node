@@ -19,7 +19,6 @@ package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -140,9 +139,6 @@ public final class EpochManager {
 	private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
 	private final PersistentSafetyStateStore persistentSafetyStateStore;
-
-	// FIXME: Remove these once sync is fixed
-	private final RateLimiter epochRequestRateLimiter = RateLimiter.create(10.0);
 
 	@Inject
 	public EpochManager(
@@ -481,9 +477,7 @@ public final class EpochManager {
 			log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", response, this.currentEpoch());
 
 			// Send request for higher epoch proof
-			if (this.epochRequestRateLimiter.tryAcquire()) {
-				epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
-			}
+			epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
 		} else {
 			// Current epoch
 			syncBFTResponseProcessor.processGetVerticesErrorResponse(response);

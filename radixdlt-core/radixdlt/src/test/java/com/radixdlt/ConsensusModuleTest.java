@@ -75,8 +75,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -225,6 +225,7 @@ public class ConsensusModuleTest {
 		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
 		// Act
+		nothrowSleep(100); // FIXME: Remove when rate limit on send removed
 		bftSync.vertexRequestTimeoutEventProcessor().process(timeout);
 
 		// Assert
@@ -243,11 +244,21 @@ public class ConsensusModuleTest {
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
 
 		// Act
+		nothrowSleep(100); // FIXME: Remove when rate limit on send removed
 		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));
 		bftSync.responseProcessor().process(response);
 
 		// Assert
 		verify(requestSender, times(1))
 			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+	}
+
+	private void nothrowSleep(long milliseconds) {
+		try {
+			Thread.sleep(milliseconds);
+		} catch (InterruptedException e) {
+			// Ignore
+			Thread.currentThread().interrupt();
+		}
 	}
 }

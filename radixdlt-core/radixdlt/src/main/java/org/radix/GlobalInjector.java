@@ -87,7 +87,7 @@ public class GlobalInjector {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 50));
+				bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));

@@ -232,6 +232,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 				return true;
 			case INVALID:
 				return true;
+			case STARTED:
 			case IN_PROGRESS:
 				return false;
 			default:
