@@ -68,7 +68,44 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		submitConflictingAtomXTimesConcurrently(16);
 	}
 
-	public void submitConflictingAtomXTimesConcurrently(int times) {
+	@Test
+	public void testSubmitSameAtomManyTimes() {
+		submitSameAtomXTimesSequentially(4);
+	}
+
+	private void submitSameAtomXTimesSequentially(int times) {
+		final var rri = RRI.of(this.universe.getAddressFrom(this.identity.getPublicKey()), "notunique");
+		final var rriParticle = new RRIParticle(rri);
+		final var uniqueParticle = new UniqueParticle(rri.getAddress(), rri.getName());
+
+		for (int i = 0; i < times; ++i) {
+			Atom atom = buildAtom(0, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
+
+			TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status " + i));
+			final String subscriberId = UUID.randomUUID().toString();
+			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+				.doOnNext(n -> {
+					if (n.getType() == NotificationType.START) {
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
+					}
+				})
+				.filter(n -> n.getType().equals(NotificationType.EVENT))
+				.map(Notification::getEvent)
+				.subscribe(observer);
+			TestObserver<AtomStatusEvent> submission = submitAtom(atom);
+			submission.awaitTerminalEvent();
+			submission.assertNoErrors();
+			submission.assertComplete();
+
+			observer.awaitCount(1);
+			observer.assertValueCount(1);
+			AtomStatus expectedStatus = i == 0 ? AtomStatus.STORED : AtomStatus.CONFLICT_LOSER;
+			observer.assertValueAt(0, notification -> notification.getAtomStatus() == expectedStatus);
+			observer.dispose();
+		}
+	}
+
+	private void submitConflictingAtomXTimesConcurrently(int times) {
 		List<TestObserver<AtomStatusEvent>> observers = Lists.newArrayList();
 		List<TestObserver<AtomStatusEvent>> submissions = Lists.newArrayList();
 
@@ -101,12 +138,19 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			submission.assertNoErrors();
 			submission.assertComplete();
 		});
+		boolean foundCommit = false;
 		for (int i = 0; i < times; ++i) {
 			TestObserver<AtomStatusEvent> observer = observers.get(i);
 			observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 			observer.assertValueCount(1);
-			AtomStatus expectedStatus = (i == 0) ? AtomStatus.STORED : AtomStatus.CONFLICT_LOSER;
-			observer.assertValueAt(0, notification -> notification.getAtomStatus() == expectedStatus);
+
+			if (!foundCommit) {
+				AtomStatusEvent atomStatusEvent = observer.values().get(0);
+				foundCommit = atomStatusEvent.getAtomStatus() == AtomStatus.STORED;
+			} else {
+				observer.assertValueAt(0, notification -> notification.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
+			}
+
 			observer.dispose();
 		}
 	}
