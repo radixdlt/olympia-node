@@ -101,12 +101,19 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			submission.assertNoErrors();
 			submission.assertComplete();
 		});
+		boolean foundCommit = false;
 		for (int i = 0; i < times; ++i) {
 			TestObserver<AtomStatusEvent> observer = observers.get(i);
 			observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 			observer.assertValueCount(1);
-			AtomStatus expectedStatus = (i == 0) ? AtomStatus.STORED : AtomStatus.CONFLICT_LOSER;
-			observer.assertValueAt(0, notification -> notification.getAtomStatus() == expectedStatus);
+
+			if (!foundCommit) {
+				AtomStatusEvent atomStatusEvent = observer.values().get(0);
+				foundCommit = atomStatusEvent.getAtomStatus() == AtomStatus.STORED;
+			} else {
+				observer.assertValueAt(0, notification -> notification.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
+			}
+
 			observer.dispose();
 		}
 	}
