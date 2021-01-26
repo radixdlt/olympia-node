@@ -100,34 +100,6 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onStoredFailure(RadixEngineException exception) {
-				JSONObject data = new JSONObject();
-				data.put("aid", aid);
-				data.put("pointerToIssue", exception.getDataPointer());
-				if (exception.getCmError() != null) {
-					data.put("cmError", exception.getCmError().getErrMsg());
-				}
-
-				final AtomStatus atomStatus;
-				switch (exception.getErrorCode()) {
-					case VIRTUAL_STATE_CONFLICT:
-						atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-						break;
-					case MISSING_DEPENDENCY:
-						atomStatus = AtomStatus.MISSING_DEPENDENCY;
-						break;
-					case STATE_CONFLICT:
-						atomStatus = AtomStatus.CONFLICT_LOSER;
-						break;
-					default: // Don't send back unhandled exception
-						return;
-				}
-
-
-				sendAtomSubmissionState.accept(atomStatus, data);
-			}
-
-			@Override
 			public void onError(Throwable e) {
 				if (e instanceof AtomConversionException) {
 					AtomConversionException conversionException = (AtomConversionException) e;
@@ -142,13 +114,38 @@ public class AtomStatusEpic {
 					String pointerToIssue = reException.getDataPointer().toString();
 
 					JSONObject data = new JSONObject();
+					data.put("aid", aid);
 					data.put("message", reException.getMessage());
 					data.put("errorCode", reException.getErrorCode().toString());
 					data.put("pointerToIssue", pointerToIssue);
-					if (reException.getCmError() != null) {
-						data.put("cmError", reException.getCmError().getErrMsg());
+
+					final AtomStatus atomStatus;
+					switch (reException.getErrorCode()) {
+						case CONVERSION_ERROR:
+						// Fall through
+						case CM_ERROR:
+						// Fall through
+						case HOOK_ERROR:
+							if (reException.getCmError() != null) {
+								data.put("cmError", reException.getCmError().getErrMsg());
+							}
+							atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+							break;
+
+						case VIRTUAL_STATE_CONFLICT:
+							atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+							break;
+						case MISSING_DEPENDENCY:
+							atomStatus = AtomStatus.MISSING_DEPENDENCY;
+							break;
+						case STATE_CONFLICT:
+							atomStatus = AtomStatus.CONFLICT_LOSER;
+							break;
+						default: // Don't send back unhandled exception
+							return;
 					}
-					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
+
+					sendAtomSubmissionState.accept(atomStatus, data);
 				} else if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());

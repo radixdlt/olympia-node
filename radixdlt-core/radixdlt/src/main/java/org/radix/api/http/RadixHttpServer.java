@@ -19,16 +19,15 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
-import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -104,8 +103,7 @@ public final class RadixHttpServer {
 	public RadixHttpServer(
 		InMemorySystemInfo inMemorySystemInfo,
 		Observable<MempoolAddFailure> mempoolAddFailures,
-		CommittedAtomsRx committedAtomsRx,
-		Observable<BFTCommittedUpdate> committedUpdates,
+		Observable<AtomCommittedToLedger> ledgerCommitted,
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
@@ -127,8 +125,7 @@ public final class RadixHttpServer {
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(
 			mempoolAddFailures,
-			committedAtomsRx,
-			committedUpdates,
+			ledgerCommitted,
 			store,
 			mempoolAddEventDispatcher,
 			commandToBinaryConverter,

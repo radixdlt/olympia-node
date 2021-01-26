@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
@@ -33,9 +32,9 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
+import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
@@ -58,25 +57,13 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
-
-	// TODO: Refactor committed command when commit logic is re-written
-	// TODO: as currently it's mostly loosely coupled logic
-	public interface CommittedAtomWithResult {
-		CommittedAtom getCommittedAtom();
-		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
-	}
-
-	// TODO: Remove this temporary interface
-	public interface CommittedAtomSender {
-		void sendCommittedAtom(CommittedAtomWithResult committedAtomWithResult);
-	}
 
 	private final Mempool mempool;
 	private final Serialization serialization;
@@ -180,9 +167,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		try {
-			radixEngine.staticCheck(clientAtom);
+			RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
+			checker.checkAndStore(clientAtom);
+		} catch (RadixEngineException e) {
+		    if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
+				mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+				return;
+			}
+		} finally {
+			radixEngine.deleteBranches();
+		}
+
+		try {
 			mempool.add(command);
-		} catch (RadixEngineException | MempoolFullException e) {
+		} catch (MempoolFullException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
@@ -191,7 +189,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
+		Set<HashCode> exclude = prepared.stream().map(PreparedCommand::hash).collect(Collectors.toSet());
+
+		// TODO: only return commands which will not cause a missing dependency error
 		final List<Command> commands = mempool.getCommands(1, exclude);
 		return !commands.isEmpty() ? commands.get(0) : null;
 	}
@@ -386,6 +387,31 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 		atomicCommitManager.commitTransaction();
 
+		// TODO: refactor mempool to be less generic and make this more efficient
 		verifiedCommandsAndProof.getCommands().forEach(cmd -> this.mempool.removeCommitted(hasher.hash(cmd)));
+		List<Command> mempoolCommands = mempool.getCommands(Integer.MAX_VALUE, Set.of());
+		for (Command command : mempoolCommands) {
+			ClientAtom clientAtom = command.map(payload -> {
+				try {
+					return serialization.fromDson(payload, ClientAtom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			});
+
+			try {
+				RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
+				checker.checkAndStore(clientAtom);
+			} catch (RadixEngineException e) {
+				if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
+					// TODO: Create more specific AtomRemovedFromMempool event
+					mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+				    mempool.removeRejected(hasher.hash(command));
+					return;
+				}
+			} finally {
+				radixEngine.deleteBranches();
+			}
+		}
 	}
 }

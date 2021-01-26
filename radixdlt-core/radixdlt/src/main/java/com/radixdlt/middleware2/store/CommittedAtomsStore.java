@@ -27,6 +27,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -38,8 +39,7 @@ import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.statecomputer.CommittedAtoms;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -64,7 +64,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	private final PersistentVertexStore persistentVertexStore;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
-	private final CommittedAtomSender committedAtomSender;
+	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
 	private final Hasher hasher;
 	private Transaction transaction;
 
@@ -73,16 +73,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	public CommittedAtomsStore(
-		CommittedAtomSender committedAtomSender,
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
 		Serialization serialization,
-		Hasher hasher
+		Hasher hasher,
+		EventDispatcher<AtomCommittedToLedger> committedDispatcher
 	) {
-		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
@@ -90,6 +89,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.hasher = hasher;
+		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
 	private boolean particleExists(Particle particle, boolean isInput) {
@@ -157,7 +157,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			.map(e -> EngineAtomIndices.toEUID(e.asKey()))
 			.collect(ImmutableSet.toImmutableSet());
 
-		committedAtomSender.sendCommittedAtom(CommittedAtoms.success(committedAtom, indicies));
+		// Don't send event on genesis
+		// TODO: this is a bit hacky
+		if (committedAtom.getStateVersion() > 0) {
+			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, indicies));
+		}
     }
 
 	@Override

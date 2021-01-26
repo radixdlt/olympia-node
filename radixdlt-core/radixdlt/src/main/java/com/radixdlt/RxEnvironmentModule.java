@@ -37,6 +37,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.ThreadFactories;
@@ -78,7 +79,8 @@ public class RxEnvironmentModule extends AbstractModule {
 			SyncInProgress.class,
 			ViewUpdate.class,
 			EpochViewUpdate.class,
-			MempoolAddFailure.class
+			MempoolAddFailure.class,
+			AtomCommittedToLedger.class
 		);
 
 		return new RxEnvironment(
@@ -151,5 +153,10 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Provides
 	public Observable<ViewUpdate> viewUpdates(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(ViewUpdate.class);
+	}
+
+	@Provides
+	public Observable<AtomCommittedToLedger> commits(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(AtomCommittedToLedger.class);
 	}
 }

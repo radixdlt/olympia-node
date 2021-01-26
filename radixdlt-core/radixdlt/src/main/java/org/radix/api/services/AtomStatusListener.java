@@ -17,7 +17,6 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.statecomputer.CommittedAtom;
 
 /**
@@ -26,6 +25,5 @@ import com.radixdlt.statecomputer.CommittedAtom;
  */
 public interface AtomStatusListener {
 	void onStored(CommittedAtom committedAtom);
-	void onStoredFailure(RadixEngineException e);
 	void onError(Throwable e);
 }

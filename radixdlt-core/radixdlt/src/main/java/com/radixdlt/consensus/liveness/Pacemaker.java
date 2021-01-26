@@ -50,8 +50,6 @@ import org.apache.logging.log4j.Level;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Manages the pacemaker driver.
@@ -174,13 +172,7 @@ public final class Pacemaker {
 			nextCommand = null;
 		} else {
 			final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-			final Set<HashCode> prepared = preparedVertices.stream()
-					.flatMap(PreparedVertex::getCommands)
-					.filter(Objects::nonNull)
-					.map(hasher::hash)
-					.collect(Collectors.toSet());
-
-			nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
+			nextCommand = nextCommandGenerator.generateNextCommand(view, preparedVertices);
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
