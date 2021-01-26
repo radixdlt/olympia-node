@@ -27,95 +27,56 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 
+import java.util.Objects;
+
 /**
  * A helper class to help in constructing a BFT validator state machine
  */
 public final class BFTBuilder {
 	// BFT Configuration objects
-	private BFTValidatorSet validatorSet;
-	private Hasher hasher;
-	private HashVerifier verifier;
+	private final BFTValidatorSet validatorSet;
+	private final Hasher hasher;
+	private final HashVerifier verifier;
 
 	// BFT Stateful objects
-	private Pacemaker pacemaker;
-	private VertexStore vertexStore;
-	private BFTSyncer bftSyncer;
-	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
-	private EventDispatcher<NoVote> noVoteEventDispatcher;
+	private final Pacemaker pacemaker;
+	private final VertexStore vertexStore;
+	private final BFTSyncer bftSyncer;
+	private final EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
+	private final EventDispatcher<NoVote> noVoteEventDispatcher;
 
 	// Instance specific objects
-	private BFTNode self;
+	private final BFTNode self;
 
-	private ViewUpdate viewUpdate;
-	private RemoteEventDispatcher<Vote> voteDispatcher;
-	private SafetyRules safetyRules;
+	private final ViewUpdate viewUpdate;
+	private final RemoteEventDispatcher<Vote> voteDispatcher;
+	private final SafetyRules safetyRules;
 
-	private BFTBuilder() {
-		// Just making this inaccessible
-	}
+	public BFTBuilder(BFTNode self,
+					  ViewUpdate viewUpdate,
+					  RemoteEventDispatcher<Vote> voteDispatcher,
+					  SafetyRules safetyRules,
+					  Hasher hasher,
+					  HashVerifier verifier,
+					  BFTValidatorSet validatorSet,
+					  Pacemaker pacemaker,
+					  VertexStore vertexStore,
+					  BFTSyncer syncer,
+					  EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
+					  EventDispatcher<NoVote> noVoteEventDispatcher) {
 
-	public static BFTBuilder create() {
-		return new BFTBuilder();
-	}
-
-	public BFTBuilder self(BFTNode self) {
-		this.self = self;
-		return this;
-	}
-
-	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
-		this.viewUpdate = viewUpdate;
-		return this;
-	}
-
-	public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
-		this.voteDispatcher = voteDispatcher;
-		return this;
-	}
-
-	public BFTBuilder safetyRules(SafetyRules safetyRules) {
-		this.safetyRules = safetyRules;
-		return this;
-	}
-
-	public BFTBuilder hasher(Hasher hasher) {
-		this.hasher = hasher;
-		return this;
-	}
-
-	public BFTBuilder verifier(HashVerifier verifier) {
-		this.verifier = verifier;
-		return this;
-	}
-
-	public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
-		this.validatorSet = validatorSet;
-		return this;
-	}
-
-	public BFTBuilder pacemaker(Pacemaker pacemaker) {
-		this.pacemaker = pacemaker;
-		return this;
-	}
-
-	public BFTBuilder vertexStore(VertexStore vertexStore) {
-		this.vertexStore = vertexStore;
-		return this;
-	}
-
-	public BFTBuilder bftSyncer(BFTSyncer bftSyncer) {
-		this.bftSyncer = bftSyncer;
-		return this;
-	}
-
-	public BFTBuilder viewQuorumReachedEventDispatcher(EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
-		this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
-		return this;
-	}
-
-	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
-		this.noVoteEventDispatcher = noVoteEventDispatcher;
-		return this;
+		this.self = Objects.requireNonNull(self);
+		this.viewUpdate = Objects.requireNonNull(viewUpdate);
+		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
+		this.safetyRules = Objects.requireNonNull(safetyRules);
+		this.hasher = Objects.requireNonNull(hasher);
+		this.verifier = Objects.requireNonNull(verifier);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
+		this.pacemaker = Objects.requireNonNull(pacemaker);
+		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.bftSyncer = Objects.requireNonNull(syncer);
+		this.viewQuorumReachedEventDispatcher = Objects.requireNonNull(viewQuorumReachedEventDispatcher);
+		this.noVoteEventDispatcher = Objects.requireNonNull(noVoteEventDispatcher);
 	}
 
 	public BFTEventProcessor build() {

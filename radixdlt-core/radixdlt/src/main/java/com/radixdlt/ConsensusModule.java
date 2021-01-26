@@ -106,24 +106,24 @@ public final class ConsensusModule extends AbstractModule {
 			viewUpdate,
 			safetyRules
 		) ->
-			BFTBuilder.create()
-				.self(self)
-				.hasher(hasher)
-				.verifier(verifier)
-				.voteDispatcher(voteDispatcher)
-				.safetyRules(safetyRules)
-				.pacemaker(pacemaker)
-				.vertexStore(vertexStore)
-				.viewQuorumReachedEventDispatcher(viewQuorumReached -> {
-					// FIXME: a hack for now until replacement of epochmanager factories
-					viewQuorumReachedEventProcessor.process(viewQuorumReached);
-					viewQuorumReachedEventDispatcher.dispatch(viewQuorumReached);
-				})
-				.noVoteEventDispatcher(noVoteEventDispatcher)
-				.viewUpdate(viewUpdate)
-				.bftSyncer(bftSyncer)
-				.validatorSet(validatorSet)
-				.build();
+				(new BFTBuilder(
+					self,
+						viewUpdate,
+						voteDispatcher,
+						safetyRules,
+						hasher,
+						verifier,
+						validatorSet,
+						pacemaker,
+						vertexStore,
+						bftSyncer,
+						viewQuorumReached -> {
+							// FIXME: a hack for now until replacement of epochmanager factories
+							viewQuorumReachedEventProcessor.process(viewQuorumReached);
+							viewQuorumReachedEventDispatcher.dispatch(viewQuorumReached);
+						},
+						noVoteEventDispatcher
+				)).build();
 	}
 
 	@ProvidesIntoSet
