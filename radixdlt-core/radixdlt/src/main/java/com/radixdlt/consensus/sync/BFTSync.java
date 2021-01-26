@@ -19,6 +19,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -133,6 +134,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final int bftSyncPatienceMillis;
 	private final SystemCounters systemCounters;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
+
+	// FIXME: Remove this once sync is fixed
+	private final RateLimiter syncRequestRateLimiter = RateLimiter.create(100.0);
 
 	public BFTSync(
 		@Self BFTNode self,
@@ -310,7 +314,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		if (syncRequestState.syncIds.isEmpty()) {
 			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
-			this.requestSender.dispatch(authors.get(0), request);
+			if (this.syncRequestRateLimiter.tryAcquire()) {
+				this.requestSender.dispatch(authors.get(0), request);
+			}
 			this.bftSyncing.put(request, syncRequestState);
 		}
 		syncRequestState.syncIds.add(syncId);
