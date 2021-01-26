@@ -105,7 +105,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 	}
 
 	private void processLocalSyncRequest(LocalSyncRequest request) {
-		log.info("SYNC_LOCAL_REQUEST: {} current {}", request, this.currentHeader);
+		log.debug("SYNC_LOCAL_REQUEST: {} current {}", request, this.currentHeader);
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {

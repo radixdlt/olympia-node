@@ -484,8 +484,10 @@ public final class EpochManager {
 			if (this.epochRequestRateLimiter.tryAcquire()) {
 				epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
 			}
+		} else {
+			// Current epoch
+			syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
 		}
-		syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
