@@ -42,7 +42,7 @@ import static com.radixdlt.store.mvstore.CommonCounterType.ELAPSED;
 import static com.radixdlt.store.mvstore.CommonCounterType.TOTAL;
 
 public class MVStoreSafetyStateStore extends MVStoreBase implements PersistentSafetyStateStore {
-	private static final String NAME = "safety_store";
+	static final String NAME = "safety_store";
 
 	public MVStoreSafetyStateStore(
 		Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters

@@ -66,7 +66,7 @@ public class MVStoreBase {
 	}
 
 	protected TransactionMap<byte[], byte[]> openMap(String name, Transaction tx) {
-		return tx.openMap(dbName, BYTE_ARRAY_TYPE, BYTE_ARRAY_TYPE);
+		return tx.openMap(name, BYTE_ARRAY_TYPE, BYTE_ARRAY_TYPE);
 	}
 
 	protected <T> T withTime(Supplier<T> supplier) {

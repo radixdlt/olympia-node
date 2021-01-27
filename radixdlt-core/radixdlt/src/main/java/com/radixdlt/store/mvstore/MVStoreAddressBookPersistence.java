@@ -96,9 +96,9 @@ public class MVStoreAddressBookPersistence extends MVStoreBase implements PeerPe
 	}
 
 	private Optional<Boolean> doDeletePeer(Transaction tx, EUID nid) {
-		openMap(tx).remove(nid.toByteArray());
+		boolean result = openMap(tx).remove(nid.toByteArray()) != null;
 		increment(COUNT_BDB_ADDRESS_BOOK_DELETES);
-		return SUCCESS;
+		return result ? SUCCESS : FAILURE;
 	}
 
 	@Override
@@ -120,7 +120,7 @@ public class MVStoreAddressBookPersistence extends MVStoreBase implements PeerPe
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		//Do nothing
 	}
 }

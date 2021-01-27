@@ -19,6 +19,8 @@ package com.radixdlt.store.mvstore;
 
 import com.google.inject.Inject;
 import com.radixdlt.properties.RuntimeProperties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.h2.engine.IsolationLevel;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -27,64 +29,44 @@ import org.h2.mvstore.tx.TransactionStore;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 public final class DatabaseEnvironment {
-	public static final ByteArrayDataType BYTE_ARRAY_TYPE =new ByteArrayDataType();
+	public static final ByteArrayDataType BYTE_ARRAY_TYPE = new ByteArrayDataType();
+	private static final Logger LOG = LogManager.getLogger();
 
-	private final ReentrantLock lock = new ReentrantLock(true);
-
-	private final MVStore mvStore;
-	private final TransactionStore transactionStore;
-	private final MVMap<byte[], byte[]> metaDatabase;
-	private final MVMap.Builder<byte[], byte[]> mapTemplate;
+	private final String dbName;
+	private final int cacheSizeMB;
+	private MVStore mvStore;
+	private TransactionStore transactionStore;
 
 	@Inject
 	public DatabaseEnvironment(RuntimeProperties properties) {
-		File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
-		dbhome.mkdir();
+		File dbHomeDir = new File(properties.get("db.location", ".//RADIXDB"));
+		if (dbHomeDir.mkdir()) {
+			LOG.info("DB working directory created");
+		} else {
+			LOG.info("DB working directory not created, assuming it already exists");
+		}
+		dbName = new File(dbHomeDir, "store.db").toString();
+		cacheSizeMB = (int)(calculateCacheSize(properties) /1_000_000);
+	}
 
-		long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
-		long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
-		long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
-		cacheSize = Math.max(cacheSize, minCacheSize);
-		cacheSize = Math.min(cacheSize, maxCacheSize);
-		int cacheSizeMB = (int)(cacheSize/1_000_000);
-
+	public void start() {
 		mvStore = new MVStore.Builder()
-			.fileName(new File(dbhome, "store.db").toString())
+			.fileName(dbName)
 			.cacheSize(cacheSizeMB)
 			.autoCommitDisabled()
 			.compress()
 			.open();
 
 		transactionStore = new TransactionStore(mvStore, new ByteArrayDataType(), 0);
-		mapTemplate = new MVMap.Builder<byte[], byte[]>()
-			.valueType(BYTE_ARRAY_TYPE)
-			.keyType(BYTE_ARRAY_TYPE);
-
-		try {
-			//TODO: do we need it???
-			this.metaDatabase = mvStore.openMap(
-				"environment.meta_data",
-				mapTemplate
-			);
-		} catch (Exception ex) {
-			throw new RuntimeException("while opening database", ex);
-		}
-	}
-
-	public void start() {
-		this.transactionStore.init();
+		transactionStore.init();
 	}
 
 	public void stop() {
-		this.transactionStore.close();
-	}
-
-	public MVMap<byte[], byte[]> open(String name) {
-		return mvStore.openMap(name, mapTemplate);
+		transactionStore.close();
+		mvStore.close();
 	}
 
 	public Transaction startTransaction() {
@@ -105,5 +87,14 @@ public final class DatabaseEnvironment {
 			transaction.rollback();
 			return Optional.empty();
 		}
+	}
+
+	private long calculateCacheSize(RuntimeProperties properties) {
+		long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
+		long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
+		long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
+		cacheSize = Math.max(cacheSize, minCacheSize);
+		cacheSize = Math.min(cacheSize, maxCacheSize);
+		return cacheSize;
 	}
 }
