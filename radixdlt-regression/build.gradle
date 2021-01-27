@@ -1,38 +1,8 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.0.1.201806211838-r'
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7'
-        classpath 'com.adarshr:gradle-test-logger-plugin:2.1.0'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
-    }
-}
-
-group 'com.radix.regression'
-version '1.0-SNAPSHOT'
-
 apply plugin: 'java'
 apply plugin: 'application'
-apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.adarshr.test-logger'
-
-repositories {
-    mavenCentral()
-    maven {
-        name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/radixdlt/maven-pkg")
-        credentials {
-            username = System.getenv("GPR_USER") ?: 'radixgpr'
-            password = System.getenv("GPR_TOKEN") ?: '\u0064\u0038\u0064\u0065\u0063\u0066\u0061\u0065\u0031\u0038\u0030\u0037\u0030\u0032\u0033\u0038\u0061\u0036\u0063\u0061\u0065\u0061\u0031\u0038\u0032\u0039\u0064\u0030\u0033\u0065\u0061\u0038\u0066\u0032\u0066\u0030\u0065\u0036\u0039\u0039'
-        }
-    }
-    maven { url 'https://jitpack.io' }
-}
 
 test {
     if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
@@ -43,22 +13,17 @@ test {
     systemProperties System.getProperties()
 }
 
-subprojects {
-    compileJava {
-        options.release = 11
-    }
-}
-
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:1.0-beta.22-rc~1.0-beta.23-SNAPSHOT'
-    compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
-    compile group: 'com.google.guava', name: 'guava', version: '27.1-jre'
+    implementation project(':radixdlt-java')
 
-    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.14.9'
-    compile group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.14.9'
+    implementation 'io.reactivex.rxjava2:rxjava'
+    implementation 'com.google.guava:guava'
 
-    testCompile group: 'io.cucumber', name: 'cucumber-java', version: '6.8.1'
-    testCompile group: 'io.cucumber', name: 'cucumber-junit', version: '6.8.1'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.0'
+    implementation 'com.squareup.okhttp3:okhttp'
+    implementation 'com.squareup.okhttp3:logging-interceptor'
+
+    testImplementation 'junit:junit'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'io.cucumber:cucumber-java:6.8.1'
+    testImplementation 'io.cucumber:cucumber-junit:6.8.1'
 }

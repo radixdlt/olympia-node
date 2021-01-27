@@ -1,2 +1,0 @@
-rootProject.name = 'RadixRegressionTests'
-include ":system-tests"
