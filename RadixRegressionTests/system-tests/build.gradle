@@ -1,0 +1,87 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+}
+
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'https://jitpack.io' }
+}
+
+apply plugin: 'java-library'
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+
+sourceSets {
+    test {
+        java { srcDirs = [] }    // no source dirs for the java compiler
+        groovy { srcDirs = ["src/test/java", "src/test/groovy"] }  // compile   everything in src/ with groovy
+    }
+}
+
+dependencies {
+    implementation 'com.github.radixdlt:radixdlt-java:1.0-beta.18'
+    testCompile group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
+    testCompile "org.codehaus.groovy:groovy-all:2.4.12"
+    testCompile "io.cucumber:cucumber-core:2.1.0"
+    testCompile 'io.cucumber:cucumber-java:5.5.0'
+    testCompile 'io.cucumber:cucumber-junit:5.5.0'
+    testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
+    testCompile group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
+    testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
+    testCompile group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
+    api group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
+    api 'org.json:json:20180813'
+}
+
+task copyCLIJar {
+    doLast {
+        delete "${projectDir}/target/cli"
+        copy {
+            from "${rootDir}/../radixdlt-java/radixdlt-cli/build/libs"
+            into "${projectDir}/target/cli"
+        }
+    }
+}
+task bddTest(type: Test) {
+    dependsOn clean,copyCLIJar
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    include "Runner.class"
+}
+test.enabled = false
+
+task dockerSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Docker'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
+    exclude "Runner.class"
+}
+
+task clusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Cluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    exclude "Runner.class"
+}
+
+task ephemeralClusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.EphemeralCluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
+    exclude "Runner.class"
+}

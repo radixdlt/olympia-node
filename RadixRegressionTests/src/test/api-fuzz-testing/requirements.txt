@@ -1,0 +1,7 @@
+gevent==1.4.0
+greenlet==0.4.15
+six==1.14.0
+websocket-client==0.48
+sklearn
+termcolor
+pygments
