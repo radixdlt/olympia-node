@@ -81,10 +81,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		private final List<HashCode> syncIds = new ArrayList<>();
 		private final ImmutableList<BFTNode> authors;
 		private final View view;
+		private final int count;
 
-		SyncRequestState(ImmutableList<BFTNode> authors, View view) {
+		SyncRequestState(ImmutableList<BFTNode> authors, View view, int count) {
 			this.authors = Objects.requireNonNull(authors);
 			this.view = Objects.requireNonNull(view);
+			this.count = count;
 		}
 	}
 
@@ -121,6 +123,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			return String.format("%s{%s syncState=%s}", this.getClass().getSimpleName(), highQC, syncStage);
 		}
 	}
+
+	private static final Comparator<Map.Entry<GetVerticesRequest, SyncRequestState>> syncPriority =
+		Comparator.<Map.Entry<GetVerticesRequest, SyncRequestState>>comparingInt(e -> e.getValue().count)
+		.reversed() // Prioritise requests with higher counts
+		.thenComparing(e -> e.getValue().view)
+		.reversed(); // The prioritise by highest view
+
 
 	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
@@ -311,14 +320,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private GetVerticesRequest highestQCRequest(Collection<Map.Entry<GetVerticesRequest, SyncRequestState>> requests) {
 		return requests.stream()
-			.sorted(this::requestOrdering)
+			.sorted(syncPriority)
 			.findFirst()
 			.map(Map.Entry::getKey)
 			.orElse(null);
-	}
-
-	private int requestOrdering(Map.Entry<GetVerticesRequest, SyncRequestState> left, Map.Entry<GetVerticesRequest, SyncRequestState> right) {
-		return left.getValue().view.compareTo(right.getValue().view);
 	}
 
 	private <T> T randomFrom(List<T> elements) {
@@ -332,7 +337,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private void sendBFTSyncRequest(View view, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
 		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
+		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view, count));
 		if (syncRequestState.syncIds.isEmpty()) {
 			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);

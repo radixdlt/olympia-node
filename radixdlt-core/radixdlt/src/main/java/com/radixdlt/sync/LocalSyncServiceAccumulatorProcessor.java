@@ -167,7 +167,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 	private void updateCounters() {
 		systemCounters.set(
 			CounterType.SYNC_TARGET_CURRENT_DIFF,
-			this.targetHeader.getStateVersion() - this.currentHeader.getStateVersion()
+			Math.max(0L, this.targetHeader.getStateVersion() - this.currentHeader.getStateVersion())
 		);
 	}
 }
