@@ -139,6 +139,7 @@ dependencies {
     implementation 'io.undertow:undertow-core'
     implementation 'io.undertow:undertow-servlet'
     implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
+    implementation 'com.h2database:h2-mvstore'
 
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.objenesis:objenesis'

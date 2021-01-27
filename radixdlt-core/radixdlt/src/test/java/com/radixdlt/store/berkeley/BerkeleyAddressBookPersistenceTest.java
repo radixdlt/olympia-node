@@ -15,12 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.addressbook;
+package com.radixdlt.store.berkeley;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
@@ -38,15 +42,15 @@ import com.radixdlt.crypto.ECKeyPair;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-public class AddressBookPersistenceTest extends RadixTest {
+public class BerkeleyAddressBookPersistenceTest extends RadixTest {
 
-	private AddressBookPersistence abp;
+	private BerkeleyAddressBookPersistence abp;
 	private DatabaseEnvironment dbEnv;
 
 	@Before
 	public void setUp() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
-		this.abp = new AddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
+		this.abp = new BerkeleyAddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
 		this.abp.reset();
 	}
 
@@ -96,14 +100,14 @@ public class AddressBookPersistenceTest extends RadixTest {
 		PeerWithSystem pws = makePeer();
 		assertTrue(this.abp.savePeer(pws));
 		assertEquals(1, peerCount());
-		assertEquals(0L, onlyPeer().getTimestamp(Timestamps.ACTIVE));
+		Assert.assertEquals(0L, onlyPeer().getTimestamp(Timestamps.ACTIVE));
 
 		// Update timestamp
 		long now = Time.currentTimestamp();
 		pws.setTimestamp(Timestamps.ACTIVE, now);
 		assertTrue(this.abp.savePeer(pws));
 		assertEquals(1, peerCount());
-		assertEquals(now, onlyPeer().getTimestamp(Timestamps.ACTIVE));
+		Assert.assertEquals(now, onlyPeer().getTimestamp(Timestamps.ACTIVE));
 
 		// Add new peer
 		PeerWithSystem pws2 = makePeer();
@@ -124,13 +128,13 @@ public class AddressBookPersistenceTest extends RadixTest {
 
 		// Delete one, and check that the only one left is the right one
 		assertTrue(this.abp.deletePeer(pws1.getNID()));
-		assertEquals(pws2.getNID(), onlyPeer().getNID());
+		Assert.assertEquals(pws2.getNID(), onlyPeer().getNID());
 
 		// Add back the deleted one, and delete the other
 		assertTrue(this.abp.savePeer(pws1));
 		assertEquals(2, peerCount());
 		assertTrue(this.abp.deletePeer(pws2.getNID()));
-		assertEquals(pws1.getNID(), onlyPeer().getNID());
+		Assert.assertEquals(pws1.getNID(), onlyPeer().getNID());
 
 		// Try to delete something that doesn't exist
 		assertFalse(this.abp.deletePeer(pws2.getNID()));

@@ -24,7 +24,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
+import com.radixdlt.store.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Objects;

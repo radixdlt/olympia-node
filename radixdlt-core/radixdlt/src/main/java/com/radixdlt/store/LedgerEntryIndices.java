@@ -15,16 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.store;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.berkeley.BerkeleyStoreException;
 
 import java.util.List;
 import java.util.Set;
@@ -60,15 +59,15 @@ public final class LedgerEntryIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	Set<StoreIndex> getUniqueIndices() {
+	public Set<StoreIndex> getUniqueIndices() {
 		return this.uniqueIndices;
 	}
 
-	Set<StoreIndex> getDuplicateIndices() {
+	public Set<StoreIndex> getDuplicateIndices() {
 		return this.duplicateIndices;
 	}
 
-	static LedgerEntryIndices from(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+	public static LedgerEntryIndices from(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		List<StoreIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
 			.filter(index -> index.getPrefix() == ENTRY_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());

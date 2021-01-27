@@ -212,6 +212,7 @@ subprojects {
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'info.picocli:picocli:4.4.0'
             dependency 'info.picocli:picocli-codegen:4.4.0'
+            dependency 'com.h2database:h2-mvstore:1.4.200'
         }
     }
 }

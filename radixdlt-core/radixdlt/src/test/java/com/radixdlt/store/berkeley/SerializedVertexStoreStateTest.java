@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.store.SerializedVertexStoreState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

@@ -15,11 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.addressbook;
+package com.radixdlt.store.berkeley;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.addressbook.PeerPersistence;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.sleepycat.je.Cursor;
@@ -44,7 +46,7 @@ import java.util.function.Consumer;
 /**
  * Persistence for peers.
  */
-public class AddressBookPersistence implements PeerPersistence {
+public class BerkeleyAddressBookPersistence implements PeerPersistence {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -53,7 +55,7 @@ public class AddressBookPersistence implements PeerPersistence {
 	private Database peersByNidDB;
 
 
-	AddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
+	public BerkeleyAddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
 		super();
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);

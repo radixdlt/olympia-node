@@ -19,7 +19,6 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -27,9 +26,12 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.AtomStorePackedPrimaryKeyComparator;
+import com.radixdlt.store.LedgerEntryIndices;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.SerializedVertexStoreState;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.Transaction;
@@ -61,7 +63,6 @@ import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import java.text.MessageFormat;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,7 +71,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
+import static com.radixdlt.store.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 
 @Singleton
 public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
@@ -115,7 +116,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);
 		primaryConfig.setKeyPrefixing(true);
-		primaryConfig.setBtreeComparator(BerkeleyLedgerEntryStore.AtomStorePackedPrimaryKeyComparator.class);
+		primaryConfig.setBtreeComparator(AtomStorePackedPrimaryKeyComparator.class);
 
 		SecondaryConfig uniqueIndicesConfig = new SecondaryConfig();
 		uniqueIndicesConfig.setAllowCreate(true);
@@ -131,12 +132,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		DatabaseConfig indicesConfig = new DatabaseConfig();
 		indicesConfig.setAllowCreate(true);
 		indicesConfig.setTransactional(true);
-		indicesConfig.setBtreeComparator(BerkeleyLedgerEntryStore.AtomStorePackedPrimaryKeyComparator.class);
+		indicesConfig.setBtreeComparator(AtomStorePackedPrimaryKeyComparator.class);
 
 		DatabaseConfig pendingConfig = new DatabaseConfig();
 		pendingConfig.setAllowCreate(true);
 		pendingConfig.setTransactional(true);
-		pendingConfig.setBtreeComparator(BerkeleyLedgerEntryStore.AtomStorePackedPrimaryKeyComparator.class);
+		pendingConfig.setBtreeComparator(AtomStorePackedPrimaryKeyComparator.class);
 
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
@@ -420,6 +421,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			transaction.abort();
 
 			LedgerEntry ledgerEntry = serialization.fromDson(ledgerEntryData, LedgerEntry.class);
+			//TODO: doGetConflictingAtoms is never called within transaction
 			ImmutableMap<StoreIndex, LedgerEntry> conflictingAtoms = doGetConflictingAtoms(indices.getUniqueIndices(), null);
 			return LedgerEntryStoreResult.conflict(new LedgerEntryConflict(ledgerEntry, conflictingAtoms));
 		} finally {
@@ -741,20 +743,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 	private static long lcFromPKey(byte[] pKey) {
 		return Longs.fromByteArray(pKey, 1);
-	}
-
-	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
-		private static final int RELEVANT_PREFIX_LENGTH = 1 + Long.BYTES;
-		@Override
-		public int compare(byte[] primary1, byte[] primary2) {
-			for (int i = 0; i < RELEVANT_PREFIX_LENGTH; i++) {
-				int compare = UnsignedBytes.compare(primary1[i], primary2[i]);
-				if (compare != 0) {
-					return compare;
-				}
-			}
-			return 0;
-		}
 	}
 
 	private static class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
