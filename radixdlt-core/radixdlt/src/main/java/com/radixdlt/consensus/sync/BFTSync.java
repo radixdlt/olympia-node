@@ -125,10 +125,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private static final Comparator<Map.Entry<GetVerticesRequest, SyncRequestState>> syncPriority =
-		Comparator.<Map.Entry<GetVerticesRequest, SyncRequestState>>comparingInt(e -> e.getValue().count)
-		.reversed() // Prioritise requests with higher counts
-		.thenComparing(e -> e.getValue().view)
-		.reversed(); // The prioritise by highest view
+		Comparator.comparing((Map.Entry<GetVerticesRequest, SyncRequestState> e) -> e.getValue().view)
+		.reversed(); // Prioritise by highest view
 
 
 	private static final Logger log = LogManager.getLogger();
