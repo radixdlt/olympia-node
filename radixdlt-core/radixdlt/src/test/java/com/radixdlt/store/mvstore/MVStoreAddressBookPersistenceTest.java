@@ -22,7 +22,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.serialization.RadixTest;
@@ -33,10 +32,14 @@ import org.radix.universe.system.RadixSystem;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.radix.Radix.*;
 import static org.radix.Radix.AGENT;
+import static org.radix.Radix.AGENT_VERSION;
+import static org.radix.Radix.PROTOCOL_VERSION;
 
 public class MVStoreAddressBookPersistenceTest extends RadixTest {
 	private MVStoreAddressBookPersistence abp;

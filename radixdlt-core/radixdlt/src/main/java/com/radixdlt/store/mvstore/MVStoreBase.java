@@ -21,7 +21,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import org.h2.mvstore.MVMap;
 import org.h2.mvstore.tx.Transaction;
 import org.h2.mvstore.tx.TransactionMap;
 
@@ -30,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.radixdlt.counters.SystemCounters.*;
+import static com.radixdlt.counters.SystemCounters.CounterType;
 import static com.radixdlt.store.mvstore.CommonCounterType.BYTES_READ;
 import static com.radixdlt.store.mvstore.CommonCounterType.BYTES_WRITE;
 import static com.radixdlt.store.mvstore.CommonCounterType.ELAPSED;

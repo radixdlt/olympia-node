@@ -30,11 +30,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.store.mvstore.DatabaseEnvironment.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
+import static com.radixdlt.store.mvstore.DatabaseEnvironment.BYTE_ARRAY_TYPE;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomView;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class MVStoreSafetyStateStoreTest  extends RadixTest {
 	private static final Vote UNUSED_VOTE = randomVote();

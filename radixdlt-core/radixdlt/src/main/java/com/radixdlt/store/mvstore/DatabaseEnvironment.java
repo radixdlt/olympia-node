@@ -22,7 +22,6 @@ import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.h2.engine.IsolationLevel;
-import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.tx.Transaction;
 import org.h2.mvstore.tx.TransactionStore;
@@ -34,6 +33,10 @@ import java.util.function.Function;
 public final class DatabaseEnvironment {
 	public static final ByteArrayDataType BYTE_ARRAY_TYPE = new ByteArrayDataType();
 	private static final Logger LOG = LogManager.getLogger();
+	private static final long AVAILABLE_MEMORY = Runtime.getRuntime().maxMemory();
+	private static final long MAX_CACHE_LIMIT = Math.max(50000000L, (long) (AVAILABLE_MEMORY * 0.1));
+	private static final long MIN_CACHE_LIMIT = (long) (AVAILABLE_MEMORY * 0.25);
+	private static final long DESIRED_CACHE_SIZE = (long) (AVAILABLE_MEMORY * 0.125);
 
 	private final String dbName;
 	private final int cacheSizeMB;
@@ -49,7 +52,7 @@ public final class DatabaseEnvironment {
 			LOG.info("DB working directory not created, assuming it already exists");
 		}
 		dbName = new File(dbHomeDir, "store.db").toString();
-		cacheSizeMB = (int)(calculateCacheSize(properties) /1_000_000);
+		cacheSizeMB = calculateCacheSize(properties);
 	}
 
 	public void start() {
@@ -89,12 +92,11 @@ public final class DatabaseEnvironment {
 		}
 	}
 
-	private long calculateCacheSize(RuntimeProperties properties) {
-		long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
-		long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
-		long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
-		cacheSize = Math.max(cacheSize, minCacheSize);
-		cacheSize = Math.min(cacheSize, maxCacheSize);
-		return cacheSize;
+	private int calculateCacheSize(RuntimeProperties properties) {
+		long minCacheSize = properties.get("db.cache_size.min", MAX_CACHE_LIMIT);
+		long maxCacheSize = properties.get("db.cache_size.max", MIN_CACHE_LIMIT);
+		long cacheSize = properties.get("db.cache_size", DESIRED_CACHE_SIZE);
+
+		return (int) (Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize) / 1_000_000);
 	}
 }

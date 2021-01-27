@@ -71,7 +71,7 @@ public class MVStoreSafetyStateStore extends MVStoreBase implements PersistentSa
 		var dataLen = new AtomicInteger();
 
 		return Optional.ofNullable(map.lastKey())
-			.map(v -> { keyLen.set(v.length); return v; })
+			.map(v -> { keyLen.set(v.length); return v; })	//TODO: switch to own Optional and eliminate such hacks
 			.map(map::get)
 			.map(v -> { dataLen.set(v.length); return v; })
 			.flatMap(this::safetyStateFromDson)
