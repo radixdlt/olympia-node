@@ -468,6 +468,7 @@ public final class EpochManager {
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", response);
 		final var responseEpoch = response.highQC().highestQC().getEpoch();
 		if (responseEpoch < this.currentEpoch()) {
 			log.debug("SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}", response, this.currentEpoch());

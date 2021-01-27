@@ -81,12 +81,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		private final List<HashCode> syncIds = new ArrayList<>();
 		private final ImmutableList<BFTNode> authors;
 		private final View view;
-		private final int count;
 
-		SyncRequestState(ImmutableList<BFTNode> authors, View view, int count) {
+		SyncRequestState(ImmutableList<BFTNode> authors, View view) {
 			this.authors = Objects.requireNonNull(authors);
 			this.view = Objects.requireNonNull(view);
-			this.count = count;
 		}
 	}
 
@@ -335,7 +333,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private void sendBFTSyncRequest(View view, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
 		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view, count));
+		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
 		if (syncRequestState.syncIds.isEmpty()) {
 			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
