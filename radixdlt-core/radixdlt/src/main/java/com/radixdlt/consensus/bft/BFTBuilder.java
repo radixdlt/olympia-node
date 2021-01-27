@@ -52,6 +52,10 @@ public final class BFTBuilder {
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final SafetyRules safetyRules;
 
+	private BFTBuilder() {
+		// Just making this inaccessible
+	}
+
 	public BFTBuilder(BFTNode self,
 					  ViewUpdate viewUpdate,
 					  RemoteEventDispatcher<Vote> voteDispatcher,
