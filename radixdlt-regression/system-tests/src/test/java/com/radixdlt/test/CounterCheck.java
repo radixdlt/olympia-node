@@ -22,7 +22,6 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 
 import java.util.Objects;
@@ -38,7 +37,7 @@ public class CounterCheck implements RemoteBFTCheck {
 	private  List<String> nodesToIgnore;
 
 
-	private CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription ) {
+	private CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription) {
 		this(assertion, assertionDescription, new ArrayList<String>());
 	}
 
@@ -49,7 +48,7 @@ public class CounterCheck implements RemoteBFTCheck {
 	}
 
 
-	public CounterCheck withNodesToIgnore( List<String> nodesToIgnore) {
+	public CounterCheck withNodesToIgnore(List<String> nodesToIgnore) {
 		this.nodesToIgnore = nodesToIgnore;
 		return this;
 	}

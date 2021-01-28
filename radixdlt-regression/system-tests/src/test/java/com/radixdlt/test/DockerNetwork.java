@@ -52,7 +52,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 
 	private Map<String, Map<String, Object>> dockerOptionsPerNode;
 
-	private DockerNetwork(String name, int numNodes, boolean startConsensusOnBoot,String testName) {
+	private DockerNetwork(String name, int numNodes, boolean startConsensusOnBoot, String testName) {
 		this.name = Objects.requireNonNull(name);
 		this.numNodes = numNodes;
 		this.startConsensusOnBoot = startConsensusOnBoot;
@@ -91,19 +91,19 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
 		String[] universeValidatorEnvVariables = CmdHelper.generateUniverseValidators(numNodes);
-		if(!CmdHelper.testRunningOnDocker() && !networkName.contains(DID_NETWORK) ){
+		if (!CmdHelper.testRunningOnDocker() && !networkName.contains(DID_NETWORK)) {
 			CmdHelper.runCommand("docker network rm " + networkName);
 			CmdHelper.runCommand("docker network create " + networkName, null, true);
 		}
 		dockerOptionsPerNode.forEach((nodeId, options) -> {
 			options.put("network", networkName);
-			String nodeValidatorKey = CmdHelper.getNodeValidator(universeValidatorEnvVariables,options);
+			String nodeValidatorKey = CmdHelper.getNodeValidator(universeValidatorEnvVariables, options);
 			String universe = CmdHelper.getUniverse(universeValidatorEnvVariables);
-			List<Object> dockerSetup = CmdHelper.node(options,universe,nodeValidatorKey);
+			List<Object> dockerSetup = CmdHelper.node(options, universe, nodeValidatorKey);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
 			String dockerCommand = (String) dockerSetup.get(1);
 			String containerId = CmdHelper.runContainer(dockerCommand, dockerEnv);
-			options.put("containerId",containerId);
+			options.put("containerId", containerId);
 		});
 
 		return Collections.unmodifiableMap(dockerOptionsPerNode);
@@ -112,9 +112,9 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	@Override
 	public void close() {
 		this.networkState.assertCanShutdown();
-		this.dockerOptionsPerNode.forEach((nodeId,options)->{
+		this.dockerOptionsPerNode.forEach((nodeId, options) -> {
 			String containerId = (String) options.get("containerId");
-			CmdHelper.captureLogs(containerId,testName);
+			CmdHelper.captureLogs(containerId, testName);
 		});
 		CmdHelper.removeAllDockerContainers();
 		CmdHelper.cleanCoreGradleOutput();
@@ -137,9 +137,9 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
 		String network = (String) nodeOptions.get(NETWORK);
-		return network.contains(DID_NETWORK) || CmdHelper.testRunningOnDocker() ?
-			String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint):
-			String.format("http://localhost:%d/%s", nodePort, endpoint);
+		return network.contains(DID_NETWORK) || CmdHelper.testRunningOnDocker()
+			? String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint)
+			: String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}
 
 	@Override
@@ -224,7 +224,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerNetwork(name, numNodes, startConsensusOnBoot,testName);
+			return new DockerNetwork(name, numNodes, startConsensusOnBoot, testName);
 		}
 	}
 

@@ -54,7 +54,7 @@ public final class SystemCounters {
 	 * @return The parsed instance of {@link SystemCounters}
 	 */
 	public static SystemCounters from(JSONObject jsonCounters) {
-		logger.debug("Response {}",jsonCounters.toString());
+		logger.debug("Response {}", jsonCounters.toString());
 		ImmutableMap.Builder<CounterType, Long> systemCounters = ImmutableMap.builder();
 		for (CounterType value : CounterType.values()) {
 			try {

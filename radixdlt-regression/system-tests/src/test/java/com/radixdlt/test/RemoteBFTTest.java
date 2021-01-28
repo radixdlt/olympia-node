@@ -137,13 +137,21 @@ public final class RemoteBFTTest {
 						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
 						.doOnSuccess(result -> {
 							if (!delayErrors) {
-								result.assertSuccess(String.format("check %s failed, failing immediately (delayErrors=false)", checkToRun));
-							} }))
+								result.assertSuccess(
+									String.format(
+										"check %s failed, failing immediately (delayErrors=false)",
+										checkToRun
+									)
+								);
+							}
+						})
+					)
 					.flatMap(Single::toObservable))
 				.collect(Collectors.toList()))
 			.take(duration, durationUnit)
 			.filter(RemoteBFTCheckResult::isError)
-			.doOnNext(failedCheck -> logger.error("check failed, delaying until completion (delayErrors=true)", failedCheck.getException()))
+			.doOnNext(failedCheck ->
+				logger.error("check failed, delaying until completion (delayErrors=true)", failedCheck.getException()))
 			.collectInto(new ArrayList<RemoteBFTCheckResult>(), List::add)
 			.blockingGet();
 		if (!failingChecks.isEmpty()) {
@@ -291,7 +299,7 @@ public final class RemoteBFTTest {
 		 * Asserts liveness using the {@link LivenessCheck}
 		 * @return This builder
 		 */
-		public Builder assertLiveness(int livenessExpectedInSeconds,List<String> nodestoIgnore) {
+		public Builder assertLiveness(int livenessExpectedInSeconds, List<String> nodestoIgnore) {
 			return addCheck(LivenessCheck
 				.with(livenessExpectedInSeconds, TimeUnit.SECONDS, 1, TimeUnit.SECONDS)
 				.withNodesToIgnore(nodestoIgnore)
@@ -326,7 +334,9 @@ public final class RemoteBFTTest {
 		 * @return This builder
 		 */
 		public Builder assertAllProposalsHaveDirectParents(List<String> nodesToIgnore) {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.BFT_INDIRECT_PARENT, 0L).withNodesToIgnore(nodesToIgnore));
+			return addCheck(
+				CounterCheck.checkEquals(SystemCounters.CounterType.BFT_INDIRECT_PARENT, 0L).withNodesToIgnore(nodesToIgnore)
+			);
 		}
 
 		/**
@@ -350,8 +360,8 @@ public final class RemoteBFTTest {
 				throw new IllegalStateException("testNetwork not set");
 			}
 
-			return new RemoteBFTTest(this.testNetwork, ImmutableList.copyOf(this.prerequisites), ImmutableList.copyOf(this.checks), this.schedule,
-				this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, startConsensusOnRun);
+			return new RemoteBFTTest(this.testNetwork, ImmutableList.copyOf(this.prerequisites), ImmutableList.copyOf(this.checks),
+				this.schedule, this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, startConsensusOnRun);
 		}
 	}
 

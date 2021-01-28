@@ -49,7 +49,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 	private List<String> nodesToIgnore;
 
 
-	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit , List<String> nodesToIgnore) {
+	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit, List<String> nodesToIgnore) {
 		this.patience = patience;
 		this.patienceUnit = Objects.requireNonNull(patienceUnit);
 		this.timeout = timeout;
@@ -58,7 +58,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 	}
 
 	public static LivenessCheck with(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
-		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit,new ArrayList<String>());
+		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit, new ArrayList<String>());
 	}
 
 	public LivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {
@@ -133,7 +133,12 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * An error that is thrown when liveness was not satisfied
 	 */
 	public static final class LivenessError extends AssertionError {
-		private LivenessError(Pair<Long, Long> previousHighestView, Pair<Long, Long> currentHighestView, long patience, TimeUnit patienceUnit) {
+		private LivenessError(
+			Pair<Long, Long> previousHighestView,
+			Pair<Long, Long> currentHighestView,
+			long patience,
+			TimeUnit patienceUnit
+		) {
 			super(String.format("QC has not advanced from {epoch=%d view=%d} (current={epoch=%d view=%d}) after %d %s",
 				previousHighestView.getFirst(),
 				previousHighestView.getSecond(),

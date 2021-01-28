@@ -20,6 +20,10 @@ package com.radixdlt.test;
 import java.util.ArrayList;
 
 public class AssertionChecks {
+	private AssertionChecks() {
+		throw new IllegalStateException("Can't construct");
+	}
+
 	/**
 	 * Gets the test builder for slow node BFT network tests.
 	 *
