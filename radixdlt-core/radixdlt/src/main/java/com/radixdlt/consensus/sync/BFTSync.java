@@ -143,7 +143,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	// FIXME: Remove this once sync is fixed
-	private final RateLimiter syncRequestRateLimiter = RateLimiter.create(100.0);
+	private final RateLimiter syncRequestRateLimiter = RateLimiter.create(50.0);
 
 	public BFTSync(
 		@Self BFTNode self,
@@ -335,9 +335,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
 		if (syncRequestState.syncIds.isEmpty()) {
-			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
-			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
 			if (this.syncRequestRateLimiter.tryAcquire()) {
+				VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
+				this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
 				this.requestSender.dispatch(authors.get(0), request);
 			}
 			this.bftSyncing.put(request, syncRequestState);
