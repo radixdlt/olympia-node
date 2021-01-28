@@ -112,7 +112,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 			updateCounters();
 			if (accComparator.compare(this.targetHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 				final var nextSync = new SyncInProgress(this.targetHeader, this.currentHeader, this.targetNodes);
-				timeoutScheduler.dispatch(nextSync, 0);
+				refreshRequest(nextSync, "continue");
 			}
 		}
 	}

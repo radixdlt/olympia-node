@@ -387,8 +387,7 @@ public class PeerManager {
 			if (value != null && value.longValue() == nonce) {
 				log.info("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
 				this.probes.remove(peer);
-				// FIXME: Reinstate when better inbound/outbound management
-				//this.addressbook.removePeer(peer.getNID());
+				this.addressbook.removePeer(peer.getNID());
 			}
 		}
 	}
