@@ -1,0 +1,91 @@
+/*
+ * (C) Copyright 2021 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
+apply plugin: 'java-library'
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+
+sourceSets {
+    test {
+        java { srcDirs = [] }    // no source dirs for the java compiler
+        groovy { srcDirs = ["src/test/java", "src/test/groovy"] }  // compile   everything in src/ with groovy
+    }
+}
+
+dependencies {
+    implementation project(':radixdlt-java')
+
+    implementation 'io.reactivex.rxjava2:rxjava'
+    implementation 'org.json:json'
+
+    testImplementation group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
+    testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
+    testImplementation 'io.cucumber:cucumber-core:2.1.0'
+    testImplementation 'io.cucumber:cucumber-java:5.5.0'
+    testImplementation 'io.cucumber:cucumber-junit:5.5.0'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
+    testImplementation group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
+    testImplementation group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
+}
+
+task copyCLIJar {
+    doLast {
+        delete "${projectDir}/target/cli"
+        copy {
+            from "${rootDir}/../radixdlt-java/radixdlt-cli/build/libs"
+            into "${projectDir}/target/cli"
+        }
+    }
+}
+task bddTest(type: Test) {
+    dependsOn clean,copyCLIJar
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    include "Runner.class"
+}
+test.enabled = false
+
+task dockerSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Docker'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
+    exclude "Runner.class"
+}
+
+task clusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Cluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    exclude "Runner.class"
+}
+
+task ephemeralClusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.EphemeralCluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
+    exclude "Runner.class"
+}
