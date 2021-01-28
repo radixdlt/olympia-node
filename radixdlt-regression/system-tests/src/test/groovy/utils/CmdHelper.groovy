@@ -285,7 +285,7 @@ class CmdHelper {
             //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
             throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
         }
-        String gradlewPath = System.getProperty("user.dir")
+        String gradlewPath = System.getenv('CORE_DIR')
         (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} clean generateDevUniverse",
                 null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
         String[] envVars =  exportVars
