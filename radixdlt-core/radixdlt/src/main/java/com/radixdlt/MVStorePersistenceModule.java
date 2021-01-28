@@ -24,8 +24,8 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
@@ -33,22 +33,22 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import org.radix.database.DatabaseEnvironment;
+import com.radixdlt.store.mvstore.DatabaseEnvironment;
+import com.radixdlt.store.mvstore.MVStoreLedgerEntryStore;
+import com.radixdlt.store.mvstore.MVStoreSafetyStateStore;
 
 /**
- * Module which manages persistent storage
+ * Module which manages persistent storage using MVStore-based persistence layer
  */
-public class PersistenceModule extends AbstractModule {
+public class MVStorePersistenceModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO: should be singletons?
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
-		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
+		bind(LedgerEntryStore.class).to(MVStoreLedgerEntryStore.class).in(Scopes.SINGLETON);
+		bind(LedgerEntryStoreView.class).to(MVStoreLedgerEntryStore.class);
+		bind(PersistentVertexStore.class).to(MVStoreLedgerEntryStore.class);
+		bind(PersistentSafetyStateStore.class).to(MVStoreSafetyStateStore.class);
+		bind(MVStoreSafetyStateStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

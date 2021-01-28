@@ -22,6 +22,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
+import com.radixdlt.BerkeleyPersistenceModule;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DispatcherModule;
@@ -32,7 +33,6 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.NoFeeModule;
-import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
@@ -125,7 +125,7 @@ public final class ModuleForRecoveryTests {
 			// Fees
 			new NoFeeModule(),
 
-			new PersistenceModule(),
+			new BerkeleyPersistenceModule(),
 
 			new ConsensusRecoveryModule(),
 			new LedgerRecoveryModule()

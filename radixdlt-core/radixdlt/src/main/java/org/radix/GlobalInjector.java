@@ -24,6 +24,7 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.BFTKeyModule;
+import com.radixdlt.BerkeleyPersistenceModule;
 import com.radixdlt.CheckpointModule;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -40,7 +41,6 @@ import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.MempoolReceiverModule;
-import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
@@ -62,7 +62,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
-import com.radixdlt.network.addressbook.AddressBookModule;
+import com.radixdlt.network.addressbook.BerkeleyAddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
@@ -167,7 +167,7 @@ public class GlobalInjector {
 			// Fees
 			new TokenFeeModule(),
 
-			new PersistenceModule(),
+			new BerkeleyPersistenceModule(),
 			new ConsensusRecoveryModule(),
 			new LedgerRecoveryModule(),
 
@@ -179,7 +179,7 @@ public class GlobalInjector {
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
-			new AddressBookModule(),
+			new BerkeleyAddressBookModule(),
 			new HostIpModule(properties),
 
 			globalModule

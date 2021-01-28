@@ -27,6 +27,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
+import com.radixdlt.BerkeleyPersistenceModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.DispatcherModule;
@@ -36,7 +37,6 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.NoFeeModule;
-import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
@@ -145,7 +145,7 @@ public class MempoolTest {
 			// Fees
 			new NoFeeModule(),
 
-			new PersistenceModule(),
+			new BerkeleyPersistenceModule(),
 			new LedgerRecoveryModule()
 		);
 	}

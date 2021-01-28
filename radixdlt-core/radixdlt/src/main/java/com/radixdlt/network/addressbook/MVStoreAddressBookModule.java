@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -17,19 +17,19 @@
 
 package com.radixdlt.network.addressbook;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
-import org.radix.database.DatabaseEnvironment;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.mvstore.DatabaseEnvironment;
+import com.radixdlt.store.mvstore.MVStoreAddressBookPersistence;
 
 /**
- * Guice configuration for {@link AddressBook}.
+ * Guice configuration for {@link AddressBook} with MVStore-based persistence layer.
  */
-public final class AddressBookModule extends AbstractModule {
+public final class MVStoreAddressBookModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
@@ -45,7 +45,7 @@ public final class AddressBookModule extends AbstractModule {
 	@Provides
 	@Singleton
 	PeerPersistence addressBookPersistenceProvider(Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
-		BerkeleyAddressBookPersistence persistence = new BerkeleyAddressBookPersistence(serialization, dbEnv, systemCounters);
+		var persistence = new MVStoreAddressBookPersistence(serialization, dbEnv, systemCounters);
 		persistence.start();
 		return persistence;
 	}
