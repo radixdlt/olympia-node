@@ -103,7 +103,8 @@ public class BurnMultiIssuanceTokens {
 		disposables.forEach(Disposable::dispose);
 	}
 
-	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the state of \"([^\"]*)\"$")
+	@Given
+	("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to state of \"([^\"]*)\"$")
 	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_state_of(
 			String symbol1, int initialSupply, String symbol2) throws Throwable {
 		assertEquals(symbol1, symbol2); // Only case we handle at the moment
@@ -150,12 +151,22 @@ public class BurnMultiIssuanceTokens {
 
 	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens' on the other account$")
 	public void the_client_executes_burn_tokens_on_the_other_account(int newSupply, String symbol) throws Throwable {
-		burnTokens(BigDecimal.valueOf(newSupply), symbol, RadixAddress.from(this.properties.get(OTHER_ADDRESS)), RadixAddress.from(this.properties.get(OTHER_ADDRESS)));
+		burnTokens(
+			BigDecimal.valueOf(newSupply),
+			symbol,
+			RadixAddress.from(this.properties.get(OTHER_ADDRESS)),
+			RadixAddress.from(this.properties.get(OTHER_ADDRESS))
+		);
 	}
 
 	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens'$")
 	public void the_client_executes_burn_tokens(int newSupply, String symbol) throws Throwable {
-		burnTokens(BigDecimal.valueOf(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)), RadixAddress.from(this.properties.get(ADDRESS)));
+		burnTokens(
+			BigDecimal.valueOf(newSupply),
+			symbol,
+			RadixAddress.from(this.properties.get(ADDRESS)),
+			RadixAddress.from(this.properties.get(ADDRESS))
+		);
 	}
 
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
@@ -201,7 +212,8 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
-	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_burn_those_tokens() throws Throwable {
+	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission()
+		throws Throwable {
 		awaitAtomValidationError();
 	}
 

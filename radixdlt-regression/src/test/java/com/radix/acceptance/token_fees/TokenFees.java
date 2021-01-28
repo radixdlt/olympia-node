@@ -248,13 +248,13 @@ public class TokenFees {
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
 		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
-				SpunParticle.down(inParticle),
-				SpunParticle.up(new UnallocatedTokensParticle(
-						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-				SpunParticle.up(new TransferrableTokensParticle(
-						changeAmountFirstParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-				SpunParticle.up(new TransferrableTokensParticle(
-						changeAmountSecondParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+			SpunParticle.down(inParticle),
+			SpunParticle.up(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+			SpunParticle.up(new TransferrableTokensParticle(
+				changeAmountFirstParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+			SpunParticle.up(new TransferrableTokensParticle(
+				changeAmountSecondParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));
 
 		t.stage(feeParticleGroup);
@@ -265,7 +265,8 @@ public class TokenFees {
 				.subscribe(this.observer);
 	}
 
-	@When("^I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,$")
+	@When("^I submit an atom with a fee group that has an input TransferrableTokensParticle "
+	      + "with a smaller value than the output TransferrableTokensParticle,$")
 	public void i_submit_an_atom_with_a_fee_group_that_has_an_input_ttp_with_a_smaller_value_than_the_output_ttp() {
 		final RadixAddress address = this.api.getAddress();
 		final Transaction t = this.api.createTransaction();
@@ -278,7 +279,13 @@ public class TokenFees {
 
 		// acquired ttp is first split into two ttps, one being just 40 millirads
 		final TransferrableTokensParticle exchangedParticle1 = new TransferrableTokensParticle(
-				unitsToSubunits(BigDecimal.valueOf(40, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
+			unitsToSubunits(BigDecimal.valueOf(40, 3)),
+			UInt256.ONE,
+			address,
+			System.nanoTime(),
+			feeTokenRri,
+			inParticle.getTokenPermissions()
+		);
 
 		// 2nd exchanged particle gets the remaining amount
 		final TransferrableTokensParticle exchangedParticle2 = new TransferrableTokensParticle(

@@ -66,6 +66,9 @@ import com.radixdlt.utils.Pair;
 
 import static org.junit.Assume.assumeTrue;
 
+// FIXME: Too many warnings here to fix for checkstyle right now.
+//CHECKSTYLE:OFF
+
 public final class DoubleSpendTestRunner {
 	private final Function<RadixApplicationAPI, DoubleSpendTestConditions> testSupplier;
 	private final BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier;
@@ -106,7 +109,12 @@ public final class DoubleSpendTestRunner {
 		private final RadixNode node;
 		private final int clientId;
 
-		SingleNodeAPI(int clientId, RadixNode node, RadixIdentity identity, BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier) {
+		SingleNodeAPI(
+			int clientId,
+			RadixNode node,
+			RadixIdentity identity,
+			BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier
+		) {
 			this.clientId = clientId;
 			this.node = node;
 			this.api = apiSupplier.apply(
@@ -196,7 +204,7 @@ public final class DoubleSpendTestRunner {
 
 		List<TestObserver<SubmitAtomAction>> submissionObservers = conflictingAtoms.map(a -> {
 			TestObserver<SubmitAtomAction> submissionObserver =
-				TestObserver.create(Util.loggingObserver("Client " + a.getFirst().clientId + " Submission" ));
+				TestObserver.create(Util.loggingObserver("Client " + a.getFirst().clientId + " Submission"));
 			a.getFirst().executeSequentially(a.getSecond()).subscribe(submissionObserver);
 			return submissionObserver;
 		}).toList().blockingGet();
@@ -234,13 +242,26 @@ public final class DoubleSpendTestRunner {
 				if (a instanceof FetchAtomsObservationAction) {
 					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;
 					if (f.getObservation().getType() == Type.DELETE || f.getObservation().getType() == Type.STORE) {
-						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " " + f.getObservation().getType() + ": "
-							+ f.getObservation().getAtom().getAid());
+						System.out.println(
+							System.currentTimeMillis()
+							+ " "
+							+ singleNodeApi
+							+ " "
+							+ f.getObservation().getType()
+							+ ": "
+							+ f.getObservation().getAtom().getAid()
+						);
 					}
 				} else if (a instanceof SubmitAtomStatusAction) {
 					SubmitAtomStatusAction r = (SubmitAtomStatusAction) a;
 					if (r.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION) {
-						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getAid());
+						System.out.println(
+							System.currentTimeMillis()
+							+ " "
+							+ singleNodeApi
+							+ " VALIDATION_ERROR: "
+							+ r.getAtom().getAid()
+						);
 					}
 				}
 			})
@@ -282,26 +303,45 @@ public final class DoubleSpendTestRunner {
 				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(1000) - cur;
 
 				if (timeUntilResolved > 0) {
-					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition().getCondition().matches(s))
-							&& states.stream().allMatch(s0 -> states.stream().allMatch(s1 -> s1.equals(s0)))
-							&& lastAtomState.entrySet().stream().map(Entry::getValue)
-								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0))
+					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition()
+						.getCondition().matches(s))
+						&& states.stream().allMatch(s0 -> states.stream().allMatch(s1 -> s1.equals(s0)))
+						&& lastAtomState.entrySet().stream().map(Entry::getValue)
+							.allMatch(s0 -> lastAtomState.entrySet().stream()
+								.map(Entry::getValue)
+								.allMatch(s1 -> s1.equals(s0))
 					)) {
 						return states.iterator().next();
 					} else {
 						try {
 							if (lastAtomState.entrySet().stream().map(Entry::getValue)
-								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0)))) {
-								System.out.println(cur + " States match but not expected retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+								.allMatch(s0 -> lastAtomState.entrySet().stream()
+									.map(Entry::getValue).allMatch(s1 -> s1.equals(s0)))) {
+								System.out.println(
+									cur
+									+ " States match but not expected retrying 5 seconds...Time until resolved: "
+									+ (timeUntilResolved / 1000)
+								);
 								if (!states.isEmpty()) {
 									System.out.println(states.iterator().next());
 								}
 							} else {
-								System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+								System.out.println(
+									cur
+									+ " States don't match retrying 5 seconds...Time until resolved: "
+									+ (timeUntilResolved / 1000)
+								);
 							}
 
 							for (Entry<String, Set<Atom>> e : lastAtomState.entrySet()) {
-								System.out.println(e.getKey() + ": " + e.getValue().stream().map(Atom::getAid).map(Object::toString).collect(Collectors.toSet()));
+								System.out.println(
+									e.getKey()
+									+ ": "
+									+ e.getValue().stream()
+										.map(Atom::getAid)
+										.map(Object::toString)
+										.collect(Collectors.toSet())
+								);
 							}
 
 							TimeUnit.SECONDS.sleep(5);
@@ -335,7 +375,7 @@ public final class DoubleSpendTestRunner {
 
 		} finally {
 			compositeDisposable.dispose();
-			testObserversPerApi.forEach(testObservers -> testObservers.forEach((k,v) -> v.dispose()));
+			testObserversPerApi.forEach(testObservers -> testObservers.forEach((k, v) -> v.dispose()));
 		}
 
 		throw new IllegalStateException();

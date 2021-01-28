@@ -112,7 +112,10 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.uuid)
 			.flatMap(n -> {
 				if (n.getType() == NotificationType.START) {
-					return this.jsonRpcClient.sendAtomsSubscribe(this.uuid, new AtomQuery(this.api.getAddress())).andThen(Observable.empty());
+					return this.jsonRpcClient.sendAtomsSubscribe(
+						this.uuid,
+						new AtomQuery(this.api.getAddress())
+					).andThen(Observable.empty());
 				} else {
 					return Observable.just(n.getEvent());
 				}
@@ -135,7 +138,10 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.otherUuid)
 			.flatMap(n -> {
 				if (n.getType() == NotificationType.START) {
-					return this.jsonRpcClient.sendAtomsSubscribe(this.otherUuid, new AtomQuery(this.api.getAddress())).andThen(Observable.empty());
+					return this.jsonRpcClient.sendAtomsSubscribe(
+						this.otherUuid,
+						new AtomQuery(this.api.getAddress())
+					).andThen(Observable.empty());
 				} else {
 					return Observable.just(n.getEvent());
 				}
@@ -163,7 +169,10 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.otherUuid)
 			.flatMap(n -> {
 				if (n.getType() == NotificationType.START) {
-					return this.jsonRpcClient.sendAtomsSubscribe(this.otherUuid, new AtomQuery(this.api.getAddress())).andThen(Observable.empty());
+					return this.jsonRpcClient.sendAtomsSubscribe(
+						this.otherUuid,
+						new AtomQuery(this.api.getAddress())
+					).andThen(Observable.empty());
 				} else {
 					return Observable.just(n.getEvent());
 				}

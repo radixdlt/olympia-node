@@ -99,7 +99,8 @@ public class MintMultiIssuanceTokens {
 		disposables.forEach(Disposable::dispose);
 	}
 
-	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the state of \"([^\"]*)\"$")
+	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply "
+	       + "and is listening to the state of \"([^\"]*)\"$")
 	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_state_of(
 			String symbol1, int initialSupply, String symbol2) throws Throwable {
 		assertEquals(symbol1, symbol2); // Only case we handle at the moment
@@ -120,8 +121,9 @@ public class MintMultiIssuanceTokens {
 		awaitAtomStatus(AtomStatus.STORED);
 	}
 
-	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply and is listening to the state of the token$")
-	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply_and_is_listening_to_the_state_of_the_token(int pow2)
+	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply "
+	       + "and is listening to the state of the token$")
+	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply_and_is_listening(int pow2)
 			throws Throwable {
 		setupApi();
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18).toString());
@@ -170,7 +172,11 @@ public class MintMultiIssuanceTokens {
 
 	@When("^the client executes mint 2\\^(\\d+) subunit tokens$")
 	public void the_client_executes_mint_subunit_tokens(int pow2) throws Throwable {
-		mintTokens(BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
+		mintTokens(
+			BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18),
+			this.properties.get(SYMBOL),
+			RadixAddress.from(this.properties.get(ADDRESS))
+		);
 	}
 
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
@@ -205,7 +211,8 @@ public class MintMultiIssuanceTokens {
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
-	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_mint_those_tokens() throws Throwable {
+	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_mint_those_tokens()
+		throws Throwable {
 		awaitAtomValidationError();
 	}
 

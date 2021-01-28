@@ -83,7 +83,7 @@ public class UnallocatedTokensParticleTest {
 	}
 
 	@Test
-	public void given_an_account_with_a_token__when_the_account_executes_an_atom_with_unallocated_particles_to_that_token__then_the_atom_will_be_rejected() {
+	public void given_an_account_with_a_token__when_the_account_executes_an_atom_with_unallocated_particles_to_that_token__then_error() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api);
 

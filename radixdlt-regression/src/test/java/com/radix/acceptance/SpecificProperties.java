@@ -89,8 +89,8 @@ public class SpecificProperties {
 		}
 		if (obj instanceof SpecificProperties) {
 			SpecificProperties other = (SpecificProperties) obj;
-			return Objects.equals(this.defaultValues, other.defaultValues) &&
-					Objects.equals(this.propertyValues, other.propertyValues);
+			return Objects.equals(this.defaultValues, other.defaultValues)
+				&& Objects.equals(this.propertyValues, other.propertyValues);
 		}
 		return false;
 	}

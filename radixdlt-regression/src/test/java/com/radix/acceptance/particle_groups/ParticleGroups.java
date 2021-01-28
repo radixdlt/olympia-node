@@ -130,7 +130,8 @@ public class ParticleGroups {
 			List<Particle> particles = store.collect(Collectors.toList());
 
 			return Arrays.stream(mergeAction.actions)
-				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups((T) a, particles.stream()).stream()))
+				.flatMap(a -> Arrays.stream(this.mappers)
+					 .flatMap(mapper -> mapper.mapToParticleGroups((T) a, particles.stream()).stream()))
 				.collect(Collectors.toList());
 		}
 	}
@@ -155,7 +156,12 @@ public class ParticleGroups {
 	}
 
 	@And("^I submit one token transfer requests of (\\d+) for \"([^\"]*)\" and of (\\d+) for \"([^\"]*)\" in one particle group$")
-	public void i_submit_one_token_transfer_requests_of_for_and_of_for_in_one_particle_group(int amount1, String symbol1, int amount2, String symbol2) throws Throwable {
+	public void i_submit_one_token_transfer_requests_of_for_and_of_for_in_one_particle_group(
+		int amount1,
+		String symbol1,
+		int amount2,
+		String symbol2
+	) throws Throwable {
 		MergeAction doubleSpendAction = new MergeAction(
 			buildTransferTokenAction(symbol1, amount1),
 			buildTransferTokenAction(symbol2, amount2)

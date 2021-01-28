@@ -50,7 +50,7 @@ public class UnsubscribeTest {
 		state -> state.getNodeStates().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	@Test
-	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {
+	public void given_i_am_a_library_user_with_no_connections__when_send_a_message_to_myself__then_all_network_connections_closed() {
 		// Given I am a library user
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(normalApi);
@@ -78,7 +78,8 @@ public class UnsubscribeTest {
 	}
 
 	@Test
-	public void given_i_am_connected_to_a_node_and_subscribed_once__when_i_dispose_of_the_lone_subscriber__then_i_can_observe_all_network_connections_being_closed() throws Exception {
+	public void given_i_am_connected_to_a_node_and_subscribed_once__when_i_dispose_of_the_lone_subscriber__then_all_connections_closed()
+		throws Exception {
 		// Given I am connected to a node and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<PlaintextMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
@@ -103,7 +104,7 @@ public class UnsubscribeTest {
 	}
 
 	@Test
-	public void given_i_am_connected_to_a_node_and_subscribed_twice__when_i_dispose_of_one_subscriber__then_i_can_observe_a_network_connection_still_open() {
+	public void given_i_am_connected_to_a_node_and_subscribed_twice__when_i_dispose_of_one_subscriber__then_network_connection_still_open() {
 		// Given I am connected to a node and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<PlaintextMessage> messageListener1 = TestObserver.create(Util.loggingObserver("MessageListener1"));

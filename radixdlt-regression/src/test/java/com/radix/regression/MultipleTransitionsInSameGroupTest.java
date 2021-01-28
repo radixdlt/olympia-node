@@ -124,7 +124,11 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.down(unallocatedTokens),
 			SpunParticle.up(mintedTokens)
 		);
-		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().multiply(UInt256.TWO));
+		TransferrableTokensParticle output = createTransferrableTokens(
+			myAddress,
+			tokenDefinition,
+			mintedTokens.getAmount().multiply(UInt256.TWO)
+		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),
@@ -158,7 +162,11 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.down(unallocatedTokens),
 			SpunParticle.up(mintedTokens)
 		);
-		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().multiply(UInt256.THREE));
+		TransferrableTokensParticle output = createTransferrableTokens(
+			myAddress,
+			tokenDefinition,
+			mintedTokens.getAmount().multiply(UInt256.THREE)
+		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),
@@ -178,7 +186,11 @@ public class MultipleTransitionsInSameGroupTest {
 		result.dispose();
 	}
 
-	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, MutableSupplyTokenDefinitionParticle tokenDefinition, UInt256 amount) {
+	private TransferrableTokensParticle createTransferrableTokens(
+		RadixAddress myAddress,
+		MutableSupplyTokenDefinitionParticle tokenDefinition,
+		UInt256 amount
+	) {
 		return new TransferrableTokensParticle(
 			amount,
 			UInt256.ONE,
@@ -203,7 +215,11 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.down(unallocatedTokens),
 			SpunParticle.up(mintedTokens)
 		);
-		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().divide(UInt256.TWO));
+		TransferrableTokensParticle output = createTransferrableTokens(
+			myAddress,
+			tokenDefinition,
+			mintedTokens.getAmount().divide(UInt256.TWO)
+		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),

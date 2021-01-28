@@ -21,6 +21,10 @@ import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
 public class Util {
+	private Util() {
+		throw new IllegalArgumentException("Can't construct");
+	}
+
 	public static <T> Observer<T> loggingObserver(String name) {
 		return new Observer<>() {
 			@Override

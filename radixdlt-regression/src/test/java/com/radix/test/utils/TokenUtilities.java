@@ -143,8 +143,8 @@ public final class TokenUtilities {
 
 	private static EUID requestTokens(RadixAddress address) {
 		try {
-			String faucetHost = Optional.ofNullable(System.getenv("FAUCET_HOST")).orElse("http://localhost:8079") ;
-			URL url = new URL(faucetHost+ "/api/v1/getTokens/" + address);
+			String faucetHost = Optional.ofNullable(System.getenv("FAUCET_HOST")).orElse("http://localhost:8079");
+			URL url = new URL(faucetHost + "/api/v1/getTokens/" + address);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
 			con.setRequestMethod("GET");
 			con.setConnectTimeout(5000);

@@ -87,7 +87,8 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 		return new PostConsensusCondition(
 			stateRequired,
 			new Condition<>(map -> {
-				TokenDefinitionsState tokenDef = (TokenDefinitionsState) map.get(ShardedAppStateId.of(TokenDefinitionsState.class, apiAddress));
+				TokenDefinitionsState tokenDef =
+					(TokenDefinitionsState) map.get(ShardedAppStateId.of(TokenDefinitionsState.class, apiAddress));
 				TokenState tokenState = tokenDef.getState().get(tokenRef);
 				if (tokenState == null) {
 					return false;

@@ -123,7 +123,9 @@ public class AtomTimestamp {
 		boolean existingIdentity = this.identities.stream()
 			.anyMatch(i -> identity.getPublicKey().equals(i.getPublicKey()));
 		if (this.identities.size() != expectedNumber) {
-			throw new IllegalStateException(String.format("Expected %s identities and there are %s", expectedNumber, this.identities.size()));
+			throw new IllegalStateException(
+				String.format("Expected %s identities and there are %s", expectedNumber, this.identities.size())
+			);
 		}
 		this.identities.add(identity);
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);

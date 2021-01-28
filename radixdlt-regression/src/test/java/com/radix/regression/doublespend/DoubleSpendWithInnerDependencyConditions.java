@@ -39,7 +39,7 @@ class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditi
 	private final RRI tokenRef;
 
 	DoubleSpendWithInnerDependencyConditions(RadixAddress apiAddress) {
-		this.tokenRef = RRI.of(apiAddress,"JOSH");
+		this.tokenRef = RRI.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
 	}
 
@@ -85,7 +85,8 @@ class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditi
 		return new PostConsensusCondition(
 			stateRequired,
 			new Condition<>(map -> {
-				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
+				TokenBalanceState balanceState =
+					(TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 				return balanceState.getBalance().get(tokenRef).compareTo(BigDecimal.ONE) == 0;
 			}, "1 JOSH in account")
 		);

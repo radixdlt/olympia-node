@@ -32,7 +32,7 @@ import org.junit.Test;
 
 public class MintTooManyTokensOfDifferentTypesTest {
 	@Test
-	public void given_a_token_with_max_supply_created_in_one_account__when_another_token_with_max_supply_is_created_in_another_account__then_the_client_should_be_notified_of_success() {
+	public void given_a_token_with_max_supply_created_in_one_account__when_another_token_with_max_supply_created() {
 		RadixApplicationAPI api0 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api0);
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());

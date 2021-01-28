@@ -125,7 +125,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 		return new PostConsensusCondition(
 			stateRequired,
 			new Condition<>(map -> {
-				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
+				TokenBalanceState balanceState =
+					(TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 
 				Map<RRI, BigDecimal> balances = balanceState.getBalance();
 

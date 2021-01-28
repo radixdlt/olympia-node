@@ -42,7 +42,8 @@ import io.reactivex.observers.TestObserver;
 public class SendUniqueTransactionsTest {
 
 	@Test
-	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_client_should_be_notified_that_unique_id_is_already_used() throws Exception {
+	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_error()
+		throws Exception {
 
 		// Given account owner which has performed an action with a unique id
 		final RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
@@ -74,13 +75,15 @@ public class SendUniqueTransactionsTest {
 		// Then client should be notified that unique id is already used
 		submissionObserver.awaitTerminalEvent();
 		final AlreadyUsedUniqueIdReason expectedReason = new AlreadyUsedUniqueIdReason(new UniqueId(api.getAddress(), uniqueId));
-		final Predicate<ActionExecutionException> hasExpectedUniqueIdCollision = e -> e.getReasons().stream().anyMatch(expectedReason::equals);
+		final Predicate<ActionExecutionException> hasExpectedUniqueIdCollision = e -> e.getReasons().stream()
+			.anyMatch(expectedReason::equals);
 		submissionObserver.assertError(e -> hasExpectedUniqueIdCollision.test((ActionExecutionException) e));
 		submissionObserver.assertError(ActionExecutionException.class);
 	}
 
 	@Test
-	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_client_should_be_notified_of_success() throws Exception {
+	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_success()
+		throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
@@ -100,7 +103,8 @@ public class SendUniqueTransactionsTest {
 	}
 
 	@Test
-	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id_in_another_account__then_client_should_be_notified_of_error() throws Exception {
+	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id_in_another_account__then_error()
+		throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(),  RadixIdentities.createNew());

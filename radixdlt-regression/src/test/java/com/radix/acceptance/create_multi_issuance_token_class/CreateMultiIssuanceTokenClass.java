@@ -104,7 +104,8 @@ public class CreateMultiIssuanceTokenClass {
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
+	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", "
+	      + "initialSupply (\\d+) and granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_name_symbol_initialSupply_and_granularity(
 			String name, String symbol, int initialSupply, int granularity) {
 		this.properties.put(NAME, name);
@@ -114,7 +115,8 @@ public class CreateMultiIssuanceTokenClass {
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", description \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
+	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", "
+	      + "description \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_name_description_symbol_initialSupply_and_granularity(
 			String name, String description, String symbol, int initialSupply, int granularity) {
 		this.properties.put(NAME, name);
@@ -147,7 +149,11 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		MintTokensAction mintTokensAction = MintTokensAction.create(RRI.of(api.getAddress(), symbol), api.getAddress(), new BigDecimal(count));
+		MintTokensAction mintTokensAction = MintTokensAction.create(
+			RRI.of(api.getAddress(), symbol),
+			api.getAddress(),
+			new BigDecimal(count)
+		);
 		Transaction tx = api.createTransaction();
 		tx.stage(mintTokensAction);
 		tx.commitAndPush(nodeConnection)
@@ -160,7 +166,11 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_burn_request_of_for(int count, String symbol) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(RRI.of(api.getAddress(), symbol), api.getAddress(), new BigDecimal(count));
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(
+			RRI.of(api.getAddress(), symbol),
+			api.getAddress(),
+			new BigDecimal(count)
+		);
 		Transaction tx = api.createTransaction();
 		tx.stage(burnTokensAction);
 		tx.commitAndPush(nodeConnection)

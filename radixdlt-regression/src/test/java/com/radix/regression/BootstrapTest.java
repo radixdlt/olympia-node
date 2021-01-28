@@ -47,7 +47,9 @@ public class BootstrapTest {
 
 			@Override
 			public List<RadixNetworkEpic> getDiscoveryEpics() {
-				return Collections.singletonList(new DiscoverNodesEpic(nodeFinder.getSeed().toObservable(), RadixEnv.getBootstrapConfig().getConfig()));
+				return Collections.singletonList(
+					new DiscoverNodesEpic(nodeFinder.getSeed().toObservable(), RadixEnv.getBootstrapConfig().getConfig())
+				);
 			}
 
 			@Override
