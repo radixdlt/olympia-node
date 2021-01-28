@@ -17,12 +17,11 @@
 
 package com.radixdlt.store.berkeley;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,11 +34,14 @@ import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class BerkeleyAddressBookPersistenceTest extends RadixTest {

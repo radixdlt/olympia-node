@@ -134,7 +134,7 @@ public class MVStoreAddressBookPersistenceTest extends RadixTest {
 		assertNotNull(peer.get());
 		return peer.get();
 	}
-	
+
 	private PeerWithSystem makePeer() {
 		var sys = new RadixSystem(
 			ECKeyPair.generateNew().getPublicKey(),
