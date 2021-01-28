@@ -64,6 +64,10 @@ regressionTest {
     }
 }
 
+checkstyleRegressionTest {
+    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
+}
+
 dependencies {
     implementation project(':radixdlt-java')
 
