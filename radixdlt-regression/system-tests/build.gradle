@@ -69,6 +69,11 @@ task dockerSystemTests(type: Test) {
     systemProperties System.getProperties()
     systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
     exclude "Runner.class"
+    jacoco {
+        // It appears that Jacoco can introduce thread and/or JVM pauses, which
+        // in turn can cause timeouts that interfere with integration tests.
+        enabled false
+    }
 }
 
 task clusterSystemTests(type: Test) {
