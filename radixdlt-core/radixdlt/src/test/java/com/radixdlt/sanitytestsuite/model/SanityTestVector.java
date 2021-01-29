@@ -19,6 +19,8 @@ package com.radixdlt.sanitytestsuite.model;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Sanity test vector interface.
  * @param <I> - type of input value

@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "45648c4ad69554b49ff3df094cbd5652c8cc9c284413789df4b8759c91e312c4",
+		"hashOfSuite": "20478e94216232bf1822ce42c2302f8ca04e3ffdf3321647d1283275579e6bad",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -364,13 +364,13 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and do a verbatim string comparison against an expected JSON string.",
-					"purpose": "Verify that all Radix models properly serializes into the expected JSON.",
+					"implementationInfo": "edit this -> Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly serializes into the expected JSON and DSON.",
 					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
-			
+
 				},
-				"identifier": "json_serialization_radix_models",
-				"name": "JSON serialization of Radix Models",
+				"identifier": "serialization_radix_models",
+				"name": "JSON and DSON serialization of Radix Models",
 				"tests": {
 					"source": {
 						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
@@ -378,34 +378,24 @@
 					"vectors": [
 						{
 							"expected": {
-								"jsonPrettyPrinted": "{\n  \"address\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"amount\": \":u20:960000000000000000\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\"\n  ],\n  \"granularity\": \":u20:1\",\n  \"nonce\": 12345678,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD\",\n  \"version\": 100\n}"
+								"jsonPrettyPrinted": "{\n  \"address\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n  \"amount\": \":u20:8\",\n  \"granularity\": \":u20:1\",\n  \"nonce\": 10550563423900,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\"\n}",
+								"dson": {
+									"allOutputHex": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086c64657374696e6174696f6e7381510220bf3f95bb01b8bbb080401d8ad5baee6b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b000017c8bc9de6d46b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782472616469782e7061727469636c65732e7472616e736665727261626c655f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456776657273696f6e1864ff",
+									"hashOutputHex": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086c64657374696e6174696f6e7381510220bf3f95bb01b8bbb080401d8ad5baee6b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b000017c8bc9de6d46b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782472616469782e7061727469636c65732e7472616e736665727261626c655f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456776657273696f6e1864ff"
+								}
 							},
 							"input": {
 								"typeSerialization": "radix.particles.transferrable_tokens",
 								"arguments": {
-									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"amount": "960000000000000000",
+									"address": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"amount": "8",
 									"granularity": "1",
-									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
-									"nonce": "12345678",
+									"tokenDefinitionReference": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"nonce": "26150925362900",
 									"tokenPermissions": {
 										"mint": "token_owner_only",
 										"burn": "all"
 									}
-								}
-							}
-						}, 
-						{
-							"expected": {
-								"jsonPrettyPrinted": "{\n  \"bytes\": \":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\",\n    \":uid:dfd7c486570a7ad40eb948c80cb89376\"\n  ],\n  \"from\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"nonce\": 156115453148799,\n  \"serializer\": \"radix.particles.message\",\n  \"to\": \":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF\",\n  \"version\": 100\n}"
-							},
-							"input": {
-								"typeSerialization": "radix.particles.message",
-								"arguments": {
-									"message": "Hello Bob, this is your friend Alice.",
-									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"nonce": "156115453148799"
 								}
 							}
 						}
@@ -414,13 +404,12 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
-					"purpose": "Verify that all Radix models properly deserializes from JSON.",
+					"implementationInfo": "edit this -> Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly deserializes from JSON and DSON.",
 					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
-
 				},
-				"identifier": "json_deserialization_radix_models",
-				"name": "JSON deserialization of Radix Models",
+				"identifier": "deserialization_radix_models",
+				"name": "JSON and DSON deserialization of Radix Models",
 				"tests": {
 					"source": {
 						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
@@ -429,59 +418,64 @@
 						{
 							"expected": {
 								"arguments": {
-									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"amount": "960000000000000000",
+									"address": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"amount": "8",
 									"granularity": "1",
-									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
-									"nonce": "12345678",
+									"tokenDefinitionReference": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"nonce": "10550563423900",
 									"tokenPermissions": {
-										"mint": "token_owner_only",
-										"burn": "all"
+										"burn": "all",
+										"mint": "token_owner_only"
 									}
 								}
 							},
 							"input": {
 								"typeSerialization": "radix.particles.transferrable_tokens",
-								"json": {
-									"address": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"amount": ":u20:960000000000000000",
-									"destinations": [
-										":uid:e45e72925767ee14d7368fec2a141768"
-									],
+								"json":  {
+									"amount": ":u20:8",
+									"address": ":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
 									"granularity": ":u20:1",
-									"nonce": 12345678,
 									"permissions": {
 										"burn": ":str:all",
 										"mint": ":str:token_owner_only"
 									},
 									"serializer": "radix.particles.transferrable_tokens",
-									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
-									"version": 100
+									"nonce": 10550563423900,
+									"tokenDefinitionReference": ":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE"
+								},
+								"dson": {
+									"allOutputHex": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b000009987e95c69c6b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782472616469782e7061727469636c65732e7472616e736665727261626c655f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b4945ff",
+									"hashOutputHex": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b000009987e95c69c6b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782472616469782e7061727469636c65732e7472616e736665727261626c655f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b4945ff"
 								}
 							}
 						},
 						{
 							"expected": {
-								"arguments": {
-									"message": "Hello Bob, this is your friend Alice.",
-									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"nonce": "156115453148799"
+								"arguments":  {
+									"granularity": "1",
+									"rri": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"name": "TEST",
+									"description": "description",
+									"iconUrl": "http://somewhere.com/icon.jpg",
+									"supply": "10",
+									"url": "http://somewhere.com"
 								}
 							},
 							"input": {
-								"typeSerialization": "radix.particles.message",
-								"json": {
-									"bytes": ":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==",
-									"destinations": [
-										":uid:e45e72925767ee14d7368fec2a141768",
-										":uid:dfd7c486570a7ad40eb948c80cb89376"
-									],
-									"from": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
-									"nonce": 156115453148799,
-									"serializer": "radix.particles.message",
-									"to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"version": 100
+								"typeSerialization": "radix.particles.fixed_supply_token_definition",
+								"json":   {
+									"granularity": ":u20:1",
+									"rri": ":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"name": ":str:TEST",
+									"serializer": "radix.particles.fixed_supply_token_definition",
+									"description": ":str:description",
+									"iconUrl": ":str:http://somewhere.com/icon.jpg",
+									"supply": ":u20:10",
+									"url": ":str:http://somewhere.com"
+								},
+								"dson": {
+									"allOutputHex": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d65645445535463727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782d72616469782e7061727469636c65732e66697865645f737570706c795f746f6b656e5f646566696e6974696f6e66737570706c79582105000000000000000000000000000000000000000000000000000000000000000a6375726c74687474703a2f2f736f6d6577686572652e636f6dff",
+									"hashOutputHex": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d65645445535463727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782d72616469782e7061727469636c65732e66697865645f737570706c795f746f6b656e5f646566696e6974696f6e66737570706c79582105000000000000000000000000000000000000000000000000000000000000000a6375726c74687474703a2f2f736f6d6577686572652e636f6dff"
 								}
 							}
 						}

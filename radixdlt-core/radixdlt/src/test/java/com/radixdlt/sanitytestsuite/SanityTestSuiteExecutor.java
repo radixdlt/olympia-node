@@ -20,6 +20,7 @@ package com.radixdlt.sanitytestsuite;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.deserialization.DeserializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.jsondeserialization.JsonDeserializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestScenarioRunner;
@@ -27,6 +28,7 @@ import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.radixhashing.RadixHashingTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.serialization.SerializationTestScenarioRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -39,7 +41,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 
-public final class Executor {
+public final class SanityTestSuiteExecutor {
 	private static final Logger LOG = LogManager.getLogger();
 	private static final String SANITY_TEST_SUITE_JSON_FILE_NAME = "sanity_test_suite.json";
 
@@ -49,8 +51,8 @@ public final class Executor {
 		new KeyGenTestScenarioRunner(),
 		new KeySignTestScenarioRunner(),
 		new KeyVerifyTestScenarioRunner(),
-		new JsonSerializationTestScenarioRunner(),
-		new JsonDeserializationTestScenarioRunner()
+		new SerializationTestScenarioRunner(),
+		new DeserializationTestScenarioRunner()
 	);
 
 	@Test
