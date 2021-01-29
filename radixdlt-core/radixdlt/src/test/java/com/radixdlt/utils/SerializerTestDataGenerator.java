@@ -72,7 +72,7 @@ public class SerializerTestDataGenerator {
             randomView(),
             HashCode.fromLong(random.nextLong()),
             LedgerHeader.create(
-                random.nextLong(),
+                Math.abs(random.nextLong()),    //epoch can't be negative
                 randomView(),
                 new AccumulatorState(
                     random.nextLong(), HashCode.fromLong(random.nextLong())

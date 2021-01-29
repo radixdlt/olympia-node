@@ -154,7 +154,7 @@ public class MVStoreBase {
 		systemCounters.add(counterNames.get(BYTES_WRITE), bytesWrite);
 	}
 
-	protected static  <T> T sideEffect(T value, Runnable runnable) {
+	protected static <T> T sideEffect(T value, Runnable runnable) {
 		runnable.run();
 		return value;
 	}
