@@ -66,7 +66,7 @@ class CmdHelper {
             logger.error("-----------Error---------")
             serr.each { logger.error(it) }
             error = serr.toString().split("\n").collect({ it })
-            if (failOnError) {
+            if (failOnError && !error.contains("WARNING")) {
                 throw new Exception(error.toString())
             }
         }
