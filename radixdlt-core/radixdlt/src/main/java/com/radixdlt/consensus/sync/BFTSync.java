@@ -46,6 +46,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -143,10 +144,11 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	// FIXME: Remove this once sync is fixed
-	private final RateLimiter syncRequestRateLimiter = RateLimiter.create(50.0);
+	private final RateLimiter syncRequestRateLimiter;
 
 	public BFTSync(
 		@Self BFTNode self,
+		@GetVerticesErrorRateLimit RateLimiter syncRequestRateLimiter,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
@@ -159,6 +161,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		SystemCounters systemCounters
 	) {
 		this.self = self;
+		this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
 		this.vertexStore = vertexStore;
 		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
@@ -233,7 +236,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 		startSync(highQC, author);
 
-		return SyncResult.STARTED;
+		return SyncResult.IN_PROGRESS;
 	}
 
 	private boolean requiresLedgerSync(SyncState syncState) {
@@ -339,6 +342,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 				VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 				this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
 				this.requestSender.dispatch(authors.get(0), request);
+			} else {
+				log.warn("RATE_LIMIT: Request dropped");
 			}
 			this.bftSyncing.put(request, syncRequestState);
 		}
@@ -434,9 +439,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
 				// error response indicates that the node has moved on from last sync so try and sync to a new sync
-				if (SyncResult.STARTED == syncToQC(response.highQC(), response.getSender())) {
-					this.bftSyncing.remove(request);
-				}
+				syncToQC(response.highQC(), response.getSender());
 			}
 		}
 	}
