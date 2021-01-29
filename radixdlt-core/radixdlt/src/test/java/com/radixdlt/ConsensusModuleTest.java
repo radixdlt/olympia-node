@@ -171,7 +171,8 @@ public class ConsensusModuleTest {
 				VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 				when(proof.getView()).thenReturn(View.genesis());
 				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(proof);
-				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(Double.MAX_VALUE));
+				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+					.toInstance(RateLimiter.create(Double.MAX_VALUE));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);

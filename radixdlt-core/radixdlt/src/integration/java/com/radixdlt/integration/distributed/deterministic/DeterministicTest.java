@@ -223,7 +223,8 @@ public final class DeterministicTest {
 					@Override
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
-						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(unlimitedRateLimiter());
+						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
@@ -246,7 +247,8 @@ public final class DeterministicTest {
 					@Override
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(unlimitedRateLimiter());
+						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });

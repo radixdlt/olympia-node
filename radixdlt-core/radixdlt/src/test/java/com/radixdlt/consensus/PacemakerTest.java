@@ -88,7 +88,8 @@ public class PacemakerTest {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(Double.MAX_VALUE));
+					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
 
 					final RuntimeProperties runtimeProperties;

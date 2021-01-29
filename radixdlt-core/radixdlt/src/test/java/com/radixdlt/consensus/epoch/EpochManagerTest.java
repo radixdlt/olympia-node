@@ -189,7 +189,8 @@ public class EpochManagerTest {
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
-				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(Double.MAX_VALUE));
+				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+					.toInstance(RateLimiter.create(Double.MAX_VALUE));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(10L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
