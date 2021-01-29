@@ -1,21 +1,72 @@
 #!/bin/bash
 
+function help() {
+
+  echo
+  echo "-----------------------------------------"
+  echo "usage: generate-yml.sh -n node_number -p port_number [-fh]"
+  echo
+  echo "-n node_number   – the node file numbers that will be generated (mandatory)"
+  echo "-p port_number   – the first port number to allocate (mandatory)"
+  echo "-f               – this flag will force the configuration file to be overwritten without deleting it first"
+  echo "-h               – this displays the help, which you're looking at now."
+  echo
+  echo "example: generate-yml.sh -n 2 -p 8990 -f"
+  echo "This will generate the configuration for 2 nodes using port numbers starting with 8990."
+  echo "The files will be overwritten without you having to delete them first."
+  echo "-----------------------------------------"
+  echo
+}
+
 # Fail on error
 set -e
 
 # Where we are run from
 scriptdir=$(dirname "$0")
 
-# Number of validators
-validators=${1:-1}
+while getopts fhn:p: flag
+do
+  case "${flag}" in
+    f) force_delete=true;;
+    h) requesting_help=true;;
+    n) validators=${OPTARG};;
+    p) port_param=${OPTARG};;
+    *) help
+       exit 1;;
+  esac
+done
+
+# If help is requested then show the help page and exit, regardless of other options.
+if [ $requesting_help ]; then
+  help
+  exit 0
+fi
+
+
+# Being a bit strict. You need  port parameter and a node parameter to continue
+# and they both have to be numbers.
+re='^[0-9]+$'
+
+if ! [[ $port_param =~ $re ]] || ! [[ $validators =~ $re ]]; then
+  echo "Invalid parameter setting"
+  help
+  exit 1
+fi
 
 network_name="network_${validators}_nodes"
 file_name="${scriptdir}/../node-${validators}.yml"
 
-if [ -f "${file_name}" ]; then
-  echo "File ${file_name} already exist, aborting."
-  exit 1
+# Added -f flag that will force the node file to be overwritten without checking it exists first.
+if ! [ $force_delete ]; then
+
+   if  [ -f "${file_name}" ]; then
+    echo "File ${file_name} already exist, aborting."
+    exit 1
+  fi
+
 fi
+
+
 
 echo "version: '2.1'" >${file_name}
 echo "services:" >>${file_name}
@@ -23,7 +74,7 @@ echo "services:" >>${file_name}
 for ((i=0;i<$validators;i++));
 do
     nodelist=''
-    p0=$(printf "%02d" $(( 80+i )))
+    p0=$(printf "%04d" $(( port_param+i )))
     p1=$(printf "%02d" $(( 11+i )))
     p2=$(printf "%02d" $(( 5+i )))
 
@@ -53,7 +104,7 @@ do
     echo "    networks:">>${file_name}
     echo "      - $network_name">>${file_name}
     echo "    ports:">>${file_name}
-    echo "      - \"80${p0}:8080\"">>${file_name}
+    echo "      - \"${p0}:8080\"">>${file_name}
     echo "      - \"90${p1}:9011\"">>${file_name}
     echo "      - \"505${p2}:50505\"">>${file_name}
 
@@ -73,4 +124,3 @@ echo "    networks:">>${file_name}
 echo "      - $network_name">>${file_name}
 echo "networks:">>${file_name}
 echo "  $network_name:">>${file_name}
-
