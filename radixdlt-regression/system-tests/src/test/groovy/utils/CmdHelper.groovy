@@ -189,7 +189,7 @@ class CmdHelper {
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
                 runCommand(dockerCommand.tokenize(), dockerEnv, true) :
-                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, false)
         return results[0][0]
     }
 
