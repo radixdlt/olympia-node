@@ -23,6 +23,7 @@ ENV PATH=/opt/gradle-6.6.1/bin:$PATH
 
 RUN docker --version
 
+COPY . /core
 WORKDIR /core
 USER root
 CMD /bin/bash
