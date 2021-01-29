@@ -19,6 +19,7 @@ package com.radixdlt.store.mvstore;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
@@ -31,7 +32,6 @@ import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryIndices;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.SerializedVertexStoreState;
 import com.radixdlt.store.StoreIndex;
@@ -62,6 +62,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_LAST_VERTEX;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SAVE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SAVE_TX;
+import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SEARCH;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_STORE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_TOTAL;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_COMMIT;
@@ -74,6 +75,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGE
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SAVE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SAVE_TX;
+import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SEARCH;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_STORE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_TOTAL;
 import static com.radixdlt.store.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
@@ -96,6 +98,7 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
+	@Inject
 	public MVStoreLedgerEntryStore(
 		Serialization serialization,
 		DatabaseEnvironment dbEnv,
@@ -158,10 +161,9 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 	private Optional<LedgerEntry> doGet(Transaction tx, byte[] key) {
 		var result = Optional.ofNullable(openMap(UNIQUE_INDICES_DB_NAME, tx).get(key));
 
-		return result.map(v -> {
-			addBytesRead(key.length + v.length);
-			return v;
-		})
+		return result
+			.map(v -> sideEffect(v, () -> addBytesRead(key.length + v.length)))
+			.flatMap(pKey -> Optional.ofNullable(openMap(ATOMS_DB_NAME, tx).get(pKey)))
 			.flatMap(v -> safeFromDson(v, LedgerEntry.class));
 	}
 
@@ -184,6 +186,14 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 		var indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
 		var atomBytes = toDson(atom);
 
+		if (tx == null) {
+			return withTimeInTx(
+				transaction -> Optional.of(doStore(atom.getStateVersion(), atom.getAID(), atomBytes, indices, transaction)),
+				ELAPSED_BDB_LEDGER_STORE,
+				COUNT_BDB_LEDGER_STORE)
+				.orElseGet(LedgerEntryStoreResult::success); //Never used
+		}
+
 		return withTime(
 			() -> doStore(atom.getStateVersion(), atom.getAID(), atomBytes, indices, unwrap(tx)),
 			ELAPSED_BDB_LEDGER_STORE,
@@ -199,20 +209,27 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 		Transaction tx
 	) {
 		try {
-			var pKey = toPKey(PREFIX_COMMITTED, logicalClock, aid);
+			var primaryKey = toPKey(PREFIX_COMMITTED, logicalClock, aid);
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
 
-			if (openMap(ATOMS_DB_NAME, tx).putIfAbsent(pKey, pData) == null) {
-				addBytesWrite(pData.length + pKey.length);
+			if (openMap(ATOMS_DB_NAME, tx).putIfAbsent(primaryKey, pData) == null) {
+				addBytesWrite(pData.length + primaryKey.length);
 			} else {
 				fail("Atom write for '" + aid + "' failed");
 			}
 
-			var indicesData = toDson(indices);
+			var uniqueMap = openMap(UNIQUE_INDICES_DB_NAME, tx);
+			indices.getUniqueIndices().forEach(ndx -> uniqueMap.put(ndx.asKey(), primaryKey));
 
-			if (openMap(ATOM_INDICES_DB_NAME, tx).putIfAbsent(pKey, indicesData) == null) {
-				addBytesWrite(indicesData.length + pKey.length);
+			var duplicateMap = openMap(DUPLICATE_INDICES_DB_NAME, tx);
+			var mergedPrimaryKey = KeyList.of(primaryKey).toBytes();
+
+			indices.getDuplicateIndices().forEach(ndx -> duplicateMap.merge(ndx.asKey(), mergedPrimaryKey, KeyList::merge));
+
+			var indicesData = toDson(indices);
+			if (openMap(ATOM_INDICES_DB_NAME, tx).putIfAbsent(primaryKey, indicesData) == null) {
+				addBytesWrite(indicesData.length + primaryKey.length);
 			} else {
 				log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 				tx.rollback();
@@ -292,10 +309,7 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 		var pendingStore = openMap(PENDING_DB_NAME, tx);
 
 		return Optional.ofNullable(pendingStore.lastKey()).map(key -> Pair.of(key, pendingStore.get(key)))
-			.map(kvPair -> {
-				addBytesRead(kvPair.getFirst().length + kvPair.getSecond().length);
-				return kvPair.getSecond();
-			})
+			.map(kv -> sideEffect(kv.getSecond(), () -> addBytesRead(kv.getFirst().length + kv.getSecond().length)))
 			.flatMap(value -> safeFromDson(value, SerializedVertexStoreState.class));
 	}
 
@@ -423,20 +437,47 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 	}
 
 	@Override
-	public SearchCursor search(LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
-		throw new UnsupportedOperationException("Search cursor is not supported");
+	public SearchCursor search(LedgerIndexType type, StoreIndex index) {
+		return withTime(() -> doSearch(type, index), ELAPSED_BDB_LEDGER_SEARCH, COUNT_BDB_LEDGER_SEARCH);
+	}
+
+	private SearchCursor doSearch(LedgerIndexType type, StoreIndex index) {
+		byte[] key = index.asKey();
+
+		switch (type) {
+			case UNIQUE:
+				var uniqueMap = openMap(UNIQUE_INDICES_DB_NAME);
+				return uniqueMap.containsKey(key)
+					   ? new UniqueSearchCursor(uniqueMap, key)
+					   : null;
+
+			case DUPLICATE:
+				var duplicateMap = openMap(DUPLICATE_INDICES_DB_NAME);
+				return duplicateMap.containsKey(key)
+					   ? new DuplicateSearchCursor(duplicateMap, key, false)
+					   : null;
+
+			default:
+				throw new IllegalStateException("Cursor type " + type + " not supported");
+		}
 	}
 
 	@Override
-	public boolean contains(com.radixdlt.store.Transaction tx, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
-		return withTime(() -> doContains(unwrap(tx), type, index, mode), ELAPSED_BDB_LEDGER_CONTAINS_TX, COUNT_BDB_LEDGER_CONTAINS_TX);
+	public boolean contains(com.radixdlt.store.Transaction tx, LedgerIndexType type, StoreIndex index) {
+		if (tx == null) {
+			return withTimeInTx(
+				ltx -> Optional.of(doContains(ltx, type, index)),
+				ELAPSED_BDB_LEDGER_CONTAINS_TX,
+				COUNT_BDB_LEDGER_CONTAINS_TX
+			).orElse(false); //Unreachable. Suppressing ".get() without .isPresent()" complain
+		}
+		return withTime(() -> doContains(unwrap(tx), type, index), ELAPSED_BDB_LEDGER_CONTAINS_TX, COUNT_BDB_LEDGER_CONTAINS_TX);
 	}
 
-	private boolean doContains(Transaction tx, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
+	private boolean doContains(Transaction tx, LedgerIndexType type, StoreIndex index) {
 		final var start = System.nanoTime();
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
 
 		return selectStore(tx, type).containsKey(index.asKey());
 	}

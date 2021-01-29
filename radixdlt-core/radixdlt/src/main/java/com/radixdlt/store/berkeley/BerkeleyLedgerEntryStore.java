@@ -26,22 +26,21 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.AtomStorePackedPrimaryKeyComparator;
+import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryIndices;
-import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.SerializedVertexStoreState;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.Transaction;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntry;
-import com.radixdlt.store.LedgerEntryConflict;
-import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -57,7 +56,6 @@ import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.SecondaryMultiKeyCreator;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
@@ -555,24 +553,18 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public SearchCursor search(LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
+	public SearchCursor search(LedgerIndexType type, StoreIndex index) {
 		final var start = System.nanoTime();
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
+
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(type)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
-			if (mode == LedgerSearchMode.EXACT) {
-				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new BerkeleySearchCursor(this, type, pKey.getData(), key.getData());
-				}
-			} else if (mode == LedgerSearchMode.RANGE) {
-				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new BerkeleySearchCursor(this, type, pKey.getData(), key.getData());
-				}
-			}
 
+			if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				return new BerkeleySearchCursor(this, type, pKey.getData(), key.getData());
+			}
 			return null;
 		} finally {
 			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
@@ -580,22 +572,16 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public boolean contains(Transaction tx, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
+	public boolean contains(Transaction tx, LedgerIndexType type, StoreIndex index) {
 		final var start = System.nanoTime();
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
+
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(unwrap(tx), type)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
-			if (mode == LedgerSearchMode.EXACT) {
-				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return true;
-				}
-			} else if (mode == LedgerSearchMode.RANGE) {
-				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return true;
-				}
+			if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				return true;
 			}
 
 			return false;

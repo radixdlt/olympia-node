@@ -24,32 +24,34 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.BFTKeyModule;
-import com.radixdlt.BerkeleyPersistenceModule;
 import com.radixdlt.CheckpointModule;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
+import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.GenesisValidatorSetFromUniverseModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRecoveryModule;
-import com.radixdlt.MempoolRelayerModule;
+import com.radixdlt.MVStorePersistenceModule;
 import com.radixdlt.MempoolReceiverModule;
+import com.radixdlt.MempoolRelayerModule;
+import com.radixdlt.NetworkModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.ConsensusRecoveryModule;
-import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
+import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.LedgerModule;
+import com.radixdlt.SystemInfoModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -60,9 +62,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.SystemInfoModule;
-import com.radixdlt.NetworkModule;
-import com.radixdlt.network.addressbook.BerkeleyAddressBookModule;
+import com.radixdlt.network.addressbook.MVStoreAddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
@@ -74,7 +74,6 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
-
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -167,7 +166,7 @@ public class GlobalInjector {
 			// Fees
 			new TokenFeeModule(),
 
-			new BerkeleyPersistenceModule(),
+			new MVStorePersistenceModule(),
 			new ConsensusRecoveryModule(),
 			new LedgerRecoveryModule(),
 
@@ -179,7 +178,7 @@ public class GlobalInjector {
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
-			new BerkeleyAddressBookModule(),
+			new MVStoreAddressBookModule(),
 			new HostIpModule(properties),
 
 			globalModule

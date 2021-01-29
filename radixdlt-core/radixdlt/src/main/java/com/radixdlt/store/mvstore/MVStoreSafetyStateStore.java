@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.mvstore;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -44,8 +45,11 @@ import static com.radixdlt.store.mvstore.CommonCounterType.TOTAL;
 public class MVStoreSafetyStateStore extends MVStoreBase implements PersistentSafetyStateStore {
 	static final String NAME = "safety_store";
 
+	@Inject
 	public MVStoreSafetyStateStore(
-		Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters
+		Serialization serialization,
+		DatabaseEnvironment dbEnv,
+		SystemCounters systemCounters
 	) {
 		super(
 			serialization,
@@ -61,7 +65,8 @@ public class MVStoreSafetyStateStore extends MVStoreBase implements PersistentSa
 		);
 	}
 
-	public Optional<SafetyState> get() {
+	@Override
+	public Optional<SafetyState> getLastState() {
 		return withTimeInTx(this::doFindLast);
 	}
 
@@ -76,11 +81,6 @@ public class MVStoreSafetyStateStore extends MVStoreBase implements PersistentSa
 			.map(v -> sideEffect(v, () -> dataLen.set(v.length)))
 			.flatMap(this::safetyStateFromDson)
 			.map(v -> sideEffect(v, () -> addBytesRead(keyLen.get() + dataLen.get())));
-	}
-
-	private <T> T sideEffect(T value, Runnable runnable) {
-		runnable.run();
-		return value;
 	}
 
 	private Optional<SafetyState> safetyStateFromDson(byte[] value) {

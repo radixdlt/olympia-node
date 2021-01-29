@@ -22,9 +22,12 @@ import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.h2.engine.IsolationLevel;
+import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.tx.Transaction;
 import org.h2.mvstore.tx.TransactionStore;
+import org.h2.mvstore.tx.VersionedValueType;
+import org.h2.value.VersionedValue;
 
 import java.io.File;
 import java.util.Optional;
@@ -32,6 +35,7 @@ import java.util.function.Function;
 
 public final class DatabaseEnvironment {
 	public static final ByteArrayDataType BYTE_ARRAY_TYPE = new ByteArrayDataType();
+	public static final VersionedValueType VERSIONED_BYTE_ARRAY_TYPE = new VersionedValueType(BYTE_ARRAY_TYPE);
 	private static final Logger LOG = LogManager.getLogger();
 	private static final long AVAILABLE_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long MAX_CACHE_LIMIT = Math.max(50000000L, (long) (AVAILABLE_MEMORY * 0.1));
@@ -55,7 +59,7 @@ public final class DatabaseEnvironment {
 		cacheSizeMB = calculateCacheSize(properties);
 	}
 
-	public void start() {
+	public DatabaseEnvironment start() {
 		mvStore = new MVStore.Builder()
 			.fileName(dbName)
 			.cacheSize(cacheSizeMB)
@@ -65,6 +69,7 @@ public final class DatabaseEnvironment {
 
 		transactionStore = new TransactionStore(mvStore, new ByteArrayDataType(), 0);
 		transactionStore.init();
+		return this;
 	}
 
 	public void stop() {
@@ -90,6 +95,15 @@ public final class DatabaseEnvironment {
 			transaction.rollback();
 			return Optional.empty();
 		}
+	}
+
+	public MVMap<byte[], VersionedValue> openMap(String dbName) {
+		return mvStore.openMap(
+			dbName,
+			new MVMap.Builder<byte[], VersionedValue>()
+				.keyType(BYTE_ARRAY_TYPE)
+				.valueType(VERSIONED_BYTE_ARRAY_TYPE)
+		);
 	}
 
 	private int calculateCacheSize(RuntimeProperties properties) {

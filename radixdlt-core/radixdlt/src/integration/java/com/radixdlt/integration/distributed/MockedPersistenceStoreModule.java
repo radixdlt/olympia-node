@@ -24,6 +24,8 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.Transaction;
 
+import java.util.Optional;
+
 public class MockedPersistenceStoreModule extends AbstractModule {
 
 	@Override
@@ -43,6 +45,10 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 			// Nothing to do here
 		}
 
+		@Override
+		public Optional<SafetyState> getLastState() {
+			return Optional.empty();
+		}
 	}
 
 	private static class MockedPersistentVertexStore implements PersistentVertexStore {

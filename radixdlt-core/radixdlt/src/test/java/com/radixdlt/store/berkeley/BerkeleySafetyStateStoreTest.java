@@ -73,6 +73,6 @@ public class BerkeleySafetyStateStoreTest {
             return OperationStatus.SUCCESS;
         });
 
-        assertEquals(safetyState, store.get().get());
+        assertEquals(safetyState, store.getLastState().get());
     }
 }

@@ -22,8 +22,8 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
-import com.radixdlt.BerkeleyPersistenceModule;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
@@ -32,11 +32,11 @@ import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRecoveryModule;
+import com.radixdlt.MVStorePersistenceModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
-import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -125,7 +125,7 @@ public final class ModuleForRecoveryTests {
 			// Fees
 			new NoFeeModule(),
 
-			new BerkeleyPersistenceModule(),
+			new MVStorePersistenceModule(),
 
 			new ConsensusRecoveryModule(),
 			new LedgerRecoveryModule()

@@ -82,7 +82,7 @@ public class CommittedAtomsStoreTest {
 	@Test
 	public void when_compute_and_empty__then_should_return_initial_state() {
 		when(serialization.getIdForClass(any())).thenReturn("test");
-		when(store.search(any(), any(), any())).thenReturn(null);
+		when(store.search(any(), any())).thenReturn(null);
 		Object initial = mock(Object.class);
 		Object result = committedAtomsStore.compute(Particle.class, initial, (o, v) -> {
 			throw new RuntimeException();
@@ -99,7 +99,7 @@ public class CommittedAtomsStoreTest {
 
 		// TODO: Cleanup this transformation mess
 		SearchCursor searchCursor = mock(SearchCursor.class);
-		when(store.search(any(), any(), any())).thenReturn(searchCursor);
+		when(store.search(any(), any())).thenReturn(searchCursor);
 		AID aid = mock(AID.class);
 		when(searchCursor.get()).thenReturn(aid);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
@@ -132,7 +132,7 @@ public class CommittedAtomsStoreTest {
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {
 		Particle particle = mock(Particle.class);
 		AID aid = mock(AID.class);
-		when(store.contains(any(), any(), any(), any())).thenReturn(true);
+		when(store.contains(any(), any(), any())).thenReturn(true);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
 		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);

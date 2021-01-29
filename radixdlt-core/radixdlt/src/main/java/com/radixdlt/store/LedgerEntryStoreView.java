@@ -54,17 +54,16 @@ public interface LedgerEntryStoreView {
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	SearchCursor search(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	SearchCursor search(StoreIndex.LedgerIndexType type, StoreIndex index);
 
 	/**
 	 * Checks whether a certain index is contained in this ledger.
 	 *
 	 * @param type The type of index
 	 * @param index The index
-	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index);
 
 	/**
 	 * Retrieve a chunk of {@link LedgerEntry} with state version greater than the given one

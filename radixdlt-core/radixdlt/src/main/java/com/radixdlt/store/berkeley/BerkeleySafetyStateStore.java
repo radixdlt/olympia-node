@@ -107,7 +107,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		}
 	}
 
-	public Optional<SafetyState> get() {
+	@Override
+	public Optional<SafetyState> getLastState() {
 		final var start = System.nanoTime();
 		try (com.sleepycat.je.Cursor cursor = this.safetyStore.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.integration;
+package com.radixdlt.store.berkeley;
 
 import com.google.inject.Inject;
 import com.radixdlt.store.LedgerEntryStore;
@@ -23,10 +23,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
+import com.radixdlt.integration.RadixTest;
 
 import java.util.Objects;
 
-public class RadixTestWithStores extends RadixTest {
+public class RadixTestWithBerkeleyStores extends RadixTest {
 	@Inject
 	private DatabaseEnvironment dbEnv;
 	@Inject

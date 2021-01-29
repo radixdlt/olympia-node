@@ -54,7 +54,7 @@ public class MVStorePersistenceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private DatabaseEnvironment databaseEnvironment(RuntimeProperties properties) {
-		return new DatabaseEnvironment(properties);
+		return new DatabaseEnvironment(properties).start();
 	}
 
 	@ProvidesIntoSet

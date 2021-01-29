@@ -32,30 +32,29 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.CommittedAtoms;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
-import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-
-import com.radixdlt.store.StoreIndex.LedgerIndexType;
+import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.NextCommittedLimitReachedException;
+import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreIndex;
+import com.radixdlt.store.StoreIndex.LedgerIndexType;
+import com.radixdlt.store.Transaction;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
-import com.radixdlt.store.Transaction;
+
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
 	private final Serialization serialization;
@@ -97,7 +96,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
 			Particle.euidOf(particle, hasher)
 		);
-		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes));
 	}
 
 	@Override
@@ -171,7 +170,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
 		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex);
 
 		V v = initial;
 		while (cursor != null) {
@@ -207,8 +206,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
 		SearchCursor cursor = store.search(
 			StoreIndex.LedgerIndexType.UNIQUE,
-			new StoreIndex(IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-			LedgerSearchMode.EXACT
+			new StoreIndex(IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch))
 		);
 		if (cursor != null) {
 			return store.get(cursor.get())

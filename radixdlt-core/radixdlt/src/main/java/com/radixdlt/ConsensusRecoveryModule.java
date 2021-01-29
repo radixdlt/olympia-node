@@ -31,9 +31,9 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import java.util.Optional;
 
 /**
@@ -71,8 +71,8 @@ public class ConsensusRecoveryModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStateStore berkeleySafetyStore) {
-		return berkeleySafetyStore.get().flatMap(safetyState -> {
+	private SafetyState safetyState(EpochChange initialEpoch, PersistentSafetyStateStore persistentSafetyStore) {
+		return persistentSafetyStore.getLastState().flatMap(safetyState -> {
 			final long safetyStateEpoch =
 				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 

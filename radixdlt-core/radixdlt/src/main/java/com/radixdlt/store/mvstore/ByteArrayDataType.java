@@ -17,22 +17,21 @@
 
 package com.radixdlt.store.mvstore;
 
+import com.google.common.primitives.UnsignedBytes;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class ByteArrayDataType implements DataType {
-	@SuppressWarnings("unchecked")
 	private byte[] cast(Object a) {
 		return (byte[]) a;
 	}
 
 	@Override
 	public int compare(Object a, Object b) {
-		return Arrays.compare(cast(a), cast(b));
+		return UnsignedBytes.lexicographicalComparator().compare(cast(a), cast(b));
 	}
 
 	@Override

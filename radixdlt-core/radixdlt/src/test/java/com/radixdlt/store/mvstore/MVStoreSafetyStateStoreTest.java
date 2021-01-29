@@ -75,7 +75,7 @@ public class MVStoreSafetyStateStoreTest  extends RadixTest {
 		// only init, don't clear
 		initDB();
 
-		stateStore.get()
+		stateStore.getLastState()
 			.ifPresentOrElse(
 				state -> assertEquals(safetyState, state),
 				() -> fail("Saved state not found")
@@ -96,7 +96,7 @@ public class MVStoreSafetyStateStoreTest  extends RadixTest {
 		// only init, don't clear
 		initDB();
 
-		stateStore.get()
+		stateStore.getLastState()
 			.ifPresentOrElse(
 				state -> assertEquals(states.get(2), state),
 				() -> fail("Saved state not found")

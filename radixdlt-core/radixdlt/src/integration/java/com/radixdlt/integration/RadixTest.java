@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.integration;
+package com.radixdlt.integration;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.properties.RuntimeProperties;
@@ -63,10 +63,6 @@ public class RadixTest {
 		serialization = null;
 		dbLocation = null;
 		properties = null;
-	}
-
-	protected Serialization getSerialization() {
-		return Objects.requireNonNull(serialization, "serialization was not initialized");
 	}
 
 	protected RuntimeProperties getProperties() {

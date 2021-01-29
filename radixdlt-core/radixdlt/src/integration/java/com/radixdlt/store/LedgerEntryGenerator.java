@@ -15,15 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.store;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.store.LedgerEntry;
 
 import java.util.LinkedHashMap;
 import java.util.List;

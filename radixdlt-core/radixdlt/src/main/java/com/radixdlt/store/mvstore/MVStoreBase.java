@@ -21,8 +21,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import org.h2.mvstore.MVMap;
 import org.h2.mvstore.tx.Transaction;
 import org.h2.mvstore.tx.TransactionMap;
+import org.h2.value.VersionedValue;
 
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +60,10 @@ public class MVStoreBase {
 		this.systemCounters = systemCounters;
 		this.dbName = dbName;
 		this.counterNames = counterNames;
+	}
+
+	protected MVMap<byte[], VersionedValue> openMap(String name) {
+		return dbEnv.openMap(name);
 	}
 
 	protected TransactionMap<byte[], byte[]> openMap(Transaction tx) {
@@ -146,5 +152,10 @@ public class MVStoreBase {
 
 	protected void addBytesWrite(int bytesWrite) {
 		systemCounters.add(counterNames.get(BYTES_WRITE), bytesWrite);
+	}
+
+	protected static  <T> T sideEffect(T value, Runnable runnable) {
+		runnable.run();
+		return value;
 	}
 }
