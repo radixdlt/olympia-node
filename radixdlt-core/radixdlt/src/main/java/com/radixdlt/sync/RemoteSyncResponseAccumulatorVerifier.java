@@ -59,7 +59,7 @@ public final class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncRe
 
 	@Override
 	public void processSyncResponse(RemoteSyncResponse syncResponse) {
-		log.info("SYNC_RESPONSE: Accumulator verifier {}", syncResponse);
+		log.debug("SYNC_RESPONSE: Accumulator verifier {}", syncResponse);
 
 		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
 

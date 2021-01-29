@@ -92,7 +92,7 @@ public final class EpochsRemoteSyncResponseProcessor {
 		}
 
 		if (Objects.equals(dtoCommandsAndProof.getHead().getLedgerHeader(), this.currentEpoch.getProof().getRaw())) {
-			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
+			log.debug("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
 			DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
 			if (!dto.getLedgerHeader().isEndOfEpoch()) {
 				log.warn("Bad message as sync epoch responses must be end of epochs: {}", dtoCommandsAndProof);

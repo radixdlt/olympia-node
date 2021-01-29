@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -67,7 +68,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -221,6 +222,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	private BFTSyncFactory bftSyncFactory(
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		@Self BFTNode self,
+		@GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		Random random,
@@ -229,6 +231,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	) {
 		return (vertexStore, pacemakerState, configuration) -> new BFTSync(
 			self,
+			syncRequestRateLimiter,
 			vertexStore,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
