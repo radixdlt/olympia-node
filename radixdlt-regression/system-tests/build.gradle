@@ -35,12 +35,12 @@ dependencies {
 
     testImplementation group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
-    testImplementation 'io.cucumber:cucumber-core:2.1.0'
-    testImplementation 'io.cucumber:cucumber-java:5.5.0'
-    testImplementation 'io.cucumber:cucumber-junit:5.5.0'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
+    testCompile 'io.cucumber:cucumber-core:2.1.0'
+    testCompile 'io.cucumber:cucumber-java:5.5.0'
+    testCompile 'io.cucumber:cucumber-junit:5.5.0'
+    testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
-    testImplementation group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
+    testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
     testImplementation group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
 }
 
