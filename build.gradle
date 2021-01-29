@@ -174,8 +174,8 @@ subprojects {
             dependency 'org.openjdk.jmh:jmh-core:1.25'
             dependency 'org.openjdk.jmh:jmh-generator-annprocess:1.25'
 
-            dependency 'com.squareup.okhttp3:okhttp:3.12.11'
-            dependency 'com.squareup.okhttp3:logging-interceptor:3.12.11'
+            dependency 'com.squareup.okhttp3:okhttp:3.14.9'
+            dependency 'com.squareup.okhttp3:logging-interceptor:3.14.9'
             dependency 'io.reactivex.rxjava2:rxjava:2.1.14'
 
             dependency 'com.google.code.gson:gson:2.8.2'
