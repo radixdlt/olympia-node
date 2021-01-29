@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -472,53 +473,56 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
 		final var start = System.nanoTime();
-		try {
-			long proofVersion = -1;
-			// when querying committed atoms, no need to worry about transaction as they aren't going away
-			try (Cursor atomCursor = this.atoms.openCursor(null, null);
-					Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
-				ImmutableList.Builder<LedgerEntry> ledgerEntries = ImmutableList.builder();
-				// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
-				DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
-				OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
-				int size = 0;
-				while (atomCursorStatus == OperationStatus.SUCCESS && size <= limit) {
-					if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
-						// if we've gone beyond committed keys, abort, as this is only for committed atoms
-						break;
-					}
-					AID atomId = getAidFromPKey(atomSearchKey);
-					try {
-						DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
-						DatabaseEntry value = new DatabaseEntry();
-						OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
-
-						// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
-						//  how should we handle it?
-						if (uqCursorStatus == OperationStatus.SUCCESS) {
-							LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
-							if (proofVersion == -1) {
-								proofVersion = ledgerEntry.getProofVersion();
-							} else if (ledgerEntry.getProofVersion() != proofVersion) {
-								break;
-							}
-
-							ledgerEntries.add(ledgerEntry);
-							++size;
-						}
-					} catch (Exception e) {
-						String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
-						log.error(message, e);
-					}
-					atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
+		// when querying committed atoms, no need to worry about transaction as they aren't going away
+		try (Cursor atomCursor = this.atoms.openCursor(null, null);
+				Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
+			final var ledgerEntries = Lists.<LedgerEntry>newArrayList();
+			final var atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
+			OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
+			while (atomCursorStatus == OperationStatus.SUCCESS && ledgerEntries.size() <= limit) {
+				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
+					// if we've gone beyond committed keys, abort, as this is only for committed atoms
+					break;
 				}
+				AID atomId = getAidFromPKey(atomSearchKey);
+				try {
+					DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
+					DatabaseEntry value = new DatabaseEntry();
+					OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
 
-				if (size > limit) {
-					throw new NextCommittedLimitReachedException(limit);
+					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
+					//  how should we handle it?
+					if (uqCursorStatus == OperationStatus.SUCCESS) {
+						LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
+						ledgerEntries.add(ledgerEntry);
+					}
+				} catch (Exception e) {
+					String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
+					log.error(message, e);
 				}
-
-				return ledgerEntries.build();
+				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
 			}
+
+			if (ledgerEntries.size() <= limit) {
+				// Assume that the last entry is a complete commit
+				// if we ran out of entries at or before limit
+				return ImmutableList.copyOf(ledgerEntries);
+			}
+
+			// Otherwise we search backwards for the change in state version
+			var lastIndex = ledgerEntries.size() - 1; // Should be == limit
+			final var lastVersion = ledgerEntries.get(lastIndex).getProofVersion();
+			while (--lastIndex >= 0) {
+				if (lastVersion != ledgerEntries.get(lastIndex).getProofVersion()) {
+					break;
+				}
+			}
+
+			if (lastIndex < 0) {
+				throw new NextCommittedLimitReachedException(limit);
+			}
+
+			return ImmutableList.copyOf(ledgerEntries.subList(0, lastIndex + 1));
 		} finally {
 			addTime(start, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
 		}
