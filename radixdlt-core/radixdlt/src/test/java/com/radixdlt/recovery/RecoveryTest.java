@@ -138,7 +138,10 @@ public class RecoveryTest {
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
 					try {
 						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set("db.location", folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
+						runtimeProperties.set(
+							"db.location",
+							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
+						);
 					} catch (ParseException e) {
 						throw new IllegalStateException();
 					}
