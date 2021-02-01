@@ -50,6 +50,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.mvstore.DatabaseEnvironment;
 import com.radixdlt.sync.LocalSyncRequest;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -72,7 +73,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
 
 @RunWith(Parameterized.class)
 public class OneNodeAlwaysAliveSafetyTest {

@@ -53,6 +53,7 @@ import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 
+import com.radixdlt.store.mvstore.DatabaseEnvironment;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -75,7 +76,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
 
 /**
  * Various liveness+recovery tests
