@@ -36,7 +36,6 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 
 import java.util.Optional;
 
