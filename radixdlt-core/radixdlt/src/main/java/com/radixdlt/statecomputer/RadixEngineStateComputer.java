@@ -406,8 +406,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 				if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
 					// TODO: Create more specific AtomRemovedFromMempool event
 					mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
-				    mempool.removeRejected(hasher.hash(command));
-					return;
+					mempool.removeRejected(hasher.hash(command));
+					continue;
 				}
 			} finally {
 				radixEngine.deleteBranches();
