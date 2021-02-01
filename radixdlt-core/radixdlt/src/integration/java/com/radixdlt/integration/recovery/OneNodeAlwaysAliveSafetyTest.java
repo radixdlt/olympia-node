@@ -49,7 +49,7 @@ import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.mvstore.DatabaseEnvironment;
 import com.radixdlt.sync.LocalSyncRequest;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -151,7 +151,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(LedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
@@ -207,6 +207,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private void restartNode(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+		this.nodes.get(index).getInstance(DatabaseEnvironment.class).stop();
 		Injector injector = nodeCreators.get(index).get();
 		this.nodes.set(index, injector);
 	}
