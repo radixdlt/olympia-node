@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -84,8 +83,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
 	// TODO: Remove
-	@VisibleForTesting
-	static final byte PREFIX_COMMITTED = 0b0000_0000;
+	private static final byte PREFIX_COMMITTED = 0b0000_0000;
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
