@@ -66,7 +66,7 @@ public class DockerTests {
 
             // make all nodes slow/latent
             logger.info("Adding latency...");
-            network.getNodeIds().forEach(node -> CmdHelper.runTcUsingVeth(node, "delay 100ms loss 10%"));
+            network.getNodeIds().forEach(node -> CmdHelper.runTcUsingVeth(node, "delay 200ms"));
 
             // first check
             logger.info("First round of checks");
