@@ -35,7 +35,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.Optional;
 
@@ -81,10 +81,10 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	private VerifiedVertexStoreState vertexStoreState(
 		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
-		BerkeleyLedgerEntryStore berkeleyLedgerEntryStore,
+		LedgerEntryStore ledgerEntryStore,
 		Hasher hasher
 	) {
-		return berkeleyLedgerEntryStore.loadLastVertexStoreState()
+		return ledgerEntryStore.loadLastVertexStoreState()
 				.map(serializedVertexStoreState -> {
 					UnverifiedVertex root = serializedVertexStoreState.getRoot();
 					HashCode rootVertexId = hasher.hash(root);

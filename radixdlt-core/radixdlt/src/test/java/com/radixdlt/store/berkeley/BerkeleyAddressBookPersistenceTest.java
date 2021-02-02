@@ -15,11 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.addressbook;
+package com.radixdlt.store.berkeley;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerPersistence;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,22 +34,25 @@ import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class AddressBookPersistenceTest extends RadixTest {
+public class BerkeleyAddressBookPersistenceTest extends RadixTest {
 
-	private AddressBookPersistence abp;
+	private PeerPersistence abp;
 	private DatabaseEnvironment dbEnv;
 
 	@Before
 	public void setUp() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
-		this.abp = new AddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
+		this.abp = new BerkeleyAddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
 		this.abp.reset();
 	}
 

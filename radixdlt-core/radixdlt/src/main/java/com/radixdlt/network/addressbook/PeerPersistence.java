@@ -25,7 +25,17 @@ import com.radixdlt.identifiers.EUID;
 /**
  * Persistence interface for persisting peers in AddressBook.
  */
-public interface PeerPersistence extends Closeable  {
+public interface PeerPersistence extends Closeable {
+
+	/**
+	 * Starts persistence.
+	 */
+	void start();
+
+	/**
+	 * Clears content of the underlying store.
+	 */
+	void reset();
 
 	/**
 	 * Saves peer to database.
@@ -49,4 +59,9 @@ public interface PeerPersistence extends Closeable  {
 	 * @param c the consumer to call with each persisted peer
 	 */
 	void forEachPersistedPeer(Consumer<PeerWithSystem> c);
+
+	/**
+	 * Closes persistence
+	 */
+	void close();
 }
