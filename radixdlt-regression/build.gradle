@@ -21,10 +21,6 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
 
-// Disable "test" task so it doesn't run with unit tests, as it relies on
-// a running network to successfully complete. This isn't always available.
-tasks.test.enabled = false
-
 configurations {
     regressionTestImplementation.extendsFrom testImplementation
 }
@@ -43,6 +39,14 @@ sourceSets {
 task regressionTest(type: Test) {
     testClassesDirs = sourceSets.regressionTest.output.classesDirs
     classpath = sourceSets.regressionTest.runtimeClasspath
+}
+
+test {
+    enabled false
+    jacoco {
+        // Don't attempt to include these in code coverage.
+        enabled false
+    }
 }
 
 regressionTest {
