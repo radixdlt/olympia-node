@@ -19,6 +19,6 @@ docker create  --pid=host --privileged ^
 --network=host --cap-add=NET_ADMIN ^
 -e CONTAINER_NAME -e TEST_DURATION -e CORE_DIR=%CORE_DIR% ^
 --name=%TEST_EXECUTOR% radix-system-test ^
-gradle clean dockerSystemTests
+./gradlew clean -p radixdlt-regression/system-tests :radixdlt-regression:system-tests:dockerSystemTests --stacktrace --info
 docker start -a %TEST_EXECUTOR%
 docker cp %TEST_EXECUTOR%:src/system-tests .
