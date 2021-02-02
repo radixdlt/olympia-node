@@ -19,17 +19,21 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -99,6 +103,8 @@ public final class RadixHttpServer {
 	private final int port;
 	private Undertow server;
 
+	private final EventDispatcher<MessageFloodUpdate> messageFloodSetEventDispatcher;
+
 	@Inject
 	public RadixHttpServer(
 		InMemorySystemInfo inMemorySystemInfo,
@@ -107,6 +113,7 @@ public final class RadixHttpServer {
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		EventDispatcher<MessageFloodUpdate> messageFloodSetEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -116,6 +123,7 @@ public final class RadixHttpServer {
 		AddressBook addressBook,
 		Hasher hasher
 	) {
+		this.messageFloodSetEventDispatcher = Objects.requireNonNull(messageFloodSetEventDispatcher);
 		this.inMemorySystemInfo = Objects.requireNonNull(inMemorySystemInfo);
 		this.consensusRunner = Objects.requireNonNull(moduleRunners.get("consensus"));
 		this.universe = Objects.requireNonNull(universe);
@@ -305,6 +313,8 @@ public final class RadixHttpServer {
 			respond(result, exchange);
 		}, handler);
 
+		addRoute("/api/chaos/message-flood", Methods.POST_STRING, this::handleMessageFlood, handler);
+
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
 		// keep-alive
@@ -385,6 +395,27 @@ public final class RadixHttpServer {
 		result.put("closedCount", peersCopy.size());
 
 		return result;
+	}
+
+	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			String nodeKey = values.getString("nodeKey");
+			if (nodeKey != null) {
+				BFTNode node = BFTNode.create(ECPublicKey.fromBase64(nodeKey));
+				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.create(node));
+			} else {
+				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.disable());
+			}
+
+		} catch (PublicKeyException e) {
+			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			return;
+		}
+		exchange.setStatusCode(StatusCodes.OK);
 	}
 
 	/**

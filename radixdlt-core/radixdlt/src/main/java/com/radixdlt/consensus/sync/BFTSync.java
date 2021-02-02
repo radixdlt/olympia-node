@@ -148,7 +148,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	public BFTSync(
 		@Self BFTNode self,
-		@GetVerticesErrorRateLimit RateLimiter syncRequestRateLimiter,
+		RateLimiter syncRequestRateLimiter,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,

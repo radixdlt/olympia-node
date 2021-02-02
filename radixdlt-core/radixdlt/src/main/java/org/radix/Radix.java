@@ -153,6 +153,9 @@ public final class Radix {
 		final ModuleRunner mempoolReceiverRunner = moduleRunners.get("mempool");
 		mempoolReceiverRunner.start();
 
+		final ModuleRunner chaosRunner = moduleRunners.get("chaos");
+		chaosRunner.start();
+
 		// start API services
 		final RadixHttpServer httpServer = globalInjector.getInjector().getInstance(RadixHttpServer.class);
 		httpServer.start();

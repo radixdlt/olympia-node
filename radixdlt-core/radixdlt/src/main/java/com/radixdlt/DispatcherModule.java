@@ -23,6 +23,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.chaos.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
@@ -421,5 +423,17 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment
 	) {
 		return environment.getDispatcher(AtomCommittedToLedger.class);
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher(Environment environment) {
+		return environment.getDispatcher(MessageFloodUpdate.class);
+	}
+
+	@Provides
+	@Singleton
+	private ScheduledEventDispatcher<ScheduledMessageFlood> scheduledMessageFloodScheduledEventDispatcher(Environment environment) {
+		return environment.getScheduledDispatcher(ScheduledMessageFlood.class);
 	}
 }
