@@ -20,6 +20,10 @@ import org.apache.tools.ant.taskdefs.condition.Os
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
+sourceSets {
+    test.java.srcDirs += 'test'
+    test.resources.srcDirs += 'test'
+}
 
 test {
     if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
