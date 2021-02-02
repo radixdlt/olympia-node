@@ -37,6 +37,7 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
 		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		return new GetVerticesErrorResponseMessage(12345, highQC);
+		final var request = new GetVerticesRequestMessage(12345, HashUtils.random256(), 3);
+		return new GetVerticesErrorResponseMessage(12345, highQC, request);
 	}
 }

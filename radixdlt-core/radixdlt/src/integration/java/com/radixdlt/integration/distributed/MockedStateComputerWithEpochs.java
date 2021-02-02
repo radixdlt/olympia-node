@@ -19,19 +19,18 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
@@ -57,7 +56,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+	public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
 		return null;
 	}
 

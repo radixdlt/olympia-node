@@ -19,6 +19,7 @@ package com.radixdlt.store.mvstore;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -32,6 +33,7 @@ import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryIndices;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.SerializedVertexStoreState;
 import com.radixdlt.store.StoreIndex;
@@ -392,14 +394,11 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 	private Optional<ImmutableList<LedgerEntry>> doGetNextCommitted(Transaction tx, long stateVersion, int limit) {
 		var atomStore = openMap(ATOMS_DB_NAME, tx);
 		var uniqueStore = openMap(UNIQUE_INDICES_DB_NAME, tx);
-		var ledgerEntries = ImmutableList.<LedgerEntry>builder();
-		long proofVersion = -1;
+		var ledgerEntries = Lists.<LedgerEntry>newArrayList();
 		var fistKey = atomStore.ceilingKey(toPKey(PREFIX_COMMITTED, stateVersion + 1));
-		int size = 0;
-
 		var entryIterator = atomStore.entryIterator(fistKey, null);
 
-		while (entryIterator.hasNext() && size <= limit) {
+		while (entryIterator.hasNext() && ledgerEntries.size() <= limit) {
 			var entry = entryIterator.next();
 
 			if (entry.getKey()[0] != PREFIX_COMMITTED) {
@@ -409,31 +408,40 @@ public class MVStoreLedgerEntryStore extends MVStoreBase implements LedgerEntryS
 
 			var atomId = getAidFromPKey(entry.getKey());
 			var pKey = StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes());
-			var value = uniqueStore.get(pKey);
+			var atomKey = uniqueStore.get(pKey);
+
+			if (atomKey == null) {
+				continue;
+			}
+
+			var value = atomStore.get(atomKey);
 
 			if (value != null) {
 				addBytesRead(value.length + pKey.length);
-				LedgerEntry ledgerEntry = safeFromDson(value, LedgerEntry.class)
+				safeFromDson(value, LedgerEntry.class)
+					.map(ledgerEntries::add)
 					.orElseThrow(() -> new MVStoreException("Unable to deserialize ledger entry"));
-
-				if (proofVersion == -1) {
-					proofVersion = ledgerEntry.getProofVersion();
-				} else if (ledgerEntry.getProofVersion() != proofVersion) {
-					break;
-				}
-
-				ledgerEntries.add(ledgerEntry);
-				++size;
-			} else {
-				log.error("Unable to fetch ledger entry for Atom ID " + atomId);
-			}
-
-			//TODO: is this can happen?
-			if (size > limit) {
-				throw new IllegalStateException("Unexpected: next committed limit reached");
 			}
 		}
-		return Optional.of(ledgerEntries.build());
+
+		if (ledgerEntries.size() <= limit) {
+			return Optional.of(ImmutableList.copyOf(ledgerEntries));
+		}
+
+		var lastIndex = ledgerEntries.size() - 1;
+		final var lastVersion = ledgerEntries.get(lastIndex).getProofVersion();
+
+		while (--lastIndex >= 0) {
+			if (lastVersion != ledgerEntries.get(lastIndex).getProofVersion()) {
+				break;
+			}
+		}
+
+		if (lastIndex < 0) {
+			throw new RuntimeException(new NextCommittedLimitReachedException(limit));
+		}
+
+		return Optional.of(ImmutableList.copyOf(ledgerEntries.subList(0, lastIndex + 1)));
 	}
 
 	@Override

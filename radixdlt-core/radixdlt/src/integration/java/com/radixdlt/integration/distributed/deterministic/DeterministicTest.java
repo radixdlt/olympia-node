@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -52,6 +53,7 @@ import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -221,6 +223,8 @@ public final class DeterministicTest {
 					@Override
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
+						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
@@ -243,6 +247,8 @@ public final class DeterministicTest {
 					@Override
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
@@ -289,6 +295,10 @@ public final class DeterministicTest {
 
 		private static Stream<NodeIndexAndWeight> equalWeight(IntStream indexes) {
 			return indexes.mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
+		}
+
+		private static RateLimiter unlimitedRateLimiter() {
+			return RateLimiter.create(Double.MAX_VALUE);
 		}
 	}
 

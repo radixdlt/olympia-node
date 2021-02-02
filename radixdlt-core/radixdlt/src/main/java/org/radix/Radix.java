@@ -25,7 +25,6 @@ import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.systeminfo.SystemInfoRunner;
-import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
 

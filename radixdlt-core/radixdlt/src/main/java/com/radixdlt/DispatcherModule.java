@@ -52,6 +52,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -412,5 +413,13 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment
 	) {
 		return environment.getRemoteDispatcher(MempoolAddSuccess.class);
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<AtomCommittedToLedger> committedDispatcher(
+		Environment environment
+	) {
+		return environment.getDispatcher(AtomCommittedToLedger.class);
 	}
 }

@@ -93,7 +93,8 @@ public final class DatabaseEnvironment {
 			return result;
 		} catch (Exception e) {
 			transaction.rollback();
-			return Optional.empty();
+			//return Optional.empty();
+			throw e;
 		}
 	}
 

@@ -41,9 +41,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithBerkeleyStores {
 
 	@Test
 	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
-		ECKeyPair identity = ECKeyPair.generateNew();
-
-		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
+		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(1);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 		Transaction tx = getStore().createTransaction();
 		try {
@@ -89,7 +87,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithBerkeleyStores {
 		ECKeyPair identity = ECKeyPair.generateNew();
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 
 		Transaction tx = getStore().createTransaction();
 		try {
@@ -120,7 +118,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithBerkeleyStores {
 		ECKeyPair identity = ECKeyPair.generateNew();
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 
 		Transaction tx = getStore().createTransaction();
 		try {
@@ -151,7 +149,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithBerkeleyStores {
 		ECKeyPair identity = ECKeyPair.generateNew();
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 
 		Transaction tx = getStore().createTransaction();
 		try {

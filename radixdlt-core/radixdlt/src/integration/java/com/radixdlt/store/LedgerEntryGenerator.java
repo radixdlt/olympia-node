@@ -20,49 +20,53 @@ package com.radixdlt.store;
 import com.google.common.collect.Lists;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class LedgerEntryGenerator {
-    private long stateVersion = 0;
+	private final Random random = new Random(); // SecureRandom not required for test
+	private long stateVersion = 0;
+	private long proofVersion = 0;
 
-    public List<LedgerEntry> createLedgerEntries(ECKeyPair identity, int n) {
-        Random r = new Random(); // SecureRandom not required for test
-        // Super paranoid way of doing things
-        Map<AID, LedgerEntry> ledgerEntries = new LinkedHashMap<>(n);
-        while (ledgerEntries.size() < n) {
-            LedgerEntry ledgerEntry = createLedgerEntry(identity, r);
-            ledgerEntries.put(ledgerEntry.getAID(), ledgerEntry);
-        }
+	public List<LedgerEntry> createLedgerEntries(int n) {
+		return createLedgerEntries(n, false);
+	}
 
-        // Make sure return list is ordered by atom clock.
-        List<LedgerEntry> ledgerEntryList = Lists.newArrayList(ledgerEntries.values());
-        return ledgerEntryList;
-    }
+	public List<LedgerEntry> createLedgerEntriesBatch(int n) {
+		return createLedgerEntries(n, true);
+	}
 
-    public List<LedgerEntry> createLedgerEntries(int n) throws Exception {
-        ECKeyPair identity = ECKeyPair.generateNew();
-        return createLedgerEntries(identity, n);
-    }
+	private List<LedgerEntry> createLedgerEntries(int n, boolean sameCommit) {
+		// Super paranoid way of doing things
+		final var ledgerEntries = new LinkedHashMap<AID, LedgerEntry>(n);
+		while (ledgerEntries.size() < n) {
+			final var ledgerEntry = createLedgerEntry();
+			if (ledgerEntries.put(ledgerEntry.getAID(), ledgerEntry) == null && !sameCommit) {
+				this.proofVersion += 1;
+			}
+		}
+		if (sameCommit) {
+			this.proofVersion += 1;
+		}
 
-    public LedgerEntry createLedgerEntry(ECKeyPair identity, Random r) {
-        byte[] pKey = new byte[32];
-        r.nextBytes(pKey);
-        Atom atom = new Atom();
+		// Make sure return list is ordered by state version.
+		return Lists.newArrayList(ledgerEntries.values());
+	}
 
-        LedgerEntry ledgerEntry = new LedgerEntry(
-            DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
-            stateVersion,
-            stateVersion,
-            AID.from(pKey)
-        );
-        stateVersion++;
-        return ledgerEntry;
-    }
+	private LedgerEntry createLedgerEntry() {
+		final var pKey = new byte[32];
+		this.random.nextBytes(pKey);
+		final var atom = new Atom();
+
+		return new LedgerEntry(
+			DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
+			this.stateVersion++,
+			this.proofVersion,
+			AID.from(pKey)
+		);
+	}
 }

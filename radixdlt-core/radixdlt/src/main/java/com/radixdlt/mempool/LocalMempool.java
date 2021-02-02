@@ -27,11 +27,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -53,11 +55,14 @@ public final class LocalMempool implements Mempool {
 
 	private final SystemCounters counters;
 
+	private final Random random;
+
 	public LocalMempool(
 		int maxSize,
 		Hasher hasher,
-        SystemCounters counters,
-        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
+		SystemCounters counters,
+		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
+		Random random
 	) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
@@ -66,6 +71,7 @@ public final class LocalMempool implements Mempool {
 		this.hasher = hasher;
 		this.mempoolAddedCommandEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.counters = Objects.requireNonNull(counters);
+		this.random = Objects.requireNonNull(random);
 	}
 
 	@Override
@@ -108,10 +114,13 @@ public final class LocalMempool implements Mempool {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
 				List<Command> commands = Lists.newArrayList();
-				Iterator<Command> i = this.data.values().iterator();
+				var values = new ArrayList<>(this.data.values());
+				Collections.shuffle(values, random);
+
+				Iterator<Command> i = values.iterator();
 				while (commands.size() < size && i.hasNext()) {
 					Command a = i.next();
-					if (seen.add(hasher.hash(a))) {
+					if (!seen.contains(hasher.hash(a))) {
 						commands.add(a);
 					}
 				}

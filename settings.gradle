@@ -7,6 +7,8 @@ include ':radixdlt-engine-examples'
 include ':radixdlt-java'
 include ':radixdlt-java-common'
 include ':radixdlt-java-examples'
+include ':radixdlt-regression'
+include ':system-tests'
 
 project(':faucet-service').projectDir = new File('radixdlt-core/faucet-service')
 project(':radixdlt').projectDir = new File('radixdlt-core/radixdlt')
@@ -16,3 +18,5 @@ project(':radixdlt-engine-examples').projectDir = new File('radixdlt-engine/exam
 project(':radixdlt-java').projectDir = new File('radixdlt-java/radixdlt-java')
 project(':radixdlt-java-common').projectDir = new File('radixdlt-java-common')
 project(':radixdlt-java-examples').projectDir = new File('radixdlt-java/examples')
+project(':radixdlt-regression').projectDir = new File('radixdlt-regression')
+project(':system-tests').projectDir = new File('radixdlt-regression/system-tests')

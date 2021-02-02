@@ -46,8 +46,7 @@ public class MVStoreSearchCursorTests extends RadixTestWithMVStoreStores {
 
 	@Test
 	public void store_single_atom__search_by_unique_aid_and_get() {
-		ECKeyPair identity = ECKeyPair.generateNew();
-		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(identity, 1);
+		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(1);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 		LedgerEntryStore ledgerEntryStore = createStore();
 		Transaction tx = ledgerEntryStore.createTransaction();
@@ -97,7 +96,7 @@ public class MVStoreSearchCursorTests extends RadixTestWithMVStoreStores {
 	public void create_and_store_two_atoms__search_by_index__do_get_and_next() throws Exception {
 		ECKeyPair identity = ECKeyPair.generateNew();
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(2);
 		LedgerEntryStore ledgerEntryStore = createStore();
 		Transaction tx = ledgerEntryStore.createTransaction();
 
@@ -129,7 +128,7 @@ public class MVStoreSearchCursorTests extends RadixTestWithMVStoreStores {
 	public void create_and_store_two_atoms__search_by_index__get_last() throws Exception {
 		ECKeyPair identity = ECKeyPair.generateNew();
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(2);
 		LedgerEntryStore ledgerEntryStore = createStore();
 		Transaction tx = ledgerEntryStore.createTransaction();
 
@@ -161,7 +160,7 @@ public class MVStoreSearchCursorTests extends RadixTestWithMVStoreStores {
 	public void create_and_store_two_atoms__search_by_index__get_next__get_first() throws Exception {
 		ECKeyPair identity = ECKeyPair.generateNew();
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
-		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(identity, 2);
+		List<LedgerEntry> ledgerEntries = GENERATOR.createLedgerEntries(2);
 		LedgerEntryStore ledgerEntryStore = createStore();
 		Transaction tx = ledgerEntryStore.createTransaction();
 

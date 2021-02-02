@@ -468,7 +468,21 @@ public final class EpochManager {
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
+		log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", response);
+		final var responseEpoch = response.highQC().highestQC().getEpoch();
+		if (responseEpoch < this.currentEpoch()) {
+			log.debug("SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}", response, this.currentEpoch());
+			return;
+		}
+		if (responseEpoch > this.currentEpoch()) {
+			log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", response, this.currentEpoch());
+
+			// Send request for higher epoch proof
+			epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
+		} else {
+			// Current epoch
+			syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
+		}
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {

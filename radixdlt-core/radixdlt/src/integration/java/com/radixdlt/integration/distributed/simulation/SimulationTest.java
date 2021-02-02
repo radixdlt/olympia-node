@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -46,7 +47,6 @@ import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
-import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;
@@ -97,10 +97,13 @@ import com.radixdlt.integration.distributed.simulation.invariants.consensus.Node
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
+import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -251,6 +254,13 @@ public class SimulationTest {
 					if (!hasMempool) {
 						modules.add(new MockedCommandGeneratorModule());
 
+						// TODO: Remove once mempool fixed
+						modules.add(new AbstractModule() {
+							public void configure() {
+								bind(Mempool.class).to(EmptyMempool.class);
+							}
+						});
+
 						if (!hasEpochs) {
 							modules.add(new MockedStateComputerModule());
 						} else {
@@ -265,7 +275,6 @@ public class SimulationTest {
 						} else {
 							modules.add(new NoFeeModule());
 							modules.add(new RadixEngineModule());
-							modules.add(new RadixEngineRxModule());
 							modules.add(new MockedRadixEngineStoreModule());
 							modules.add(new SimulationValidatorComputersModule());
 						}
@@ -589,6 +598,7 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
+					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
                     bind(NodeEvents.class).toInstance(nodeEvents);
 				}
 
