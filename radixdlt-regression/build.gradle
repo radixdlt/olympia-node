@@ -20,10 +20,6 @@ import org.apache.tools.ant.taskdefs.condition.Os
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
-sourceSets {
-    test.java.srcDirs += 'test'
-    test.resources.srcDirs += 'test'
-}
 
 // Disable "test" task so it doesn't run with unit tests, as it relies on
 // a running network to successfully complete. This isn't always available.
