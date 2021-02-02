@@ -24,7 +24,6 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -37,15 +36,12 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -184,7 +180,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 				return;
 			}
 
-			try (Cursor cursor = this.safetyStore.openCursor(null, null)) {
+			try (Cursor cursor = this.safetyStore.openCursor(transaction, null)) {
 				DatabaseEntry key = new DatabaseEntry();
 				DatabaseEntry value = new DatabaseEntry();
 
