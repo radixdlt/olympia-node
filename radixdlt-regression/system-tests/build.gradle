@@ -70,8 +70,6 @@ task dockerSystemTests(type: Test) {
     systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
     exclude "Runner.class"
     jacoco {
-        // It appears that Jacoco can introduce thread and/or JVM pauses, which
-        // in turn can cause timeouts that interfere with integration tests.
         enabled false
     }
 }
@@ -83,6 +81,9 @@ task clusterSystemTests(type: Test) {
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     exclude "Runner.class"
+    jacoco {
+        enabled false
+    }
 }
 
 task ephemeralClusterSystemTests(type: Test) {
@@ -93,4 +94,7 @@ task ephemeralClusterSystemTests(type: Test) {
     systemProperties System.getProperties()
     systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
     exclude "Runner.class"
+    jacoco {
+        enabled false
+    }
 }

@@ -66,7 +66,7 @@ class CmdHelper {
             logger.error("-----------Error---------")
             serr.each { logger.error(it) }
             error = serr.toString().split("\n").collect({ it })
-            if (failOnError && !error.contains("WARNING")) {
+            if (failOnError) {
                 throw new Exception(error.toString())
             }
         }
@@ -189,7 +189,7 @@ class CmdHelper {
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
                 runCommand(dockerCommand.tokenize(), dockerEnv, true) :
-                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, false)
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
         return results[0][0]
     }
 
