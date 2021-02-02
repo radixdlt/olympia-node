@@ -20,6 +20,8 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -29,6 +31,8 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Flowable;
+import com.radixdlt.utils.ThreadFactories;
+
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -39,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.radixdlt.utils.ThreadFactories;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,9 +54,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private static final Logger log = LogManager.getLogger();
 
 	private final Scheduler singleThreadScheduler;
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(
-		ThreadFactories.daemonThreads("SyncManager")
-	);
+	private final ScheduledExecutorService executorService;
 	private final EventProcessor<LocalSyncRequest> syncRequestEventProcessor;
 
 	private final RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor;
@@ -73,6 +74,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 	@Inject
 	public SyncServiceRunner(
+		@Self BFTNode self,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<SyncInProgress> syncTimeouts,
@@ -84,6 +86,8 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
+		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager " + self));
+
 		this.localSyncRequests = Objects.requireNonNull(localSyncRequests);
 		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
 

@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,13 +75,13 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom has no instructions");
 		}
 
-		final boolean magic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
-		if (magic) {
+		// FIXME: Magic should be removed at some point
+		if (isMagic(atom)) {
 			return Result.success();
 		}
 
 		// no need for fees if a system update
-		// TODO: update should also have no metadata
+		// TODO: update should also have no message
 		if (atom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isCheckSpin)
 				.allMatch(i -> i.getParticle() instanceof SystemParticle)
@@ -119,11 +118,12 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		return Result.success();
 	}
 
+	private boolean isMagic(LedgerAtom atom) {
+		final var message = atom.getMessage();
+		return message != null && message.startsWith("magic:0xdeadbeef");
+	}
+
 	private boolean isFeeGroup(ParticleGroup pg) {
-		// No free storage in metadata
-		if (!pg.getMetaData().isEmpty()) {
-			return false;
-		}
 		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.getParticles().stream()
 			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = Optional.ofNullable(grouping.remove(TransferrableTokensParticle.class))

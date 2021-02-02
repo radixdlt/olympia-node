@@ -17,19 +17,20 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.HashUtils;
-import java.util.Set;
+
+import java.util.List;
 
 /**
  * Generates new random hash commands
  */
 public final class RandomHashCommandGenerator implements NextCommandGenerator {
 	@Override
-	public Command generateNextCommand(View view, Set<HashCode> prepared) {
+	public Command generateNextCommand(View view, List<PreparedVertex> prepared) {
 		return new Command(HashUtils.random256().asBytes());
 	}
 }

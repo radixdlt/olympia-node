@@ -21,6 +21,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -48,11 +50,13 @@ public class OneNodeFallingBehindTest {
 		)
 		.pacemakerTimeout(1000)
 		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 30, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(30, TimeUnit.SECONDS),
+			ConsensusMonitors.vertexRequestRate(50), // Conservative check
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		);
 
 	@Test
 	public void sanity_test() {

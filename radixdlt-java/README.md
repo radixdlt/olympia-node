@@ -25,21 +25,6 @@ radixdlt-java is a Java/Android Client library for interacting with a [Radix](ht
 * RXJava 2 based
 * Utilizes JSON-RPC over Websockets
 
-## Installation
-Include the following gradle dependency:
-### Gradle
-```
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
-```
-```
-dependencies {
-    implementation 'com.radixdlt:radixdlt-java:1.0-beta.19'
-}
-```
-
 ## Getting Started
 
 ### Identities
@@ -49,7 +34,7 @@ as well as decrypt data.
 
 To create/load an identity from a file:
 ```java
-RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password123");
+RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password123", "key_name");
 ```
 This will either create or load a file with a public/private key and encrypted with the given password.
 
@@ -255,15 +240,15 @@ result.blockUntilComplete();
 
 ## Contribute
 
-[Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
+[Contributions](../CONTRIBUTING.md) are welcome, we simply ask to:
 
 * Fork the codebase
 * Make changes
 * Submit a pull request for review
 
-When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt-java/issues) before making changes.
+When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt/issues) before making changes.
 
-Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
+Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interactions with the project.
 
 ## Links
 

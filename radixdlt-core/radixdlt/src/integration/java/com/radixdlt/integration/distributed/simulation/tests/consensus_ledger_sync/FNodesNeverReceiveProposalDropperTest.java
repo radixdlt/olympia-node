@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -60,12 +62,14 @@ public class FNodesNeverReceiveProposalDropperTest {
 			)
 			.pacemakerTimeout(5000)
 			.ledgerAndSync(50)
-			.checkConsensusSafety("safety")
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkConsensusAllProposalsHaveDirectParents("directParents")
-			.checkLedgerInOrder("ledgerInOrder")
-			.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-			.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+				ConsensusMonitors.directParents(),
+				ConsensusMonitors.vertexRequestRate(50), // Conservative check
+				LedgerMonitors.consensusToLedger(),
+				LedgerMonitors.ordered()
+			);
 	}
 
 	@Test

@@ -38,10 +38,10 @@ import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerRecoveryModule;
-import com.radixdlt.MempoolRelayModule;
+import com.radixdlt.MempoolRelayerModule;
+import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
-import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.RxEnvironmentModule;
@@ -86,7 +86,7 @@ public class GlobalInjector {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 50));
+				bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
@@ -136,7 +136,8 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// Mempool Relay
-			new MempoolRelayModule(),
+			new MempoolReceiverModule(),
+			new MempoolRelayerModule(),
 
 			// Sync
 			new SyncRunnerModule(),
@@ -153,7 +154,6 @@ public class GlobalInjector {
 			// State Computer
 			new RadixEngineModule(),
 			new RadixEngineValidatorComputersModule(),
-			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(),
 
 			// Checkpoints

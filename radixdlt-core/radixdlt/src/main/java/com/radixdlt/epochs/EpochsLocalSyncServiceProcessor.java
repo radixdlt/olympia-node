@@ -104,7 +104,7 @@ public class EpochsLocalSyncServiceProcessor {
 	private void processLocalSyncRequest(LocalSyncRequest request) {
 		final long targetEpoch = request.getTarget().getEpoch();
 		if (targetEpoch > currentEpoch.getEpoch()) {
-			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
+			log.debug("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
 
 			outsideOfCurrentEpochRequests.computeIfAbsent(targetEpoch, epoch -> Lists.newArrayList()).add(request);
 			requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());

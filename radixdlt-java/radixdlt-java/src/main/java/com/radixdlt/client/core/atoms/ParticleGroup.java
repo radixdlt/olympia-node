@@ -53,10 +53,6 @@ public class ParticleGroup {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableList<SpunParticle> particles;

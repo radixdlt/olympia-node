@@ -1,0 +1,150 @@
+{
+  "id": "25656d21-cd50-48b2-b568-866c7883385b",
+  "method": "Atoms.submitAtom",
+  "params": {
+    "metaData": {
+      "powNonce": ":str:16425",
+      "timestamp": ":str:1583757493942"
+    },
+    "serializer": "radix.atom",
+    "particleGroups": [
+      {
+        "serializer": "radix.particle_group",
+        "particles": [
+          {
+            "spin": -1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "rri": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF",
+              "serializer": "radix.particles.rri",
+              "version": 100,
+              "nonce": 0
+            },
+            "version": 100
+          },
+          {
+            "spin": 1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "granularity": ":u20:1000000000000000000",
+              "permissions": {
+                "burn": ":str:token_owner_only",
+                "mint": ":str:token_owner_only"
+              },
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "rri": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF",
+              "name": ":str:RLAU-40 Test token",
+              "serializer": "radix.particles.mutable_supply_token_definition",
+              "description": ":str:RLAU-40 Test token",
+              "version": 100
+            },
+            "version": 100
+          },
+          {
+            "spin": 1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "amount": ":u20:115792089237316195423570985008687907853269984665640564039457584007913129639935",
+              "granularity": ":u20:1000000000000000000",
+              "permissions": {
+                "burn": ":str:token_owner_only",
+                "mint": ":str:token_owner_only"
+              },
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "serializer": "radix.particles.unallocated_tokens",
+              "version": 100,
+              "nonce": 1583757493934,
+              "tokenDefinitionReference": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF"
+            },
+            "version": 100
+          }
+        ],
+        "version": 100
+      },
+      {
+        "serializer": "radix.particle_group",
+        "particles": [
+          {
+            "spin": -1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "amount": ":u20:115792089237316195423570985008687907853269984665640564039457584007913129639935",
+              "granularity": ":u20:1000000000000000000",
+              "permissions": {
+                "burn": ":str:token_owner_only",
+                "mint": ":str:token_owner_only"
+              },
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "serializer": "radix.particles.unallocated_tokens",
+              "version": 100,
+              "nonce": 1583757493934,
+              "tokenDefinitionReference": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF"
+            },
+            "version": 100
+          },
+          {
+            "spin": 1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "amount": ":u20:1000000000000000000000000000",
+              "address": ":adr:JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES",
+              "granularity": ":u20:1000000000000000000",
+              "permissions": {
+                "burn": ":str:token_owner_only",
+                "mint": ":str:token_owner_only"
+              },
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "serializer": "radix.particles.transferrable_tokens",
+              "version": 100,
+              "nonce": 69026309778560,
+              "tokenDefinitionReference": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF",
+              "planck": 26455958
+            },
+            "version": 100
+          },
+          {
+            "spin": 1,
+            "serializer": "radix.spun_particle",
+            "particle": {
+              "amount": ":u20:115792089237316195423570985008687907853269984665639564039457584007913129639935",
+              "granularity": ":u20:1000000000000000000",
+              "permissions": {
+                "burn": ":str:token_owner_only",
+                "mint": ":str:token_owner_only"
+              },
+              "destinations": [
+                ":uid:0c767ab918b29333ee48554006f261de"
+              ],
+              "serializer": "radix.particles.unallocated_tokens",
+              "version": 100,
+              "nonce": 1583757493935,
+              "tokenDefinitionReference": ":rri:/JG9uySadf4ebCX3fvmfN8LqUgDTUnX6FPTWC49scbbZGvosVFES/ABC DEF"
+            },
+            "version": 100
+          }
+        ],
+        "version": 100
+      }
+    ],
+    "version": 100,
+    "signatures": {
+      "0c767ab918b29333ee48554006f261de": {
+        "r": ":byt:em3CJKvM93BOU5+KcwTZ3AbWpo1T3fLaETdBjVI/Jow\u003d",
+        "s": ":byt:IX5w7EtS+iyKqi/+QwopS2qmplyVHmdmnnXZb9ep7kU\u003d",
+        "serializer": "crypto.ecdsa_signature",
+        "version": 100
+      }
+    }
+  }
+}

@@ -261,7 +261,7 @@ public class TicTacToeRunner {
 			try {
 				engine.checkAndStore(atom);
 			} catch (RadixEngineException e) {
-				System.out.println("ERROR:   " + atom);
+				System.out.println(atom + "\n\t" + e.getCmError());
 			}
 		}
 	}

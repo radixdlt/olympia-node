@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import io.reactivex.rxjava3.core.Flowable;
@@ -30,7 +31,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 /**
  * Network glue for SubmissionControl.
  */
-public final class MempoolReceiver {
+public final class MempoolReceiver implements ModuleRunner {
 	private final Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands;
 	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
 
@@ -46,6 +47,7 @@ public final class MempoolReceiver {
 		this.remoteEventProcessor = Objects.requireNonNull(remoteEventProcessor);
 	}
 
+	@Override
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
@@ -55,7 +57,8 @@ public final class MempoolReceiver {
 		}
 	}
 
-	void stop() {
+	@Override
+	public void stop() {
 		synchronized (this.startLock) {
 			if (this.disposable != null) {
 				// Try to do the sensible thing if disposable.dispose() throws
@@ -63,12 +66,6 @@ public final class MempoolReceiver {
 				this.disposable = null;
 				d.dispose();
 			}
-		}
-	}
-
-	boolean running() {
-		synchronized (this.startLock) {
-			return this.disposable != null;
 		}
 	}
 }

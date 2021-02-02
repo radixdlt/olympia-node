@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -40,13 +42,16 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents(),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		)
+		.addRadixEngineValidatorRegisterMempoolSubmissions()
+		.addMempoolCommittedChecker();
 
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {

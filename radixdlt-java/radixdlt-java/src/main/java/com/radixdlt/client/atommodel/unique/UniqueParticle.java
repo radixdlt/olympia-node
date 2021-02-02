@@ -22,10 +22,14 @@
 
 package com.radixdlt.client.atommodel.unique;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -52,10 +56,14 @@ public final class UniqueParticle extends Particle implements Identifiable {
 	}
 
 	public UniqueParticle(RadixAddress address, String unique) {
-		super(address.euid());
 		this.address = address;
 		this.name = unique;
 		this.nonce = System.nanoTime();
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid());
 	}
 
 	public String getName() {

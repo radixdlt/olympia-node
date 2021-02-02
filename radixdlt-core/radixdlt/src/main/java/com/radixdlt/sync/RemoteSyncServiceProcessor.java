@@ -27,7 +27,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.store.NextCommittedLimitReachedException;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +62,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 	@Override
 	public void process(BFTNode sender, DtoLedgerHeaderAndProof currentHeader) {
 		if (currentHeader.getLedgerHeader().isEndOfEpoch()) {
-			log.info("REMOTE_EPOCH_SYNC_REQUEST: {} {}", sender, currentHeader);
+			log.debug("REMOTE_EPOCH_SYNC_REQUEST: {} {}", sender, currentHeader);
 			long currentEpoch = currentHeader.getLedgerHeader().getEpoch() + 1;
 			long nextEpoch = currentEpoch + 1;
 			Optional<VerifiedLedgerHeaderAndProof> nextEpochProof = committedReader.getEpochVerifiedHeader(nextEpoch);
@@ -75,7 +75,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 				ImmutableList.of(),
 				currentHeader, nextEpochProof.get().toDto()
 			);
-			log.info("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
+			log.debug("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
 			syncResponseDispatcher.dispatch(sender, dtoCommandsAndProof);
 			return;
 		}
@@ -102,8 +102,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 			committedCommands.getHeader().toDto()
 		);
 
-		log.info("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, currentHeader, sender);
-
+		log.debug("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, currentHeader, sender);
 		syncResponseDispatcher.dispatch(sender, verifiable);
 	}
 }

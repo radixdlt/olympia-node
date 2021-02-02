@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -36,11 +38,13 @@ public class MovingWindowValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.checkConsensusSafety("safety")
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents(),
+			LedgerMonitors.consensusToLedger(),
+			LedgerMonitors.ordered()
+		);
 
 	private static Function<Long, IntStream> windowedEpochToNodesMapper(int windowSize, int totalValidatorCount) {
 		return epoch -> IntStream.range(0, windowSize).map(index -> (int) (epoch + index) % totalValidatorCount);
@@ -52,9 +56,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
+			.addTestModules(
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
+			)
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -66,9 +72,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
-			.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
+			.addTestModules(
+				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
+			)
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -80,9 +88,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
-			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
+			.addTestModules(
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS), // High timeout to make Travis happy
+				ConsensusMonitors.timestampChecker(),
+				ConsensusMonitors.epochCeilingView(View.of(100))
+			)
 			.build();
 
 		TestResults results = bftTest.run();
@@ -95,8 +105,10 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
-			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
+			.addTestModules(
+				ConsensusMonitors.epochCeilingView(View.of(1)),
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy
+			)
 			.build();
 
 		TestResults results = bftTest.run();

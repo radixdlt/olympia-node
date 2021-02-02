@@ -19,7 +19,9 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -67,6 +69,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 
 	@Inject
 	public EpochManagerRunner(
+		@Self BFTNode self,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		Observable<BFTInsertUpdate> bftUpdates,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
@@ -84,7 +87,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EpochManager epochManager
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
-		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
+		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
 		this.subscriptions = List.of(

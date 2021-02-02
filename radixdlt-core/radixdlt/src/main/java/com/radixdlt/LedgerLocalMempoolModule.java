@@ -27,6 +27,8 @@ import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddSuccess;
 
+import java.util.Random;
+
 public class LedgerLocalMempoolModule extends AbstractModule {
 	private final int maxSize;
 
@@ -39,8 +41,9 @@ public class LedgerLocalMempoolModule extends AbstractModule {
 	Mempool localMempool(
 		Hasher hasher,
 		SystemCounters counters,
-		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
+		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
+		Random random
 	) {
-		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher);
+		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher, random);
 	}
 }

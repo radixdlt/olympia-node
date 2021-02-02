@@ -31,8 +31,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -45,7 +43,7 @@ public class AtomTest {
 		Particle p = mock(Particle.class);
 		ParticleGroup group1 = ParticleGroup.of(SpunParticle.up(p));
 		ParticleGroup group2 = ParticleGroup.of(ImmutableList.of());
-		Atom atom = new Atom(ImmutableList.of(group1, group2), ImmutableMap.of(), ImmutableMap.of());
+		Atom atom = new Atom(ImmutableList.of(group1, group2), ImmutableMap.of());
 
 		assertEquals(2L, atom.particleGroups().count());
 
@@ -59,14 +57,13 @@ public class AtomTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Atom.class)
-				.withIgnoredFields("version")
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
 
 	@Test
 	public void testAtomSignAndVerify() throws AtomAlreadySignedException, PublicKeyException {
-		final Atom atom = new Atom(Map.of("some", "metadata"));
+		final Atom atom = new Atom();
 
 		final Hasher hasher = mock(Hasher.class);
 		when(hasher.hash(atom)).thenReturn(HashCode.fromLong(1234));

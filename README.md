@@ -19,6 +19,7 @@ Here we have:
 - [radixdlt-engine](radixdlt-engine/README.md): The Radix execution environment which provides an engine for a real-time, distributed state machine
 - [radixdlt-java-common](radixdlt-java-common/README.md): Common Java utilities used by various modules
 - [radixdlt-java](radixdlt-java/README.md): The Java client access library
+- [radixdlt-regression](radixdlt-regression/README.md): Regression tests
 
 ## Contribute
 
@@ -43,6 +44,6 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core`, `radixdlt-engine` and `radixdlt-java-common` code is released under the [Apache 2.0 License](LICENSE).
+The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common`, `radixdlt-regression` code is released under the [Apache 2.0 License](LICENSE).
 
 The `radixdlt-java` library is released under the [MIT License](radixdlt-java/LICENSE).

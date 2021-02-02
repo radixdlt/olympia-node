@@ -34,7 +34,6 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -115,6 +114,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
+				addBytesRead(pKey.getSize() + value.getSize());
 				try {
 					final SafetyState deserializedState =
 						serialization.fromDson(value.getData(), SafetyState.class);
@@ -139,8 +139,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 		final var start = System.nanoTime();
 
-		final Transaction transaction =
-			dbEnv.getEnvironment().beginTransaction(null, null);
+		final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);
 
@@ -150,6 +149,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			final OperationStatus status = this.safetyStore.put(transaction, key, data);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");
+			} else {
+				addBytesWrite(key.getSize() + data.getSize());
 			}
 
 			transaction.commit();
@@ -164,7 +165,15 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	private void addTime(long start) {
 		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
 		this.systemCounters.add(CounterType.ELAPSED_BDB_SAFETY_STATE, elapsed);
-		this.systemCounters.increment(CounterType.COUNT_BDB_SAFETY_STATE);
+		this.systemCounters.increment(CounterType.COUNT_BDB_SAFETY_STATE_TOTAL);
+	}
+
+	private void addBytesRead(int bytesRead) {
+		this.systemCounters.add(CounterType.COUNT_BDB_SAFETY_STATE_BYTES_READ, bytesRead);
+	}
+
+	private void addBytesWrite(int bytesWrite) {
+		this.systemCounters.add(CounterType.COUNT_BDB_SAFETY_STATE_BYTES_WRITE, bytesWrite);
 	}
 
 	private byte[] keyFor(SafetyState safetyState) {

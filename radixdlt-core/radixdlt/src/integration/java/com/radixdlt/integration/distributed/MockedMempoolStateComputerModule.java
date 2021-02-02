@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -58,8 +57,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public Command getNextCommandFromMempool(Set<HashCode> exclude) {
-				final List<Command> commands = mempool.getCommands(1, exclude);
+			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
+				final List<Command> commands = mempool.getCommands(1, Set.of());
 				return !commands.isEmpty() ? commands.get(0) : null;
 			}
 

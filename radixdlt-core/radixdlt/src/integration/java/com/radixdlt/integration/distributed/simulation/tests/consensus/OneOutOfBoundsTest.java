@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -40,9 +41,11 @@ public class OneOutOfBoundsTest {
 			NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
 		)
 		.pacemakerTimeout(synchronousTimeout)
-		// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
-		.checkConsensusLiveness("liveness", 4 * synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkConsensusSafety("safety");
+		.addTestModules(
+			ConsensusMonitors.safety(),
+			// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
+			ConsensusMonitors.liveness(4 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		);
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

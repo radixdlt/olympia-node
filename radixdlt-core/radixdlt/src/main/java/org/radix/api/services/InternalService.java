@@ -30,7 +30,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -117,7 +116,7 @@ public final class InternalService {
 						long sliceStart = System.currentTimeMillis();
 
 						for (int i = 0; i < this.rate; i++) {
-							Atom atom = new Atom(ImmutableMap.of("magic", "0xdeadbeef"));
+							Atom atom = new Atom("magic:0xdeadbeef");
 
 							for (int b = 0; b < this.batching; b++) {
 								byte[] nonce = generateNonce(nonceBits);

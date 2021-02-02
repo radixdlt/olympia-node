@@ -41,9 +41,9 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Synchronizes execution
@@ -90,7 +90,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	public interface StateComputer {
 		void addToMempool(Command command);
-		Command getNextCommandFromMempool(Set<HashCode> exclude);
+		Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared);
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
@@ -143,8 +143,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public Command generateNextCommand(View view, Set<HashCode> prepared) {
-		return stateComputer.getNextCommandFromMempool(prepared);
+	public Command generateNextCommand(View view, List<PreparedVertex> prepared) {
+		final ImmutableList<PreparedCommand> preparedCommands = prepared.stream()
+				.flatMap(PreparedVertex::successfulCommands)
+				.collect(ImmutableList.toImmutableList());
+		return stateComputer.getNextCommandFromMempool(preparedCommands);
 	}
 
 	@Override

@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -61,7 +62,6 @@ public final class RegisteredValidatorParticle extends Particle implements Accou
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
-		super(address.euid());
 		this.address = Objects.requireNonNull(address);
 		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
 		this.url = url;
@@ -83,6 +83,11 @@ public final class RegisteredValidatorParticle extends Particle implements Accou
 			this.url,
 			nonce
 		);
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid());
 	}
 
 	public boolean allowsDelegator(RadixAddress delegator) {

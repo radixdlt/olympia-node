@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -35,6 +36,7 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
@@ -52,6 +54,9 @@ public final class NetworkModule extends AbstractModule {
 		bind(MessageCentralMempool.class).in(Scopes.SINGLETON);
 
 		// Network BFT/Epoch Sync messages
+		//TODO: make rate limits configurable
+		bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
+
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);

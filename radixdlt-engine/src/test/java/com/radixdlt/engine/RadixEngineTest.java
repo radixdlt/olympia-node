@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
@@ -30,6 +31,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
@@ -39,6 +41,7 @@ import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,6 +58,11 @@ public class RadixEngineTest {
 
 	@SerializerId2("test.indexed_particle_2")
 	private final class IndexedParticle extends Particle {
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
+		}
+
 		@Override
 		public String toString() {
 			return String.format("%s", getClass().getSimpleName());

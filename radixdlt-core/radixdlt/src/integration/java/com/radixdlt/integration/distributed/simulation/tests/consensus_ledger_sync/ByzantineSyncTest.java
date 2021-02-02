@@ -25,6 +25,9 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -66,12 +69,14 @@ public class ByzantineSyncTest {
 			})
 			.pacemakerTimeout(5000)
 			.ledgerAndSync(50)
-			.checkConsensusSafety("safety")
-			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkConsensusNoTimeouts("noTimeouts")
-			.checkConsensusAllProposalsHaveDirectParents("directParents")
-			.checkLedgerInOrder("ledgerInOrder")
-			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+			.addTestModules(
+				ConsensusMonitors.safety(),
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+				ConsensusMonitors.noTimeouts(),
+				ConsensusMonitors.directParents(),
+				LedgerMonitors.consensusToLedger(),
+				LedgerMonitors.ordered()
+			);
 	}
 
 	@Test
@@ -103,6 +108,9 @@ public class ByzantineSyncTest {
 			.summaryStatistics();
 
 		logger.info("{}", statistics);
-		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults()).hasEntrySatisfying(
+			Monitor.LEDGER_IN_ORDER,
+			error -> assertThat(error).isPresent()
+		);
 	}
 }
