@@ -23,6 +23,6 @@ docker create  --pid=host --privileged  \
       --name=${test_executor} radix-system-test \
       ./gradlew clean -p radixdlt-regression/system-tests :radixdlt-regression:system-tests:dockerSystemTests --stacktrace --refresh-dependencies --info --tests "com.radixdlt.test.DockerTests.smoke_test"
 docker start -a "${test_executor}"
-docker cp $test_executor:src/system-tests .
+docker cp $test_executor:/core/radixdlt-regression/system-tests .
 test_status=$(docker inspect $test_executor --format='{{.State.ExitCode}}')
 exit $test_status
