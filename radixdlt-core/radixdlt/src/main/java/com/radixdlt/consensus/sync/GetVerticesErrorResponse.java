@@ -27,10 +27,12 @@ import java.util.Objects;
 public final class GetVerticesErrorResponse {
 	private final BFTNode sender;
 	private final HighQC highQC;
+	private final GetVerticesRequest request;
 
-	public GetVerticesErrorResponse(BFTNode sender, HighQC highQC) {
+	public GetVerticesErrorResponse(BFTNode sender, HighQC highQC, GetVerticesRequest request) {
 		this.sender = Objects.requireNonNull(sender);
 		this.highQC = Objects.requireNonNull(highQC);
+		this.request = Objects.requireNonNull(request);
 	}
 
 	public BFTNode getSender() {
@@ -39,6 +41,10 @@ public final class GetVerticesErrorResponse {
 
 	public HighQC highQC() {
 		return this.highQC;
+	}
+
+	public GetVerticesRequest request() {
+		return this.request;
 	}
 
 	@Override

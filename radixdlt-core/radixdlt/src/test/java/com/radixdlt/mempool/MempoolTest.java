@@ -228,7 +228,7 @@ public class MempoolTest {
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
-		ClientAtom atom = createAtom(keyPair, hasher, 0, numParticles);
+		ClientAtom atom = createAtom(keyPair, hasher, nonce, numParticles);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
@@ -377,6 +377,32 @@ public class MempoolTest {
 		var proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
+		radixEngineStateComputer.commit(commandsAndProof, null);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+	}
+
+	@Test
+	public void mempool_removes_multiple_conflicts_on_commit() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher, 0, 2);
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		Command command2 = createCommand(keyPair, hasher, 0, 3);
+		processor.handleMessage(BFTNode.random(), MempoolAddSuccess.create(command2));
+
+		// Act
+		Command command3 = createCommand(keyPair, hasher, 0, 1);
+		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
+		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
 		radixEngineStateComputer.commit(commandsAndProof, null);
 
 		// Assert

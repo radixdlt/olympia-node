@@ -25,21 +25,6 @@ radixdlt-java is a Java/Android Client library for interacting with a [Radix](ht
 * RXJava 2 based
 * Utilizes JSON-RPC over Websockets
 
-## Installation
-Include the following gradle dependency:
-### Gradle
-```
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
-```
-```
-dependencies {
-    implementation 'com.radixdlt:radixdlt-java:1.0-beta.19'
-}
-```
-
 ## Getting Started
 
 ### Identities

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -93,6 +94,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -185,6 +187,8 @@ public class EpochManagerTest {
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
+				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+					.toInstance(RateLimiter.create(Double.MAX_VALUE));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(10L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);

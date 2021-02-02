@@ -65,7 +65,7 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 	}
 
 	public String getClusterName() {
-		if(clusterName == null){
+		if (clusterName == null) {
 			throw new IllegalStateException("Cluster Name is empty. Its the name of remote cluster");
 		}
 		return clusterName;
@@ -100,17 +100,17 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 	}
 
 
-	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes){
+	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes) {
 		ImmutableSet<String> nodesList = new TestnetNodes().nodeURLList();
-		return new StaticClusterNetwork(nodesList,System.getenv(STATIC_CLUSTER_TESTNET_NAME));
+		return new StaticClusterNetwork(nodesList, System.getenv(STATIC_CLUSTER_TESTNET_NAME));
 	}
 
-	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes,String dockerOptions,String cmdOptions){
+	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes, String dockerOptions, String cmdOptions) {
 		ImmutableSet<String> nodesList = new TestnetNodes()
 			.usingDockerRunOptions(dockerOptions)
 			.usingCmdOptions(cmdOptions)
 			.nodeURLList();
-		return new StaticClusterNetwork(nodesList,System.getenv(STATIC_CLUSTER_TESTNET_NAME));
+		return new StaticClusterNetwork(nodesList, System.getenv(STATIC_CLUSTER_TESTNET_NAME));
 	}
 	/**
 	 * Creates a static cluster BFT network of the cluster .
@@ -119,16 +119,16 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 	 * @param expectedNumNodes The expected number of nodes
 	 * @return A static cluster network
 	 */
-	public static StaticClusterNetwork clusterInfo(int expectedNumNodes){
-		if(System.getenv(STATIC_CLUSTER_TESTNET_NAME) == null ){
+	public static StaticClusterNetwork clusterInfo(int expectedNumNodes) {
+		if (System.getenv(STATIC_CLUSTER_TESTNET_NAME) == null) {
 			return StaticClusterNetwork.extractFromProperty(expectedNumNodes);
-		}else{
+		} else {
 			return StaticClusterNetwork.extractFromTestnet(expectedNumNodes);
 		}
 	}
 
-	public static StaticClusterNetwork clusterInfo(int expectedNumNodes,String dockerOptions,String cmdOptions){
-		return StaticClusterNetwork.extractFromTestnet(expectedNumNodes,dockerOptions,cmdOptions);
+	public static StaticClusterNetwork clusterInfo(int expectedNumNodes, String dockerOptions, String cmdOptions) {
+		return StaticClusterNetwork.extractFromTestnet(expectedNumNodes, dockerOptions, cmdOptions);
 	}
 	/**
 	 * Extracts cluster node URLs out of the STATIC_CLUSTER_NODE_URLS_PROPERTY.

@@ -21,13 +21,51 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
 
-test {
+// Disable "test" task so it doesn't run with unit tests, as it relies on
+// a running network to successfully complete. This isn't always available.
+tasks.test.enabled = false
+
+configurations {
+    regressionTestImplementation.extendsFrom testImplementation
+}
+
+sourceSets {
+    regressionTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/test/java')
+        }
+        resources.srcDir file('src/test/resources')
+    }
+}
+
+task regressionTest(type: Test) {
+    testClassesDirs = sourceSets.regressionTest.output.classesDirs
+    classpath = sourceSets.regressionTest.runtimeClasspath
+}
+
+regressionTest {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        outputs.upToDateWhen { false }
+        showStandardStreams true
+    }
     if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
         systemProperty 'java.security.egd', 'file:/dev/urandom'
         systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
         systemProperty 'javax.net.ssl.trustStoreType', 'jks'
     }
     systemProperties System.getProperties()
+    jacoco {
+        // Jacoco plugin fails with an exception if run on these tests.
+        enabled false
+    }
+}
+
+checkstyleRegressionTest {
+    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
 dependencies {

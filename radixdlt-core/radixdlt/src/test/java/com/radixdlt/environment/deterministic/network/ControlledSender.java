@@ -34,6 +34,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
@@ -63,8 +64,8 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
-		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC);
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest request) {
+		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC, request);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
 	}

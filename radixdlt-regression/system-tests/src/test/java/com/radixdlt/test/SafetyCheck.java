@@ -53,7 +53,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 	private final TimeUnit timeoutUnit;
 	private List<String> nodesToIgnore;
 
-	private SafetyCheck(long timeout, TimeUnit timeoutUnit , List<String> nodesToIgnore) {
+	private SafetyCheck(long timeout, TimeUnit timeoutUnit, List<String> nodesToIgnore) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
@@ -64,7 +64,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 
 	public static SafetyCheck with(long timeout, TimeUnit timeoutUnit) {
 
-		return new SafetyCheck(timeout, timeoutUnit,new ArrayList<String>());
+		return new SafetyCheck(timeout, timeoutUnit, new ArrayList<String>());
 	}
 
 	public SafetyCheck withNodesToIgnore(List<String> nodesToIgnore) {
@@ -81,7 +81,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
 					.timeout(timeout, timeoutUnit)
 					.map(verticesString -> {
-						logger.debug("Api/Vertices/commited endpoint response {} ",verticesString);
+						logger.debug("Api/Vertices/commited endpoint response {} ", verticesString);
 						return extractVertices(verticesString, node);
 					})
 					.doOnError(err -> logger.debug(
@@ -149,7 +149,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 		private final long view;
 
 		private EpochView(long epoch, long view) {
-			this.epoch= epoch;
+			this.epoch = epoch;
 			this.view = view;
 		}
 

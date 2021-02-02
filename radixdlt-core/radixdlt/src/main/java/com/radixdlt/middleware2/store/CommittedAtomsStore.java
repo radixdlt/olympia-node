@@ -231,7 +231,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return null;
 		}
 
-		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedCommands.get(0).getStateAndProof();
+		final var tailPosition = storedCommittedCommands.size() - 1;
+		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
 		return new VerifiedCommandsAndProof(
 			storedCommittedCommands.stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
 			nextHeader

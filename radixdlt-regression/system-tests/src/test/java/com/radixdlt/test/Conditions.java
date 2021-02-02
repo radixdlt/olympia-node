@@ -33,6 +33,10 @@ public class Conditions {
 
     private static final Duration MAX_TIME_TO_WAIT_FOR_LIVENESS = Duration.ofMinutes(10);
 
+    private Conditions() {
+        throw new IllegalStateException("Can't construct");
+    }
+
     /**
      * will block and keep checking for liveness, until a fixed amount of time has passed
      */

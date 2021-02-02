@@ -66,7 +66,7 @@ public class DockerTests {
 
             // make all nodes slow/latent
             logger.info("Adding latency...");
-            network.getNodeIds().forEach(node -> CmdHelper.runTcUsingVeth(node, "delay 100ms loss 10%"));
+            network.getNodeIds().forEach(node -> CmdHelper.runTcUsingVeth(node, "delay 200ms"));
 
             // first check
             logger.info("First round of checks");
@@ -102,7 +102,9 @@ public class DockerTests {
     @Parameters({"4", "5"})
     @TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail")
     @Test
-    public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail(int numberOfNodes) {
+    public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail(
+        int numberOfNodes
+    ) {
         try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testMethodName).startConsensusOnBoot().build()) {
             network.startBlocking();
 

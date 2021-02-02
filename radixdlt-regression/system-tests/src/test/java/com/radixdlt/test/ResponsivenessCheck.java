@@ -46,7 +46,7 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	}
 
 	public static ResponsivenessCheck with(long timeout, TimeUnit timeoutUnit) {
-		return new ResponsivenessCheck(timeout, timeoutUnit,new ArrayList<String>());
+		return new ResponsivenessCheck(timeout, timeoutUnit, new ArrayList<String>());
 	}
 
 	public ResponsivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {

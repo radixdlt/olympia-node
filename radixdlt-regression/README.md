@@ -15,5 +15,5 @@ The project contains two helper scripts which can be used to run tests.
 ### Running Test Suite Locally
 In order to run test suite locally running Radix Network is necessary. It's recommended to have at least 2 nodes in the 
 network. For development purposes such a network can be started using instructions provided in 
-[radixdlt-core/docker/README.md](https://github.com/radixdlt/radixdlt-core/blob/release/1.0-beta.19/docker/README.md).
+[radixdlt-core/docker/README.md](../radixdlt-core/docker/README.md).
 Once network is up and running, just launch `run-regression-test.sh` script.

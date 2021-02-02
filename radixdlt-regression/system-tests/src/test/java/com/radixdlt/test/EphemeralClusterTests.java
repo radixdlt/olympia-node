@@ -33,7 +33,12 @@ import utils.Constants;
 import utils.EphemeralNetworkCreator;
 import utils.Generic;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,7 +66,8 @@ public class EphemeralClusterTests {
         this.nodesCrashed = nodesCrashed;
     }
 
-    @Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
+    @Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__"
+		+ "then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {11, 2},
@@ -72,28 +78,28 @@ public class EphemeralClusterTests {
 
     @Before
     public void setupCluster() {
-        String SSH_IDENTITY = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY))
+        String sshIdentity = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY))
                 .orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-        String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY_PUB))
+        String sshIdentityPub = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY_PUB))
                 .orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
-        String AWS_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
-        String GCP_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
-        String CREDENTIAL_VOL_NAME = Optional.ofNullable(System.getenv(Constants.getCREDENTIAL_VOL_NAME()))
+        String awsCredential = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
+        String gcpCredential = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
+        String credentialVolName = Optional.ofNullable(System.getenv(Constants.getCREDENTIAL_VOL_NAME()))
                 .orElse("key-volume");
 
 
         ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
                 .withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
                 .withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
-                .withKeyVolume(CREDENTIAL_VOL_NAME)
+                .withKeyVolume(credentialVolName)
                 .withTerraformOptions(Collections.emptyList()).build();
 
-        ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY);
-        ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY_PUB, Constants.getTESTNET_SSH_KEY_FILE_NAME());
-        ephemeralNetworkCreator.copyToTFSecrets(AWS_CREDENTIAL, Constants.getAWS_CREDENTIAL_FILE());
+        ephemeralNetworkCreator.copyToTFSecrets(sshIdentity);
+        ephemeralNetworkCreator.copyToTFSecrets(sshIdentityPub, Constants.getTESTNET_SSH_KEY_FILE_NAME());
+        ephemeralNetworkCreator.copyToTFSecrets(awsCredential, Constants.getAWS_CREDENTIAL_FILE());
 
-        ephemeralNetworkCreator.copyToAnsibleSecrets(AWS_CREDENTIAL, Constants.getAWS_CREDENTIAL_FILE());
-        ephemeralNetworkCreator.copyToAnsibleSecrets(GCP_CREDENTIAL, Constants.getGCP_CREDENTIAL_FILE());
+        ephemeralNetworkCreator.copyToAnsibleSecrets(awsCredential, Constants.getAWS_CREDENTIAL_FILE());
+        ephemeralNetworkCreator.copyToAnsibleSecrets(gcpCredential, Constants.getGCP_CREDENTIAL_FILE());
     }
 
     @Test
@@ -101,22 +107,22 @@ public class EphemeralClusterTests {
         String name = Generic.extractTestName(testNameRule.getMethodName());
         logger.info("Test name is " + name);
 
-        String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
-        String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
-        String LOG_LEVEL = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_LOG_LEVEL)).orElse("debug");
+        String coreTag = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
+        String testnetName = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+        String logLevel = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_LOG_LEVEL)).orElse("debug");
         ephemeralNetworkCreator.setTotalNumberOfNodes(networkSize);
         ephemeralNetworkCreator.pullImage();
         ephemeralNetworkCreator.plan();
         ephemeralNetworkCreator.setup();
-        ephemeralNetworkCreator.nodesToBringdown(TESTNET_NAME);
+        ephemeralNetworkCreator.nodesToBringdown(testnetName);
         ephemeralNetworkCreator.deploy(Collections.emptyList(),
                 Stream
                         .of(" -i aws-inventory  ",
-                                "--limit " + TESTNET_NAME + " ",
+                                "--limit " + testnetName + " ",
                                 "-e RADIXDLT_UNIVERSE ",
-                                "-e core_tag=" + CORE_TAG + " ",
-                                "-e core_log_level=" + LOG_LEVEL + " ",
-                                "-e boot_nodes=\"{{ groups['" + TESTNET_NAME + "'] | join(',') }}\" ",
+                                "-e core_tag=" + coreTag + " ",
+                                "-e core_log_level=" + logLevel + " ",
+                                "-e boot_nodes=\"{{ groups['" + testnetName + "'] | join(',') }}\" ",
                                 "-e quorum_size=" + networkSize + " -e consensus_start_on_boot=true").collect(toList()));
 
         network = ephemeralNetworkCreator.getNetwork(networkSize);
@@ -148,7 +154,6 @@ public class EphemeralClusterTests {
 
     @After
     public void removeCluster() {
-        String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
         List<String> runningNodes = network.getNodeIds()
                 .stream()
                 .filter(this::isNodeRunning)
