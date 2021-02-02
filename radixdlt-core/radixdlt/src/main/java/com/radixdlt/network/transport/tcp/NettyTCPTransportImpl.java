@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
-import com.radixdlt.utils.streams.RoundRobinBackpressuredProcessor;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,8 +86,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
-	private final RoundRobinBackpressuredProcessor<InboundMessage> inboundMessageSink =
-		new RoundRobinBackpressuredProcessor<>();
+
+	private final PublishProcessor<Flowable<InboundMessage>> channels = PublishProcessor.create();
 
 	private final TCPTransportControl control;
 
@@ -200,7 +200,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-		return Flowable.fromPublisher(inboundMessageSink);
+		return Flowable.mergeDelayError(channels);
 	}
 
 	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
@@ -220,7 +220,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		}
 
 		final var messageHandler = new TCPNettyMessageHandler(this.counters, this.messageBufferSize);
-		this.inboundMessageSink.subscribeTo(messageHandler.inboundMessageRx());
+		channels.onNext(messageHandler.inboundMessageRx());
 
 		ch.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
