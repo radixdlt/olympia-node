@@ -9,6 +9,7 @@ network.discovery.urls=$RADIXDLT_NETWORK_DISCOVERY_URLS
 consensus.pacemaker_timeout_millis=$RADIXDLT_PACEMAKER_TIMEOUT_MILLIS
 consensus.fixed_node_count=$RADIXDLT_CONSENSUS_FIXED_NODE_COUNT
 consensus.start_on_boot=$RADIXDLT_CONSENSUS_START_ON_BOOT
+chaos.enable=$RADIXDLT_CHAOS_ENABLE
 
 host.ip=$RADIXDLT_HOST_IP_ADDRESS
 cp.port=$RADIXDLT_CP_PORT

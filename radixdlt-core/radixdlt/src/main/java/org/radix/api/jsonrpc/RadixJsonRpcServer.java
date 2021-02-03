@@ -74,6 +74,7 @@ public final class RadixJsonRpcServer {
 	private final ModuleRunner consensusRunner;
 	private final PeerWithSystem localPeer;
 
+
 	public RadixJsonRpcServer(
 		ModuleRunner consensusRunner,
 		Serialization serialization,

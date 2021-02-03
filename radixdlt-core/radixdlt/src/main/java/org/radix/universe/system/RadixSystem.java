@@ -17,6 +17,7 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.utils.Base58;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -137,14 +138,14 @@ public class RadixSystem extends BasicContainer {
 	// FIXME: Should serialize ECKeyPair directly
 	@JsonProperty("key")
 	@DsonOutput(Output.ALL)
-	byte[] getJsonKey() {
-		return (key == null) ? null : key.getBytes();
+	String getJsonKey() {
+		return (key == null) ? null : Base58.toBase58(key.getBytes());
 	}
 
 	@JsonProperty("key")
-	void setJsonKey(byte[] newKey) throws DeserializeException {
+	void setJsonKey(String newKey) throws DeserializeException {
 		try {
-			key = ECPublicKey.fromBytes(newKey);
+			key = ECPublicKey.fromBytes(Base58.fromBase58(newKey));
 		} catch (PublicKeyException cex) {
 			throw new DeserializeException("Invalid key", cex);
 		}

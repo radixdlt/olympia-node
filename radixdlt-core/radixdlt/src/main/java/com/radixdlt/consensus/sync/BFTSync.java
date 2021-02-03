@@ -46,7 +46,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
-import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -148,7 +147,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	public BFTSync(
 		@Self BFTNode self,
-		@GetVerticesErrorRateLimit RateLimiter syncRequestRateLimiter,
+		RateLimiter syncRequestRateLimiter,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
