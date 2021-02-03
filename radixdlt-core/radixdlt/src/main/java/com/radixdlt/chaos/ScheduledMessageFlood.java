@@ -20,11 +20,10 @@ package com.radixdlt.chaos;
 /**
  * Event specifying that a message flood should be run
  */
-public final class ScheduledMessageFlood {
-    private ScheduledMessageFlood() {
-    }
+public enum ScheduledMessageFlood {
+    INSTANCE;
 
     public static ScheduledMessageFlood create() {
-        return new ScheduledMessageFlood();
+        return INSTANCE;
     }
 }

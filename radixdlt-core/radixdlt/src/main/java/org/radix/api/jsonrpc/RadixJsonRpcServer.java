@@ -81,7 +81,6 @@ public final class RadixJsonRpcServer {
 
 	private final EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher;
 
-
 	public RadixJsonRpcServer(
 		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
 		ModuleRunner consensusRunner,

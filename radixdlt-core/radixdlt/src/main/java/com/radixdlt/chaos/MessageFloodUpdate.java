@@ -44,4 +44,19 @@ public final class MessageFloodUpdate {
     public Optional<BFTNode> getBFTNode() {
         return Optional.ofNullable(bftNode);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(bftNode);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MessageFloodUpdate)) {
+            return false;
+        }
+
+        MessageFloodUpdate other = (MessageFloodUpdate) o;
+        return Objects.equals(this.bftNode, other.bftNode);
+    }
 }

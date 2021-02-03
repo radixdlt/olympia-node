@@ -59,7 +59,7 @@ public final class BFTNodeMessageFlooder {
 	public BFTNodeMessageFlooder(
 		@Self BFTNode self,
 		ProposalBroadcaster proposalBroadcaster,
-        ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher
+		ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
@@ -82,15 +82,15 @@ public final class BFTNodeMessageFlooder {
 	public EventProcessor<MessageFloodUpdate> messageFloodUpdateProcessor() {
 		return msg -> {
 			BFTNode nextNode = msg.getBFTNode().orElse(null);
-		    if (Objects.equals(this.nodeToAttack, nextNode)) {
+			if (Objects.equals(this.nodeToAttack, nextNode)) {
 				logger.info("Message flood no update: {}", nextNode);
-		    	return;
+				return;
 			}
 
 			logger.info("Message flood update: {}", nextNode);
 
 			if (this.nodeToAttack == null) {
-		    	scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 50);
+				scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 50);
 			}
 
 			this.nodeToAttack = nextNode;
