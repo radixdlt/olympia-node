@@ -33,15 +33,15 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'org.json:json'
 
-    testImplementation group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
-    testImplementation 'io.cucumber:cucumber-core:2.1.0'
-    testImplementation 'io.cucumber:cucumber-java:5.5.0'
-    testImplementation 'io.cucumber:cucumber-junit:5.5.0'
-    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
+    testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
-    testImplementation group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
+    testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
     testImplementation group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
+    testImplementation 'junit:junit'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'io.cucumber:cucumber-java:6.8.1'
+    testImplementation 'io.cucumber:cucumber-junit:6.8.1'
 }
 
 task copyCLIJar {
@@ -69,6 +69,9 @@ task dockerSystemTests(type: Test) {
     systemProperties System.getProperties()
     systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
     exclude "Runner.class"
+    jacoco {
+        enabled false
+    }
 }
 
 task clusterSystemTests(type: Test) {
@@ -78,6 +81,9 @@ task clusterSystemTests(type: Test) {
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     exclude "Runner.class"
+    jacoco {
+        enabled false
+    }
 }
 
 task ephemeralClusterSystemTests(type: Test) {
@@ -88,4 +94,7 @@ task ephemeralClusterSystemTests(type: Test) {
     systemProperties System.getProperties()
     systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
     exclude "Runner.class"
+    jacoco {
+        enabled false
+    }
 }
