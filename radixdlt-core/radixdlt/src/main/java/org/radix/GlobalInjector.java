@@ -82,6 +82,8 @@ public class GlobalInjector {
 	private Injector injector;
 
 	public GlobalInjector(RuntimeProperties properties) {
+		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
+
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
 			@Override
@@ -99,6 +101,74 @@ public class GlobalInjector {
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(properties.get("consensus.pacemaker_timeout_millis", 1000L));
 				bindConstant().annotatedWith(PacemakerRate.class).to(properties.get("consensus.pacemaker_rate", 2.0));
 				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(properties.get("consensus.pacemaker_max_exponent", 6));
+
+				// System (e.g. time, random)
+				install(new SystemModule());
+
+				install(new RxEnvironmentModule());
+
+				install(new DispatcherModule());
+
+				// Consensus
+				install(new BFTKeyModule());
+				install(new CryptoModule());
+				install(new ConsensusModule());
+				install(new ConsensusRxModule());
+				install(new ConsensusRunnerModule());
+
+				// Ledger
+				install(new LedgerModule());
+				install(new LedgerCommandGeneratorModule());
+				install(new LedgerLocalMempoolModule(mempoolMaxSize));
+
+				// Mempool Relay
+				install(new MempoolReceiverModule());
+				install(new MempoolRelayerModule());
+
+				// Sync
+				install(new SyncRunnerModule());
+				install(new SyncServiceModule());
+
+				// Epochs - Consensus
+				install(new EpochsConsensusModule());
+				// Epochs - Ledger
+				install(new EpochsLedgerUpdateModule());
+				install(new EpochsLedgerUpdateRxModule());
+				// Epochs - Sync
+				install(new EpochsSyncModule());
+
+				// State Computer
+				install(new RadixEngineModule());
+				install(new RadixEngineValidatorComputersModule());
+				install(new RadixEngineStoreModule());
+
+				// Checkpoints
+				install(new CheckpointModule());
+
+				// Genesis validators
+				install(new GenesisValidatorSetFromUniverseModule());
+
+				// Fees
+				install(new TokenFeeModule());
+
+				install(new PersistenceModule());
+				install(new ConsensusRecoveryModule());
+				install(new LedgerRecoveryModule());
+
+				// System Info
+				install(new SystemInfoModule());
+
+				// Network
+				install(new NetworkModule());
+				install(new MessageCentralModule(properties));
+				install(new UDPTransportModule(properties));
+				install(new TCPTransportModule(properties));
+				install(new AddressBookModule());
+				install(new HostIpModule(properties));
+
+				if (properties.get("chaos.enable", false)) {
+					install(new ChaosModule());
+				}
 			}
 
 			@Provides
@@ -114,75 +184,7 @@ public class GlobalInjector {
 			}
 		};
 
-		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
-
 		injector = Guice.createInjector(
-			// System (e.g. time, random)
-			new SystemModule(),
-
-			new RxEnvironmentModule(),
-
-			new DispatcherModule(),
-
-			// Consensus
-			new BFTKeyModule(),
-			new CryptoModule(),
-			new ConsensusModule(),
-			new ConsensusRxModule(),
-			new ConsensusRunnerModule(),
-
-			// Ledger
-			new LedgerModule(),
-			new LedgerCommandGeneratorModule(),
-			new LedgerLocalMempoolModule(mempoolMaxSize),
-
-			// Mempool Relay
-			new MempoolReceiverModule(),
-			new MempoolRelayerModule(),
-
-			// Sync
-			new SyncRunnerModule(),
-			new SyncServiceModule(),
-
-			// Epochs - Consensus
-			new EpochsConsensusModule(),
-			// Epochs - Ledger
-			new EpochsLedgerUpdateModule(),
-			new EpochsLedgerUpdateRxModule(),
-			// Epochs - Sync
-			new EpochsSyncModule(),
-
-			// State Computer
-			new RadixEngineModule(),
-			new RadixEngineValidatorComputersModule(),
-			new RadixEngineStoreModule(),
-
-			// Checkpoints
-			new CheckpointModule(),
-
-			// Genesis validators
-			new GenesisValidatorSetFromUniverseModule(),
-
-			// Fees
-			new TokenFeeModule(),
-
-			new PersistenceModule(),
-			new ConsensusRecoveryModule(),
-			new LedgerRecoveryModule(),
-
-			// System Info
-			new SystemInfoModule(),
-
-			// Network
-			new NetworkModule(),
-			new MessageCentralModule(properties),
-			new UDPTransportModule(properties),
-			new TCPTransportModule(properties),
-			new AddressBookModule(),
-			new HostIpModule(properties),
-
-			new ChaosModule(),
-
 			globalModule
 		);
 	}
