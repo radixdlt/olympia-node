@@ -377,6 +377,72 @@
 					"vectors": [
 						{
 							"expected": {
+								"jsonPrettyPrinted": "{\n    \"description\": \":str:description\",\n    \"granularity\": \":u20:1\",\n    \"iconUrl\": \":str:http://somewhere.com/icon.jpg\",\n    \"name\": \":str:TEST\",\n    \"rri\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\",\n    \"serializer\": \"radix.particles.fixed_supply_token_definition\",\n    \"supply\": \":u20:10\",\n    \"url\": \":str:http://somewhere.com\"\n}",
+								"dson": {
+									"all": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d65645445535463727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782d72616469782e7061727469636c65732e66697865645f737570706c795f746f6b656e5f646566696e6974696f6e66737570706c79582105000000000000000000000000000000000000000000000000000000000000000a6375726c74687474703a2f2f736f6d6577686572652e636f6dff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.fixed_supply_token_definition",
+								"arguments": {
+									"granularity": "1",
+									"rri": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"name": "TEST",
+									"description": "description",
+									"iconUrl": "http://somewhere.com/icon.jpg",
+									"supply": "10",
+									"url": "http://somewhere.com"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"description\": \":str:description\",\n    \"granularity\": \":u20:1\",\n    \"iconUrl\": \":str:http://somewhere.com/icon.jpg\",\n    \"name\": \":str:TEST\",\n    \"permissions\": {\n        \"burn\": \":str:all\",\n        \"mint\": \":str:token_owner_only\"\n    },\n    \"rri\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\",\n    \"serializer\": \"radix.particles.mutable_supply_token_definition\",\n    \"url\": \":str:http://somewhere.com\"\n}",
+								"dson": {
+									"all": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d6564544553546b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff63727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782f72616469782e7061727469636c65732e6d757461626c655f737570706c795f746f6b656e5f646566696e6974696f6e6375726c74687474703a2f2f736f6d6577686572652e636f6dff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.mutable_supply_token_definition",
+								"arguments": {
+									"granularity": "1",
+									"permissions": {
+										"burn": "all",
+										"mint": "token_owner_only"
+									},
+									"rri": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"name": "TEST",
+									"description": "description",
+									"iconUrl": "http://somewhere.com/icon.jpg",
+									"url": "http://somewhere.com"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"address\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n    \"amount\": \":u20:8\",\n    \"delegateAddress\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n    \"granularity\": \":u20:1\",\n    \"nonce\": 17948340944900,\n    \"permissions\": {\n        \"burn\": \":str:all\",\n        \"mint\": \":str:token_owner_only\"\n    },\n    \"serializer\": \"radix.particles.staked_tokens\",\n    \"tokenDefinitionReference\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\"\n}",
+								"dson": {
+									"all": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086f64656c6567617465416464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc16b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b00001052ec7c80046b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572781d72616469782e7061727469636c65732e7374616b65645f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b4945ff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.staked_tokens",
+								"arguments": {
+									"amount": "8",
+									"address": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"granularity": "1",
+									"permissions": {
+										"burn": "all",
+										"mint": "token_owner_only"
+									},
+									"delegateAddress": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"nonce": "17948340944900",
+									"tokenDefinitionReference": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE"
+								}
+							}
+						},
+						{
+							"expected": {
 								"jsonPrettyPrinted": "{\n    \"address\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n    \"amount\": \":u20:8\",\n    \"granularity\": \":u20:1\",\n    \"nonce\": 26150925362900,\n    \"permissions\": {\n        \"burn\": \":str:all\",\n        \"mint\": \":str:token_owner_only\"\n    },\n    \"serializer\": \"radix.particles.transferrable_tokens\",\n    \"tokenDefinitionReference\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\"\n}",
 								"dson": {
 									"all": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc166616d6f756e7458210500000000000000000000000000000000000000000000000000000000000000086b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b000017c8bc9de6d46b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782472616469782e7061727469636c65732e7472616e736665727261626c655f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b4945ff"
@@ -399,21 +465,87 @@
 						},
 						{
 							"expected": {
-								"jsonPrettyPrinted": "{\n    \"description\": \":str:description\",\n    \"granularity\": \":u20:1\",\n    \"iconUrl\": \":str:http://somewhere.com/icon.jpg\",\n    \"name\": \":str:TEST\",\n    \"rri\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\",\n    \"serializer\": \"radix.particles.fixed_supply_token_definition\",\n    \"supply\": \":u20:10\",\n    \"url\": \":str:http://somewhere.com\"\n}",
+								"jsonPrettyPrinted": "{\n    \"amount\": \":u20:10\",\n    \"granularity\": \":u20:1\",\n    \"nonce\": 17948366358500,\n    \"permissions\": {\n        \"burn\": \":str:all\",\n        \"mint\": \":str:token_owner_only\"\n    },\n    \"serializer\": \"radix.particles.unallocated_tokens\",\n    \"tokenDefinitionReference\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\"\n}",
 								"dson": {
-									"all": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d65645445535463727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782d72616469782e7061727469636c65732e66697865645f737570706c795f746f6b656e5f646566696e6974696f6e66737570706c79582105000000000000000000000000000000000000000000000000000000000000000a6375726c74687474703a2f2f736f6d6577686572652e636f6dff"
+									"all": "bf66616d6f756e74582105000000000000000000000000000000000000000000000000000000000000000a6b6772616e756c61726974795821050000000000000000000000000000000000000000000000000000000000000001656e6f6e63651b00001052ee0047e46b7065726d697373696f6e73bf646275726e63616c6c646d696e7470746f6b656e5f6f776e65725f6f6e6c79ff6a73657269616c697a6572782272616469782e7061727469636c65732e756e616c6c6f63617465645f746f6b656e737818746f6b656e446566696e6974696f6e5265666572656e6365583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b4945ff"
 								}
 							},
 							"input": {
-								"typeSerialization": "radix.particles.fixed_supply_token_definition",
+								"typeSerialization": "radix.particles.unallocated_tokens",
 								"arguments": {
+									"amount": "10",
 									"granularity": "1",
+									"permissions": {
+										"burn": "all",
+										"mint": "token_owner_only"
+									},
+									"nonce": "17948366358500",
+									"tokenDefinitionReference": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"nonce\": 123,\n    \"rri\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\",\n    \"serializer\": \"radix.particles.rri\"\n}",
+								"dson": {
+									"all": "bf656e6f6e6365187b63727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a65727372616469782e7061727469636c65732e727269ff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.rri",
+								"arguments": {
 									"rri": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
-									"name": "TEST",
-									"description": "description",
-									"iconUrl": "http://somewhere.com/icon.jpg",
-									"supply": "10",
-									"url": "http://somewhere.com"
+									"nonce": "123"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"address\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n    \"allowedDelegators\": [\n        \":adr:JHJTc1vUVA3JbjKCDtNu3x7tPaeB8fFcfnYp26s3hzos3s351To\",\n        \":adr:JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8\"\n    ],\n    \"nonce\": 1,\n    \"serializer\": \"radix.particles.registered_validator\"\n}",
+								"dson": {
+									"all": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc171616c6c6f77656444656c656761746f72738258270402039f212c97a0e865fcb41424c17521b271ad14b1908338a3a261ca2f653b8586ea3ccd639258270402023b2dc2eaa3a237c9ab13e3ec0357679db51efb63a7dc95980ad81a90d9b0ebd30c695a1b656e6f6e6365016a73657269616c697a6572782472616469782e7061727469636c65732e726567697374657265645f76616c696461746f72ff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.registered_validator",
+								"arguments": {
+									"address": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"allowedDelegators": [
+										"JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8",
+										"JHJTc1vUVA3JbjKCDtNu3x7tPaeB8fFcfnYp26s3hzos3s351To"
+									],
+									"nonce": "1"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"address\": \":adr:23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\n    \"nonce\": 1,\n    \"serializer\": \"radix.particles.unregistered_validator\"\n}",
+								"dson": {
+									"all": "bf67616464726573735827040703703967d20e7e193380218961d27c450a850ae005182bf76413d2656009c6dc0daf892dc1656e6f6e6365016a73657269616c697a6572782672616469782e7061727469636c65732e756e726567697374657265645f76616c696461746f72ff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.unregistered_validator",
+								"arguments": {
+									"address": "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x",
+									"nonce": "1"
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"epoch\": 1,\n    \"serializer\": \"radix.particles.system_particle\",\n    \"timestamp\": 1612357246596,\n    \"view\": 1000\n}",
+								"dson": {
+									"all": "bf6565706f6368016a73657269616c697a6572781f72616469782e7061727469636c65732e73797374656d5f7061727469636c656974696d657374616d701b0000017767fb1e8464766965771903e8ff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.system_particle",
+								"arguments": {
+									"view": "1000",
+									"epoch": "1",
+									"timestamp": "1612357246596"
 								}
 							}
 						}

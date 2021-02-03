@@ -56,7 +56,7 @@ public class JsonAndDsonPrinter {
 
     private Serialization instance = DefaultSerialization.getInstance();
 
-    @Ignore // Run this test if you want to see how our models look in json/dson
+    @Ignore("run this test if you want to see how our models look in json/dson")
     @Test
     public void logAllParticles() {
         logFixedSupplyTokenDefinitionParticle();

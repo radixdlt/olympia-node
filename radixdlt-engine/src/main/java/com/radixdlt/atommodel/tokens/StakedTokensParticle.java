@@ -89,6 +89,25 @@ public final class StakedTokensParticle extends Particle {
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 	}
 
+	public StakedTokensParticle(
+			RadixAddress delegateAddress,
+			RadixAddress address,
+			UInt256 amount,
+			UInt256 granularity,
+			RRI tokenDefinitionReference,
+			Map<TokenTransition, TokenPermission> tokenPermissions,
+			long nonce
+	) {
+		this.delegateAddress = Objects.requireNonNull(delegateAddress);
+		this.address = Objects.requireNonNull(address);
+		this.granularity = Objects.requireNonNull(granularity);
+		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
+		this.nonce = System.nanoTime();
+		this.amount = Objects.requireNonNull(amount);
+		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+		this.nonce = nonce;
+	}
+
 	@Override
 	public Set<EUID> getDestinations() {
 		return ImmutableSet.of(this.address.euid(), this.delegateAddress.euid());

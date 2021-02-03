@@ -18,6 +18,7 @@
 package com.radixdlt.sanitytestsuite.utility;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
@@ -119,7 +120,7 @@ public final class ArgumentsExtractor {
 	public Set<RadixAddress> asAddressSet(String named) {
 		return extract(
 				named,
-				object -> ((List<String>) object).stream().map(RadixAddress::from).collect(Collectors.toSet())
+				object -> (List<String>) object).stream().map(RadixAddress::from).collect(Collectors.toSet()
 		);
 	}
 
