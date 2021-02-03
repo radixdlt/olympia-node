@@ -26,9 +26,11 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -111,6 +113,13 @@ public final class ArgumentsExtractor {
 			named,
 			k -> MutableSupplyTokenDefinitionParticle.TokenTransition.valueOf(k.toUpperCase()),
 			v -> TokenPermission.valueOf(v.toUpperCase())
+		);
+	}
+
+	public Set<RadixAddress> asAddressSet(String named) {
+		return extract(
+				named,
+				object -> ((List<String>) object).stream().map(RadixAddress::from).collect(Collectors.toSet())
 		);
 	}
 
