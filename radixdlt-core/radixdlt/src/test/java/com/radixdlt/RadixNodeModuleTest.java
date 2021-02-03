@@ -15,10 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix;
+package com.radixdlt;
 
 import java.io.File;
 
+import com.google.inject.Guice;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,9 +30,9 @@ import com.radixdlt.properties.RuntimeProperties;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class GlobalInjectorTest {
+public class RadixNodeModuleTest {
 
-	private GlobalInjector globalInjector;
+	private RadixNodeModule radixNodeModule;
 
 	@BeforeClass
 	public static void beforeClass() {
@@ -45,8 +46,8 @@ public class GlobalInjectorTest {
 		Files.delete(new File("nonesuch.ks"));
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
 
-		this.globalInjector = new GlobalInjector(properties);
+		this.radixNodeModule = new RadixNodeModule(properties);
 
-		assertNotNull(this.globalInjector.getInjector());
+		assertNotNull(Guice.createInjector(this.radixNodeModule));
 	}
 }
