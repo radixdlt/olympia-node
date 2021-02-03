@@ -51,7 +51,7 @@ import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.sync.LocalSyncRequest;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -153,7 +153,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(LedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}

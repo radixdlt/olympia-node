@@ -316,6 +316,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
+	@Override
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
 		final var start = System.nanoTime();
 		try {
