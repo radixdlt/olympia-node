@@ -87,6 +87,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager " + self));
+		this.singleThreadScheduler = Schedulers.from(this.executorService);
 
 		this.localSyncRequests = Objects.requireNonNull(localSyncRequests);
 		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
@@ -98,7 +99,6 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		this.syncTimeoutProcessor = Objects.requireNonNull(syncTimeoutProcessor);
 
 		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
-		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
 		this.responseProcessor = Objects.requireNonNull(responseProcessor);
 		this.ledgerUpdateProcessors = Objects.requireNonNull(ledgerUpdateProcessors);

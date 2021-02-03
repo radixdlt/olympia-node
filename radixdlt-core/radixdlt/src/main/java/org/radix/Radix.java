@@ -18,8 +18,11 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
@@ -134,18 +137,16 @@ public final class Radix {
 	}
 
 	public static void start(RuntimeProperties properties) {
-		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties);
+		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
 
 		// setup networking
-		final PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
+		final PeerManager peerManager = injector.getInstance(PeerManager.class);
 		peerManager.start();
 
-		final SystemInfoRunner infoStateRunner = globalInjector.getInjector().getInstance(SystemInfoRunner.class);
+		final SystemInfoRunner infoStateRunner = injector.getInstance(SystemInfoRunner.class);
 		infoStateRunner.start();
 
-		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()
-			.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 
 		final ModuleRunner syncRunner = moduleRunners.get("sync");
 		syncRunner.start();
@@ -153,11 +154,16 @@ public final class Radix {
 		final ModuleRunner mempoolReceiverRunner = moduleRunners.get("mempool");
 		mempoolReceiverRunner.start();
 
+		final ModuleRunner chaosRunner = moduleRunners.get("chaos");
+		if (chaosRunner != null) {
+			chaosRunner.start();
+		}
+
 		// start API services
-		final RadixHttpServer httpServer = globalInjector.getInjector().getInstance(RadixHttpServer.class);
+		final RadixHttpServer httpServer = injector.getInstance(RadixHttpServer.class);
 		httpServer.start();
 
-		final BFTNode self = globalInjector.getInjector().getInstance(Key.get(BFTNode.class, Self.class));
+		final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
 		if (properties.get("consensus.start_on_boot", true)) {
 			final ModuleRunner consensusRunner = moduleRunners.get("consensus");
 			consensusRunner.start();

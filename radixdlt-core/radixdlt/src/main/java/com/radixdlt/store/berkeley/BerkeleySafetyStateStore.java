@@ -28,6 +28,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -41,21 +42,23 @@ import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Store which persists state required to preserve the networks safety in case of a
  * node restart.
- *
- * TODO: Prune saved safety state.
  */
 public final class BerkeleySafetyStateStore implements PersistentSafetyStateStore {
 	private static final String SAFETY_STORE_NAME = "safety_store";
 	private static final Logger logger = LogManager.getLogger();
+	private static final long UPPER_THRESHOLD = 1000;
+	private static final long LOWER_THRESHOLD = 10;
 
 	private final DatabaseEnvironment dbEnv;
 	private final Database safetyStore;
 	private final SystemCounters systemCounters;
-	private Serialization serialization;
+	private final AtomicLong cleanupCounter = new AtomicLong();
+	private final Serialization serialization;
 
 	@Inject
 	public BerkeleySafetyStateStore(
@@ -107,6 +110,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		}
 	}
 
+	@Override
 	public Optional<SafetyState> get() {
 		final var start = System.nanoTime();
 		try (com.sleepycat.je.Cursor cursor = this.safetyStore.openCursor(null, null)) {
@@ -131,8 +135,6 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		}
 	}
 
-
-
 	@Override
 	public void commitState(SafetyState safetyState) {
 		this.systemCounters.increment(CounterType.PERSISTENCE_SAFETY_STORE_SAVES);
@@ -154,11 +156,57 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			}
 
 			transaction.commit();
+
+			cleanupUnused();
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Error while storing safety state for " + safetyState, e);
 		} finally {
 			addTime(start);
+		}
+	}
+
+	private void cleanupUnused() {
+		if (cleanupCounter.incrementAndGet() % UPPER_THRESHOLD != 0) {
+			return;
+		}
+
+		final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		try {
+			long count = safetyStore.count();
+
+			if (count < UPPER_THRESHOLD) {
+				transaction.abort();
+				return;
+			}
+
+			try (Cursor cursor = this.safetyStore.openCursor(transaction, null)) {
+				DatabaseEntry key = new DatabaseEntry();
+				DatabaseEntry value = new DatabaseEntry();
+
+				if (cursor.getFirst(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					if (cursor.delete() != OperationStatus.SUCCESS) {
+						transaction.abort();
+						return;
+					}
+					addBytesRead(key.getSize() + value.getSize());
+					count--;
+				}
+
+				while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS && count > LOWER_THRESHOLD) {
+					if (cursor.delete() != OperationStatus.SUCCESS) {
+						transaction.abort();
+						return;
+					}
+					addBytesRead(key.getSize() + value.getSize());
+					count--;
+				}
+			}
+
+			transaction.commit();
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Error while clearing unused states", e);
 		}
 	}
 

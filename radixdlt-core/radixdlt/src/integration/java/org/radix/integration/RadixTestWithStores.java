@@ -17,11 +17,13 @@
 
 package org.radix.integration;
 
+import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;
-import org.radix.GlobalInjector;
+import com.radixdlt.RadixNodeModule;
 import org.radix.database.DatabaseEnvironment;
 
 import java.util.Objects;
@@ -34,8 +36,8 @@ public class RadixTestWithStores extends RadixTest {
 
 	@Before
 	public void beforeEachRadixTest() {
-		GlobalInjector injector = new GlobalInjector(getProperties());
-		injector.getInjector().injectMembers(this);
+		Injector injector = Guice.createInjector(new RadixNodeModule(getProperties()));
+		injector.injectMembers(this);
 	}
 
 	@After

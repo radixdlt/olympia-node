@@ -53,8 +53,8 @@ import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 
+import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -153,7 +153,7 @@ public class RecoveryLivenessTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(LedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}

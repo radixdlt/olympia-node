@@ -19,23 +19,28 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Base58;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
@@ -98,6 +103,7 @@ public final class RadixHttpServer {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final int port;
 	private Undertow server;
+	private final EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher;
 
 	@Inject
 	public RadixHttpServer(
@@ -107,6 +113,7 @@ public final class RadixHttpServer {
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -132,6 +139,7 @@ public final class RadixHttpServer {
 			clientAtomToBinaryConverter,
 			hasher
 		);
+		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
 			serialization,
@@ -307,6 +315,8 @@ public final class RadixHttpServer {
 
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
+		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
+
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
 			JSONObject obj = new JSONObject();
@@ -411,6 +421,27 @@ public final class RadixHttpServer {
 			} else {
 				consensusRunner.stop();
 			}
+		}
+		exchange.setStatusCode(StatusCodes.OK);
+	}
+
+	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			boolean enabled = values.getBoolean("enabled");
+			if (enabled) {
+				String nodeKeyBase58 = values.getString("nodeKey");
+				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
+				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.create(node));
+			} else {
+				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.disable());
+			}
+		} catch (PublicKeyException e) {
+			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			return;
 		}
 		exchange.setStatusCode(StatusCodes.OK);
 	}

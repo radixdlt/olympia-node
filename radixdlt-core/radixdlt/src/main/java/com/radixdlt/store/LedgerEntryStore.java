@@ -18,7 +18,9 @@
 package com.radixdlt.store;
 
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -43,4 +45,6 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	void reset();
 
 	void close();
+
+	Optional<SerializedVertexStoreState> loadLastVertexStoreState();
 }
