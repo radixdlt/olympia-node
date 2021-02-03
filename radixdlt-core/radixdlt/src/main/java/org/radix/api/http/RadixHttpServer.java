@@ -40,6 +40,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Base58;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
@@ -403,9 +404,10 @@ public final class RadixHttpServer {
 			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
 			String requestBody = CharStreams.toString(httpStreamReader);
 			JSONObject values = new JSONObject(requestBody);
-			String nodeKey = values.getString("nodeKey");
-			if (nodeKey != null) {
-				BFTNode node = BFTNode.create(ECPublicKey.fromBase64(nodeKey));
+
+			if (values.has("nodeKey")) {
+				String nodeKey = values.getString("nodeKey");
+				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKey)));
 				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.create(node));
 			} else {
 				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.disable());
