@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static java.util.Optional.ofNullable;
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -79,9 +80,16 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
 
     @Override
     public void doRunTestVector(DeserializationTestVector testVector) throws AssertionError {
-        var assertEqualModel = ofNullable(
-                assertEqualsMap.get(testVector.input.typeSerialization)
-        ).orElseThrow(() -> new IllegalStateException("Can't find assertEqualModel method"));
+        var assertEqualModel = assertEqualsMap.get(testVector.input.typeSerialization);
+        assertNotNull(
+                "Serializer must be implemented for " + testVector.input.typeSerialization,
+                assertEqualModel
+        );
+        Class<?> type = serialization.getClassForId(testVector.input.typeSerialization);
+        assertNotNull(
+                "Unknown or missing serialization type: " + type,
+                type
+        );
 
         var deserializedModel = ofNullable(testVector.input.json)
                 .map(jsonMap -> {
@@ -93,7 +101,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
                 })
                 .map(jsonString -> {
                     try {
-                        return serialization.fromJson(jsonString, serialization.getClassForId(testVector.input.typeSerialization));
+                        return serialization.fromJson(jsonString, type);
                     } catch (DeserializeException e) {
                         throw new AssertionError("Failed to deserialize model from JSON string.", e);
                     }
