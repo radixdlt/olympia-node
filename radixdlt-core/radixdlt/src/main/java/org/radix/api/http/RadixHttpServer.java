@@ -315,7 +315,7 @@ public final class RadixHttpServer {
 
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
-		addRoute("/api/chaos/message-flood", Methods.PUT_STRING, this::handleMessageFlood, handler);
+		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
 
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
@@ -431,8 +431,8 @@ public final class RadixHttpServer {
 			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
 			String requestBody = CharStreams.toString(httpStreamReader);
 			JSONObject values = new JSONObject(requestBody);
-			boolean enable = values.getBoolean("enable");
-			if (enable) {
+			boolean enabled = values.getBoolean("enabled");
+			if (enabled) {
 				String nodeKeyBase58 = values.getString("nodeKey");
 				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
 				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.create(node));
