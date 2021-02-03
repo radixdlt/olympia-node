@@ -364,7 +364,7 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and do a verbatim string comparison against an expected JSON string.",
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and DSON and do a verbatim string comparison against the expected JSON and DSON strings.",
 					"purpose": "Verify that all Radix models properly serializes into the expected JSON and DSON.",
 					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
 				},
@@ -394,6 +394,26 @@
 										"mint": "token_owner_only",
 										"burn": "all"
 									}
+								}
+							}
+						},
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n    \"description\": \":str:description\",\n    \"granularity\": \":u20:1\",\n    \"iconUrl\": \":str:http://somewhere.com/icon.jpg\",\n    \"name\": \":str:TEST\",\n    \"rri\": \":rri:/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE\",\n    \"serializer\": \"radix.particles.fixed_supply_token_definition\",\n    \"supply\": \":u20:10\",\n    \"url\": \":str:http://somewhere.com\"\n}",
+								"dson": {
+									"all": "bf6b6465736372697074696f6e6b6465736372697074696f6e6b6772616e756c617269747958210500000000000000000000000000000000000000000000000000000000000000016769636f6e55726c781d687474703a2f2f736f6d6577686572652e636f6d2f69636f6e2e6a7067646e616d65645445535463727269583d062f3233423666483346656b4a65503665356775685a416b366e397a34666d546f35546e676f336131315767355238677357545632782f434f4f4b49456a73657269616c697a6572782d72616469782e7061727469636c65732e66697865645f737570706c795f746f6b656e5f646566696e6974696f6e66737570706c79582105000000000000000000000000000000000000000000000000000000000000000a6375726c74687474703a2f2f736f6d6577686572652e636f6dff"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.fixed_supply_token_definition",
+								"arguments": {
+									"granularity": "1",
+									"rri": "/23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x/COOKIE",
+									"name": "TEST",
+									"description": "description",
+									"iconUrl": "http://somewhere.com/icon.jpg",
+									"supply": "10",
+									"url": "http://somewhere.com"
 								}
 							}
 						}

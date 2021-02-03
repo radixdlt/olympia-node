@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 
 public final class DeserializationTestScenarioRunner extends SanityTestScenarioRunner<DeserializationTestVector> {
 
-    private final static Serialization serialization = DefaultSerialization.getInstance();
+    private static final Serialization serialization = DefaultSerialization.getInstance();
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ImmutableMap<String, BiConsumer<Map<String, Object>, Object>> assertEqualsMap;
@@ -56,7 +56,8 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         Map<String, BiConsumer<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
         mutableMap.put("radix.particles.transferrable_tokens", DeserializationTestScenarioRunner::assertTransferableTokensParticle);
         mutableMap.put("radix.particles.fixed_supply_token_definition", DeserializationTestScenarioRunner::assertFixedSupplyTokenDefinitionParticle);
-        mutableMap.put("radix.particles.mutable_supply_token_definition", DeserializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
+        mutableMap.put("radix.particles.mutable_supply_token_definition",
+                DeserializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.staked_tokens", DeserializationTestScenarioRunner::assertStakedTokensParticle);
         mutableMap.put("radix.particles.unallocated_tokens", DeserializationTestScenarioRunner::assertUnallocatedTokensParticle);
         mutableMap.put("radix.particles.rri", DeserializationTestScenarioRunner::assertRRIParticle);
@@ -106,12 +107,13 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEqualDson(testVector, deserializedModel, Particle.class);
     }
 
-    private static void assertEqualDson(DeserializationTestVector testVector, Object deserializedModel, Class<? extends Particle> classToDeserializeAs) {
+    private static void assertEqualDson(DeserializationTestVector testVector, Object deserializedModel,
+                                        Class<? extends Particle> classToDeserializeAs) {
         try {
             byte[] dsonAllBytes = Hex.decode(testVector.input.dson.get("all").toString());
             Particle deserializedParticle = serialization.fromDson(dsonAllBytes, classToDeserializeAs);
             assertEquals(deserializedModel, deserializedParticle);
-        } catch(DeserializeException e) {
+        } catch (DeserializeException e) {
             throw new RuntimeException(e);
         }
     }

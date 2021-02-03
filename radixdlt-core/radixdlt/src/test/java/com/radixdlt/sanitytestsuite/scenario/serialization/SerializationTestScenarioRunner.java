@@ -20,6 +20,7 @@ package com.radixdlt.sanitytestsuite.scenario.serialization;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
@@ -29,7 +30,6 @@ import com.radixdlt.utils.JSONFormatter;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
@@ -45,14 +45,15 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     public SerializationTestScenarioRunner() {
         Map<String, Function<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
         mutableMap.put("radix.particles.transferrable_tokens", SerializationTestScenarioRunner::makeTransferrableTokensParticle);
-/*        mutableMap.put("radix.particles.fixed_supply_token_definition", SerializationTestScenarioRunner::assertFixedSupplyTokenDefinitionParticle);
-        mutableMap.put("radix.particles.mutable_supply_token_definition", SerializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
-        mutableMap.put("radix.particles.staked_tokens", SerializationTestScenarioRunner::assertStakedTokensParticle);
-        mutableMap.put("radix.particles.unallocated_tokens", SerializationTestScenarioRunner::assertUnallocatedTokensParticle);
-        mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::assertRRIParticle);
-        mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::assertRegisteredValidatorParticle);
-        mutableMap.put("radix.particles.unregistered_validator", SerializationTestScenarioRunner::assertUnregisteredValidatorParticle);
-        mutableMap.put("radix.particles.system_particle", SerializationTestScenarioRunner::assertSystemParticle);*/
+        mutableMap.put("radix.particles.fixed_supply_token_definition", SerializationTestScenarioRunner::makeFixedSupplyTokenDefinitionParticle);
+        //mutableMap.put("radix.particles.mutable_supply_token_definition",
+        // SerializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
+        //mutableMap.put("radix.particles.staked_tokens", SerializationTestScenarioRunner::assertStakedTokensParticle);
+        //mutableMap.put("radix.particles.unallocated_tokens", SerializationTestScenarioRunner::assertUnallocatedTokensParticle);
+        //mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::assertRRIParticle);
+        //mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::assertRegisteredValidatorParticle);
+        //mutableMap.put("radix.particles.unregistered_validator", SerializationTestScenarioRunner::assertUnregisteredValidatorParticle);
+        //mutableMap.put("radix.particles.system_particle", SerializationTestScenarioRunner::assertSystemParticle);
         constructorMap = ImmutableMap.copyOf(mutableMap);
     }
 
@@ -64,6 +65,21 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     @Override
     public Class<SerializationTestVector> testVectorType() {
         return SerializationTestVector.class;
+    }
+
+    private static FixedSupplyTokenDefinitionParticle makeFixedSupplyTokenDefinitionParticle(final Map<String, Object> arguments) {
+        var argsExtractor = ArgumentsExtractor.from(arguments);
+        var ttp = new FixedSupplyTokenDefinitionParticle(
+                argsExtractor.asRRI("rri"),
+                argsExtractor.asString("name"),
+                argsExtractor.asString("description"),
+                argsExtractor.asUInt256("supply"),
+                argsExtractor.asUInt256("granularity"),
+                argsExtractor.asString("iconUrl"),
+                argsExtractor.asString("url")
+        );
+        assertTrue(argsExtractor.isFinished());
+        return ttp;
     }
 
     private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
