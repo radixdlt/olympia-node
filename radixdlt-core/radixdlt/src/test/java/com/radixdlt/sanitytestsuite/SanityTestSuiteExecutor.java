@@ -22,8 +22,6 @@ import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.deserialization.DeserializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.jsondeserialization.JsonDeserializationTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestScenarioRunner;

@@ -18,6 +18,7 @@
 package com.radixdlt.sanitytestsuite.scenario.serialization;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
@@ -28,6 +29,7 @@ import com.radixdlt.utils.JSONFormatter;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
@@ -35,7 +37,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public final class SerializationTestScenarioRunner extends SanityTestScenarioRunner<SerializationTestVector> {
+
     private final Serialization serialization = DefaultSerialization.getInstance();
+
+    private final Map<String, Function<Map<String, Object>, Object>> constructorMap;
+
+    public SerializationTestScenarioRunner() {
+        Map<String, Function<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
+        mutableMap.put("radix.particles.transferrable_tokens", SerializationTestScenarioRunner::makeTransferrableTokensParticle);
+/*        mutableMap.put("radix.particles.fixed_supply_token_definition", SerializationTestScenarioRunner::assertFixedSupplyTokenDefinitionParticle);
+        mutableMap.put("radix.particles.mutable_supply_token_definition", SerializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
+        mutableMap.put("radix.particles.staked_tokens", SerializationTestScenarioRunner::assertStakedTokensParticle);
+        mutableMap.put("radix.particles.unallocated_tokens", SerializationTestScenarioRunner::assertUnallocatedTokensParticle);
+        mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::assertRRIParticle);
+        mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::assertRegisteredValidatorParticle);
+        mutableMap.put("radix.particles.unregistered_validator", SerializationTestScenarioRunner::assertUnregisteredValidatorParticle);
+        mutableMap.put("radix.particles.system_particle", SerializationTestScenarioRunner::assertSystemParticle);*/
+        constructorMap = ImmutableMap.copyOf(mutableMap);
+    }
 
     @Override
     public String testScenarioIdentifier() {
@@ -47,13 +66,8 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         return SerializationTestVector.class;
     }
 
-    public SerializationTestScenarioRunner() {
-
-    }
-
     private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-
         var ttp = new TransferrableTokensParticle(
                 argsExtractor.asRadixAddress("address"),
                 argsExtractor.asUInt256("amount"),
@@ -62,35 +76,25 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
                 argsExtractor.extractTokenPermissions("tokenPermissions"),
                 argsExtractor.asLong("nonce")
         );
-
         assertTrue(argsExtractor.isFinished());
-
         return ttp;
     }
 
-    private static final Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
-            "radix.particles.transferrable_tokens", SerializationTestScenarioRunner::makeTransferrableTokensParticle
-    );
-
     @Override
     public void doRunTestVector(SerializationTestVector testVector) throws AssertionError {
-        /*
         var produced = ofNullable(constructorMap.get(testVector.input.typeSerialization))
                 .map(constructor -> constructor.apply(testVector.input.arguments))
-                .map(model -> {
-                    String expectedDsonAllHex = testVector.expected.dson.get("allOutputHex").toString();
-                    String expectedDsonHashHex = testVector.expected.dson.get("hashOutputHex").toString();
+                .map(model -> { // this is the step where the DSON is checked
+                    String expectedDsonAllHex = testVector.expected.dson.get("all").toString();
                     String dsonAllHex = Hex.toHexString(serialization.toDson(model, DsonOutput.Output.ALL));
-                    String dsonHashHex = Hex.toHexString(serialization.toDson(model, DsonOutput.Output.HASH));
                     assertEquals("DSON (all) mismatch", expectedDsonAllHex, dsonAllHex);
-                    assertEquals("DSON (hash) mismatch", expectedDsonHashHex, dsonHashHex);
                     return model;
                 })
                 .map(model -> serialization.toJson(model, DsonOutput.Output.HASH))
                 .map(JSONFormatter::sortPrettyPrintJSONString)
                 .orElseThrow(() -> new IllegalStateException("Cant find constructor for " + testVector.input.typeSerialization));
         String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
-        assertEquals(expected, produced);*/
+        assertEquals(expected, produced);
     }
 
 }

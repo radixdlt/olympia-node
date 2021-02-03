@@ -50,7 +50,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
     private final static Serialization serialization = DefaultSerialization.getInstance();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static ImmutableMap<String, BiConsumer<Map<String, Object>, Object>> assertEqualsMap;
+    private final ImmutableMap<String, BiConsumer<Map<String, Object>, Object>> assertEqualsMap;
 
     public DeserializationTestScenarioRunner() {
         Map<String, BiConsumer<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
