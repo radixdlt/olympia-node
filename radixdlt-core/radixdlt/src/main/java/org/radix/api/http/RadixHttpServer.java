@@ -104,8 +104,6 @@ public final class RadixHttpServer {
 	private final int port;
 	private Undertow server;
 
-	private final EventDispatcher<MessageFloodUpdate> messageFloodSetEventDispatcher;
-
 	@Inject
 	public RadixHttpServer(
 		InMemorySystemInfo inMemorySystemInfo,
@@ -114,7 +112,7 @@ public final class RadixHttpServer {
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		EventDispatcher<MessageFloodUpdate> messageFloodSetEventDispatcher,
+		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -124,7 +122,6 @@ public final class RadixHttpServer {
 		AddressBook addressBook,
 		Hasher hasher
 	) {
-		this.messageFloodSetEventDispatcher = Objects.requireNonNull(messageFloodSetEventDispatcher);
 		this.inMemorySystemInfo = Objects.requireNonNull(inMemorySystemInfo);
 		this.consensusRunner = Objects.requireNonNull(moduleRunners.get("consensus"));
 		this.universe = Objects.requireNonNull(universe);
@@ -142,6 +139,7 @@ public final class RadixHttpServer {
 			hasher
 		);
 		this.jsonRpcServer = new RadixJsonRpcServer(
+			messageFloodUpdateEventDispatcher,
 			consensusRunner,
 			serialization,
 			store,
@@ -314,8 +312,6 @@ public final class RadixHttpServer {
 			respond(result, exchange);
 		}, handler);
 
-		addRoute("/api/chaos/message-flood", Methods.POST_STRING, this::handleMessageFlood, handler);
-
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
 		// keep-alive
@@ -396,28 +392,6 @@ public final class RadixHttpServer {
 		result.put("closedCount", peersCopy.size());
 
 		return result;
-	}
-
-	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-		try (InputStream httpStream = exchange.getInputStream();
-			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
-			String requestBody = CharStreams.toString(httpStreamReader);
-			JSONObject values = new JSONObject(requestBody);
-
-			if (values.has("nodeKey")) {
-				String nodeKey = values.getString("nodeKey");
-				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKey)));
-				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.create(node));
-			} else {
-				this.messageFloodSetEventDispatcher.dispatch(MessageFloodUpdate.disable());
-			}
-
-		} catch (PublicKeyException e) {
-			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-			return;
-		}
-		exchange.setStatusCode(StatusCodes.OK);
 	}
 
 	/**
