@@ -19,10 +19,6 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.chaos.MessageFloodUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
@@ -34,7 +30,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Base58;
 import io.undertow.server.HttpServerExchange;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -79,10 +74,8 @@ public final class RadixJsonRpcServer {
 	private final ModuleRunner consensusRunner;
 	private final PeerWithSystem localPeer;
 
-	private final EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher;
 
 	public RadixJsonRpcServer(
-		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
 		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
@@ -91,11 +84,10 @@ public final class RadixJsonRpcServer {
 		AddressBook addressBook,
 		Universe universe
 	) {
-		this(messageFloodUpdateEventDispatcher, consensusRunner, serialization, ledger, atomsService, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
+		this(consensusRunner, serialization, ledger, atomsService, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
 		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
@@ -105,7 +97,6 @@ public final class RadixJsonRpcServer {
 		Universe universe,
 		long maxRequestSizeBytes
 	) {
-		this.messageFloodUpdateEventDispatcher = Objects.requireNonNull(messageFloodUpdateEventDispatcher);
 		this.consensusRunner = Objects.requireNonNull(consensusRunner);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
@@ -266,22 +257,6 @@ public final class RadixJsonRpcServer {
 						result = new JSONObject().put("status", atomStatus.toString());
 					}
 					break;
-				case "Chaos.enableMessageFlooder":
-					if (!(paramsObject instanceof JSONObject) || !((JSONObject) paramsObject).has("nodeKey")) {
-						return JsonRpcUtil.errorResponse(id, -32000, "NodeKey not present", new JSONObject());
-					}
-
-					String nodeKeyBase58 = ((JSONObject) paramsObject).getString("nodeKey");
-					BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
-					this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.create(node));
-					result = new JSONObject().put("status", "ok");
-					break;
-
-				case "Chaos.disableMessageFlooder":
-					this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.disable());
-					result = new JSONObject().put("status", "ok");
-					break;
-
                 default:
                     return JsonRpcUtil.methodNotFoundResponse(id);
             }

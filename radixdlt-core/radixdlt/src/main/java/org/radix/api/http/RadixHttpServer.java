@@ -103,6 +103,7 @@ public final class RadixHttpServer {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final int port;
 	private Undertow server;
+	private final EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher;
 
 	@Inject
 	public RadixHttpServer(
@@ -138,8 +139,8 @@ public final class RadixHttpServer {
 			clientAtomToBinaryConverter,
 			hasher
 		);
+		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(
-			messageFloodUpdateEventDispatcher,
 			consensusRunner,
 			serialization,
 			store,
@@ -314,6 +315,8 @@ public final class RadixHttpServer {
 
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
+		addRoute("/api/chaos/message-flood", Methods.PUT_STRING, this::handleMessageFlood, handler);
+
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
 			JSONObject obj = new JSONObject();
@@ -418,6 +421,27 @@ public final class RadixHttpServer {
 			} else {
 				consensusRunner.stop();
 			}
+		}
+		exchange.setStatusCode(StatusCodes.OK);
+	}
+
+	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			boolean enable = values.getBoolean("enable");
+			if (enable) {
+				String nodeKeyBase58 = values.getString("nodeKey");
+				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
+				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.create(node));
+			} else {
+				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.disable());
+			}
+		} catch (PublicKeyException e) {
+			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			return;
 		}
 		exchange.setStatusCode(StatusCodes.OK);
 	}

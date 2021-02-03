@@ -17,14 +17,12 @@
 
 package org.radix.api.jsonrpc;
 
-import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
@@ -42,7 +40,6 @@ public class RadixJsonRpcServerTest {
 		JSONObject request = new JSONObject();
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			rmock(EventDispatcher.class),
 			mock(EpochManagerRunner.class),
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
@@ -73,7 +70,6 @@ public class RadixJsonRpcServerTest {
 		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			rmock(EventDispatcher.class),
 			mock(EpochManagerRunner.class),
 			serializer,
 			mock(LedgerEntryStore.class),
@@ -94,7 +90,6 @@ public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			rmock(EventDispatcher.class),
 			mock(EpochManagerRunner.class),
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
