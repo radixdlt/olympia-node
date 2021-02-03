@@ -17,7 +17,6 @@
 
 package com.radixdlt.network.addressbook;
 
-import com.radixdlt.utils.Base58;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -64,12 +63,6 @@ public final class PeerWithSystem extends Peer {
 	PeerWithSystem(Peer toCopy, RadixSystem system) {
 		super(toCopy); // Timestamps etc
 		this.system = Objects.requireNonNull(system);
-	}
-
-	@JsonProperty("key")
-	@DsonOutput(Output.ALL)
-	private String nodeKey() {
-		return Base58.toBase58(system.getKey().getBytes());
 	}
 
 	@Override
