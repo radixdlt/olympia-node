@@ -44,6 +44,14 @@ dependencies {
     testImplementation 'io.cucumber:cucumber-junit:6.8.1'
 }
 
+test {
+    enabled false
+    jacoco {
+        // Don't attempt to include these in code coverage.
+        enabled false
+    }
+}
+
 task copyCLIJar {
     doLast {
         delete "${projectDir}/target/cli"
@@ -58,8 +66,11 @@ task bddTest(type: Test) {
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     include "Runner.class"
+    jacoco {
+        // Not included in code coverage
+        enabled false
+    }
 }
-test.enabled = false
 
 task dockerSystemTests(type: Test) {
     useJUnit {
@@ -70,6 +81,7 @@ task dockerSystemTests(type: Test) {
     systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
     exclude "Runner.class"
     jacoco {
+        // We don't want these tests included in code coverage.
         enabled false
     }
 }
@@ -82,6 +94,7 @@ task clusterSystemTests(type: Test) {
     systemProperties System.getProperties()
     exclude "Runner.class"
     jacoco {
+        // We don't want these tests included in code coverage.
         enabled false
     }
 }
@@ -95,6 +108,7 @@ task ephemeralClusterSystemTests(type: Test) {
     systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
     exclude "Runner.class"
     jacoco {
+        // We don't want these tests included in code coverage.
         enabled false
     }
 }

@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -53,6 +54,7 @@ import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.store.Transaction;
+
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
@@ -231,12 +233,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return null;
 		}
 
-		final var tailPosition = storedCommittedCommands.size() - 1;
-		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
-		return new VerifiedCommandsAndProof(
-			storedCommittedCommands.stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextHeader
-		);
+		// Limit the batch to within a single epoch
+		final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, cmd -> cmd.getStateAndProof().getRaw().isEndOfEpoch());
+		final var tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
+		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
+		final var commands = storedCommittedCommands.stream()
+			.limit(tailPosition + 1L)
+			.map(StoredCommittedCommand::getCommand)
+			.collect(ImmutableList.toImmutableList());
+		return new VerifiedCommandsAndProof(commands, nextHeader);
 	}
 
 	@Override

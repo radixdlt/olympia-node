@@ -256,6 +256,7 @@ public class SimulationTest {
 
 						// TODO: Remove once mempool fixed
 						modules.add(new AbstractModule() {
+							@Override
 							public void configure() {
 								bind(Mempool.class).to(EmptyMempool.class);
 							}
