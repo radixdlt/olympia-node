@@ -237,10 +237,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, cmd -> cmd.getStateAndProof().getRaw().isEndOfEpoch());
 		final var tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
 		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
-		return new VerifiedCommandsAndProof(
-			storedCommittedCommands.stream().limit(tailPosition + 1).map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextHeader
-		);
+		final var commands = storedCommittedCommands.stream()
+			.limit(tailPosition + 1)
+			.map(StoredCommittedCommand::getCommand)
+			.collect(ImmutableList.toImmutableList());
+		return new VerifiedCommandsAndProof(commands, nextHeader);
 	}
 
 	@Override

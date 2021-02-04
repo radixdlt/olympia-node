@@ -224,9 +224,14 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader = LedgerHeader.create(epoch, view, committedAccumulatorState, System.currentTimeMillis());
 		}
 		final var signatures = new TimestampedECDSASignatures();
-		final var proof = new VerifiedLedgerHeaderAndProof(proposed, parent, stateVersion, committedVertexId, committedLedgerHeader, signatures);
-		final var committedAtom = new CommittedAtom(clientAtom, stateVersion, proof);
-
-		return committedAtom;
+		final var proof = new VerifiedLedgerHeaderAndProof(
+			proposed,
+			parent,
+			stateVersion,
+			committedVertexId,
+			committedLedgerHeader,
+			signatures
+		);
+		return new CommittedAtom(clientAtom, stateVersion, proof);
 	}
 }
