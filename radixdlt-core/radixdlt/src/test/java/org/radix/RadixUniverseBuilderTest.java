@@ -17,6 +17,11 @@
 
 package org.radix;
 
+import hu.akarnokd.rxjava3.operators.FlowableTransformers;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECKeyPair;
@@ -28,6 +33,40 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RadixUniverseBuilderTest {
+	private void startPublisher(String name, PublishProcessor<String> pub, long sleep) {
+		new Thread(() -> {
+			while (true) {
+				pub.onNext(name);
+				try {
+					Thread.sleep(sleep);
+				} catch (InterruptedException e) {
+				}
+			}
+		}).start();
+	}
+
+	@Test
+	public void testFlowableMerge() throws Exception {
+		final var publisher1 = PublishProcessor.<String>create();
+		final var publisher2 = PublishProcessor.<String>create();
+		final var publisher3 = PublishProcessor.<String>create();
+		PublishProcessor<Flowable<String>> channels = PublishProcessor.create();
+		Flowable<String> merged = channels
+			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
+
+		merged
+			.subscribe(next -> {
+				Thread.sleep(1000);
+				System.out.println("next: " + next);
+			});
+		channels.onNext(publisher1.onBackpressureBuffer(1, () -> {}, BackpressureOverflowStrategy.DROP_LATEST));
+		channels.onNext(publisher2.onBackpressureBuffer(1, () -> {}, BackpressureOverflowStrategy.DROP_LATEST));
+		channels.onNext(publisher3.onBackpressureBuffer(1, () -> {}, BackpressureOverflowStrategy.DROP_LATEST));
+		startPublisher("p1", publisher1, 10);
+		startPublisher("p2", publisher2, 1000);
+		startPublisher("p3", publisher3, 1000);
+		Thread.sleep(1000000);
+	}
 
 	@Test
 	public void testDevUniverse() {

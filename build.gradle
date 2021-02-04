@@ -128,6 +128,7 @@ subprojects {
         overriddenByDependencies = false
 
         dependencies {
+            dependency "com.github.akarnokd:rxjava3-extensions:3.0.1"
             dependency 'io.reactivex.rxjava3:rxjava:3.0.9'
             dependency 'com.sleepycat:je:18.3.12'
 

@@ -125,6 +125,7 @@ dependencies {
     implementation project(':radixdlt-engine')
     implementation project(':radixdlt-java-common')
 
+    implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'
     implementation 'com.sleepycat:je'
 

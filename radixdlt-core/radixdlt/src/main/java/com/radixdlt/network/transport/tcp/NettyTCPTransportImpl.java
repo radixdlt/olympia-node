@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
+import hu.akarnokd.rxjava3.operators.FlowableTransformers;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -200,8 +202,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-		// TODO: This should ignore errors but implement this once we can reproduce some sort of error
-		return Flowable.merge(channels);
+		return channels
+			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
 	}
 
 	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
