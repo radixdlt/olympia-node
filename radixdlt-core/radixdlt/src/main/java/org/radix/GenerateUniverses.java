@@ -17,10 +17,14 @@
 
 package org.radix;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
+import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
@@ -51,240 +55,316 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.Security;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class GenerateUniverses {
-	private GenerateUniverses() { }
+    private GenerateUniverses() {
+    }
 
-	private static final BigDecimal SUB_UNITS_BIG_DECIMAL
-		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
-	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
-	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
-	private static final String DEFAULT_KEYSTORE  = "universe.ks";
-	private static final String DEFAULT_STAKE = "5000000";
-	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
-	private static final String STAKER_TEMPLATE = "staker%s.ks";
+    private static final BigDecimal SUB_UNITS_BIG_DECIMAL
+            = new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
+    private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
+    private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
+    private static final String DEFAULT_KEYSTORE = "universe.ks";
+    private static final String DEFAULT_STAKE = "5000000";
+    private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
+    private static final String STAKER_TEMPLATE = "staker%s.ks";
+    private static final String DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY = ".";
+    private static final Boolean DEFAULT_HELM_OUTPUT = false;
 
-	private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000);
+    private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000);
 
-	public static void main(String[] args) {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+    public static void main(String[] args) {
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-		Options options = new Options();
-		options.addOption("h", "help",                   false, "Show usage information (this message)");
-		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
-		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
-		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
-		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
-		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
-		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
-		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
-		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
-		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
+        Options options = new Options();
+        options.addOption("h", "help", false, "Show usage information (this message)");
+        options.addOption("c", "no-cbor-output", false, "Suppress DSON output");
+        options.addOption("i", "issue-default-tokens", false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
+        options.addOption("j", "no-json-output", false, "Suppress JSON output");
+        options.addOption("k", "keystore", true, "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
+        options.addOption("p", "include-private-keys", false, "Include universe, validator and staking private keys in output");
+        options.addOption("S", "stake-amounts", true, "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
+        options.addOption("t", "universe-type", true, "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
+        options.addOption("T", "universe-timestamp", true, "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
+        options.addOption("v", "validator-count", true, "Specify number of validators to generate (required)");
+        options.addOption("hc", "helm-configuration", true, "Generates Helm values for validators(default: " + DEFAULT_HELM_OUTPUT + ")");
+        options.addOption("d", "helm-output-directory", true, "Output dir to add Helm values files(default: " + DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY + ")");
 
-		CommandLineParser parser = new DefaultParser();
-		try {
-			CommandLine cmd = parser.parse(options, args);
-			if (!cmd.getArgList().isEmpty()) {
-				System.err.println("Extra arguments: " + cmd.getArgList().stream().collect(Collectors.joining(" ")));
-				usage(options);
-				return;
-			}
+        CommandLineParser parser = new DefaultParser();
+        try {
+            CommandLine cmd = parser.parse(options, args);
+            if (!cmd.getArgList().isEmpty()) {
+                System.err.println("Extra arguments: " + cmd.getArgList().stream().collect(Collectors.joining(" ")));
+                usage(options);
+                return;
+            }
 
-			if (cmd.hasOption('h')) {
-				usage(options);
-				return;
-			}
+            if (cmd.hasOption('h')) {
+                usage(options);
+                return;
+            }
 
-			final boolean suppressCborOutput = cmd.hasOption('c');
-			final boolean suppressJsonOutput = cmd.hasOption('j');
-			final String universeKeyFile = getOption(cmd, 'k').orElse(DEFAULT_KEYSTORE);
-			final boolean outputPrivateKeys = cmd.hasOption('p');
-			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
-			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
-			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
-			final int validatorsCount = Integer.parseInt(
-				getOption(cmd, 'v').orElseThrow(() -> new IllegalArgumentException("Must specify number of validators"))
-			);
+            final boolean suppressCborOutput = cmd.hasOption('c');
+            final boolean suppressJsonOutput = cmd.hasOption('j');
+            final String universeKeyFile = getOption(cmd, 'k').orElse(DEFAULT_KEYSTORE);
+            final boolean outputPrivateKeys = cmd.hasOption('p');
+            final boolean outputHelmValues = cmd.hasOption("hc");
+            final String helmValuesPath = getOption(cmd, 'd').orElse(DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY);
+            final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
+            final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
+            final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
+            final int validatorsCount = Integer.parseInt(
+                    getOption(cmd, 'v').orElseThrow(() -> new IllegalArgumentException("Must specify number of validators"))
+            );
 
-			if (stakes.isEmpty()) {
-				throw new IllegalArgumentException("Must specify at least one staking amount");
-			}
-			if (validatorsCount <= 0) {
-				throw new IllegalArgumentException("There must be at least one validator");
-			}
+            if (stakes.isEmpty()) {
+                throw new IllegalArgumentException("Must specify at least one staking amount");
+            }
+            if (validatorsCount <= 0) {
+                throw new IllegalArgumentException("There must be at least one validator");
+            }
 
-			final ImmutableList<ECKeyPair> validatorKeys = getValidatorKeys(validatorsCount);
-			final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
-				Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
-			);
+            final ImmutableList<ECKeyPair> validatorKeys = getValidatorKeys(validatorsCount);
+            final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
+                    Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
+            );
 
-			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
-				tokenIssuancesBuilder.add(
-					TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
-				);
-			}
-			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
-				.addAll(getTokenIssuances(stakeDelegations))
-				.build();
+            final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
+            if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
+                tokenIssuancesBuilder.add(
+                        TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
+                        TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
+                        TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
+                        TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
+                        TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
+                );
+            }
+            final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
+                    .addAll(getTokenIssuances(stakeDelegations))
+                    .build();
 
-			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
-			final ECKeyPair universeKey = Keys.readKey(
-				universeKeyFile,
-				"universe",
-				"RADIX_UNIVERSE_KEYSTORE_PASSWORD",
-				"RADIX_UNIVERSE_KEY_PASSWORD"
-			);
+            final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
+            final ECKeyPair universeKey = Keys.readKey(
+                    universeKeyFile,
+                    "universe",
+                    "RADIX_UNIVERSE_KEYSTORE_PASSWORD",
+                    "RADIX_UNIVERSE_KEY_PASSWORD"
+            );
 
-			final Pair<ECKeyPair, Universe> universe = RadixUniverseBuilder.forType(universeType)
-				.withKey(universeKey)
-				.withTimestamp(universeTimestamp)
-				.withTokenIssuance(tokenIssuances)
-				.withRegisteredValidators(validatorKeys)
-				.withStakeDelegations(stakeDelegations)
-				.build();
-			if (outputPrivateKeys) {
-				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
-				outputNumberedKeys("VALIDATOR_%s", validatorKeys);
-				outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker));
-			}
-			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe);
-		} catch (ParseException e) {
-			System.err.println(e.getMessage());
-			usage(options);
-		} catch (IOException | CryptoException e) {
-			System.err.println("Error while reading key: " + e.getMessage());
-			usage(options);
-		}
-	}
+            final Pair<ECKeyPair, Universe> universe = RadixUniverseBuilder.forType(universeType)
+                    .withKey(universeKey)
+                    .withTimestamp(universeTimestamp)
+                    .withTokenIssuance(tokenIssuances)
+                    .withRegisteredValidators(validatorKeys)
+                    .withStakeDelegations(stakeDelegations)
+                    .build();
+            if (outputPrivateKeys) {
+                System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
+                outputNumberedKeys("VALIDATOR_%s", validatorKeys, outputHelmValues, helmValuesPath);
+                outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker), outputHelmValues, helmValuesPath);
+            }
+            outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe, outputHelmValues, helmValuesPath);
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+            usage(options);
+        } catch (IOException | CryptoException e) {
+            System.err.println("Error while reading key: " + e.getMessage());
+            usage(options);
+        }
+    }
 
-	private static ImmutableList<ECKeyPair> getValidatorKeys(int validatorsCount) {
-		return IntStream.range(0, validatorsCount)
-			.mapToObj(n -> {
-				try {
-					return Keys.readKey(
-						String.format(VALIDATOR_TEMPLATE, n),
-						"node",
-						"RADIX_VALIDATOR_KEYSTORE_PASSWORD",
-						"RADIX_VALIDATOR_KEY_PASSWORD"
-					);
-				} catch (CryptoException | IOException e) {
-					throw new IllegalStateException("While reading validator keys", e);
-				}
-			})
-			.collect(ImmutableList.toImmutableList());
-	}
+    private static ImmutableList<ECKeyPair> getValidatorKeys(int validatorsCount) {
+        return IntStream.range(0, validatorsCount)
+                .mapToObj(n -> {
+                    try {
+                        return Keys.readKey(
+                                String.format(VALIDATOR_TEMPLATE, n),
+                                "node",
+                                "RADIX_VALIDATOR_KEYSTORE_PASSWORD",
+                                "RADIX_VALIDATOR_KEY_PASSWORD"
+                        );
+                    } catch (CryptoException | IOException e) {
+                        throw new IllegalStateException("While reading validator keys", e);
+                    }
+                })
+                .collect(ImmutableList.toImmutableList());
+    }
 
-	private static ImmutableList<StakeDelegation> getStakeDelegation(List<ECPublicKey> validators, List<UInt256> stakes) {
-		int n = 0;
-		final ImmutableList.Builder<StakeDelegation> stakeDelegations = ImmutableList.builder();
-		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
-		for (ECPublicKey validator : validators) {
-			try {
-				final ECKeyPair stakerKey = Keys.readKey(
-					String.format(STAKER_TEMPLATE, n++),
-					"wallet",
-					"RADIX_STAKER_KEYSTORE_PASSWORD",
-					"RADIX_STAKER_KEY_PASSWORD"
-				);
-				stakeDelegations.add(StakeDelegation.of(stakerKey, validator, stakesCycle.next()));
-			} catch (CryptoException | IOException e) {
-				throw new IllegalStateException("While reading staker keys", e);
-			}
-		}
-		return stakeDelegations.build();
-	}
+    private static ImmutableList<StakeDelegation> getStakeDelegation(List<ECPublicKey> validators, List<UInt256> stakes) {
+        int n = 0;
+        final ImmutableList.Builder<StakeDelegation> stakeDelegations = ImmutableList.builder();
+        final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+        for (ECPublicKey validator : validators) {
+            try {
+                final ECKeyPair stakerKey = Keys.readKey(
+                        String.format(STAKER_TEMPLATE, n++),
+                        "wallet",
+                        "RADIX_STAKER_KEYSTORE_PASSWORD",
+                        "RADIX_STAKER_KEY_PASSWORD"
+                );
+                stakeDelegations.add(StakeDelegation.of(stakerKey, validator, stakesCycle.next()));
+            } catch (CryptoException | IOException e) {
+                throw new IllegalStateException("While reading staker keys", e);
+            }
+        }
+        return stakeDelegations.build();
+    }
 
-	// We just generate issuances in the amounts of the stake delegations here
-	private static ImmutableList<TokenIssuance> getTokenIssuances(ImmutableList<StakeDelegation> stakeDelegations) {
-		return stakeDelegations.stream()
-			.map(sd -> TokenIssuance.of(sd.staker().getPublicKey(), sd.amount()))
-			.collect(ImmutableList.toImmutableList());
-	}
+    // We just generate issuances in the amounts of the stake delegations here
+    private static ImmutableList<TokenIssuance> getTokenIssuances(ImmutableList<StakeDelegation> stakeDelegations) {
+        return stakeDelegations.stream()
+                .map(sd -> TokenIssuance.of(sd.staker().getPublicKey(), sd.amount()))
+                .collect(ImmutableList.toImmutableList());
+    }
 
-	private static ECPublicKey pubkeyOf(int pk) {
-		final byte[] privateKey = new byte[ECKeyPair.BYTES];
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-		ECKeyPair kp;
-		try {
-			kp = ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
-		return kp.getPublicKey();
-	}
+    private static ECPublicKey pubkeyOf(int pk) {
+        final byte[] privateKey = new byte[ECKeyPair.BYTES];
+        Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+        ECKeyPair kp;
+        try {
+            kp = ECKeyPair.fromPrivateKey(privateKey);
+        } catch (PrivateKeyException | PublicKeyException e) {
+            throw new IllegalArgumentException("Error while generating public key", e);
+        }
+        return kp.getPublicKey();
+    }
 
-	private static ImmutableList<UInt256> parseStake(String stakes) {
-		return Stream.of(stakes.split(","))
-			.map(String::trim)
-			.map(BigDecimal::new)
-			.map(GenerateUniverses::unitsToSubunits)
-			.collect(ImmutableList.toImmutableList());
-	}
+    private static ImmutableList<UInt256> parseStake(String stakes) {
+        return Stream.of(stakes.split(","))
+                .map(String::trim)
+                .map(BigDecimal::new)
+                .map(GenerateUniverses::unitsToSubunits)
+                .collect(ImmutableList.toImmutableList());
+    }
 
-	private static void outputNumberedKeys(String template, List<ECKeyPair> keys) {
-		int n = 0;
-		for (ECKeyPair k : keys) {
-			String keyname = String.format(template, n++);
-			System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
-		}
-	}
+    private static void outputNumberedKeys(String template, List<ECKeyPair> keys, boolean outputHelmValues, String helmValuesPath) {
+        int n = 0;
+        List<Map<String, Object>> validators = new ArrayList<>();
 
-	private static void outputUniverse(
-		boolean suppressDson,
-		boolean suppressJson,
-		UniverseType type,
-		Pair<ECKeyPair, Universe> p
-	) {
-		final Serialization serialization = DefaultSerialization.getInstance();
-		final ECKeyPair k = p.getFirst();
-		final Universe u = p.getSecond();
-		if (!suppressDson) {
-			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
-			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
-			System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
-			System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
-			System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
-			System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
-			System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
-		}
-		if (!suppressJson) {
-			JSONObject json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
-			System.out.println(json.toString(4));
-		}
-	}
+        List<String> nodeNames = new ArrayList<>();
+        for (ECKeyPair k : keys) {
+            Map<String, Object> validator = new HashMap<>();
+            String nodeName = String.format("node%s", n);
+            String keyname = String.format(template, n++);
+            System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
+            if (outputHelmValues) {
+                nodeNames.add(nodeName);
+                validator.put("host", nodeName);
+                if (template.startsWith("VALIDATOR")) {
+                    validator.put("seedsRemote", "");
+                    validator.put("privateKey", Bytes.toBase64String(k.getPrivateKey()));
+                } else if (template.startsWith("STAKER")) {
+                    validator.put("stakingKey", Bytes.toBase64String(k.getPrivateKey()));
+                }
+                validators.add(validator);
+            }
+        }
 
-	private static void usage(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
-	}
+        if (outputHelmValues) {
+            for (Map<String, Object> validator : validators) {
+                String name = (String) validator.get("host");
+                String fileName = String.format("%s/%s-staker.yaml", helmValuesPath, name);
+                Map<String, Map<String, Object>> validatorsOut = new HashMap<>();
+                if (template.startsWith("VALIDATOR")) {
+                    fileName = String.format("%s/%s-validator.yaml", helmValuesPath, name);
+                    List<String> seedsRemote = new ArrayList<>(nodeNames);
+                    seedsRemote.remove(name);
+                    validator.put("seedsRemote", Strings.join(seedsRemote, ','));
+                    validator.put("allNodes", Strings.join(nodeNames, ','));
+                    validatorsOut.put("validator", validator);
+                } else if (template.startsWith("STAKER")) {
+                    validatorsOut.put("staker", validator);
+                }
 
-	private static UniverseType parseUniverseType(String type) {
-		return UniverseType.valueOf(type.toUpperCase());
-	}
+                writeYamlOutput(fileName, validatorsOut);
+            }
+        }
+    }
 
-	private static Optional<String> getOption(CommandLine cmd, char opt) {
-		String value = cmd.getOptionValue(opt);
-		return Optional.ofNullable(value);
-	}
+    private static void outputUniverse(
+            boolean suppressDson,
+            boolean suppressJson,
+            UniverseType type,
+            Pair<ECKeyPair, Universe> p,
+            boolean outputHelmValues,
+            String helmValuesPath
+    ) {
+        final Serialization serialization = DefaultSerialization.getInstance();
+        final ECKeyPair k = p.getFirst();
+        final Universe u = p.getSecond();
+        if (!suppressDson) {
+            byte[] universeBytes = serialization.toDson(u, Output.WIRE);
+            RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
+            RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
+            System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
+            System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
+            System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
+            System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
+            System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
 
-	private static UInt256 unitsToSubunits(BigDecimal units) {
-		return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
-	}
+            if (outputHelmValues) {
+                Map<String, Map<String, Object>> config = new HashMap<>();
+                Map<String, Object> universe = new HashMap<>();
+                universe.put("type", type);
+                universe.put("privKey", Bytes.toBase64String(p.getFirst().getPrivateKey()));
+                universe.put("pubkey", k.getPublicKey().toBase64());
+                universe.put("address", universeAddress.toString());
+                universe.put("token", tokenRri.toString());
+                universe.put("value", Bytes.toBase64String(universeBytes));
+                config.put("universe", universe);
+
+                String filename = String.format("%s/universe.yaml", helmValuesPath);
+                writeYamlOutput(filename, config);
+            }
+        }
+        if (!suppressJson) {
+            JSONObject json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+            System.out.println(json.toString(4));
+        }
+    }
+
+    private static void usage(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
+    }
+
+    private static UniverseType parseUniverseType(String type) {
+        return UniverseType.valueOf(type.toUpperCase());
+    }
+
+    private static Optional<String> getOption(CommandLine cmd, char opt) {
+        String value = cmd.getOptionValue(opt);
+        return Optional.ofNullable(value);
+    }
+
+    private static UInt256 unitsToSubunits(BigDecimal units) {
+        return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
+    }
+
+    private static void writeYamlOutput(String fileName, Map<String, Map<String, Object>> validatorsOut) {
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        try {
+            String yaml = objectMapper.writeValueAsString(validatorsOut);
+            FileWriter file = new FileWriter(fileName);
+            file.write(yaml);
+            file.flush();
+
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("While creating YAML", e);
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("While writing Helm values files", e);
+        }
+    }
 }

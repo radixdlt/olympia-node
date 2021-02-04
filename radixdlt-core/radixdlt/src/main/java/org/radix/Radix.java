@@ -111,7 +111,7 @@ public final class Radix {
 
 	public static void main(String[] args) {
 		try {
-			MemoryLeakDetector.start();
+			// MemoryLeakDetector.start();
 
 			logVersion();
 			dumpExecutionLocation();
