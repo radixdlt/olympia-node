@@ -63,4 +63,9 @@ public final class RemoteEvent<T> {
 	public T getEvent() {
 		return event;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
+	}
 }

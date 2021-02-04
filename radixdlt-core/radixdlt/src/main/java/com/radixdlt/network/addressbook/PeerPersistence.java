@@ -63,5 +63,6 @@ public interface PeerPersistence extends Closeable {
 	/**
 	 * Closes persistence
 	 */
+	@Override
 	void close();
 }

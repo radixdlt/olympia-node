@@ -105,8 +105,7 @@ integrationTest {
     }
     systemProperty "java.security.egd", "file:/dev/urandom"
     jacoco {
-        // It appears that Jacoco can introduce thread and/or JVM pauses, which
-        // in turn can cause timeouts that interfere with integration tests.
+        // We don't want integration tests included in code coverage.
         enabled false
     }
 }

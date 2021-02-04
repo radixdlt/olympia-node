@@ -48,7 +48,7 @@ shadowJar {
     manifest {
         attributes 'Main-Class': 'com.radixdlt.cli.RadixCLI'
     }
-    archiveName = "radixdlt-cli-${classifier}.${extension}"
+    archiveFileName = "radixdlt-cli-${archiveClassifier}.${archiveExtension}"
 }
 
 jacocoTestReport {

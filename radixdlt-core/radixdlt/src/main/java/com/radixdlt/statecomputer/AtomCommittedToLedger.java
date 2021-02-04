@@ -53,7 +53,8 @@ public final class AtomCommittedToLedger {
         return Objects.hash(committedAtom, indices);
     }
 
-    public boolean equals(Object o) {
+    @Override
+	public boolean equals(Object o) {
         if (!(o instanceof AtomCommittedToLedger)) {
             return false;
         }
