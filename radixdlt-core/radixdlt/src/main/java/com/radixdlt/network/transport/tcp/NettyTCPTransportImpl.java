@@ -200,6 +200,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
+		// TODO: This should ignore errors but implement this once we can reproduce some sort of error
 		return Flowable.merge(channels);
 	}
 

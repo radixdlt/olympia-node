@@ -67,9 +67,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 					log.warn("TCP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
-			.map(this::parseMessage)
-			.publish()
-			.autoConnect();
+			.map(this::parseMessage);
 	}
 
 	Flowable<InboundMessage> inboundMessageRx() {
@@ -85,10 +83,15 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 		SocketAddress socketSender = ctx.channel().remoteAddress();
 		if (socketSender instanceof InetSocketAddress) {
 			final InetSocketAddress sender = (InetSocketAddress) socketSender;
-			final int length = buf.readableBytes();
-			final byte[] data = new byte[length];
-			buf.readBytes(data);
-			this.rawMessageSink.offer(Pair.of(sender, data));
+			final byte[] data;
+			if (buf.isDirect() && buf.nioBuffer().hasArray()) {
+				data = buf.nioBuffer().array();
+			} else {
+				final int length = buf.readableBytes();
+				data = new byte[length];
+				buf.readBytes(data);
+			}
+			this.rawMessageSink.onNext(Pair.of(sender, data));
 		} else if (logRateLimiter.tryAcquire()) {
 			String type = socketSender == null ? null : socketSender.getClass().getName();
 			String from = socketSender == null ? null : socketSender.toString();
