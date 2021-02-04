@@ -48,9 +48,9 @@ import io.netty.handler.codec.TooLongFrameException;
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	private static final Logger log = LogManager.getLogger();
 
-	private final PublishProcessor<Pair<InetSocketAddress, ByteBuf>> rawMessageSink = PublishProcessor.create();
+	private final PublishProcessor<Pair<InetSocketAddress, byte[]>> rawMessageSink = PublishProcessor.create();
+	private final Flowable<InboundMessage> inboundMessages;
 
-	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
 	private final SystemCounters counters;
@@ -59,20 +59,21 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 	TCPNettyMessageHandler(SystemCounters counters, int bufferSize) {
 		this.counters = counters;
 		this.bufferSize = bufferSize;
-	}
-
-	Flowable<InboundMessage> inboundMessageRx() {
-		return rawMessageSink
+		this.inboundMessages = rawMessageSink
 			.onBackpressureBuffer(
 				this.bufferSize,
 				() -> {
 					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-					if (droppedMessagesRateLimiter.tryAcquire()) {
-						log.warn("TCP msg buffer overflow, dropping msg");
-					}
+					log.warn("TCP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
-			.map(this::parseMessage);
+			.map(this::parseMessage)
+			.publish()
+			.autoConnect();
+	}
+
+	Flowable<InboundMessage> inboundMessageRx() {
+		return inboundMessages;
 	}
 
 	void shutdownRx() {
@@ -84,7 +85,10 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 		SocketAddress socketSender = ctx.channel().remoteAddress();
 		if (socketSender instanceof InetSocketAddress) {
 			final InetSocketAddress sender = (InetSocketAddress) socketSender;
-			this.rawMessageSink.onNext(Pair.of(sender, buf));
+			final int length = buf.readableBytes();
+			final byte[] data = new byte[length];
+			buf.readBytes(data);
+			this.rawMessageSink.offer(Pair.of(sender, data));
 		} else if (logRateLimiter.tryAcquire()) {
 			String type = socketSender == null ? null : socketSender.getClass().getName();
 			String from = socketSender == null ? null : socketSender.toString();
@@ -92,10 +96,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 		}
 	}
 
-	private InboundMessage parseMessage(Pair<InetSocketAddress, ByteBuf> rawData) {
-		final int length = rawData.getSecond().readableBytes();
-		final byte[] data = new byte[length];
-		rawData.getSecond().readBytes(data);
+	private InboundMessage parseMessage(Pair<InetSocketAddress, byte[]> rawData) {
 		final TransportInfo source = TransportInfo.of(
 			TCPConstants.NAME,
 			StaticTransportMetadata.of(
@@ -103,7 +104,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				TCPConstants.METADATA_PORT, String.valueOf(rawData.getFirst().getPort())
 			)
 		);
-		return InboundMessage.of(source, data);
+		return InboundMessage.of(source, rawData.getSecond());
 	}
 
 	@Override

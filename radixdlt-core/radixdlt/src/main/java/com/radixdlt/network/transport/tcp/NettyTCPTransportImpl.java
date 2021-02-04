@@ -120,7 +120,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
-		this.messageBufferSize = config.messageBufferSize(255);
+		this.messageBufferSize = config.messageBufferSize(1);
 		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
@@ -200,7 +200,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-		return Flowable.mergeDelayError(channels);
+		return Flowable.merge(channels);
 	}
 
 	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
