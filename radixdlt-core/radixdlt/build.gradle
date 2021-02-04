@@ -119,6 +119,12 @@ jacocoTestReport {
     }
 }
 
+sonarqube {
+    properties {
+        property 'sonar.exclusions', "**/com/radixdlt/sanitytestsuite/**"
+    }
+}
+
 dependencies {
     // If dependencies on other projects appear, do not forget to update
     // generateDevUniverse task to depend on those projects
