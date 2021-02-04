@@ -125,11 +125,9 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_from_empty_store__null_returned() throws NextCommittedLimitReachedException {
-		final var committedAtomsStore = this.injector.getInstance(CommittedAtomsStore.class);
-
 		// No atoms generated
 
-		final var commands = committedAtomsStore.getNextCommittedCommands(0, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands).isNull();
 	}
