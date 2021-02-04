@@ -33,7 +33,6 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -68,7 +67,6 @@ public class BFTRunner implements ModuleRunner {
 	private final Scheduler singleThreadScheduler;
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTNode self;
-	private final SystemCounters counters;
 	private Disposable disposable;
 
 	@Inject
@@ -90,14 +88,12 @@ public class BFTRunner implements ModuleRunner {
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		@Self BFTNode self,
-		SystemCounters counters
+		@Self BFTNode self
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 		this.self = Objects.requireNonNull(self);
-		this.counters = Objects.requireNonNull(counters);
 
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption

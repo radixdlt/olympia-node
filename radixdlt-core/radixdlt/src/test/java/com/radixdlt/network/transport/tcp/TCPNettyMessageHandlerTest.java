@@ -108,6 +108,7 @@ public class TCPNettyMessageHandlerTest {
 			mh.channelRead0(ctx, Unpooled.copiedBuffer(data));
 		}
 
+		testSubscriber.assertNoValues();
 		verify(counters, times(overflowSize)).increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
 	}
 

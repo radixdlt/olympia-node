@@ -66,7 +66,6 @@ public class MessageDispatcherTest extends RadixTest {
 		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
 		RadixSystem system1 = makeSystem(EUID.ONE);
-		RadixSystem system2 = makeSystem(EUID.TWO);
 		peer1 = spy(new PeerWithSystem(system1));
 
 		counters = mock(SystemCounters.class);

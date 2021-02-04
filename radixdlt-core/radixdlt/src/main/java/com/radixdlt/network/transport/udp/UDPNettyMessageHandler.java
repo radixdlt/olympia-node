@@ -47,7 +47,6 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 	private static final Logger log = LogManager.getLogger();
 
 	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
-	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
 	private final SystemCounters counters;
 	private final int bufferSize;

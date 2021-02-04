@@ -124,6 +124,7 @@ public class UDPNettyMessageHandlerTest {
 			mh.channelRead0(ctx, dp);
 		}
 
+		testSubscriber.assertNoValues();
 		verify(counters, times(overflowSize)).increment(CounterType.NETWORKING_UDP_DROPPED_MESSAGES);
 	}
 

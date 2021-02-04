@@ -17,9 +17,9 @@
 
 package com.radixdlt;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.google.inject.AbstractModule;
@@ -41,7 +41,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.reactivex.rxjava3.core.Flowable;
-import org.apache.commons.cli.ParseException;
 import org.junit.Test;
 
 public class NetworkModuleTest {
@@ -61,7 +60,7 @@ public class NetworkModuleTest {
 	}
 
 	@Test
-	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() throws ParseException {
+	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() {
 		Injector injector = Guice.createInjector(
 			new NetworkModule(),
 			new ExternalLedgerModule()

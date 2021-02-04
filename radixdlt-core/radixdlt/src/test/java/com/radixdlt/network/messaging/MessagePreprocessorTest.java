@@ -27,10 +27,8 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
-import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import org.junit.Before;
 import org.junit.Test;
@@ -141,13 +139,6 @@ public class MessagePreprocessorTest extends RadixTest {
 		messagePreprocessor = new MessagePreprocessor(
 			counters, conf, () -> 30_000, getLocalSystem(), addressBook, hasher, serialization
 		);
-
-		// Suppression safe here - dummy outbound connection does not need closing
-		@SuppressWarnings("resource")
-		TransportOutboundConnection transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
-		// Suppression safe here - dummy transport does not need closing
-		@SuppressWarnings("resource")
-		Transport transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
 	}
 
 	@Test
