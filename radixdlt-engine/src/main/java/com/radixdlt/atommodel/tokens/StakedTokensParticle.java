@@ -90,13 +90,13 @@ public final class StakedTokensParticle extends Particle {
 	}
 
 	public StakedTokensParticle(
-			RadixAddress delegateAddress,
-			RadixAddress address,
-			UInt256 amount,
-			UInt256 granularity,
-			RRI tokenDefinitionReference,
-			Map<TokenTransition, TokenPermission> tokenPermissions,
-			long nonce
+		RadixAddress delegateAddress,
+		RadixAddress address,
+		UInt256 amount,
+		UInt256 granularity,
+		RRI tokenDefinitionReference,
+		Map<TokenTransition, TokenPermission> tokenPermissions,
+		long nonce
 	) {
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);

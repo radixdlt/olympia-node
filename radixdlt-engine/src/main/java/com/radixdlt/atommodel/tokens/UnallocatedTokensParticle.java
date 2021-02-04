@@ -76,11 +76,11 @@ public final class UnallocatedTokensParticle extends Particle {
 	}
 
 	public UnallocatedTokensParticle(
-			UInt256 amount,
-			UInt256 granularity,
-			RRI tokenDefinitionReference,
-			Map<TokenTransition, TokenPermission> tokenPermissions,
-			long nonce
+		UInt256 amount,
+		UInt256 granularity,
+		RRI tokenDefinitionReference,
+		Map<TokenTransition, TokenPermission> tokenPermissions,
+		long nonce
 	) {
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);

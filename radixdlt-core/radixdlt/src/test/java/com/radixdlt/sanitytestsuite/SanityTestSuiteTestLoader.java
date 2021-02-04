@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
+import static org.junit.Assert.assertEquals;
 
 public final class SanityTestSuiteTestLoader {
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -39,7 +40,7 @@ public final class SanityTestSuiteTestLoader {
 			var expected = sanityTestSuiteRoot.integrity.hashOfSuite;
 
 			// Compare saved hash in file with calculated hash of test.
-			//assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
+			assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
 
 			return sanityTestSuiteRoot;
 		} catch (IOException e) {

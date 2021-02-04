@@ -118,8 +118,8 @@ public final class ArgumentsExtractor {
 
 	public Set<RadixAddress> asAddressSet(String named) {
 		return extract(
-				named,
-				object -> (List<String>) object).stream().map(RadixAddress::from).collect(Collectors.toSet()
+			named,
+			object -> (List<String>) object).stream().map(RadixAddress::from).collect(Collectors.toSet()
 		);
 	}
 

@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "20478e94216232bf1822ce42c2302f8ca04e3ffdf3321647d1283275579e6bad",
+		"hashOfSuite": "4d2d9a278efeb9d41865f8db3c4d669f2b5d7707073327a5462161977cae1e7a",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {

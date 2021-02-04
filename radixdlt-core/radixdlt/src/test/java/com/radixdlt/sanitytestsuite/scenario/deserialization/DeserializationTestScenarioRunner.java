@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -54,7 +54,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
     private final ImmutableMap<String, BiConsumer<Map<String, Object>, Object>> assertEqualsMap;
 
     public DeserializationTestScenarioRunner() {
-        Map<String, BiConsumer<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
+        var mutableMap = Maps.<String, BiConsumer<Map<String, Object>, Object>>newHashMap();
         mutableMap.put("radix.particles.transferrable_tokens", DeserializationTestScenarioRunner::assertTransferableTokensParticle);
         mutableMap.put("radix.particles.fixed_supply_token_definition", DeserializationTestScenarioRunner::assertFixedSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.mutable_supply_token_definition",
