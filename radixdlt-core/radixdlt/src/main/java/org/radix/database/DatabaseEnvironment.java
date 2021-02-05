@@ -135,7 +135,7 @@ public final class DatabaseEnvironment {
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
 
-		return this.metaDatabase.put((com.sleepycat.je.Transaction) transaction.unwrap(), key, value);
+		return this.metaDatabase.put(transaction.unwrap(), key, value);
 	}
 
 	public byte[] get(String resource, String key) {

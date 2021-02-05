@@ -68,7 +68,7 @@ public final class LedgerEntryIndices {
 		return this.duplicateIndices;
 	}
 
-	static LedgerEntryIndices from(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+	static LedgerEntryIndices makeIndices(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		List<StoreIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
 			.filter(index -> index.getPrefix() == ENTRY_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());

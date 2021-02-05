@@ -32,6 +32,15 @@ public final class LedgerEntryStoreResult {
 		return this == SUCCESS;
 	}
 
+	public LedgerEntryStoreResult ifSuccess(Runnable runnable) {
+		if (isSuccess()) {
+			runnable.run();
+		}
+
+		return this;
+	}
+
+	//TODO: retrieving this info is rather complicated, but we don't use it. Cleanup this code?
 	public LedgerEntryConflict getConflictInfo() {
 		return conflictInfo;
 	}
