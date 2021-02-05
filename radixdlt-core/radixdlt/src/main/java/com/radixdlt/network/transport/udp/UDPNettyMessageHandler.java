@@ -27,6 +27,7 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,9 +68,8 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 				this.bufferSize,
 				() -> {
 					this.counters.increment(SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES);
-					if (droppedMessagesRateLimiter.tryAcquire()) {
-						log.warn("UDP msg buffer overflow, dropping msg");
-					}
+					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
 			.map(this::parseMessage);

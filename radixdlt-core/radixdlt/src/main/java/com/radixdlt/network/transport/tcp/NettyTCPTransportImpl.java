@@ -122,7 +122,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
-		this.messageBufferSize = config.messageBufferSize(1);
+		this.messageBufferSize = config.messageBufferSize(2);
 		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);

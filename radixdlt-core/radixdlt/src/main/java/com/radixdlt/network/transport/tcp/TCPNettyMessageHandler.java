@@ -27,6 +27,7 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,6 +49,8 @@ import io.netty.handler.codec.TooLongFrameException;
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	private static final Logger log = LogManager.getLogger();
 
+	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
+
 	private final PublishProcessor<Pair<InetSocketAddress, byte[]>> rawMessageSink = PublishProcessor.create();
 	private final Flowable<InboundMessage> inboundMessages;
 
@@ -64,7 +67,8 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				this.bufferSize,
 				() -> {
 					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-					log.warn("TCP msg buffer overflow, dropping msg");
+					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
 			.map(this::parseMessage);
