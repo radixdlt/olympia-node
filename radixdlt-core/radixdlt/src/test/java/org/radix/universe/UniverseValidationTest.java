@@ -20,40 +20,43 @@ package org.radix.universe;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.properties.RuntimeProperties;
-
 import java.io.IOException;
+import java.util.Properties;
 
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
 import org.junit.Test;
-import org.radix.Radix;
-import org.radix.utils.IOUtils;
-
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+/**
+ * Checks that "universe" property in resource
+ * default.config can be deserialised and validated.
+ */
 public class UniverseValidationTest {
+	private static final String PROPERTIES_FILE = "/default.config";
 
 	@Test
 	public void testLoadingUniverse() throws Exception {
-		byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
+		System.out.println(universeBase64());
+		byte[] bytes = Bytes.fromBase64String(universeBase64());
 		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
 		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
 	public void testLoadingUniverseHasImmutableGenesis() throws Exception {
-		byte[] bytes = Bytes.fromBase64String(loadProperties().get("universe"));
+		byte[] bytes = Bytes.fromBase64String(universeBase64());
 		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
 		universe.getGenesis().add(new Atom());
 	}
 
-	private RuntimeProperties loadProperties() throws ParseException, IOException {
-		JSONObject runtimeConfigurationJSON = new JSONObject();
-		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
-			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+	private String universeBase64() throws IOException {
+		final var properties = new Properties();
+		try (final var input = this.getClass().getResourceAsStream(PROPERTIES_FILE)) {
+			if (input == null) {
+				throw new IOException("Resource not found: " + PROPERTIES_FILE);
+			}
+			properties.load(input);
 		}
-		return new RuntimeProperties(runtimeConfigurationJSON, null);
+		return (String) properties.get("universe");
 	}
 }
