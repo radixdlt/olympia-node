@@ -141,7 +141,19 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(10);
+			.hasSize(9);
+	}
+
+	@Test
+	public void when_request_at_epoch_boundary__single_command_returned()
+		throws NextCommittedLimitReachedException {
+		generateAtoms(1, 1, 10);
+		generateAtoms(2, 11, 10);
+
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
+
+		assertThat(commands.getCommands())
+			.hasSize(1);
 	}
 
 	@Test
@@ -152,7 +164,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(10);
+			.hasSize(9);
 	}
 
 	@Test
@@ -164,7 +176,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(91);
+			.hasSize(90);
 	}
 
 	@Test

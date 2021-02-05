@@ -234,8 +234,14 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		}
 
 		// Limit the batch to within a single epoch
-		final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, cmd -> cmd.getStateAndProof().getRaw().isEndOfEpoch());
-		final var tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
+		final int tailPosition;
+		if (cmdIsEndOfEpoch(storedCommittedCommands.get(0))) {
+			// Send this by itself
+			tailPosition = 0;
+		} else {
+			final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, this::cmdIsEndOfEpoch);
+			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex - 1;
+		}
 		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
 		final var commands = storedCommittedCommands.stream()
 			.limit(tailPosition + 1L)
@@ -260,5 +266,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return Spin.UP;
 		}
 		return Spin.NEUTRAL;
+	}
+
+	private boolean cmdIsEndOfEpoch(StoredCommittedCommand cmd) {
+		return cmd.getStateAndProof().getRaw().isEndOfEpoch();
 	}
 }
