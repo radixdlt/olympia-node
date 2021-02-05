@@ -442,7 +442,17 @@ public interface Result<T> extends Foldable<Failure, T> {
 								vv6 -> value7.flatMap(
 									vv7 -> value8.flatMap(
 										vv8 -> value9.flatMap(
-											vv9 -> ok(tuple(vv1, vv2, vv3, vv4, vv5, vv6, vv7, vv8, vv9)))))))))));
+											vv9 -> ok(
+												tuple(
+													vv1,
+													vv2,
+													vv3,
+													vv4,
+													vv5,
+													vv6,
+													vv7,
+													vv8,
+													vv9)))))))))));
 	}
 
 	abstract class ResultBase<T> implements Result<T> {

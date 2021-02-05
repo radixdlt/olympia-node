@@ -27,7 +27,7 @@ public class OptionTest {
 	@Test
 	public void emptyOptionCanBeCreated() {
 		Option.empty()
-			.apply(() -> {}, v -> fail());
+			.apply(() -> { }, v -> fail());
 	}
 
 	@Test
