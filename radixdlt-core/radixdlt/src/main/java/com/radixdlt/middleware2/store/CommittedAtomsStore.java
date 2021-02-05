@@ -235,12 +235,12 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 		// Limit the batch to within a single epoch
 		final int tailPosition;
-		if (storedCommittedCommands.get(0).getStateAndProof().getRaw().isEndOfEpoch()) {
+		if (cmdIsEndOfEpoch(storedCommittedCommands.get(0))) {
 			// Send this by itself
 			tailPosition = 0;
 		} else {
-			final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, this::cmdIsEndOfEpoch) - 1;
-			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
+			final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, this::cmdIsEndOfEpoch);
+			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex - 1;
 		}
 		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
 		final var commands = storedCommittedCommands.stream()
