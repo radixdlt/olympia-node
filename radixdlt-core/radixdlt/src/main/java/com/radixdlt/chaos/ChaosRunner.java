@@ -40,8 +40,8 @@ public final class ChaosRunner implements ModuleRunner {
 	private final ScheduledExecutorService executorService;
 	private final Observable<ScheduledMessageFlood> scheduledSwarms;
 	private final EventProcessor<ScheduledMessageFlood> scheduledSwarmEventProcessor;
-	private final Observable<MessageFloodUpdate> messageFloodUpdates;
-	private final EventProcessor<MessageFloodUpdate> messageFloodUpdateProcessor;
+	private final Observable<MessageFlooderUpdate> messageFloodUpdates;
+	private final EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor;
 
 	private final Object startLock = new Object();
 	private CompositeDisposable compositeDisposable;
@@ -50,8 +50,8 @@ public final class ChaosRunner implements ModuleRunner {
 	public ChaosRunner(
 		Observable<ScheduledMessageFlood> scheduledFloods,
 		EventProcessor<ScheduledMessageFlood> scheduledFloodProcessor,
-		Observable<MessageFloodUpdate> messageFloodUpdates,
-		EventProcessor<MessageFloodUpdate> messageFloodUpdateProcessor
+		Observable<MessageFlooderUpdate> messageFloodUpdates,
+		EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor
 	) {
 		this.scheduledSwarms = Objects.requireNonNull(scheduledFloods);
 		this.scheduledSwarmEventProcessor = Objects.requireNonNull(scheduledFloodProcessor);
