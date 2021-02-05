@@ -36,7 +36,6 @@ public class UniverseValidationTest {
 
 	@Test
 	public void testLoadingUniverse() throws Exception {
-		System.out.println(universeBase64());
 		byte[] bytes = Bytes.fromBase64String(universeBase64());
 		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
 		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
