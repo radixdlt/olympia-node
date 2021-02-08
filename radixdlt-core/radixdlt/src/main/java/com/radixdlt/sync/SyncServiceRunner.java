@@ -30,6 +30,7 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import io.reactivex.rxjava3.core.Flowable;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -66,8 +67,8 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private final Observable<T> ledgerUpdates;
 	private final Set<EventProcessor<T>> ledgerUpdateProcessors;
 
-	private final Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses;
-	private final Observable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests;
+	private final Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses;
+	private final Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
@@ -80,9 +81,9 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		EventProcessor<SyncInProgress> syncTimeoutProcessor,
 		Observable<T> ledgerUpdates,
 		@ProcessWithSyncRunner Set<EventProcessor<T>> ledgerUpdateProcessors,
-		Observable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
+		Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor,
-		Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
+		Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager " + self));

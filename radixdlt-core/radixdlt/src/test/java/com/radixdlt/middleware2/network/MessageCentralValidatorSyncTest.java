@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.network;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -29,8 +28,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
@@ -49,10 +48,13 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
+import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.universe.Universe;
-import io.reactivex.rxjava3.observers.TestObserver;
+
 import java.util.Optional;
+
+import com.radixdlt.utils.RandomHasher;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
@@ -63,7 +65,6 @@ public class MessageCentralValidatorSyncTest {
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
 	private Hasher hasher;
-	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
@@ -73,16 +74,11 @@ public class MessageCentralValidatorSyncTest {
 		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
 		Universe universe = mock(Universe.class);
-		var limiter = RateLimiter.create(1000.0);
 		this.addressBook = mock(AddressBook.class);
-		this.messageCentral = mock(MessageCentral.class);
-		this.hasher = mock(Hasher.class);
-		this.counters = mock(SystemCounters.class);
-		this.sync = new MessageCentralValidatorSync(
-				self, universe, addressBook, messageCentral, hasher, counters, limiter
-		);
+		this.messageCentral = MessageCentralMockProvider.get();
+		this.hasher = new RandomHasher();
+		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
 	}
-
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
@@ -105,7 +101,6 @@ public class MessageCentralValidatorSyncTest {
 
 		// No messages sent or injected
 		verify(this.messageCentral, never()).send(any(), any());
-		verify(this.messageCentral, never()).inject(any(), any());
 	}
 
 	@Test
@@ -154,18 +149,57 @@ public class MessageCentralValidatorSyncTest {
 		when(peer.getSystem()).thenReturn(system);
 		HashCode vertexId0 = mock(HashCode.class);
 		HashCode vertexId1 = mock(HashCode.class);
-		doAnswer(inv -> {
-			MessageListener<GetVerticesRequestMessage> messageListener = inv.getArgument(1);
-			messageListener.handleMessage(peer, new GetVerticesRequestMessage(0, vertexId0, 1));
-			messageListener.handleMessage(peer, new GetVerticesRequestMessage(0, vertexId1, 1));
-			return null;
-		}).when(messageCentral).addListener(eq(GetVerticesRequestMessage.class), any());
 
-		TestObserver<GetVerticesRequest> testObserver = sync.requests().map(RemoteEvent::getEvent).test();
+		TestSubscriber<GetVerticesRequest> testObserver = sync.requests().map(RemoteEvent::getEvent).test();
+		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId0, 1));
+		messageCentral.send(peer, new GetVerticesRequestMessage(0, vertexId1, 1));
 
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));
 		testObserver.assertValueAt(1, v -> v.getVertexId().equals(vertexId1));
+	}
+
+	@Test
+	public void when_subscribed_to_rpc_responses__then_should_receive_responses() {
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		UnverifiedVertex vertex1 = mock(UnverifiedVertex.class);
+
+		TestSubscriber<GetVerticesResponse> testObserver = sync.responses().test();
+		messageCentral.send(peer, new GetVerticesResponseMessage(0, ImmutableList.of(vertex1)));
+		messageCentral.send(peer, new GetVerticesResponseMessage(0, ImmutableList.of()));
+
+		testObserver.awaitCount(2);
+		testObserver.assertValueAt(0, v -> v.getVertices().size() == 1);
+		testObserver.assertValueAt(1, v -> v.getVertices().isEmpty());
+	}
+
+	@Test
+	public void when_subscribed_to_rpc_error_responses__then_should_receive_error_responses() {
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		final var highQc1 = mock(HighQC.class);
+		final var highQc2 = mock(HighQC.class);
+
+		TestSubscriber<GetVerticesErrorResponse> testObserver = sync.errorResponses().test();
+
+		var requestMessage = new GetVerticesRequestMessage(0, HashUtils.random256(), 1);
+		messageCentral.send(peer, new GetVerticesErrorResponseMessage(0, highQc1, requestMessage));
+		messageCentral.send(peer, new GetVerticesErrorResponseMessage(0, highQc2, requestMessage));
+
+		testObserver.awaitCount(2);
+		testObserver.assertValueAt(0, v -> v.highQC().equals(highQc1));
+		testObserver.assertValueAt(1, v -> v.highQC().equals(highQc2));
 	}
 
 	@Test
@@ -185,13 +219,10 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_subscribed_to_epoch_requests__then_should_receive_requests() {
 		BFTNode author = mock(BFTNode.class);
-		doAnswer(inv -> {
-			MessageListener<GetEpochRequestMessage> messageListener = inv.getArgument(1);
-			messageListener.handleMessage(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
-			return null;
-		}).when(messageCentral).addListener(eq(GetEpochRequestMessage.class), any());
 
-		TestObserver<GetEpochRequest> testObserver = sync.epochRequests().test();
+		TestSubscriber<GetEpochRequest> testObserver = sync.epochRequests().test();
+		messageCentral.send(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
+
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().equals(author));
 	}
@@ -200,13 +231,10 @@ public class MessageCentralValidatorSyncTest {
 	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
 		BFTNode author = mock(BFTNode.class);
 		VerifiedLedgerHeaderAndProof ancestor = mock(VerifiedLedgerHeaderAndProof.class);
-		doAnswer(inv -> {
-			MessageListener<GetEpochResponseMessage> messageListener = inv.getArgument(1);
-			messageListener.handleMessage(mock(Peer.class), new GetEpochResponseMessage(author, 12345, ancestor));
-			return null;
-		}).when(messageCentral).addListener(eq(GetEpochResponseMessage.class), any());
 
-		TestObserver<GetEpochResponse> testObserver = sync.epochResponses().test();
+		TestSubscriber<GetEpochResponse> testObserver = sync.epochResponses().test();
+		messageCentral.send(mock(Peer.class), new GetEpochResponseMessage(author, 12345, ancestor));
+
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, r -> r.getEpochProof().equals(ancestor) && r.getAuthor().equals(author));
 	}

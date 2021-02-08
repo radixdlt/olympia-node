@@ -100,8 +100,8 @@ public class NettyTCPTransportRTTTest {
 	public void testRoundtripTime() throws InterruptedException, ExecutionException, IOException {
 		final int runCount = 100_000;
 
-		this.transport1.start(this::inboundReceiver);
-		this.transport2.start(this::outboundReceiver);
+		this.transport1.start().subscribe(this::inboundReceiver);
+		this.transport2.start().subscribe(this::outboundReceiver);
 
 		try (TransportControl control1 = this.transport1.control();
 			 TransportControl control2 = this.transport2.control()) {
@@ -178,6 +178,11 @@ public class NettyTCPTransportRTTTest {
 			@Override
 			public boolean debugData(boolean defaultValue) {
 				return false;
+			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return 255;
 			}
 		};
 		Module systemCounterModule = new AbstractModule() {

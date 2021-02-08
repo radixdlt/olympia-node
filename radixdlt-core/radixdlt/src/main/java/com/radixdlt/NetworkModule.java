@@ -36,13 +36,12 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Network related module
@@ -56,7 +55,6 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT/Epoch Sync messages
 		//TODO: make rate limits configurable
-		bind(RateLimiter.class).annotatedWith(GetVerticesErrorRateLimit.class).toInstance(RateLimiter.create(10.0));
 		bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
 
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
@@ -97,22 +95,22 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncResponses();
 	}
 
 	@Provides
-	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncRequests();
 	}
 
 	@Provides
-	private Observable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
+	private Flowable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
 		return validatorSync.requests();
 	}
 
 	@Provides
-	private Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
+	private Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
 		return messageCentralMempool.mempoolComands();
 	}
 }

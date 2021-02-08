@@ -45,9 +45,16 @@ public interface UDPConfiguration {
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return the priority of this transport
-	 * @see org.radix.network2.transport.Transport#priority()
+	 * @see com.radixdlt.network.transport.Transport#priority()
 	 */
 	int priority(int defaultValue);
+
+	/**
+	 * Get the buffer size of incoming messages for each UDP connection.
+	 *
+	 * @return the size of a message buffer
+	 */
+	int messageBufferSize(int defaultValue);
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -70,6 +77,11 @@ public interface UDPConfiguration {
 			@Override
 			public int priority(int defaultValue) {
 				return properties.get("network.udp.priority", defaultValue);
+			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return properties.get("network.udp.message_buffer_size", defaultValue);
 			}
 		};
 	}

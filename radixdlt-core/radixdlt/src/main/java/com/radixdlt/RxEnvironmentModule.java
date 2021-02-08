@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.chaos.MessageFlooderUpdate;
 import com.radixdlt.chaos.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -83,7 +83,7 @@ public class RxEnvironmentModule extends AbstractModule {
 			EpochViewUpdate.class,
 			MempoolAddFailure.class,
 			AtomCommittedToLedger.class,
-			MessageFloodUpdate.class,
+			MessageFlooderUpdate.class,
 			ScheduledMessageFlood.class
 		);
 
@@ -165,8 +165,8 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	public Observable<MessageFloodUpdate> messageFloodUpdates(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(MessageFloodUpdate.class);
+	public Observable<MessageFlooderUpdate> messageFloodUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(MessageFlooderUpdate.class);
 	}
 
 	@Provides

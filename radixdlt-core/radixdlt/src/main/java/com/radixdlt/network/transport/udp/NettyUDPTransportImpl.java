@@ -21,15 +21,19 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.network.messaging.InboundMessage;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.network.messaging.InboundMessageConsumer;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportControl;
@@ -67,7 +71,9 @@ final class NettyUDPTransportImpl implements Transport {
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
+	private final SystemCounters counters;
 	private final int priority;
+	private final int messageBufferSize;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final NatHandler natHandler;
@@ -77,15 +83,19 @@ final class NettyUDPTransportImpl implements Transport {
 	private TransportOutboundConnection outbound;
 	private TransportControl control;
 
+	private final PublishProcessor<Flowable<InboundMessage>> channels = PublishProcessor.create();
 
 	@Inject
 	NettyUDPTransportImpl(
+		SystemCounters counters,
 		UDPConfiguration config,
 		@Named("local") TransportMetadata localMetadata,
 		UDPTransportControlFactory controlFactory,
 		UDPTransportOutboundConnectionFactory connectionFactory,
 		NatHandler natHandler
 	) {
+		this.counters = Objects.requireNonNull(counters);
+
 		String providedHost = localMetadata.get(UDPConstants.METADATA_HOST);
 		if (providedHost == null) {
 			providedHost = config.networkAddress(DEFAULT_HOST);
@@ -104,6 +114,7 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.priority = config.priority(1000);
+		this.messageBufferSize = config.messageBufferSize(2);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}
@@ -134,29 +145,34 @@ final class NettyUDPTransportImpl implements Transport {
 	}
 
 	@Override
-	public void start(InboundMessageConsumer messageSink) {
+	public Flowable<InboundMessage> start() {
 		if (log.isInfoEnabled()) {
 			log.info("UDP transport {}", localAddress());
 		}
 		MultithreadEventLoopGroup group = new NioEventLoopGroup(1, this::createThread);
 
-	    Bootstrap b = new Bootstrap();
-	    b.group(group)
-	        .channel(NioDatagramChannel.class)
-	        .handler(new ChannelInitializer<NioDatagramChannel>() {
-	            @Override
-	            public void initChannel(NioDatagramChannel ch) throws Exception {
-	            	ch.config()
-	            		.setReceiveBufferSize(RCV_BUF_SIZE)
-	            		.setSendBufferSize(SND_BUF_SIZE)
-	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
-	        		if (log.isDebugEnabled()) {
-	        			ch.pipeline()
-	        				.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
-	        		}
-	                ch.pipeline()
-	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
-	            }
+		Bootstrap b = new Bootstrap();
+		b.group(group)
+			.channel(NioDatagramChannel.class)
+			.handler(new ChannelInitializer<NioDatagramChannel>() {
+				@Override
+				public void initChannel(NioDatagramChannel ch) {
+					final var messageHandler = new UDPNettyMessageHandler(counters, messageBufferSize, natHandler);
+					channels.onNext(messageHandler.inboundMessageRx());
+
+					ch.config()
+						.setReceiveBufferSize(RCV_BUF_SIZE)
+						.setSendBufferSize(SND_BUF_SIZE)
+						.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
+					if (log.isDebugEnabled()) {
+						ch.pipeline()
+							.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
+					}
+					ch.pipeline()
+						.addLast("onboard", messageHandler);
+					ch.closeFuture()
+						.addListener(f -> messageHandler.shutdownRx());
+				}
 	        });
 	    try {
 	    	synchronized (channelLock) {
@@ -170,6 +186,8 @@ final class NettyUDPTransportImpl implements Transport {
 	    } catch (IOException e) {
 	    	throw new UncheckedIOException("Error while opening channel", e);
 		}
+
+	    return Flowable.mergeDelayError(channels);
 	}
 
 	@Override

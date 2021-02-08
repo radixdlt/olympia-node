@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,16 +17,14 @@
 
 package com.radixdlt.network.messaging;
 
-import org.radix.network.messaging.Message;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import com.radixdlt.network.addressbook.Peer;
+public class MessageFromPeerTest {
 
-/**
- * A listener to messages of a specific type.
- *
- * @param <T> The type of the message to listen for.
- */
-@FunctionalInterface
-public interface MessageListener<T extends Message> {
-	void handleMessage(Peer source, T message);
+    @Test
+    public void test_equals() {
+        EqualsVerifier.forClass(MessageFromPeer.class)
+            .verify();
+    }
 }

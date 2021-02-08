@@ -40,7 +40,8 @@ import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class NettyTCPTransportTest {
 	private static final int TEST_SECONDS =
@@ -99,8 +100,8 @@ public class NettyTCPTransportTest {
 	// Note that windowSize is to help us not wharrgarbl the O/S too much, as this just results in packets being dropped
 	private void testThroughput(String name, int testPacketSize, int windowSize, int testSeconds)
 		throws InterruptedException, ExecutionException, IOException {
-		transport1.start(this::unexpectedMessage);
-		transport2.start(this::handleMessage);
+		transport1.start().subscribe(this::unexpectedMessage);
+		transport2.start().subscribe(this::handleMessage);
 
 		final long start;
 		try (TransportControl control1 = transport1.control();
@@ -178,6 +179,11 @@ public class NettyTCPTransportTest {
 			@Override
 			public boolean debugData(boolean defaultValue) {
 				return false;
+			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return 255;
 			}
 		};
 		Module systemCounterModule = new AbstractModule() {

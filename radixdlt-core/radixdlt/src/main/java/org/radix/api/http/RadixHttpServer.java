@@ -19,7 +19,7 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.chaos.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
@@ -103,7 +103,7 @@ public final class RadixHttpServer {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final int port;
 	private Undertow server;
-	private final EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher;
+	private final EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher;
 
 	@Inject
 	public RadixHttpServer(
@@ -113,7 +113,7 @@ public final class RadixHttpServer {
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher,
+		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -431,14 +431,28 @@ public final class RadixHttpServer {
 			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
 			String requestBody = CharStreams.toString(httpStreamReader);
 			JSONObject values = new JSONObject(requestBody);
+			MessageFlooderUpdate update = MessageFlooderUpdate.create();
+
 			boolean enabled = values.getBoolean("enabled");
 			if (enabled) {
-				String nodeKeyBase58 = values.getString("nodeKey");
-				BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
-				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.create(node));
-			} else {
-				this.messageFloodUpdateEventDispatcher.dispatch(MessageFloodUpdate.disable());
+				JSONObject data = values.getJSONObject("data");
+				if (data.has("nodeKey")) {
+					String nodeKeyBase58 = values.getString("nodeKey");
+					BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
+					update = update.bftNode(node);
+				}
+
+				if (data.has("messagesPerSec")) {
+					update = update.messagesPerSec(values.getInt("messagesPerSec"));
+				}
+
+				if (data.has("commandSize")) {
+					update = update.commandSize(values.getInt("commandSize"));
+				}
 			}
+
+			this.messageFloodUpdateEventDispatcher.dispatch(update);
+
 		} catch (PublicKeyException e) {
 			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
 			return;

@@ -22,12 +22,18 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.discovery.BootstrapDiscovery;
@@ -36,6 +42,7 @@ import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
+import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
@@ -87,6 +94,8 @@ public class PeerManager {
 	private final LocalSystem localSystem;
 
 	private ScheduledExecutorService executor; // Ideally would be injected at some point
+	private Scheduler scheduler;
+	private Disposable disposable;
 
 	private final Object startedLock = new Object();
 	private boolean started = false;
@@ -155,7 +164,7 @@ public class PeerManager {
 		this.heartbeatPeersIntervalMs = config.networkHeartbeatPeersInterval(10000);
 		this.heartbeatPeersDelayMs = config.networkHeartbeatPeersDelay(10000);
 
-		this.discoverPeersIntervalMs = config.networkDiscoverPeersInterval(60000);
+		this.discoverPeersIntervalMs = config.networkDiscoverPeersInterval(10000);
 		this.discoverPeersDelayMs = config.networkDiscoverPeersDelay(1000);
 
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
@@ -175,14 +184,21 @@ public class PeerManager {
 		synchronized (this.startedLock) {
 			if (!this.started) {
 				// Listen for messages
-				messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
-				messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
-				messageCentral.addListener(PeerPingMessage.class, this::handlePeerPingMessage);
-				messageCentral.addListener(PeerPongMessage.class, this::handlePeerPongMessage);
-				messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
+
+				this.executor = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("PeerManager"));
+				this.scheduler = Schedulers.from(executor);
+
+				final var disposables = List.of(
+					subscribe(PeersMessage.class, m -> this.handlePeersMessage(m.getPeer(), m.getMessage())),
+					subscribe(GetPeersMessage.class, m -> this.handleGetPeersMessage(m.getPeer(), m.getMessage())),
+					subscribe(PeerPingMessage.class, m -> this.handlePeerPingMessage(m.getPeer(), m.getMessage())),
+					subscribe(PeerPongMessage.class, m -> this.handlePeerPongMessage(m.getPeer(), m.getMessage())),
+					subscribe(SystemMessage.class, m -> this.handleHeartbeatPeersMessage(m.getPeer(), m.getMessage()))
+				);
+
+				this.disposable = new CompositeDisposable(disposables);
 
 				// Tasks
-				this.executor = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("PeerManager"));
 				this.executor.scheduleAtFixedRate(
 					this::heartbeatPeers,
 					heartbeatPeersDelayMs,
@@ -214,15 +230,16 @@ public class PeerManager {
 		}
 	}
 
+	private <T extends Message> Disposable subscribe(Class<T> clazz, Consumer<MessageFromPeer<T>> consumer) {
+		return this.messageCentral.messagesOf(clazz)
+			.observeOn(this.scheduler)
+			.subscribe(consumer);
+	}
+
 	public void stop() {
 		synchronized (this.startedLock) {
 			if (this.started) {
-				messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
-				messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
-				messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);
-				messageCentral.removeListener(PeerPongMessage.class, this::handlePeerPongMessage);
-				messageCentral.removeListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
-
+				this.disposable.dispose();
 				this.executor.shutdownNow();
 				try {
 					this.executor.awaitTermination(10L, TimeUnit.SECONDS);

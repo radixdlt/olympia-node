@@ -28,7 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RadixUniverseBuilderTest {
-
 	@Test
 	public void testDevUniverse() {
 		Pair<ECKeyPair, Universe> p = RadixUniverseBuilder.development().build();

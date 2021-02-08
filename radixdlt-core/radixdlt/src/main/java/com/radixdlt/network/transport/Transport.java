@@ -19,7 +19,8 @@ package com.radixdlt.network.transport;
 
 import java.io.Closeable;
 
-import com.radixdlt.network.messaging.InboundMessageConsumer;
+import com.radixdlt.network.messaging.InboundMessage;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Transport interface for various transport implementations.
@@ -70,11 +71,9 @@ public interface Transport extends Closeable {
 	int priority();
 
 	/**
-	 * Starts the transport's listener with the provided message sink.
-	 * The listener is expected to call the message sink with each inbound
-	 * message received.
+	 * Starts the transport's listener and returns a Flowable of inbound messages.
 	 *
-	 * @param messageSink the message consumer
+	 * @return A Flowable of inbound messages
 	 */
-	void start(InboundMessageConsumer messageSink);
+	Flowable<InboundMessage> start();
 }
