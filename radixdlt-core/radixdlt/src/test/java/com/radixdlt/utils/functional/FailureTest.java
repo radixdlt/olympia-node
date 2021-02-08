@@ -20,9 +20,18 @@ package com.radixdlt.utils.functional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
+import static com.radixdlt.utils.functional.Failure.failure;
+import static org.junit.Assert.assertEquals;
+
 public class FailureTest {
 	@Test
 	public void equalsVerifier() {
 		EqualsVerifier.forClass(Failure.class).verify();
+	}
+
+	@Test
+	public void twoFailuresWithSameComponentsAreEqual() {
+		assertEquals(failure("Message"), failure("Message"));
+		assertEquals(failure("Message", "Cause"), failure("Message", "Cause"));
 	}
 }

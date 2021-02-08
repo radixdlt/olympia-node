@@ -29,20 +29,21 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ResultTest {
-	static final Failure TEST_FAILURE = Failure.failure("Test error");
+	static final Failure TEST_FAILURE1 = Failure.failure("Test error");
+	static final Failure TEST_FAILURE2 = Failure.failure("Test error", new RuntimeException());
 
 	@Test
 	public void equalsFollowsContract() {
 		assertEquals(ok("1"), ok("1"));
 		assertNotEquals(ok(1), ok(2));
-		assertNotEquals(ok(1), fail(TEST_FAILURE));
+		assertNotEquals(ok(1), fail(TEST_FAILURE1));
 	}
 
 	@Test
 	public void orSelectsFirstSuccess() {
 		assertEquals(ok(1), ok(1).or(ok(2)).or(ok(3)));
-		assertEquals(ok(2), fail(TEST_FAILURE).or(ok(2)).or(ok(3)));
-		assertEquals(ok(3), fail(TEST_FAILURE).or(fail(TEST_FAILURE)).or(ok(3)));
+		assertEquals(ok(2), fail(TEST_FAILURE1).or(ok(2)).or(ok(3)));
+		assertEquals(ok(3), fail(TEST_FAILURE1).or(fail(TEST_FAILURE1)).or(ok(3)));
 	}
 
 	@Test
@@ -62,25 +63,25 @@ public class ResultTest {
 		final var result = new Failure[1];
 		final var aBool = new AtomicBoolean(false);
 
-		fail(TEST_FAILURE).onFailure(v -> result[0] = v)
+		fail(TEST_FAILURE1).onFailure(v -> result[0] = v)
 			.onFailureDo(() -> aBool.set(true));
 
-		assertEquals(TEST_FAILURE, result[0]);
+		assertEquals(TEST_FAILURE1, result[0]);
 		assertTrue(aBool.get());
 	}
 
 	@Test
 	public void testEquals() {
-		assertNotEquals(ok(TEST_FAILURE), fail(TEST_FAILURE));
-		assertEquals(ok(TEST_FAILURE), ok(TEST_FAILURE));
-		assertEquals(fail(TEST_FAILURE), fail(TEST_FAILURE));
-		assertEquals(ok(TEST_FAILURE).hashCode(), fail(TEST_FAILURE).hashCode());
+		assertNotEquals(ok(TEST_FAILURE1), fail(TEST_FAILURE1));
+		assertEquals(ok(TEST_FAILURE1), ok(TEST_FAILURE1));
+		assertEquals(fail(TEST_FAILURE1), fail(TEST_FAILURE1));
+		assertEquals(ok(TEST_FAILURE1).hashCode(), fail(TEST_FAILURE1).hashCode());
 	}
 
 	@Test
 	public void testApply() {
 		ok(123).apply(f -> Assert.fail("Should not be invoked"), s -> assertEquals(123, (int) s));
-		fail(TEST_FAILURE).apply(s -> assertEquals(TEST_FAILURE, s), s -> Assert.fail("Should not be invoked"));
+		fail(TEST_FAILURE1).apply(s -> assertEquals(TEST_FAILURE1, s), s -> Assert.fail("Should not be invoked"));
 	}
 
 	@Test
@@ -88,7 +89,7 @@ public class ResultTest {
 		ok(123).toOption()
 			.whenEmpty(() -> Assert.fail("Should not be empty"))
 			.whenPresent(v -> assertEquals(123, (int) v));
-		fail(TEST_FAILURE).toOption()
+		fail(TEST_FAILURE1).toOption()
 			.whenPresent(v -> Assert.fail("Should not be empty"));
 	}
 
@@ -319,73 +320,73 @@ public class ResultTest {
 
 	@Test
 	public void inputFailureResultsToTransformationFailureForOneInput() {
-		allOf(fail(TEST_FAILURE))
+		allOf(fail(TEST_FAILURE2))
 			.map((v1) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE2, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForTwoInputs() {
-		allOf(ok(1), fail(TEST_FAILURE))
+		allOf(ok(1), fail(TEST_FAILURE2))
 			.map((v1, v2) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE2, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForThreeInputs() {
-		allOf(ok(1), ok(2), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), fail(TEST_FAILURE2))
 			.map((v1, v2, v3) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE2, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForFourInputs() {
-		allOf(ok(1), ok(2), ok(3), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), fail(TEST_FAILURE2))
 			.map((v1, v2, v3, v4) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE2, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForFiveInputs() {
-		allOf(ok(1), ok(2), ok(3), ok(4), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), ok(4), fail(TEST_FAILURE1))
 			.map((v1, v2, v3, v4, v5) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE1, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForSixInputs() {
-		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), fail(TEST_FAILURE1))
 			.map((v1, v2, v3, v4, v5, v6) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE1, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForSevenInputs() {
-		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), fail(TEST_FAILURE1))
 			.map((v1, v2, v3, v4, v5, v6, v7) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE1, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForEightInputs() {
-		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), ok(7), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), ok(7), fail(TEST_FAILURE1))
 			.map((v1, v2, v3, v4, v5, v6, v7, v8) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE1, f))
 			.onSuccessDo(Assert::fail);
 	}
 
 	@Test
 	public void anyInputFailureResultsToTransformationFailureForNineInputs() {
-		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), ok(7), ok(8), fail(TEST_FAILURE))
+		allOf(ok(1), ok(2), ok(3), ok(4), ok(5), ok(6), ok(7), ok(8), fail(TEST_FAILURE1))
 			.map((v1, v2, v3, v4, v5, v6, v7, v8, v9) -> true)
-			.onFailure(f -> assertEquals(TEST_FAILURE, f))
+			.onFailure(f -> assertEquals(TEST_FAILURE1, f))
 			.onSuccessDo(Assert::fail);
 	}
 }
