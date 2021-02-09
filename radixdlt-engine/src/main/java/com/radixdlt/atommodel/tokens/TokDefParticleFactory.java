@@ -42,13 +42,22 @@ public final class TokDefParticleFactory {
 		this.granularity = granularity;
 	}
 
-	public TransferrableTokensParticle create(RadixAddress address, UInt256 amount) {
+	public UnallocatedTokensParticle createUnallocated(UInt256 amount) {
+		return new UnallocatedTokensParticle(
+			amount,
+			granularity,
+			tokDefRef,
+			tokenPermissions
+		);
+	}
+
+	public TransferrableTokensParticle createTransferrable(RadixAddress address, UInt256 amount) {
 		return new TransferrableTokensParticle(
-				address,
-				amount,
-				granularity,
-				tokDefRef,
-				tokenPermissions
+			address,
+			amount,
+			granularity,
+			tokDefRef,
+			tokenPermissions
 		);
 	}
 

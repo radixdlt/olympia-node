@@ -32,7 +32,6 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
@@ -174,15 +173,11 @@ public class RadixEngineStateComputerTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		atom.sign(keyPair, hasher);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		Command cmd = new Command(payload);
+		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
 	}
 
 	@Test

@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -36,7 +35,6 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.identifiers.RRI;
@@ -269,13 +267,7 @@ public final class RadixUniverseBuilder {
 			stakeDelegations.stream().map(StakeDelegation::staker)
 		).collect(ImmutableList.toImmutableList());
 
-
-		try {
-			genesisAtom.sign(signingKeys, this.hasher);
-		} catch (AtomAlreadySignedException ex) {
-			// This can't happen, as we have created the atom, and are sure it is not signed
-			throw new IllegalStateException("Error while signing universe", ex);
-		}
+		genesisAtom.sign(signingKeys, this.hasher);
 		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
 
 		return genesisAtom;
@@ -319,7 +311,7 @@ public final class RadixUniverseBuilder {
 
 		var issuedTokens = UInt384.from(selfIssuance);
 		if (!selfIssuance.isZero()) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.create(universeAddress, selfIssuance)));
+			particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(universeAddress, selfIssuance)));
 		}
 		// Merge issuances so we only have one TTP per address
 		final var issuedAmounts = issuances.stream()
@@ -327,7 +319,7 @@ public final class RadixUniverseBuilder {
 		for (final var issuance : issuedAmounts.entrySet()) {
 			final var amount = issuance.getValue();
 			if (!amount.isZero()) {
-				particles.add(SpunParticle.up(tokDefParticleFactory.create(new RadixAddress(magic, issuance.getKey()), amount)));
+				particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount)));
 				issuedTokens = issuedTokens.add(amount);
 			}
 		}
@@ -336,12 +328,7 @@ public final class RadixUniverseBuilder {
 			throw new IllegalStateException("Too many issued tokens: " + issuedTokens);
 		}
 		if (!issuedTokens.getLow().equals(UInt256.MAX_VALUE)) {
-			particles.add(SpunParticle.up(new UnallocatedTokensParticle(
-				UInt256.MAX_VALUE.subtract(issuedTokens.getLow()),
-				UInt256.ONE,
-				tokenRRI,
-				XRD_TOKEN_PERMISSIONS
-			)));
+			particles.add(SpunParticle.up(tokDefParticleFactory.createUnallocated(UInt256.MAX_VALUE.subtract(issuedTokens.getLow()))));
 		}
 		return particles.build();
 	}
