@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 /**
  * Reduces staked tokens particles to total amount staked per node
  */
-public final class StakesReducer implements StateReducer<Stakes, StakedTokensParticle, Stakes> {
+public final class StakesReducer implements StateReducer<Stakes, StakedTokensParticle> {
     private final RRI stakingToken;
     private final Supplier<Stakes> initial;
 
@@ -43,8 +43,8 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
     }
 
     @Override
-    public Stakes initial() {
-        return initial.get();
+    public Supplier<Stakes> initial() {
+        return initial;
     }
 
     @Override

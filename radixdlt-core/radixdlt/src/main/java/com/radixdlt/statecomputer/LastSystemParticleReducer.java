@@ -21,19 +21,20 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Reducer to keep track of the last system particle
  */
-public final class LastSystemParticleReducer implements StateReducer<SystemParticle, SystemParticle, SystemParticle> {
+public final class LastSystemParticleReducer implements StateReducer<SystemParticle, SystemParticle> {
     @Override
     public Class<SystemParticle> particleClass() {
         return SystemParticle.class;
     }
 
     @Override
-    public SystemParticle initial() {
-        return new SystemParticle(0, 0, 0);
+    public Supplier<SystemParticle> initial() {
+        return () -> new SystemParticle(0, 0, 0);
     }
 
     @Override

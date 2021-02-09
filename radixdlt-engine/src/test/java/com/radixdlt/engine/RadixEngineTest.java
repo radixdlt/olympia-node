@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
@@ -139,8 +140,8 @@ public class RadixEngineTest {
 				}
 
 				@Override
-				public Object initial() {
-					return mock(Object.class);
+				public Supplier<Object> initial() {
+					return () -> mock(Object.class);
 				}
 
 				@Override
@@ -179,8 +180,8 @@ public class RadixEngineTest {
 				}
 
 				@Override
-				public Object initial() {
-					return mock(Object.class);
+				public Supplier<Object> initial() {
+					return () -> mock(Object.class);
 				}
 
 				@Override

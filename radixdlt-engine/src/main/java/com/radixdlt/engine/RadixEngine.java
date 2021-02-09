@@ -132,13 +132,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param <U> the class of the state
 	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle, W extends U> void addStateReducer(
+	public <U, V extends Particle> void addStateReducer(
 		Class<U> stateClass,
-		StateReducer<U, V, W> stateReducer
+		StateReducer<U, V> stateReducer
 	) {
 		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
-			stateReducer.particleClass(), stateReducer.initial(), stateReducer.outputReducer(), stateReducer.inputReducer()
+			stateReducer.particleClass(),
+			stateReducer.initial().get(),
+			stateReducer.outputReducer(),
+			stateReducer.inputReducer()
 		);
+
 		synchronized (stateUpdateEngineLock) {
 			applicationStateComputer.initialize(this.engineStore);
 			stateComputers.put(stateClass, applicationStateComputer);

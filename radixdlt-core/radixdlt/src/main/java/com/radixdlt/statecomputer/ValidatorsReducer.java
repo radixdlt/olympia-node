@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 /**
  * Reduces particles to Registered Validators
  */
-public final class ValidatorsReducer implements StateReducer<RegisteredValidators, RegisteredValidatorParticle, RegisteredValidators> {
+public final class ValidatorsReducer implements StateReducer<RegisteredValidators, RegisteredValidatorParticle> {
     private final Supplier<RegisteredValidators> initial;
 
     public ValidatorsReducer(Supplier<RegisteredValidators> initial) {
@@ -40,8 +40,8 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
-    public RegisteredValidators initial() {
-        return initial.get();
+    public Supplier<RegisteredValidators> initial() {
+        return initial;
     }
 
     @Override

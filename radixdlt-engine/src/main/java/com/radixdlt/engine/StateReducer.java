@@ -20,13 +20,14 @@ package com.radixdlt.engine;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Reduces particles to state
  */
-public interface StateReducer<U, V extends Particle, W extends U> {
+public interface StateReducer<U, V extends Particle> {
     Class<V> particleClass();
-    W initial();
+    Supplier<U> initial();
     BiFunction<U, V, U> outputReducer();
     BiFunction<U, V, U> inputReducer();
 }
