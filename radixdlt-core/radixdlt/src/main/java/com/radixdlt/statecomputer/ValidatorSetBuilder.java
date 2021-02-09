@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -61,11 +62,11 @@ public final class ValidatorSetBuilder {
 	}
 
 	public BFTValidatorSet buildValidatorSet(
-		RadixEngineValidatorsComputer validatorsComputer,
-		RadixEngineStakeComputer stakeComputer
+		RegisteredValidators registeredValidators,
+		Stakes stakes
 	) {
-		final var validators = validatorsComputer.activeValidators();
-		final var stakedAmounts = stakeComputer.stakedAmounts(validators);
+		var stakedAmounts = ImmutableMap.copyOf(Maps.filterKeys(stakes.toMap(), registeredValidators.toSet()::contains));
+
 		return buildValidatorSet(stakedAmounts);
 	}
 

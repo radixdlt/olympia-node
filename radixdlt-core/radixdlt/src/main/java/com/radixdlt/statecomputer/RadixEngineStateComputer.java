@@ -218,8 +218,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
 			validatorSet = this.validatorSetBuilder.buildValidatorSet(
-				branch.getComputedState(RadixEngineValidatorsComputer.class),
-				branch.getComputedState(RadixEngineStakeComputer.class)
+				branch.getComputedState(RegisteredValidators.class),
+				branch.getComputedState(Stakes.class)
 			);
 		} else {
 			validatorSet = null;
@@ -356,8 +356,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: set as malicious (RPNV1-633)
 		if (epochChange) {
 			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(
-				this.radixEngine.getComputedState(RadixEngineValidatorsComputer.class),
-				this.radixEngine.getComputedState(RadixEngineStakeComputer.class)
+				this.radixEngine.getComputedState(RegisteredValidators.class),
+				this.radixEngine.getComputedState(Stakes.class)
 			);
 			final var signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
 				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));

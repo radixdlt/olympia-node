@@ -42,6 +42,7 @@ import com.radixdlt.test.utils.TypedMocks;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
@@ -129,12 +130,29 @@ public class RadixEngineTest {
 	public void when_add_state_computer__then_store_is_accessed_for_initial_computation() {
 		Object state = mock(Object.class);
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
-		radixEngine.addStateComputer(
-			Particle.class,
+		radixEngine.addStateReducer(
 			Object.class,
-			mock(Object.class),
-			(o, p) -> o,
-			(o, p) -> o
+			new StateReducer<>() {
+				@Override
+				public Class<Particle> particleClass() {
+					return Particle.class;
+				}
+
+				@Override
+				public Object initial() {
+					return mock(Object.class);
+				}
+
+				@Override
+				public BiFunction<Object, Particle, Object> outputReducer() {
+					return (o, p) -> o;
+				}
+
+				@Override
+				public BiFunction<Object, Particle, Object> inputReducer() {
+					return (o, p) -> o;
+				}
+			}
 		);
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state);
 	}
@@ -152,12 +170,29 @@ public class RadixEngineTest {
 		Object state1 = mock(Object.class);
 		Object state2 = mock(Object.class);
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
-		radixEngine.addStateComputer(
-			Particle.class,
+		radixEngine.addStateReducer(
 			Object.class,
-			mock(Object.class),
-			(o, p) -> state1,
-			(o, p) -> state2
+			new StateReducer<>() {
+				@Override
+				public Class<Particle> particleClass() {
+					return Particle.class;
+				}
+
+				@Override
+				public Object initial() {
+					return mock(Object.class);
+				}
+
+				@Override
+				public BiFunction<Object, Particle, Object> outputReducer() {
+					return (o, p) -> state1;
+				}
+
+				@Override
+				public BiFunction<Object, Particle, Object> inputReducer() {
+					return (o, p) -> state2;
+				}
+			}
 		);
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(initialState);
 		RadixEngineAtom radixEngineAtom = mock(RadixEngineAtom.class);
