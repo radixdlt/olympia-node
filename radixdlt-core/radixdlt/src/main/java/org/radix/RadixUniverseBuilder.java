@@ -26,6 +26,7 @@ import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
@@ -314,15 +315,11 @@ public final class RadixUniverseBuilder {
 			RADIX_TOKEN_URL,
 			XRD_TOKEN_PERMISSIONS
 		)));
+		TokDefParticleFactory tokDefParticleFactory = TokDefParticleFactory.create(tokenRRI, XRD_TOKEN_PERMISSIONS, UInt256.ONE);
+
 		var issuedTokens = UInt384.from(selfIssuance);
 		if (!selfIssuance.isZero()) {
-			particles.add(SpunParticle.up(new TransferrableTokensParticle(
-				universeAddress,
-				selfIssuance,
-				UInt256.ONE,
-				tokenRRI,
-				XRD_TOKEN_PERMISSIONS
-			)));
+			particles.add(SpunParticle.up(tokDefParticleFactory.create(universeAddress, selfIssuance)));
 		}
 		// Merge issuances so we only have one TTP per address
 		final var issuedAmounts = issuances.stream()
@@ -330,13 +327,7 @@ public final class RadixUniverseBuilder {
 		for (final var issuance : issuedAmounts.entrySet()) {
 			final var amount = issuance.getValue();
 			if (!amount.isZero()) {
-				particles.add(SpunParticle.up(new TransferrableTokensParticle(
-					new RadixAddress(magic, issuance.getKey()),
-					amount,
-					UInt256.ONE,
-					tokenRRI,
-					XRD_TOKEN_PERMISSIONS
-				)));
+				particles.add(SpunParticle.up(tokDefParticleFactory.create(new RadixAddress(magic, issuance.getKey()), amount)));
 				issuedTokens = issuedTokens.add(amount);
 			}
 		}
