@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
+import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingValidatorSetVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
@@ -38,6 +39,8 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+
+import com.radixdlt.sync.SyncConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -68,7 +71,7 @@ public class ByzantineSyncTest {
 				}
 			})
 			.pacemakerTimeout(5000)
-			.ledgerAndSync(50)
+			.ledgerAndSync(SyncConfig.of(50L, 10, 50L))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -99,6 +102,7 @@ public class ByzantineSyncTest {
 	public void given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
+			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingValidatorSetVerifierModule())
 			.build();
 		TestResults results = simulationTest.run();
 

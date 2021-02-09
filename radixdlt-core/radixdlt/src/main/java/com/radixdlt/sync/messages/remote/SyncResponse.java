@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,23 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Objects;
 
-public final class RemoteSyncResponse {
-	private final BFTNode sender;
+/**
+ * A response to the SyncRequest message.
+ */
+public final class SyncResponse {
+
 	private final DtoCommandsAndProof commandsAndProof;
 
-	public RemoteSyncResponse(BFTNode sender, DtoCommandsAndProof commandsAndProof) {
-		this.sender = Objects.requireNonNull(sender);
-		this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
+	public static SyncResponse create(DtoCommandsAndProof commandsAndProof) {
+		return new SyncResponse(commandsAndProof);
 	}
 
-	public BFTNode getSender() {
-		return sender;
+	private SyncResponse(DtoCommandsAndProof commandsAndProof) {
+		this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
 	}
 
 	public DtoCommandsAndProof getCommandsAndProof() {
@@ -40,6 +41,23 @@ public final class RemoteSyncResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{sender=%s payload=%s}", this.getClass().getSimpleName(), sender, commandsAndProof);
+		return String.format("%s{commandsAndProof=%s}", this.getClass().getSimpleName(), commandsAndProof);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SyncResponse that = (SyncResponse) o;
+		return Objects.equals(commandsAndProof, that.commandsAndProof);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(commandsAndProof);
 	}
 }

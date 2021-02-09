@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 
+import com.radixdlt.sync.SyncConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)
 			.pacemakerTimeout(5000)
-			.ledgerAndSync(50)
+			.ledgerAndSync(SyncConfig.of(50L, 10, 50L))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -74,8 +75,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 
 	@Test
 	public void sanity_tests_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
+		SimulationTest simulationTest = bftTestBuilder.build();
 		TestResults results = simulationTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 

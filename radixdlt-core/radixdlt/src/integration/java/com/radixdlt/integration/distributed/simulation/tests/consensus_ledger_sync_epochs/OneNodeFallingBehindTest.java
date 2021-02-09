@@ -33,6 +33,8 @@ import java.time.Duration;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+
+import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -41,6 +43,9 @@ import org.junit.Test;
  * BFT but is slowed down by Ledger sync.
  */
 public class OneNodeFallingBehindTest {
+
+	private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
+
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(10)
 		.networkModules(
@@ -49,7 +54,7 @@ public class OneNodeFallingBehindTest {
 			NetworkDroppers.dropAllMessagesForOneNode(10000, 10000)
 		)
 		.pacemakerTimeout(1000)
-		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
+		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), syncConfig)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(30, TimeUnit.SECONDS),

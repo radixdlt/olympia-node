@@ -87,8 +87,9 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.List;
+
+import com.radixdlt.sync.SyncConfig;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.junit.Rule;
@@ -108,7 +109,6 @@ public class MempoolTest {
 				@Override
 				public void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
@@ -120,6 +120,8 @@ public class MempoolTest {
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+					bind(SyncConfig.class).toInstance(SyncConfig.of(200L, 10, 200L));
 				}
 			},
 			new MockedCheckpointModule(),
@@ -178,8 +180,7 @@ public class MempoolTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(1L));
 					bind(LedgerUpdateSender.class).toInstance(mock(LedgerUpdateSender.class));
-					AddressBook addressBook = mock(AddressBook.class);
-					bind(AddressBook.class).toInstance(addressBook);
+					bind(AddressBook.class).toInstance(mock(AddressBook.class));
 
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken

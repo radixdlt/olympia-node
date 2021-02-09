@@ -74,6 +74,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
+import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
@@ -108,7 +109,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -233,6 +234,7 @@ public class SimulationTest {
 					if (!hasSync) {
 						modules.add(new MockedSyncServiceModule());
 					} else {
+						modules.add(new MockedAddressBookModule());
 						modules.add(new SyncServiceModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
@@ -439,12 +441,12 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndSync(int syncPatienceMillis) {
+		public Builder ledgerAndSync(SyncConfig syncConfig) {
 			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(SyncConfig.class).toInstance(syncConfig);
 				}
 			});
 			return this;
@@ -453,14 +455,14 @@ public class SimulationTest {
 		public Builder ledgerAndEpochsAndSync(
 			View epochHighView,
 			Function<Long, IntStream> epochToNodeIndexMapper,
-			int syncPatienceMillis
+			SyncConfig syncConfig
 		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(SyncConfig.class).toInstance(syncConfig);
 				}
 
 				@Provides
