@@ -75,11 +75,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom has no instructions");
 		}
 
-		// FIXME: Magic should be removed at some point
-		if (isMagic(atom)) {
-			return Result.success();
-		}
-
 		// no need for fees if a system update
 		// TODO: update should also have no message
 		if (atom.getCMInstruction().getMicroInstructions().stream()
@@ -116,11 +111,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 
 		return Result.success();
-	}
-
-	private boolean isMagic(LedgerAtom atom) {
-		final var message = atom.getMessage();
-		return message != null && message.startsWith("magic:0xdeadbeef");
 	}
 
 	private boolean isFeeGroup(ParticleGroup pg) {
