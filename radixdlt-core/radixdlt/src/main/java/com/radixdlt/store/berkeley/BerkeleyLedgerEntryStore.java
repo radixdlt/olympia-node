@@ -40,6 +40,8 @@ import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.Transaction;
+import com.radixdlt.store.berkeley.atom.AppendLog;
+import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -56,6 +58,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,6 +102,7 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGE
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SEARCH;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_STORE;
 import static com.radixdlt.store.LedgerEntryStoreResult.conflict;
+import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
 import static com.radixdlt.store.LedgerEntryStoreResult.success;
 import static com.radixdlt.store.LedgerSearchMode.EXACT;
 import static com.radixdlt.store.LedgerSearchMode.RANGE;
@@ -119,6 +124,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
+	private static final String ATOM_LOG = "radix.ledger";
 
 	// TODO: Remove
 	private static final byte PREFIX_COMMITTED = 0b0000_0000;
@@ -134,6 +140,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
 	private Database pendingDatabase; // AIDs marked as 'pending'
+	private AppendLog atomLog; //Atom data append only log
 
 	@Inject
 	public BerkeleyLedgerEntryStore(
@@ -164,12 +171,15 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			duplicatedIndices = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atoms, duplicateIndicesConfig);
 			atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
 			pendingDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+
+			atomLog = SimpleAppendLog.open(new File(env.getHome(), ATOM_LOG).getAbsolutePath());
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
 
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
 			// TODO implement integrity check
+			// TODO perhaps we should implement recovery instead?
 		}
 	}
 
@@ -237,20 +247,20 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 	@Override
 	public void close() {
-		if (uniqueIndices != null) {
-			uniqueIndices.close();
+		safeClose(uniqueIndices);
+		safeClose(duplicatedIndices);
+		safeClose(atoms);
+		safeClose(atomIndices);
+		safeClose(pendingDatabase);
+
+		if (atomLog != null) {
+			atomLog.close();
 		}
-		if (duplicatedIndices != null) {
-			duplicatedIndices.close();
-		}
-		if (atoms != null) {
-			atoms.close();
-		}
-		if (atomIndices != null) {
-			atomIndices.close();
-		}
-		if (pendingDatabase != null) {
-			pendingDatabase.close();
+	}
+
+	private void safeClose(Database database) {
+		if (database != null) {
+			database.close();
 		}
 	}
 
@@ -333,6 +343,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 					atom.getStateVersion(),
 					atom.getAID(),
 					serialize(atom),
+					true,
 					makeIndices(atom, uniqueIndices, duplicateIndices),
 					unwrap(tx)
 				);
@@ -358,7 +369,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				failIfNotSuccess(doDelete(aid, transaction, pKey, indices), "Delete of pending atom", aid);
 
 				// transaction is aborted in doStore in case of conflict
-				doStore(lcFromPKey(pKey.getData()), aid, value, indices, transaction)
+				doStore(lcFromPKey(pKey.getData()), aid, value, false, indices, transaction)
 					.ifSuccess(transaction::commit);
 			} catch (Exception e) {
 				transaction.abort();
@@ -443,16 +454,26 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		long logicalClock,
 		AID aid,
 		DatabaseEntry pData,
+		boolean fullData,
 		LedgerEntryIndices indices,
 		com.sleepycat.je.Transaction transaction
 	) throws DeserializeException {
+		var offset = 0L;
 		try {
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
 
 			var pKey = toPKey(PREFIX_COMMITTED, logicalClock, aid);
 
-			failIfNotSuccess(atoms.putNoOverwrite(transaction, pKey, pData), "Atom write for", aid);
+			if (fullData) {
+				var logData = entry(new byte[Long.BYTES]);
+				offset = atomLog.position();
+
+				Longs.copyTo(offset, logData.getData(), 0);
+				failIfNotSuccess(atoms.putNoOverwrite(transaction, pKey, logData), "Atom write for", aid);
+			} else {
+				failIfNotSuccess(atoms.putNoOverwrite(transaction, pKey, pData), "Atom write for", aid);
+			}
 			addBytesWrite(pData, pKey);
 
 			var indicesData = serialize(indices);
@@ -460,6 +481,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			failIfNotSuccess(atomIndices.putNoOverwrite(transaction, pKey, indicesData), "LedgerEntry indices write for", aid);
 			addBytesWrite(indicesData, pKey);
 
+			if (fullData) {
+				atomLog.write(pData.getData());
+			}
+		} catch (IOException e) {
+			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
 			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
@@ -576,7 +602,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
 					//  how should we handle it?
 					if (uqCursorStatus == SUCCESS) {
-						ledgerEntries.add(restoreLedgerEntry(value.getData()));
+						var offset = Longs.fromByteArray(value.getData());
+						ledgerEntries.add(restoreLedgerEntry(atomLog.read(offset)));
 					}
 				} catch (Exception e) {
 					log.error(format("Unable to fetch ledger entry for Atom ID %s", atomId), e);

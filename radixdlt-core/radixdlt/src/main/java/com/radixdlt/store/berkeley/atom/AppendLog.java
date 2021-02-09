@@ -17,7 +17,7 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import com.radixdlt.utils.functional.Result;
+import java.io.IOException;
 
 /**
  * Interface for append-only log file. The file consists of variable length chunks with following format:
@@ -36,9 +36,8 @@ public interface AppendLog {
 	 *
 	 * @param position position to which file should be truncated.
 	 *
-	 * @return successful result with new file length or failure with error description.
 	 */
-	Result<Long> truncate(long position);
+	void truncate(long position);
 
 	/**
 	 * Write next chunk.
@@ -47,15 +46,24 @@ public interface AppendLog {
 	 *
 	 * @return successful result with chunk length or failure with error description.
 	 */
-	Result<Long> write(byte[] data);
+	void write(byte[] data) throws IOException;
+
+	/**
+	 * Read chunk .
+	 *
+	 * @param data data to write
+	 *
+	 * @return successful result with chunk length or failure with error description.
+	 */
+	byte[] read(long offset) throws IOException;
 
 	/**
 	 * Force flushing data to disk.
 	 */
-	void flush();
+	void flush() throws IOException;
 
 	/**
 	 * Close append log.
 	 */
-	boolean close();
+	void close();
 }
