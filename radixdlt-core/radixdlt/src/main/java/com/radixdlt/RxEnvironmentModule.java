@@ -17,8 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -33,9 +31,9 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -64,31 +62,11 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Singleton
 	private RxEnvironment rxEnvironment(
 		ScheduledExecutorService ses,
-		Set<RxRemoteDispatcher<?>> dispatchers
+		Set<RxRemoteDispatcher<?>> dispatchers,
+		@LocalEvents Set<Class<?>> localProcessedEventClasses
 	) {
-		Builder<Class<?>> eventClasses = ImmutableSet.builder();
-		eventClasses.add(
-			ScheduledLocalTimeout.class,
-			LocalSyncRequest.class,
-			GetVerticesRequest.class,
-			VertexRequestTimeout.class,
-			BFTInsertUpdate.class,
-			BFTRebuildUpdate.class,
-			BFTHighQCUpdate.class,
-			BFTCommittedUpdate.class,
-			LocalTimeoutOccurrence.class,
-			EpochLocalTimeoutOccurrence.class,
-			SyncInProgress.class,
-			ViewUpdate.class,
-			EpochViewUpdate.class,
-			MempoolAddFailure.class,
-			AtomCommittedToLedger.class,
-			MessageFlooderUpdate.class,
-			ScheduledMessageFlood.class
-		);
-
 		return new RxEnvironment(
-			eventClasses.build(),
+			localProcessedEventClasses,
 			ses,
 			dispatchers
 		);

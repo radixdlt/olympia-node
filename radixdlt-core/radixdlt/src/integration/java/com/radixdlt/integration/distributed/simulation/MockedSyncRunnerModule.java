@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
@@ -28,6 +29,7 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
@@ -53,6 +55,11 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
 			.to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
 		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(SyncInProgress.class);
 	}
 
 	@ProvidesIntoMap

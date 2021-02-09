@@ -20,24 +20,31 @@ package com.radixdlt.chaos.messageflooder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 
 /**
  * Module which manages message flooding
  */
 public final class MessageFlooderModule extends AbstractModule {
-    @Override
-    public void configure() {
-        bind(MessageFlooder.class).in(Scopes.SINGLETON);
-    }
+	@Override
+	public void configure() {
+		bind(MessageFlooder.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(ScheduledMessageFlood.class);
+		eventBinder.addBinding().toInstance(MessageFlooderUpdate.class);
+	}
 
-    @Provides
-    public EventProcessor<MessageFlooderUpdate> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
-        return messageFlooder.messageFloodUpdateProcessor();
-    }
+	@Provides
+	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
+		return messageFlooder.messageFloodUpdateProcessor();
+	}
 
-    @Provides
-    public EventProcessor<ScheduledMessageFlood> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
-        return messageFlooder.scheduledMessageFloodProcessor();
-    }
+	@Provides
+	public EventProcessor<ScheduledMessageFlood> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
+		return messageFlooder.scheduledMessageFloodProcessor();
+	}
 }

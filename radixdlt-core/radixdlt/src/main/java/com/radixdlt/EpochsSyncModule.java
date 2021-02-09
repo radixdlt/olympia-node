@@ -21,11 +21,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -56,6 +59,11 @@ public class EpochsSyncModule extends AbstractModule {
 	public void configure() {
 		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
 		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(SyncInProgress.class);
+		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet

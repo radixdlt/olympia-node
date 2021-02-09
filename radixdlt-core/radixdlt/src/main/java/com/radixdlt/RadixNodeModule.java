@@ -84,6 +84,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new DispatcherModule());
 
+		// API
+		install(new ApiModule());
+
 		// Consensus
 		install(new BFTKeyModule());
 		install(new CryptoModule());

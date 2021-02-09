@@ -22,12 +22,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSystemInfoRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.systeminfo.SystemInfoRunner;
@@ -50,6 +53,13 @@ public class SystemInfoModule extends AbstractModule {
 	protected void configure() {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(SystemInfoRunner.class).in(Scopes.SINGLETON);
+
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(EpochViewUpdate.class);
+		eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
+		eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
+		eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
 	}
 
 	@ProvidesIntoSet

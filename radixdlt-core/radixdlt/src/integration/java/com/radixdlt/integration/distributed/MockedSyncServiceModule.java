@@ -27,6 +27,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -57,6 +58,11 @@ public class MockedSyncServiceModule extends AbstractModule {
 		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).toInstance((node, res) -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).toInstance((node, res) -> { });
+
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(SyncInProgress.class);
+		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 	}
 
 	@ProvidesIntoSet
