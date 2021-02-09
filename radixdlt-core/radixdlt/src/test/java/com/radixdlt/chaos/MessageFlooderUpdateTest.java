@@ -1,6 +1,7 @@
 package com.radixdlt.chaos;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;

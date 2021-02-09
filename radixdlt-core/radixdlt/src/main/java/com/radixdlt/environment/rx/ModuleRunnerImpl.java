@@ -15,9 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.chaos;
+package com.radixdlt.environment.rx;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.utils.ThreadFactories;
@@ -27,39 +27,61 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 /**
  * Executes chaos related events
  */
-public final class ChaosRunner implements ModuleRunner {
+public final class ModuleRunnerImpl implements ModuleRunner {
 
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService;
-	private final Observable<ScheduledMessageFlood> scheduledSwarms;
-	private final EventProcessor<ScheduledMessageFlood> scheduledSwarmEventProcessor;
-	private final Observable<MessageFlooderUpdate> messageFloodUpdates;
-	private final EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor;
-
 	private final Object startLock = new Object();
 	private CompositeDisposable compositeDisposable;
 
-	@Inject
-	public ChaosRunner(
-		Observable<ScheduledMessageFlood> scheduledFloods,
-		EventProcessor<ScheduledMessageFlood> scheduledFloodProcessor,
-		Observable<MessageFlooderUpdate> messageFloodUpdates,
-		EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor
-	) {
-		this.scheduledSwarms = Objects.requireNonNull(scheduledFloods);
-		this.scheduledSwarmEventProcessor = Objects.requireNonNull(scheduledFloodProcessor);
-		this.messageFloodUpdates = Objects.requireNonNull(messageFloodUpdates);
-		this.messageFloodUpdateProcessor = Objects.requireNonNull(messageFloodUpdateProcessor);
-		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("ChaosRunner"));
+	private final List<Subscription<?>> subscriptions;
+
+	private static class Subscription<T> {
+        final Observable<T> o;
+        final EventProcessor<T> p;
+
+        Subscription(Observable<T> o, EventProcessor<T> p) {
+            this.o = o;
+            this.p = p;
+        }
+
+        Disposable subscribe(Scheduler s) {
+        	return o.observeOn(s).subscribe(p::process);
+		}
+    }
+
+	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions) {
+		this.subscriptions = Objects.requireNonNull(subscriptions);
+		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 	}
+
+	public static class Builder {
+		private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
+
+		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
+			subscriptionsBuilder.add(new Subscription<>(o, p));
+			return this;
+		}
+
+		public ModuleRunnerImpl build(String threadName) {
+			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build());
+		}
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
 
 	@Override
 	public void start() {
@@ -68,15 +90,10 @@ public final class ChaosRunner implements ModuleRunner {
 			    return;
 			}
 
-			Disposable d0 = this.scheduledSwarms
-				.observeOn(singleThreadScheduler)
-				.subscribe(this.scheduledSwarmEventProcessor::process);
-
-			Disposable d1 = this.messageFloodUpdates
-					.observeOn(singleThreadScheduler)
-					.subscribe(this.messageFloodUpdateProcessor::process);
-
-			compositeDisposable = new CompositeDisposable(d0, d1);
+			final var disposables = this.subscriptions.stream()
+				.map(s -> s.subscribe(singleThreadScheduler))
+				.collect(Collectors.toList());
+			this.compositeDisposable = new CompositeDisposable(disposables);
 		}
 	}
 

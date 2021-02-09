@@ -19,7 +19,7 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.chaos.MessageFlooderUpdate;
+import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
