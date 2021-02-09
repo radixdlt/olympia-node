@@ -20,7 +20,9 @@ package com.radixdlt.environment.rx;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.utils.ThreadFactories;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -28,7 +30,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
@@ -60,7 +61,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
     }
 
 	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions) {
-		this.subscriptions = Objects.requireNonNull(subscriptions);
+		this.subscriptions = subscriptions;
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 	}
@@ -70,6 +71,16 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 
 		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
 			subscriptionsBuilder.add(new Subscription<>(o, p));
+			return this;
+		}
+
+		public <T> Builder add(Flowable<T> o, EventProcessor<T> p) {
+			subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
+			return this;
+		}
+
+		public <T> Builder add(Flowable<RemoteEvent<T>> o, RemoteEventProcessor<T> p) {
+			subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
 			return this;
 		}
 

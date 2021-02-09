@@ -43,7 +43,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
