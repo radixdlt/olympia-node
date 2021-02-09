@@ -49,7 +49,7 @@ import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncRunnerModule;
+import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;

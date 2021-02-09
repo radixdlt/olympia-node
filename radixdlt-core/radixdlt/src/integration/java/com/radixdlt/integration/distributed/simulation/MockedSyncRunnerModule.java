@@ -18,23 +18,31 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.rx.ModuleRunnerImpl;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.sync.SyncServiceRunner;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+
+import java.util.Set;
 
 /**
  * A sync runner which doesn't involve epochs
@@ -42,13 +50,33 @@ import com.radixdlt.sync.SyncServiceRunner;
 public class MockedSyncRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
-
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
 			.to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
-
 		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("sync")
+	private ModuleRunner syncRunner(
+		@Self BFTNode self,
+		Observable<LocalSyncRequest> localSyncRequests,
+		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
+		Observable<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeouts,
+		EventProcessor<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeoutProcessor,
+		Observable<LedgerUpdate> ledgerUpdates,
+		@ProcessWithSyncRunner Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
+		Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
+		RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor,
+		Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
+		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
+	) {
+		return ModuleRunnerImpl.builder()
+				.add(localSyncRequests, syncRequestEventProcessor)
+				.add(syncTimeouts, syncTimeoutProcessor)
+				.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
+				.add(remoteSyncRequests, remoteSyncServiceProcessor)
+				.add(remoteSyncResponses, responseProcessor)
+				.build("SyncManager " + self);
 	}
 
 	@ProvidesIntoSet

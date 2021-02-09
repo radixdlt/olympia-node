@@ -44,6 +44,7 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
 
 import org.radix.universe.system.LocalSystem;
