@@ -26,6 +26,14 @@ import com.radixdlt.utils.functional.Result;
  *     [size (64-bit little-endian)] [byte0, byte1, ..., byteN]
  * </pre>
  */
-public interface ReadOnlyLog {
+public interface RandomAccessLogReader {
+	/**
+	 * Read chunk from specified offset in the log.
+	 */
 	Result<byte[]> read(long offset);
+
+	/**
+	 * Close log.
+	 */
+	void close();
 }

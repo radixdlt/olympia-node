@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
@@ -185,6 +186,62 @@ public interface Result<T> extends Foldable<Failure, T> {
 	}
 
 	/**
+	 * Unwrap result into contained value in case of success or {@code null} in case of failure.
+	 *
+	 * @param failureConsumer consumer for the failure
+	 *
+	 * @return unwrapped result.
+	 */
+	default T unwrap(final Consumer<Failure> failureConsumer) {
+		return fold(failure -> {
+			failureConsumer.accept(failure);
+			return null;
+		}, v -> v);
+	}
+
+	/**
+	 * Check if result is failure.
+	 *
+	 * @return true if instance contains an failure.
+	 */
+	default boolean isFailure() {
+		return fold(__ -> true, __ -> false);
+	}
+
+	/**
+	 * Helper method for starting chained computations or transformations which allow passing tuples between stages.
+	 *
+	 * @param mapper transformation function
+	 *
+	 * @return {@link Mapper1} transformable entity
+	 */
+	default <R> Mapper1<R> chain1(final FN1<Mapper1<R>, ? super T> mapper) {
+		return fold(t -> () -> fail(t), mapper);
+	}
+
+	/**
+	 * Helper method for starting chained computations or transformations which allow passing tuples between stages.
+	 *
+	 * @param mapper transformation function
+	 *
+	 * @return {@link Mapper2} transformable entity
+	 */
+	default <R1, R2> Mapper2<R1, R2> chain2(final FN1<Mapper2<R1, R2>, ? super T> mapper) {
+		return fold(t -> () -> fail(t), mapper);
+	}
+
+	/**
+	 * Helper method for starting chained computations or transformations which allow passing tuples between stages.
+	 *
+	 * @param mapper transformation function
+	 *
+	 * @return {@link Mapper3} transformable entity
+	 */
+	default <R1, R2, R3> Mapper3<R1, R2, R3> chain3(final FN1<Mapper3<R1, R2, R3>, ? super T> mapper) {
+		return fold(t -> () -> fail(t), mapper);
+	}
+
+	/**
 	 * Create an instance of successful operation result.
 	 *
 	 * @param value Operation result
@@ -220,6 +277,14 @@ public interface Result<T> extends Foldable<Failure, T> {
 				return leftMapper.apply(value);
 			}
 		};
+	}
+
+	static <R> Result<R> fail(final String message) {
+		return fail(failure(message));
+	}
+
+	static <R> Result<R> fail(final String message, Object cause) {
+		return fail(failure(message, cause));
 	}
 
 	/**

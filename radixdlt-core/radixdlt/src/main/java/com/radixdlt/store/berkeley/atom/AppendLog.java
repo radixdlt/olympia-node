@@ -47,9 +47,15 @@ public interface AppendLog {
 	 *
 	 * @return successful result with chunk length or failure with error description.
 	 */
-	Result<Integer> write(byte[] data);
+	Result<Long> write(byte[] data);
 
+	/**
+	 * Force flushing data to disk.
+	 */
 	void flush();
 
+	/**
+	 * Close append log.
+	 */
 	boolean close();
 }

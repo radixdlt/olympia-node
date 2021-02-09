@@ -16,6 +16,7 @@
 
 package com.radixdlt.utils.functional;
 
+import com.radixdlt.utils.functional.Consumers.Consumer2;
 import com.radixdlt.utils.functional.Functions.FN1;
 import com.radixdlt.utils.functional.Functions.FN2;
 import com.radixdlt.utils.functional.Functions.FN3;
@@ -35,11 +36,12 @@ import com.radixdlt.utils.functional.Tuple.Tuple7;
 import com.radixdlt.utils.functional.Tuple.Tuple8;
 import com.radixdlt.utils.functional.Tuple.Tuple9;
 
+import java.util.function.Consumer;
+
 /**
  * Utility interfaces with transformable entities.
  */
 public interface ResultMappers {
-
 	/**
 	 * Transformable entity for one {@Result}.
 	 */
@@ -68,6 +70,27 @@ public interface ResultMappers {
 		default <R> Result<R> flatMap(final FN2<Result<R>, T1, T2> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
+
+		default <R1, R2> Mapper2<R1, R2> chain2(final FN2<Result<Tuple2<R1, R2>>, T1, T2> mapper) {
+			return () -> flatMap(mapper);
+		}
+
+		default <R1, R2, R3> Mapper3<R1, R2, R3> chain3(final FN2<Result<Tuple3<R1, R2, R3>>, T1, T2> mapper) {
+			return () -> flatMap(mapper);
+		}
+
+		default Mapper2<T1, T2> onSuccess(final Consumer2<T1, T2> consumer) {
+			id().onSuccess(tuple -> tuple.map((v1, v2) -> {
+				consumer.accept(v1, v2);
+				return null;
+			}));
+			return this;
+		}
+
+		default Mapper2<T1, T2> onFailure(final Consumer<Failure> consumer) {
+			id().onFailure(consumer);
+			return this;
+		}
 	}
 
 	/**
@@ -82,6 +105,14 @@ public interface ResultMappers {
 
 		default <R> Result<R> flatMap(final FN3<Result<R>, T1, T2, T3> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+
+		default <R1, R2> Mapper2<R1, R2> chain2(final FN3<Result<Tuple2<R1, R2>>, T1, T2, T3> mapper) {
+			return () -> flatMap(mapper);
+		}
+
+		default <R1, R2, R3> Mapper3<R1, R2, R3> chain3(final FN3<Result<Tuple3<R1, R2, R3>>, T1, T2, T3> mapper) {
+			return () -> flatMap(mapper);
 		}
 	}
 
