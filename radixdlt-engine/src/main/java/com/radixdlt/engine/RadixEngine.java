@@ -127,27 +127,25 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * Initially runs the computation with all the atoms currently in the store
 	 * and then updates the state value as atoms get stored.
 	 *
-	 * @param particleClass the particle class of the particles to map
-	 * @param computerClass the class of the computer that computes the state
-	 * @param initial the initial value of the output
-	 * @param outputReducer deterministic function which computes the next state if a particle has been created
-	 * @param inputReducer deterministic function which computes the next state if a particle has been destroyed
+	 * @param stateClass the class of the state
+	 * @param stateReducer the reducer
 	 * @param <U> the class of the state
 	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle, W extends U> void addStateComputer(
-		Class<V> particleClass,
-		Class<U> computerClass,
-		W initial,
-		BiFunction<U, V, U> outputReducer,
-		BiFunction<U, V, U> inputReducer
+	public <U, V extends Particle> void addStateReducer(
+		Class<U> stateClass,
+		StateReducer<U, V> stateReducer
 	) {
 		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
-			particleClass, initial, outputReducer, inputReducer
+			stateReducer.particleClass(),
+			stateReducer.initial().get(),
+			stateReducer.outputReducer(),
+			stateReducer.inputReducer()
 		);
+
 		synchronized (stateUpdateEngineLock) {
 			applicationStateComputer.initialize(this.engineStore);
-			stateComputers.put(computerClass, applicationStateComputer);
+			stateComputers.put(stateClass, applicationStateComputer);
 		}
 	}
 

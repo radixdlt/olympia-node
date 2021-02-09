@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,14 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.atommodel;
+package com.radixdlt.statecomputer;
 
-/**
- * Exception when an already signed {@link Atom} is signed again
- */
-@SuppressWarnings("serial")
-public class AtomAlreadySignedException extends RuntimeException {
-	public AtomAlreadySignedException(String message) {
-		super(message);
-	}
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
+public class StakesTest {
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(Stakes.class)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
+    }
+
 }

@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -54,15 +53,9 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 				.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		final Command command;
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
-			command = new Command(payload);
-		} catch (AtomAlreadySignedException e) {
-			throw new IllegalStateException("Should not get here.", e);
-		}
-		return command;
+		atom.sign(keyPair, hasher);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
+		return new Command(payload);
 	}
 }

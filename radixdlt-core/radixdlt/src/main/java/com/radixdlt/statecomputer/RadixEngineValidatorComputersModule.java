@@ -15,17 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.statecomputer.RadixEngineStakeComputer;
-import com.radixdlt.statecomputer.TokenStakeComputer;
-import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
-import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
 
 /**
  * Module which manages computers used for validators and stake
@@ -33,13 +26,7 @@ import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
 public class RadixEngineValidatorComputersModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(RadixEngineValidatorsComputer.class).toProvider(RadixEngineValidatorsComputerImpl::create).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	private RadixEngineStakeComputer stakeComputer(
-		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
-	) {
-		return TokenStakeComputer.create(stakeToken);
+		bind(RegisteredValidators.class).toProvider(RegisteredValidators::create).in(Scopes.SINGLETON);
+		bind(Stakes.class).toProvider(Stakes::create).in(Scopes.SINGLETON);
 	}
 }

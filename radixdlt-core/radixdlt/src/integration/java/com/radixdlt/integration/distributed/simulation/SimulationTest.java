@@ -46,7 +46,7 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
-import com.radixdlt.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;

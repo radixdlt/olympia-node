@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,14 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.atommodel;
+package com.radixdlt.engine;
+
+import com.radixdlt.constraintmachine.Particle;
+
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
- * Exception when an already signed {@link Atom} is signed again
+ * Reduces particles to state
  */
-@SuppressWarnings("serial")
-public class AtomAlreadySignedException extends RuntimeException {
-	public AtomAlreadySignedException(String message) {
-		super(message);
-	}
+public interface StateReducer<U, V extends Particle> {
+    Class<V> particleClass();
+    Supplier<U> initial();
+    BiFunction<U, V, U> outputReducer();
+    BiFunction<U, V, U> inputReducer();
 }

@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
@@ -80,15 +79,10 @@ public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandG
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		final Command command;
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			command = new Command(payload);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		atom.sign(keyPair, hasher);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		Command command = new Command(payload);
 
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 		validatorRegistrationSubmissions.onNext(node);

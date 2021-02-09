@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -23,10 +23,8 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
@@ -36,16 +34,11 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.RadixEngineStakeComputer;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
-import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
@@ -134,8 +127,9 @@ public class RadixEngineModule extends AbstractModule {
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		RadixEngineValidatorsComputer validatorsComputer,
-		RadixEngineStakeComputer stakeComputer
+		RegisteredValidators initialRegisteredValidators,
+		Stakes initialStakes,
+		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
@@ -151,28 +145,20 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateComputer(
-			RegisteredValidatorParticle.class,
-			RadixEngineValidatorsComputer.class,
-			validatorsComputer,
-			(computer, p) -> computer.addValidator(p.getAddress().getPublicKey()),
-			(computer, p) -> computer.removeValidator(p.getAddress().getPublicKey())
+		radixEngine.addStateReducer(
+			RegisteredValidators.class,
+			new ValidatorsReducer(() -> initialRegisteredValidators)
 		);
-		radixEngine.addStateComputer(
-			StakedTokensParticle.class,
-			RadixEngineStakeComputer.class,
-			stakeComputer,
-			(computer, p) -> computer.addStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount()),
-			(computer, p) -> computer.removeStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount())
+
+		radixEngine.addStateReducer(
+			Stakes.class,
+			new StakesReducer(stakeToken, () -> initialStakes)
 		);
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateComputer(
+		radixEngine.addStateReducer(
 			SystemParticle.class,
-			SystemParticle.class,
-			new SystemParticle(0, 0, 0),
-			(prev, p) -> p,
-			(prev, p) -> prev
+			new LastSystemParticleReducer()
 		);
 
 		return radixEngine;
