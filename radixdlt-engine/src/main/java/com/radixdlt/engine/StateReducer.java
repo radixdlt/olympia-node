@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  * Reduces particles to state
  */
 public interface StateReducer<U, V extends Particle> {
+    Class<U> stateClass();
     Class<V> particleClass();
     Supplier<U> initial();
     BiFunction<U, V, U> outputReducer();

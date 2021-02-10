@@ -19,6 +19,11 @@ public final class InMemoryWalletReducer implements StateReducer<InMemoryWallet,
     }
 
     @Override
+    public Class<InMemoryWallet> stateClass() {
+        return InMemoryWallet.class;
+    }
+
+    @Override
     public Class<TransferrableTokensParticle> particleClass() {
         return TransferrableTokensParticle.class;
     }
