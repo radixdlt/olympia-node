@@ -111,7 +111,8 @@ public class SimpleAppendLog implements AppendLog {
 		int len = channel.read(buffer.clear(), offset);
 
 		if (len != buffer.capacity()) {
-			throw new IOException("Written less bytes than requested: " + len + " vs " + buffer.capacity());
+			throw new IOException("Got less bytes than requested: " + len + " vs " + buffer.capacity()
+									  + " at " + offset + ", size " + channel.size());
 		}
 		return buffer;
 	}
