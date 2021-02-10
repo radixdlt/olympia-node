@@ -23,8 +23,11 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -32,9 +35,13 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.addressbook.AddressBook;
 
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -44,6 +51,7 @@ import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.utils.RandomHasher;
@@ -211,13 +219,175 @@ public class LocalSyncServiceTest {
 			currentHeader, ImmutableSet.of(waiting1, waiting2, waiting3));
 		this.setupSyncServiceWithState(syncState);
 
-		when(addressBook.hasBftNodePeer(eq(waiting2))).thenReturn(true);
+		when(addressBook.hasBftNodePeer(waiting2)).thenReturn(true);
 
 		this.localSyncService.statusResponseEventProcessor().process(waiting1, StatusResponse.create(statusHeader1));
 		this.localSyncService.statusResponseEventProcessor().process(waiting2, StatusResponse.create(statusHeader2));
 		this.localSyncService.statusResponseEventProcessor().process(waiting3, StatusResponse.create(statusHeader3));
 
 		verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting2), any());
+	}
+
+	@Test
+	public void when_status_timeout_with_no_responses__then_should_reschedule_another_check() {
+		final VerifiedLedgerHeaderAndProof currentHeader = createHeaderAtStateVersion(10L);
+		final BFTNode waiting1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(waiting1)).thenReturn(true);
+
+		final var syncState = SyncState.SyncCheckState.init(
+			currentHeader, ImmutableSet.of(waiting1));
+		this.setupSyncServiceWithState(syncState);
+
+
+		this.localSyncService.syncCheckReceiveStatusTimeoutEventProcessor().process(
+			SyncCheckReceiveStatusTimeout.create()
+		);
+
+		verifyNoMoreInteractions(syncRequestDispatcher);
+		verify(syncCheckTriggerDispatcher, times(1)).dispatch(any(), eq(syncConfig.syncCheckInterval()));
+	}
+
+	@Test
+	public void when_status_timeout_with_at_least_one_response__then_should_start_sync() {
+		final VerifiedLedgerHeaderAndProof currentHeader = createHeaderAtStateVersion(10L);
+		final VerifiedLedgerHeaderAndProof statusHeader1 = createHeaderAtStateVersion(12L);
+		final VerifiedLedgerHeaderAndProof statusHeader2 = createHeaderAtStateVersion(20L);
+		final BFTNode waiting1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(waiting1)).thenReturn(true);
+		final BFTNode waiting2 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(waiting2)).thenReturn(true);
+
+		final var syncState = SyncState.SyncCheckState.init(
+			currentHeader, ImmutableSet.of(waiting1, waiting2));
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.statusResponseEventProcessor().process(waiting1, StatusResponse.create(statusHeader1));
+
+		this.localSyncService.syncCheckReceiveStatusTimeoutEventProcessor().process(
+			SyncCheckReceiveStatusTimeout.create()
+		);
+
+		// even though statusHeader2 is more up to date, it should be ignored because was received
+		// after a timeout event
+		this.localSyncService.statusResponseEventProcessor().process(waiting2, StatusResponse.create(statusHeader2));
+
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting1), any());
+		verifyNoMoreInteractions(syncCheckTriggerDispatcher);
+	}
+
+	@Test
+	public void when_syncing_timeout__then_should_remove_candidate_and_retry_with_other_candidate() {
+		final var currentHeader = createHeaderAtStateVersion(10L);
+		final var targetHeader = createHeaderAtStateVersion(20L);
+
+		final var peer1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+		final var peer2 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer2))).thenReturn(true);
+
+		final var originalCandidates = ImmutableList.of(peer1, peer2);
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, originalCandidates, targetHeader).withWaitingFor(peer1);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.syncRequestTimeoutEventProcessor()
+			.process(SyncRequestTimeout.create(peer1, currentHeader));
+
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
+	}
+
+	@Test
+	public void when_syncing_timeout_for_unexpected_peer__then_should_ignore() {
+		final var currentHeader = createHeaderAtStateVersion(10L);
+		final var targetHeader = createHeaderAtStateVersion(20L);
+
+		final var peer1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+		final var peer2 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer2))).thenReturn(true);
+
+		final var originalCandidates = ImmutableList.of(peer1, peer2);
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, originalCandidates, targetHeader).withWaitingFor(peer1);
+		this.setupSyncServiceWithState(syncState);
+
+		// waiting for response from peer1, but got a timeout for peer2
+		this.localSyncService.syncRequestTimeoutEventProcessor()
+			.process(SyncRequestTimeout.create(peer2, currentHeader));
+
+		verifyNoMoreInteractions(syncCheckTriggerDispatcher);
+		verifyNoMoreInteractions(syncRequestDispatcher);
+	}
+
+	@Test
+	public void when_received_a_valid_response__then_should_send_verified() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(20L);
+
+		final var peer1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+		this.setupSyncServiceWithState(syncState);
+
+		final var respHeadLedgerHeader = mock(LedgerHeader.class);
+		when(respHeadLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
+		final var respTailLedgerHeader = mock(LedgerHeader.class);
+		when(respTailLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
+		final var respHead = mock(DtoLedgerHeaderAndProof.class);
+		when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
+		final var respTail = mock(DtoLedgerHeaderAndProof.class);
+		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
+		final var response = mock(DtoCommandsAndProof.class);
+		final var cmd = mock(Command.class);
+		when(response.getCommands()).thenReturn(ImmutableList.of(cmd));
+		when(response.getHead()).thenReturn(respHead);
+		when(response.getTail()).thenReturn(respTail);
+
+		final var syncResponse = SyncResponse.create(response);
+
+		when(validatorSetVerifier.verifyValidatorSet(syncResponse)).thenReturn(true);
+		when(signaturesVerifier.verifyResponseSignatures(syncResponse)).thenReturn(true);
+		when(accumulatorVerifier.verify(any(), any(), any())).thenReturn(true);
+
+		this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
+
+		verify(verifiedSender, times(1)).sendVerifiedSyncResponse(syncResponse);
+		verifyNoMoreInteractions(syncRequestDispatcher);
+	}
+
+	@Test
+	public void when_received_ledger_update_and_fully_synced__then_should_schedule_sync_check() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(20L);
+
+		final var peer1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+
+		final var syncState = SyncState.SyncingState.init(
+				currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.ledgerUpdateEventProcessor().process(new LedgerUpdate() {
+			@Override
+			public ImmutableList<Command> getNewCommands() {
+				return ImmutableList.of();
+			}
+
+			@Override
+			public VerifiedLedgerHeaderAndProof getTail() {
+				return targetHeader;
+			}
+
+			@Override
+			public Optional<BFTValidatorSet> getNextValidatorSet() {
+				return Optional.empty();
+			}
+		});
+
+		verify(syncCheckTriggerDispatcher, times(1)).dispatch(any(), eq(syncConfig.syncCheckInterval()));
+		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
 
 	private VerifiedLedgerHeaderAndProof createHeaderAtStateVersion(long version) {

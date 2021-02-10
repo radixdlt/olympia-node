@@ -55,7 +55,6 @@ public final class MessageCentralLedgerSync {
 			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-				final var msg = m.getMessage();
 				return RemoteEvent.create(node, StatusRequest.create(), StatusRequest.class);
 			});
 	}

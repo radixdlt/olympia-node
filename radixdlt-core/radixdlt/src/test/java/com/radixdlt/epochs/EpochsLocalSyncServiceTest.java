@@ -19,7 +19,6 @@ package com.radixdlt.epochs;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -90,7 +89,7 @@ public class EpochsLocalSyncServiceTest {
 
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(localSyncEventProcessor, times(1)).process(eq(request));
+		verify(localSyncEventProcessor, times(1)).process(request);
 	}
 
 	@Test
@@ -100,7 +99,7 @@ public class EpochsLocalSyncServiceTest {
 
 		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
-		verify(ledgerUpdateEventProcessor, times(1)).process(eq(ledgerUpdate));
+		verify(ledgerUpdateEventProcessor, times(1)).process(ledgerUpdate);
 	}
 
 	@Test
@@ -119,7 +118,7 @@ public class EpochsLocalSyncServiceTest {
 
 		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
-		verify(ledgerUpdateEventProcessor, times(0)).process(eq(ledgerUpdate));
-		verify(newLedgerUpdateProcessor, times(1)).process(eq(ledgerUpdate));
+		verify(ledgerUpdateEventProcessor, times(0)).process(ledgerUpdate);
+		verify(newLedgerUpdateProcessor, times(1)).process(ledgerUpdate);
 	}
 }
