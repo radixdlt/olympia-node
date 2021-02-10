@@ -24,6 +24,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -80,6 +82,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
@@ -87,6 +91,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncInProgress>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncInProgress.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
+				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
 				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);

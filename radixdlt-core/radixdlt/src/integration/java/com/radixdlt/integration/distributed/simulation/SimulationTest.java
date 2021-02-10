@@ -47,7 +47,7 @@ import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.RxEnvironmentModule;
+import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;

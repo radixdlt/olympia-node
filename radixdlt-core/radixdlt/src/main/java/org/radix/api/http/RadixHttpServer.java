@@ -19,6 +19,8 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
@@ -102,6 +104,11 @@ public final class RadixHttpServer {
 	private final int port;
 	private Undertow server;
 	private final EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher;
+	private final EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+
+	@Inject(optional = true)
+	@MempoolFillerKey
+	private ECPublicKey mempoolFillerKey;
 
 	@Inject
 	public RadixHttpServer(
@@ -112,6 +119,7 @@ public final class RadixHttpServer {
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
+		EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -138,6 +146,7 @@ public final class RadixHttpServer {
 			hasher
 		);
 		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
+		this.mempoolFillerUpdateEventDispatcher = mempoolFillerUpdateEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
 			serialization,
@@ -300,6 +309,10 @@ public final class RadixHttpServer {
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
 		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
+		addRoute("/api/chaos/mempool-filler", Methods.PUT_STRING, this::handleMempoolFill, handler);
+		addGetRoute("/api/chaos/mempool-filler", exchange
+			-> respond(new JSONObject()
+				.put("pubkeyBase64", mempoolFillerKey != null ? mempoolFillerKey.toBase64() : null), exchange), handler);
 
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
@@ -408,6 +421,20 @@ public final class RadixHttpServer {
 		}
 		exchange.setStatusCode(StatusCodes.OK);
 	}
+
+	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			boolean enabled = values.getBoolean("enabled");
+			this.mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
+		}
+
+		exchange.setStatusCode(StatusCodes.OK);
+	}
+
 
 	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
 		exchange.startBlocking();
