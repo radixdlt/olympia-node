@@ -47,6 +47,7 @@ public class SimpleAppendLog implements AppendLog {
 	}
 
 	public static AppendLog open(String path) throws IOException {
+		@SuppressWarnings("resource")
 		var channel = new RandomAccessFile(path, "rw").getChannel();
 		channel.position(channel.size());
 		return new SimpleAppendLog(channel);

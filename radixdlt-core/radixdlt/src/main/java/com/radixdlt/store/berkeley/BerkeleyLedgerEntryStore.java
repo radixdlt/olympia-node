@@ -860,11 +860,13 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	private void addBytesRead(DatabaseEntry entryA, DatabaseEntry entryB) {
-		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_READ, entryA.getSize() + entryB.getSize());
+		long amount = (long) entryA.getSize() + (long) entryB.getSize();
+		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_READ, amount);
 	}
 
 	private void addBytesWrite(DatabaseEntry entryA, DatabaseEntry entryB) {
-		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, entryA.getSize() + entryB.getSize());
+		long amount = (long) entryA.getSize() + (long) entryB.getSize();
+		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
 	}
 
 	private com.sleepycat.je.Transaction unwrap(Transaction tx) {
