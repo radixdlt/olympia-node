@@ -89,6 +89,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 				.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(NoVote.class, CounterType.BFT_REJECTED, true)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
@@ -359,17 +361,6 @@ public class DispatcherModule extends AbstractModule {
 			logger.trace("Vote sending to {}: {}", node, vote);
 			dispatcher.dispatch(node, vote);
 			processors.forEach(e -> e.process(vote));
-		};
-	}
-
-	@Provides
-	private EventDispatcher<NoVote> noVoteDispatcher(
-		Environment environment,
-		SystemCounters systemCounters
-	) {
-		return (noVote) -> {
-			systemCounters.increment(CounterType.BFT_REJECTED);
-			logger.warn(() -> new FormattedMessage("Proposal: Rejected {}", noVote.getVertex()));
 		};
 	}
 

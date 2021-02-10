@@ -1,6 +1,7 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -18,6 +19,8 @@ import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Set;
 
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
@@ -76,19 +79,20 @@ public final class MempoolFiller {
 			logger.info("Mempool Filler: Filling");
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			wallet.createTransaction(to, UInt256.ONE)
-				.ifPresentOrElse(
-					atom -> {
-						atom.sign(keyPair, hasher);
-						ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-						byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
-						Command command = new Command(payload);
-						this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-					},
-					() -> logger.warn("Unable to create atom")
-				);
+			Set<Atom> atoms = wallet.createParallelTransactions(to, 100);
+			if (atoms.isEmpty()) {
+				logger.warn("Unable to create atoms");
+			} else {
+				atoms.forEach(atom -> {
+					atom.sign(keyPair, hasher);
+					ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+					byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+					Command command = new Command(payload);
+					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+				});
+			}
 
-			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 1000);
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
 		};
 	}
 }
