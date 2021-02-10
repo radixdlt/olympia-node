@@ -19,9 +19,12 @@ package com.radixdlt.store.berkeley.atom;
 
 import org.junit.Test;
 
+import com.radixdlt.counters.SystemCounters;
+
 import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.mock;
 
 import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.open;
 import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.openCompressed;
@@ -29,6 +32,8 @@ import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.openCompressed;
 import static java.io.File.createTempFile;
 
 public class SimpleAppendLogTest {
+	private final SystemCounters systemCounters = mock(SystemCounters.class);
+
 	@Test
 	public void appendLogCanBeCreated() throws IOException {
 		String path = createTempPath();
@@ -49,16 +54,16 @@ public class SimpleAppendLogTest {
 	public void compressedAppendLogCanBeCreated() throws IOException {
 		String path = createTempPath();
 
-		readAfterWrite(openCompressed(path));
+		readAfterWrite(openCompressed(path, systemCounters));
 	}
 
 	@Test
 	public void compressedAppendLogCanBeReadFromTheBeginning() throws IOException {
 		var path = createTempPath();
 
-		writeLogEntriesAndClose(openCompressed(path));
+		writeLogEntriesAndClose(openCompressed(path, systemCounters));
 
-		readSequentially(openCompressed(path));
+		readSequentially(openCompressed(path, systemCounters));
 	}
 
 	private String createTempPath() throws IOException {

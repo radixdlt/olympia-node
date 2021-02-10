@@ -21,20 +21,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.xerial.snappy.Snappy;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
+
+import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
+import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
 
 public class CompressedAppendLog implements AppendLog {
 	private static final Logger log = LogManager.getLogger();
 
 	private final AppendLog delegate;
-	private final AtomicLong original = new AtomicLong();
-	private final AtomicLong compressed = new AtomicLong();
+	private final SystemCounters counters;
 
-	public CompressedAppendLog(final AppendLog delegate) {
+	public CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
 		this.delegate = delegate;
+		this.counters = counters;
 	}
 
 	@Override
@@ -51,17 +54,9 @@ public class CompressedAppendLog implements AppendLog {
 	public void write(final byte[] data) throws IOException {
 		byte[] compressedData = Snappy.compress(data);
 
-		if (log.isDebugEnabled()) {
-			var oLen = original.addAndGet(data.length);
-			var cLen = compressed.addAndGet(compressedData.length);
-			var ratio = (double) cLen / (double) oLen;
+		counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
+		counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
 
-			log.debug(
-				"Compression ratio: {}, i.e. written {} than original size",
-				ratio,
-				ratio < 1.0f ? "less" : "more"
-			);
-		}
 		delegate.write(compressedData);
 	}
 

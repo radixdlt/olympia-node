@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley.atom;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
@@ -41,8 +42,8 @@ public class SimpleAppendLog implements AppendLog {
 		this.sizeBufferR = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
 	}
 
-	public static AppendLog openCompressed(String path) throws IOException {
-		return new CompressedAppendLog(open(path));
+	public static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
+		return new CompressedAppendLog(open(path), counters);
 	}
 
 	public static AppendLog open(String path) throws IOException {
