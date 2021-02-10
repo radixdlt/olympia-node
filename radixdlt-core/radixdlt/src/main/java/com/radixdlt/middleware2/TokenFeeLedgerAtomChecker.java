@@ -75,6 +75,11 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom has no instructions");
 		}
 
+		// FIXME: Magic should be removed at some point
+		if (isMagic(atom)) {
+			return Result.success();
+		}
+
 		// no need for fees if a system update
 		// TODO: update should also have no message
 		if (atom.getCMInstruction().getMicroInstructions().stream()
@@ -113,9 +118,14 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		return Result.success();
 	}
 
+	private boolean isMagic(LedgerAtom atom) {
+		final var message = atom.getMessage();
+		return message != null && message.startsWith("magic:0xdeadbeef");
+	}
+
 	private boolean isFeeGroup(ParticleGroup pg) {
 		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.getParticles().stream()
-			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
+				.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = Optional.ofNullable(grouping.remove(TransferrableTokensParticle.class))
 				.orElseGet(List::of);
 		List<SpunParticle> spunUnallocatedTokens = Optional.ofNullable(grouping.remove(UnallocatedTokensParticle.class))
@@ -127,9 +137,9 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 
 		final Map<Spin, List<TransferrableTokensParticle>> transferableParticlesBySpin =
-			spunTransferableTokens.stream().collect(
-					Collectors.groupingBy(SpunParticle::getSpin,
-					Collectors.mapping(sp -> (TransferrableTokensParticle) sp.getParticle(), Collectors.toList())));
+				spunTransferableTokens.stream().collect(
+						Collectors.groupingBy(SpunParticle::getSpin,
+								Collectors.mapping(sp -> (TransferrableTokensParticle) sp.getParticle(), Collectors.toList())));
 
 		// Needs to be at least some down transferrable tokens
 		final var downTransferrableParticles = transferableParticlesBySpin.get(Spin.DOWN);
@@ -153,7 +163,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	// Check that all unallocated particles are in the up state and for the fee token
 	private boolean allUpForFeeToken(List<SpunParticle> spunUnallocatedTokens) {
 		return spunUnallocatedTokens.stream()
-			.allMatch(this::isUpAndForFee);
+				.allMatch(this::isUpAndForFee);
 	}
 
 	private boolean isUpAndForFee(SpunParticle sp) {
