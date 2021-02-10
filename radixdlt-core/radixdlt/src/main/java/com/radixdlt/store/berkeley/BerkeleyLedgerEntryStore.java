@@ -111,6 +111,7 @@ import static com.radixdlt.store.berkeley.AtomSecondaryCreator.creator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.makeIndices;
+import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 import static java.lang.String.format;
@@ -310,6 +311,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				var value = entry();
 
 				if (uniqueIndices.get(null, key, value, DEFAULT) == SUCCESS) {
+					value.setData(atomLog.read(fromByteArray(value.getData())));
+
 					addBytesRead(value, key);
 					return Optional.of(restoreLedgerEntry(value.getData()));
 				}
@@ -602,7 +605,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
 					//  how should we handle it?
 					if (uqCursorStatus == SUCCESS) {
-						var offset = Longs.fromByteArray(value.getData());
+						var offset = fromByteArray(value.getData());
 						ledgerEntries.add(restoreLedgerEntry(atomLog.read(offset)));
 					}
 				} catch (Exception e) {
@@ -845,7 +848,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	private static long lcFromPKey(byte[] pKey) {
-		return Longs.fromByteArray(pKey, 1);
+		return fromByteArray(pKey, 1);
 	}
 
 	private void addTime(long start, CounterType detailTime, CounterType detailCounter) {
