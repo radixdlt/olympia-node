@@ -17,6 +17,8 @@
 
 package com.radixdlt.store.berkeley.atom;
 
+import com.radixdlt.utils.Pair;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -39,6 +41,10 @@ public class SimpleAppendLog implements AppendLog {
 		this.sizeBufferR = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
 	}
 
+	public static AppendLog openCompressed(String path) throws IOException {
+		return new CompressedAppendLog(open(path));
+	}
+
 	public static AppendLog open(String path) throws IOException {
 		var channel = new RandomAccessFile(path, "rw").getChannel();
 		channel.position(channel.size());
@@ -47,16 +53,16 @@ public class SimpleAppendLog implements AppendLog {
 
 	@Override
 	public void write(byte[] data) throws IOException {
-		int length = data.length;
-		sizeBufferW.clear().putInt(length).clear();
+		sizeBufferW.clear().putInt(data.length).clear();
 		checkedWrite(Integer.BYTES, sizeBufferW);
 		checkedWrite(data.length, ByteBuffer.wrap(data));
 	}
 
 	@Override
-	public byte[] read(long offset) throws IOException {
+	public Pair<byte[], Integer> readChunk(long offset) throws IOException {
 		checkedRead(offset, sizeBufferR.clear());
-		return checkedRead(offset + Integer.BYTES, allocate(sizeBufferR.clear().getInt())).array();
+		var readLength = sizeBufferR.clear().getInt();
+		return Pair.of(checkedRead(offset + Integer.BYTES, allocate(readLength)).array(), readLength);
 	}
 
 	@Override

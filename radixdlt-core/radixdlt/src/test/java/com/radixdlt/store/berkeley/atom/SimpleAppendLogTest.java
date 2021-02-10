@@ -19,40 +19,71 @@ package com.radixdlt.store.berkeley.atom;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.open;
+import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.openCompressed;
+
+import static java.io.File.createTempFile;
+
 public class SimpleAppendLogTest {
 	@Test
 	public void appendLogCanBeCreated() throws IOException {
-		var path = File.createTempFile("mal-", ".log").getAbsolutePath();
-		var appendLog = SimpleAppendLog.open(path);
+		String path = createTempPath();
 
-		checkReadAfterWrite(appendLog, new byte[]{0x01});
-		checkReadAfterWrite(appendLog, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
-		checkReadAfterWrite(appendLog, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+		readAfterWrite(open(path));
 	}
 
 	@Test
-	public void appendLogCanBeReadFromScratch() throws IOException {
-		var path = File.createTempFile("mal-", ".log").getAbsolutePath();
-		var appendLog = SimpleAppendLog.open(path);
+	public void appendLogCanBeReadFromTheBeginning() throws IOException {
+		var path = createTempPath();
 
-		appendLog.write(new byte[]{0x01});
-		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
-		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+		writeLogEntriesAndClose(open(path));
 
-		appendLog.close();
+		readSequentially(open(path));
+	}
 
-		var newAppendLog = SimpleAppendLog.open(path);
+	@Test
+	public void compressedAppendLogCanBeCreated() throws IOException {
+		String path = createTempPath();
 
+		readAfterWrite(openCompressed(path));
+	}
+
+	@Test
+	public void compressedAppendLogCanBeReadFromTheBeginning() throws IOException {
+		var path = createTempPath();
+
+		writeLogEntriesAndClose(openCompressed(path));
+
+		readSequentially(openCompressed(path));
+	}
+
+	private String createTempPath() throws IOException {
+		return createTempFile("mal-", ".log").getAbsolutePath();
+	}
+
+	private void readSequentially(final AppendLog newAppendLog) throws IOException {
 		long pos;
 
 		pos = checkSingleChunk(newAppendLog, 0L, new byte[]{0x01});
 		pos = checkSingleChunk(newAppendLog, pos, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
 		pos = checkSingleChunk(newAppendLog, pos, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+	}
+
+	private void writeLogEntriesAndClose(final AppendLog appendLog) throws IOException {
+		appendLog.write(new byte[]{0x01});
+		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
+		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+		appendLog.close();
+	}
+
+	private void readAfterWrite(final AppendLog appendLog) throws IOException {
+		checkReadAfterWrite(appendLog, new byte[]{0x01});
+		checkReadAfterWrite(appendLog, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
+		checkReadAfterWrite(appendLog, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
 	}
 
 	private void checkReadAfterWrite(AppendLog appendLog, byte[] data) throws IOException {
@@ -63,10 +94,10 @@ public class SimpleAppendLogTest {
 	}
 
 	private long checkSingleChunk(AppendLog appendLog, long offset, byte[] expect) throws IOException {
-		var bytes = appendLog.read(offset);
+		var result = appendLog.readChunk(offset);
 
-		assertArrayEquals(expect, bytes);
+		assertArrayEquals(expect, result.getFirst());
 
-		return offset + bytes.length + Integer.BYTES;
+		return offset + result.getSecond() + Integer.BYTES;
 	}
 }

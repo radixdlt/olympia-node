@@ -173,7 +173,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
 			pendingDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 
-			atomLog = SimpleAppendLog.open(new File(env.getHome(), ATOM_LOG).getAbsolutePath());
+			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath());
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}

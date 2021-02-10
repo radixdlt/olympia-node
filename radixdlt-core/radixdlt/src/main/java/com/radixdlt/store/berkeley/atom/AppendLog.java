@@ -17,6 +17,8 @@
 
 package com.radixdlt.store.berkeley.atom;
 
+import com.radixdlt.utils.Pair;
+
 import java.io.IOException;
 
 /**
@@ -49,13 +51,24 @@ public interface AppendLog {
 	void write(byte[] data) throws IOException;
 
 	/**
-	 * Read chunk .
+	 * Read chunk at specified position.
 	 *
-	 * @param data data to write
+	 * @param offset offset to read from
 	 *
 	 * @return successful result with chunk length or failure with error description.
 	 */
-	byte[] read(long offset) throws IOException;
+	default byte[] read(long offset) throws IOException {
+		return readChunk(offset).getFirst();
+	}
+
+	/**
+	 * Read chunk at specified position.
+	 *
+	 * @param offset offset to read from
+	 *
+	 * @return successful result with chunk length or failure with error description.
+	 */
+	Pair<byte[], Integer> readChunk(long offset) throws IOException;
 
 	/**
 	 * Force flushing data to disk.
