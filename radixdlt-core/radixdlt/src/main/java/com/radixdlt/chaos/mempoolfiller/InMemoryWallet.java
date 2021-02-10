@@ -30,7 +30,7 @@ public final class InMemoryWallet {
 	private final RadixAddress address;
 	private final ImmutableList<TransferrableTokensParticle> particles;
 	private final TokDefParticleFactory factory;
-	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(40));
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private InMemoryWallet(RRI tokenRRI, RadixAddress address, ImmutableList<TransferrableTokensParticle> particles) {
 		this.tokenRRI = tokenRRI;
@@ -104,7 +104,7 @@ public final class InMemoryWallet {
 
 	public Set<Atom> createParallelTransactions(RadixAddress to, int max) {
 		Stream<Optional<Atom>> atoms = particles.stream()
-			.filter(t -> t.getAmount().compareTo(fee) > 0)
+			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0)
 			.map(t -> {
 				var mutableList = new LinkedList<TransferrableTokensParticle>();
 				mutableList.add(t);
@@ -113,10 +113,12 @@ public final class InMemoryWallet {
 			});
 
 	    var mutableList = new LinkedList<TransferrableTokensParticle>();
-	    particles.stream().filter(t -> t.getAmount().compareTo(fee) <= 0).forEach(mutableList::add);
+	    particles.stream().filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
+			.limit(3)
+			.forEach(mutableList::add);
 		UInt256 dustAmount = particles.stream()
 			.map(TransferrableTokensParticle::getAmount)
-			.filter(a -> a.compareTo(fee) <= 0)
+			.filter(a -> a.compareTo(fee.multiply(UInt256.TWO)) <= 0)
 			.reduce(UInt256.ZERO, UInt256::add);
 		Stream<Optional<Atom>> dustAtom = Stream.of(createTransaction(mutableList, to, dustAmount.subtract(fee)));
 

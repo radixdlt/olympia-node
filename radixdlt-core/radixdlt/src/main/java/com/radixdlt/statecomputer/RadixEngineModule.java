@@ -19,6 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -29,20 +30,13 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -56,32 +50,8 @@ import java.util.function.UnaryOperator;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(StateComputer.class).to(RadixEngineStateComputer.class);
+		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
-	}
-
-	@Provides
-	@Singleton
-	private RadixEngineStateComputer radixEngineStateComputer(
-		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
-		Mempool mempool,
-		RadixEngineAtomicCommitManager atomicCommitManager,
-		@EpochCeilingView View epochCeilingView,
-		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher,
-		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
-	) {
-		return RadixEngineStateComputer.create(
-			serialization,
-			radixEngine,
-			mempool,
-			atomicCommitManager,
-			epochCeilingView,
-			validatorSetBuilder,
-			hasher,
-			mempoolAddFailureEventDispatcher
-		);
 	}
 
 	@Provides

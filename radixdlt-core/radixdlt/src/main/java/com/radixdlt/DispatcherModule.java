@@ -59,6 +59,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -88,9 +89,19 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(NoVote.class, CounterType.BFT_REJECTED, true)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				NoVote.class,
+				CounterType.BFT_REJECTED,
+				true
+			))
+			.in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(
+				InvalidProposedCommand.class,
+				true
+			)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);

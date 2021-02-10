@@ -76,23 +76,19 @@ public final class MempoolFiller {
 		    	return;
 			}
 
-			logger.info("Mempool Filler: Filling");
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			Set<Atom> atoms = wallet.createParallelTransactions(to, 100);
-			if (atoms.isEmpty()) {
-				logger.warn("Unable to create atoms");
-			} else {
-				atoms.forEach(atom -> {
-					atom.sign(keyPair, hasher);
-					ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-					byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
-					Command command = new Command(payload);
-					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-				});
-			}
+			logger.info("Mempool Filler: Adding " + atoms.size() + " atoms to mempool...");
+			atoms.forEach(atom -> {
+				atom.sign(keyPair, hasher);
+				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+				Command command = new Command(payload);
+				this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+			});
 
-			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 1000);
 		};
 	}
 }

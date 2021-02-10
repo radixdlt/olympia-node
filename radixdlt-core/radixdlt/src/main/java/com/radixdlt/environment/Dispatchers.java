@@ -70,7 +70,7 @@ public final class Dispatchers {
 					systemCounters.increment(counterType);
 				}
 				if (enableLogging) {
-					Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
+					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 					logger.log(logLevel, "{}", e);
 				}
 			};
@@ -115,8 +115,8 @@ public final class Dispatchers {
 		return new DispatcherProvider<>(c, counterType, enableLogging);
 	}
 
-	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, SystemCounters.CounterType counterType) {
-		return new DispatcherProvider<>(c, counterType, false);
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, boolean enableLogging) {
+		return new DispatcherProvider<>(c, null, enableLogging);
 	}
 
 	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
