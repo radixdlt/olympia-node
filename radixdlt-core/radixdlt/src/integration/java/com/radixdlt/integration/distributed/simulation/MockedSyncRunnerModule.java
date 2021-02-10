@@ -78,12 +78,12 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
 		return ModuleRunnerImpl.builder()
-				.add(localSyncRequests, syncRequestEventProcessor)
-				.add(syncTimeouts, syncTimeoutProcessor)
-				.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
-				.add(remoteSyncRequests, remoteSyncServiceProcessor)
-				.add(remoteSyncResponses, responseProcessor)
-				.build("SyncManager " + self);
+			.add(localSyncRequests, syncRequestEventProcessor)
+			.add(syncTimeouts, syncTimeoutProcessor)
+			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
+			.add(remoteSyncRequests, remoteSyncServiceProcessor)
+			.add(remoteSyncResponses, responseProcessor)
+			.build("SyncManager " + self);
 	}
 
 	@ProvidesIntoSet
