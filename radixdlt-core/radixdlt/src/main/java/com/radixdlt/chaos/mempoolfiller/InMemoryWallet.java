@@ -1,8 +1,24 @@
+/*
+ * (C) Copyright 2021 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
@@ -14,9 +30,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.utils.UInt256;
-import io.undertow.util.Transfer;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,10 +39,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Wallet where all state is kept in memory
+ */
 public final class InMemoryWallet {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 	private final ImmutableList<TransferrableTokensParticle> particles;
+	private final UInt256 balance;
 	private final TokDefParticleFactory factory;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
@@ -36,6 +54,10 @@ public final class InMemoryWallet {
 		this.tokenRRI = tokenRRI;
 		this.address = address;
 		this.particles = particles;
+		this.balance = particles.stream()
+			.map(TransferrableTokensParticle::getAmount)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
 		this.factory = TokDefParticleFactory.create(
 			tokenRRI,
 			ImmutableMap.of(
@@ -51,6 +73,10 @@ public final class InMemoryWallet {
 		Objects.requireNonNull(address);
 
 		return new InMemoryWallet(tokenRRI, address, ImmutableList.of());
+	}
+
+	public UInt256 getBalance() {
+		return balance;
 	}
 
 	private Optional<UInt256> downParticles(

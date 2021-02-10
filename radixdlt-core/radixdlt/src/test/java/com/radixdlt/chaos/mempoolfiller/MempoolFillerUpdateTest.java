@@ -15,28 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.environment.rx;
+package com.radixdlt.chaos.mempoolfiller;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import java.util.Objects;
-
-/**
- * Helper class to hook up observables to the environment
- */
-public final class ObservableProvider<T> implements Provider<Observable<T>> {
-    @Inject
-    private Provider<RxEnvironment> rxEnvironmentProvider;
-    private final Class<T> c;
-
-    ObservableProvider(Class<T> c) {
-        this.c = Objects.requireNonNull(c);
+public class MempoolFillerUpdateTest {
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(MempoolFillerUpdate.class)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
     }
 
-    @Override
-    public Observable<T> get() {
-        return rxEnvironmentProvider.get().getObservable(c);
-    }
 }

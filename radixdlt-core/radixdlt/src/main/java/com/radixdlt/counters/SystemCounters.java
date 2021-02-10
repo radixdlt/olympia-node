@@ -118,7 +118,7 @@ public interface SystemCounters {
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
 
-		MEMPOOL_FAILURE_COUNT("mempool.failures_count"),
+		MEMPOOL_FAILURE_COUNT("mempool.failure_count"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
 
