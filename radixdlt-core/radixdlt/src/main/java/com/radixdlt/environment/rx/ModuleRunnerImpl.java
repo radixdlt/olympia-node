@@ -47,18 +47,18 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 	private final List<Subscription<?>> subscriptions;
 
 	private static class Subscription<T> {
-        final Observable<T> o;
-        final EventProcessor<T> p;
+		final Observable<T> o;
+		final EventProcessor<T> p;
 
-        Subscription(Observable<T> o, EventProcessor<T> p) {
-            this.o = o;
-            this.p = p;
-        }
-
-        Disposable subscribe(Scheduler s) {
-        	return o.observeOn(s).subscribe(p::process);
+		Subscription(Observable<T> o, EventProcessor<T> p) {
+			this.o = o;
+			this.p = p;
 		}
-    }
+
+		Disposable subscribe(Scheduler s) {
+			return o.observeOn(s).subscribe(p::process);
+		}
+	}
 
 	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions) {
 		this.subscriptions = subscriptions;
@@ -98,7 +98,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.compositeDisposable != null) {
-			    return;
+				return;
 			}
 
 			final var disposables = this.subscriptions.stream()
