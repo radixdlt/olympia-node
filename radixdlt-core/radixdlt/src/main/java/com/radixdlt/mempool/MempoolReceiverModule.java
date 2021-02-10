@@ -15,20 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.mempool.MempoolReceiver;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.rx.ModuleRunnerImpl;
+import com.radixdlt.environment.rx.RemoteEvent;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Module for receiving mempool commands
  */
 public final class MempoolReceiverModule extends AbstractModule {
-    @Override
-    public void configure() {
-        MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
-        moduleRunners.addBinding("mempool").to(MempoolReceiver.class).in(Scopes.SINGLETON);
-    }
+	@ProvidesIntoMap
+	@StringMapKey("mempool")
+	private ModuleRunner mempoolReceiver(
+		Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
+		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
+	) {
+		return ModuleRunnerImpl.builder()
+			.add(mempoolCommands, remoteEventProcessor)
+			.build("MempoolReceiver");
+	}
 }

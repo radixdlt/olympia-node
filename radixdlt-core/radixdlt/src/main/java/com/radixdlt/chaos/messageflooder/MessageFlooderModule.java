@@ -15,27 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.chaos.messageflooder;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.chaos.MessageFlooder;
-import com.radixdlt.chaos.ChaosRunner;
-import com.radixdlt.chaos.MessageFlooderUpdate;
-import com.radixdlt.chaos.ScheduledMessageFlood;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
 
 /**
- * Module for chaos type functions
+ * Module which manages message flooding
  */
-public final class ChaosModule extends AbstractModule {
+public final class MessageFlooderModule extends AbstractModule {
 	@Override
 	public void configure() {
-		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
-		moduleRunners.addBinding("chaos").to(ChaosRunner.class).in(Scopes.SINGLETON);
 		bind(MessageFlooder.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(ScheduledMessageFlood.class);
+		eventBinder.addBinding().toInstance(MessageFlooderUpdate.class);
 	}
 
 	@Provides

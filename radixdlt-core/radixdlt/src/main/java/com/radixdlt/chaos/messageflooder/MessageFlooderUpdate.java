@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.chaos;
+package com.radixdlt.chaos.messageflooder;
 
 import com.radixdlt.consensus.bft.BFTNode;
 

@@ -20,11 +20,12 @@ package com.radixdlt;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.chaos.MessageFlooderUpdate;
-import com.radixdlt.chaos.ScheduledMessageFlood;
+import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
@@ -45,6 +46,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -69,8 +71,26 @@ import org.apache.logging.log4j.message.FormattedMessage;
  */
 public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
+
 	@Override
 	public void configure() {
+		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolAddFailure.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
+
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<SyncInProgress>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncInProgress.class)).in(Scopes.SINGLETON);
+
+		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
+				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
@@ -109,7 +129,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
-
 
 		final var mempoolAddKey = new TypeLiteral<EventProcessor<MempoolAdd>>() { };
 		Multibinder.newSetBinder(binder(), mempoolAddKey, ProcessOnDispatch.class);
@@ -159,16 +178,6 @@ public class DispatcherModule extends AbstractModule {
 			dispatcher.dispatch(timeout, ms);
 			processors.forEach(e -> e.process(timeout));
 		};
-	}
-
-	@Provides
-	private ScheduledEventDispatcher<VertexRequestTimeout> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
-		return environment.getScheduledDispatcher(VertexRequestTimeout.class);
-	}
-
-	@Provides
-	private ScheduledEventDispatcher<SyncInProgress> timeoutSync(Environment environment) {
-		return environment.getScheduledDispatcher(SyncInProgress.class);
 	}
 
 	@Provides
@@ -396,44 +405,8 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors,
-		Environment environment
+		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
 	) {
 		return cmd -> processors.forEach(e -> e.process(cmd));
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher(
-		Environment environment
-	) {
-		return environment.getDispatcher(MempoolAddFailure.class);
-	}
-
-	@Provides
-	private RemoteEventDispatcher<MempoolAddSuccess> mempoolAddedRemoteEventDispatcher(
-		Environment environment
-	) {
-		return environment.getRemoteDispatcher(MempoolAddSuccess.class);
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<AtomCommittedToLedger> committedDispatcher(
-		Environment environment
-	) {
-		return environment.getDispatcher(AtomCommittedToLedger.class);
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher(Environment environment) {
-		return environment.getDispatcher(MessageFlooderUpdate.class);
-	}
-
-	@Provides
-	@Singleton
-	private ScheduledEventDispatcher<ScheduledMessageFlood> scheduledMessageFloodScheduledEventDispatcher(Environment environment) {
-		return environment.getScheduledDispatcher(ScheduledMessageFlood.class);
 	}
 }

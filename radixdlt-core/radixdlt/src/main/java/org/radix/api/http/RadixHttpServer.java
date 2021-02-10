@@ -19,7 +19,7 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.chaos.MessageFlooderUpdate;
+import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
@@ -63,7 +63,6 @@ import org.json.JSONObject;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
-import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -94,7 +93,6 @@ public final class RadixHttpServer {
 	private final ModuleRunner consensusRunner;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
-	private final InternalService internalService;
 	private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
@@ -149,7 +147,6 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(mempoolAddEventDispatcher, properties, universe, hasher);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 	}
@@ -195,10 +192,7 @@ public final class RadixHttpServer {
 			);
 		});
 
-		// if we are in a development universe, add the dev only routes (e.g. for spamathons)
-		if (this.universe.isDevelopment()) {
-			addDevelopmentOnlyRoutesTo(handler);
-		}
+		// if we are in a development universe, add the dev only routes
 		if (this.universe.isDevelopment() || this.universe.isTest()) {
 			addTestRoutesTo(handler);
 		}
@@ -218,16 +212,6 @@ public final class RadixHttpServer {
 	public void stop() {
 		this.atomsService.stop();
 		this.server.stop();
-	}
-
-	private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
-		addGetRoute("/api/internal/spamathon", exchange -> {
-			String iterations = getParameter(exchange, "iterations").orElse(null);
-			String batching = getParameter(exchange, "batching").orElse(null);
-			String rate = getParameter(exchange, "rate").orElse(null);
-
-			respond(internalService.spamathon(iterations, batching, rate), exchange);
-		}, handler);
 	}
 
 	private void addTestRoutesTo(RoutingHandler handler) {

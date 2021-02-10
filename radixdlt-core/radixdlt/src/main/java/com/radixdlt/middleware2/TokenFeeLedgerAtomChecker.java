@@ -127,9 +127,9 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.getParticles().stream()
 			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = Optional.ofNullable(grouping.remove(TransferrableTokensParticle.class))
-				.orElseGet(List::of);
+			.orElseGet(List::of);
 		List<SpunParticle> spunUnallocatedTokens = Optional.ofNullable(grouping.remove(UnallocatedTokensParticle.class))
-				.orElseGet(List::of);
+			.orElseGet(List::of);
 
 		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
 		if (!grouping.isEmpty() || spunTransferableTokens.isEmpty() || spunUnallocatedTokens.isEmpty()) {

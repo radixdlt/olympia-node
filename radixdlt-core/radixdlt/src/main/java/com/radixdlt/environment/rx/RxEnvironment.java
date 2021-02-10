@@ -18,7 +18,6 @@
 package com.radixdlt.environment.rx;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -27,6 +26,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ public final class RxEnvironment implements Environment {
 	private final ImmutableMap<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
 	public RxEnvironment(
-		ImmutableSet<Class<?>> localEventClasses,
+		Set<Class<?>> localEventClasses,
 		ScheduledExecutorService executorService,
 		Set<RxRemoteDispatcher<?>> remoteDispatchers
 	) {
@@ -51,25 +51,24 @@ public final class RxEnvironment implements Environment {
 		this.remoteDispatchers = remoteDispatchers.stream().collect(ImmutableMap.toImmutableMap(RxRemoteDispatcher::eventClass, d -> d));
 	}
 
-	private <T> Subject<T> getSubject(Class<T> eventClass) {
+	private <T> Optional<Subject<T>> getSubject(Class<T> eventClass) {
 		@SuppressWarnings("unchecked")
 		Subject<T> eventDispatcher = (Subject<T>) subjects.get(eventClass);
 
-		if (eventDispatcher == null) {
-			throw new IllegalStateException("RxEnvironment does not support event class: " + eventClass);
-		}
-
-		return eventDispatcher;
+		return Optional.ofNullable(eventDispatcher);
 	}
 
 	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-		return getSubject(eventClass)::onNext;
+		return getSubject(eventClass).<EventDispatcher<T>>map(s -> s::onNext).orElse(e -> { });
 	}
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-		return (e, millis) -> executorService.schedule(() -> getSubject(eventClass).onNext(e), millis, TimeUnit.MILLISECONDS);
+		return (e, millis) -> {
+			getSubject(eventClass).ifPresent(s -> executorService.schedule(
+					() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
+		};
 	}
 
 	@Override
@@ -80,6 +79,6 @@ public final class RxEnvironment implements Environment {
 	}
 
 	public <T> Observable<T> getObservable(Class<T> eventClass) {
-		return getSubject(eventClass);
+		return getSubject(eventClass).orElseThrow();
 	}
 }

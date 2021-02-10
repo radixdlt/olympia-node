@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -28,6 +29,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
@@ -42,6 +44,7 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
 
 import org.radix.universe.system.LocalSystem;
@@ -80,6 +83,9 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RxEnvironmentModule());
 
 		install(new DispatcherModule());
+
+		// API
+		install(new ApiModule());
 
 		// Consensus
 		install(new BFTKeyModule());

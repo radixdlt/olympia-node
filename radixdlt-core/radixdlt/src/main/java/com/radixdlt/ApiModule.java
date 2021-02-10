@@ -19,6 +19,11 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import org.radix.api.http.RadixHttpServer;
 
 /**
@@ -28,5 +33,9 @@ public final class ApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
+		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 	}
 }

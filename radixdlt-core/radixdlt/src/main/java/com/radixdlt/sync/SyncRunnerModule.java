@@ -15,53 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.sync;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 
 import java.util.Set;
 
-/**
- * A sync runner which doesn't involve epochs
- */
-public class MockedSyncRunnerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
-			.to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
-		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
-
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
-		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
-		eventBinder.addBinding().toInstance(SyncInProgress.class);
-	}
-
+public class SyncRunnerModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("sync")
 	private ModuleRunner syncRunner(
@@ -70,8 +45,8 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeouts,
 		EventProcessor<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeoutProcessor,
-		Observable<LedgerUpdate> ledgerUpdates,
-		@ProcessWithSyncRunner Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
+		Observable<EpochsLedgerUpdate> ledgerUpdates,
+		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors,
 		Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor,
 		Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
@@ -84,28 +59,5 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(remoteSyncRequests, remoteSyncServiceProcessor)
 			.add(remoteSyncResponses, responseProcessor)
 			.build("SyncManager " + self);
-	}
-
-	@ProvidesIntoSet
-	@ProcessWithSyncRunner
-	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
-	) {
-		return localSyncServiceAccumulatorProcessor::processLedgerUpdate;
-	}
-
-	@Provides
-	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
-	) {
-		return localSyncServiceAccumulatorProcessor.localSyncRequestEventProcessor();
-	}
-
-
-	@Provides
-	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
-	) {
-		return localSyncServiceAccumulatorProcessor.syncTimeoutProcessor();
 	}
 }
