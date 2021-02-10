@@ -171,7 +171,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		if (checker != null) {
 			Result hookResult = checker.check(atom);
 			if (hookResult.isError()) {
-				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, "Checker failed", DataPointer.ofAtom());
+				throw new RadixEngineException(
+					RadixEngineErrorCode.HOOK_ERROR,
+					"Checker failed: " + hookResult.getErrorMessage(),
+					DataPointer.ofAtom()
+				);
 			}
 		}
 	}

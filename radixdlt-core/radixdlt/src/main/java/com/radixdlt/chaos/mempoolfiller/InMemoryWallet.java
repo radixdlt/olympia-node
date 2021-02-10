@@ -33,7 +33,7 @@ public final class InMemoryWallet {
 		this.factory = TokDefParticleFactory.create(
 			tokenRRI,
 			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
 				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
 			),
 			UInt256.ONE

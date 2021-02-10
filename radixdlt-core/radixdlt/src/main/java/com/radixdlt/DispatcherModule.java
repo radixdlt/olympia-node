@@ -77,7 +77,12 @@ public class DispatcherModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MempoolAddFailure.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				MempoolAddFailure.class,
+				CounterType.MEMPOOL_FAILURE_COUNT,
+				true
+			))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })

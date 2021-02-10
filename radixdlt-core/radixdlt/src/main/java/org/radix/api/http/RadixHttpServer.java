@@ -28,6 +28,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
@@ -108,7 +109,7 @@ public final class RadixHttpServer {
 
 	@Inject(optional = true)
 	@MempoolFillerKey
-	private ECPublicKey mempoolFillerKey;
+	private RadixAddress mempoolFillerAddress;
 
 	@Inject
 	public RadixHttpServer(
@@ -311,8 +312,7 @@ public final class RadixHttpServer {
 		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
 		addRoute("/api/chaos/mempool-filler", Methods.PUT_STRING, this::handleMempoolFill, handler);
 		addGetRoute("/api/chaos/mempool-filler", exchange
-			-> respond(new JSONObject()
-				.put("pubkeyBase64", mempoolFillerKey != null ? mempoolFillerKey.toBase64() : null), exchange), handler);
+			-> respond(new JSONObject().put("address", mempoolFillerAddress), exchange), handler);
 
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
@@ -448,7 +448,7 @@ public final class RadixHttpServer {
 			if (enabled) {
 				JSONObject data = values.getJSONObject("data");
 				if (data.has("nodeKey")) {
-					String nodeKeyBase58 = values.getString("nodeKey");
+					String nodeKeyBase58 = data.getString("nodeKey");
 					BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
 					update = update.bftNode(node);
 				}

@@ -17,72 +17,113 @@
 
 package com.radixdlt.environment;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.counters.SystemCounters;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Helper class to set up environment with dispatched events
  */
 public final class Dispatchers {
-    private Dispatchers() {
-        throw new IllegalStateException("Cannot instantiate.");
-    }
+	private static final Logger logger = LogManager.getLogger();
 
-    private static class DispatcherProvider<T> implements Provider<EventDispatcher<T>> {
-        @Inject
-        private Provider<Environment> environmentProvider;
+	private Dispatchers() {
+		throw new IllegalStateException("Cannot instantiate.");
+	}
 
-        private final Class<T> c;
+	private static class DispatcherProvider<T> implements Provider<EventDispatcher<T>> {
+		@Inject
+		private Provider<Environment> environmentProvider;
 
-        DispatcherProvider(Class<T> c) {
-            this.c = c;
-        }
+		@Inject
+		private SystemCounters systemCounters;
 
-        @Override
-        public EventDispatcher<T> get() {
-            return environmentProvider.get().getDispatcher(c);
-        }
-    }
+		private final Class<T> c;
+		private final SystemCounters.CounterType counterType;
+		private final boolean enableLogging;
 
-    private static final class ScheduledDispatcherProvider<T> implements Provider<ScheduledEventDispatcher<T>> {
-        @Inject
-        private Provider<Environment> environmentProvider;
-        private final Class<T> c;
+		DispatcherProvider(
+			Class<T> c,
+			@Nullable SystemCounters.CounterType counterType,
+			boolean enableLogging
+		) {
+			this.c = c;
+			this.counterType = counterType;
+			this.enableLogging = enableLogging;
+		}
 
-        ScheduledDispatcherProvider(Class<T> c) {
-            this.c = c;
-        }
+		@Override
+		public EventDispatcher<T> get() {
+			final EventDispatcher<T> dispatcher = environmentProvider.get().getDispatcher(c);
+			final RateLimiter logLimiter = RateLimiter.create(1.0);
+			return e -> {
+				dispatcher.dispatch(e);
+				if (counterType != null) {
+					systemCounters.increment(counterType);
+				}
+				if (enableLogging) {
+					Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
+					logger.log(logLevel, "{}", e);
+				}
+			};
+		}
+	}
 
-        @Override
-        public ScheduledEventDispatcher<T> get() {
-            return environmentProvider.get().getScheduledDispatcher(c);
-        }
-    }
+	private static final class ScheduledDispatcherProvider<T> implements Provider<ScheduledEventDispatcher<T>> {
+		@Inject
+		private Provider<Environment> environmentProvider;
+		private final Class<T> c;
 
-    private static final class RemoteDispatcherProvider<T> implements Provider<RemoteEventDispatcher<T>> {
-        @Inject
-        private Provider<Environment> environmentProvider;
-        private final Class<T> c;
+		ScheduledDispatcherProvider(Class<T> c) {
+			this.c = c;
+		}
 
-        RemoteDispatcherProvider(Class<T> c) {
-            this.c = c;
-        }
+		@Override
+		public ScheduledEventDispatcher<T> get() {
+			return environmentProvider.get().getScheduledDispatcher(c);
+		}
+	}
 
-        @Override
-        public RemoteEventDispatcher<T> get() {
-            return environmentProvider.get().getRemoteDispatcher(c);
-        }
-    }
+	private static final class RemoteDispatcherProvider<T> implements Provider<RemoteEventDispatcher<T>> {
+		@Inject
+		private Provider<Environment> environmentProvider;
+		private final Class<T> c;
 
-    public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
-        return new DispatcherProvider<>(c);
-    }
+		RemoteDispatcherProvider(Class<T> c) {
+			this.c = c;
+		}
 
-    public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
-        return new ScheduledDispatcherProvider<>(c);
-    }
+		@Override
+		public RemoteEventDispatcher<T> get() {
+			return environmentProvider.get().getRemoteDispatcher(c);
+		}
+	}
 
-    public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
-        return new RemoteDispatcherProvider<>(c);
-    }
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
+		return new DispatcherProvider<>(c, null, false);
+	}
+
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, SystemCounters.CounterType counterType, boolean enableLogging) {
+		return new DispatcherProvider<>(c, counterType, enableLogging);
+	}
+
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, SystemCounters.CounterType counterType) {
+		return new DispatcherProvider<>(c, counterType, false);
+	}
+
+	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
+		return new ScheduledDispatcherProvider<>(c);
+	}
+
+	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
+		return new RemoteDispatcherProvider<>(c);
+	}
 }
