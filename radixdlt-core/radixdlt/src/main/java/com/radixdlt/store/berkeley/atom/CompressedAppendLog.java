@@ -19,9 +19,9 @@ package com.radixdlt.store.berkeley.atom;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xerial.snappy.Snappy;
 
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
@@ -52,7 +52,7 @@ public class CompressedAppendLog implements AppendLog {
 
 	@Override
 	public void write(final byte[] data) throws IOException {
-		byte[] compressedData = Snappy.compress(data);
+		byte[] compressedData = Compress.compress(data);
 
 		counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
 		counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
@@ -63,7 +63,7 @@ public class CompressedAppendLog implements AppendLog {
 	@Override
 	public Pair<byte[], Integer> readChunk(final long offset) throws IOException {
 		var result = delegate.readChunk(offset);
-		return Pair.of(Snappy.uncompress(result.getFirst()), result.getSecond());
+		return Pair.of(Compress.uncompress(result.getFirst()), result.getSecond());
 	}
 
 	@Override
@@ -75,4 +75,5 @@ public class CompressedAppendLog implements AppendLog {
 	public void close() {
 		delegate.close();
 	}
+
 }

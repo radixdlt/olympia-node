@@ -32,6 +32,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Compress;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +40,6 @@ import org.junit.Test;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.LocalSystem;
-import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -209,13 +209,13 @@ public class MessageCentralImplTest {
 	@Test
 	public void testInbound() throws IOException, InterruptedException {
 		Message msg = new TestMessage(1);
-		byte[] data = Snappy.compress(serialization.toDson(msg, Output.WIRE));
+		byte[] data = Compress.compress(serialization.toDson(msg, Output.WIRE));
 
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();
 		Semaphore receivedFlag = new Semaphore(0);
 
-		mci.addListener(msg.getClass(), (peer, messsage) -> {
-			receivedMessage.set(messsage);
+		mci.addListener(msg.getClass(), (peer, message) -> {
+			receivedMessage.set(message);
 			receivedFlag.release();
 		});
 

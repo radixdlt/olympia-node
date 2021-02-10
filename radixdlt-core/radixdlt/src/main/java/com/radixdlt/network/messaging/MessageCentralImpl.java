@@ -31,7 +31,6 @@ import org.radix.network.messaging.Message;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SimpleThreadPool;
-import org.xerial.snappy.Snappy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -46,6 +45,7 @@ import com.radixdlt.network.addressbook.PeerWithTransport;
 import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
 
 final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = LogManager.getLogger();
@@ -227,7 +227,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	private Message deserialize(byte[] in) {
 		try {
-			byte[] uncompressed = Snappy.uncompress(in);
+			byte[] uncompressed = Compress.uncompress(in);
 
 			return serialization.fromDson(uncompressed, Message.class);
 

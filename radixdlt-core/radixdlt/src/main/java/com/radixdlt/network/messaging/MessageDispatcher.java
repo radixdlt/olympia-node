@@ -40,6 +40,7 @@ import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.Compress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +50,6 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
-import org.xerial.snappy.Snappy;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -239,7 +239,7 @@ class MessageDispatcher {
 	private byte[] serialize(Message out) {
 		try {
 			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
-			return Snappy.compress(uncompressed);
+			return Compress.compress(uncompressed);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}
