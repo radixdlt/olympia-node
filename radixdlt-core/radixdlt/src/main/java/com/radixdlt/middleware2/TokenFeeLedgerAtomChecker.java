@@ -174,18 +174,11 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		return false;
 	}
 
-	// Check that there is at most one output particle and no input particle is smaller
+	// Check that there is at most one output particle
+    // TODO: look into preventing fees with too much "dust" as previously implemented
 	private boolean noSuperfluousParticles(Map<Spin, List<TransferrableTokensParticle>> particlesBySpin) {
-		final List<TransferrableTokensParticle> inputParticles = particlesBySpin.getOrDefault(Spin.DOWN, List.of());
 		final List<TransferrableTokensParticle> outputParticles = particlesBySpin.getOrDefault(Spin.UP, List.of());
-
-		if (outputParticles.size() != 1) {
-			return outputParticles.isEmpty();
-		}
-		final UInt256 outputAmount = outputParticles.get(0).getAmount();
-
-		return inputParticles.stream()
-				.allMatch(ttp -> ttp.getAmount().compareTo(outputAmount) > 0);
+		return outputParticles.size() <= 1;
 	}
 
 	private UInt256 computeFeePaid(Stream<ParticleGroup> feeParticleGroups) {
