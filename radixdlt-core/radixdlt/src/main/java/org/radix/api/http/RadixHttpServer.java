@@ -437,17 +437,17 @@ public final class RadixHttpServer {
 			if (enabled) {
 				JSONObject data = values.getJSONObject("data");
 				if (data.has("nodeKey")) {
-					String nodeKeyBase58 = values.getString("nodeKey");
+					String nodeKeyBase58 = data.getString("nodeKey");
 					BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
 					update = update.bftNode(node);
 				}
 
 				if (data.has("messagesPerSec")) {
-					update = update.messagesPerSec(values.getInt("messagesPerSec"));
+					update = update.messagesPerSec(data.getInt("messagesPerSec"));
 				}
 
 				if (data.has("commandSize")) {
-					update = update.commandSize(values.getInt("commandSize"));
+					update = update.commandSize(data.getInt("commandSize"));
 				}
 			}
 
