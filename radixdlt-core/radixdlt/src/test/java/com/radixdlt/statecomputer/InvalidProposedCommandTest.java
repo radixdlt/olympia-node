@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-
-/**
- * Reduces particles to state
- */
-public interface StateReducer<U, V extends Particle> {
-    Class<U> stateClass();
-    Class<V> particleClass();
-    Supplier<U> initial();
-    BiFunction<U, V, U> outputReducer();
-    BiFunction<U, V, U> inputReducer();
+public class InvalidProposedCommandTest {
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(InvalidProposedCommand.class)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
+    }
 }

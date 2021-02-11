@@ -183,30 +183,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_with_invalid_input_particles_in_fee_group__result_has_error() {
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
-		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
-				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
-				address, UInt256.NINE, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
-				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(
-					SpunParticle.up(unallocatedParticle),
-					SpunParticle.down(tokenInputParticle),
-					SpunParticle.up(tokenOutputParticle)))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
-				.contains("less than required minimum");
-	}
-
-	@Test
 	public void when_validating_atom_with_fee_and_change__result_has_no_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);

@@ -72,6 +72,7 @@ import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
@@ -125,6 +126,8 @@ public class RadixEngineStateComputerTest {
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 				bind(Mempool.class).toInstance(mock(Mempool.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(RegisteredValidators.class).toInstance(RegisteredValidators.create(stakes.keySet().stream().limit(2)));
 				bind(Stakes.class).toInstance(Stakes.create(stakes));

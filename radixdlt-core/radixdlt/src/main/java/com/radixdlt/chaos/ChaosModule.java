@@ -21,6 +21,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderModule;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
@@ -35,6 +38,7 @@ public final class ChaosModule extends AbstractModule {
 	@Override
 	public void configure() {
 		install(new MessageFlooderModule());
+		install(new MempoolFillerModule());
 	}
 
 	@ProvidesIntoMap
@@ -43,11 +47,17 @@ public final class ChaosModule extends AbstractModule {
 		Observable<ScheduledMessageFlood> scheduledFloods,
 		EventProcessor<ScheduledMessageFlood> scheduledFloodProcessor,
 		Observable<MessageFlooderUpdate> messageFloodUpdates,
-		EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor
+		EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor,
+		Observable<ScheduledMempoolFill> scheduledFills,
+		EventProcessor<ScheduledMempoolFill> scheduledFillProcessor,
+		Observable<MempoolFillerUpdate> mempoolFillerUpdates,
+		EventProcessor<MempoolFillerUpdate> mempoolFillUpdateProcessor
 	) {
 		return ModuleRunnerImpl.builder()
 			.add(scheduledFloods, scheduledFloodProcessor)
 			.add(messageFloodUpdates, messageFloodUpdateProcessor)
+			.add(scheduledFills, scheduledFillProcessor)
+			.add(mempoolFillerUpdates, mempoolFillUpdateProcessor)
 			.build("ChaosRunner");
 	}
 }

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.chaos.mempoolfiller;
 
-import com.radixdlt.constraintmachine.Particle;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Reduces particles to state
+ * Key for the mempool filler
  */
-public interface StateReducer<U, V extends Particle> {
-    Class<U> stateClass();
-    Class<V> particleClass();
-    Supplier<U> initial();
-    BiFunction<U, V, U> outputReducer();
-    BiFunction<U, V, U> inputReducer();
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface MempoolFillerKey {
 }

@@ -38,6 +38,11 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
     }
 
     @Override
+    public Class<Stakes> stateClass() {
+        return Stakes.class;
+    }
+
+    @Override
     public Class<StakedTokensParticle> particleClass() {
         return StakedTokensParticle.class;
     }

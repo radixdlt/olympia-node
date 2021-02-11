@@ -35,6 +35,11 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
+    public Class<RegisteredValidators> stateClass() {
+        return RegisteredValidators.class;
+    }
+
+    @Override
     public Class<RegisteredValidatorParticle> particleClass() {
         return RegisteredValidatorParticle.class;
     }

@@ -24,6 +24,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -57,13 +59,13 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 /**
  * Manages dispatching of internal events to a given environment
@@ -75,11 +77,30 @@ public class DispatcherModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MempoolAddFailure.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				MempoolAddFailure.class,
+				CounterType.MEMPOOL_FAILURE_COUNT,
+				true
+			))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(
+				NoVote.class,
+				CounterType.BFT_REJECTED,
+				true
+			))
+			.in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(
+				InvalidProposedCommand.class,
+				true
+			)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
@@ -87,6 +108,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncInProgress>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncInProgress.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
+				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
 				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
@@ -348,17 +371,6 @@ public class DispatcherModule extends AbstractModule {
 			logger.trace("Vote sending to {}: {}", node, vote);
 			dispatcher.dispatch(node, vote);
 			processors.forEach(e -> e.process(vote));
-		};
-	}
-
-	@Provides
-	private EventDispatcher<NoVote> noVoteDispatcher(
-		Environment environment,
-		SystemCounters systemCounters
-	) {
-		return (noVote) -> {
-			systemCounters.increment(CounterType.BFT_REJECTED);
-			logger.warn(() -> new FormattedMessage("Proposal: Rejected {}", noVote.getVertex()));
 		};
 	}
 

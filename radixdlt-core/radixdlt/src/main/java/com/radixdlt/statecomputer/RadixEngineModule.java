@@ -19,31 +19,29 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
@@ -52,31 +50,8 @@ import java.util.function.UnaryOperator;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(StateComputer.class).to(RadixEngineStateComputer.class);
-	}
-
-	@Provides
-	@Singleton
-	private RadixEngineStateComputer radixEngineStateComputer(
-		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
-		Mempool mempool,
-		RadixEngineAtomicCommitManager atomicCommitManager,
-		@EpochCeilingView View epochCeilingView,
-		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher,
-		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
-	) {
-		return RadixEngineStateComputer.create(
-			serialization,
-			radixEngine,
-			mempool,
-			atomicCommitManager,
-			epochCeilingView,
-			validatorSetBuilder,
-			hasher,
-			mempoolAddFailureEventDispatcher
-		);
+		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 	}
 
 	@Provides
@@ -129,6 +104,7 @@ public class RadixEngineModule extends AbstractModule {
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
 		RegisteredValidators initialRegisteredValidators,
 		Stakes initialStakes,
+		Set<StateReducer<?, ?>> stateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
@@ -145,21 +121,13 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(
-			RegisteredValidators.class,
-			new ValidatorsReducer(() -> initialRegisteredValidators)
-		);
-
-		radixEngine.addStateReducer(
-			Stakes.class,
-			new StakesReducer(stakeToken, () -> initialStakes)
-		);
+		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators));
+		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes));
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(
-			SystemParticle.class,
-			new LastSystemParticleReducer()
-		);
+		radixEngine.addStateReducer(new LastSystemParticleReducer());
+
+		stateReducers.forEach(radixEngine::addStateReducer);
 
 		return radixEngine;
 	}

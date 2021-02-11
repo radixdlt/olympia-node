@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -73,17 +74,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final Hasher hasher;
 	private final RadixEngineAtomicCommitManager atomicCommitManager;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
+	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
 
-	private RadixEngineStateComputer(
+	@Inject
+	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Mempool mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
-		View epochCeilingView,
+		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher,
-		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
+		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
+		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher
 	) {
+		if (epochCeilingView.isGenesis()) {
+			throw new IllegalArgumentException("Epoch change view must not be genesis.");
+		}
+
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochCeilingView = epochCeilingView;
@@ -92,32 +100,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
-	}
-
-	public static RadixEngineStateComputer create(
-		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
-		Mempool mempool,
-		RadixEngineAtomicCommitManager atomicCommitManager,
-		@EpochCeilingView View epochCeilingView,
-		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher,
-		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
-	) {
-		if (epochCeilingView.isGenesis()) {
-			throw new IllegalArgumentException("Epoch change view must not be genesis.");
-		}
-
-		return new RadixEngineStateComputer(
-			serialization,
-			radixEngine,
-			mempool,
-			atomicCommitManager,
-			epochCeilingView,
-			validatorSetBuilder,
-			hasher,
-			mempoolAddFailureEventDispatcher
-		);
+		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -271,6 +254,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				branch.checkAndStore(clientAtom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
+				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
 				return;
 			}
 

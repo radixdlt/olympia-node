@@ -28,6 +28,11 @@ import java.util.function.Supplier;
  */
 public final class LastSystemParticleReducer implements StateReducer<SystemParticle, SystemParticle> {
     @Override
+    public Class<SystemParticle> stateClass() {
+        return SystemParticle.class;
+    }
+
+    @Override
     public Class<SystemParticle> particleClass() {
         return SystemParticle.class;
     }

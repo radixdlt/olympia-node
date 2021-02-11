@@ -132,8 +132,11 @@ public class RadixEngineTest {
 		Object state = mock(Object.class);
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
 		radixEngine.addStateReducer(
-			Object.class,
 			new StateReducer<>() {
+				public Class<Object> stateClass() {
+					return Object.class;
+				}
+
 				@Override
 				public Class<Particle> particleClass() {
 					return Particle.class;
@@ -172,8 +175,12 @@ public class RadixEngineTest {
 		Object state2 = mock(Object.class);
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
 		radixEngine.addStateReducer(
-			Object.class,
 			new StateReducer<>() {
+				@Override
+				public Class<Object> stateClass() {
+					return Object.class;
+				}
+
 				@Override
 				public Class<Particle> particleClass() {
 					return Particle.class;
