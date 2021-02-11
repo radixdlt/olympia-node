@@ -110,33 +110,4 @@ public class RemoteSyncServiceTest {
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
 		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
-
-	// TODO(luk): fixme or remove; see comment in RemoteSyncService.processSyncRequest
-	/*
-	@Test
-	public void return_epoch_proof_on_request() {
-		// Arrange
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(verifiedLedgerHeaderAndProof.getEpoch()).thenReturn(2L);
-		DtoLedgerHeaderAndProof epoch2 = mock(DtoLedgerHeaderAndProof.class);
-		when(verifiedLedgerHeaderAndProof.toDto()).thenReturn(epoch2);
-		when(verifiedLedgerHeaderAndProof.isEndOfEpoch()).thenReturn(true);
-		when(reader.getEpochVerifiedHeader(anyLong())).thenReturn(Optional.of(verifiedLedgerHeaderAndProof));
-
-		// Act
-		DtoLedgerHeaderAndProof ledgerHeaderAndProof = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader ledgerHeader = LedgerHeader.create(
-			1,
-			View.of(1),
-			new AccumulatorState(0, HashUtils.zero256()),
-			0,
-			BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
-		);
-		when(ledgerHeaderAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
-		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(ledgerHeaderAndProof));
-
-		// Assert
-		verify(syncResponseDispatcher, times(1)).dispatch(any(BFTNode.class), argThat(l -> l.getCommandsAndProof().getTail().equals(epoch2)));
-	}
- 	*/
 }

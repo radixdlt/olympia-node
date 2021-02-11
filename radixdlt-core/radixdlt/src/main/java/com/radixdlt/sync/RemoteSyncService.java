@@ -81,31 +81,6 @@ public final class RemoteSyncService {
 
 	private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
 		final DtoLedgerHeaderAndProof remoteCurrentHeader = syncRequest.getHeader();
-
-		/* TODO(luk): is this still needed? how is epoch proof different from regular proof?
-		if (remoteCurrentHeader.getLedgerHeader().isEndOfEpoch()) {
-			log.info("REMOTE_EPOCH_SYNC_REQUEST: {} {}", sender, remoteCurrentHeader);
-			long currentEpoch = remoteCurrentHeader.getLedgerHeader().getEpoch() + 1;
-			long nextEpoch = currentEpoch + 1;
-			Optional<VerifiedLedgerHeaderAndProof> nextEpochProof = committedReader.getEpochVerifiedHeader(nextEpoch);
-			if (nextEpochProof.isEmpty()) {
-				log.warn("REMOTE_EPOCH_SYNC_REQUEST: Unable to serve epoch sync request {} {}", sender, remoteCurrentHeader);
-				return;
-			}
-
-			// start != end and commands is empty
-			// can't be verified by accumulator verifier
-			DtoCommandsAndProof dtoCommandsAndProof = new DtoCommandsAndProof(
-				ImmutableList.of(),
-				remoteCurrentHeader,
-				nextEpochProof.get().toDto()
-			);
-			log.trace("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
-			syncResponseDispatcher.dispatch(sender, SyncResponse.create(dtoCommandsAndProof));
-			return;
-		}
-		 */
-
 		final VerifiedCommandsAndProof committedCommands;
 		try {
 			final long start = System.currentTimeMillis();
