@@ -21,12 +21,16 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.util.EnumSet;
 
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Implementation of simple append-only log
@@ -47,8 +51,8 @@ public class SimpleAppendLog implements AppendLog {
 	}
 
 	public static AppendLog open(String path) throws IOException {
-		@SuppressWarnings("resource")
-		var channel = new RandomAccessFile(path, "rw").getChannel();
+		var channel = FileChannel.open(Path.of(path), EnumSet.of(READ, WRITE, CREATE));
+
 		channel.position(channel.size());
 		return new SimpleAppendLog(channel);
 	}
