@@ -62,7 +62,7 @@ public final class MempoolFiller {
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher
 	) {
-	    this.keyPair = keyPair;
+		this.keyPair = keyPair;
 		this.serialization = serialization;
 		this.hasher = hasher;
 		this.universe = universe;
@@ -72,27 +72,27 @@ public final class MempoolFiller {
 	}
 
 	public EventProcessor<MempoolFillerUpdate> messageFloodUpdateProcessor() {
-	    return u -> {
-	    	if (u.enabled() == (to != null)) {
-	    		logger.info("Mempool Filler: not updating");
-	    		return;
+		return u -> {
+			if (u.enabled() == (to != null)) {
+				logger.info("Mempool Filler: not updating");
+				return;
 			}
 
 			logger.info("Mempool Filler: Updating " + u.enabled());
 
 			if (u.enabled()) {
-	    		to = new RadixAddress((byte) universe.getMagic(), keyPair.getPublicKey());
-	    		mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
+				to = new RadixAddress((byte) universe.getMagic(), keyPair.getPublicKey());
+				mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
 			} else {
-	    		to = null;
+				to = null;
 			}
 		};
-    }
+	}
 
 	public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
 		return p -> {
-		    if (to == null) {
-		    	return;
+			if (to == null) {
+				return;
 			}
 
 

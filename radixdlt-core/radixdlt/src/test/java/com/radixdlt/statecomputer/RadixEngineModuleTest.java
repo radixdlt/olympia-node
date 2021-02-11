@@ -89,7 +89,7 @@ public class RadixEngineModuleTest {
 			bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 				.toInstance(TypedMocks.rmock(EventDispatcher.class));
 			bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
-					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				.toInstance(TypedMocks.rmock(EventDispatcher.class));
 		}
 	}
 
