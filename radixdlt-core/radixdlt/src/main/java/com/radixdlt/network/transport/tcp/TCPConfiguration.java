@@ -56,7 +56,7 @@ public interface TCPConfiguration {
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return the priority of this transport
-	 * @see org.radix.network2.transport.Transport#priority()
+	 * @see com.radixdlt.network.transport.Transport#priority()
 	 */
 	int priority(int defaultValue);
 
@@ -69,6 +69,13 @@ public interface TCPConfiguration {
 	 * @return {@code true} if hexdump data is required, {@code false} otherwise
 	 */
 	boolean debugData(boolean defaultValue);
+
+	/**
+	 * Get the buffer size of incoming messages for each TCP connection.
+	 *
+	 * @return the size of a message buffer
+	 */
+	int messageBufferSize(int defaultValue);
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -101,6 +108,11 @@ public interface TCPConfiguration {
 			@Override
 			public boolean debugData(boolean defaultValue) {
 				return properties.get("network.tcp.debug_data", defaultValue);
+			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return properties.get("network.tcp.message_buffer_size", defaultValue);
 			}
 		};
 	}

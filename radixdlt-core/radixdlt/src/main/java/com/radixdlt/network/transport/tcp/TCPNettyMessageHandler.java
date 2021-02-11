@@ -21,12 +21,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.utils.Pair;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.network.messaging.InboundMessage;
-import com.radixdlt.network.messaging.InboundMessageConsumer;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 
@@ -43,33 +49,53 @@ import io.netty.handler.codec.TooLongFrameException;
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	private static final Logger log = LogManager.getLogger();
 
-	private final InboundMessageConsumer messageSink;
+	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 
-	// Limit rate at which bad SocketAddress type logs are produced
+	private final PublishProcessor<Pair<InetSocketAddress, byte[]>> rawMessageSink = PublishProcessor.create();
+	private final Flowable<InboundMessage> inboundMessages;
+
 	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
+	private final SystemCounters counters;
+	private final int bufferSize;
 
-	TCPNettyMessageHandler(InboundMessageConsumer messageSink) {
-		this.messageSink = messageSink;
+	TCPNettyMessageHandler(SystemCounters counters, int bufferSize) {
+		this.counters = counters;
+		this.bufferSize = bufferSize;
+		this.inboundMessages = rawMessageSink
+			.onBackpressureBuffer(
+				this.bufferSize,
+				() -> {
+					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
+				},
+				BackpressureOverflowStrategy.DROP_LATEST)
+			.map(this::parseMessage);
+	}
+
+	Flowable<InboundMessage> inboundMessageRx() {
+		return inboundMessages;
+	}
+
+	void shutdownRx() {
+		rawMessageSink.onComplete();
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) {
 		SocketAddress socketSender = ctx.channel().remoteAddress();
 		if (socketSender instanceof InetSocketAddress) {
-			InetSocketAddress sender = (InetSocketAddress) socketSender;
-
-			final int length = buf.readableBytes();
-			final byte[] data = new byte[length];
-			buf.readBytes(data);
-			TransportInfo source = TransportInfo.of(
-				TCPConstants.NAME,
-				StaticTransportMetadata.of(
-					TCPConstants.METADATA_HOST, sender.getAddress().getHostAddress(),
-					TCPConstants.METADATA_PORT, String.valueOf(sender.getPort())
-				)
-			);
-			messageSink.accept(InboundMessage.of(source, data));
+			final InetSocketAddress sender = (InetSocketAddress) socketSender;
+			final byte[] data;
+			if (buf.isDirect() && buf.nioBuffer().hasArray()) {
+				data = buf.nioBuffer().array();
+			} else {
+				final int length = buf.readableBytes();
+				data = new byte[length];
+				buf.readBytes(data);
+			}
+			this.rawMessageSink.onNext(Pair.of(sender, data));
 		} else if (logRateLimiter.tryAcquire()) {
 			String type = socketSender == null ? null : socketSender.getClass().getName();
 			String from = socketSender == null ? null : socketSender.toString();
@@ -77,8 +103,19 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 		}
 	}
 
+	private InboundMessage parseMessage(Pair<InetSocketAddress, byte[]> rawData) {
+		final TransportInfo source = TransportInfo.of(
+			TCPConstants.NAME,
+			StaticTransportMetadata.of(
+				TCPConstants.METADATA_HOST, rawData.getFirst().getAddress().getHostAddress(),
+				TCPConstants.METADATA_PORT, String.valueOf(rawData.getFirst().getPort())
+			)
+		);
+		return InboundMessage.of(source, rawData.getSecond());
+	}
+
 	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 		String remoteAddress = formatSocketAddress(ctx.channel().remoteAddress());
 		if (cause instanceof TooLongFrameException) {
 			// Frame desynchronisation or possible interloper sending random data

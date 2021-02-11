@@ -17,18 +17,20 @@
 
 package com.radixdlt;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
@@ -37,16 +39,21 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.universe.Universe;
 import java.util.Arrays;
 import java.util.List;
+
+import io.reactivex.rxjava3.core.Flowable;
 import org.junit.Test;
 
 public class NetworkModuleTest {
 	private static class ExternalLedgerModule extends AbstractModule {
 		@Override
 		protected void configure() {
+			final MessageCentral messageCentral = mock(MessageCentral.class);
+			when(messageCentral.messagesOf(any())).thenReturn(Flowable.empty());
+
 			bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 			bind(Universe.class).toInstance(mock(Universe.class));
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
-			bind(MessageCentral.class).toInstance(mock(MessageCentral.class));
+			bind(MessageCentral.class).toInstance(messageCentral);
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 		}

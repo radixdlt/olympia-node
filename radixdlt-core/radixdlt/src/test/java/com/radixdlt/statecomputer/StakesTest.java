@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,18 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.statecomputer;
 
-import java.util.function.Consumer;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Specific type for consuming {@code InboundMessage} objects.
- *
- * @see org.radix.network2.transport.Transport#start(InboundMessageConsumer)
- */
-@FunctionalInterface
-public interface InboundMessageConsumer extends Consumer<InboundMessage> {
-
-	// Nothing added here
+public class StakesTest {
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(Stakes.class)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
+    }
 
 }

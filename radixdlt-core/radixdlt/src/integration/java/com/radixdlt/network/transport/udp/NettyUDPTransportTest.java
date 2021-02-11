@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import org.junit.After;
 import org.junit.Before;
@@ -41,6 +42,7 @@ import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class NettyUDPTransportTest {
 	private static final int TEST_SECONDS =
@@ -93,8 +95,8 @@ public class NettyUDPTransportTest {
 	// Note that windowSize is to help us not wharrgarbl the O/S too much, as this just results in packets being dropped
 	private void testThroughput(String name, int testPacketSize, int windowSize, int testSeconds)
 		throws InterruptedException, ExecutionException, IOException {
-		transport1.start(this::unexpectedMessage);
-		transport2.start(this::handleMessage);
+		transport1.start().subscribe(this::unexpectedMessage);
+		transport2.start().subscribe(this::handleMessage);
 
 		final long start;
 		try (TransportControl control1 = transport1.control();
@@ -163,6 +165,11 @@ public class NettyUDPTransportTest {
 			public int priority(int defaultValue) {
 				return 0;
 			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return 255;
+			}
 		};
 		HostIp hostip = () -> Optional.of("127.0.0.1");
 		Module hostIpModule = new AbstractModule() {
@@ -171,7 +178,11 @@ public class NettyUDPTransportTest {
 				bind(HostIp.class).toInstance(hostip);
 			}
 		};
-		Injector injector = Guice.createInjector(hostIpModule, new UDPTransportModule(config));
+		Injector injector = Guice.createInjector(
+			hostIpModule,
+			new UDPTransportModule(config),
+			binder -> binder.bind(SystemCounters.class).toInstance(mock(SystemCounters.class))
+		);
 		return injector.getInstance(NettyUDPTransportImpl.class);
 	}
 }

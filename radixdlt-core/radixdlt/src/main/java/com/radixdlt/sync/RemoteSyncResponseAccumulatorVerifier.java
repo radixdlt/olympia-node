@@ -69,11 +69,13 @@ public final class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncRe
 			.map(hasher::hash)
 			.collect(ImmutableList.toImmutableList());
 		if (!this.accumulatorVerifier.verify(start, hashes, end)) {
+			log.debug("SYNC_RESPONSE: Ignoring invalid sync response");
 			invalidSyncedCommandsSender.sendInvalidAccumulator(syncResponse);
 			return;
 		}
 
 		// TODO: Check validity of response
+		log.debug("SYNC_RESPONSE: Processing valid sync response");
 		this.verifiedSender.sendVerifiedAccumulator(syncResponse);
 	}
 

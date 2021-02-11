@@ -20,12 +20,13 @@ package com.radixdlt.network.transport.tcp;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.network.messaging.InboundMessage;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
+import org.junit.Before;
 import org.junit.Test;
-
-import com.radixdlt.network.messaging.InboundMessageConsumer;
-
 import static org.mockito.Mockito.*;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -34,10 +35,17 @@ import io.netty.channel.socket.SocketChannel;
 
 public class TCPNettyMessageHandlerTest {
 
+	private SystemCounters counters;
+
+	@Before
+	public void setup() {
+		this.counters = mock(SystemCounters.class);
+	}
+
 	@Test
-	public void testChannelRead0() throws Exception {
-		InboundMessageConsumer messageSink = mock(InboundMessageConsumer.class);
-		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(messageSink);
+	public void testChannelRead0() {
+		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(counters, 255);
+		final TestSubscriber<InboundMessage> testSubscriber = mh.inboundMessageRx().test();
 
 		ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
 		byte[] data = new byte[] {
@@ -46,19 +54,21 @@ public class TCPNettyMessageHandlerTest {
 		ByteBuf buf = Unpooled.copiedBuffer(data);
 		mh.channelRead0(ctx, buf);
 
-		verify(messageSink, times(1)).accept(any());
+		testSubscriber.awaitCount(1);
+		testSubscriber.assertValueCount(1);
+		testSubscriber.assertNoErrors();
 	}
 
 	@Test
-	public void testChannelRead0NotInetSocketAddress() throws Exception {
+	public void testChannelRead0NotInetSocketAddress() {
 		SocketAddress sa = mock(SocketAddress.class);
 		Channel sch = mock(Channel.class);
 		when(sch.localAddress()).thenReturn(sa);
 		when(sch.remoteAddress()).thenReturn(sa);
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		when(ctx.channel()).thenReturn(sch);
-		InboundMessageConsumer messageSink = mock(InboundMessageConsumer.class);
-		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(messageSink);
+		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(counters, 255);
+		final TestSubscriber<InboundMessage> testSubscriber = mh.inboundMessageRx().test();
 
 		byte[] data = new byte[] {
 			0, 1, 2, 3, 4, 5, 6, 7, 8, 9
@@ -66,19 +76,40 @@ public class TCPNettyMessageHandlerTest {
 		ByteBuf buf = Unpooled.copiedBuffer(data);
 		mh.channelRead0(ctx, buf);
 
-		verify(messageSink, never()).accept(any());
+		testSubscriber.assertNoValues();
 	}
 
 	@Test
-	public void testExceptionCaughtChannelHandlerContextThrowable() throws Exception {
-		InboundMessageConsumer messageSink = mock(InboundMessageConsumer.class);
-		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(messageSink);
+	public void testExceptionCaughtChannelHandlerContextThrowable() {
+		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(counters, 255);
+		final TestSubscriber<InboundMessage> testSubscriber = mh.inboundMessageRx().test();
 
 		ChannelHandlerContext ctx = createContext("127.0.0.1", 4321);
 
 		mh.exceptionCaught(ctx, new Exception("dummy exception"));
 
-		verify(messageSink, never()).accept(any());
+		testSubscriber.assertNoValues();
+	}
+
+	@Test
+	public void testBufferOverflow() {
+		int bufferSize = 5;
+		int overflowSize = 4;
+
+		TCPNettyMessageHandler mh = new TCPNettyMessageHandler(counters, bufferSize);
+		final TestSubscriber<InboundMessage> testSubscriber = mh.inboundMessageRx().test(0);
+
+		ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
+		byte[] data = new byte[] {
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+		};
+
+		for (int i = 0; i < bufferSize + overflowSize; i++) {
+			mh.channelRead0(ctx, Unpooled.copiedBuffer(data));
+		}
+
+		testSubscriber.assertNoValues();
+		verify(counters, times(overflowSize)).increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
 	}
 
 	ChannelHandlerContext createContext(String host, int port) {

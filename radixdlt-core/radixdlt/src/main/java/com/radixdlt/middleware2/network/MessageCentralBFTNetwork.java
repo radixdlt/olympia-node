@@ -18,33 +18,32 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+
 import java.util.Objects;
 
 import java.util.Optional;
 import java.util.Set;
 
+import com.radixdlt.network.messaging.MessageFromPeer;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
-
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -57,7 +56,7 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-	private final PublishSubject<ConsensusEvent> localMessages;
+	private final PublishProcessor<ConsensusEvent> localMessages;
 
 	@Inject
 	public MessageCentralBFTNetwork(
@@ -70,16 +69,20 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.localMessages = PublishSubject.create();
+		this.localMessages = PublishProcessor.create();
 	}
 
 	@Override
-	public Observable<ConsensusEvent> bftEvents() {
-		return Observable.<ConsensusEvent>create(emitter -> {
-			MessageListener<ConsensusEventMessage> listener = (src, msg) -> emitter.onNext(msg.getConsensusMessage());
-			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		}).mergeWith(localMessages.observeOn(Schedulers.io()));
+	public Flowable<ConsensusEvent> localBftEvents() {
+		return localMessages.onBackpressureBuffer(255, false, true /* unbounded for local messages */);
+	}
+
+	@Override
+	public Flowable<ConsensusEvent> remoteBftEvents() {
+		return this.messageCentral
+			.messagesOf(ConsensusEventMessage.class)
+			.map(MessageFromPeer::getMessage)
+			.map(ConsensusEventMessage::getConsensusMessage);
 	}
 
 	@Override

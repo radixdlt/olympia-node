@@ -39,6 +39,8 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 

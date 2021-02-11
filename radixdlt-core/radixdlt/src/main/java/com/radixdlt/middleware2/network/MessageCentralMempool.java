@@ -24,9 +24,8 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -75,15 +74,15 @@ public final class MessageCentralMempool {
 		}
 	}
 
-	public Observable<RemoteEvent<MempoolAddSuccess>> mempoolComands() {
-		return Observable.create(emitter -> {
-			MessageListener<MempoolAtomAddedMessage> listener = (src, msg) -> {
-
-				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				emitter.onNext(RemoteEvent.create(node, MempoolAddSuccess.create(msg.command()), MempoolAddSuccess.class));
-			};
-			this.messageCentral.addListener(MempoolAtomAddedMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+	public Flowable<RemoteEvent<MempoolAddSuccess>> mempoolComands() {
+		return messageCentral.messagesOf(MempoolAtomAddedMessage.class)
+			.map(msg -> {
+				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
+				return RemoteEvent.create(
+					node,
+					MempoolAddSuccess.create(msg.getMessage().command()),
+					MempoolAddSuccess.class
+				);
+			});
 	}
 }

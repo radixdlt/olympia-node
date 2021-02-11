@@ -23,7 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.chaos.MessageFloodUpdate;
+import com.radixdlt.chaos.MessageFlooderUpdate;
 import com.radixdlt.chaos.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -427,8 +427,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EventDispatcher<MessageFloodUpdate> messageFloodUpdateEventDispatcher(Environment environment) {
-		return environment.getDispatcher(MessageFloodUpdate.class);
+	private EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher(Environment environment) {
+		return environment.getDispatcher(MessageFlooderUpdate.class);
 	}
 
 	@Provides

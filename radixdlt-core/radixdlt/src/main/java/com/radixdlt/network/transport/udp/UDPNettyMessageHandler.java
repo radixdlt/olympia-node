@@ -20,11 +20,17 @@ package com.radixdlt.network.transport.udp;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.utils.Pair;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.network.messaging.InboundMessage;
-import com.radixdlt.network.messaging.InboundMessageConsumer;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 
@@ -41,13 +47,36 @@ import io.netty.channel.socket.DatagramPacket;
 final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private static final Logger log = LogManager.getLogger();
 
-	private final InboundMessageConsumer messageSink;
+	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
+
+	private final SystemCounters counters;
+	private final int bufferSize;
+
 	private final NatHandler natHandler;
 
+	private final PublishProcessor<Pair<InetSocketAddress, ByteBuf>> rawMessageSink = PublishProcessor.create();
 
-	UDPNettyMessageHandler(NatHandler natHandler, InboundMessageConsumer messageSink) {
-		this.messageSink = messageSink;
+	UDPNettyMessageHandler(SystemCounters counters, int bufferSize, NatHandler natHandler) {
+		this.counters = counters;
+		this.bufferSize = bufferSize;
 		this.natHandler = natHandler;
+	}
+
+	Flowable<InboundMessage> inboundMessageRx() {
+		return rawMessageSink
+			.onBackpressureBuffer(
+				this.bufferSize,
+				() -> {
+					this.counters.increment(SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES);
+					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
+				},
+				BackpressureOverflowStrategy.DROP_LATEST)
+			.map(this::parseMessage);
+	}
+
+	void shutdownRx() {
+		rawMessageSink.onComplete();
 	}
 
 	@Override
@@ -55,24 +84,27 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 		final ByteBuf buf = msg.content();
 		// part of the NAT address validation process
 		if (!natHandler.endInboundValidation(buf)) {
-			InetSocketAddress sender = msg.sender();
-			InetAddress peerAddress = sender.getAddress();
+			final InetSocketAddress sender = msg.sender();
+			final InetAddress peerAddress = sender.getAddress();
 			natHandler.handleInboundPacket(ctx, peerAddress, buf);
-
 			// NAT validated, just make the message available
 			// Clone data and put in queue
-			final int length = buf.readableBytes();
-			final byte[] data = new byte[length];
-			buf.readBytes(data);
-			TransportInfo source = TransportInfo.of(
-				UDPConstants.NAME,
-				StaticTransportMetadata.of(
-					UDPConstants.METADATA_HOST, sender.getAddress().getHostAddress(),
-					UDPConstants.METADATA_PORT, String.valueOf(sender.getPort())
-				)
-			);
-			messageSink.accept(InboundMessage.of(source, data));
+			this.rawMessageSink.onNext(Pair.of(sender, buf));
 		}
+	}
+
+	private InboundMessage parseMessage(Pair<InetSocketAddress, ByteBuf> rawData) {
+		final int length = rawData.getSecond().readableBytes();
+		final byte[] data = new byte[length];
+		rawData.getSecond().readBytes(data);
+		final TransportInfo source = TransportInfo.of(
+			UDPConstants.NAME,
+			StaticTransportMetadata.of(
+				UDPConstants.METADATA_HOST, rawData.getFirst().getAddress().getHostAddress(),
+				UDPConstants.METADATA_PORT, String.valueOf(rawData.getFirst().getPort())
+			)
+		);
+		return InboundMessage.of(source, data);
 	}
 
 	@Override

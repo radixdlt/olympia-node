@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -33,7 +32,6 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
@@ -76,12 +74,12 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.RadixEngineStakeComputer;
+import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
-import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
-import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
+import com.radixdlt.statecomputer.RegisteredValidators;
+import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
@@ -95,37 +93,18 @@ import org.junit.Test;
 
 public class RadixEngineStateComputerTest {
 
-	private static class ConstantStakeComputer implements RadixEngineStakeComputer {
-		private final UInt256 stake;
-
-		private ConstantStakeComputer(UInt256 stake) {
-			this.stake = stake;
-		}
-
-		@Override
-		public RadixEngineStakeComputer addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
-			return this;
-		}
-
-		@Override
-		public RadixEngineStakeComputer removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
-			return this;
-		}
-
-		@Override
-		public ImmutableMap<ECPublicKey, UInt256> stakedAmounts(ImmutableSet<ECPublicKey> validators) {
-			return ImmutableMap.copyOf(Maps.asMap(validators, k -> this.stake));
-		}
-	}
-
 	@Inject
 	private RadixEngineStateComputer sut;
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private BFTValidatorSet validatorSet;
-	private RadixEngineValidatorsComputer validatorsComputer;
 	private EngineStore<LedgerAtom> engineStore;
 	private RRI stakeToken = mock(RRI.class);
+	private ECKeyPair unregisteredNode = ECKeyPair.generateNew();
+	private ImmutableMap<ECPublicKey, UInt256> stakes = ImmutableMap.of(
+		ECKeyPair.generateNew().getPublicKey(), UInt256.ONE,
+		ECKeyPair.generateNew().getPublicKey(), UInt256.ONE,
+		unregisteredNode.getPublicKey(), UInt256.ONE
+	);
 
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
@@ -135,7 +114,6 @@ public class RadixEngineStateComputerTest {
 			@Override
 			public void configure() {
 				bind(Serialization.class).toInstance(serialization);
-				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
 				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
@@ -145,22 +123,17 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(RRI.class).annotatedWith(NativeToken.class).toInstance(stakeToken);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
-				bind(RadixEngineValidatorsComputer.class).toInstance(validatorsComputer);
-				bind(RadixEngineStakeComputer.class).toInstance(new ConstantStakeComputer(UInt256.ONE));
 				bind(Mempool.class).toInstance(mock(Mempool.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(RegisteredValidators.class).toInstance(RegisteredValidators.create(stakes.keySet().stream().limit(2)));
+				bind(Stakes.class).toInstance(Stakes.create(stakes));
 			}
 		};
 	}
 
 	@Before
 	public void setup() {
-		this.validatorSet = BFTValidatorSet.from(Stream.of(
-			BFTValidator.from(BFTNode.random(), UInt256.ONE),
-			BFTValidator.from(BFTNode.random(), UInt256.ONE)
-		));
-		this.validatorsComputer = validatorComputerWithValidatorsFrom(this.validatorSet);
 		this.engineStore = new InMemoryEngineStore<>();
 		Injector injector = Guice.createInjector(
 			new RadixEngineModule(),
@@ -168,14 +141,6 @@ public class RadixEngineStateComputerTest {
 			getExternalModule()
 		);
 		injector.injectMembers(this);
-	}
-
-	private static RadixEngineValidatorsComputer validatorComputerWithValidatorsFrom(BFTValidatorSet validatorSet) {
-		RadixEngineValidatorsComputer initialComputer = RadixEngineValidatorsComputerImpl.create();
-		for (BFTValidator validator : validatorSet.getValidators()) {
-			initialComputer = initialComputer.addValidator(validator.getNode().getKey());
-		}
-		return initialComputer;
 	}
 
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
@@ -208,15 +173,11 @@ public class RadixEngineStateComputerTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		atom.sign(keyPair, hasher);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		Command cmd = new Command(payload);
+		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
 	}
 
 	@Test
@@ -238,7 +199,9 @@ public class RadixEngineStateComputerTest {
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
 		assertThat(result.getFailedCommands()).isEmpty();
-		assertThat(result.getNextValidatorSet()).contains(this.validatorSet);
+		assertThat(result.getNextValidatorSet()).hasValueSatisfying(set ->
+			assertThat(stakes.keySet()).allMatch(k -> k.equals(unregisteredNode.getPublicKey()) || set.containsNode(BFTNode.create(k)))
+		);
 	}
 
 	@Test
@@ -262,9 +225,8 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
 		// Arrange
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd = registerCommand(keyPair);
-		BFTNode node = BFTNode.create(keyPair.getPublicKey());
+		RadixEngineCommand cmd = registerCommand(unregisteredNode);
+		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
 
 		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, 0, View.of(10), 1);
@@ -364,7 +326,9 @@ public class RadixEngineStateComputerTest {
 			mock(BFTHeader.class),
 			0,
 			HashUtils.zero256(),
-			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1, this.validatorSet),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1,
+				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+			),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(

@@ -77,6 +77,11 @@ public class TCPTransportControlImplTest {
 			public boolean debugData(boolean defaultValue) {
 				return false;
 			}
+
+			@Override
+			public int messageBufferSize(int defaultValue) {
+				return 255;
+			}
 		};
 
 		transportOutboundConnection = mock(TransportOutboundConnection.class);

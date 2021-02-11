@@ -38,11 +38,10 @@ import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.PersistenceModule;
-import com.radixdlt.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.RadixEngineValidatorComputersModule;
+import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -219,12 +218,8 @@ public class MempoolTest {
 		ParticleGroup particleGroup = builder.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		try {
-			atom.sign(keyPair, hasher);
-			return ClientAtom.convertFromApiAtom(atom, hasher);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+		atom.sign(keyPair, hasher);
+		return ClientAtom.convertFromApiAtom(atom, hasher);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {

@@ -45,18 +45,20 @@ import org.apache.logging.log4j.Logger;
 /**
  * Floods a node with proposal messages attempting to bring it down
  */
-public final class BFTNodeMessageFlooder {
-	private static final int NUM_MESSAGES_PER_SECOND = 100;
-	private static final int COMMAND_SIZE = 1024 * 1024;
+public final class MessageFlooder {
+
 	private Logger logger = LogManager.getLogger();
 
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher;
 	private final BFTNode self;
+
 	private BFTNode nodeToAttack;
+	private int messagesPerSec = 100;
+	private int commandSize = 1024 * 1024;
 
 	@Inject
-	public BFTNodeMessageFlooder(
+	public MessageFlooder(
 		@Self BFTNode self,
 		ProposalBroadcaster proposalBroadcaster,
 		ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher
@@ -73,13 +75,13 @@ public final class BFTNodeMessageFlooder {
 		VoteData voteData = new VoteData(header, header, header);
 		TimestampedECDSASignatures signatures = new TimestampedECDSASignatures();
 		QuorumCertificate qc = new QuorumCertificate(voteData, signatures);
-		Command command = new Command(new byte[COMMAND_SIZE]);
+		Command command = new Command(new byte[commandSize]);
 		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, View.of(3), command);
 
 		return new Proposal(vertex, qc, self, new ECDSASignature(), Optional.empty());
 	}
 
-	public EventProcessor<MessageFloodUpdate> messageFloodUpdateProcessor() {
+	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor() {
 		return msg -> {
 			BFTNode nextNode = msg.getBFTNode().orElse(null);
 			if (Objects.equals(this.nodeToAttack, nextNode)) {
@@ -89,10 +91,12 @@ public final class BFTNodeMessageFlooder {
 
 			logger.info("Message flood update: {}", nextNode);
 
+			// Start flooding if we haven't started yet.
 			if (this.nodeToAttack == null) {
 				scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 50);
 			}
 
+			this.messagesPerSec = msg.getMessagesPerSec().orElse(this.messagesPerSec);
 			this.nodeToAttack = nextNode;
 		};
 	}
@@ -104,7 +108,7 @@ public final class BFTNodeMessageFlooder {
 			}
 
 			Proposal proposal = createProposal();
-			for (int i = 0; i < NUM_MESSAGES_PER_SECOND; i++) {
+			for (int i = 0; i < messagesPerSec; i++) {
 				proposalBroadcaster.broadcastProposal(proposal, Set.of(nodeToAttack));
 			}
 

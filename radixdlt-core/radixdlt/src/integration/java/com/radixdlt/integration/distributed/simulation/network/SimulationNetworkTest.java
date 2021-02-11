@@ -49,7 +49,8 @@ public class SimulationNetworkTest {
 	@Test
 	public void when_send_vote_to_self_twice__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
+		network.getNetwork(node1).remoteBftEvents()
+			.toObservable()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
@@ -61,7 +62,8 @@ public class SimulationNetworkTest {
 	@Test
 	public void when_self_and_other_send_vote_to_self__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
+		network.getNetwork(node1).remoteBftEvents()
+			.toObservable()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
@@ -73,7 +75,8 @@ public class SimulationNetworkTest {
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
+		network.getNetwork(node1).remoteBftEvents()
+			.toObservable()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
@@ -84,7 +87,8 @@ public class SimulationNetworkTest {
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
+		network.getNetwork(node1).localBftEvents()
+			.toObservable()
 			.subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
 		network.getNetwork(node1).broadcastProposal(proposal, ImmutableSet.of(node1, node2));
@@ -97,7 +101,8 @@ public class SimulationNetworkTest {
 		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
 
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node2).bftEvents()
+		network.getNetwork(node2).localBftEvents()
+			.toObservable()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
@@ -110,7 +115,8 @@ public class SimulationNetworkTest {
 		HashCode vertexId = mock(HashCode.class);
 
 		TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
-			network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).test();
+			network.getNetwork(node2).remoteEvents(GetVerticesRequest.class)
+				.toObservable().test();
 
 		network
 			.getNetwork(node1)

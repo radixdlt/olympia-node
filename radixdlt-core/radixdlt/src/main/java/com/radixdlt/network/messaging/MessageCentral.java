@@ -19,6 +19,7 @@ package com.radixdlt.network.messaging;
 
 import java.io.IOException;
 
+import io.reactivex.rxjava3.core.Flowable;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.SystemMessage;
 
@@ -52,45 +53,11 @@ public interface MessageCentral {
 	void sendSystemMessage(TransportInfo transportInfo, SystemMessage message) throws TransportException;
 
 	/**
-	 * Injects a message into the processing pipeline as if it had been received from
-	 * the specified peer.
-	 *
-	 * @param source the source the message should appear to come from
-	 * @param message the message to inject
+	 * Returns a Flowable of inbound peer messages of specified type.
+	 * @param messageType the message type
+	 * @return a Flowable of inbound peer messages
 	 */
-	void inject(TransportInfo source, Message message);
-
-	/**
-	 * Registers a callback to be called when messages of a particular type are received.
-	 * <p>
-	 * Note that messages are dispatched to listeners synchronously within the message
-	 * dispatch loop.  Clients should ensure that they do not perform blocking operations
-	 * such as I/O or long-running computations in this thread.  If necessary clients can
-	 * use the callback to place the received items in a queue or stream for clients to
-	 * retrieve and process in a separate thread.
-	 *
-	 * @param messageType The type of message to be notified of
-	 * @param listener The listener to notify
-	 * @throws IllegalArgumentException if an attempt to add a null listener, or an already registered listener
-	 */
-	<T extends Message> void addListener(Class<T> messageType, MessageListener<T> listener);
-
-	/**
-	 * Removes a callback from those to be called when messages of a particular type are received.
-	 *
-	 * @param messageType The type of message for the callback
-	 * @param listener The listener to remove
-	 * @throws IllegalArgumentException if an attempt to remove a null listener
-	 */
-	<T extends Message> void removeListener(Class<T> messageType, MessageListener<T> listener);
-
-	/**
-	 * Removes a callback from those to be called when messages of any type are received.
-	 *
-	 * @param listener The listener to remove
-	 * @throws IllegalArgumentException if an attempt to remove a null listener
-	 */
-	<T extends Message> void removeListener(MessageListener<T> listener);
+	<T extends Message> Flowable<MessageFromPeer<T>> messagesOf(Class<T> messageType);
 
     /**
      * Closes this {@code MessageCentral} and releases any system resources associated
@@ -99,5 +66,4 @@ public interface MessageCentral {
      * @throws IOException if an I/O error occurs
      */
     void close() throws IOException;
-
 }

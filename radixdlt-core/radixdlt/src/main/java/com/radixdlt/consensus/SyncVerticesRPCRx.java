@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Provider of GetVertices RPC request/response events
@@ -30,11 +30,11 @@ public interface SyncVerticesRPCRx {
 	 * Retrieve a never-ending stream of responses
 	 * @return a never-ending stream of responses
 	 */
-	Observable<GetVerticesResponse> responses();
+	Flowable<GetVerticesResponse> responses();
 
 	/**
 	 * Retrieve a never-ending stream of error responses
 	 * @return a never-ending stream of error responses
 	 */
-	Observable<GetVerticesErrorResponse> errorResponses();
+	Flowable<GetVerticesErrorResponse> errorResponses();
 }

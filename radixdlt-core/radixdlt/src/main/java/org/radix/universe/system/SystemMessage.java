@@ -41,6 +41,12 @@ public class SystemMessage extends SignedMessage {
 		this.system = system;
 	}
 
+	public SystemMessage(RadixSystem system, int magic, long timestamp) {
+		super(magic, timestamp);
+		this.system = system;
+	}
+
+
 	public RadixSystem getSystem() {
 		return this.system;
 	}
