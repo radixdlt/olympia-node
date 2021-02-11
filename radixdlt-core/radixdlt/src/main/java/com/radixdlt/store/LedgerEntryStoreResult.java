@@ -17,31 +17,51 @@
 
 package com.radixdlt.store;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public final class LedgerEntryStoreResult {
-	private static final LedgerEntryStoreResult SUCCESS = new LedgerEntryStoreResult(null);
+	private static final LedgerEntryStoreResult SUCCESS = new LedgerEntryStoreResult(null, null);
 
 	private final LedgerEntryConflict conflictInfo;
+	private final IOException exception;
 
-	private LedgerEntryStoreResult(LedgerEntryConflict conflictInfo) {
+	private LedgerEntryStoreResult(LedgerEntryConflict conflictInfo, IOException exception) {
 		this.conflictInfo = conflictInfo;
+		this.exception = exception;
 	}
 
 	public boolean isSuccess() {
 		return this == SUCCESS;
 	}
 
+	public LedgerEntryStoreResult ifSuccess(Runnable runnable) {
+		if (isSuccess()) {
+			runnable.run();
+		}
+
+		return this;
+	}
+
+	//TODO: retrieving this info is rather complicated, but we don't use it. Cleanup this code?
 	public LedgerEntryConflict getConflictInfo() {
 		return conflictInfo;
+	}
+
+	public IOException exception() {
+		return exception;
 	}
 
 	public static LedgerEntryStoreResult success() {
 		return SUCCESS;
 	}
 
+	public static LedgerEntryStoreResult ioFailure(IOException exception) {
+		return new LedgerEntryStoreResult(null, exception);
+	}
+
 	public static LedgerEntryStoreResult conflict(LedgerEntryConflict conflict) {
 		Objects.requireNonNull(conflict, "conflict is required");
-		return new LedgerEntryStoreResult(conflict);
+		return new LedgerEntryStoreResult(conflict, null);
 	}
 }

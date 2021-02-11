@@ -33,12 +33,12 @@ import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.Compress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.SignedMessage;
-import org.xerial.snappy.Snappy;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -131,7 +131,7 @@ class MessageDispatcher {
 	private byte[] serialize(Message out) {
 		try {
 			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
-			return Snappy.compress(uncompressed);
+			return Compress.compress(uncompressed);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}

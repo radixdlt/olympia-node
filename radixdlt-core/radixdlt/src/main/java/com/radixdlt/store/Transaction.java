@@ -25,5 +25,5 @@ public interface Transaction {
 
 	void abort();
 
-	Object unwrap();
+	<T> T unwrap();
 }

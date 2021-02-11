@@ -148,7 +148,7 @@ subprojects {
             dependency 'com.lmax:disruptor:3.4.2'
 
             dependency 'commons-cli:commons-cli:1.4'
-            dependency 'org.xerial.snappy:snappy-java:1.1.7.3'
+            dependency 'org.xerial.snappy:snappy-java:1.1.8.4'
             dependency 'io.netty:netty-all:4.1.51.Final'
             dependency('com.google.inject:guice:4.2.3') {
                 exclude 'com.google.guava:guava'

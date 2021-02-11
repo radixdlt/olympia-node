@@ -21,11 +21,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Ints;
 
 import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
-import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,7 +68,7 @@ public abstract class Message extends BasicContainer {
 
 	public byte[] toByteArray(Serialization serialization) throws IOException {
 		byte[] bytes = serialization.toDson(this, Output.WIRE);
-		byte[] data = Snappy.compress(bytes);
+		byte[] data = Compress.compress(bytes);
 
 		byte[] byteArray = new byte[data.length + Integer.BYTES];
 		Ints.copyTo(data.length, byteArray, 0);

@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
 import java.util.Optional;
@@ -35,12 +34,6 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 		Set<StoreIndex> uniqueIndices,
 		Set<StoreIndex> duplicateIndices
 	);
-
-	/**
-	 * Irreversibly commits this store to an atom with at a certain logical clock.
-	 * Once committed, an atom may no longer be deleted or replaced.
-	 */
-	void commit(AID aid);
 
 	void reset();
 

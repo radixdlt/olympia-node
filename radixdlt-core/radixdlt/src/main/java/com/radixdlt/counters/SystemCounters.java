@@ -103,6 +103,9 @@ public interface SystemCounters {
 		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
 		PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
 
+		PERSISTENCE_ATOM_LOG_WRITE_BYTES("persistence.atom_log.write_bytes"),
+		PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED("persistence.atom_log.write_compressed"),
+
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
 		HASHED_BYTES("hashed.bytes"),

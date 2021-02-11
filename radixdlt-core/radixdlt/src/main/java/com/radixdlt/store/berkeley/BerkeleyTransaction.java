@@ -44,6 +44,7 @@ final class BerkeleyTransaction implements Transaction {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public com.sleepycat.je.Transaction unwrap() {
 		return transaction;
 	}

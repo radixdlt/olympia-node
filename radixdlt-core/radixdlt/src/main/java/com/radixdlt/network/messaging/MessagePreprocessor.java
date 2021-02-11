@@ -17,6 +17,16 @@
 
 package com.radixdlt.network.messaging;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.Radix;
+import org.radix.network.messaging.Message;
+import org.radix.network.messaging.SignedMessage;
+import org.radix.time.Timestamps;
+import org.radix.universe.system.LocalSystem;
+import org.radix.universe.system.RadixSystem;
+import org.radix.universe.system.SystemMessage;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -28,17 +38,8 @@ import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.Radix;
-import org.radix.network.messaging.Message;
-import org.radix.network.messaging.SignedMessage;
-import org.radix.time.Timestamps;
-import org.radix.universe.system.LocalSystem;
-import org.radix.universe.system.RadixSystem;
-import org.radix.universe.system.SystemMessage;
-import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -120,7 +121,7 @@ class MessagePreprocessor {
 
 	private Message deserialize(byte[] in) {
 		try {
-			byte[] uncompressed = Snappy.uncompress(in);
+			byte[] uncompressed = Compress.uncompress(in);
 			return serialization.fromDson(uncompressed, Message.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While deserializing message", e);
