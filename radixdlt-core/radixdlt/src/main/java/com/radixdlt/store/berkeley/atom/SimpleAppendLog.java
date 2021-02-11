@@ -55,27 +55,35 @@ public class SimpleAppendLog implements AppendLog {
 
 	@Override
 	public void write(byte[] data) throws IOException {
-		sizeBufferW.clear().putInt(data.length).clear();
-		checkedWrite(Integer.BYTES, sizeBufferW);
-		checkedWrite(data.length, ByteBuffer.wrap(data));
+		synchronized (channel) {
+			sizeBufferW.clear().putInt(data.length).clear();
+			checkedWrite(Integer.BYTES, sizeBufferW);
+			checkedWrite(data.length, ByteBuffer.wrap(data));
+		}
 	}
 
 	@Override
 	public Pair<byte[], Integer> readChunk(long offset) throws IOException {
-		checkedRead(offset, sizeBufferR.clear());
-		var readLength = sizeBufferR.clear().getInt();
-		return Pair.of(checkedRead(offset + Integer.BYTES, allocate(readLength)).array(), readLength);
+		synchronized (channel) {
+			checkedRead(offset, sizeBufferR.clear());
+			var readLength = sizeBufferR.clear().getInt();
+			return Pair.of(checkedRead(offset + Integer.BYTES, allocate(readLength)).array(), readLength);
+		}
 	}
 
 	@Override
 	public void flush() throws IOException {
-		channel.force(true);
+		synchronized (channel) {
+			channel.force(true);
+		}
 	}
 
 	@Override
 	public long position() {
 		try {
-			return channel.position();
+			synchronized (channel) {
+				return channel.position();
+			}
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to obtain current position in log", e);
 		}
@@ -84,7 +92,9 @@ public class SimpleAppendLog implements AppendLog {
 	@Override
 	public void truncate(long position) {
 		try {
-			channel.truncate(position);
+			synchronized (channel) {
+				channel.truncate(position);
+			}
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to truncate log", e);
 		}
@@ -93,7 +103,9 @@ public class SimpleAppendLog implements AppendLog {
 	@Override
 	public void close() {
 		try {
-			channel.close();
+			synchronized (channel) {
+				channel.close();
+			}
 		} catch (IOException e) {
 			throw new RuntimeException("Error while closing log", e);
 		}
