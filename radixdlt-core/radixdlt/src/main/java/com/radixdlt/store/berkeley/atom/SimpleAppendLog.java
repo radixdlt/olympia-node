@@ -54,11 +54,15 @@ public class SimpleAppendLog implements AppendLog {
 	}
 
 	@Override
-	public void write(byte[] data) throws IOException {
+	public long write(byte[] data) throws IOException {
 		synchronized (channel) {
+			var position = channel.position();
+
 			sizeBufferW.clear().putInt(data.length).clear();
 			checkedWrite(Integer.BYTES, sizeBufferW);
 			checkedWrite(data.length, ByteBuffer.wrap(data));
+
+			return position;
 		}
 	}
 

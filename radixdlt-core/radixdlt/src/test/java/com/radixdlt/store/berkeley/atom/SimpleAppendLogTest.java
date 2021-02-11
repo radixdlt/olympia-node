@@ -17,7 +17,9 @@
 
 package com.radixdlt.store.berkeley.atom;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.radixdlt.counters.SystemCounters;
 
@@ -29,10 +31,11 @@ import static org.mockito.Mockito.mock;
 import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.open;
 import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.openCompressed;
 
-import static java.io.File.createTempFile;
-
 public class SimpleAppendLogTest {
 	private final SystemCounters systemCounters = mock(SystemCounters.class);
+
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Test
 	public void appendLogCanBeCreated() throws IOException {
@@ -67,7 +70,7 @@ public class SimpleAppendLogTest {
 	}
 
 	private String createTempPath() throws IOException {
-		return createTempFile("mal-", ".log").getAbsolutePath();
+		return folder.newFile().getAbsolutePath();
 	}
 
 	private void readSequentially(final AppendLog newAppendLog) throws IOException {
