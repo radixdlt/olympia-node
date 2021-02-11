@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.translate.tokens;
+package com.radixdlt.application;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

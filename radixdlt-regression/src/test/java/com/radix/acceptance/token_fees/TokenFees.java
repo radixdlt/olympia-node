@@ -46,10 +46,10 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 
-import static com.radixdlt.client.application.translate.tokens.TokenUnitConversions.unitsToSubunits;
+import static com.radixdlt.application.TokenUnitConversions.unitsToSubunits;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
