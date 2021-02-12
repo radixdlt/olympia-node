@@ -316,7 +316,11 @@ public class SimulationTest {
 		}
 
 		public Builder addSingleByzantineModule(Module byzantineModule) {
-			this.byzantineModuleCreator = nodes -> ImmutableMap.of(nodes.get(0), byzantineModule);
+			return addSingleByzantineModule(0, byzantineModule);
+		}
+
+		public Builder addSingleByzantineModule(int nodeIndex, Module byzantineModule) {
+			this.byzantineModuleCreator = nodes -> ImmutableMap.of(nodes.get(nodeIndex), byzantineModule);
 			return this;
 		}
 
@@ -426,10 +430,10 @@ public class SimulationTest {
 				@Provides
 				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
-							indices.mapToObj(nodes::get)
-									.map(node -> BFTNode.create(node.getPublicKey()))
-									.map(node -> BFTValidator.from(node, UInt256.ONE))
-									.collect(Collectors.toList())));
+						indices.mapToObj(nodes::get)
+							.map(node -> BFTNode.create(node.getPublicKey()))
+							.map(node -> BFTValidator.from(node, UInt256.ONE))
+							.collect(Collectors.toList())));
 				}
 			});
 

@@ -32,6 +32,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +46,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 	private CompositeDisposable compositeDisposable;
 
 	private final List<Subscription<?>> subscriptions;
+	private final Runnable onStart;
 
 	private static class Subscription<T> {
 		final Observable<T> o;
@@ -60,14 +62,17 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 		}
 	}
 
-	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions) {
+	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions, Runnable onStart) {
 		this.subscriptions = subscriptions;
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
+		this.onStart = onStart;
 	}
 
 	public static class Builder {
 		private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
+
+		private Runnable onStart;
 
 		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
 			subscriptionsBuilder.add(new Subscription<>(o, p));
@@ -84,8 +89,13 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			return this;
 		}
 
+		public Builder onStart(Runnable r) {
+			this.onStart = r;
+			return this;
+		}
+
 		public ModuleRunnerImpl build(String threadName) {
-			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build());
+			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build(), onStart);
 		}
 	}
 
@@ -105,6 +115,10 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 				.map(s -> s.subscribe(singleThreadScheduler))
 				.collect(Collectors.toList());
 			this.compositeDisposable = new CompositeDisposable(disposables);
+
+			if (this.onStart != null) {
+				this.onStart.run();
+			}
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,18 +15,26 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.chaos.messageflooder;
+package com.radixdlt;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+/**
+ * A marker interface for sync ModuleRunner.
+ * Needed to be able to replace the sync runner in integration tests.
+ */
+public interface SyncModuleRunner extends ModuleRunner {
 
-public class MessageFlooderUpdateTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(MessageFlooderUpdate.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+    static SyncModuleRunner wrap(ModuleRunner baseModule) {
+        return new SyncModuleRunner() {
+            @Override
+            public void start() {
+                baseModule.start();
+            }
+
+            @Override
+            public void stop() {
+                baseModule.stop();
+            }
+        };
+    }
+
 }

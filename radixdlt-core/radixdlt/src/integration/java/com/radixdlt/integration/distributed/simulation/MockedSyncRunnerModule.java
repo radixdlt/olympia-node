@@ -25,15 +25,14 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.SyncModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -65,8 +64,10 @@ public class MockedSyncRunnerModule extends AbstractModule {
 
 	@ProvidesIntoMap
 	@StringMapKey("sync")
-	private ModuleRunner syncRunner(
+	private SyncModuleRunner syncRunner(
 		@Self BFTNode self,
+		SyncConfig syncConfig,
+		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<SyncCheckTrigger> syncCheckTriggers,
@@ -86,7 +87,7 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> remoteSyncResponseProcessor
 	) {
-		return ModuleRunnerImpl.builder()
+		return SyncModuleRunner.wrap(ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
@@ -96,7 +97,11 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, remoteStatusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, remoteSyncResponseProcessor)
-			.build("SyncManager " + self);
+			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
+				SyncCheckTrigger.create(),
+				syncConfig.syncCheckInterval()
+			))
+			.build("SyncManager " + self));
 	}
 
 	@ProvidesIntoSet

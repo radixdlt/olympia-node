@@ -18,14 +18,15 @@
 package com.radixdlt.sync;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.Key;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.SyncModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -43,10 +44,18 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
 
 public class SyncRunnerModule extends AbstractModule {
-	@ProvidesIntoMap
-	@StringMapKey("sync")
-	private ModuleRunner syncRunner(
+
+	@Override
+	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding("sync").to(Key.get(new TypeLiteral<SyncModuleRunner>() { }));
+	}
+
+	@Provides
+	private SyncModuleRunner syncRunner(
 		@Self BFTNode self,
+		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<SyncCheckTrigger> syncCheckTriggers,
@@ -66,7 +75,7 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> responseProcessor
 	) {
-		return ModuleRunnerImpl.builder()
+		return SyncModuleRunner.wrap(ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
@@ -76,6 +85,10 @@ public class SyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncServiceProcessor)
 			.add(remoteSyncResponses, responseProcessor)
-			.build("SyncManager " + self);
+			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
+				SyncCheckTrigger.create(),
+				syncConfig.syncCheckInterval()
+			))
+			.build("SyncManager " + self));
 	}
 }
