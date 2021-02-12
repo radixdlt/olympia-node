@@ -18,6 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
@@ -30,17 +31,21 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.sync.SyncState.IdleState;
+import com.radixdlt.sync.SyncState.SyncCheckState;
+import com.radixdlt.sync.SyncState.SyncingState;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.network.addressbook.AddressBook;
 
-import java.util.Collections;
+import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -54,6 +59,7 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,6 +95,8 @@ public final class LocalSyncService {
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final VerifiedSyncResponseSender verifiedSender;
 	private final InvalidSyncResponseSender invalidSyncedCommandsSender;
+
+	private final ImmutableMap<Object, Object> handlers; // need to use Object because of broken variance in map builder
 
 	private SyncState syncState;
 
@@ -128,29 +136,70 @@ public final class LocalSyncService {
 		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 
 		this.syncState = initialState;
+
+		this.handlers = new ImmutableMap.Builder<>()
+			.put(handler(
+				IdleState.class, SyncCheckTrigger.class,
+				state -> unused -> this.initSyncCheck(state)
+			))
+			.put(remoteHandler(
+				SyncCheckState.class, StatusResponse.class,
+				state -> peer -> response -> this.processStatusResponse(state, peer, response)
+			))
+			.put(handler(
+				SyncCheckState.class, SyncCheckReceiveStatusTimeout.class,
+				state -> unused -> this.processSyncCheckReceiveStatusTimeout(state)
+			))
+			.put(remoteHandler(
+				SyncingState.class, SyncResponse.class,
+				state -> peer -> response -> this.processSyncResponse(state, peer, response)
+			))
+			.put(handler(
+				SyncingState.class, SyncRequestTimeout.class,
+				state -> timeout -> this.processSyncRequestTimeout(state, timeout)
+			))
+			.put(handler(
+				IdleState.class, LedgerUpdate.class,
+				state -> ledgerUpdate -> this.updateCurrentHeaderIfNeeded(state, ledgerUpdate)
+			))
+			.put(handler(
+				SyncCheckState.class, LedgerUpdate.class,
+				state -> ledgerUpdate -> this.updateCurrentHeaderIfNeeded(state, ledgerUpdate)
+			))
+			.put(handler(
+				SyncingState.class, LedgerUpdate.class,
+				state -> ledgerUpdate -> {
+					final var newState = (SyncingState) this.updateCurrentHeaderIfNeeded(state, ledgerUpdate);
+					return this.processSync(newState);
+				}
+			))
+			.put(handler(
+				IdleState.class, LocalSyncRequest.class,
+				state -> request -> this.startSync(state, request.getTargetNodes(), request.getTarget())
+			))
+			.put(handler(
+				SyncCheckState.class, LocalSyncRequest.class,
+				state -> request -> this.startSync(state, request.getTargetNodes(), request.getTarget())
+			))
+			.put(handler(
+				SyncingState.class, LocalSyncRequest.class,
+				state -> request -> this.updateSyncingTarget(state, request)
+			))
+			.build();
 	}
 
-	public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
-		return this::processSyncCheckTrigger;
-	}
-
-	private void processSyncCheckTrigger(SyncCheckTrigger syncCheckTrigger) {
-		if (this.isIdleState()) {
-			this.initSyncCheck();
-		}
-	}
-
-	private void initSyncCheck() {
+	private SyncState initSyncCheck(IdleState currentState) {
 		final ImmutableSet<BFTNode> peersToAsk = this.choosePeersForSyncCheck();
 
 		log.trace("LocalSync: Initializing sync check, about to ask {} peers for their status", peersToAsk.size());
 
 		peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
-		this.syncState = SyncState.SyncCheckState.init(this.syncState.getCurrentHeader(), peersToAsk);
 		this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
 			SyncCheckReceiveStatusTimeout.create(),
 			this.syncConfig.syncCheckReceiveStatusTimeout()
 		);
+
+		return SyncCheckState.init(currentState.getCurrentHeader(), peersToAsk);
 	}
 
 	private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
@@ -162,148 +211,121 @@ public final class LocalSyncService {
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
-		return this::processStatusResponse;
-	}
-
-	private void processStatusResponse(BFTNode peer, StatusResponse statusResponse) {
+	private SyncState processStatusResponse(SyncCheckState currentState, BFTNode peer, StatusResponse statusResponse) {
 		log.trace("LocalSync: Received status response {} from peer {}", statusResponse, peer);
 
-		if (!isSyncCheckState()) {
-			return;
-		}
-		final var syncCheckState = (SyncState.SyncCheckState) this.syncState;
-
-		if (!syncCheckState.hasAskedPeer(peer)) {
-			return; // we didn't ask this peer
+		if (!currentState.hasAskedPeer(peer)) {
+			return currentState; // we didn't ask this peer
 		}
 
-		if (syncCheckState.receivedResponseFrom(peer)) {
-			return; // already got the response from this peer
+		if (currentState.receivedResponseFrom(peer)) {
+			return currentState; // already got the response from this peer
 		}
 
-		final var newState = syncCheckState.withStatusResponse(peer, statusResponse);
-		this.syncState = newState;
+		final var newState = currentState.withStatusResponse(peer, statusResponse);
 
 		if (newState.gotAllResponses()) {
-			processPeerStatusResponsesAndStartSyncIfNeeded(newState); // we've got all the responses
+			return processPeerStatusResponsesAndStartSyncIfNeeded(newState); // we've got all the responses
+		} else {
+			return newState;
 		}
 	}
 
-	private void processPeerStatusResponsesAndStartSyncIfNeeded(SyncState.SyncCheckState syncCheckState) {
+	private SyncState processPeerStatusResponsesAndStartSyncIfNeeded(SyncCheckState currentState) {
 		// get the highest state that we received that is also higher than what we currently have
-		final var maybeMaxPeerHeader = syncCheckState.responses().values()
+		final var maybeMaxPeerHeader = currentState.responses().values()
 			.stream()
 			.map(StatusResponse::getHeader)
 			.max(Comparator.comparing(VerifiedLedgerHeaderAndProof::getAccumulatorState, accComparator))
 			.filter(h ->
 				accComparator.compare(
 					h.getAccumulatorState(),
-					syncCheckState.getCurrentHeader().getAccumulatorState()
+					currentState.getCurrentHeader().getAccumulatorState()
 				) > 0
 			);
 
-		maybeMaxPeerHeader.ifPresentOrElse(
-			maxPeerHeader -> {
-				// start sync with all peers that are at the highest received state
-				final var candidatePeers = syncCheckState.responses()
-					.entrySet().stream()
-					.filter(e ->
-						accComparator.compare(
-							e.getValue().getHeader().getAccumulatorState(),
-							maxPeerHeader.getAccumulatorState()
-						) == 0
-					)
-					.map(Map.Entry::getKey)
-					.collect(ImmutableList.toImmutableList());
+		return maybeMaxPeerHeader.map(maxPeerHeader -> {
+			// start sync with all peers that are at the highest received state
+			final var candidatePeers = currentState.responses()
+				.entrySet().stream()
+				.filter(e ->
+					accComparator.compare(
+						e.getValue().getHeader().getAccumulatorState(),
+						maxPeerHeader.getAccumulatorState()
+					) == 0
+				)
+				.map(Map.Entry::getKey)
+				.collect(ImmutableList.toImmutableList());
 
-				this.startSync(candidatePeers, maxPeerHeader);
-			},
-			() -> {
-				// there is no peer ahead of us, retry the sync check after some delay
-				this.goToIdleAndScheduleSyncCheck();
-			});
+			return this.startSync(currentState, candidatePeers, maxPeerHeader);
+		})
+		.orElseGet(() -> {
+			// there is no peer ahead of us, retry the sync check after some delay
+			return this.goToIdleAndScheduleSyncCheck(currentState);
+		});
 	}
 
-	public EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor() {
-		return this::processSyncCheckReceiveStatusTimeout;
-	}
-
-	private void processSyncCheckReceiveStatusTimeout(SyncCheckReceiveStatusTimeout syncCheckReceiveStatusTimeout) {
-		if (!this.isSyncCheckState()) {
-			return;
-		}
-		final var syncCheckState = (SyncState.SyncCheckState) this.syncState;
-
-		if (!syncCheckState.responses().isEmpty()) {
+	private SyncState processSyncCheckReceiveStatusTimeout(SyncCheckState currentState) {
+		if (!currentState.responses().isEmpty()) {
 			// we didn't get all the responses but we have some, try to sync with what we have
-			this.processPeerStatusResponsesAndStartSyncIfNeeded(syncCheckState);
+			return this.processPeerStatusResponsesAndStartSyncIfNeeded(currentState);
 		} else {
 			// we didn't get any response, retry the sync check after some delay
-			this.goToIdleAndScheduleSyncCheck();
+			return this.goToIdleAndScheduleSyncCheck(currentState);
 		}
 	}
 
-	private void goToIdleAndScheduleSyncCheck() {
-		this.syncState = SyncState.IdleState.init(this.syncState.getCurrentHeader());
+	private SyncState goToIdleAndScheduleSyncCheck(SyncState currentState) {
 		this.syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create(), syncConfig.syncCheckInterval());
+		return IdleState.init(currentState.getCurrentHeader());
 	}
 
-	private void startSync(ImmutableList<BFTNode> candidatePeers, VerifiedLedgerHeaderAndProof targetHeader) {
+	private SyncState startSync(
+		SyncState currentState,
+		ImmutableList<BFTNode> candidatePeers,
+		VerifiedLedgerHeaderAndProof targetHeader
+	) {
 		log.trace("LocalSync: Syncing to target header {}, got {} candidate peers", targetHeader, candidatePeers.size());
-
-		if (!this.isIdleState() && !isSyncCheckState()) {
-			return;
-		}
-
-		this.syncState = SyncState.SyncingState.init(this.syncState.getCurrentHeader(), candidatePeers, targetHeader);
-		this.processSync();
+		return this.processSync(SyncingState.init(currentState.getCurrentHeader(), candidatePeers, targetHeader));
 	}
 
-	private void processSync() {
-		if (!this.isSyncingState()) {
-			return;
-		}
-		final var syncingState = (SyncState.SyncingState) this.syncState;
+	private SyncState processSync(SyncingState currentState) {
+		this.updateSyncTargetDiffCounter(currentState);
 
-		this.updateSyncTargetDiffCounter(syncingState);
-
-		if (isFullySynced(syncingState)) {
-			log.trace("LocalSync: Fully synced to {}", syncingState.getTargetHeader());
+		if (isFullySynced(currentState)) {
+			log.trace("LocalSync: Fully synced to {}", currentState.getTargetHeader());
 			// we're fully synced, scheduling another sync check
-			this.goToIdleAndScheduleSyncCheck();
-			return;
+			return this.goToIdleAndScheduleSyncCheck(currentState);
 		}
 
-		if (syncingState.waitingForResponse()) {
-			return; // we're already waiting for a response from peer
+		if (currentState.waitingForResponse()) {
+			return currentState; // we're already waiting for a response from peer
 		}
 
-		final Optional<BFTNode> peerToUse = syncingState.candidatePeers().stream()
+		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
 			.filter(addressBook::hasBftNodePeer)
 			.findFirst();
 
-		peerToUse.ifPresentOrElse(
-			peer -> this.sendSyncRequest(syncingState, peer),
-			() -> {
+		return peerToUse
+			.map(peer -> this.sendSyncRequest(currentState, peer))
+			.orElseGet(() -> {
 				// there's no connected peer on our candidates list, starting a fresh sync check immediately
-				this.syncState = SyncState.IdleState.init(syncingState.getCurrentHeader());
-				this.initSyncCheck();
-			}
-		);
+				return this.initSyncCheck(IdleState.init(currentState.getCurrentHeader()));
+			});
 	}
 
-	private void sendSyncRequest(SyncState.SyncingState syncingState, BFTNode peer) {
+	private SyncState sendSyncRequest(SyncingState currentState, BFTNode peer) {
 		log.trace("LocalSync: Sending sync request to {}", peer);
 
-		final var newState = syncingState.withWaitingFor(peer);
-		this.syncState = newState;
+		final var currentHeader = currentState.getCurrentHeader();
 
-		this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(newState.getCurrentHeader().toDto()));
+		this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
 		this.syncRequestTimeoutDispatcher.dispatch(
-			SyncRequestTimeout.create(peer, newState.getCurrentHeader()),
+			SyncRequestTimeout.create(peer, currentHeader),
 			this.syncConfig.syncRequestTimeout()
 		);
+
+		return currentState.withWaitingFor(peer);
 	}
 
 	private boolean isFullySynced(SyncState.SyncingState syncingState) {
@@ -313,44 +335,37 @@ public final class LocalSyncService {
 		) >= 0;
 	}
 
-	public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
-		return this::processSyncResponse;
-	}
-
-	private void processSyncResponse(BFTNode sender, SyncResponse syncResponse) {
+	private SyncState processSyncResponse(SyncingState currentState, BFTNode sender, SyncResponse syncResponse) {
 		log.trace("LocalSync: Received sync response from {}", sender);
 
-		if (!this.isSyncingState()) {
-			return;
-		}
-		final var syncingState = (SyncState.SyncingState) this.syncState;
-
-		if (!syncingState.waitingForResponseFrom(sender)) {
+		if (!currentState.waitingForResponseFrom(sender)) {
 			log.trace("LocalSync: Received unexpected sync response from {}", sender);
-			return;
+			return currentState;
 		}
 
 		// TODO: check validity of response
 		if (syncResponse.getCommandsAndProof().getCommands().isEmpty()) {
 			log.trace("LocalSync: Received empty sync response from {}", sender);
 			// didn't receive any commands, remove from candidate peers and processSync
-			this.syncState = syncingState
-				.clearWaitingFor()
-				.removeCandidate(sender);
-			this.processSync();
+			return this.processSync(
+				currentState
+					.clearWaitingFor()
+					.removeCandidate(sender)
+			);
 		} else if (!this.verifyResponse(syncResponse)) {
 			log.trace("LocalSync: Received invalid sync response from {}", sender);
 			// validation failed, remove from candidate peers and processSync
 			// TODO: also blacklist peer in PeerManager
-			this.syncState = syncingState
-				.clearWaitingFor()
-				.removeCandidate(sender);
 			invalidSyncedCommandsSender.sendInvalidSyncResponse(syncResponse);
-			this.processSync();
+			return this.processSync(
+				currentState
+					.clearWaitingFor()
+					.removeCandidate(sender)
+			);
 		} else {
-			this.syncState = syncingState.clearWaitingFor();
 			// TODO: What if ledger update event never comes? Consider adding another timeout.
 			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
+			return currentState.clearWaitingFor();
 		}
 	}
 
@@ -367,74 +382,50 @@ public final class LocalSyncService {
 			&& this.accumulatorVerifier.verify(start, hashes, end);
 	}
 
-	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
-		return this::processSyncRequestTimeout;
-	}
-
-	private void processSyncRequestTimeout(SyncRequestTimeout syncRequestTimeout) {
-		if (!this.isSyncingState()) {
-			return;
-		}
-		final var syncingState = (SyncState.SyncingState) this.syncState;
-
-		if (!syncingState.waitingForResponseFrom(syncRequestTimeout.getPeer())
-			|| !syncingState.getCurrentHeader().equals(syncRequestTimeout.getCurrentHeader())) {
-			return; // ignore, this timeout is no longer valid
+	private SyncState processSyncRequestTimeout(SyncingState currentState, SyncRequestTimeout syncRequestTimeout) {
+		if (!currentState.waitingForResponseFrom(syncRequestTimeout.getPeer())
+			|| !currentState.getCurrentHeader().equals(syncRequestTimeout.getCurrentHeader())) {
+			return currentState; // ignore, this timeout is no longer valid
 		}
 
 		log.trace("LocalSync: Sync request timeout from peer {}", syncRequestTimeout.getPeer());
 
-		this.syncState = syncingState
-			.clearWaitingFor()
-			.removeCandidate(syncRequestTimeout.getPeer());
-		this.processSync();
+		return this.processSync(
+			currentState
+				.clearWaitingFor()
+				.removeCandidate(syncRequestTimeout.getPeer())
+		);
 	}
 
-	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-		return this::processLedgerUpdate;
-	}
-
-	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+	private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
 		final var updatedHeader = ledgerUpdate.getTail();
 		final var isNewerState = accComparator.compare(
-			updatedHeader.getAccumulatorState(),
-			this.syncState.getCurrentHeader().getAccumulatorState()
+				updatedHeader.getAccumulatorState(),
+				currentState.getCurrentHeader().getAccumulatorState()
 		) > 0;
 
 		if (isNewerState) {
-			this.syncState = this.syncState.withCurrentHeader(updatedHeader);
-		}
-		this.processSync();
-	}
-
-	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
-		return this::processLocalSyncRequest;
-	}
-
-	private void processLocalSyncRequest(LocalSyncRequest request) {
-		final var requestedTarget = request.getTarget();
-
-		if (this.isIdleState() || this.isSyncCheckState()) {
-			this.startSync(request.getTargetNodes(), request.getTarget());
-		} else if (this.isSyncingState()) {
-			final var syncingState = (SyncState.SyncingState) this.syncState;
-
-			// we're already syncing, update the target if needed and add candidate peers
-			final var isNewerState =
-				accComparator.compare(
-					requestedTarget.getAccumulatorState(),
-					syncingState.getTargetHeader().getAccumulatorState()
-				) > 0;
-
-			if (isNewerState) {
-				this.syncState = syncingState
-					.withTargetHeader(requestedTarget)
-					.withCandidatePeers(request.getTargetNodes());
-			} else {
-				log.trace("LocalSync: skipping as already targeted {}", syncingState.getTargetHeader());
-			}
+			return currentState.withCurrentHeader(updatedHeader);
 		} else {
-			throw new IllegalStateException("Unknown sync state");
+			return currentState;
+		}
+	}
+
+	private SyncingState updateSyncingTarget(SyncingState currentState, LocalSyncRequest request) {
+		// we're already syncing, update the target if needed and add candidate peers
+		final var isNewerState =
+			accComparator.compare(
+					request.getTarget().getAccumulatorState(),
+					currentState.getTargetHeader().getAccumulatorState()
+			) > 0;
+
+		if (isNewerState) {
+			return currentState
+				.withTargetHeader(request.getTarget())
+				.withCandidatePeers(request.getTargetNodes());
+		} else {
+			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
+			return currentState;
 		}
 	}
 
@@ -448,23 +439,91 @@ public final class LocalSyncService {
 		);
 	}
 
-	private boolean isIdleState() {
-		return isInState(SyncState.IdleState.class);
-	}
-
-	private boolean isSyncCheckState() {
-		return isInState(SyncState.SyncCheckState.class);
-	}
-
-	private boolean isSyncingState() {
-		return isInState(SyncState.SyncingState.class);
-	}
-
-	private <T extends SyncState> boolean isInState(Class<T> cls) {
-		return cls.isInstance(this.syncState);
-	}
-
 	public SyncState getSyncState() {
 		return this.syncState;
+	}
+
+	public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
+		return (event) -> this.processEvent(SyncCheckTrigger.class, event);
+	}
+
+	public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+		return (peer, event) -> this.processRemoteEvent(StatusResponse.class, peer, event);
+	}
+
+	public EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor() {
+		return (event) -> this.processEvent(SyncCheckReceiveStatusTimeout.class, event);
+	}
+
+	public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+		return (peer, event) -> this.processRemoteEvent(SyncResponse.class, peer, event);
+	}
+
+	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
+		return (event) -> this.processEvent(SyncRequestTimeout.class, event);
+	}
+
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+		return (event) -> this.processEvent(LedgerUpdate.class, event);
+	}
+
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+		return (event) -> this.processEvent(LocalSyncRequest.class, event);
+	}
+
+	private <T> void processEvent(Class<T> eventClass, T event) {
+		@SuppressWarnings("unchecked")
+		final var maybeHandler =
+			(Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
+		if (maybeHandler != null) {
+			this.syncState = maybeHandler.handle(this.syncState, event);
+		}
+	}
+
+	private <T> void processRemoteEvent(Class<T> eventClass, BFTNode peer, T event) {
+		@SuppressWarnings("unchecked")
+		final var maybeHandler =
+			(Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
+		if (maybeHandler != null) {
+			this.syncState = maybeHandler.handle(this.syncState, peer, event);
+		}
+	}
+
+	private <S, T> Map.Entry<Pair<Class<S>, Class<T>>, Handler<S, T>> handler(
+		Class<S> stateClass,
+		Class<T> eventClass,
+		Function<S, Function<T, SyncState>> fn
+	) {
+		return Map.entry(Pair.of(stateClass, eventClass), new Handler<>(fn));
+	}
+
+	private <S, T> Map.Entry<Pair<Class<S>, Class<T>>, Handler<S, T>> remoteHandler(
+		Class<S> stateClass,
+		Class<T> eventClass,
+		Function<S, Function<BFTNode, Function<T, SyncState>>> fn
+	) {
+		return Map.entry(Pair.of(stateClass, eventClass), new Handler<>(new Object(), fn));
+	}
+
+	private static final class Handler<S, T> {
+		private Function<S, Function<T, SyncState>> handleEvent;
+		private Function<S, Function<BFTNode, Function<T, SyncState>>> handleRemoteEvent;
+
+		Handler(Function<S, Function<T, SyncState>> fn) {
+			this.handleEvent = fn;
+		}
+
+		/* need another param to be able to distinguish the methods after type erasure */
+		Handler(Object erasureFix, Function<S, Function<BFTNode, Function<T, SyncState>>> fn) {
+			this.handleRemoteEvent = fn;
+		}
+
+		SyncState handle(S currentState, T event) {
+			return this.handleEvent.apply(currentState).apply(event);
+		}
+
+		SyncState handle(S currentState, BFTNode peer, T event) {
+			return this.handleRemoteEvent.apply(currentState).apply(peer).apply(event);
+		}
 	}
 }
