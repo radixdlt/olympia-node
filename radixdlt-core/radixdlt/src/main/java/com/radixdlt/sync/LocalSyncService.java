@@ -96,7 +96,7 @@ public final class LocalSyncService {
 	private final VerifiedSyncResponseSender verifiedSender;
 	private final InvalidSyncResponseSender invalidSyncedCommandsSender;
 
-	private final ImmutableMap<Object, Object> handlers; // need to use Object because of broken variance in map builder
+	private final ImmutableMap<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>> handlers;
 
 	private SyncState syncState;
 
@@ -137,7 +137,7 @@ public final class LocalSyncService {
 
 		this.syncState = initialState;
 
-		this.handlers = new ImmutableMap.Builder<>()
+		this.handlers = new ImmutableMap.Builder<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>>()
 			.put(handler(
 				IdleState.class, SyncCheckTrigger.class,
 				state -> unused -> this.initSyncCheck(state)
