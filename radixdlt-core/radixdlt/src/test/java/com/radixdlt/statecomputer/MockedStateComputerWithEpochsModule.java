@@ -15,17 +15,26 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-/**
- * Module which provides a random hash command generator
- */
-public class MockedCommandGeneratorModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(NextCommandGenerator.class).to(RandomHashCommandGenerator.class);
+import java.util.function.Function;
+
+public class MockedStateComputerWithEpochsModule extends AbstractModule {
+	@Provides
+	@Singleton
+	private StateComputer stateComputer(
+		@EpochCeilingView View epochHighView,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
+		Hasher hasher
+	) {
+		return new MockedStateComputerWithEpochs(hasher, validatorSetMapping, epochHighView);
 	}
 }

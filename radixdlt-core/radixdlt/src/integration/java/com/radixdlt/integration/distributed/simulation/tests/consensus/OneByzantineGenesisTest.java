@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.integration.distributed.MockedRecoveryModule;
+import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;

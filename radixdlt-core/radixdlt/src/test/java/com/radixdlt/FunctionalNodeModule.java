@@ -1,21 +1,20 @@
-package com.radixdlt.integration.distributed;
+package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.ConsensusModule;
-import com.radixdlt.DispatcherModule;
-import com.radixdlt.EpochsConsensusModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsSyncModule;
-import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerLocalMempoolModule;
-import com.radixdlt.LedgerModule;
-import com.radixdlt.NoFeeModule;
-import com.radixdlt.SyncServiceModule;
+import com.radixdlt.ledger.MockedCommandGeneratorModule;
+import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
+import com.radixdlt.statecomputer.MockedStateComputerModule;
+import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
+import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.store.MockedRadixEngineStoreModule;
+import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.MockedSyncServiceModule;
 
 public class FunctionalNodeModule extends AbstractModule {
 	private final boolean hasSharedMempool;

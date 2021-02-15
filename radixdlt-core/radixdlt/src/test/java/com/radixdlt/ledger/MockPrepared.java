@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.ledger;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;

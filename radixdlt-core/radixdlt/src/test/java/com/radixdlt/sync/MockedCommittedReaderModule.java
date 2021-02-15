@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.sync;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -23,7 +23,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.CommittedReader;
 
 public class MockedCommittedReaderModule extends AbstractModule {
 	@Override

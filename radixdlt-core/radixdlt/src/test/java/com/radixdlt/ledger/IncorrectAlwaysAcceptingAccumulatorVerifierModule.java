@@ -15,14 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;

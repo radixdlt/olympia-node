@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.PersistentVertexStore;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt;
 
 import com.radixdlt.consensus.bft.Self;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +29,6 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.Hasher;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -27,7 +27,6 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -32,8 +32,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override

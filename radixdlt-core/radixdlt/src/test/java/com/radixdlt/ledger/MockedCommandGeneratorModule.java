@@ -15,15 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed;
+package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.statecomputer.RandomHashCommandGenerator;
 
-public class MockedStateComputerModule extends AbstractModule {
+/**
+ * Module which provides a random hash command generator
+ */
+public class MockedCommandGeneratorModule extends AbstractModule {
 	@Override
-	public void configure() {
-		bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
+	protected void configure() {
+		bind(NextCommandGenerator.class).to(RandomHashCommandGenerator.class);
 	}
 }
