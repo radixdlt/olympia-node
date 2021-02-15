@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
@@ -27,10 +28,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
@@ -58,6 +61,7 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,6 +110,7 @@ public final class RadixHttpServer {
 	private Undertow server;
 	private final EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+	private final RadixEngine<LedgerAtom> radixEngine;
 
 	@Inject(optional = true)
 	@MempoolFillerKey
@@ -117,6 +122,7 @@ public final class RadixHttpServer {
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		Map<String, ModuleRunner> moduleRunners,
+		RadixEngine<LedgerAtom> radixEngine,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
@@ -137,6 +143,7 @@ public final class RadixHttpServer {
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
+		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.atomsService = new AtomsService(
 			mempoolAddFailures,
 			ledgerCommitted,
@@ -310,9 +317,10 @@ public final class RadixHttpServer {
 		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
 		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
+
+
 		addRoute("/api/chaos/mempool-filler", Methods.PUT_STRING, this::handleMempoolFill, handler);
-		addGetRoute("/api/chaos/mempool-filler", exchange
-			-> respond(new JSONObject().put("address", mempoolFillerAddress), exchange), handler);
+		addGetRoute("/api/chaos/mempool-filler", this::handleMempoolFillView, handler);
 
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
@@ -420,6 +428,15 @@ public final class RadixHttpServer {
 			}
 		}
 		exchange.setStatusCode(StatusCodes.OK);
+	}
+
+	private void handleMempoolFillView(HttpServerExchange exchange) {
+		InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
+		JSONObject data = new JSONObject()
+			.put("address", mempoolFillerAddress)
+			.put("balance", wallet.getBalance())
+			.put("numParticles", wallet.getNumParticles());
+		exchange.getResponseSender().send(data.toString());
 	}
 
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {

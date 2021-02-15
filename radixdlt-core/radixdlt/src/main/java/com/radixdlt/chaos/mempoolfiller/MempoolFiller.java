@@ -95,10 +95,13 @@ public final class MempoolFiller {
 				return;
 			}
 
-
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			Set<Atom> atoms = wallet.createParallelTransactions(to, 100);
-			logger.info("Mempool Filler (balance: {}): Adding {} atoms to mempool...", wallet.getBalance(), atoms.size());
+			logger.info("Mempool Filler (balance: {} particles: {}): Adding {} atoms to mempool...",
+				wallet.getBalance(),
+				wallet.getNumParticles(),
+				atoms.size()
+			);
 			atoms.forEach(atom -> {
 				atom.sign(keyPair, hasher);
 				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
