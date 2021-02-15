@@ -37,11 +37,9 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
-import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.LocalSyncRequest;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -50,14 +48,9 @@ import com.radixdlt.sync.LocalSyncRequest;
 public class DeterministicEnvironmentModule extends AbstractModule {
 	@Override
 	protected void configure() {
-
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
-
-		// TODO: Remove multibind?
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
 		bind(DeterministicSender.class).to(ControlledSender.class);
 

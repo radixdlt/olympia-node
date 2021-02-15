@@ -25,7 +25,6 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -90,11 +89,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		GetEpochResponse getEpochResponse = new GetEpochResponse(self, ancestor);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(self, channelId, getEpochResponse, arrivalTime(channelId)));
-	}
-
-	@Override
-	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
 	@Override

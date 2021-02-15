@@ -283,7 +283,7 @@ public final class EpochManager {
 	public void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.processLedgerUpdate(epochsLedgerUpdate)
+			() -> this.syncLedgerUpdateProcessor.processLedgerUpdate(epochsLedgerUpdate.getBase())
 		);
 	}
 

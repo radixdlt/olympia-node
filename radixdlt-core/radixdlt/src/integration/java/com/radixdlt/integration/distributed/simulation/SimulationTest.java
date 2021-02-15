@@ -40,7 +40,6 @@ import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
@@ -279,7 +278,6 @@ public class SimulationTest {
 
 					if (hasEpochs) {
 						modules.add(new EpochsLedgerUpdateModule());
-						modules.add(new EpochsLedgerUpdateRxModule());
 					}
 				}
 

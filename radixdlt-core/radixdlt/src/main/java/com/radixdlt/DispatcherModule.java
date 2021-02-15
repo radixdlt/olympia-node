@@ -55,6 +55,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
@@ -169,6 +170,9 @@ public class DispatcherModule extends AbstractModule {
 
 		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
+
+		final var epochsLedgerUpdateKey = new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { };
+		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -437,6 +441,19 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment
 	) {
 		EventDispatcher<LedgerUpdate> dispatcher = environment.getDispatcher(LedgerUpdate.class);
+		return u -> {
+			dispatcher.dispatch(u);
+			processors.forEach(e -> e.process(u));
+		};
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
+		Environment environment
+	) {
+		EventDispatcher<EpochsLedgerUpdate> dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
 		return u -> {
 			dispatcher.dispatch(u);
 			processors.forEach(e -> e.process(u));

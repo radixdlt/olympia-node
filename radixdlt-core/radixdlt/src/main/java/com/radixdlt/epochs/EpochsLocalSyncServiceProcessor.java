@@ -88,8 +88,8 @@ public class EpochsLocalSyncServiceProcessor {
 					requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 				});
 		} else {
-			this.currentHeader = ledgerUpdate.getTail();
-			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
+			this.currentHeader = ledgerUpdate.getBase().getTail();
+			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate.getBase());
 		}
 	}
 

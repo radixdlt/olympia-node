@@ -17,6 +17,7 @@
 
 package com.radixdlt.epochs;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -28,6 +29,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
@@ -37,14 +39,14 @@ import java.util.Optional;
  * Translates committed commands to epoch change messages
  */
 public final class EpochChangeManager {
-	public interface EpochsLedgerUpdateSender {
-		void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate);
-	}
-
-	private final EpochsLedgerUpdateSender epochsLedgerUpdateSender;
+	private final EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateSender;
 	private final Hasher hasher;
 
-	public EpochChangeManager(EpochsLedgerUpdateSender epochsLedgerUpdateSender, Hasher hasher) {
+	@Inject
+	public EpochChangeManager(
+		EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateSender,
+		Hasher hasher
+	) {
 		this.epochsLedgerUpdateSender = Objects.requireNonNull(epochsLedgerUpdateSender);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -68,7 +70,7 @@ public final class EpochChangeManager {
 		});
 
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
-		this.epochsLedgerUpdateSender.sendLedgerUpdate(epochsLedgerUpdate);
+		this.epochsLedgerUpdateSender.dispatch(epochsLedgerUpdate);
 	}
 
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {

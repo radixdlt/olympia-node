@@ -38,6 +38,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
@@ -81,8 +82,8 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<ScheduledMempoolFill>>() { }).toProvider(new ObservableProvider<>(ScheduledMempoolFill.class));
 		bind(new TypeLiteral<Observable<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(new ObservableProvider<>(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }));
-		bind(new TypeLiteral<Observable<LedgerUpdate>>() { })
-				.toProvider(new ObservableProvider<>(LedgerUpdate.class));
+		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
+		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
 	}
 
 	@Provides
