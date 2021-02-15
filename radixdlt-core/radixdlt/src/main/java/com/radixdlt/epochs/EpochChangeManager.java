@@ -28,15 +28,15 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Translates committed commands to epoch change messages
  */
-public final class EpochChangeManager implements LedgerUpdateSender {
+public final class EpochChangeManager {
 	public interface EpochsLedgerUpdateSender {
 		void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate);
 	}
@@ -49,8 +49,7 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	@Override
-	public void sendLedgerUpdate(LedgerUpdate ledgerUpdate) {
+	private void sendLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		Optional<EpochChange> epochChangeOptional = ledgerUpdate.getNextValidatorSet().map(validatorSet -> {
 			VerifiedLedgerHeaderAndProof header = ledgerUpdate.getTail();
 			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
@@ -70,5 +69,9 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
 		this.epochsLedgerUpdateSender.sendLedgerUpdate(epochsLedgerUpdate);
+	}
+
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+		return this::sendLedgerUpdate;
 	}
 }

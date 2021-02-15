@@ -23,7 +23,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -37,6 +36,5 @@ public class EpochsLedgerUpdateRxModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class)
 			.addBinding().toInstance(epochsLedgerUpdates::send);
 		bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx());
-		bind(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx().map(e -> e));
 	}
 }

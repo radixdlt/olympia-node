@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
@@ -34,7 +36,7 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -61,10 +63,14 @@ public class ByzantineSyncTest {
 			.addByzantineModuleToAll(new AbstractModule() {
 				@Override
 				protected void configure() {
-					var committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
-					committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 					bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 					bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<LedgerUpdate> eventProcessor(SometimesByzantineCommittedReader reader) {
+					return reader.ledgerUpdateEventProcessor();
 				}
 			})
 			.pacemakerTimeout(5000)

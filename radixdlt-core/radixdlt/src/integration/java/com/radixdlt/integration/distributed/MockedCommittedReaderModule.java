@@ -19,16 +19,22 @@ package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
 
 public class MockedCommittedReaderModule extends AbstractModule {
 	@Override
 	public void configure() {
-		Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
-		committedSenders.addBinding().to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	public EventProcessor<LedgerUpdate> eventProcessor(InMemoryCommittedReader reader) {
+		return reader.updateProcessor();
 	}
 }

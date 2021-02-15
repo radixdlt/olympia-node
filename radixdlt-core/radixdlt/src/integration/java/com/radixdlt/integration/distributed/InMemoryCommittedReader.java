@@ -22,10 +22,10 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
@@ -36,7 +36,7 @@ import java.util.TreeMap;
 /**
  * A correct in memory committed reader used for testing
  */
-class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
+class InMemoryCommittedReader implements CommittedReader {
 
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
@@ -52,17 +52,18 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	@Override
-	public void sendLedgerUpdate(LedgerUpdate update) {
-		long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
-			: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-		for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
-			commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
-		}
+	public EventProcessor<LedgerUpdate>	updateProcessor() {
+		return update -> {
+			long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
+					: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
+			for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
+				commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+			}
 
-		if (update.getTail().isEndOfEpoch()) {
-			this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
-		}
+			if (update.getTail().isEndOfEpoch()) {
+				this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+			}
+		};
 	}
 
 	@Override

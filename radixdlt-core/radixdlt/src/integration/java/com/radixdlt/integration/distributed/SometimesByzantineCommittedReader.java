@@ -24,11 +24,11 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
@@ -39,7 +39,7 @@ import java.util.function.UnaryOperator;
 /**
  * A reader which sometimes returns erroneous commands.
  */
-public final class SometimesByzantineCommittedReader implements LedgerUpdateSender, CommittedReader {
+public final class SometimesByzantineCommittedReader implements CommittedReader {
 	private final InMemoryCommittedReader correctReader;
 	private final LedgerAccumulator accumulator;
 	private final Hasher hasher;
@@ -53,9 +53,8 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 		this.hasher = hasher;
 	}
 
-	@Override
-	public void sendLedgerUpdate(LedgerUpdate update) {
-		this.correctReader.sendLedgerUpdate(update);
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+		return this.correctReader.updateProcessor();
 	}
 
 	private static class ByzantineVerifiedCommandsAndProofBuilder {

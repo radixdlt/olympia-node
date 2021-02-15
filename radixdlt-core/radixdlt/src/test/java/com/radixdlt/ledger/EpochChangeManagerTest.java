@@ -60,7 +60,7 @@ public class EpochChangeManagerTest {
 		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
 		when(ledgerUpdate.getTail()).thenReturn(tailHeader);
 		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
-		epochChangeManager.sendLedgerUpdate(ledgerUpdate);
+		epochChangeManager.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
 		verify(epochsLedgerUpdateSender, times(1))
 			.sendLedgerUpdate(

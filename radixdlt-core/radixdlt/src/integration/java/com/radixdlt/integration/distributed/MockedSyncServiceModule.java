@@ -34,8 +34,8 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +66,8 @@ public class MockedSyncServiceModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private LedgerUpdateSender sync() {
+    @ProcessOnDispatch
+	private EventProcessor<LedgerUpdate> sync() {
 		return update -> {
 			final VerifiedLedgerHeaderAndProof headerAndProof = update.getTail();
 			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();

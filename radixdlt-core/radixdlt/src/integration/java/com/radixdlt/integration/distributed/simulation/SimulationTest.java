@@ -74,7 +74,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
-import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
@@ -245,7 +244,6 @@ public class SimulationTest {
 				// State Manager
 				if (!hasLedger) {
 					modules.add(new MockedLedgerModule());
-					modules.add(new MockedLedgerUpdateRxModule());
 				} else {
 					modules.add(new LedgerModule());
 
@@ -279,10 +277,7 @@ public class SimulationTest {
 						}
 					}
 
-					if (!hasEpochs) {
-						modules.add(new MockedLedgerUpdateRxModule());
-						modules.add(new MockedLedgerUpdateSender());
-					} else {
+					if (hasEpochs) {
 						modules.add(new EpochsLedgerUpdateModule());
 						modules.add(new EpochsLedgerUpdateRxModule());
 					}

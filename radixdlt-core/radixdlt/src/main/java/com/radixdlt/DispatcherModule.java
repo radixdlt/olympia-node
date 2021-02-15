@@ -55,6 +55,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -165,6 +166,9 @@ public class DispatcherModule extends AbstractModule {
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
+
+		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
+		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -424,5 +428,18 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
 	) {
 		return cmd -> processors.forEach(e -> e.process(cmd));
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
+		Environment environment
+	) {
+		EventDispatcher<LedgerUpdate> dispatcher = environment.getDispatcher(LedgerUpdate.class);
+		return u -> {
+			dispatcher.dispatch(u);
+			processors.forEach(e -> e.process(u));
+		};
 	}
 }
