@@ -29,11 +29,11 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Build and analyze
-          run: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
-          env:
-            # Needed to get some information about the pull request, if any
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
+        env:
+          # Needed to get some information about the pull request, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: integration tests
         run: ./gradlew integrationTest --refresh-dependencies
