@@ -17,6 +17,8 @@
 
 package com.radixdlt.environment;
 
+import com.google.inject.TypeLiteral;
+
 /**
  * The environment where events get dispatched to. The implementing
  * environment is then responsible for getting dispatched events to their
@@ -25,5 +27,6 @@ package com.radixdlt.environment;
 public interface Environment {
 	<T> EventDispatcher<T> getDispatcher(Class<T> eventClass);
 	<T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
+	<T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral);
 	<T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass);
 }

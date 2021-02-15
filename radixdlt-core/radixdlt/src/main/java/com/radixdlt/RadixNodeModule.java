@@ -92,7 +92,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new BFTKeyModule());
 		install(new CryptoModule());
 		install(new ConsensusModule());
-		install(new ConsensusRxModule());
 		install(new ConsensusRunnerModule());
 
 		// Ledger

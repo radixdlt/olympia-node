@@ -27,6 +27,7 @@ import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -77,6 +78,8 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<ScheduledMessageFlood>>() { }).toProvider(new ObservableProvider<>(ScheduledMessageFlood.class));
 		bind(new TypeLiteral<Observable<MempoolFillerUpdate>>() { }).toProvider(new ObservableProvider<>(MempoolFillerUpdate.class));
 		bind(new TypeLiteral<Observable<ScheduledMempoolFill>>() { }).toProvider(new ObservableProvider<>(ScheduledMempoolFill.class));
+		bind(new TypeLiteral<Observable<Epoched<ScheduledLocalTimeout>>>() { })
+			.toProvider(new ObservableProvider<>(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }));
 	}
 
 	@Provides
@@ -87,6 +90,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		@LocalEvents Set<Class<?>> localProcessedEventClasses
 	) {
 		return new RxEnvironment(
+			Set.of(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }),
 			localProcessedEventClasses,
 			ses,
 			dispatchers

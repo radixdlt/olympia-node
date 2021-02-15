@@ -35,7 +35,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
-import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
@@ -219,7 +218,6 @@ public class SimulationTest {
 				// Consensus
 				if (hasConsensus) {
 					modules.add(new ConsensusModule());
-					modules.add(new ConsensusRxModule());
 					if (!hasEpochs) {
 						modules.add(new MockedConsensusRunnerModule());
 					} else {

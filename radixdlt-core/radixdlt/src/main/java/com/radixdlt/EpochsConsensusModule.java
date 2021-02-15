@@ -35,7 +35,6 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -88,7 +87,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	protected void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
+			.permitDuplicates();
 		eventBinder.addBinding().toInstance(EpochViewUpdate.class);
 		eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
 	}
@@ -138,12 +137,12 @@ public class EpochsConsensusModule extends AbstractModule {
 	@ProvidesIntoSet
 	@ProcessOnDispatch
 	private EventProcessor<ScheduledLocalTimeout> initialEpochsTimeoutSender(
-		LocalTimeoutSender localTimeoutSender,
+		ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
 		EpochChange initialEpoch
 	) {
 		return localTimeout -> {
 			Epoched<ScheduledLocalTimeout> epochTimeout = Epoched.from(initialEpoch.getEpoch(), localTimeout);
-			localTimeoutSender.scheduleTimeout(epochTimeout, localTimeout.millisecondsWaitTime());
+			localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
 		};
 	}
 
@@ -189,7 +188,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
-		LocalTimeoutSender localTimeoutSender,
+		ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier
 	) {
@@ -207,7 +206,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			vertexStore,
 			safetyRules,
 			timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
-			(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
+			(scheduledTimeout, ms) -> localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
 			timeoutCalculator,
 			nextCommandGenerator,
 			proposalBroadcaster,

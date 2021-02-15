@@ -17,11 +17,10 @@
 
 package com.radixdlt.environment.deterministic.network;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -80,12 +79,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void scheduleTimeout(Epoched<ScheduledLocalTimeout> localTimeout, long milliseconds) {
-		ControlledMessage msg = new ControlledMessage(self, this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
-		handleMessage(msg);
-	}
-
-	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
 		GetEpochRequest getEpochRequest = new GetEpochRequest(self, epoch);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
@@ -111,6 +104,14 @@ public final class ControlledSender implements DeterministicSender, Environment 
 
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+		return (t, milliseconds) -> {
+			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			handleMessage(msg);
+		};
+	}
+
+	@Override
+	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
 		return (t, milliseconds) -> {
 			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
 			handleMessage(msg);
