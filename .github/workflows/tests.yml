@@ -1,0 +1,39 @@
+name: Core pipeline
+
+on: [push,pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - uses: joschi/setup-jdk@v2
+        with:
+          java-version: '11' # The OpenJDK version to make available on the path
+          architecture: 'x64' # defaults to 'x64'
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Build and analyze
+          run: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
+          env:
+            # Needed to get some information about the pull request, if any
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: integration tests
+        run: ./gradlew integrationTest --refresh-dependencies
