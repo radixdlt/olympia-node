@@ -17,6 +17,18 @@
 
 package org.radix.api.services;
 
+import org.json.JSONObject;
+import org.radix.universe.system.LocalSystem;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,18 +37,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.Hasher;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import org.radix.universe.system.LocalSystem;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class NetworkService {
 	private final Serialization serialization;
@@ -55,29 +57,30 @@ public class NetworkService {
 	}
 
 	public JSONObject getSelf() {
- 		JSONObject self = new JSONObject();
-		self.put("system", serialization.toJsonObject(localSystem, Output.WIRE));
- 		return self;
+		return jsonObject()
+			.put("system", serialization.toJsonObject(localSystem, Output.WIRE));
  	}
 
  	public JSONObject getNetwork() {
-		JSONObject result = new JSONObject();
-
-		// sorted by transport name
-		Map<String, Set<Peer>> peersByTransport = new TreeMap<>();
+		var result = jsonObject();
+		var peersByTransport = new TreeMap<String, Set<Peer>>(); // sorted by transport name
 
 		selfAndOthers(this.addressBook.recentPeers())
 			.forEachOrdered(p -> addPeerToMap(p, peersByTransport));
 
-		for (Map.Entry<String, Set<Peer>> e : peersByTransport.entrySet()) {
-			JSONArray transportPeers = new JSONArray();
-			for (Peer peer : e.getValue()) {
-				transportPeers.put(serialization.toJsonObject(peer, Output.API));
-			}
-			result.put(e.getKey(), transportPeers);
-		}
+		peersByTransport.entrySet().forEach(entry -> processEntry(result, entry));
 
 		return result;
+	}
+
+	private void processEntry(final JSONObject result, final Map.Entry<String, Set<Peer>> entry) {
+		var transportPeers = jsonArray();
+
+		entry.getValue().stream()
+			.map(peer -> serialization.toJsonObject(peer, Output.API))
+			.forEach(transportPeers::put);
+
+		result.put(entry.getKey(), transportPeers);
 	}
 
 	private void addPeerToMap(Peer peer, Map<String, Set<Peer>> pbt) {
@@ -92,9 +95,9 @@ public class NetworkService {
 	}
 
 	public JSONObject getLiveNIDS() {
-		JSONArray nids = new JSONArray();
+		var nids = jsonArray();
 		selfAndOthers(this.addressBook.recentPeers()).forEachOrdered(peer -> nids.put(peer.getNID().toString()));
-		return new JSONObject().put("nids", nids);
+		return jsonObject().put("nids", nids);
 	}
 
 	public List<JSONObject> getPeers() {
@@ -105,7 +108,7 @@ public class NetworkService {
 
 	public JSONObject getPeer(String id) {
 		try {
-			EUID euid = EUID.valueOf(id);
+			var euid = EUID.valueOf(id);
 			if (euid.equals(EUID.fromHash(this.localPeerHash))) {
 				return serialization.toJsonObject(this.localPeer, Output.API);
 			}
@@ -115,7 +118,7 @@ public class NetworkService {
 		} catch (IllegalArgumentException ex) {
 			// Ignore, return empty object
 		}
-		return new JSONObject();
+		return jsonObject();
 	}
 
 	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {

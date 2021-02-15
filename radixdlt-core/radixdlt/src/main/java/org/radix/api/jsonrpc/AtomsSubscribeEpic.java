@@ -17,45 +17,40 @@
 
 package org.radix.api.jsonrpc;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.Disposable;
+import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
+
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
+import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
+import static org.radix.api.jsonrpc.JsonRpcUtil.simpleResponse;
+
 /**
  * Epic responsible for converting JSON RPC atom subscribe request to JSON RPC notifications
- *
- * TODO: replace with a framework like akka
  */
 public class AtomsSubscribeEpic {
-
 	/**
 	 * Observers for this epic channel
 	 * TODO: should get rid of this at some point so that the epic is stateless
 	 */
 	private final ConcurrentHashMap<String, Disposable> observers = new ConcurrentHashMap<>();
-
-	/**
-	 * Interface for atom submission and return of results
-	 */
 	private final AtomsService atomsService;
-
-	/**
-	 * Stream of JSON RPC objects to be sent back in the same channel
-	 */
 	private final Consumer<JSONObject> callback;
-
-	/**
-	 * DSON serializer/deserializer
-	 */
 	private final Serialization serialization;
-
 	private final Function<JSONObject, AtomQuery> queryMapper;
 
 	public AtomsSubscribeEpic(
@@ -79,59 +74,59 @@ public class AtomsSubscribeEpic {
 	}
 
 	private void onAtomUpdate(String subscriberId, JSONArray atoms, boolean isHead) {
-		JSONObject notification = new JSONObject();
-		notification.put("jsonrpc", "2.0");
-		notification.put("method", "Atoms.subscribeUpdate");
-		JSONObject params = new JSONObject();
-		params.put("atomEvents", atoms);
-		params.put("subscriberId", subscriberId);
-		params.put("isHead", isHead);
-		notification.put("params", params);
-		callback.accept(notification);
+		callback.accept(notification("Atoms.subscribeUpdate", jsonObject()
+			.put("atomEvents", atoms).put("subscriberId", subscriberId).put("isHead", isHead)));
 	}
 
 	public synchronized void action(JSONObject jsonRequest) {
-		JSONObject params = jsonRequest.getJSONObject("params");
-		String subscriberId = jsonRequest.getJSONObject("params").getString("subscriberId");
-		Object id = jsonRequest.get("id");
+		var params = jsonRequest.getJSONObject("params");
+		var subscriberId = params.getString("subscriberId");
+		var id = jsonRequest.get("id");
+		var method = jsonRequest.getString("method");
 
-		if (jsonRequest.getString("method").equals("Atoms.subscribe")) {
-			JSONObject query = params.getJSONObject("query");
-
-			final AtomQuery atomQuery;
-			if (query.has("address")) {
-				atomQuery = queryMapper.apply(query);
-			} else {
-				callback.accept(JsonRpcUtil.errorResponse(id, -32000, "Invalid query.", new JSONObject()));
-				return;
-			}
-
-			if (observers.containsKey(subscriberId)) {
-				callback.accept(JsonRpcUtil.errorResponse(
-					id, -32000, "Subscriber + " + subscriberId + " already exists.", new JSONObject()
-				));
-				return;
-			} else {
-				callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));
-			}
-
-			observers.computeIfAbsent(subscriberId, (i) -> atomsService.getAtomEvents(atomQuery)
-				.subscribe(observedAtoms -> {
-					final JSONArray atomEventsJson = new JSONArray();
-					observedAtoms.atomEvents()
-						.map(event -> serialization.toJsonObject(event, Output.WIRE))
-						.forEach(atomEventsJson::put);
-
-					onAtomUpdate(subscriberId, atomEventsJson, observedAtoms.isHead());
-				}));
-		} else if (jsonRequest.getString("method").equals("Atoms.cancel")) {
-			Disposable disposable = observers.remove(subscriberId);
-			if (disposable != null) {
-				disposable.dispose();
-			}
-			callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));
-			return;
+		if (method.equals("Atoms.subscribe")) {
+			subscribe(params, subscriberId, id);
+		} else if (method.equals("Atoms.cancel")) {
+			cancelSubscription(subscriberId, id);
 		}
 	}
 
+	private void subscribe(final JSONObject params, final String subscriberId, final Object id) {
+		if (observers.containsKey(subscriberId)) {
+			callback.accept(errorResponse(id, SERVER_ERROR, "Subscriber + " + subscriberId + " already exists."));
+			return;
+		}
+
+		var query = params.getJSONObject("query");
+
+		if (!query.has("address")) {
+			callback.accept(errorResponse(id, SERVER_ERROR, "Invalid query."));
+			return;
+		}
+
+		callback.accept(simpleResponse(id, "success", true));
+		observers.computeIfAbsent(subscriberId, __ -> initSubscription(subscriberId, queryMapper.apply(query)));
+	}
+
+	private Disposable initSubscription(final String subscriberId, final AtomQuery atomQuery) {
+		return atomsService.getAtomEvents(atomQuery)
+			.subscribe(observedAtoms -> {
+				subscriber(subscriberId, observedAtoms);
+			});
+	}
+
+	private void subscriber(final String subscriberId, final ObservedAtomEvents observedAtoms) {
+		final var atomEventsJson = jsonArray();
+
+		observedAtoms.atomEvents()
+			.map(event -> serialization.toJsonObject(event, Output.WIRE))
+			.forEach(atomEventsJson::put);
+
+		onAtomUpdate(subscriberId, atomEventsJson, observedAtoms.isHead());
+	}
+
+	private void cancelSubscription(final String subscriberId, final Object id) {
+		Optional.ofNullable(observers.remove(subscriberId)).ifPresent(Disposable::dispose);
+		callback.accept(simpleResponse(id, "success", true));
+	}
 }

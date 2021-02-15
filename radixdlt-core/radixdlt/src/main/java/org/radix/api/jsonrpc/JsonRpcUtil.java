@@ -17,76 +17,90 @@
 
 package org.radix.api.jsonrpc;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * A collection of utilities for the Json RPC API
  */
 public final class JsonRpcUtil {
-
 	/**
 	 * The following found at: https://www.jsonrpc.org/specification
 	 */
-	public static final int INVALID_REQUEST_CODE = -32600;
-
-	public static final int OVERSIZED_REQUEST = -32001;
+	public static final int INVALID_REQUEST = -32600;
+	public static final int INVALID_PARAMS = -32602;
+	public static final int METHOD_NOT_FOUND = -32601;
+	public static final int REQUEST_TOO_LONG = -32001;
+	public static final int SERVER_ERROR = -32000;
+	public static final int PARSE_ERROR = -32700;
 
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
 	}
 
+	public static Optional<JSONObject> jsonObject(String data) {
+		try {
+			return Optional.ofNullable(new JSONObject(data));
+		} catch (JSONException e) {
+			return Optional.empty();
+		}
+	}
+
+	public static JSONObject jsonObject() {
+		return new JSONObject();
+	}
+
+	public static JSONArray jsonArray() {
+		return new JSONArray();
+	}
+
+	public static JSONArray listToArray(Serialization serialization, final List<?> list) {
+		var resultArray = jsonArray();
+		list.stream()
+			.map(o -> serialization.toJsonObject(o, DsonOutput.Output.API))
+			.forEach(resultArray::put);
+		return resultArray;
+	}
+
 	public static JSONObject methodNotFoundResponse(Object id) {
-		return errorResponse(id, -32601, "Method not found");
+		return errorResponse(id, METHOD_NOT_FOUND, "Method not found");
 	}
 
 	public static JSONObject errorResponse(Object id, int code, String message, JSONObject data) {
-		JSONObject error = new JSONObject();
-		error.put("id", id);
-		error.put("jsonrpc", "2.0");
-		JSONObject errorData = new JSONObject();
-		errorData.put("code", code);
-		errorData.put("message", message);
-		errorData.put("data", data);
-		error.put("error", errorData);
-		return error;
+		return commonFields(id).put("error", jsonObject().put("code", code).put("message", message).put("data", data));
 	}
 
 	public static JSONObject errorResponse(Object id, int code, String message) {
-		JSONObject error = new JSONObject();
-		error.put("id", id);
-		error.put("jsonrpc", "2.0");
-		JSONObject errorData = new JSONObject();
-		errorData.put("code", code);
-		errorData.put("message", message);
-		error.put("error", errorData);
-		return error;
+		return commonFields(id).put("error", jsonObject().put("code", code).put("message", message));
+	}
+
+	public static JSONObject errorResponse(int code, String message) {
+		return errorResponse(JSONObject.NULL, code, message);
 	}
 
 	public static JSONObject notification(String method, JSONObject params) {
-		JSONObject notification = new JSONObject();
-		notification.put("jsonrpc", "2.0");
-		notification.put("method", method);
-		notification.put("params", params);
-		return notification;
+		return jsonObject()
+			.put("jsonrpc", "2.0")
+			.put("method", method)
+			.put("params", params);
 	}
 
 	public static JSONObject response(Object id, JSONObject result) {
-		JSONObject response = new JSONObject();
-		response.put("id", id);
-		response.put("jsonrpc", "2.0");
-		response.put("result", result);
-		return response;
+		return commonFields(id).put("result", result);
 	}
 
 	public static JSONObject simpleResponse(Object id, String key, boolean value) {
-		JSONObject resultJson = new JSONObject();
-		resultJson.put(key, value);
-		return response(id, resultJson);
+		return response(id, jsonObject().put(key, value));
 	}
 
-	public static JSONObject simpleResponse(Object id, String key, String value) {
-		JSONObject resultJson = new JSONObject();
-		resultJson.put(key, value);
-		return response(id, resultJson);
+	public static JSONObject commonFields(final Object id) {
+		return jsonObject().put("id", id).put("jsonrpc", "2.0");
 	}
 }
