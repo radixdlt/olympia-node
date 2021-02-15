@@ -27,9 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
-
 import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
+import static org.junit.Assert.assertEquals;
 
 public final class SanityTestSuiteTestLoader {
 	private final ObjectMapper mapper = new ObjectMapper();
