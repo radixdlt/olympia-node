@@ -26,7 +26,10 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.SyncModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.*;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -71,9 +74,9 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<StatusResponse>> remoteStatusResponses,
 		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
 		Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
-		RemoteEventProcessor<SyncRequest> remoteSyncServiceProcessor,
+		RemoteEventProcessor<SyncRequest> remoteSyncRequestProcessor,
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
-		RemoteEventProcessor<SyncResponse> responseProcessor
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
 		return SyncModuleRunner.wrap(ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
@@ -83,8 +86,8 @@ public class SyncRunnerModule extends AbstractModule {
 			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
 			.add(remoteStatusRequests, statusRequestProcessor)
 			.add(remoteStatusResponses, statusResponseProcessor)
-			.add(remoteSyncRequests, remoteSyncServiceProcessor)
-			.add(remoteSyncResponses, responseProcessor)
+			.add(remoteSyncRequests, remoteSyncRequestProcessor)
+			.add(remoteSyncResponses, syncResponseProcessor)
 			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
 				SyncCheckTrigger.create(),
 				syncConfig.syncCheckInterval()

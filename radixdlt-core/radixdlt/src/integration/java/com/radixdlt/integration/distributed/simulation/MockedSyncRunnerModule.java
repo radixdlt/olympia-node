@@ -18,17 +18,21 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SyncModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.*;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -60,32 +64,34 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding("sync").to(Key.get(new TypeLiteral<SyncModuleRunner>() { }));
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("sync")
+	@Provides
 	private SyncModuleRunner syncRunner(
 		@Self BFTNode self,
-		SyncConfig syncConfig,
 		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<SyncCheckTrigger> syncCheckTriggers,
 		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
-		Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
-		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
 		Observable<SyncRequestTimeout> syncRequestTimeouts,
 		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
+		Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
+		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
 		Observable<LedgerUpdate> ledgerUpdates,
 		@ProcessWithSyncRunner Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
 		Flowable<RemoteEvent<StatusRequest>> remoteStatusRequests,
-		RemoteEventProcessor<StatusRequest> remoteStatusRequestProcessor,
+		RemoteEventProcessor<StatusRequest> statusRequestProcessor,
 		Flowable<RemoteEvent<StatusResponse>> remoteStatusResponses,
-		RemoteEventProcessor<StatusResponse> remoteStatusResponseProcessor,
+		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
 		Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
 		RemoteEventProcessor<SyncRequest> remoteSyncRequestProcessor,
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
-		RemoteEventProcessor<SyncResponse> remoteSyncResponseProcessor
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
 		return SyncModuleRunner.wrap(ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
@@ -93,10 +99,10 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
 			.add(syncRequestTimeouts, syncRequestTimeoutProcessor)
 			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
-			.add(remoteStatusRequests, remoteStatusRequestProcessor)
-			.add(remoteStatusResponses, remoteStatusResponseProcessor)
+			.add(remoteStatusRequests, statusRequestProcessor)
+			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
-			.add(remoteSyncResponses, remoteSyncResponseProcessor)
+			.add(remoteSyncResponses, syncResponseProcessor)
 			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
 				SyncCheckTrigger.create(),
 				syncConfig.syncCheckInterval()
