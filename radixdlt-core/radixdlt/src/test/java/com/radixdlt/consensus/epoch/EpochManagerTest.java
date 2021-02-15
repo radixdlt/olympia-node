@@ -274,7 +274,7 @@ public class EpochManagerTest {
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(mock(LedgerUpdate.class), epochChange);
 
 		// Act
-		epochManager.processLedgerUpdate(epochsLedgerUpdate);
+		epochManager.epochsLedgerUpdateEventProcessor().process(epochsLedgerUpdate);
 
 		// Assert
 		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());

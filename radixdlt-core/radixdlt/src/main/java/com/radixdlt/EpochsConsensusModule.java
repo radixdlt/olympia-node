@@ -96,7 +96,12 @@ public class EpochsConsensusModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
-	@Provides
+    @Provides
+    private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
+        return epochManager.epochsLedgerUpdateEventProcessor();
+    }
+
+    @Provides
 	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
 		return epochManager.localGetVerticesRequestRemoteEventProcessor();
 	}

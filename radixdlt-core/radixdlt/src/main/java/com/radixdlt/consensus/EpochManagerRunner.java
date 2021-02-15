@@ -72,6 +72,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 	public EpochManagerRunner(
 		@Self BFTNode self,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
+		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		Observable<BFTInsertUpdate> bftUpdates,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Observable<BFTRebuildUpdate> bftRebuilds,
@@ -92,7 +93,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
 		this.subscriptions = List.of(
-			new Subscription<>(ledgerUpdates, epochManager::processLedgerUpdate),
+			new Subscription<>(ledgerUpdates, epochsLedgerUpdateEventProcessor::process),
 			new Subscription<>(bftUpdates, bftUpdateProcessor::process),
 			new Subscription<>(bftRebuilds, bftRebuildProcessor::process),
 			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process),

@@ -62,6 +62,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		EpochManager epochManager,
+		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
@@ -79,7 +80,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
 		processorsBuilder.put(EpochsLedgerUpdate.class, e -> {
-			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
+			epochsLedgerUpdateEventProcessor.process((EpochsLedgerUpdate) e);
 			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
 		});
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
