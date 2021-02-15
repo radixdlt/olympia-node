@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -33,7 +33,7 @@ import com.radixdlt.utils.UInt256;
 /**
  * Module which manages computers used for validators and stake
  */
-public class SimulationValidatorComputersModule extends AbstractModule {
+public class MockedValidatorComputersModule extends AbstractModule {
 	@Provides
 	private Stakes stakes(ImmutableList<BFTValidator> allValidators) {
 		ImmutableMap<ECPublicKey, UInt256> stakes = allValidators.stream()

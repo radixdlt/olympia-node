@@ -33,20 +33,9 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
-import com.radixdlt.DispatcherModule;
-import com.radixdlt.EpochsConsensusModule;
-import com.radixdlt.EpochsSyncModule;
-import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.LedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.NoFeeModule;
-import com.radixdlt.LedgerLocalMempoolModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.integration.distributed.FunctionalNodeModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.SyncServiceModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -70,17 +59,9 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
-import com.radixdlt.integration.distributed.MockedLedgerModule;
-import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
-import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
-import com.radixdlt.integration.distributed.MockedStateComputerModule;
-import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
-import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
@@ -99,8 +80,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
@@ -115,7 +94,6 @@ import io.reactivex.rxjava3.core.Single;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -203,85 +181,6 @@ public class SimulationTest {
 				this.hasRadixEngine = hasRadixEngine;
 				this.hasEpochs = hasEpochs;
 				this.hasSync = hasSync;
-			}
-
-			Module getCoreModule() {
-				List<Module> modules = new ArrayList<>();
-
-				// Shared Mempool
-				if (hasSharedMempool) {
-					modules.add(new MempoolReceiverModule());
-				}
-
-				// Consensus
-				if (hasConsensus) {
-					modules.add(new ConsensusModule());
-					if (!hasEpochs) {
-						modules.add(new MockedConsensusRunnerModule());
-					} else {
-						modules.add(new EpochsConsensusModule());
-						modules.add(new ConsensusRunnerModule());
-					}
-				}
-
-				// Sync
-				if (hasLedger) {
-					if (!hasSync) {
-						modules.add(new MockedSyncServiceModule());
-					} else {
-						modules.add(new SyncServiceModule());
-						modules.add(new MockedCommittedReaderModule());
-						if (!hasEpochs) {
-							modules.add(new MockedSyncRunnerModule());
-						} else {
-							modules.add(new EpochsSyncModule());
-							modules.add(new SyncRunnerModule());
-						}
-					}
-				}
-
-				// State Manager
-				if (!hasLedger) {
-					modules.add(new MockedLedgerModule());
-				} else {
-					modules.add(new LedgerModule());
-
-					if (!hasMempool) {
-						modules.add(new MockedCommandGeneratorModule());
-
-						// TODO: Remove once mempool fixed
-						modules.add(new AbstractModule() {
-							@Override
-							public void configure() {
-								bind(Mempool.class).to(EmptyMempool.class);
-							}
-						});
-
-						if (!hasEpochs) {
-							modules.add(new MockedStateComputerModule());
-						} else {
-							modules.add(new MockedStateComputerWithEpochsModule());
-						}
-					} else {
-						modules.add(new LedgerCommandGeneratorModule());
-						modules.add(new LedgerLocalMempoolModule(10));
-
-						if (!hasRadixEngine) {
-							modules.add(new MockedMempoolStateComputerModule());
-						} else {
-							modules.add(new NoFeeModule());
-							modules.add(new RadixEngineModule());
-							modules.add(new MockedRadixEngineStoreModule());
-							modules.add(new SimulationValidatorComputersModule());
-						}
-					}
-
-					if (hasEpochs) {
-						modules.add(new EpochsLedgerUpdateModule());
-					}
-				}
-
-				return Modules.combine(modules);
 			}
 		}
 
@@ -642,11 +541,34 @@ public class SimulationTest {
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
-			modules.add(ledgerType.getCoreModule());
+			if (ledgerType.hasConsensus) {
+				if (!ledgerType.hasEpochs) {
+					modules.add(new MockedConsensusRunnerModule());
+				} else {
+					modules.add(new ConsensusRunnerModule());
+				}
+			}
+
+			if (ledgerType.hasLedger && ledgerType.hasSync) {
+				if (!ledgerType.hasEpochs) {
+					modules.add(new MockedSyncRunnerModule());
+				} else {
+					modules.add(new SyncRunnerModule());
+				}
+			}
+
+			modules.add(new FunctionalNodeModule(
+				ledgerType.hasSharedMempool,
+				ledgerType.hasConsensus,
+				ledgerType.hasLedger,
+				ledgerType.hasMempool,
+				ledgerType.hasRadixEngine,
+				ledgerType.hasEpochs,
+				ledgerType.hasSync
+			));
 
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
 				initialNodesModule,

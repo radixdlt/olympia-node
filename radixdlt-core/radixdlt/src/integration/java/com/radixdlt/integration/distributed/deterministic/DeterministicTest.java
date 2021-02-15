@@ -25,13 +25,6 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
-import com.radixdlt.DispatcherModule;
-import com.radixdlt.EpochsConsensusModule;
-import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.LedgerLocalMempoolModule;
-import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -48,6 +41,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.integration.distributed.FunctionalNodeModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
@@ -61,10 +55,6 @@ import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.MockedLedgerModule;
-import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.MockedStateComputerModule;
-import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.TimeSupplier;
@@ -208,14 +198,22 @@ public final class DeterministicTest {
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 					bind(Random.class).toInstance(new Random(123456));
+					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+						.toInstance(unlimitedRateLimiter());
 				}
 			});
-			modules.add(new ConsensusModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
-			modules.add(new LedgerLocalMempoolModule(10));
-			modules.add(new DispatcherModule());
+			modules.add(new FunctionalNodeModule(
+				false,
+				true,
+				ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC,
+				false,
+				false,
+				ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC,
+				false
+			));
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
@@ -223,8 +221,6 @@ public final class DeterministicTest {
 					@Override
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
-						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
@@ -238,8 +234,6 @@ public final class DeterministicTest {
 						return processor::processViewUpdate;
 					}
 				});
-				modules.add(new MockedStateComputerModule());
-				modules.add(new MockedLedgerModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
@@ -247,8 +241,6 @@ public final class DeterministicTest {
 					@Override
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-						bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-							.toInstance(unlimitedRateLimiter());
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
@@ -259,13 +251,8 @@ public final class DeterministicTest {
 						return epochToValidatorSetMapping;
 					}
 				});
-				modules.add(new LedgerModule());
-				modules.add(new EpochsConsensusModule());
-				modules.add(new EpochsLedgerUpdateModule());
-				modules.add(new LedgerCommandGeneratorModule());
-				modules.add(new MockedSyncServiceModule());
-				modules.add(new MockedStateComputerWithEpochsModule());
 			}
+
 			return new DeterministicTest(
 				this.nodes,
 				this.messageSelector,
