@@ -206,7 +206,6 @@ public final class DeterministicTest {
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
 			modules.add(new FunctionalNodeModule(
-				false,
 				true,
 				ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC,
 				false,

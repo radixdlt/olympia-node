@@ -36,6 +36,10 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.statecomputer.MockedValidatorComputersModule;
+import com.radixdlt.store.MockedRadixEngineStoreModule;
+import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -541,27 +545,9 @@ public class SimulationTest {
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedCryptoModule());
+
 			modules.add(new RxEnvironmentModule());
-			modules.add(new MockedPersistenceStoreModule());
-			modules.add(new MockedRecoveryModule());
-			if (ledgerType.hasConsensus) {
-				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedConsensusRunnerModule());
-				} else {
-					modules.add(new ConsensusRunnerModule());
-				}
-			}
-
-			if (ledgerType.hasLedger && ledgerType.hasSync) {
-				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedSyncRunnerModule());
-				} else {
-					modules.add(new SyncRunnerModule());
-				}
-			}
-
 			modules.add(new FunctionalNodeModule(
-				ledgerType.hasSharedMempool,
 				ledgerType.hasConsensus,
 				ledgerType.hasLedger,
 				ledgerType.hasMempool,
@@ -569,6 +555,34 @@ public class SimulationTest {
 				ledgerType.hasEpochs,
 				ledgerType.hasSync
 			));
+
+			// Runners
+			if (ledgerType.hasSharedMempool) {
+				modules.add(new MempoolReceiverModule());
+			}
+			if (ledgerType.hasConsensus) {
+				if (!ledgerType.hasEpochs) {
+					modules.add(new MockedConsensusRunnerModule());
+				} else {
+					modules.add(new ConsensusRunnerModule());
+				}
+			}
+			if (ledgerType.hasLedger && ledgerType.hasSync) {
+				modules.add(new MockedCommittedReaderModule());
+				if (!ledgerType.hasEpochs) {
+					modules.add(new MockedSyncRunnerModule());
+				} else {
+					modules.add(new SyncRunnerModule());
+				}
+			}
+
+			// Persistence
+			if (ledgerType.hasRadixEngine) {
+				modules.add(new MockedRadixEngineStoreModule());
+				modules.add(new MockedValidatorComputersModule());
+			}
+			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
 
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
 				initialNodesModule,

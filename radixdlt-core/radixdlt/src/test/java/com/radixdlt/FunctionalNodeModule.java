@@ -6,18 +6,13 @@ import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.store.MockedRadixEngineStoreModule;
-import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.MockedSyncServiceModule;
 
 public class FunctionalNodeModule extends AbstractModule {
-	private final boolean hasSharedMempool;
 	private final boolean hasConsensus;
 	private final boolean hasSync;
 
@@ -31,8 +26,11 @@ public class FunctionalNodeModule extends AbstractModule {
 	// FIXME: This is required for now for shared syncing, remove after refactor
 	private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
+	public FunctionalNodeModule() {
+		this(true, true, true, true, true, true);
+	}
+
 	public FunctionalNodeModule(
-		boolean hasSharedMempool,
 		boolean hasConsensus,
 		boolean hasLedger,
 		boolean hasMempool,
@@ -40,7 +38,6 @@ public class FunctionalNodeModule extends AbstractModule {
 		boolean hasEpochs,
 		boolean hasSync
 	) {
-		this.hasSharedMempool = hasSharedMempool;
 		this.hasConsensus = hasConsensus;
 		this.hasLedger = hasLedger;
 		this.hasMempool = hasMempool;
@@ -52,11 +49,6 @@ public class FunctionalNodeModule extends AbstractModule {
 	@Override
 	public void configure() {
 		install(new DispatcherModule());
-
-		// Shared Mempool
-		if (hasSharedMempool) {
-			install(new MempoolReceiverModule());
-		}
 
 		// Consensus
 		if (hasConsensus) {
@@ -72,7 +64,6 @@ public class FunctionalNodeModule extends AbstractModule {
 				install(mockedSyncServiceModule);
 			} else {
 				install(new SyncServiceModule());
-				install(new MockedCommittedReaderModule());
 				if (hasEpochs) {
 					install(new EpochsSyncModule());
 				}
@@ -110,8 +101,6 @@ public class FunctionalNodeModule extends AbstractModule {
 				} else {
 					install(new NoFeeModule());
 					install(new RadixEngineModule());
-					install(new MockedRadixEngineStoreModule());
-					install(new MockedValidatorComputersModule());
 				}
 			}
 
