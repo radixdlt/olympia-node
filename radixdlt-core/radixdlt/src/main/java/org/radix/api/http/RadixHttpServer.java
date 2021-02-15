@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
@@ -212,7 +213,7 @@ public final class RadixHttpServer {
 		// Chaos routes
 		handler.add(Methods.PUT, "/api/chaos/message-flooder", this::handleMessageFlood);
 		handler.add(Methods.PUT, "/api/chaos/mempool-filler", this::handleMempoolFill);
-		handler.add(Methods.GET, "/api/chaos/mempool-filler", exchange -> respond(jsonObject().put("address", mempoolFillerAddress), exchange));
+		handler.add(Methods.GET, "/api/chaos/mempool-filler", this::respondWithMempoolFill);
 
 		// keep-alive route
 		handler.add(Methods.GET, "/api/ping", this::respondWithPong);
@@ -255,6 +256,10 @@ public final class RadixHttpServer {
 		filter.setUrlPattern("^.*$");
 
 		return filter;
+	}
+
+	private void respondWithMempoolFill(HttpServerExchange exchange) {
+		respond(jsonObject().put("address", mempoolFillerAddress), exchange);
 	}
 
 	private void respondWithPong(final HttpServerExchange exchange) {
@@ -353,15 +358,10 @@ public final class RadixHttpServer {
 		peer.close();
 	}
 
-	/**
-	 * Disconnect all currently connected peers
-	 *
-	 * @return Json object containing disconnect information
-	 */
 	private JSONObject disconnectAllPeers() {
 		var result = jsonObject();
 		var closed = jsonArray();
-		var peersCopy = new HashMap<RadixJsonRpcPeer, WebSocketChannel>(peers);
+		var peersCopy = new HashMap<>(peers);
 
 		result.put("closed", closed);
 
@@ -386,59 +386,54 @@ public final class RadixHttpServer {
 		return result;
 	}
 
-	/**
-	 * Handle PUT request for changing BFT state.
-	 * <p>
-	 * Put request takes two parameters:
-	 * <ul>
-	 *   <li><b>id</b> the ID of the BFT instance (must be {@code 0} for now)</li>
-	 *   <li><b>state</b> {@code true} to enable the specified instance id, otherwise
-	 *     the instance is disabled
-	 * </ul>
-	 *
-	 * @param exchange The {@link HttpServerExchange} to use
-	 *
-	 * @throws IOException if an error occurs parsing form data
-	 */
-	private void handleBftState(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
-			var requestBody = CharStreams.toString(httpStreamReader);
-			var values = new JSONObject(requestBody);
+	@FunctionalInterface
+	interface ThrowingConsumer<A> {
+		void accept(final A arg1) throws PublicKeyException;
+	}
 
+	private void withJSONRequestBody(
+		HttpServerExchange exchange,
+		ThrowingConsumer<JSONObject> bodyHandler
+	) throws IOException {
+		exchange.startBlocking();
+
+		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
+			JSONObject values = new JSONObject(CharStreams.toString(httpStreamReader));
+
+			bodyHandler.accept(values);
+		} catch (JSONException e) {
+			exchange.setStatusCode(StatusCodes.UNPROCESSABLE_ENTITY);
+			return;
+		} catch (PublicKeyException e) {
+			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			return;
+		}
+
+		exchange.setStatusCode(StatusCodes.OK);
+	}
+
+	private void handleBftState(HttpServerExchange exchange) throws IOException {
+		withJSONRequestBody(exchange, values -> {
 			if (values.getBoolean("state")) {
 				consensusRunner.start();
 			} else {
 				consensusRunner.stop();
 			}
-		}
-		exchange.setStatusCode(StatusCodes.OK);
+		});
 	}
 
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-		try (InputStream httpStream = exchange.getInputStream();
-			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
-			String requestBody = CharStreams.toString(httpStreamReader);
-			JSONObject values = new JSONObject(requestBody);
+		withJSONRequestBody(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
-			this.mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
-		}
-
-		exchange.setStatusCode(StatusCodes.OK);
+			mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
+		});
 	}
 
-
 	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-
-		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
-			var requestBody = CharStreams.toString(httpStreamReader);
-			var values = new JSONObject(requestBody);
+		withJSONRequestBody(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
-			boolean enabled = values.getBoolean("enabled");
-			if (enabled) {
+			if (values.getBoolean("enabled")) {
 				var data = values.getJSONObject("data");
 
 				if (data.has("nodeKey")) {
@@ -455,12 +450,7 @@ public final class RadixHttpServer {
 			}
 
 			this.messageFloodUpdateEventDispatcher.dispatch(update);
-		} catch (PublicKeyException e) {
-			exchange.setStatusCode(StatusCodes.BAD_REQUEST); //TODO UNPROCESSABLE_ENTITY might be better choice
-			return;
-		}
-
-		exchange.setStatusCode(StatusCodes.OK);
+		});
 	}
 
 	private BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {
