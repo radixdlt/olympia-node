@@ -29,7 +29,7 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Build and analyze
-        run: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
+        run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
