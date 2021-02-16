@@ -76,7 +76,7 @@ public final class ModuleForRecoveryTests {
 						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(nativeToken);
 					bindConstant().annotatedWith(DatabaseCacheSize.class)
-							.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
+						.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
 
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
