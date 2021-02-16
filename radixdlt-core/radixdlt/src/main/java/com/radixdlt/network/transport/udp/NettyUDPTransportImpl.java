@@ -26,8 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
+import hu.akarnokd.rxjava3.operators.FlowableTransformers;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +56,8 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = LogManager.getLogger();
+
+	private static final int CHANNELS_BUFFER_SIZE = 128;
 
 	// Set this to true to see a dump of packet data
 	protected static final boolean DEBUG_DATA = false;
@@ -187,7 +192,13 @@ final class NettyUDPTransportImpl implements Transport {
 	    	throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-	    return Flowable.mergeDelayError(channels);
+		return channels
+			.onBackpressureBuffer(
+				CHANNELS_BUFFER_SIZE,
+				() -> log.error("UDP channels buffer overflow!"),
+				BackpressureOverflowStrategy.DROP_LATEST
+			)
+			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
 	}
 
 	@Override
