@@ -15,14 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.PersistedBFTKeyManager;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -31,7 +30,7 @@ import com.radixdlt.properties.RuntimeProperties;
 /**
  * Configures the key to be used for signing things as a BFT validator.
  */
-public final class BFTKeyModule extends AbstractModule {
+public final class PersistedBFTKeyModule extends AbstractModule {
 	@Provides
 	@Singleton
 	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {

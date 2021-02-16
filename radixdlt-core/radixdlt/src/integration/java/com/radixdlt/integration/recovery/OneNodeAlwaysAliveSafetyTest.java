@@ -24,7 +24,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -160,10 +159,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-
 		return Guice.createInjector(
-			ModuleForRecoveryTests.create(),
+			ModuleForRecoveryTests.create(ecKeyPair),
 			new AbstractModule() {
 
 				@ProvidesIntoSet
@@ -180,13 +177,11 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + ecKeyPair.getPublicKey());
 				}
 			}
 		);

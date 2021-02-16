@@ -24,7 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -151,20 +150,16 @@ public class RecoveryLivenessTest {
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-
 		return Guice.createInjector(
-			ModuleForRecoveryTests.create(),
+			ModuleForRecoveryTests.create(ecKeyPair),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + ecKeyPair.getPublicKey());
 				}
 			}
 		);

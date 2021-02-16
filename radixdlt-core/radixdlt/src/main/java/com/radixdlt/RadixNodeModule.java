@@ -30,6 +30,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -91,7 +92,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new ApiModule());
 
 		// Consensus
-		install(new BFTKeyModule());
+		install(new PersistedBFTKeyModule());
 		install(new CryptoModule());
 		install(new ConsensusModule());
 		install(new ConsensusRunnerModule());

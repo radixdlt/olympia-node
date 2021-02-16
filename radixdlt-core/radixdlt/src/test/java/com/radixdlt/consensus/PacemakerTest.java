@@ -27,7 +27,6 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
@@ -81,8 +80,6 @@ public class PacemakerTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
@@ -90,7 +87,7 @@ public class PacemakerTest {
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 				}
 			},
-			ModuleForRecoveryTests.create()
+			ModuleForRecoveryTests.create(ecKeyPair)
 		);
 	}
 

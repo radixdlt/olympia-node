@@ -28,6 +28,7 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.ConsensusRecoveryModule;
@@ -57,7 +58,7 @@ public final class ModuleForRecoveryTests {
 		throw new UnsupportedOperationException("Cannot instantiate.");
 	}
 
-	public static Module create() {
+	public static Module create(ECKeyPair ecKeyPair) {
 		final RadixAddress nativeTokenAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		final RRI nativeToken = RRI.of(nativeTokenAddress, "NOSUCHTOKEN");
 		return Modules.combine(
@@ -83,6 +84,7 @@ public final class ModuleForRecoveryTests {
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				}
 			},
+			new InMemoryBFTKeyModule(ecKeyPair),
 			new MockedCheckpointModule(),
 			new CryptoModule(),
 			new DeterministicEnvironmentModule(),

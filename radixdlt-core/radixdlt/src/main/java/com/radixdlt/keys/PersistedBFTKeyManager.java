@@ -15,12 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.keys;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.CryptoException;
-import com.radixdlt.keys.Keys;
 import com.radixdlt.utils.Bytes;
 
 import java.io.IOException;

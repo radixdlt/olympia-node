@@ -30,10 +30,8 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
@@ -87,8 +85,6 @@ public class MempoolTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(1L));
@@ -99,7 +95,7 @@ public class MempoolTest {
 				}
 			},
 			new MempoolRelayerModule(),
-			ModuleForRecoveryTests.create()
+			ModuleForRecoveryTests.create(ecKeyPair)
 		);
 	}
 

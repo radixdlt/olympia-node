@@ -28,12 +28,10 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
@@ -129,8 +127,6 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
@@ -141,7 +137,7 @@ public class RecoveryTest {
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
-			ModuleForRecoveryTests.create()
+			ModuleForRecoveryTests.create(ecKeyPair)
 		);
 	}
 
