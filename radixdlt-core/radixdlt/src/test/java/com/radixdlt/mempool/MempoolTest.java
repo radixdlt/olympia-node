@@ -25,24 +25,19 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MempoolRelayerModule;
-import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.SingleNodeDeterministicNetworkModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicMempoolProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
@@ -51,10 +46,8 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.store.DatabaseLocation;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -67,16 +60,7 @@ public class MempoolTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	private DeterministicNetwork network;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	public MempoolTest() {
-		this.network = new DeterministicNetwork(
-			List.of(BFTNode.create(ecKeyPair.getPublicKey())),
-			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
-		);
-	}
 
 	private Injector getInjector(ECKeyPair ecKeyPair) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
@@ -85,9 +69,6 @@ public class MempoolTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(1L));
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(DatabaseLocation.class)
@@ -95,7 +76,7 @@ public class MempoolTest {
 				}
 			},
 			new MempoolRelayerModule(),
-			new PersistedNodeForTestingModule(ecKeyPair)
+			new SingleNodeDeterministicNetworkModule(ecKeyPair)
 		);
 	}
 
