@@ -16,18 +16,6 @@ jobs:
         with:
           java-version: '11' # The OpenJDK version to make available on the path
           architecture: 'x64' # defaults to 'x64'
-      - name: Cache Gradle packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
       - name: Build and analyze
         run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
