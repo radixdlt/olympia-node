@@ -21,7 +21,8 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import com.radixdlt.environment.MockedCheckpointModule;
+import com.google.inject.name.Names;
+import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
@@ -93,6 +94,7 @@ public class GetNextCommittedCommandsTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+				    bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);

@@ -3,6 +3,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -26,6 +27,7 @@ public class SingleNodeDeterministicNetworkModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
+        bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ecKeyPair);
         install(new PersistedNodeForTestingModule(ecKeyPair));
     }
 

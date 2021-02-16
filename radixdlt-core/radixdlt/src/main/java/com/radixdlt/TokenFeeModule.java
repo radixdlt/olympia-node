@@ -26,17 +26,13 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.fees.PerBytesFeeEntry;
 import com.radixdlt.fees.PerParticleFeeEntry;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -47,27 +43,6 @@ public class TokenFeeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<AtomChecker<LedgerAtom>>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	@Singleton // Don't want to recompute on each use
-	@NativeToken
-	private RRI feeTokenRri(Universe universe) {
-		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = universe.getGenesis().stream()
-			.flatMap(a -> a.particles(Spin.UP))
-			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
-			.map(p -> (MutableSupplyTokenDefinitionParticle) p)
-			.map(MutableSupplyTokenDefinitionParticle::getRRI)
-			.filter(rri -> rri.getName().equals(tokenName))
-			.collect(ImmutableList.toImmutableList());
-		if (rris.isEmpty()) {
-			throw new IllegalStateException("No mutable supply token " + tokenName + " in genesis");
-		}
-		if (rris.size() > 1) {
-			throw new IllegalStateException("More than one mutable supply token " + tokenName + " in genesis");
-		}
-		return rris.get(0);
 	}
 
 	@Provides

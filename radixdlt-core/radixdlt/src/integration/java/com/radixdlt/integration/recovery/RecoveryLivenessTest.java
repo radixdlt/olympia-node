@@ -24,6 +24,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -89,6 +90,7 @@ public class RecoveryLivenessTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
+	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final List<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
 	private MessageMutator messageMutator;
@@ -155,6 +157,7 @@ public class RecoveryLivenessTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));

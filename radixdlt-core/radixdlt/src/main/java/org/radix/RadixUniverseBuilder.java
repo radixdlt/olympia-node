@@ -25,19 +25,17 @@ import com.google.common.collect.Streams;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.checkpoint.CheckpointUtils;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -47,7 +45,6 @@ import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 
 import java.util.Collection;
 import java.util.List;
@@ -232,15 +229,20 @@ public final class RadixUniverseBuilder {
 				);
 			}
 		});
-		final var epochParticles = createEpochUpdate();
-		final var xrdParticles = createTokenDefinition(
+		final var epochParticles = CheckpointUtils.createEpochUpdate();
+		final var xrdParticles = CheckpointUtils.createTokenDefinition(
 			magic,
+			universeKey.getPublicKey(),
 			TokenDefinitionUtils.getNativeTokenShortCode(),
 			"Rads",
 			"Radix Native Tokens",
+			RADIX_ICON_URL,
+			RADIX_TOKEN_URL,
+			XRD_TOKEN_PERMISSIONS,
 			selfIssuance,
 			tokenIssuances
 		);
+
 		final var validatorParticles = createValidators(
 			magic,
 			validatorKeys
@@ -278,66 +280,6 @@ public final class RadixUniverseBuilder {
 	 */
 	private static String helloMessage() {
 		return "Radix... just imagine!";
-	}
-
-	/*
-	 * Create a token definition as a genesis token with the radix icon and granularity of 1.
-	 * In addition, create an issuance for the universe key and other keys as specified.
-	 */
-	private ImmutableList<SpunParticle> createTokenDefinition(
-		byte magic,
-		String symbol,
-		String name,
-		String description,
-		UInt256 selfIssuance,
-		ImmutableList<TokenIssuance> issuances
-	) {
-		final var universeAddress = new RadixAddress(magic, this.universeKey.getPublicKey());
-		final var tokenRRI = RRI.of(universeAddress, symbol);
-
-		final var particles = ImmutableList.<SpunParticle>builder();
-
-		particles.add(SpunParticle.down(new RRIParticle(tokenRRI)));
-		particles.add(SpunParticle.up(new MutableSupplyTokenDefinitionParticle(
-			tokenRRI,
-			name,
-			description,
-			UInt256.ONE,
-			RADIX_ICON_URL,
-			RADIX_TOKEN_URL,
-			XRD_TOKEN_PERMISSIONS
-		)));
-		TokDefParticleFactory tokDefParticleFactory = TokDefParticleFactory.create(tokenRRI, XRD_TOKEN_PERMISSIONS, UInt256.ONE);
-
-		var issuedTokens = UInt384.from(selfIssuance);
-		if (!selfIssuance.isZero()) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(universeAddress, selfIssuance)));
-		}
-		// Merge issuances so we only have one TTP per address
-		final var issuedAmounts = issuances.stream()
-			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
-		for (final var issuance : issuedAmounts.entrySet()) {
-			final var amount = issuance.getValue();
-			if (!amount.isZero()) {
-				particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount)));
-				issuedTokens = issuedTokens.add(amount);
-			}
-		}
-		if (!issuedTokens.getHigh().isZero()) {
-			// TokenOverflowException
-			throw new IllegalStateException("Too many issued tokens: " + issuedTokens);
-		}
-		if (!issuedTokens.getLow().equals(UInt256.MAX_VALUE)) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.createUnallocated(UInt256.MAX_VALUE.subtract(issuedTokens.getLow()))));
-		}
-		return particles.build();
-	}
-
-	private ImmutableList<SpunParticle> createEpochUpdate() {
-		ImmutableList.Builder<SpunParticle> particles = ImmutableList.builder();
-		particles.add(SpunParticle.down(new SystemParticle(0, 0, 0)));
-		particles.add(SpunParticle.up(new SystemParticle(1, 0, 0)));
-		return particles.build();
 	}
 
 	private List<SpunParticle> createValidators(byte magic, ImmutableList<ECKeyPair> validatorKeys) {

@@ -15,18 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.properties.RuntimeProperties;
@@ -58,6 +63,27 @@ public class CheckpointModule extends AbstractModule {
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Error while deserialising universe", e);
 		}
+	}
+
+	@Provides
+	@Singleton // Don't want to recompute on each use
+	@NativeToken
+	private RRI nativeToken(Universe universe) {
+		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
+		ImmutableList<RRI> rris = universe.getGenesis().stream()
+				.flatMap(a -> a.particles(Spin.UP))
+				.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
+				.map(p -> (MutableSupplyTokenDefinitionParticle) p)
+				.map(MutableSupplyTokenDefinitionParticle::getRRI)
+				.filter(rri -> rri.getName().equals(tokenName))
+				.collect(ImmutableList.toImmutableList());
+		if (rris.isEmpty()) {
+			throw new IllegalStateException("No mutable supply token " + tokenName + " in genesis");
+		}
+		if (rris.size() > 1) {
+			throw new IllegalStateException("More than one mutable supply token " + tokenName + " in genesis");
+		}
+		return rris.get(0);
 	}
 
 	@Provides

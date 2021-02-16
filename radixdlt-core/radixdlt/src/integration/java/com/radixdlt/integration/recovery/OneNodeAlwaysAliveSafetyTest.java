@@ -24,6 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -88,6 +89,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
+	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final List<ECKeyPair> nodeKeys;
 
 	@Inject
@@ -162,7 +164,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 		return Guice.createInjector(
 			new PersistedNodeForTestingModule(ecKeyPair),
 			new AbstractModule() {
-
 				@ProvidesIntoSet
 				@ProcessOnDispatch
 				private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(@Self BFTNode node) {
@@ -177,6 +178,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 				@Override
 				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));

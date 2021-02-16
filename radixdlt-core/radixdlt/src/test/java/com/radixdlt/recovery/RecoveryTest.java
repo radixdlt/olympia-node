@@ -27,6 +27,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
@@ -92,6 +93,7 @@ public class RecoveryTest {
 	private DeterministicNetwork network;
 	private Injector currentInjector;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final long epochCeilingView;
 
 	public RecoveryTest(long epochCeilingView) {
@@ -128,6 +130,7 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
