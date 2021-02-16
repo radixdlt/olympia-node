@@ -63,7 +63,7 @@ public class MempoolSanityTest {
 	@Test
 	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
 		SimulationTest simulationTest = bftTestBuilder
-			.overrideWithIncorrectModule(new AbstractModule() {
+			.overrideModule(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(Mempool.class).to(EmptyMempool.class);

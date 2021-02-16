@@ -330,7 +330,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder overrideWithIncorrectModule(Module module) {
+		public Builder overrideModule(Module module) {
 			this.overrideModule = module;
 			return this;
 		}

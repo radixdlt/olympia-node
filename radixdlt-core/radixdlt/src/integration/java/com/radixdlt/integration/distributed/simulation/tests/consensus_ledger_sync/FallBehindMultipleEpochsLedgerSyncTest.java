@@ -130,7 +130,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 					return new DelayedSyncModuleRunner(baseRunner, SYNC_DELAY);
 				}
 			})
-			.overrideWithIncorrectModule(new AbstractModule() {
+			.overrideModule(new AbstractModule() {
 				@Provides
 				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
 					return mapper.apply(0L);
