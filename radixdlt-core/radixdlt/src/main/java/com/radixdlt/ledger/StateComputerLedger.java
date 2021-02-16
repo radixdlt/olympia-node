@@ -278,7 +278,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
+			LedgerUpdate ledgerUpdate = new LedgerUpdate(commandsToStore);
 			ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 		}
 	}

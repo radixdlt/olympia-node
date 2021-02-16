@@ -63,7 +63,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -131,7 +130,7 @@ public final class EpochManager {
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<GetVerticesResponse> verticesResponseProcessor;
 	private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
-	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
+	private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTEventProcessor bftEventProcessor;
 
 	private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
@@ -174,7 +173,7 @@ public final class EpochManager {
 			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
 			this.verticesResponseProcessor = initialBFTSync.responseProcessor();
 			this.syncBFTResponseProcessor = initialBFTSync;
-			this.syncLedgerUpdateProcessor = initialBFTSync;
+			this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
 			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 		}
 
@@ -251,7 +250,7 @@ public final class EpochManager {
 
 		this.verticesResponseProcessor = bftSync.responseProcessor();
 		this.syncBFTResponseProcessor = bftSync;
-		this.syncLedgerUpdateProcessor = bftSync;
+		this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
 		this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
 
 
@@ -287,7 +286,7 @@ public final class EpochManager {
 	private void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.processLedgerUpdate(epochsLedgerUpdate.getBase())
+			() -> this.syncLedgerUpdateProcessor.process(epochsLedgerUpdate.getBase())
 		);
 	}
 

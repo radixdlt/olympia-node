@@ -52,6 +52,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors;
 	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
 	private final Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors;
+	private final Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors;
 
 	@Inject
 	public DeterministicConsensusProcessor(
@@ -62,7 +63,8 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors,
-		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors
+		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
+		Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
@@ -72,6 +74,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		this.bftHighQCUpdateProcessors = Objects.requireNonNull(bftHighQCUpdateProcessors);
 		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
 		this.timeoutProcessors = Objects.requireNonNull(timeoutProcessors);
+		this.ledgerUpdateProcessors = Objects.requireNonNull(ledgerUpdateProcessors);
 	}
 
 	@Override
@@ -102,7 +105,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		} else if (message instanceof BFTRebuildUpdate) {
 			bftRebuildUpdateProcessors.forEach(p -> p.process((BFTRebuildUpdate) message));
 		} else if (message instanceof LedgerUpdate) {
-			vertexStoreSync.processLedgerUpdate((LedgerUpdate) message);
+			ledgerUpdateProcessors.forEach(p -> p.process((LedgerUpdate) message));
 		} else if (message instanceof VertexRequestTimeout) {
 			vertexStoreSync.vertexRequestTimeoutEventProcessor().process((VertexRequestTimeout) message);
 		} else if (message instanceof AtomCommittedToLedger) {

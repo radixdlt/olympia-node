@@ -32,6 +32,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+
 import java.util.Objects;
 import java.util.Optional;
 

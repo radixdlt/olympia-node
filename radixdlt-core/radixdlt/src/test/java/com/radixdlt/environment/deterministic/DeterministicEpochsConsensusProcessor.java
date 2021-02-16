@@ -38,7 +38,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.ledger.BaseLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
@@ -139,7 +139,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
-		} else if (message instanceof BaseLedgerUpdate) {
+		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
 		} else if (message instanceof AtomCommittedToLedger) {
 			// Don't need to process

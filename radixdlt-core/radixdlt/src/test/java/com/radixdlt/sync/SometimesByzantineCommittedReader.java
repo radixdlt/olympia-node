@@ -26,9 +26,9 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import java.util.Objects;

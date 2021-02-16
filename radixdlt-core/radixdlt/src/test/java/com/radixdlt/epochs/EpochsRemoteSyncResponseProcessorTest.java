@@ -35,9 +35,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 

@@ -30,10 +30,10 @@ import java.util.Set;
 import org.assertj.core.util.Sets;
 import org.junit.Test;
 
-public class BaseLedgerUpdateTest {
+public class LedgerUpdateTest {
 	@Test
 	public void testEquals() {
-		EqualsVerifier.forClass(BaseLedgerUpdate.class)
+		EqualsVerifier.forClass(LedgerUpdate.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
