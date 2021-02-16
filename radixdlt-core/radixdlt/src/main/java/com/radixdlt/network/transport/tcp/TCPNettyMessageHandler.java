@@ -68,7 +68,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				() -> {
 					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
 					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
+					log.log(logLevel, "TCP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
 			.map(this::parseMessage);
