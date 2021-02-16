@@ -511,7 +511,7 @@ public class SimulationTest {
 			modules.add(new MockedRecoveryModule());
 
 			// Testing
-			modules.add(new NodeEventsModule());
+			modules.add(new SimulationNodeEventsModule());
 			testModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {

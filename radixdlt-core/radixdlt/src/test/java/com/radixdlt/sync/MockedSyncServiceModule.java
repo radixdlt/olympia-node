@@ -65,7 +65,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-    @ProcessOnDispatch
+	@ProcessOnDispatch
 	private EventProcessor<LedgerUpdate> sync() {
 		return update -> {
 			final VerifiedLedgerHeaderAndProof headerAndProof = update.getTail();

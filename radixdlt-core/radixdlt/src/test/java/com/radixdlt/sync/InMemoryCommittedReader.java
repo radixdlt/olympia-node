@@ -51,7 +51,7 @@ class InMemoryCommittedReader implements CommittedReader {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	public EventProcessor<LedgerUpdate>	updateProcessor() {
+	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
 			long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
 					: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
