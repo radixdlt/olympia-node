@@ -126,6 +126,8 @@ public class SimulationNodes {
 		SimulationNetwork getUnderlyingNetwork();
 
 		Map<BFTNode, SystemCounters> getSystemCounters();
+
+		void runModule(int nodeIndex, String name);
 	}
 
 	public RunningNetwork start(ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners) {
@@ -225,6 +227,14 @@ public class SimulationNodes {
 						node -> node,
 						node -> nodeInstances.get(bftNodes.indexOf(node)).getInstance(SystemCounters.class)
 					));
+			}
+
+			@Override
+			public void runModule(int nodeIndex, String name) {
+				nodeInstances.get(nodeIndex)
+					.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
+					.get(name)
+					.start();
 			}
 		};
 	}

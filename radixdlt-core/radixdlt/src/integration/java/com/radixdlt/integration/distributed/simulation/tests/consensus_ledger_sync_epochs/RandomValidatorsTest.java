@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -83,7 +82,7 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

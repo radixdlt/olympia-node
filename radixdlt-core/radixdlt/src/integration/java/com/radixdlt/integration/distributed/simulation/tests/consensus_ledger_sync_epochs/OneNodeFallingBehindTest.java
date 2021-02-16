@@ -28,7 +28,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.time.Duration;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -66,16 +65,17 @@ public class OneNodeFallingBehindTest {
 	@Test
 	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run(Duration.ofSeconds(60));
+		final var runningTest = test.run(Duration.ofSeconds(60));
+		final var checkResults = runningTest.awaitCompletion();
 
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
 		System.out.println(statistics);
 
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 
 }

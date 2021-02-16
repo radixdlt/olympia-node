@@ -21,16 +21,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import com.radixdlt.integration.distributed.simulation.DelayedModuleRunner;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -38,7 +34,7 @@ import com.radixdlt.sync.SyncConfig;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -64,13 +60,6 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed(10)
 			)
-			.addSingleByzantineModule(NODE_UNDER_TEST_INDEX, new AbstractModule() {
-				@ProvidesIntoMap
-				@StringMapKey("sync-delayed")
-				private ModuleRunner delayedSyncRunner(Map<String, ModuleRunner> runners) {
-					return new DelayedModuleRunner(runners.get("sync"), SYNC_DELAY);
-				}
-			})
 			.overrideModule(new AbstractModule() {
 				@Provides
 				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
@@ -92,15 +81,21 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 	@Test
 	public void given_a_node_that_falls_behind_multiple_epochs__it_should_sync_up() {
 		final var simulationTest = testBuilder.build();
-		final var results = simulationTest.run(
+
+		final var runningTest = simulationTest.run(
 			Duration.ofSeconds(15),
 			ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of("sync"))
 		);
 
-		final var nodeCounters = results.getNetwork()
-			.getSystemCounters().get(results.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
+		Executors.newSingleThreadScheduledExecutor()
+			.schedule(() -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, "sync"), SYNC_DELAY, TimeUnit.MILLISECONDS);
 
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var results = runningTest.awaitCompletion();
+
+		final var nodeCounters = runningTest.getNetwork()
+			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
+
+		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		// node must be synced up to some state after the first epoch
 		// and must not fall behind too much

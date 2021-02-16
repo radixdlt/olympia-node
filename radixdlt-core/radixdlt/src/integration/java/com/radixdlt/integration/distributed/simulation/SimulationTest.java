@@ -730,25 +730,29 @@ public class SimulationTest {
 			.doOnSubscribe(d -> runners.forEach(r -> r.start(runningNetwork)));
 	}
 
-	public static class TestResults {
-		private final Map<Monitor, Optional<TestInvariantError>> checkResults;
+	public static final class RunningSimulationTest {
+
+		private final Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable;
 		private final RunningNetwork network;
 
-		private TestResults(
-			Map<Monitor, Optional<TestInvariantError>> checkResults,
+		private RunningSimulationTest(
+			Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable,
 			RunningNetwork network
 		) {
-			this.checkResults = checkResults;
+			this.resultObservable = resultObservable;
 			this.network = network;
-		}
-
-		public Map<Monitor, Optional<TestInvariantError>> getCheckResults() {
-			return checkResults;
 		}
 
 		public RunningNetwork getNetwork() {
 			return network;
 		}
+
+		public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {
+			return this.resultObservable
+				.blockingStream()
+				.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		}
+
 	}
 
 	/**
@@ -758,11 +762,11 @@ public class SimulationTest {
 	 *
 	 * @return map of check results
 	 */
-	public TestResults run() {
+	public RunningSimulationTest run() {
 		return run(getConfiguredDuration(), ImmutableMap.of());
 	}
 
-	public TestResults run(Duration duration) {
+	public RunningSimulationTest run(Duration duration) {
 		return run(duration, ImmutableMap.of());
 	}
 
@@ -785,7 +789,7 @@ public class SimulationTest {
 	 * @param disabledModuleRunners a list of disabled module runners by node index
 	 * @return test results
 	 */
-	public TestResults run(
+	public RunningSimulationTest run(
 		Duration duration,
 		ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners
 	) {
@@ -802,14 +806,13 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
-		Map<Monitor, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
+		final var resultObservable = runChecks(runners, checkers, runningNetwork, duration)
 			.doFinally(() -> {
 				runners.forEach(SimulationNetworkActor::stop);
 				bftNetwork.stop();
-			})
-			.blockingStream()
-			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-		return new TestResults(checkResults, runningNetwork);
+			});
+
+		return new RunningSimulationTest(resultObservable, runningNetwork);
 	}
 
 	private static <T> Iterator<T> repeatLast(Iterable<T> iterable) {

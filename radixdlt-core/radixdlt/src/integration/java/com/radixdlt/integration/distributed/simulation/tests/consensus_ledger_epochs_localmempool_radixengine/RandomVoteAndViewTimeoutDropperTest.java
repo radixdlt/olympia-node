@@ -28,7 +28,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
@@ -58,7 +57,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder.build();
-		TestResults results = simulationTest.run();
+		final var runningTest = simulationTest.run();
+		final var checkResults = runningTest.awaitCompletion();
 
 		List<CounterType> counterTypes = List.of(
 			CounterType.BFT_VERTEX_STORE_FORKS,
@@ -70,13 +70,13 @@ public class RandomVoteAndViewTimeoutDropperTest {
 		Map<CounterType, LongSummaryStatistics> statistics = counterTypes.stream()
 			.collect(Collectors.toMap(
 				counterType -> counterType,
-				counterType -> results.getNetwork().getSystemCounters().values()
+				counterType -> runningTest.getNetwork().getSystemCounters().values()
 					.stream()
 					.mapToLong(s -> s.get(counterType)).summaryStatistics())
 			);
 
 		MapUtils.debugPrint(System.out, "statistics", statistics);
 
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }
