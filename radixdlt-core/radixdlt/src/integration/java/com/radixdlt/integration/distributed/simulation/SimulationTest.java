@@ -31,7 +31,6 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
@@ -43,23 +42,15 @@ import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -485,6 +476,7 @@ public class SimulationTest {
 		public SimulationTest build() {
 			final NodeEvents nodeEvents = new NodeEvents();
 
+			// Config
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
@@ -494,59 +486,13 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
-                    bind(NodeEvents.class).toInstance(nodeEvents);
-				}
-
-				// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
-				@ProcessOnDispatch
-				@ProvidesIntoSet
-				private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(
-					@Self BFTNode node,
-					NodeEvents nodeEvents
-				) {
-					return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
-				}
-
-				@ProcessOnDispatch
-				@ProvidesIntoSet
-				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(
-					@Self BFTNode node,
-					NodeEvents nodeEvents
-				) {
-					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
-				}
-
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<GetVerticesRequest> requestProcessor(
-					@Self BFTNode node,
-					NodeEvents nodeEvents
-				) {
-					return nodeEvents.processor(node, GetVerticesRequest.class);
-				}
-
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(
-					@Self BFTNode node,
-					NodeEvents nodeEvents
-				) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTHighQCUpdate> highQCProcessor(
-					@Self BFTNode node,
-					NodeEvents nodeEvents
-				) {
-					return nodeEvents.processor(node, BFTHighQCUpdate.class);
+					bind(NodeEvents.class).toInstance(nodeEvents);
 				}
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedCryptoModule());
 
-			modules.add(new RxEnvironmentModule());
+			// Functional
 			modules.add(new FunctionalNodeModule(
 				ledgerType.hasConsensus,
 				ledgerType.hasLedger,
@@ -556,7 +502,34 @@ public class SimulationTest {
 				ledgerType.hasSync
 			));
 
+			// Persistence
+			if (ledgerType.hasRadixEngine) {
+				modules.add(new MockedRadixEngineStoreModule());
+				modules.add(new MockedValidatorComputersModule());
+			}
+			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
+
+			// Testing
+			modules.add(new NodeEventsModule());
+			testModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
+					bind(Key.get(new TypeLiteral<List<ECKeyPair>>() { })).toInstance(nodes);
+					bind(NodeEvents.class).toInstance(nodeEvents);
+				}
+			});
+
+			// Nodes
+			final SimulationNetwork simulationNetwork = Guice.createInjector(
+				initialNodesModule,
+				new SimulationNetworkModule(),
+				networkModule
+			).getInstance(SimulationNetwork.class);
+
 			// Runners
+			modules.add(new RxEnvironmentModule());
 			if (ledgerType.hasSharedMempool) {
 				modules.add(new MempoolReceiverModule());
 			}
@@ -575,29 +548,6 @@ public class SimulationTest {
 					modules.add(new SyncRunnerModule());
 				}
 			}
-
-			// Persistence
-			if (ledgerType.hasRadixEngine) {
-				modules.add(new MockedRadixEngineStoreModule());
-				modules.add(new MockedValidatorComputersModule());
-			}
-			modules.add(new MockedPersistenceStoreModule());
-			modules.add(new MockedRecoveryModule());
-
-			final SimulationNetwork simulationNetwork = Guice.createInjector(
-				initialNodesModule,
-				new SimulationNetworkModule(),
-				networkModule
-			).getInstance(SimulationNetwork.class);
-
-			testModules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
-					bind(Key.get(new TypeLiteral<List<ECKeyPair>>() { })).toInstance(nodes);
-					bind(NodeEvents.class).toInstance(nodeEvents);
-				}
-			});
 
 			return new SimulationTest(
 				nodes,

@@ -17,6 +17,7 @@
 
 package com.radixdlt.recovery;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
@@ -27,6 +28,7 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -69,6 +71,8 @@ public final class ModuleForRecoveryTests {
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
+					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
+						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(nativeToken);
 
 					// System
