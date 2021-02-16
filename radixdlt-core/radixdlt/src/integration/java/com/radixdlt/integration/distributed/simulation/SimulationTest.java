@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -758,7 +759,11 @@ public class SimulationTest {
 	 * @return map of check results
 	 */
 	public TestResults run() {
-		return run(getConfiguredDuration());
+		return run(getConfiguredDuration(), ImmutableMap.of());
+	}
+
+	public TestResults run(Duration duration) {
+		return run(duration, ImmutableMap.of());
 	}
 
 	/**
@@ -777,9 +782,13 @@ public class SimulationTest {
 	 * Returns a map from the check name to the result.
 	 *
 	 * @param duration duration to run test for
+	 * @param disabledModuleRunners a list of disabled module runners by node index
 	 * @return test results
 	 */
-	public TestResults run(Duration duration) {
+	public TestResults run(
+		Duration duration,
+		ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners
+	) {
 	    Injector testInjector = Guice.createInjector(testModule);
 	    var runners = testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() { }));
 		var checkers = testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() { }));
@@ -791,7 +800,7 @@ public class SimulationTest {
 			overrideModule,
 			byzantineNodeModules
 		);
-		RunningNetwork runningNetwork = bftNetwork.start();
+		RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
 		Map<Monitor, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
 			.doFinally(() -> {

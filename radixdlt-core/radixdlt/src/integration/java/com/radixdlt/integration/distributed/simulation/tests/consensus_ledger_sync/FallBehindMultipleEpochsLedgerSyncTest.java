@@ -17,44 +17,28 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.SyncModuleRunner;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.environment.rx.ModuleRunnerImpl;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import com.radixdlt.integration.distributed.simulation.DelayedSyncModuleRunner;
+import com.radixdlt.integration.distributed.simulation.DelayedModuleRunner;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -81,53 +65,10 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 				NetworkLatencies.fixed(10)
 			)
 			.addSingleByzantineModule(NODE_UNDER_TEST_INDEX, new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(new TypeLiteral<SyncModuleRunner>() { })
-						.to(new TypeLiteral<DelayedSyncModuleRunner>() { });
-				}
-
-				@Provides
-				private DelayedSyncModuleRunner delayedSyncRunner(
-					@Self BFTNode self,
-					ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
-					SyncConfig syncConfig,
-					Observable<LocalSyncRequest> localSyncRequests,
-					EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
-					Observable<SyncCheckTrigger> syncCheckTriggers,
-					EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
-					Observable<SyncRequestTimeout> syncRequestTimeouts,
-					EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
-					Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
-					EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
-					Observable<EpochsLedgerUpdate> ledgerUpdates,
-					@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors,
-					Flowable<RemoteEvent<StatusRequest>> remoteStatusRequests,
-					RemoteEventProcessor<StatusRequest> statusRequestProcessor,
-					Flowable<RemoteEvent<StatusResponse>> remoteStatusResponses,
-					RemoteEventProcessor<StatusResponse> statusResponseProcessor,
-					Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
-					RemoteEventProcessor<SyncRequest> remoteSyncServiceProcessor,
-					Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
-					RemoteEventProcessor<SyncResponse> responseProcessor
-				) {
-					final var baseRunner = (ModuleRunnerImpl.builder()
-						.add(localSyncRequests, syncRequestEventProcessor)
-						.add(syncCheckTriggers, syncCheckTriggerProcessor)
-						.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
-						.add(syncRequestTimeouts, syncRequestTimeoutProcessor)
-						.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
-						.add(remoteStatusRequests, statusRequestProcessor)
-						.add(remoteStatusResponses, statusResponseProcessor)
-						.add(remoteSyncRequests, remoteSyncServiceProcessor)
-						.add(remoteSyncResponses, responseProcessor)
-						.onStart(() -> syncCheckTriggerDispatcher.dispatch(
-								SyncCheckTrigger.create(),
-								syncConfig.syncCheckInterval()
-						))
-						.build("SyncManager " + self));
-
-					return new DelayedSyncModuleRunner(baseRunner, SYNC_DELAY);
+				@ProvidesIntoMap
+				@StringMapKey("sync-delayed")
+				private ModuleRunner delayedSyncRunner(Map<String, ModuleRunner> runners) {
+					return new DelayedModuleRunner(runners.get("sync"), SYNC_DELAY);
 				}
 			})
 			.overrideModule(new AbstractModule() {
@@ -151,7 +92,11 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 	@Test
 	public void given_a_node_that_falls_behind_multiple_epochs__it_should_sync_up() {
 		final var simulationTest = testBuilder.build();
-		final var results = simulationTest.run(Duration.ofSeconds(15));
+		final var results = simulationTest.run(
+			Duration.ofSeconds(15),
+			ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of("sync"))
+		);
+
 		final var nodeCounters = results.getNetwork()
 			.getSystemCounters().get(results.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
 

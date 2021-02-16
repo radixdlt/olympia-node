@@ -18,12 +18,9 @@
 package com.radixdlt.sync;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.SyncModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -48,14 +45,9 @@ import java.util.Set;
 
 public class SyncRunnerModule extends AbstractModule {
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding("sync").to(Key.get(new TypeLiteral<SyncModuleRunner>() { }));
-	}
-
-	@Provides
-	private SyncModuleRunner syncRunner(
+	@ProvidesIntoMap
+	@StringMapKey("sync")
+	private ModuleRunner syncRunner(
 		@Self BFTNode self,
 		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		SyncConfig syncConfig,
@@ -78,7 +70,7 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
-		return SyncModuleRunner.wrap(ModuleRunnerImpl.builder()
+		return ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
@@ -92,6 +84,6 @@ public class SyncRunnerModule extends AbstractModule {
 				SyncCheckTrigger.create(),
 				syncConfig.syncCheckInterval()
 			))
-			.build("SyncManager " + self));
+			.build("SyncManager " + self);
 	}
 }

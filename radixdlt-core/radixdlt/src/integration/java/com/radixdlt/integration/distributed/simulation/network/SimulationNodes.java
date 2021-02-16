@@ -18,6 +18,8 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -47,6 +49,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.util.function.Predicate.not;
 
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
@@ -123,13 +128,24 @@ public class SimulationNodes {
 		Map<BFTNode, SystemCounters> getSystemCounters();
 	}
 
-	public RunningNetwork start() {
-		List<ModuleRunner> moduleRunners = this.nodeInstances.stream()
-			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
-			.collect(Collectors.toList());
+	public RunningNetwork start(ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners) {
+		final var moduleRunnersPerNode =
+			IntStream.range(0, this.nodeInstances.size())
+				.mapToObj(i -> {
+					final var injector = this.nodeInstances.get(i);
+					final var moduleRunners =
+						injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+					return Pair.of(i, moduleRunners);
+				})
+				.collect(ImmutableList.toImmutableList());
 
-		for (ModuleRunner moduleRunner : moduleRunners) {
-			moduleRunner.start();
+		for (var pair : moduleRunnersPerNode) {
+			final var nodeDisabledModuleRunners =
+				disabledModuleRunners.getOrDefault(pair.getFirst(), ImmutableSet.of());
+
+			pair.getSecond().entrySet().stream()
+				.filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
+				.forEach(e -> e.getValue().start());
 		}
 
 		final List<BFTNode> bftNodes = this.nodeInstances.stream()
