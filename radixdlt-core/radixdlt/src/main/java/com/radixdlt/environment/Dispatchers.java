@@ -79,26 +79,26 @@ public final class Dispatchers {
 	private static final class ScheduledDispatcherProvider<T> implements Provider<ScheduledEventDispatcher<T>> {
 		@Inject
 		private Provider<Environment> environmentProvider;
-		private final Class<T> c;
-		private final TypeLiteral<T> t;
+		private final Class<T> eventClass;
+		private final TypeLiteral<T> eventLiteral;
 
-		ScheduledDispatcherProvider(Class<T> c) {
-			this.c = c;
-			this.t = null;
+		ScheduledDispatcherProvider(Class<T> eventClass) {
+			this.eventClass = eventClass;
+			this.eventLiteral = null;
 		}
 
-		ScheduledDispatcherProvider(TypeLiteral<T> t) {
-			this.c = null;
-			this.t = t;
+		ScheduledDispatcherProvider(TypeLiteral<T> eventLiteral) {
+			this.eventClass = null;
+			this.eventLiteral = eventLiteral;
 		}
 
 		@Override
 		public ScheduledEventDispatcher<T> get() {
 			Environment e = environmentProvider.get();
-			if (c != null) {
-				return e.getScheduledDispatcher(c);
+			if (eventClass != null) {
+				return e.getScheduledDispatcher(eventClass);
 			} else {
-				return e.getScheduledDispatcher(t);
+				return e.getScheduledDispatcher(eventLiteral);
 			}
 		}
 	}
