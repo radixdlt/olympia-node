@@ -39,10 +39,11 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.StatusRequest;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -89,6 +90,11 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	@Provides
 	RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(ControlledSender controlledSender) {
 		return controlledSender.getRemoteDispatcher(StatusResponse.class);
+	}
+
+	@Provides
+	RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(ControlledSender controlledSender) {
+		return controlledSender.getRemoteDispatcher(LedgerStatusUpdate.class);
 	}
 
 	@Provides

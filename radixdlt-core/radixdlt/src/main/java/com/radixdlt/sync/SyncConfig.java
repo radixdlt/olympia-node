@@ -23,10 +23,17 @@ package com.radixdlt.sync;
 public interface SyncConfig {
 
 	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100);
+		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100, 10, 50);
 	}
 
-	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval, int responseBatchSize) {
+	static SyncConfig of(
+		long requestTimeout,
+		int syncCheckMaxPeers,
+		long syncCheckInterval,
+		int responseBatchSize,
+		int ledgerStatusUpdateMaxPeersToNotify,
+		double maxLedgerUpdatesRate
+	) {
 		return new SyncConfig() {
 			@Override
 			public long syncCheckReceiveStatusTimeout() {
@@ -51,6 +58,16 @@ public interface SyncConfig {
 			@Override
 			public int responseBatchSize() {
 				return responseBatchSize;
+			}
+
+			@Override
+			public int ledgerStatusUpdateMaxPeersToNotify() {
+				return ledgerStatusUpdateMaxPeersToNotify;
+			}
+
+			@Override
+			public double maxLedgerUpdatesRate() {
+				return maxLedgerUpdatesRate;
 			}
 		};
 	}
@@ -79,4 +96,14 @@ public interface SyncConfig {
 	 * Maximum number of elements to return in the sync response.
 	 */
 	int responseBatchSize();
+
+	/**
+	 * Maximum number of peers to send the LedgerStatusUpdate message to.
+	 */
+	int ledgerStatusUpdateMaxPeersToNotify();
+
+	/**
+	 * Maximum number of LedgerStatusUpdate messages send by this node per second.
+	 */
+	double maxLedgerUpdatesRate();
 }

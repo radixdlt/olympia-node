@@ -50,7 +50,6 @@ import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -61,7 +60,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -112,7 +110,6 @@ import java.util.stream.Stream;
 public class SimulationTest {
 	private static final ECKeyPair UNIVERSE_KEY = ECKeyPair.generateNew();
 	private static final RadixAddress UNIVERSE_ADDRESS = new RadixAddress((byte) 0, UNIVERSE_KEY.getPublicKey());
-	private static final RRI NATIVE_TOKEN = RRI.of(UNIVERSE_ADDRESS, TokenDefinitionUtils.getNativeTokenShortCode());
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
 

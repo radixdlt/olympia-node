@@ -17,8 +17,10 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
@@ -30,13 +32,19 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+import static java.util.function.Predicate.not;
+
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.store.NextCommittedLimitReachedException;
-import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,32 +55,46 @@ import org.apache.logging.log4j.Logger;
 public final class RemoteSyncService {
 	private static final Logger log = LogManager.getLogger();
 
+	private final AddressBook addressBook;
+	private final LocalSyncService localSyncService; /* TODO(luk): remove this dependency */
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
 	private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
+	private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
 	private final SyncConfig syncConfig;
 	private final SystemCounters systemCounters;
 	private final Comparator<AccumulatorState> accComparator;
+	private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
 	private VerifiedLedgerHeaderAndProof currentHeader;
+	private BFTValidatorSet currentValidatorSet;
 
 	public RemoteSyncService(
+		AddressBook addressBook,
+		LocalSyncService localSyncService,
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
 		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
+		RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
-		VerifiedLedgerHeaderAndProof initialHeader
+		VerifiedLedgerHeaderAndProof initialHeader,
+		BFTValidatorSet initialValidatorSet
 	) {
+		this.addressBook = Objects.requireNonNull(addressBook);
+		this.localSyncService = Objects.requireNonNull(localSyncService);
 		this.committedReader = Objects.requireNonNull(committedReader);
 		this.syncConfig = Objects.requireNonNull(syncConfig);
 		this.statusResponseDispatcher = Objects.requireNonNull(statusResponseDispatcher);
 		this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
+		this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
 		this.systemCounters = systemCounters;
 		this.accComparator = Objects.requireNonNull(accComparator);
+		this.ledgerStatusUpdateSendRateLimiter = RateLimiter.create(syncConfig.maxLedgerUpdatesRate());
 
 		this.currentHeader = initialHeader;
+		this.currentValidatorSet = initialValidatorSet;
 	}
 
 	public RemoteEventProcessor<SyncRequest> syncRequestEventProcessor() {
@@ -133,6 +155,31 @@ public final class RemoteSyncService {
 		final VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
+			ledgerUpdate.getNextValidatorSet().ifPresent(newValidatorSet -> this.currentValidatorSet = newValidatorSet);
+			this.sendStatusUpdateToSomePeers(updatedHeader);
 		}
+	}
+
+	private void sendStatusUpdateToSomePeers(VerifiedLedgerHeaderAndProof header) {
+		if (!(this.localSyncService.getSyncState() instanceof SyncState.IdleState)) {
+			return; // not sending any updates if the node is syncing itself
+		}
+
+		final var statusUpdate = LedgerStatusUpdate.create(header);
+
+		final var nonValidatorPeers = this.addressBook.peers()
+			.map(peer -> BFTNode.create(peer.getSystem().getKey()))
+			.filter(not(this.currentValidatorSet::containsNode))
+			.collect(Collectors.toList());
+
+		Collections.shuffle(nonValidatorPeers);
+
+		nonValidatorPeers.stream()
+			.limit(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+			.forEach(peer -> {
+				if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {
+					statusUpdateDispatcher.dispatch(peer, statusUpdate);
+				}
+			});
 	}
 }

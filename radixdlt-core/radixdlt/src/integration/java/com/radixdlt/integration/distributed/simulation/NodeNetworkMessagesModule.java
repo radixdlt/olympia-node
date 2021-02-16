@@ -37,6 +37,7 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -100,6 +101,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(SimulatedNetworkImpl network) {
 		return network.remoteEventDispatcher(StatusResponse.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(LedgerStatusUpdate.class);
 	}
 
 	@Provides

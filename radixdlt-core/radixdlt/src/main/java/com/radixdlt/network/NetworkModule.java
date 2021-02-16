@@ -44,6 +44,7 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBookPeersView;
 import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -113,6 +114,11 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
+	private RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.ledgerStatusUpdateDispatcher();
+	}
+
+	@Provides
 	private Flowable<RemoteEvent<StatusRequest>> statusRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.statusRequests();
 	}
@@ -130,6 +136,11 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<SyncResponse>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncResponses();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.ledgerStatusUpdates();
 	}
 
 	@Provides

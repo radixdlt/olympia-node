@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTHeader;
@@ -33,35 +34,66 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.store.NextCommittedLimitReachedException;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Comparator;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.universe.system.RadixSystem;
 
 public class RemoteSyncServiceTest {
 
 	private RemoteSyncService processor;
+	private AddressBook addressBook;
+	private LocalSyncService localSyncService;
 	private CommittedReader reader;
 	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
 	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
+	private RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
 
 	@Before
 	public void setUp() {
+		this.addressBook = mock(AddressBook.class);
+		this.localSyncService = mock(LocalSyncService.class);
 		this.reader = mock(CommittedReader.class);
 		this.statusResponseDispatcher =  rmock(RemoteEventDispatcher.class);
 		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
+		this.statusUpdateDispatcher =  rmock(RemoteEventDispatcher.class);
 
-		this.processor = new RemoteSyncService(reader, statusResponseDispatcher, syncResponseDispatcher,
-			SyncConfig.of(5000L, 10, 5000L, 1), mock(SystemCounters.class), rmock(Comparator.class),
-			mock(VerifiedLedgerHeaderAndProof.class));
+		final var initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		final var initialAccumulatorState = mock(AccumulatorState.class);
+		when(initialHeader.getAccumulatorState()).thenReturn(initialAccumulatorState);
+		when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
+
+		this.processor = new RemoteSyncService(
+			addressBook,
+			localSyncService,
+			reader,
+			statusResponseDispatcher,
+			syncResponseDispatcher,
+			statusUpdateDispatcher,
+			SyncConfig.of(5000L, 10, 5000L, 1, 10, 50),
+			mock(SystemCounters.class),
+			Comparator.comparingLong(AccumulatorState::getStateVersion),
+			initialHeader,
+			mock(BFTValidatorSet.class));
 	}
 
 	@Test
@@ -109,5 +141,44 @@ public class RemoteSyncServiceTest {
 		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
 		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
+	}
+
+	@Test
+	public void when_ledger_update__then_send_status_update_to_non_validator_peers() {
+		final var tail = mock(VerifiedLedgerHeaderAndProof.class);
+		final var ledgerUpdate = mock(LedgerUpdate.class);
+		final var accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(2L);
+		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
+		when(ledgerUpdate.getTail()).thenReturn(tail);
+
+		final var validatorSet = mock(BFTValidatorSet.class);
+		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+
+		when(this.localSyncService.getSyncState())
+			.thenReturn(SyncState.IdleState.init(mock(VerifiedLedgerHeaderAndProof.class)));
+
+		final var peer1 = createPeer();
+		final var peer1BftNode = BFTNode.create(peer1.getSystem().getKey());
+		when(validatorSet.containsNode(peer1BftNode)).thenReturn(true);
+
+		final var peer2 = createPeer();
+		final var peer2BftNode = BFTNode.create(peer2.getSystem().getKey());
+		when(validatorSet.containsNode(peer2BftNode)).thenReturn(false);
+
+		when(this.addressBook.peers()).thenReturn(Stream.of(peer1, peer2));
+
+		processor.ledgerUpdateEventProcessor().process(ledgerUpdate);
+
+		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer2BftNode), eq(LedgerStatusUpdate.create(tail)));
+		verifyNoMoreInteractions(statusUpdateDispatcher);
+	}
+
+	private PeerWithSystem createPeer() {
+		final var peer = mock(PeerWithSystem.class);
+		final var system = mock(RadixSystem.class);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
+		when(peer.getSystem()).thenReturn(system);
+		return peer;
 	}
 }

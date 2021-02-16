@@ -37,6 +37,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
@@ -45,10 +46,11 @@ import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 
@@ -117,22 +119,30 @@ public class SyncServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RemoteSyncService remoteSyncServiceProcessor(
+		AddressBook addressBook,
+		LocalSyncService localSyncService,
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
 		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
+		RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
 		SyncConfig syncConfig,
-		@LastProof VerifiedLedgerHeaderAndProof initialHeader
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
+		BFTConfiguration initialConfiguration
 	) {
 		return new RemoteSyncService(
+			addressBook,
+			localSyncService,
 			committedReader,
 			statusResponseDispatcher,
 			syncResponseDispatcher,
+			statusUpdateDispatcher,
 			syncConfig,
 			systemCounters,
 			accComparator,
-			initialHeader
+			initialHeader,
+			initialConfiguration.getValidatorSet()
 		);
 	}
 
