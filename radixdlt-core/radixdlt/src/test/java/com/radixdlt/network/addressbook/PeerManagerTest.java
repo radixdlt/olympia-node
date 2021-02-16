@@ -159,7 +159,7 @@ public class PeerManagerTest extends RadixTest {
 			rng,
 			getLocalSystem(),
 			properties,
-			getUniverse()
+			getUniverse().getMagic()
 		);
 
 		// Ignore interrupted flag from other tests

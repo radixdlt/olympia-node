@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -43,7 +44,6 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.universe.Universe;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -61,11 +61,11 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 	@Inject
 	public MessageCentralBFTNetwork(
 		@Self BFTNode self,
-		Universe universe,
+		@Named("magic") int magic,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
-		this.magic = universe.getMagic();
+		this.magic = magic;
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);

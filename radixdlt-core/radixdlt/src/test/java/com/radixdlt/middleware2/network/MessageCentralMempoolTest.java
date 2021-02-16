@@ -26,7 +26,6 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,10 +42,9 @@ public class MessageCentralMempoolTest {
 
     @Before
     public void setUp() {
-        Universe universe = mock(Universe.class);
         this.addressBook = mock(AddressBook.class);
         this.messageCentral = MessageCentralMockProvider.get();
-        this.messageCentralMempool = new MessageCentralMempool(universe, messageCentral, addressBook);
+        this.messageCentralMempool = new MessageCentralMempool(0, messageCentral, addressBook);
     }
 
     @Test
