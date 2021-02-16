@@ -39,7 +39,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.recovery.ModuleForRecoveryTests;
+import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import java.util.List;
 
@@ -87,7 +87,7 @@ public class PacemakerTest {
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 				}
 			},
-			ModuleForRecoveryTests.create(ecKeyPair)
+			new PersistedNodeForTestingModule(ecKeyPair)
 		);
 	}
 

@@ -27,6 +27,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -137,7 +138,7 @@ public class RecoveryTest {
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
-			ModuleForRecoveryTests.create(ecKeyPair)
+			new PersistedNodeForTestingModule(ecKeyPair)
 		);
 	}
 

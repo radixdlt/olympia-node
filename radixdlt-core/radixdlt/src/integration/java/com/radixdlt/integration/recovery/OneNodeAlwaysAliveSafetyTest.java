@@ -45,7 +45,7 @@ import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventProcessor;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
-import com.radixdlt.recovery.ModuleForRecoveryTests;
+import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
@@ -160,7 +160,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
-			ModuleForRecoveryTests.create(ecKeyPair),
+			new PersistedNodeForTestingModule(ecKeyPair),
 			new AbstractModule() {
 
 				@ProvidesIntoSet

@@ -25,7 +25,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MempoolRelayerModule;
-import com.radixdlt.recovery.ModuleForRecoveryTests;
+import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -95,7 +95,7 @@ public class MempoolTest {
 				}
 			},
 			new MempoolRelayerModule(),
-			ModuleForRecoveryTests.create(ecKeyPair)
+			new PersistedNodeForTestingModule(ecKeyPair)
 		);
 	}
 
