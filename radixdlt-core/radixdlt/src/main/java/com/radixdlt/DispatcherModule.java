@@ -80,46 +80,45 @@ public class DispatcherModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(
-						MempoolAddFailure.class,
-						CounterType.MEMPOOL_FAILURE_COUNT,
-						true
-				))
-				.in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				MempoolAddFailure.class,
+				CounterType.MEMPOOL_FAILURE_COUNT,
+				true
+			))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(
-						NoVote.class,
-						CounterType.BFT_REJECTED,
-						true
-				))
-				.in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				NoVote.class,
+				CounterType.BFT_REJECTED,
+				true
+			))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(
-						InvalidProposedCommand.class,
-						true
-				)).in(Scopes.SINGLETON);
-
+			.toProvider(Dispatchers.dispatcherProvider(
+				InvalidProposedCommand.class,
+				true
+			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncRequestTimeout>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(SyncRequestTimeout.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckTrigger>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
 
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
@@ -172,10 +171,10 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
-			@Self BFTNode self,
-			@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
-			Environment environment,
-			SystemCounters systemCounters
+		@Self BFTNode self,
+		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
+		Environment environment,
+		SystemCounters systemCounters
 	) {
 		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
@@ -200,8 +199,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private ScheduledEventDispatcher<ScheduledLocalTimeout> scheduledTimeoutDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
+		Environment environment
 	) {
 		ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
 		return (timeout, ms) -> {
@@ -213,8 +212,8 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<ViewQuorumReached>> processors,
-			SystemCounters systemCounters
+		@ProcessOnDispatch Set<EventProcessor<ViewQuorumReached>> processors,
+		SystemCounters systemCounters
 	) {
 		return viewQuorumReached -> {
 			logger.trace("View quorum reached with result: {}", viewQuorumReached.votingResult());
@@ -231,9 +230,9 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTInsertUpdate> viewEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
-			Environment environment,
-			SystemCounters systemCounters
+		@ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
+		Environment environment,
+		SystemCounters systemCounters
 	) {
 		EventDispatcher<BFTInsertUpdate> dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
 		return update -> {
@@ -251,8 +250,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTRebuildUpdate> bftRebuildUpdateEventDispatcher(
-			Environment environment,
-			SystemCounters systemCounters
+		Environment environment,
+		SystemCounters systemCounters
 	) {
 		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
@@ -266,8 +265,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
+		Environment environment
 	) {
 		EventDispatcher<BFTHighQCUpdate> dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
 		return update -> {
@@ -278,8 +277,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<VerifiedCommandsAndProof> syncUpdateEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<VerifiedCommandsAndProof>> processors,
-			SystemCounters systemCounters
+		@ProcessOnDispatch Set<EventProcessor<VerifiedCommandsAndProof>> processors,
+		SystemCounters systemCounters
 	) {
 		return commit -> {
 			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getCommands().size());
@@ -289,10 +288,10 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-			Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
-			Environment environment,
-			SystemCounters systemCounters
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
+		Environment environment,
+		SystemCounters systemCounters
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return commit -> {
@@ -318,9 +317,9 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
-			Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
+		Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
+		Environment environment
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
@@ -335,9 +334,9 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<EpochLocalTimeoutOccurrence>> processors,
-			Set<EventProcessor<EpochLocalTimeoutOccurrence>> asyncProcessors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<EpochLocalTimeoutOccurrence>> processors,
+		Set<EventProcessor<EpochLocalTimeoutOccurrence>> asyncProcessors,
+		Environment environment
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return timeout -> {
@@ -356,9 +355,9 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
-			Environment environment,
-			SystemCounters counters
+		@ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
+		Environment environment,
+		SystemCounters counters
 	) {
 		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
 		return (node, request) -> {
@@ -370,8 +369,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
+		Environment environment
 	) {
 		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
 		return (node, vote) -> {
@@ -384,8 +383,8 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
+		Environment environment
 	) {
 		EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
@@ -400,8 +399,8 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
-			Environment environment
+		@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
+		Environment environment
 	) {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
@@ -416,7 +415,7 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
+		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
 	) {
 		return cmd -> processors.forEach(e -> e.process(cmd));
 	}
@@ -424,7 +423,7 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher(
-			@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
+		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
 	) {
 		return cmd -> processors.forEach(e -> e.process(cmd));
 	}

@@ -22,28 +22,28 @@ package com.radixdlt.sync.messages.local;
  */
 public final class SyncCheckTrigger {
 
-    public static SyncCheckTrigger create() {
-        return new SyncCheckTrigger();
-    }
+	public static SyncCheckTrigger create() {
+		return new SyncCheckTrigger();
+	}
 
-    private SyncCheckTrigger() {
-    }
+	private SyncCheckTrigger() {
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{}", this.getClass().getSimpleName());
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        return o != null && getClass() == o.getClass();
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		return o != null && getClass() == o.getClass();
+	}
 
-    @Override
-    public int hashCode() {
-        return 1;
-    }
+	@Override
+	public int hashCode() {
+		return 1;
+	}
 }

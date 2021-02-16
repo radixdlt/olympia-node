@@ -27,45 +27,45 @@ import java.util.Objects;
  */
 public final class SyncRequestTimeout {
 
-    private final BFTNode peer;
-    private final VerifiedLedgerHeaderAndProof currentHeader;
+	private final BFTNode peer;
+	private final VerifiedLedgerHeaderAndProof currentHeader;
 
-    public static SyncRequestTimeout create(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
-        return new SyncRequestTimeout(peer, currentHeader);
-    }
+	public static SyncRequestTimeout create(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
+		return new SyncRequestTimeout(peer, currentHeader);
+	}
 
-    private SyncRequestTimeout(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
-        this.peer = peer;
-        this.currentHeader = currentHeader;
-    }
+	private SyncRequestTimeout(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
+		this.peer = peer;
+		this.currentHeader = currentHeader;
+	}
 
-    public BFTNode getPeer() {
-        return peer;
-    }
+	public BFTNode getPeer() {
+		return peer;
+	}
 
-    public VerifiedLedgerHeaderAndProof getCurrentHeader() {
-        return currentHeader;
-    }
+	public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+		return currentHeader;
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{peer=%s currentHeader=%s}", this.getClass().getSimpleName(), peer, currentHeader);
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{peer=%s currentHeader=%s}", this.getClass().getSimpleName(), peer, currentHeader);
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        SyncRequestTimeout that = (SyncRequestTimeout) o;
-        return Objects.equals(peer, that.peer) && Objects.equals(currentHeader, that.currentHeader);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SyncRequestTimeout that = (SyncRequestTimeout) o;
+		return Objects.equals(peer, that.peer) && Objects.equals(currentHeader, that.currentHeader);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(peer, currentHeader);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(peer, currentHeader);
+	}
 }

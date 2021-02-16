@@ -40,262 +40,262 @@ import static com.google.common.base.Predicates.not;
  */
 public interface SyncState {
 
-    /**
-     * Gets the current header.
-     */
-    VerifiedLedgerHeaderAndProof getCurrentHeader();
+	/**
+	 * Gets the current header.
+	 */
+	VerifiedLedgerHeaderAndProof getCurrentHeader();
 
-    /**
-     * Returns a SyncState with a new current header.
-     */
-    SyncState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader);
+	/**
+	 * Returns a SyncState with a new current header.
+	 */
+	SyncState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader);
 
-    final class IdleState implements SyncState {
-        private final VerifiedLedgerHeaderAndProof currentHeader;
+	final class IdleState implements SyncState {
+		private final VerifiedLedgerHeaderAndProof currentHeader;
 
-        public static IdleState init(VerifiedLedgerHeaderAndProof currentHeader) {
-            return new IdleState(currentHeader);
-        }
+		public static IdleState init(VerifiedLedgerHeaderAndProof currentHeader) {
+			return new IdleState(currentHeader);
+		}
 
-        private IdleState(VerifiedLedgerHeaderAndProof currentHeader) {
-            this.currentHeader = currentHeader;
-        }
+		private IdleState(VerifiedLedgerHeaderAndProof currentHeader) {
+			this.currentHeader = currentHeader;
+		}
 
-        @Override
-        public VerifiedLedgerHeaderAndProof getCurrentHeader() {
-            return this.currentHeader;
-        }
+		@Override
+		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+			return this.currentHeader;
+		}
 
-        @Override
-        public IdleState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
-            return new IdleState(newCurrentHeader);
-        }
+		@Override
+		public IdleState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+			return new IdleState(newCurrentHeader);
+		}
 
-        @Override
-        public String toString() {
-            return String.format("%s{currentHeader=%s}", this.getClass().getSimpleName(), this.currentHeader);
-        }
+		@Override
+		public String toString() {
+			return String.format("%s{currentHeader=%s}", this.getClass().getSimpleName(), this.currentHeader);
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            IdleState idleState = (IdleState) o;
-            return Objects.equals(currentHeader, idleState.currentHeader);
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			IdleState idleState = (IdleState) o;
+			return Objects.equals(currentHeader, idleState.currentHeader);
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(currentHeader);
-        }
-    }
+		@Override
+		public int hashCode() {
+			return Objects.hash(currentHeader);
+		}
+	}
 
-    final class SyncCheckState implements SyncState {
-        private final VerifiedLedgerHeaderAndProof currentHeader;
-        private final ImmutableSet<BFTNode> peersAskedForStatus;
-        private final ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses;
+	final class SyncCheckState implements SyncState {
+		private final VerifiedLedgerHeaderAndProof currentHeader;
+		private final ImmutableSet<BFTNode> peersAskedForStatus;
+		private final ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses;
 
-        public static SyncCheckState init(
-            VerifiedLedgerHeaderAndProof currentHeader,
-            ImmutableSet<BFTNode> peersAskedForStatus
-        ) {
-            return new SyncCheckState(
-                currentHeader,
-                peersAskedForStatus,
-                ImmutableMap.of()
-            );
-        }
+		public static SyncCheckState init(
+			VerifiedLedgerHeaderAndProof currentHeader,
+			ImmutableSet<BFTNode> peersAskedForStatus
+		) {
+			return new SyncCheckState(
+				currentHeader,
+				peersAskedForStatus,
+				ImmutableMap.of()
+			);
+		}
 
-        private SyncCheckState(
-            VerifiedLedgerHeaderAndProof currentHeader,
-            ImmutableSet<BFTNode> peersAskedForStatus,
-            ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses
-        ) {
-            this.currentHeader = currentHeader;
-            this.peersAskedForStatus = peersAskedForStatus;
-            this.receivedStatusResponses = receivedStatusResponses;
-        }
+		private SyncCheckState(
+			VerifiedLedgerHeaderAndProof currentHeader,
+			ImmutableSet<BFTNode> peersAskedForStatus,
+			ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses
+		) {
+			this.currentHeader = currentHeader;
+			this.peersAskedForStatus = peersAskedForStatus;
+			this.receivedStatusResponses = receivedStatusResponses;
+		}
 
-        public boolean hasAskedPeer(BFTNode peer) {
-            return this.peersAskedForStatus.contains(peer);
-        }
+		public boolean hasAskedPeer(BFTNode peer) {
+			return this.peersAskedForStatus.contains(peer);
+		}
 
-        public boolean receivedResponseFrom(BFTNode peer) {
-            return this.receivedStatusResponses.containsKey(peer);
-        }
+		public boolean receivedResponseFrom(BFTNode peer) {
+			return this.receivedStatusResponses.containsKey(peer);
+		}
 
-        public boolean gotAllResponses() {
-            return this.receivedStatusResponses.size() == this.peersAskedForStatus.size();
-        }
+		public boolean gotAllResponses() {
+			return this.receivedStatusResponses.size() == this.peersAskedForStatus.size();
+		}
 
-        public ImmutableMap<BFTNode, StatusResponse> responses() {
-            return this.receivedStatusResponses;
-        }
+		public ImmutableMap<BFTNode, StatusResponse> responses() {
+			return this.receivedStatusResponses;
+		}
 
-        public SyncCheckState withStatusResponse(BFTNode peer, StatusResponse statusResponse) {
-            return new SyncCheckState(
-                currentHeader,
-                peersAskedForStatus,
-                new ImmutableMap.Builder<BFTNode, StatusResponse>()
-                    .putAll(receivedStatusResponses)
-                    .put(peer, statusResponse)
-                    .build()
-            );
-        }
+		public SyncCheckState withStatusResponse(BFTNode peer, StatusResponse statusResponse) {
+			return new SyncCheckState(
+				currentHeader,
+				peersAskedForStatus,
+				new ImmutableMap.Builder<BFTNode, StatusResponse>()
+					.putAll(receivedStatusResponses)
+					.put(peer, statusResponse)
+					.build()
+			);
+		}
 
-        @Override
-        public VerifiedLedgerHeaderAndProof getCurrentHeader() {
-            return this.currentHeader;
-        }
+		@Override
+		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+			return this.currentHeader;
+		}
 
-        @Override
-        public SyncCheckState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
-            return new SyncCheckState(newCurrentHeader, peersAskedForStatus, receivedStatusResponses);
-        }
+		@Override
+		public SyncCheckState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+			return new SyncCheckState(newCurrentHeader, peersAskedForStatus, receivedStatusResponses);
+		}
 
-        @Override
-        public String toString() {
-            return String.format("%s{currentHeader=%s peersAskedForStatus=%s receivedStatusResponses=%s}",
-                this.getClass().getSimpleName(),
-                this.currentHeader,
-                this.peersAskedForStatus,
-                this.receivedStatusResponses
-            );
-        }
+		@Override
+		public String toString() {
+			return String.format("%s{currentHeader=%s peersAskedForStatus=%s receivedStatusResponses=%s}",
+				this.getClass().getSimpleName(),
+				this.currentHeader,
+				this.peersAskedForStatus,
+				this.receivedStatusResponses
+			);
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            SyncCheckState that = (SyncCheckState) o;
-            return Objects.equals(currentHeader, that.currentHeader)
-                && Objects.equals(peersAskedForStatus, that.peersAskedForStatus)
-                && Objects.equals(receivedStatusResponses, that.receivedStatusResponses);
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			SyncCheckState that = (SyncCheckState) o;
+			return Objects.equals(currentHeader, that.currentHeader)
+				&& Objects.equals(peersAskedForStatus, that.peersAskedForStatus)
+				&& Objects.equals(receivedStatusResponses, that.receivedStatusResponses);
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(currentHeader, peersAskedForStatus, receivedStatusResponses);
-        }
-    }
+		@Override
+		public int hashCode() {
+			return Objects.hash(currentHeader, peersAskedForStatus, receivedStatusResponses);
+		}
+	}
 
-    final class SyncingState implements SyncState {
-        private final VerifiedLedgerHeaderAndProof currentHeader;
-        private final ImmutableList<BFTNode> candidatePeers;
-        private final VerifiedLedgerHeaderAndProof targetHeader;
-        private final Optional<BFTNode> waitingForResponseFrom;
+	final class SyncingState implements SyncState {
+		private final VerifiedLedgerHeaderAndProof currentHeader;
+		private final ImmutableList<BFTNode> candidatePeers;
+		private final VerifiedLedgerHeaderAndProof targetHeader;
+		private final Optional<BFTNode> waitingForResponseFrom;
 
-        public static SyncingState init(
-            VerifiedLedgerHeaderAndProof currentHeader,
-            ImmutableList<BFTNode> candidatePeers,
-            VerifiedLedgerHeaderAndProof targetHeader
-        ) {
-            return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
-        }
+		public static SyncingState init(
+			VerifiedLedgerHeaderAndProof currentHeader,
+			ImmutableList<BFTNode> candidatePeers,
+			VerifiedLedgerHeaderAndProof targetHeader
+		) {
+			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
+		}
 
-        private SyncingState(
-            VerifiedLedgerHeaderAndProof currentHeader,
-            ImmutableList<BFTNode> candidatePeers,
-            VerifiedLedgerHeaderAndProof targetHeader,
-            Optional<BFTNode> waitingForResponseFrom
-        ) {
-            this.currentHeader = currentHeader;
-            this.candidatePeers = candidatePeers;
-            this.targetHeader = targetHeader;
-            this.waitingForResponseFrom = waitingForResponseFrom;
-        }
+		private SyncingState(
+			VerifiedLedgerHeaderAndProof currentHeader,
+			ImmutableList<BFTNode> candidatePeers,
+			VerifiedLedgerHeaderAndProof targetHeader,
+			Optional<BFTNode> waitingForResponseFrom
+		) {
+			this.currentHeader = currentHeader;
+			this.candidatePeers = candidatePeers;
+			this.targetHeader = targetHeader;
+			this.waitingForResponseFrom = waitingForResponseFrom;
+		}
 
-        public SyncingState withWaitingFor(BFTNode peer) {
-            return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.of(peer));
-        }
+		public SyncingState withWaitingFor(BFTNode peer) {
+			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.of(peer));
+		}
 
-        public SyncingState clearWaitingFor() {
-            return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
-        }
+		public SyncingState clearWaitingFor() {
+			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
+		}
 
-        public SyncingState removeCandidate(BFTNode peer) {
-            return new SyncingState(
-                currentHeader,
-                ImmutableList.copyOf(Collections2.filter(candidatePeers, not(equalTo(peer)))),
-                targetHeader,
-                waitingForResponseFrom
-            );
-        }
+		public SyncingState removeCandidate(BFTNode peer) {
+			return new SyncingState(
+				currentHeader,
+				ImmutableList.copyOf(Collections2.filter(candidatePeers, not(equalTo(peer)))),
+				targetHeader,
+				waitingForResponseFrom
+			);
+		}
 
-        public SyncingState withTargetHeader(VerifiedLedgerHeaderAndProof newTargetHeader) {
-            return new SyncingState(currentHeader, candidatePeers, newTargetHeader, waitingForResponseFrom);
-        }
+		public SyncingState withTargetHeader(VerifiedLedgerHeaderAndProof newTargetHeader) {
+			return new SyncingState(currentHeader, candidatePeers, newTargetHeader, waitingForResponseFrom);
+		}
 
-        public SyncingState withCandidatePeers(ImmutableList<BFTNode> peers) {
-            return new SyncingState(
-                currentHeader,
-                new ImmutableList.Builder<BFTNode>()
-                    .addAll(peers)
-                    .addAll(candidatePeers)
-                    .build(),
-                targetHeader,
-                waitingForResponseFrom
-            );
-        }
+		public SyncingState withCandidatePeers(ImmutableList<BFTNode> peers) {
+			return new SyncingState(
+				currentHeader,
+				new ImmutableList.Builder<BFTNode>()
+					.addAll(peers)
+					.addAll(candidatePeers)
+					.build(),
+				targetHeader,
+				waitingForResponseFrom
+			);
+		}
 
-        public boolean waitingForResponse() {
-            return this.waitingForResponseFrom.isPresent();
-        }
+		public boolean waitingForResponse() {
+			return this.waitingForResponseFrom.isPresent();
+		}
 
-        public boolean waitingForResponseFrom(BFTNode peer) {
-            return this.waitingForResponseFrom.stream().anyMatch(p -> p.equals(peer));
-        }
+		public boolean waitingForResponseFrom(BFTNode peer) {
+			return this.waitingForResponseFrom.stream().anyMatch(p -> p.equals(peer));
+		}
 
-        public ImmutableList<BFTNode> candidatePeers() {
-            return this.candidatePeers;
-        }
+		public ImmutableList<BFTNode> candidatePeers() {
+			return this.candidatePeers;
+		}
 
-        public VerifiedLedgerHeaderAndProof getTargetHeader() {
-            return this.targetHeader;
-        }
+		public VerifiedLedgerHeaderAndProof getTargetHeader() {
+			return this.targetHeader;
+		}
 
-        @Override
-        public VerifiedLedgerHeaderAndProof getCurrentHeader() {
-            return this.currentHeader;
-        }
+		@Override
+		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+			return this.currentHeader;
+		}
 
-        @Override
-        public SyncingState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
-            return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
-        }
+		@Override
+		public SyncingState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+			return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
+		}
 
-        @Override
-        public String toString() {
-            return String.format("%s{currentHeader=%s targetHeader=%s}",
-                getClass().getSimpleName(), currentHeader, targetHeader);
-        }
+		@Override
+		public String toString() {
+			return String.format("%s{currentHeader=%s targetHeader=%s}",
+				getClass().getSimpleName(), currentHeader, targetHeader);
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            SyncingState that = (SyncingState) o;
-            return Objects.equals(currentHeader, that.currentHeader)
-                && Objects.equals(candidatePeers, that.candidatePeers)
-                && Objects.equals(targetHeader, that.targetHeader)
-                && Objects.equals(waitingForResponseFrom, that.waitingForResponseFrom);
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			SyncingState that = (SyncingState) o;
+			return Objects.equals(currentHeader, that.currentHeader)
+				&& Objects.equals(candidatePeers, that.candidatePeers)
+				&& Objects.equals(targetHeader, that.targetHeader)
+				&& Objects.equals(waitingForResponseFrom, that.waitingForResponseFrom);
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(currentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
-        }
-    }
+		@Override
+		public int hashCode() {
+			return Objects.hash(currentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
+		}
+	}
 }

@@ -67,6 +67,7 @@ import org.apache.logging.log4j.Logger;
  * Processes sync service messages and manages ledger sync state machine.
  * Thread-safety must be handled by caller.
  */
+/* TODO: consider extracting some things away from this class (response validation, etc) as it's too monolithic. */
 @NotThreadSafe
 public final class LocalSyncService {
 

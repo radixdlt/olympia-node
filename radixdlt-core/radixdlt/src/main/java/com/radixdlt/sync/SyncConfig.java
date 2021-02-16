@@ -22,61 +22,61 @@ package com.radixdlt.sync;
  */
 public interface SyncConfig {
 
-    static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-        return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100);
-    }
+	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
+		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100);
+	}
 
-    static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval, int responseBatchSize) {
-        return new SyncConfig() {
-            @Override
-            public long syncCheckReceiveStatusTimeout() {
-                return requestTimeout;
-            }
+	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval, int responseBatchSize) {
+		return new SyncConfig() {
+			@Override
+			public long syncCheckReceiveStatusTimeout() {
+				return requestTimeout;
+			}
 
-            @Override
-            public long syncCheckInterval() {
-                return syncCheckInterval;
-            }
+			@Override
+			public long syncCheckInterval() {
+				return syncCheckInterval;
+			}
 
-            @Override
-            public int syncCheckMaxPeers() {
-                return syncCheckMaxPeers;
-            }
+			@Override
+			public int syncCheckMaxPeers() {
+				return syncCheckMaxPeers;
+			}
 
-            @Override
-            public long syncRequestTimeout() {
-                return requestTimeout;
-            }
+			@Override
+			public long syncRequestTimeout() {
+				return requestTimeout;
+			}
 
-            @Override
-            public int responseBatchSize() {
-                return responseBatchSize;
-            }
-        };
-    }
+			@Override
+			public int responseBatchSize() {
+				return responseBatchSize;
+			}
+		};
+	}
 
-    /**
-     * A timeout for receiving sync check response messages (StatusResponse).
-     */
-    long syncCheckReceiveStatusTimeout();
+	/**
+	 * A timeout for receiving sync check response messages (StatusResponse).
+	 */
+	long syncCheckReceiveStatusTimeout();
 
-    /**
-     * An interval for executing periodic sync checks with peers.
-     */
-    long syncCheckInterval();
+	/**
+	 * An interval for executing periodic sync checks with peers.
+	 */
+	long syncCheckInterval();
 
-    /**
-     * Maximum number of peers to use for sync check.
-     */
-    int syncCheckMaxPeers();
+	/**
+	 * Maximum number of peers to use for sync check.
+	 */
+	int syncCheckMaxPeers();
 
-    /**
-     * A timeout for peer sync request.
-     */
-    long syncRequestTimeout();
+	/**
+	 * A timeout for peer sync request.
+	 */
+	long syncRequestTimeout();
 
-    /**
-     * Maximum number of elements to return in the sync response.
-     */
-    int responseBatchSize();
+	/**
+	 * Maximum number of elements to return in the sync response.
+	 */
+	int responseBatchSize();
 }

@@ -50,6 +50,7 @@ public final class LedgerEntry {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private final long proofVersion;
 
+
 	LedgerEntry() {
 		// Serializer only
 		this.aid = null;

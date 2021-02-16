@@ -39,7 +39,7 @@ public final class SyncCheckReceiveStatusTimeout {
         if (this == o) {
             return true;
         }
-        return o != null && getClass() == o.getClass();
+	 return o != null && getClass() == o.getClass();
     }
 
     @Override
