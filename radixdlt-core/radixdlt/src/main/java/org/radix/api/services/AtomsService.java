@@ -153,7 +153,7 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
-		final Atom rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
+		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
 		byte[] payload = serialization.toDson(atom, Output.ALL);
 		Command command = new Command(payload);

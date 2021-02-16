@@ -178,7 +178,7 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Observable<AddressBookEvent> peerUpdates() {
-		return Observable.<AddressBookEvent>create(emitter ->
+		return Observable.create(emitter ->
 			Locking.withConsumerLock(this.peersLock, this::addEmitter, emitter)
 		);
 	}

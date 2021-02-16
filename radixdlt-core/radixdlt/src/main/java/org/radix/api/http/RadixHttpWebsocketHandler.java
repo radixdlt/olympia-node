@@ -81,7 +81,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 		return new AbstractReceiveListener() {
 			@Override
 			protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) throws IOException {
-				peer.onMessage(message);
+				peer.onMessage(message.getData());
 			}
 		};
 	}

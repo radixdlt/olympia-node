@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -196,6 +197,7 @@ public final class RadixHttpServer {
 		handler.add(Methods.GET, "/api/system/modules/api/websockets", this::respondWithWebSocketCount);
 
 		// delete method to disconnect all peers
+		//TODO: potentially blocking
 		handler.add(Methods.DELETE, "/api/system/modules/api/websockets", this::respondDisconnectAllPeers);
 
 		// Network routes
@@ -208,10 +210,12 @@ public final class RadixHttpServer {
 		handler.add(Methods.GET, "/api/universe", this::respondWithUniverse);
 
 		// BFT routes
+		//TODO: potentially blocking
 		handler.add(Methods.PUT, "/api/bft/0", this::handleBftState);
 
 		// Chaos routes
 		handler.add(Methods.PUT, "/api/chaos/message-flooder", this::handleMessageFlood);
+		//TODO: potentially blocking
 		handler.add(Methods.PUT, "/api/chaos/mempool-filler", this::handleMempoolFill);
 		handler.add(Methods.GET, "/api/chaos/mempool-filler", this::respondWithMempoolFill);
 
@@ -222,7 +226,9 @@ public final class RadixHttpServer {
 		var rpcPostHandler = new RpcPostHandler();
 
 		// handle both /rpc and /rpc/ for usability
+		//TODO: potentially blocking
 		handler.add(Methods.POST, "/rpc", rpcPostHandler);
+		//TODO: potentially blocking
 		handler.add(Methods.POST, "/rpc/", rpcPostHandler);
 
 		// handle websocket requests (which also uses GET method)
@@ -258,50 +264,62 @@ public final class RadixHttpServer {
 		return filter;
 	}
 
+	//Non-blocking
 	private void respondWithMempoolFill(HttpServerExchange exchange) {
 		respond(jsonObject().put("address", mempoolFillerAddress), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithPong(final HttpServerExchange exchange) {
 		respond(jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp()), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithUniverse(final HttpServerExchange exchange) {
 		respond(this.apiSerializedUniverse, exchange);
 	}
 
+	//Non-blocking
 	private void respondWithSinglePeer(final HttpServerExchange exchange) {
 		respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithPeers(final HttpServerExchange exchange) {
 		respond(this.networkService.getPeers().toString(), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithLivePeers(final HttpServerExchange exchange) {
 		respond(this.networkService.getLivePeers().toString(), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithNetwork(final HttpServerExchange exchange) {
 		respond(this.networkService.getNetwork(), exchange);
 	}
 
+	//Potentially blocking
 	private void respondDisconnectAllPeers(final HttpServerExchange exchange) {
 		respond(this.disconnectAllPeers(), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithWebSocketCount(final HttpServerExchange exchange) {
 		respond(jsonObject().put("count", Collections.unmodifiableSet(peers.keySet()).size()), exchange);
 	}
 
+	//Non-blocking
 	private void respondWaitingTaskCount(final HttpServerExchange exchange) {
 		respond(jsonObject().put("count", atomsService.getWaitingCount()), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithSystem(final HttpServerExchange exchange) {
 		respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange);
 	}
 
+	//Non-blocking
 	private void respondWithHighestQC(final HttpServerExchange exchange) {
 		var highestQC = inMemorySystemInfo.getHighestQC();
 
@@ -317,6 +335,7 @@ public final class RadixHttpServer {
 		}
 	}
 
+	//Non-blocking
 	private void respondWithCommittedVertices(final HttpServerExchange exchange) {
 		var array = jsonArray();
 
@@ -412,6 +431,7 @@ public final class RadixHttpServer {
 		exchange.setStatusCode(StatusCodes.OK);
 	}
 
+	//Potentially blocking
 	private void handleBftState(HttpServerExchange exchange) throws IOException {
 		withJSONRequestBody(exchange, values -> {
 			if (values.getBoolean("state")) {
@@ -422,6 +442,7 @@ public final class RadixHttpServer {
 		});
 	}
 
+	//Potentially blocking
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
 		withJSONRequestBody(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
@@ -429,6 +450,7 @@ public final class RadixHttpServer {
 		});
 	}
 
+	//Non-blocking
 	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
 		withJSONRequestBody(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
@@ -491,13 +513,17 @@ public final class RadixHttpServer {
 				return;
 			}
 
-			exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-			try {
-				exchange.getResponseSender().send(jsonRpcServer.handleJsonRpc(exchange));
-			} catch (IOException e) {
-				exchange.setStatusCode(400);
-				exchange.getResponseSender().send("Invalid request: " + e.getMessage());
-			}
+			CompletableFuture
+				.supplyAsync(() -> jsonRpcServer.handleJsonRpc(exchange))
+				.whenComplete((response, exception) -> {
+					if (exception == null) {
+						exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+						exchange.getResponseSender().send(response);
+					} else {
+						exchange.setStatusCode(400);
+						exchange.getResponseSender().send("Invalid request: " + exception.getMessage());
+					}
+				});
 		}
 	}
 }

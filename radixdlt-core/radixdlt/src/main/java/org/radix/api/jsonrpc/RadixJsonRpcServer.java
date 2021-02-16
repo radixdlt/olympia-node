@@ -57,6 +57,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.commonFields;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.listToArray;
+import static org.radix.api.jsonrpc.JsonRpcUtil.methodNotFoundResponse;
 
 import static com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 
@@ -121,7 +122,6 @@ public final class RadixJsonRpcServer {
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.universe = Objects.requireNonNull(universe);
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
-
 		this.localPeer = new PeerWithSystem(this.localSystem);
 
 		fillHandlers();
@@ -133,7 +133,7 @@ public final class RadixJsonRpcServer {
 		handlers.put("Universe.getUniverse", this::handleGetUniverse);
 		handlers.put("Network.getLivePeers", this::handleGetLivePeers);
 		handlers.put("Network.getPeers", this::handleGetPeers);
-		handlers.put("Network.getInfo", request -> fillPlainResponse(request, localSystem));
+		handlers.put("Network.getInfo", this::handleGetInfo);
 		handlers.put("Ping", this::handlePing);
 		handlers.put("Atoms.submitAtom", this::handleSubmitAtom);
 		handlers.put("Atoms.getAtomStatus", this::handleGetAtomStatus);
@@ -148,13 +148,17 @@ public final class RadixJsonRpcServer {
 	 *
 	 * @return The response
 	 */
-	public String handleJsonRpc(HttpServerExchange exchange) throws IOException {
-		// Switch to blocking since we need to retrieve whole request body
-		exchange.setMaxEntitySize(maxRequestSizeBytes).startBlocking();
+	public String handleJsonRpc(HttpServerExchange exchange) {
+		try {
+			// Switch to blocking since we need to retrieve whole request body
+			exchange.setMaxEntitySize(maxRequestSizeBytes).startBlocking();
 
-		var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
+			var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
 
-		return this.handleRpc(requestBody);
+			return handleRpc(requestBody);
+		} catch (IOException e) {
+			throw  new IllegalStateException("RPC failed", e);
+		}
 	}
 
 	/**
@@ -187,7 +191,7 @@ public final class RadixJsonRpcServer {
 		try {
 			return Optional.ofNullable(handlers.get(request.getString("method")))
 				.map(handler -> handler.apply(request))
-				.orElseGet(() -> JsonRpcUtil.methodNotFoundResponse(request.get("id")));
+				.orElseGet(() -> methodNotFoundResponse(request.get("id")));
 
 		} catch (Exception e) {
 			var id = request.get("id");
@@ -230,20 +234,12 @@ public final class RadixJsonRpcServer {
 		return commonFields(request.get("id")).put("result", listToArray(serialization, result));
 	}
 
-	private JSONObject fillPlainResponse(final JSONObject request, final Object result) {
-		var response = commonFields(request.get("id"));
-
-		if (result instanceof List) {
-			response.put("result", listToArray(serialization, (List<?>) result));
-		} else {
-			response.put("result", serialization.toJsonObject(result, Output.API));
-		}
-
-		return response;
+	private JSONObject fillPlainResponse(final JSONObject request, final JSONObject result) {
+		return commonFields(request.get("id")).put("result", result);
 	}
 
 	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
-		return Stream.concat(Stream.of(this.localPeer), others).distinct();
+		return Stream.concat(Stream.of(localPeer), others).distinct();
 	}
 
 	//------------------------------------------------------------------------------------------
@@ -260,15 +256,19 @@ public final class RadixJsonRpcServer {
 	}
 
 	private JSONObject handleGetUniverse(JSONObject request) {
-		return fillPlainResponse(request, this.universe);
+		return fillPlainResponse(request, serialization.toJsonObject(universe, Output.API));
 	}
 
 	private JSONObject handleGetLivePeers(JSONObject request) {
-		return fillListResponse(request, selfAndOthers(this.addressBook.recentPeers()).collect(Collectors.toList()));
+		return fillListResponse(request, selfAndOthers(addressBook.recentPeers()).collect(Collectors.toList()));
 	}
 
 	private JSONObject handleGetPeers(JSONObject request) {
-		return fillListResponse(request, selfAndOthers(this.addressBook.peers()).collect(Collectors.toList()));
+		return fillListResponse(request, selfAndOthers(addressBook.peers()).collect(Collectors.toList()));
+	}
+
+	private JSONObject handleGetInfo(JSONObject request) {
+		return fillPlainResponse(request, serialization.toJsonObject(localSystem, Output.API));
 	}
 
 	private JSONObject handlePing(JSONObject request) {
@@ -277,6 +277,7 @@ public final class RadixJsonRpcServer {
 			.put("timestamp", System.currentTimeMillis()));
 	}
 
+	//TODO: potentially blocking
 	private JSONObject handleSubmitAtom(JSONObject request) {
 		return ifParametersPresent(request, jsonAtom ->
 			fillPlainResponse(request, jsonObject()
@@ -285,6 +286,7 @@ public final class RadixJsonRpcServer {
 				.put("timestamp", System.currentTimeMillis())));
 	}
 
+	//TODO: potentially blocking
 	private JSONObject handleGetAtomStatus(JSONObject request) {
 		return ifParametersPresent(request, paramsObject ->
 			ifParameterPresent(request, paramsObject, "aid", params -> {
@@ -295,6 +297,7 @@ public final class RadixJsonRpcServer {
 			}));
 	}
 
+	//TODO: potentially blocking
 	private JSONObject handleGetAtom(JSONObject request) {
 		return ifParametersPresent(request, paramsObject ->
 			ifParameterPresent(request, paramsObject, "aid", params ->
@@ -307,6 +310,7 @@ public final class RadixJsonRpcServer {
 					))));
 	}
 
+	//TODO: potentially blocking
 	private JSONObject handleGetAtoms(JSONObject request) {
 		return ifParametersPresent(request, paramsObject ->
 			ifParameterPresent(request, paramsObject, "address", params -> {
