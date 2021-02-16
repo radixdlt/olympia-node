@@ -25,7 +25,9 @@ import com.radixdlt.network.addressbook.PeerPersistence;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.powermock.reflect.Whitebox;
 import org.radix.Radix;
 import org.radix.database.DatabaseEnvironment;
@@ -49,9 +51,12 @@ public class BerkeleyAddressBookPersistenceTest extends RadixTest {
 	private PeerPersistence abp;
 	private DatabaseEnvironment dbEnv;
 
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+
 	@Before
 	public void setUp() {
-		this.dbEnv = new DatabaseEnvironment(getProperties());
+		this.dbEnv = new DatabaseEnvironment(folder.getRoot().getAbsolutePath(), 0);
 		this.abp = new BerkeleyAddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
 		this.abp.reset();
 	}

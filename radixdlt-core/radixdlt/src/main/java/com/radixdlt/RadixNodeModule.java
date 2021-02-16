@@ -44,6 +44,7 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
+import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
@@ -65,6 +66,7 @@ public final class RadixNodeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
+
 		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
@@ -128,6 +130,8 @@ public final class RadixNodeModule extends AbstractModule {
 		// Fees
 		install(new TokenFeeModule());
 
+		// Storage
+		install(new DatabasePropertiesModule());
 		install(new PersistenceModule());
 		install(new ConsensusRecoveryModule());
 		install(new LedgerRecoveryModule());

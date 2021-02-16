@@ -46,6 +46,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncPatienceMillis;
 
 /**
@@ -74,6 +75,8 @@ public final class ModuleForRecoveryTests {
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
 						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(nativeToken);
+					bindConstant().annotatedWith(DatabaseCacheSize.class)
+							.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
 
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);

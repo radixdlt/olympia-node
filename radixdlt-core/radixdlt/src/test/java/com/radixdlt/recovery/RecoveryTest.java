@@ -54,17 +54,15 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.cli.ParseException;
 import org.assertj.core.api.Condition;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -136,20 +134,8 @@ public class RecoveryTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
-
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
 						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);

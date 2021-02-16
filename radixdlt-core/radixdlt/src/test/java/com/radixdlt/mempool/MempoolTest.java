@@ -80,16 +80,15 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.List;
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -115,6 +114,8 @@ public class MempoolTest {
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(nativeToken);
+					bindConstant().annotatedWith(DatabaseCacheSize.class)
+						.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
 
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
@@ -178,19 +179,8 @@ public class MempoolTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(1L));
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+							.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
 						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });

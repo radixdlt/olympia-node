@@ -40,13 +40,12 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import java.util.List;
-import org.apache.commons.cli.ParseException;
+
+import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
-import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -87,19 +86,8 @@ public class PacemakerTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 				}
 			},
 			ModuleForRecoveryTests.create()

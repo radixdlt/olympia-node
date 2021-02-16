@@ -19,7 +19,8 @@ package org.radix.database;
 
 import com.google.inject.Inject;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.utils.RadixConstants;
 
@@ -45,8 +46,11 @@ public final class DatabaseEnvironment {
 	private Environment environment = null;
 
 	@Inject
-	public DatabaseEnvironment(RuntimeProperties properties) {
-		File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
+	public DatabaseEnvironment(
+		@DatabaseLocation String databaseLocation,
+		@DatabaseCacheSize long cacheSize
+	) {
+		File dbhome = new File(databaseLocation);
 		dbhome.mkdir();
 
 		System.setProperty("je.disable.java.adler32", "true");
@@ -63,13 +67,6 @@ public final class DatabaseEnvironment {
 		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "true");
 		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
 		environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
-
-		long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
-		long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
-		long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
-		cacheSize = Math.max(cacheSize, minCacheSize);
-		cacheSize = Math.min(cacheSize, maxCacheSize);
-
 		environmentConfig.setCacheSize(cacheSize);
 		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 

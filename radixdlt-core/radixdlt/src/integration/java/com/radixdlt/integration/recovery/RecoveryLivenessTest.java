@@ -42,10 +42,10 @@ import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
 
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -56,11 +56,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -165,19 +163,8 @@ public class RecoveryLivenessTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 				}
 			}
 		);
