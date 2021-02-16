@@ -47,6 +47,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.utils.Base58;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -162,7 +163,7 @@ public class RecoveryLivenessTest {
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + ecKeyPair.getPublicKey());
+						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}
 			}
 		);
