@@ -24,6 +24,8 @@ import com.radixdlt.serialization.Serialization;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TemporaryFolder;
 import org.radix.Radix;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.utils.IOUtils;
@@ -34,6 +36,8 @@ public class RadixTest {
 	private static Serialization serialization;
 	private static String dbLocation = null;
 	private static RuntimeProperties properties;
+	@ClassRule
+	public static TemporaryFolder folder = new TemporaryFolder();
 
 	@BeforeClass
 	public static void startRadixTest() throws Exception {
@@ -52,8 +56,7 @@ public class RadixTest {
 		properties.set("host.ip", "127.0.0.1");
 
 		if (dbLocation == null) {
-			// Avoid RADIXDB_TEST_TEST_TEST_TEST_TEST situation
-			dbLocation = properties.get("db.location", ".//RADIXDB") + "_TEST";
+			dbLocation = folder.getRoot().getAbsolutePath();
 		}
 		properties.set("db.location", dbLocation);
 	}

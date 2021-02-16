@@ -21,8 +21,9 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
+import com.radixdlt.environment.MockedCheckpointModule;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +37,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.CheckpointModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
@@ -60,7 +60,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.NextCommittedLimitReachedException;
@@ -88,26 +87,18 @@ public class GetNextCommittedCommandsTest {
 	public void setup() {
 		this.injector = Guice.createInjector(
 			new CryptoModule(),
-			new CheckpointModule(),
+			new MockedCheckpointModule(),
 			new PersistenceModule(),
 			new RadixEngineStoreModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					final RuntimeProperties runtimeProperties;
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_TEST"
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(GenesisValidatorSetProvider.class).toInstance(() -> BFTValidatorSet.from(List.of()));
 					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
 			}
 		);
