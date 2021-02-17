@@ -35,6 +35,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -485,6 +486,7 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10); // Use constant timeout for now
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
 					bind(NodeEvents.class).toInstance(nodeEvents);
 				}

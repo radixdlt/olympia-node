@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -23,22 +23,14 @@ import com.google.inject.Singleton;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAddSuccess;
 
 import java.util.Random;
 
 public class LedgerLocalMempoolModule extends AbstractModule {
-	private final int maxSize;
-
-	public LedgerLocalMempoolModule(int maxSize) {
-		this.maxSize = maxSize;
-	}
-
 	@Provides
 	@Singleton
 	Mempool localMempool(
+	    @MempoolMaxSize int maxSize,
 		Hasher hasher,
 		SystemCounters counters,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,

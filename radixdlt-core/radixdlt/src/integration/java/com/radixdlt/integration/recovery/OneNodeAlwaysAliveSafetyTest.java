@@ -47,6 +47,7 @@ import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventPr
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
@@ -183,6 +184,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}

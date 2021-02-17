@@ -71,6 +71,7 @@ public class MempoolTest {
 				protected void configure() {
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 				}

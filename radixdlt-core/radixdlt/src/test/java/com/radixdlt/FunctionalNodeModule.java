@@ -22,6 +22,7 @@ import com.google.inject.Module;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.LedgerLocalMempoolModule;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -114,7 +115,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 				}
 			} else {
 				install(new LedgerCommandGeneratorModule());
-				install(new LedgerLocalMempoolModule(10));
+				install(new LedgerLocalMempoolModule());
 
 				if (!hasRadixEngine) {
 					install(new MockedMempoolStateComputerModule());

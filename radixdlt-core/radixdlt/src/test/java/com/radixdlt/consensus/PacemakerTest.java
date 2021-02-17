@@ -34,6 +34,7 @@ import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProces
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -63,6 +64,7 @@ public class PacemakerTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			},
