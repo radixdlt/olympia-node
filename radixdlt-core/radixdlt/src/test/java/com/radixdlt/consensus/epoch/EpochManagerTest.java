@@ -98,7 +98,7 @@ import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;

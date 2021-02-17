@@ -53,9 +53,12 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncConfig;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * Helper class for modules to be used for recovery tests.
@@ -73,7 +76,6 @@ public final class ModuleForRecoveryTests {
 				@Override
 				public void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
@@ -87,6 +89,9 @@ public final class ModuleForRecoveryTests {
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+					bind(AddressBook.class).toInstance(mock(AddressBook.class));
+					bind(SyncConfig.class).toInstance(SyncConfig.of(200L, 10, 200L));
 				}
 			},
 			new MockedCheckpointModule(),

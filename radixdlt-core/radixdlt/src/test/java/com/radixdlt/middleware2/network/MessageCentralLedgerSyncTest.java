@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -36,6 +37,10 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.universe.Universe;
 import java.util.Optional;
 
@@ -67,7 +72,7 @@ public class MessageCentralLedgerSyncTest {
 		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(DtoLedgerHeaderAndProof.class));
+		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(SyncRequest.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -80,13 +85,13 @@ public class MessageCentralLedgerSyncTest {
 		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(DtoCommandsAndProof.class));
+		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(SyncResponse.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
 	public void when_receive_sync_request__then_should_receive_it() {
-		TestSubscriber<RemoteEvent<DtoLedgerHeaderAndProof>> testObserver =
+		TestSubscriber<RemoteEvent<SyncRequest>> testObserver =
 			this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
@@ -101,13 +106,13 @@ public class MessageCentralLedgerSyncTest {
 		messageCentral.send(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
-			syncRequest.getEvent().equals(header) && syncRequest.getOrigin().getKey().equals(key)
+			syncRequest.getEvent().getHeader().equals(header) && syncRequest.getOrigin().getKey().equals(key)
 		);
 	}
 
 	@Test
 	public void when_receive_sync_response__then_should_receive_it() {
-		TestSubscriber<RemoteEvent<DtoCommandsAndProof>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestSubscriber<RemoteEvent<SyncResponse>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
@@ -120,6 +125,44 @@ public class MessageCentralLedgerSyncTest {
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageCentral.send(peer, syncResponseMessage);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(resp -> resp.getEvent().equals(commands));
+		testObserver.assertValue(resp -> resp.getEvent().getCommandsAndProof().equals(commands));
+	}
+
+	@Test
+	public void when_receive_status_request__then_should_receive_it() {
+		TestSubscriber<RemoteEvent<StatusRequest>> testObserver =
+			this.messageCentralLedgerSync.statusRequests().test();
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		StatusRequestMessage statusRequestMessage = mock(StatusRequestMessage.class);
+		messageCentral.send(peer, statusRequestMessage);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(statusResponse -> statusResponse.getOrigin().getKey().equals(key));
+	}
+
+	@Test
+	public void when_receive_status_response__then_should_receive_it() {
+		TestSubscriber<RemoteEvent<StatusResponse>> testObserver =
+			this.messageCentralLedgerSync.statusResponses().test();
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		final var header = mock(VerifiedLedgerHeaderAndProof.class);
+		StatusResponseMessage statusResponseMessage = mock(StatusResponseMessage.class);
+		when(statusResponseMessage.getHeader()).thenReturn(header);
+		messageCentral.send(peer, statusResponseMessage);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(statusResponse ->
+			statusResponse.getEvent().getHeader().equals(header) && statusResponse.getOrigin().getKey().equals(key)
+		);
 	}
 }

@@ -52,7 +52,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;

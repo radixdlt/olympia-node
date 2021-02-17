@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,10 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.epochs;
+package com.radixdlt.sync.messages.local;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public interface SyncedEpochSender {
-	void sendSyncedEpoch(VerifiedLedgerHeaderAndProof headerAndProof);
+public class SyncCheckTriggerTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(SyncCheckTrigger.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import org.radix.universe.system.RadixSystem;
 
 import com.radixdlt.identifiers.EUID;
@@ -67,6 +68,12 @@ public interface AddressBook {
 	 * @return the optional {@link PeerWithSystem} with matching Node ID
 	 */
 	Optional<PeerWithSystem> peer(EUID nid);
+
+	/**
+	 * Check whether there is a peer corresponding to given bft node in the address book.
+	 * @return true if there is a peer corresponding to given bft node in the address book, false otherwise.
+	 */
+	boolean hasBftNodePeer(BFTNode bftNode);
 
 	/**
 	 * Retrieve the {@link PeerWithSystem} contactable using the specified

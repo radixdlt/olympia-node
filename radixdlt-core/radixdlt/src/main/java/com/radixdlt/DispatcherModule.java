@@ -60,9 +60,12 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
+
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,18 +104,21 @@ public class DispatcherModule extends AbstractModule {
 				InvalidProposedCommand.class,
 				true
 			)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<SyncInProgress>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncInProgress.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<SyncRequestTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncRequestTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckTrigger>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
-				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
 
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
