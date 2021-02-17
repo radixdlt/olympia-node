@@ -18,24 +18,10 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-
-import java.util.Random;
+import com.google.inject.Scopes;
 
 public class LedgerLocalMempoolModule extends AbstractModule {
-	@Provides
-	@Singleton
-	Mempool localMempool(
-	    @MempoolMaxSize int maxSize,
-		Hasher hasher,
-		SystemCounters counters,
-		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
-		Random random
-	) {
-		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher, random);
+	public void configure() {
+		bind(Mempool.class).to(LocalMempool.class).in(Scopes.SINGLETON);
 	}
 }

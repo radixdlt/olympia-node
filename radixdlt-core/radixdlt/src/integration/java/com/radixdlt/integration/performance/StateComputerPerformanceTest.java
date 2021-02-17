@@ -22,6 +22,7 @@ import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProces
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,6 +50,7 @@ public class StateComputerPerformanceTest {
                 protected void configure() {
                     bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+                    bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
                 }
 
                 @ProvidesIntoSet

@@ -17,6 +17,7 @@
 package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -25,7 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,17 +51,15 @@ public final class LocalMempool implements Mempool {
 
 	private final Hasher hasher;
 
-	private final EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher;
-
 	private final SystemCounters counters;
 
 	private final Random random;
 
+	@Inject
 	public LocalMempool(
-		int maxSize,
+		@MempoolMaxSize int maxSize,
 		Hasher hasher,
 		SystemCounters counters,
-		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		Random random
 	) {
 		if (maxSize <= 0) {
@@ -69,7 +67,6 @@ public final class LocalMempool implements Mempool {
 		}
 		this.maxSize = maxSize;
 		this.hasher = hasher;
-		this.mempoolAddedCommandEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.counters = Objects.requireNonNull(counters);
 		this.random = Objects.requireNonNull(random);
 	}
@@ -89,7 +86,6 @@ public final class LocalMempool implements Mempool {
 		}
 
 		updateCounts();
-		mempoolAddedCommandEventDispatcher.dispatch(MempoolAddSuccess.create(command));
 	}
 
 	@Override

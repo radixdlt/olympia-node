@@ -41,6 +41,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -73,6 +74,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
 	private final RadixEngineAtomicCommitManager atomicCommitManager;
+
+	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
 
@@ -85,6 +88,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher,
+		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher
 	) {
@@ -99,6 +103,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.hasher = Objects.requireNonNull(hasher);
 		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
 		this.mempool = Objects.requireNonNull(mempool);
+		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 	}
@@ -165,10 +170,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempool.add(command);
 		} catch (MempoolFullException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+			return;
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
 			log.warn("Mempool duplicate command: {}", e.getMessage());
+			return;
 		}
+
+		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(command));
 	}
 
 	@Override
