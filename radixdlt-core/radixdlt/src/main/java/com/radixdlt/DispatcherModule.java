@@ -92,6 +92,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				NoVote.class,

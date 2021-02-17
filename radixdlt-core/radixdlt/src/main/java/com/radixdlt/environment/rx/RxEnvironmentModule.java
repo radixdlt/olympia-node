@@ -21,6 +21,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ProcessorOnRunner;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
@@ -49,6 +54,7 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 /**
  * Environment utilizing RxJava
@@ -84,6 +90,8 @@ public class RxEnvironmentModule extends AbstractModule {
 			.toProvider(new ObservableProvider<>(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }));
 		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
 		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<ProcessorOnRunner<?>>() { });
 	}
 
 	@Provides
@@ -99,5 +107,33 @@ public class RxEnvironmentModule extends AbstractModule {
 			ses,
 			dispatchers
 		);
+	}
+
+	private static <T> void addToBuilder(
+		Class<T> eventClass,
+		RxEnvironment rxEnvironment,
+		ProcessorOnRunner<?> processor,
+		ModuleRunnerImpl.Builder builder
+	) {
+		processor.getProcessor(eventClass).ifPresent(p -> builder.add(rxEnvironment.getObservable(eventClass), p));
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("chaos")
+	public ModuleRunner chaosRunner(
+		Set<ProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment
+	) {
+		Set<Class<?>> eventClasses = processors.stream()
+				.filter(p -> p.getRunnerName().equals("chaos"))
+				.map(ProcessorOnRunner::getEventClass)
+				.collect(Collectors.toSet());
+
+		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
+		for (Class<?> eventClass : eventClasses) {
+			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
+		}
+
+		return builder.build("ChaosRunner");
 	}
 }

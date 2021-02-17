@@ -24,10 +24,10 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
+import com.radixdlt.environment.ProcessorOnRunner;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -67,13 +67,14 @@ public final class MempoolFillerModule extends AbstractModule {
 		return keyPair.getPublicKey();
 	}
 
-	@Provides
-	public EventProcessor<MempoolFillerUpdate> messageFloodUpdateEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.messageFloodUpdateProcessor();
+
+	@ProvidesIntoSet
+	public ProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
+		return new ProcessorOnRunner<>("chaos", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
 	}
 
-	@Provides
-	public EventProcessor<ScheduledMempoolFill> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.scheduledMempoolFillEventProcessor();
+	@ProvidesIntoSet
+	public ProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
+		return new ProcessorOnRunner<>("chaos", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
 	}
 }

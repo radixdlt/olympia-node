@@ -71,7 +71,7 @@ public final class MempoolFiller {
 		this.mempoolFillDispatcher = mempoolFillDispatcher;
 	}
 
-	public EventProcessor<MempoolFillerUpdate> messageFloodUpdateProcessor() {
+	public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
 		return u -> {
 			if (u.enabled() == (to != null)) {
 				logger.info("Mempool Filler: not updating");

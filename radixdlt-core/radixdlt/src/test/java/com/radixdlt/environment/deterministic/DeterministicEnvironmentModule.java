@@ -34,6 +34,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
@@ -64,6 +65,8 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
 			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<ProcessorOnRunner<?>>() { });
 	}
 
 
