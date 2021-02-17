@@ -18,7 +18,6 @@ package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -42,10 +41,10 @@ import java.util.Set;
  * Performs no validation and does not share contents with
  * network.  Threadsafe.
  */
-public final class LocalMempool implements Mempool {
+public final class LocalMempool<T> implements Mempool<T> {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final LinkedHashMap<HashCode, Command> data = Maps.newLinkedHashMap();
+	private final LinkedHashMap<HashCode, T> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
@@ -72,16 +71,15 @@ public final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
+	public void add(T command) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
 				throw new MempoolFullException(
-					command,
 					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
 				);
 			}
 			if (null != this.data.put(hasher.hash(command), command)) {
-				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", hasher.hash(command)));
+				throw new MempoolDuplicateException(String.format("Mempool already has command %s", hasher.hash(command)));
 			}
 		}
 
@@ -105,17 +103,17 @@ public final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<HashCode> seen) {
+	public List<T> getCommands(int count, Set<HashCode> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
-				List<Command> commands = Lists.newArrayList();
+				List<T> commands = Lists.newArrayList();
 				var values = new ArrayList<>(this.data.values());
 				Collections.shuffle(values, random);
 
-				Iterator<Command> i = values.iterator();
+				Iterator<T> i = values.iterator();
 				while (commands.size() < size && i.hasNext()) {
-					Command a = i.next();
+					T a = i.next();
 					if (!seen.contains(hasher.hash(a))) {
 						commands.add(a);
 					}

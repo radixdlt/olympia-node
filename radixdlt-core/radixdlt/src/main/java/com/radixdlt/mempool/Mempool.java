@@ -28,7 +28,7 @@ import java.util.Set;
  * Note that conceptually, a mempoolcan be thought of as a list indexable
  * by hash and ordered FIFO by {@link #add(Command)} call order.
  */
-public interface Mempool {
+public interface Mempool<T> {
 	/**
 	 * Add a command to the local mempool.
 	 * Should be called after atom has been validated.
@@ -37,7 +37,7 @@ public interface Mempool {
 	 * @throws MempoolFullException if the mempool cannot accept new submissions.
 	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void add(Command command) throws MempoolFullException, MempoolDuplicateException;
+	void add(T command) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has
@@ -66,7 +66,7 @@ public interface Mempool {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<Command> getCommands(int count, Set<HashCode> seen);
+	List<T> getCommands(int count, Set<HashCode> seen);
 
 	/**
 	 * Return approximate count of commands in the mempool.

@@ -30,12 +30,16 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -50,6 +54,7 @@ import java.util.function.UnaryOperator;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(new TypeLiteral<Mempool<ClientAtom>>() { }).to(new TypeLiteral<LocalMempool<ClientAtom>>() { }).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 	}

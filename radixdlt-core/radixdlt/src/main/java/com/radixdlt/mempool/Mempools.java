@@ -26,29 +26,37 @@ import java.util.Set;
 /**
  * Mempool which is always empty
  */
-public class EmptyMempool implements Mempool {
-	@Override
-	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-		// No-op
+public class Mempools {
+	private Mempools() {
+		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	@Override
-	public void removeCommitted(HashCode cmdHash) {
-		// No-op
-	}
+	public static <T> Mempool<T> empty(Class<T> txClass) {
+		return new Mempool<T>() {
+			@Override
+			public void add(T command) throws MempoolFullException, MempoolDuplicateException {
+			    // No-op
+			}
 
-	@Override
-	public void removeRejected(HashCode cmdHash) {
-		// No-op
-	}
+			@Override
+			public void removeCommitted(HashCode cmdHash) {
+				// No-op
+			}
 
-	@Override
-	public List<Command> getCommands(int count, Set<HashCode> seen) {
-		return Collections.emptyList();
-	}
+			@Override
+			public void removeRejected(HashCode cmdHash) {
+				// No-op
+			}
 
-	@Override
-	public int count() {
-		return 0;
+			@Override
+			public List<T> getCommands(int count, Set<HashCode> seen) {
+				return List.of();
+			}
+
+			@Override
+			public int count() {
+				return 0;
+			}
+		};
 	}
 }

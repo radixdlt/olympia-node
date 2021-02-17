@@ -21,9 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.LedgerLocalMempoolModule;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -100,14 +98,6 @@ public final class FunctionalNodeModule extends AbstractModule {
 			if (!hasMempool) {
 				install(new MockedCommandGeneratorModule());
 
-				// TODO: Remove once mempool fixed
-				install(new AbstractModule() {
-					@Override
-					public void configure() {
-						bind(Mempool.class).to(EmptyMempool.class);
-					}
-				});
-
 				if (!hasEpochs) {
 					install(new MockedStateComputerModule());
 				} else {
@@ -115,7 +105,6 @@ public final class FunctionalNodeModule extends AbstractModule {
 				}
 			} else {
 				install(new LedgerCommandGeneratorModule());
-				install(new LedgerLocalMempoolModule());
 
 				if (!hasRadixEngine) {
 					install(new MockedMempoolStateComputerModule());
