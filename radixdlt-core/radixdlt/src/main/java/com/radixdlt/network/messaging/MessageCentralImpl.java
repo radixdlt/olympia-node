@@ -25,8 +25,8 @@ import java.util.Optional;
 
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.streams.RoundRobinBackpressuredProcessor;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -67,12 +67,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
-	// Inbound message handling
-	private final RoundRobinBackpressuredProcessor<InboundMessage> inboundMessageProcessor =
-			new RoundRobinBackpressuredProcessor<>();
-
-	private final RoundRobinBackpressuredProcessor<Pair<Peer, Message>> peerMessageProcessor =
-			new RoundRobinBackpressuredProcessor<>();
+	private final Flowable<Pair<Peer, Message>> peerMessages;
 
 	// Outbound message handling
 	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
@@ -134,29 +129,23 @@ final class MessageCentralImpl implements MessageCentral {
 		);
 		this.outboundThreadPool.start();
 
-		// Start our listeners
-		this.transports
-			.stream().map(Transport::start)
-			.forEach(inboundMessageProcessor::subscribeTo);
+		List<Flowable<InboundMessage>> inboundMessages = this.transports.stream()
+			.map(Transport::start)
+			.collect(Collectors.toList());
 
-		setupMessageProcessor();
-	}
-
-	private void setupMessageProcessor() {
-		final var processedMessages =
-				Flowable.fromPublisher(inboundMessageProcessor)
-						.map(this.messagePreprocessor::process)
-						.filter(Optional::isPresent)
-						.map(Optional::get);
-
-		peerMessageProcessor.subscribeTo(processedMessages);
+		this.peerMessages = Flowable.merge(inboundMessages)
+			.map(this.messagePreprocessor::process)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.publish()
+			.autoConnect();
 	}
 
 	@Override
 	public <T extends Message> Flowable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
-		return Flowable.fromPublisher(peerMessageProcessor)
-				.filter(p -> messageType.isInstance(p.getSecond()))
-				.map(p -> new MessageFromPeer<>(p.getFirst(), messageType.cast(p.getSecond())));
+		return this.peerMessages
+			.filter(p -> messageType.isInstance(p.getSecond()))
+			.map(p -> new MessageFromPeer<>(p.getFirst(), messageType.cast(p.getSecond())));
 	}
 
 	@Override
