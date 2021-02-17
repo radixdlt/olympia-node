@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -153,11 +154,13 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 		);
 	}
 
+	private final RateLimiter errorResponseRateLimiter = RateLimiter.create(10.0);
+
 	@Override
 	public Flowable<GetVerticesErrorResponse> errorResponses() {
 		return this.createFlowable(
 			GetVerticesErrorResponseMessage.class,
-			m -> m.getPeer().hasSystem(),
+			m -> m.getPeer().hasSystem() && errorResponseRateLimiter.tryAcquire(),
 			(src, msg) -> {
 				final var node = BFTNode.create(src.getSystem().getKey());
 				final var request = new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
