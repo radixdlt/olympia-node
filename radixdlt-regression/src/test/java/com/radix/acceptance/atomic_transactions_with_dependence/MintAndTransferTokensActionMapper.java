@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;

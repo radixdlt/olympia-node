@@ -21,7 +21,7 @@ import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;

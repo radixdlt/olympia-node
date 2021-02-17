@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;

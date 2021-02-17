@@ -25,7 +25,7 @@ import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
