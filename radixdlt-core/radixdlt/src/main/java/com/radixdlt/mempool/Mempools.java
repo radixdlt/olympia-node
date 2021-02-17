@@ -18,8 +18,6 @@
 package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -39,12 +37,12 @@ public class Mempools {
 			}
 
 			@Override
-			public void removeCommitted(HashCode cmdHash) {
+			public void committed(List<T> committed) {
 				// No-op
 			}
 
 			@Override
-			public void removeRejected(HashCode cmdHash) {
+			public void remove(T toRemove) {
 				// No-op
 			}
 

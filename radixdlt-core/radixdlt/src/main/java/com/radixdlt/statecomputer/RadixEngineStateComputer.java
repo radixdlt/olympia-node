@@ -394,7 +394,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		atomicCommitManager.commitTransaction();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		atomsCommitted.forEach(atom -> this.mempool.removeCommitted(hasher.hash(atom)));
+		this.mempool.committed(atomsCommitted);
+
 		List<ClientAtom> mempoolCommands = mempool.getCommands(Integer.MAX_VALUE, Set.of());
 		for (ClientAtom clientAtom : mempoolCommands) {
 			try {
@@ -405,7 +406,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					// TODO: Create more specific AtomRemovedFromMempool event
 					byte[] dson = serialization.toDson(clientAtom, Output.ALL);
 					mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(new Command(dson), e));
-					mempool.removeRejected(hasher.hash(clientAtom));
+					mempool.remove(clientAtom);
 					continue;
 				}
 			} finally {

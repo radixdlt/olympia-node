@@ -17,16 +17,14 @@
 package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
 import java.util.List;
 import java.util.Set;
 
 /**
  * Basic mempool functionality.
- * Implementations are expected to be thread safe.
  * <p>
  * Note that conceptually, a mempoolcan be thought of as a list indexable
- * by hash and ordered FIFO by {@link #add(Command)} call order.
+ * by hash.
  */
 public interface Mempool<T> {
 	/**
@@ -39,21 +37,9 @@ public interface Mempool<T> {
 	 */
 	void add(T command) throws MempoolFullException, MempoolDuplicateException;
 
-	/**
-	 * Remove the referenced atom from the local mempool after it has
-	 * been committed by consensus.
-	 *
-	 * @param cmdHash The hash of the command to remove
-	 */
-	void removeCommitted(HashCode cmdHash);
+	void committed(List<T> committed);
 
-	/**
-	 * Remove the referenced atom from the local mempool after it has
-	 * been rejected by consensus.
-	 *
-	 * @param cmdHash The hash of the command to remove
-	 */
-	void removeRejected(HashCode cmdHash);
+	void remove(T toRemove);
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by

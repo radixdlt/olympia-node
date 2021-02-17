@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.LedgerLocalMempoolModule;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;

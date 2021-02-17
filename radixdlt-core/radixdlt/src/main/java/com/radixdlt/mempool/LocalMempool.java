@@ -87,19 +87,15 @@ public final class LocalMempool<T> implements Mempool<T> {
 	}
 
 	@Override
-	public void removeCommitted(HashCode cmdHash) {
-		synchronized (this.lock) {
-			this.data.remove(cmdHash);
-		}
+	public void committed(List<T> commands) {
+		commands.forEach(cmd -> this.data.remove(hasher.hash(cmd)));
 		updateCounts();
 	}
 
 	@Override
-	public void removeRejected(HashCode cmdHash) {
-		// For now we just treat this the same as committed atoms.
-		// Once we have a more complete mempool implementation, we
-		// can use this to remove dependent atoms too.
-		removeCommitted(cmdHash);
+	public void remove(T toRemove) {
+	    this.data.remove(hasher.hash(toRemove));
+		updateCounts();
 	}
 
 	@Override

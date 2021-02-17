@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;

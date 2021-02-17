@@ -38,8 +38,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.ProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.rx.ModuleRunnerImpl;
-import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;

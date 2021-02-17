@@ -88,7 +88,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 			@Override
 			public void commit(VerifiedCommandsAndProof commands, VerifiedVertexStoreState vertexStoreState) {
-				commands.getCommands().forEach(cmd -> mempool.removeCommitted(hasher.hash(cmd)));
+				mempool.committed(commands.getCommands());
 			}
 		};
 	}

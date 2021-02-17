@@ -64,7 +64,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-	private Mempool mempool;
+	private Mempool<Command> mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
@@ -98,7 +98,7 @@ public class StateComputerLedgerTest {
 
 	@Before
 	public void setup() {
-		this.mempool = mock(Mempool.class);
+		this.mempool = TypedMocks.rmock(Mempool.class);
 		// No type check issues with mocking generic here
 		this.stateComputer = mock(StateComputer.class);
 		this.counters = mock(SystemCounters.class);
@@ -245,7 +245,7 @@ public class StateComputerLedgerTest {
 
 		// Assert
 		verify(stateComputer, never()).commit(any(), any());
-		verify(mempool, never()).removeCommitted(any());
+		verify(mempool, never()).committed(any());
 		verify(ledgerUpdateSender, never()).dispatch(any());
 	}
 }
