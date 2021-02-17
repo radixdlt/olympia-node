@@ -33,6 +33,7 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewVotingResult;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -54,6 +55,8 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -102,6 +105,9 @@ public class DispatcherModule extends AbstractModule {
 				true
 			)).in(Scopes.SINGLETON);
 
+		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
+			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
@@ -161,6 +167,12 @@ public class DispatcherModule extends AbstractModule {
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
+
+		final var ledgerUpdateKey = new TypeLiteral<EventProcessor<LedgerUpdate>>() { };
+		Multibinder.newSetBinder(binder(), ledgerUpdateKey, ProcessOnDispatch.class);
+
+		final var epochsLedgerUpdateKey = new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { };
+		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -420,5 +432,31 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
 	) {
 		return cmd -> processors.forEach(e -> e.process(cmd));
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<LedgerUpdate>> processors,
+		Environment environment
+	) {
+		EventDispatcher<LedgerUpdate> dispatcher = environment.getDispatcher(LedgerUpdate.class);
+		return u -> {
+			dispatcher.dispatch(u);
+			processors.forEach(e -> e.process(u));
+		};
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<EpochsLedgerUpdate> epochsLedgerUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<EpochsLedgerUpdate>> processors,
+		Environment environment
+	) {
+		EventDispatcher<EpochsLedgerUpdate> dispatcher = environment.getDispatcher(EpochsLedgerUpdate.class);
+		return u -> {
+			dispatcher.dispatch(u);
+			processors.forEach(e -> e.process(u));
+		};
 	}
 }

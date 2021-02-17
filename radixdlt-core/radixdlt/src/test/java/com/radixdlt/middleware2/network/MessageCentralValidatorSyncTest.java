@@ -49,7 +49,6 @@ import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.universe.Universe;
 
 import java.util.Optional;
 
@@ -73,11 +72,10 @@ public class MessageCentralValidatorSyncTest {
 		ECPublicKey pubKey = mock(ECPublicKey.class);
 		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
-		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.hasher = new RandomHasher();
-		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
+		this.sync = new MessageCentralValidatorSync(self, 0, addressBook, messageCentral, hasher);
 	}
 
 	@Test

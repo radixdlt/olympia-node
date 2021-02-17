@@ -35,6 +35,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.TimeSupplier;
@@ -95,13 +96,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
-	public interface LedgerUpdateSender {
-		void sendLedgerUpdate(LedgerUpdate ledgerUpdate);
-	}
-
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final StateComputer stateComputer;
-	private final LedgerUpdateSender ledgerUpdateSender;
+	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
@@ -117,7 +114,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		StateComputer stateComputer,
-		LedgerUpdateSender ledgerUpdateSender,
+		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
 		SystemCounters counters,
@@ -127,7 +124,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.stateComputer = Objects.requireNonNull(stateComputer);
-		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
+		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
@@ -281,8 +278,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
-			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
+			LedgerUpdate ledgerUpdate = new LedgerUpdate(commandsToStore);
+			ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 		}
 	}
 }

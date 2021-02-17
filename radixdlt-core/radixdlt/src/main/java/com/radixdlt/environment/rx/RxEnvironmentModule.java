@@ -27,6 +27,7 @@ import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -37,6 +38,8 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -77,6 +80,10 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<ScheduledMessageFlood>>() { }).toProvider(new ObservableProvider<>(ScheduledMessageFlood.class));
 		bind(new TypeLiteral<Observable<MempoolFillerUpdate>>() { }).toProvider(new ObservableProvider<>(MempoolFillerUpdate.class));
 		bind(new TypeLiteral<Observable<ScheduledMempoolFill>>() { }).toProvider(new ObservableProvider<>(ScheduledMempoolFill.class));
+		bind(new TypeLiteral<Observable<Epoched<ScheduledLocalTimeout>>>() { })
+			.toProvider(new ObservableProvider<>(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }));
+		bind(new TypeLiteral<Observable<LedgerUpdate>>() { }).toProvider(new ObservableProvider<>(LedgerUpdate.class));
+		bind(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { }).toProvider(new ObservableProvider<>(EpochsLedgerUpdate.class));
 	}
 
 	@Provides
@@ -87,6 +94,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		@LocalEvents Set<Class<?>> localProcessedEventClasses
 	) {
 		return new RxEnvironment(
+			Set.of(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }),
 			localProcessedEventClasses,
 			ses,
 			dispatchers

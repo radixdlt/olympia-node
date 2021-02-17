@@ -20,8 +20,8 @@ package com.radixdlt.store.berkeley;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,7 +40,6 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.NextCommittedLimitReachedException;
@@ -63,17 +62,8 @@ public class GetNextCommittedLedgerEntriesTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					final RuntimeProperties runtimeProperties;
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_TEST"
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 				}
 			}

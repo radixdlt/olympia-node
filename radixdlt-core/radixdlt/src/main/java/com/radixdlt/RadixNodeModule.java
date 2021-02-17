@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.chaos.ChaosModule;
+import com.radixdlt.checkpoint.CheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -30,6 +31,9 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.mempool.LedgerLocalMempoolModule;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -44,6 +48,7 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
+import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
@@ -54,17 +59,17 @@ import org.radix.universe.system.LocalSystem;
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
-	private final int mempoolMaxSize;
 	private final RuntimeProperties properties;
 
 	public RadixNodeModule(RuntimeProperties properties) {
 		this.properties = properties;
-		this.mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 	}
 
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
+
+		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
 		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
@@ -89,16 +94,15 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new ApiModule());
 
 		// Consensus
-		install(new BFTKeyModule());
+		install(new PersistedBFTKeyModule());
 		install(new CryptoModule());
 		install(new ConsensusModule());
-		install(new ConsensusRxModule());
 		install(new ConsensusRunnerModule());
 
 		// Ledger
 		install(new LedgerModule());
 		install(new LedgerCommandGeneratorModule());
-		install(new LedgerLocalMempoolModule(mempoolMaxSize));
+		install(new LedgerLocalMempoolModule());
 
 		// Mempool Relay
 		install(new MempoolReceiverModule());
@@ -112,7 +116,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsConsensusModule());
 		// Epochs - Ledger
 		install(new EpochsLedgerUpdateModule());
-		install(new EpochsLedgerUpdateRxModule());
 		// Epochs - Sync
 		install(new EpochsSyncModule());
 
@@ -130,6 +133,8 @@ public final class RadixNodeModule extends AbstractModule {
 		// Fees
 		install(new TokenFeeModule());
 
+		// Storage
+		install(new DatabasePropertiesModule());
 		install(new PersistenceModule());
 		install(new ConsensusRecoveryModule());
 		install(new LedgerRecoveryModule());

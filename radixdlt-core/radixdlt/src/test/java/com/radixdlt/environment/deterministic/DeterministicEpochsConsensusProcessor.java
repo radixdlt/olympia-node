@@ -38,6 +38,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
@@ -61,6 +62,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		EpochManager epochManager,
+		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
@@ -78,7 +80,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
 		processorsBuilder.put(EpochsLedgerUpdate.class, e -> {
-			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
+			epochsLedgerUpdateEventProcessor.process((EpochsLedgerUpdate) e);
 			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
 		});
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
@@ -137,6 +139,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
+		} else if (message instanceof LedgerUpdate) {
+			// Don't need to process
 		} else if (message instanceof AtomCommittedToLedger) {
 			// Don't need to process
 		} else {

@@ -17,10 +17,6 @@
 
 package com.radixdlt.epochs;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
@@ -29,7 +25,7 @@ import java.util.Optional;
 /**
  * A ledger update with possible epoch related information
  */
-public final class EpochsLedgerUpdate implements LedgerUpdate {
+public final class EpochsLedgerUpdate {
 	private final LedgerUpdate base;
 	private final EpochChange epochChange;
 
@@ -38,23 +34,12 @@ public final class EpochsLedgerUpdate implements LedgerUpdate {
 		this.epochChange = epochChange;
 	}
 
+	public LedgerUpdate getBase() {
+		return base;
+	}
+
 	public Optional<EpochChange> getEpochChange() {
 		return Optional.ofNullable(epochChange);
-	}
-
-	@Override
-	public ImmutableList<Command> getNewCommands() {
-		return base.getNewCommands();
-	}
-
-	@Override
-	public VerifiedLedgerHeaderAndProof getTail() {
-		return base.getTail();
-	}
-
-	@Override
-	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return base.getNextValidatorSet();
 	}
 
 	@Override

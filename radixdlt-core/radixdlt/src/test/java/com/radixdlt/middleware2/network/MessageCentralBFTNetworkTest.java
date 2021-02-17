@@ -31,7 +31,6 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.universe.Universe;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -49,10 +48,9 @@ public class MessageCentralBFTNetworkTest {
 	@Before
 	public void setUp() {
 		this.self = mock(BFTNode.class);
-		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = MessageCentralMockProvider.get();
-		this.network = new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
+		this.network = new MessageCentralBFTNetwork(self, 0, addressBook, messageCentral);
 	}
 
 	@Test

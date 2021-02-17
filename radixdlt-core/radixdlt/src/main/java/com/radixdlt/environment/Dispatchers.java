@@ -20,6 +20,7 @@ package com.radixdlt.environment;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.counters.SystemCounters;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -78,15 +79,27 @@ public final class Dispatchers {
 	private static final class ScheduledDispatcherProvider<T> implements Provider<ScheduledEventDispatcher<T>> {
 		@Inject
 		private Provider<Environment> environmentProvider;
-		private final Class<T> c;
+		private final Class<T> eventClass;
+		private final TypeLiteral<T> eventLiteral;
 
-		ScheduledDispatcherProvider(Class<T> c) {
-			this.c = c;
+		ScheduledDispatcherProvider(Class<T> eventClass) {
+			this.eventClass = eventClass;
+			this.eventLiteral = null;
+		}
+
+		ScheduledDispatcherProvider(TypeLiteral<T> eventLiteral) {
+			this.eventClass = null;
+			this.eventLiteral = eventLiteral;
 		}
 
 		@Override
 		public ScheduledEventDispatcher<T> get() {
-			return environmentProvider.get().getScheduledDispatcher(c);
+			Environment e = environmentProvider.get();
+			if (eventClass != null) {
+				return e.getScheduledDispatcher(eventClass);
+			} else {
+				return e.getScheduledDispatcher(eventLiteral);
+			}
 		}
 	}
 
@@ -119,6 +132,10 @@ public final class Dispatchers {
 
 	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
 		return new ScheduledDispatcherProvider<>(c);
+	}
+
+	public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(TypeLiteral<T> t) {
+		return new ScheduledDispatcherProvider<>(t);
 	}
 
 	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {

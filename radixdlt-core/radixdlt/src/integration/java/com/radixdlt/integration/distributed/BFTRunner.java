@@ -72,6 +72,7 @@ public class BFTRunner implements ModuleRunner {
 	@Inject
 	public BFTRunner(
 		Observable<LedgerUpdate> ledgerUpdates,
+		Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
 		Observable<BFTRebuildUpdate> rebuildUpdates,
 		Set<EventProcessor<BFTRebuildUpdate>> rebuildProcessors,
 		Observable<BFTInsertUpdate> bftUpdates,
@@ -127,7 +128,7 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(update -> rebuildProcessors.forEach(p -> p.process(update))),
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreSync::processLedgerUpdate),
+				.doOnNext(update -> ledgerUpdateProcessors.forEach(p -> p.process(update))),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
 				.doOnNext(t -> vertexRequestTimeoutProcessors.forEach(p -> p.process(t)))

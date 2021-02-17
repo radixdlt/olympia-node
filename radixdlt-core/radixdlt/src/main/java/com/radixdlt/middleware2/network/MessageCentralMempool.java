@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -24,7 +25,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,11 +46,11 @@ public final class MessageCentralMempool {
 
 	@Inject
 	public MessageCentralMempool(
-		Universe universe,
+		@Named("magic") int magic,
 		MessageCentral messageCentral,
 		AddressBook addressBook
 	) {
-		this.magic = universe.getMagic();
+		this.magic = magic;
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.addressBook = addressBook;
 	}

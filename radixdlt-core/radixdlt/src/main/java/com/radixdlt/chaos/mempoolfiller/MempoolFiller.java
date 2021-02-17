@@ -18,6 +18,7 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECKeyPair;
@@ -32,7 +33,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +46,7 @@ public final class MempoolFiller {
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Hasher hasher;
-	private final Universe universe;
+	private final int magic;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
 	private final ECKeyPair keyPair;
@@ -57,7 +57,7 @@ public final class MempoolFiller {
 		@MempoolFillerKey ECKeyPair keyPair,
 		Serialization serialization,
 		Hasher hasher,
-		Universe universe,
+		@Named("magic") int magic,
 		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher
@@ -65,7 +65,7 @@ public final class MempoolFiller {
 		this.keyPair = keyPair;
 		this.serialization = serialization;
 		this.hasher = hasher;
-		this.universe = universe;
+		this.magic = magic;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.mempoolFillDispatcher = mempoolFillDispatcher;
@@ -81,7 +81,7 @@ public final class MempoolFiller {
 			logger.info("Mempool Filler: Updating " + u.enabled());
 
 			if (u.enabled()) {
-				to = new RadixAddress((byte) universe.getMagic(), keyPair.getPublicKey());
+				to = new RadixAddress((byte) magic, keyPair.getPublicKey());
 				mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
 			} else {
 				to = null;

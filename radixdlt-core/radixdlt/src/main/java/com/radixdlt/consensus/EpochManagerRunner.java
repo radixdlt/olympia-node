@@ -24,8 +24,9 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.epoch.Epoched;
 
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
@@ -71,6 +72,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 	public EpochManagerRunner(
 		@Self BFTNode self,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
+		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
 		Observable<BFTInsertUpdate> bftUpdates,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Observable<BFTRebuildUpdate> bftRebuilds,
@@ -81,7 +83,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		BFTEventsRx networkRx,
-		PacemakerRx pacemakerRx,
+		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
@@ -91,12 +93,12 @@ public final class EpochManagerRunner implements ModuleRunner {
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
 		this.subscriptions = List.of(
-			new Subscription<>(ledgerUpdates, epochManager::processLedgerUpdate),
+			new Subscription<>(ledgerUpdates, epochsLedgerUpdateEventProcessor::process),
 			new Subscription<>(bftUpdates, bftUpdateProcessor::process),
 			new Subscription<>(bftRebuilds, bftRebuildProcessor::process),
 			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process),
 			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process),
-			new Subscription<>(pacemakerRx.localTimeouts(), epochManager::processLocalTimeout),
+			new Subscription<>(timeouts, epochManager::processLocalTimeout),
 			new Subscription<>(networkRx.localBftEvents(), epochManager::processConsensusEvent),
 			new Subscription<>(networkRx.remoteBftEvents(), epochManager::processConsensusEvent),
 			new Subscription<>(verticesRequests, req ->

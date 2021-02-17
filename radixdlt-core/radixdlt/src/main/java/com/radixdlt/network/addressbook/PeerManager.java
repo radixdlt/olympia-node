@@ -20,13 +20,13 @@ package com.radixdlt.network.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Scheduler;
@@ -140,7 +140,7 @@ public class PeerManager {
 		SecureRandom rng,
 		LocalSystem localSystem,
 		RuntimeProperties properties,
-		Universe universe
+		@Named("magic") int magic
 	) {
 		super();
 
@@ -151,7 +151,7 @@ public class PeerManager {
 		this.localSystem = localSystem;
 		this.recencyThreshold = properties.get("network.peers.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
-		this.universeMagic = universe.getMagic();
+		this.universeMagic = magic;
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
 		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);

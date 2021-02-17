@@ -18,6 +18,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -37,18 +38,29 @@ import java.util.concurrent.TimeUnit;
  */
 public final class RxEnvironment implements Environment {
 	private final ImmutableMap<Class<?>, Subject<?>> subjects;
+	private final ImmutableMap<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
 	private final ScheduledExecutorService executorService;
 	private final ImmutableMap<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
 	public RxEnvironment(
+		Set<TypeLiteral<?>> localEventTypeLiterals,
 		Set<Class<?>> localEventClasses,
 		ScheduledExecutorService executorService,
 		Set<RxRemoteDispatcher<?>> remoteDispatchers
 	) {
+		this.typeLiteralSubjects = localEventTypeLiterals.stream()
+				.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
 		this.subjects = localEventClasses.stream()
 			.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
 		this.executorService = Objects.requireNonNull(executorService);
 		this.remoteDispatchers = remoteDispatchers.stream().collect(ImmutableMap.toImmutableMap(RxRemoteDispatcher::eventClass, d -> d));
+	}
+
+	private <T> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
+		@SuppressWarnings("unchecked")
+		Subject<T> eventDispatcher = (Subject<T>) typeLiteralSubjects.get(t);
+
+		return Optional.ofNullable(eventDispatcher);
 	}
 
 	private <T> Optional<Subject<T>> getSubject(Class<T> eventClass) {
@@ -72,6 +84,14 @@ public final class RxEnvironment implements Environment {
 	}
 
 	@Override
+	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+		return (e, millis) -> {
+			getSubject(typeLiteral).ifPresent(s -> executorService.schedule(
+					() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
+		};
+	}
+
+	@Override
 	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
 		@SuppressWarnings("unchecked")
 		final RemoteEventDispatcher<T> dispatcher = (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
@@ -80,5 +100,9 @@ public final class RxEnvironment implements Environment {
 
 	public <T> Observable<T> getObservable(Class<T> eventClass) {
 		return getSubject(eventClass).orElseThrow();
+	}
+
+	public <T> Observable<T> getObservable(TypeLiteral<T> t) {
+		return getSubject(t).orElseThrow();
 	}
 }

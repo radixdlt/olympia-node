@@ -45,7 +45,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -69,7 +68,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -478,9 +477,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	public void processBFTUpdate(BFTInsertUpdate update) {
 	}
 
+	public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor() {
+		return this::processLedgerUpdate;
+	}
+
 	// TODO: Verify headers match
-	@Override
-	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();

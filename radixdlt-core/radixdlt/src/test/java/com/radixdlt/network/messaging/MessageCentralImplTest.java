@@ -31,7 +31,6 @@ import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Compress;
 
 import org.junit.After;
@@ -92,8 +91,6 @@ public class MessageCentralImplTest {
 		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
 		// Curse you singletons
-		Universe universe = mock(Universe.class);
-		doReturn(0).when(universe).getMagic();
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		doReturn("").when(runtimeProperties).get(eq("network.whitelist"), any());
 		AddressBook addressBook = mock(AddressBook.class);

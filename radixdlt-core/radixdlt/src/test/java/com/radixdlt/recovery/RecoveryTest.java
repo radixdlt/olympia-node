@@ -20,7 +20,6 @@ package com.radixdlt.recovery;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -28,13 +27,13 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
@@ -53,20 +52,18 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.cli.ParseException;
 import org.assertj.core.api.Condition;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -97,6 +94,7 @@ public class RecoveryTest {
 	private DeterministicNetwork network;
 	private Injector currentInjector;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final long epochCeilingView;
 
 	public RecoveryTest(long epochCeilingView) {
@@ -133,33 +131,19 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
-
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
 						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
-			ModuleForRecoveryTests.create()
+			new PersistedNodeForTestingModule(ecKeyPair)
 		);
 	}
 

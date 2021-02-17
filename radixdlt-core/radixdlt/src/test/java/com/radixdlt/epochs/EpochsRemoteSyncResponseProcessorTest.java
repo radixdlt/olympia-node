@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -112,6 +113,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(epochChange.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		when(epochChange.getBFTConfiguration()).thenReturn(mock(BFTConfiguration.class));
 		when(update.getEpochChange()).thenReturn(Optional.of(epochChange));
+		when(update.getBase()).thenReturn(mock(LedgerUpdate.class));
 		this.responseProcessor.epochsLedgerUpdateEventProcessor().process(update);
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);

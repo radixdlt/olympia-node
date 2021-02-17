@@ -72,7 +72,7 @@ public final class EpochsRemoteSyncResponseProcessor {
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
-			this.currentEpochProof = ledgerUpdate.getTail();
+			this.currentEpochProof = ledgerUpdate.getBase().getTail();
 			this.currentVerifier = verifierFactory.apply(epochChange);
 		}
 	}

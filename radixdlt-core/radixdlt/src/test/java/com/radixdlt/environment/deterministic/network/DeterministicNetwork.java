@@ -22,9 +22,7 @@ import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.utils.Pair;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -49,8 +47,6 @@ public final class DeterministicNetwork {
 	public interface DeterministicSender extends
 		ProposalBroadcaster,
 		SyncVerticesResponseSender,
-		EpochsLedgerUpdateSender,
-		LocalTimeoutSender,
 		SyncEpochsRPCSender {
 		// Aggregation, no additional stuff
 	}

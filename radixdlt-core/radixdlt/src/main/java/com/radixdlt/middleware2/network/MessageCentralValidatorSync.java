@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -41,7 +42,6 @@ import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -68,12 +68,12 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	@Inject
 	public MessageCentralValidatorSync(
 		@Self BFTNode self,
-		Universe universe,
+		@Named("magic") int magic,
 		AddressBook addressBook,
 		MessageCentral messageCentral,
 		Hasher hasher
 	) {
-		this.magic = universe.getMagic();
+		this.magic = magic;
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);

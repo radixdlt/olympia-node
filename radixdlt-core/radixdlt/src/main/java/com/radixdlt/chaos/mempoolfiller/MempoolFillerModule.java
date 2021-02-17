@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.name.Named;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
@@ -31,7 +32,6 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.universe.Universe;
 
 /**
  * Module responsible for the mempool filler chaos attack
@@ -57,8 +57,8 @@ public final class MempoolFillerModule extends AbstractModule {
 
 	@Provides
 	@MempoolFillerKey
-	private RadixAddress mempoolFillerAddress(@MempoolFillerKey ECPublicKey pubKey, Universe universe) {
-		return new RadixAddress((byte) universe.getMagic(), pubKey);
+	private RadixAddress mempoolFillerAddress(@MempoolFillerKey ECPublicKey pubKey, @Named("magic") int magic) {
+		return new RadixAddress((byte) magic, pubKey);
 	}
 
 	@Provides

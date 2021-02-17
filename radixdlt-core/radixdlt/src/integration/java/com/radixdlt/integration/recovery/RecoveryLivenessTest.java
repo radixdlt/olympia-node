@@ -19,16 +19,12 @@ package com.radixdlt.integration.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -36,8 +32,6 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
@@ -46,15 +40,15 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
-import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.recovery.ModuleForRecoveryTests;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.statecomputer.EpochCeilingView;
 
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.utils.Base58;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,11 +58,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -100,12 +92,10 @@ public class RecoveryLivenessTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
+	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final List<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
 	private MessageMutator messageMutator;
-
-	@Inject
-	private NodeEvents nodeEvents;
 
 	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
@@ -164,40 +154,18 @@ public class RecoveryLivenessTest {
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-
 		return Guice.createInjector(
-			ModuleForRecoveryTests.create(),
+			new PersistedNodeForTestingModule(ecKeyPair),
 			new AbstractModule() {
-
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> test(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-						.toInstance(RateLimiter.create(Double.MAX_VALUE));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}
 			}
 		);

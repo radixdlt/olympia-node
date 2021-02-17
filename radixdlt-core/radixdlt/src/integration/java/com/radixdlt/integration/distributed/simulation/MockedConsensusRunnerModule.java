@@ -33,6 +33,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.integration.distributed.BFTRunner;
+import com.radixdlt.ledger.LedgerUpdate;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
 	@Override
@@ -42,10 +43,11 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
+			.permitDuplicates();
 		eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
 		eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
 		eventBinder.addBinding().toInstance(ViewUpdate.class);
+		eventBinder.addBinding().toInstance(LedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet

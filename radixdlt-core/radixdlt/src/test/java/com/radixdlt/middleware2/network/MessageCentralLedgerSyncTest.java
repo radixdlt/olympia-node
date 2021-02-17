@@ -36,7 +36,6 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.universe.Universe;
 import java.util.Optional;
 
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
@@ -51,11 +50,9 @@ public class MessageCentralLedgerSyncTest {
 
 	@Before
 	public void setup() {
-		Universe universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(123);
 		this.messageCentral = MessageCentralMockProvider.get();
 		this.addressBook = mock(AddressBook.class);
-		this.messageCentralLedgerSync = new MessageCentralLedgerSync(universe, addressBook, messageCentral);
+		this.messageCentralLedgerSync = new MessageCentralLedgerSync(123, addressBook, messageCentral);
 	}
 
 	@Test

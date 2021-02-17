@@ -88,7 +88,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -117,14 +116,12 @@ public class EpochManagerTest {
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
-	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
 	private SyncVerticesResponseSender syncVerticesResponseSender = mock(SyncVerticesResponseSender.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
-	private LedgerUpdateSender ledgerUpdateSender = mock(LedgerUpdateSender.class);
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
@@ -167,9 +164,12 @@ public class EpochManagerTest {
 				bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(timeoutScheduler);
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { })
 					.toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
+						.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
 					.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
@@ -178,12 +178,10 @@ public class EpochManagerTest {
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
-				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(SyncVerticesResponseSender.class).toInstance(syncVerticesResponseSender);
-				bind(LedgerUpdateSender.class).toInstance(ledgerUpdateSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
@@ -276,7 +274,7 @@ public class EpochManagerTest {
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(mock(LedgerUpdate.class), epochChange);
 
 		// Act
-		epochManager.processLedgerUpdate(epochsLedgerUpdate);
+		epochManager.epochsLedgerUpdateEventProcessor().process(epochsLedgerUpdate);
 
 		// Assert
 		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());

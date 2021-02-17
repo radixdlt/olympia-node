@@ -21,13 +21,45 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import java.util.Objects;
 import java.util.Optional;
 
-/**
- * An update from the ledger signifying a new state has been committed.
- */
-public interface LedgerUpdate {
-	ImmutableList<Command> getNewCommands();
-	VerifiedLedgerHeaderAndProof getTail();
-	Optional<BFTValidatorSet> getNextValidatorSet();
+public final class LedgerUpdate {
+	private final VerifiedCommandsAndProof verifiedCommandsAndProof;
+
+	public LedgerUpdate(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		this.verifiedCommandsAndProof = Objects.requireNonNull(verifiedCommandsAndProof);
+	}
+
+	public ImmutableList<Command> getNewCommands() {
+		return verifiedCommandsAndProof.getCommands();
+	}
+
+	public VerifiedLedgerHeaderAndProof getTail() {
+		return verifiedCommandsAndProof.getHeader();
+	}
+
+	public Optional<BFTValidatorSet> getNextValidatorSet() {
+		return verifiedCommandsAndProof.getHeader().getNextValidatorSet();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedCommandsAndProof);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(verifiedCommandsAndProof);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof LedgerUpdate)) {
+			return false;
+		}
+
+		LedgerUpdate other = (LedgerUpdate) o;
+		return Objects.equals(other.verifiedCommandsAndProof, this.verifiedCommandsAndProof);
+	}
 }

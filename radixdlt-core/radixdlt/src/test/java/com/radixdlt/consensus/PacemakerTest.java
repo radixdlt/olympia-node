@@ -19,36 +19,26 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
+import com.radixdlt.SingleNodeDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.recovery.ModuleForRecoveryTests;
+
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import java.util.List;
-import org.apache.commons.cli.ParseException;
+import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
-import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -60,7 +50,6 @@ public class PacemakerTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	private DeterministicNetwork network;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 	@Inject
@@ -69,44 +58,20 @@ public class PacemakerTest {
 	@Inject
 	private ViewUpdate initialViewUpdate;
 
-	public PacemakerTest() {
-		this.network = new DeterministicNetwork(
-			List.of(BFTNode.create(ecKeyPair.getPublicKey())),
-			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
-		);
-	}
+	@Inject
+	private DeterministicNetwork network;
 
 	private Injector createRunner(ECKeyPair ecKeyPair) {
-		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-
 		return Guice.createInjector(
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(HashSigner.class).toInstance(ecKeyPair::sign);
-					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-						.toInstance(RateLimiter.create(Double.MAX_VALUE));
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
-
-					final RuntimeProperties runtimeProperties;
-					// TODO: this constructor/class/inheritance/dependency is horribly broken
-					try {
-						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set(
-							"db.location",
-							folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self
-						);
-					} catch (ParseException e) {
-						throw new IllegalStateException();
-					}
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			},
-			ModuleForRecoveryTests.create()
+			new SingleNodeDeterministicNetworkModule(ecKeyPair)
 		);
 	}
 

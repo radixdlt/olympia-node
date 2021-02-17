@@ -63,7 +63,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -123,7 +122,7 @@ public final class EpochManager {
 	private final SystemCounters counters;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
 	private final PacemakerStateFactory pacemakerStateFactory;
 
 	private EpochChange currentEpoch;
@@ -131,7 +130,7 @@ public final class EpochManager {
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<GetVerticesResponse> verticesResponseProcessor;
 	private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
-	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
+	private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTEventProcessor bftEventProcessor;
 
 	private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
@@ -157,7 +156,7 @@ public final class EpochManager {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
+		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
 		Hasher hasher,
 		HashSigner signer,
 		PacemakerTimeoutCalculator timeoutCalculator,
@@ -174,7 +173,7 @@ public final class EpochManager {
 			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
 			this.verticesResponseProcessor = initialBFTSync.responseProcessor();
 			this.syncBFTResponseProcessor = initialBFTSync;
-			this.syncLedgerUpdateProcessor = initialBFTSync;
+			this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
 			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 		}
 
@@ -185,7 +184,7 @@ public final class EpochManager {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
+		this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
@@ -251,7 +250,7 @@ public final class EpochManager {
 
 		this.verticesResponseProcessor = bftSync.responseProcessor();
 		this.syncBFTResponseProcessor = bftSync;
-		this.syncLedgerUpdateProcessor = bftSync;
+		this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
 		this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
 
 
@@ -280,10 +279,14 @@ public final class EpochManager {
 		return this.currentEpoch.getEpoch();
 	}
 
-	public void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
+	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+		return this::processLedgerUpdate;
+	}
+
+	private void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.syncLedgerUpdateProcessor.processLedgerUpdate(epochsLedgerUpdate)
+			() -> this.syncLedgerUpdateProcessor.process(epochsLedgerUpdate.getBase())
 		);
 	}
 
@@ -377,7 +380,7 @@ public final class EpochManager {
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			localSyncRequestProcessor.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
+			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
 				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);

@@ -71,6 +71,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -150,6 +151,11 @@ public final class ConsensusModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
 		return bftSync::processBFTUpdate;
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
+		return bftSync.baseLedgerUpdateEventProcessor();
 	}
 
 	@Provides
