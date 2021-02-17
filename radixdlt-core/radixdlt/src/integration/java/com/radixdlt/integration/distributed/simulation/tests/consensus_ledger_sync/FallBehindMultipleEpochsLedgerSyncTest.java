@@ -19,9 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -36,7 +33,6 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,17 +51,11 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 
 	public FallBehindMultipleEpochsLedgerSyncTest() {
 		this.testBuilder = SimulationTest.builder()
-			.numNodes(3)
+			.numNodes(3, 2, 2)
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed(10)
 			)
-			.overrideModule(new AbstractModule() {
-				@Provides
-				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
-					return mapper.apply(0L);
-				}
-			})
 			.pacemakerTimeout(1000)
 			.ledgerAndEpochsAndSync(View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(50L, 10, 50L))
 			.addTestModules(

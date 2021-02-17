@@ -100,7 +100,7 @@ public class ByzantineSyncTest {
 	@Test
 	public void given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
 		SimulationTest simulationTest = bftTestBuilder
-			.overrideModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
+			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
 			.build();
 		final var runningTest = simulationTest.run();
 		final var checkResults = runningTest.awaitCompletion();
