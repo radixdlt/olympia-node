@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Command;
@@ -68,7 +69,7 @@ public class MempoolSanityTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<Mempool<Command>>() { }).toInstance(Mempools.empty(Command.class));
+					bind(new TypeLiteral<Mempool<Command, HashCode>>() { }).toInstance(Mempools.empty());
 				}
 			})
 			.build();

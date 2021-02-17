@@ -17,7 +17,6 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
 import java.util.List;
 import java.util.Set;
 
@@ -29,8 +28,8 @@ public class Mempools {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static <T> Mempool<T> empty(Class<T> txClass) {
-		return new Mempool<T>() {
+	public static <T, U> Mempool<T, U> empty() {
+		return new Mempool<>() {
 			@Override
 			public void add(T command) throws MempoolFullException, MempoolDuplicateException {
 			    // No-op
@@ -47,7 +46,7 @@ public class Mempools {
 			}
 
 			@Override
-			public List<T> getCommands(int count, Set<HashCode> seen) {
+			public List<T> getCommands(int count, Set<U> seen) {
 				return List.of();
 			}
 

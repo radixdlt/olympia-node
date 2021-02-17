@@ -36,6 +36,7 @@ import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
@@ -68,7 +69,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<ClientAtom> mempool;
+	private final Mempool<ClientAtom, AID> mempool;
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochCeilingView;
@@ -84,7 +85,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Mempool<ClientAtom> mempool,
+		Mempool<ClientAtom, AID> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -182,7 +183,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
-		Set<HashCode> exclude = prepared.stream().map(PreparedCommand::hash).collect(Collectors.toSet());
+		Set<AID> exclude = prepared.stream()
+			.map(p -> (RadixEngineCommand) p)
+			.map(c -> c.clientAtom.getAID())
+			.collect(Collectors.toSet());
 
 		// TODO: only return commands which will not cause a missing dependency error
 		final List<ClientAtom> commands = mempool.getCommands(1, exclude);

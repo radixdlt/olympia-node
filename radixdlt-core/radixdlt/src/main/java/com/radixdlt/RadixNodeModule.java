@@ -32,7 +32,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.LedgerLocalMempoolModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -102,7 +101,6 @@ public final class RadixNodeModule extends AbstractModule {
 		// Ledger
 		install(new LedgerModule());
 		install(new LedgerCommandGeneratorModule());
-		install(new LedgerLocalMempoolModule());
 
 		// Mempool Relay
 		install(new MempoolReceiverModule());

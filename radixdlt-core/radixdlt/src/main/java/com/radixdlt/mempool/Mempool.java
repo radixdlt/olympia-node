@@ -16,7 +16,6 @@
  */
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
 import java.util.List;
 import java.util.Set;
 
@@ -26,7 +25,7 @@ import java.util.Set;
  * Note that conceptually, a mempoolcan be thought of as a list indexable
  * by hash.
  */
-public interface Mempool<T> {
+public interface Mempool<T, U> {
 	/**
 	 * Add a command to the local mempool.
 	 * Should be called after atom has been validated.
@@ -52,7 +51,7 @@ public interface Mempool<T> {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<T> getCommands(int count, Set<HashCode> seen);
+	List<T> getCommands(int count, Set<U> seen);
 
 	/**
 	 * Return approximate count of commands in the mempool.

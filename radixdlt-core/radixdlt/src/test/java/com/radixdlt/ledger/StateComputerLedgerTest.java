@@ -45,6 +45,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.counters.SystemCounters;
@@ -64,7 +65,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-	private Mempool<Command> mempool;
+	private Mempool<Command, AID> mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;

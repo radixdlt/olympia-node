@@ -16,15 +16,11 @@
  */
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
-
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +30,7 @@ import java.util.Objects;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Local-only mempool.
@@ -41,23 +38,22 @@ import java.util.Set;
  * Performs no validation and does not share contents with
  * network.  Threadsafe.
  */
-public final class LocalMempool<T> implements Mempool<T> {
+public final class LocalMempool<T, U> implements Mempool<T, U> {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final LinkedHashMap<HashCode, T> data = Maps.newLinkedHashMap();
+	private final LinkedHashMap<U, T> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
-	private final Hasher hasher;
+	private final Function<T, U> functionToKey;
 
 	private final SystemCounters counters;
 
 	private final Random random;
 
-	@Inject
 	public LocalMempool(
 		@MempoolMaxSize int maxSize,
-		Hasher hasher,
+		Function<T, U> functionToKey,
 		SystemCounters counters,
 		Random random
 	) {
@@ -65,7 +61,7 @@ public final class LocalMempool<T> implements Mempool<T> {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}
 		this.maxSize = maxSize;
-		this.hasher = hasher;
+		this.functionToKey = functionToKey;
 		this.counters = Objects.requireNonNull(counters);
 		this.random = Objects.requireNonNull(random);
 	}
@@ -78,8 +74,8 @@ public final class LocalMempool<T> implements Mempool<T> {
 					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
 				);
 			}
-			if (null != this.data.put(hasher.hash(command), command)) {
-				throw new MempoolDuplicateException(String.format("Mempool already has command %s", hasher.hash(command)));
+			if (null != this.data.put(functionToKey.apply(command), command)) {
+				throw new MempoolDuplicateException(String.format("Mempool already has command %s", functionToKey.apply(command)));
 			}
 		}
 
@@ -88,18 +84,18 @@ public final class LocalMempool<T> implements Mempool<T> {
 
 	@Override
 	public void committed(List<T> commands) {
-		commands.forEach(cmd -> this.data.remove(hasher.hash(cmd)));
+		commands.forEach(cmd -> this.data.remove(functionToKey.apply(cmd)));
 		updateCounts();
 	}
 
 	@Override
 	public void remove(T toRemove) {
-	    this.data.remove(hasher.hash(toRemove));
+	    this.data.remove(functionToKey.apply(toRemove));
 		updateCounts();
 	}
 
 	@Override
-	public List<T> getCommands(int count, Set<HashCode> seen) {
+	public List<T> getCommands(int count, Set<U> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
@@ -110,7 +106,7 @@ public final class LocalMempool<T> implements Mempool<T> {
 				Iterator<T> i = values.iterator();
 				while (commands.size() < size && i.hasNext()) {
 					T a = i.next();
-					if (!seen.contains(hasher.hash(a))) {
+					if (!seen.contains(functionToKey.apply(a))) {
 						commands.add(a);
 					}
 				}

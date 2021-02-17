@@ -50,6 +50,8 @@ import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -65,6 +67,8 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -122,15 +126,21 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
+				bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 				bind(RRI.class).annotatedWith(NativeToken.class).toInstance(stakeToken);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 				bind(Mempool.class).toInstance(mock(Mempool.class));
+
+				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+
 				bind(RegisteredValidators.class).toInstance(RegisteredValidators.create(stakes.keySet().stream().limit(2)));
 				bind(Stakes.class).toInstance(Stakes.create(stakes));
+				bind(SystemCounters.class).to(SystemCountersImpl.class);
 			}
 		};
 	}
