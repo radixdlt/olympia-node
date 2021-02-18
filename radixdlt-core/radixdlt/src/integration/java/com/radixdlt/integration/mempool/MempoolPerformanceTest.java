@@ -1,4 +1,4 @@
-package com.radixdlt.integration.performance;
+package com.radixdlt.integration.mempool;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -31,7 +31,7 @@ import org.radix.TokenIssuance;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class StateComputerPerformanceTest {
+public class MempoolPerformanceTest {
     private static final Logger logger = LogManager.getLogger();
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
