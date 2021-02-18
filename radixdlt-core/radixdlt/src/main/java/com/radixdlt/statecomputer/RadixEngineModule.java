@@ -31,23 +31,19 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import java.util.Random;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -58,19 +54,9 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<ClientAtom, AID>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 	}
-
-	@Provides
-	@Singleton
-	private Mempool<ClientAtom, AID> mempool(
-		@MempoolMaxSize int maxSize,
-		SystemCounters systemCounters,
-		Random random
-	) {
-		return new LocalMempool<>(maxSize, ClientAtom::getAID, systemCounters, random);
-	}
-
 
 	@Provides
 	private ValidatorSetBuilder validatorSetBuilder(

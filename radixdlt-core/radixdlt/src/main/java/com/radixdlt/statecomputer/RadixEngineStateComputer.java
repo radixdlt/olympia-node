@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -44,16 +43,17 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,25 +156,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		try {
-			RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
-			checker.checkAndStore(clientAtom);
-		} catch (RadixEngineException e) {
-		    if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-				mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
-				return;
-			}
-		} finally {
-			radixEngine.deleteBranches();
-		}
-
-		try {
 			mempool.add(clientAtom);
-		} catch (MempoolFullException e) {
-			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
-			return;
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
 			log.warn("Mempool duplicate command: {}", e.getMessage());
+			return;
+		} catch (MempoolRejectedException e) {
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 			return;
 		}
 
@@ -398,24 +386,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		atomicCommitManager.commitTransaction();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		this.mempool.committed(atomsCommitted);
-
-		List<ClientAtom> mempoolCommands = mempool.getCommands(Integer.MAX_VALUE, Set.of());
-		for (ClientAtom clientAtom : mempoolCommands) {
-			try {
-				RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
-				checker.checkAndStore(clientAtom);
-			} catch (RadixEngineException e) {
-				if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-					// TODO: Create more specific AtomRemovedFromMempool event
-					byte[] dson = serialization.toDson(clientAtom, Output.ALL);
-					mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(new Command(dson), e));
-					mempool.remove(clientAtom);
-					continue;
-				}
-			} finally {
-				radixEngine.deleteBranches();
-			}
+		List<Pair<ClientAtom, Exception>> removed = this.mempool.committed(atomsCommitted);
+		for (Pair<ClientAtom, Exception> removedAtom : removed) {
+			// TODO: Create more specific AtomRemovedFromMempool event
+			byte[] dson = serialization.toDson(removedAtom.getFirst(), DsonOutput.Output.ALL);
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(new Command(dson), removedAtom.getSecond()));
 		}
 	}
 }

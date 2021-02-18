@@ -17,6 +17,8 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.utils.Pair;
+
 import java.util.List;
 import java.util.Set;
 
@@ -36,8 +38,8 @@ public class Mempools {
 			}
 
 			@Override
-			public void committed(List<T> committed) {
-				// No-op
+			public List<Pair<T, Exception>> committed(List<T> committed) {
+				return List.of();
 			}
 
 			@Override

@@ -16,6 +16,8 @@
  */
 package com.radixdlt.mempool;
 
+import com.radixdlt.utils.Pair;
+
 import java.util.List;
 import java.util.Set;
 
@@ -31,12 +33,10 @@ public interface Mempool<T, U> {
 	 * Should be called after atom has been validated.
 	 *
 	 * @param command The command to add.
-	 * @throws MempoolFullException if the mempool cannot accept new submissions.
-	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void add(T command) throws MempoolFullException, MempoolDuplicateException;
+	void add(T command) throws MempoolRejectedException;
 
-	void committed(List<T> committed);
+	List<Pair<T, Exception>> committed(List<T> committed);
 
 	void remove(T toRemove);
 

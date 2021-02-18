@@ -21,6 +21,7 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,9 +84,10 @@ public final class LocalMempool<T, U> implements Mempool<T, U> {
 	}
 
 	@Override
-	public void committed(List<T> commands) {
+	public List<Pair<T, Exception>> committed(List<T> commands) {
 		commands.forEach(cmd -> this.data.remove(functionToKey.apply(cmd)));
 		updateCounts();
+		return List.of();
 	}
 
 	@Override

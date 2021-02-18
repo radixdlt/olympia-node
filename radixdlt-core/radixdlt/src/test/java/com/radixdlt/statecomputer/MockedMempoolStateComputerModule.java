@@ -33,9 +33,8 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRejectedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,7 +67,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			public void addToMempool(Command command) {
 				try {
 					mempool.add(command);
-				} catch (MempoolFullException | MempoolDuplicateException e) {
+				} catch (MempoolRejectedException e) {
 					log.error(e);
 				}
 			}
