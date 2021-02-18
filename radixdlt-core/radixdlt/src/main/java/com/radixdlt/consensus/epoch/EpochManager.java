@@ -367,7 +367,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.trace("GET_EPOCH_RESPONSE: {}", response);
+		log.info("GET_EPOCH_RESPONSE: {}", response);
 
 		if (response.getEpochProof() == null) {
 			log.warn("Received empty GetEpochResponse {}", response);
@@ -377,6 +377,7 @@ public final class EpochManager {
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
+			log.info("Dispatching local sync request with target {}", ancestor);
 			localSyncRequestProcessor.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
