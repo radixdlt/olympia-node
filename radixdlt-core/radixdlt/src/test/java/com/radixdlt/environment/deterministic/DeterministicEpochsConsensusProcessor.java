@@ -38,11 +38,16 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -64,14 +69,18 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
-		EventProcessor<SyncInProgress> syncTimeoutProcessor,
+		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
+		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
+		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
-		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
-		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
+		RemoteEventProcessor<StatusRequest> statusRequestProcessor,
+		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
+		RemoteEventProcessor<SyncRequest> syncRequestProcessor,
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
 
@@ -84,7 +93,12 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
-		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
+		processorsBuilder.put(SyncCheckTrigger.class, e -> syncCheckTriggerProcessor.process((SyncCheckTrigger) e));
+		processorsBuilder.put(
+			SyncCheckReceiveStatusTimeout.class,
+			e -> syncCheckReceiveStatusTimeoutProcessor.process((SyncCheckReceiveStatusTimeout) e)
+		);
+		processorsBuilder.put(SyncRequestTimeout.class, e -> syncRequestTimeoutProcessor.process((SyncRequestTimeout) e));
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
@@ -96,12 +110,20 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
 		);
 		remoteProcessorsBuilder.put(
-			DtoLedgerHeaderAndProof.class,
-			(node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event)
+			StatusRequest.class,
+			(node, event) -> statusRequestProcessor.process(node, (StatusRequest) event)
 		);
 		remoteProcessorsBuilder.put(
-			DtoCommandsAndProof.class,
-			(node, event) -> syncResponseProcessor.process(node, (DtoCommandsAndProof) event)
+			StatusResponse.class,
+			(node, event) -> statusResponseProcessor.process(node, (StatusResponse) event)
+		);
+		remoteProcessorsBuilder.put(
+			SyncRequest.class,
+			(node, event) -> syncRequestProcessor.process(node, (SyncRequest) event)
+		);
+		remoteProcessorsBuilder.put(
+			SyncResponse.class,
+			(node, event) -> syncResponseProcessor.process(node, (SyncResponse) event)
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}

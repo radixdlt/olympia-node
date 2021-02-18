@@ -64,7 +64,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
@@ -30,17 +29,22 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncService;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -50,62 +54,106 @@ import java.util.Set;
  * A sync runner which doesn't involve epochs
  */
 public class MockedSyncRunnerModule extends AbstractModule {
+
 	@Override
 	public void configure() {
-		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
-			.to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
-		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
-
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
+		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
+		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
-		eventBinder.addBinding().toInstance(SyncInProgress.class);
 	}
 
 	@ProvidesIntoMap
 	@StringMapKey("sync")
 	private ModuleRunner syncRunner(
 		@Self BFTNode self,
+		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
-		Observable<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeouts,
-		EventProcessor<LocalSyncServiceAccumulatorProcessor.SyncInProgress> syncTimeoutProcessor,
+		Observable<SyncCheckTrigger> syncCheckTriggers,
+		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
+		Observable<SyncRequestTimeout> syncRequestTimeouts,
+		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
+		Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
+		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
 		Observable<LedgerUpdate> ledgerUpdates,
 		@ProcessWithSyncRunner Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
-		Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
-		RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor,
-		Flowable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
-		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
+		Flowable<RemoteEvent<StatusRequest>> remoteStatusRequests,
+		RemoteEventProcessor<StatusRequest> statusRequestProcessor,
+		Flowable<RemoteEvent<StatusResponse>> remoteStatusResponses,
+		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
+		Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
+		RemoteEventProcessor<SyncRequest> remoteSyncRequestProcessor,
+		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
 		return ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
-			.add(syncTimeouts, syncTimeoutProcessor)
+			.add(syncCheckTriggers, syncCheckTriggerProcessor)
+			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
+			.add(syncRequestTimeouts, syncRequestTimeoutProcessor)
 			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
-			.add(remoteSyncRequests, remoteSyncServiceProcessor)
-			.add(remoteSyncResponses, responseProcessor)
+			.add(remoteStatusRequests, statusRequestProcessor)
+			.add(remoteStatusResponses, statusResponseProcessor)
+			.add(remoteSyncRequests, remoteSyncRequestProcessor)
+			.add(remoteSyncResponses, syncResponseProcessor)
+			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
+				SyncCheckTrigger.create(),
+				syncConfig.syncCheckInterval()
+			))
 			.build("SyncManager " + self);
 	}
 
 	@ProvidesIntoSet
 	@ProcessWithSyncRunner
-	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor(
+		LocalSyncService localSyncService
 	) {
-		return localSyncServiceAccumulatorProcessor::processLedgerUpdate;
+		return localSyncService.ledgerUpdateEventProcessor();
 	}
 
 	@Provides
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+		LocalSyncService localSyncService
 	) {
-		return localSyncServiceAccumulatorProcessor.localSyncRequestEventProcessor();
+		return localSyncService.localSyncRequestEventProcessor();
 	}
 
+	@Provides
+	public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.syncCheckTriggerEventProcessor();
+	}
 
 	@Provides
-	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(
-		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	private EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor(
+		LocalSyncService localSyncService
 	) {
-		return localSyncServiceAccumulatorProcessor.syncTimeoutProcessor();
+		return localSyncService.syncRequestTimeoutEventProcessor();
+	}
+
+	@Provides
+	private EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.syncCheckReceiveStatusTimeoutEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<StatusResponse> statusResponseEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.statusResponseEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<SyncResponse> syncResponseEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.syncResponseEventProcessor();
 	}
 }

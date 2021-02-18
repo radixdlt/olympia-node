@@ -33,11 +33,12 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+
+import com.radixdlt.sync.SyncConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -68,7 +69,7 @@ public class ByzantineSyncTest {
 				}
 			})
 			.pacemakerTimeout(5000)
-			.ledgerAndSync(50)
+			.ledgerAndSync(SyncConfig.of(50L, 10, 50L))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -83,10 +84,11 @@ public class ByzantineSyncTest {
 	public void given_a_sometimes_byzantine_sync_layer__sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var runningTest = simulationTest.run();
+		final var results = runningTest.awaitCompletion();
+		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
@@ -98,17 +100,18 @@ public class ByzantineSyncTest {
 	@Test
 	public void given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
 		SimulationTest simulationTest = bftTestBuilder
-			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
+			.overrideModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
 			.build();
-		TestResults results = simulationTest.run();
+		final var runningTest = simulationTest.run();
+		final var checkResults = runningTest.awaitCompletion();
 
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
 		logger.info("{}", statistics);
-		assertThat(results.getCheckResults()).hasEntrySatisfying(
+		assertThat(checkResults).hasEntrySatisfying(
 			Monitor.LEDGER_IN_ORDER,
 			error -> assertThat(error).isPresent()
 		);

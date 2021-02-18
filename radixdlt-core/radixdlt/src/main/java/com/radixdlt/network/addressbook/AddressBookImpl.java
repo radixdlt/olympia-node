@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.transport.TransportInfo;
@@ -152,6 +153,12 @@ public class AddressBookImpl implements AddressBook {
 		PeerWithSystem peer = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
 		updateActiveTime(peer);
 		return Optional.ofNullable(peer);
+	}
+
+	@Override
+	public boolean hasBftNodePeer(BFTNode bftNode) {
+		return this.peers()
+			.anyMatch(peer -> bftNode.getKey().equals(peer.getSystem().getKey()));
 	}
 
 	@Override

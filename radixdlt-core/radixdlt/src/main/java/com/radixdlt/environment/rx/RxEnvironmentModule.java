@@ -39,8 +39,10 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
@@ -60,13 +62,16 @@ public class RxEnvironmentModule extends AbstractModule {
 
 		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
 		bind(new TypeLiteral<Observable<ScheduledLocalTimeout>>() { }).toProvider(new ObservableProvider<>(ScheduledLocalTimeout.class));
-		bind(new TypeLiteral<Observable<SyncInProgress>>() { }).toProvider(new ObservableProvider<>(SyncInProgress.class));
 		bind(new TypeLiteral<Observable<BFTInsertUpdate>>() { }).toProvider(new ObservableProvider<>(BFTInsertUpdate.class));
 		bind(new TypeLiteral<Observable<BFTRebuildUpdate>>() { }).toProvider(new ObservableProvider<>(BFTRebuildUpdate.class));
 		bind(new TypeLiteral<Observable<BFTHighQCUpdate>>() { }).toProvider(new ObservableProvider<>(BFTHighQCUpdate.class));
 		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toProvider(new ObservableProvider<>(BFTCommittedUpdate.class));
 		bind(new TypeLiteral<Observable<VertexRequestTimeout>>() { }).toProvider(new ObservableProvider<>(VertexRequestTimeout.class));
 		bind(new TypeLiteral<Observable<LocalSyncRequest>>() { }).toProvider(new ObservableProvider<>(LocalSyncRequest.class));
+		bind(new TypeLiteral<Observable<SyncCheckTrigger>>() { }).toProvider(new ObservableProvider<>(SyncCheckTrigger.class));
+		bind(new TypeLiteral<Observable<SyncCheckReceiveStatusTimeout>>() { })
+			.toProvider(new ObservableProvider<>(SyncCheckReceiveStatusTimeout.class));
+		bind(new TypeLiteral<Observable<SyncRequestTimeout>>() { }).toProvider(new ObservableProvider<>(SyncRequestTimeout.class));
 		bind(new TypeLiteral<Observable<LocalTimeoutOccurrence>>() { }).toProvider(new ObservableProvider<>(LocalTimeoutOccurrence.class));
 		bind(new TypeLiteral<Observable<EpochLocalTimeoutOccurrence>>() { })
 			.toProvider(new ObservableProvider<>(EpochLocalTimeoutOccurrence.class));

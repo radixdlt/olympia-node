@@ -40,9 +40,11 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -75,15 +77,24 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 	}
 
-
 	@Provides
-	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(DtoLedgerHeaderAndProof.class);
+	RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(ControlledSender controlledSender) {
+		return controlledSender.getRemoteDispatcher(SyncRequest.class);
 	}
 
 	@Provides
-	RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(DtoCommandsAndProof.class);
+	RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(ControlledSender controlledSender) {
+		return controlledSender.getRemoteDispatcher(SyncResponse.class);
+	}
+
+	@Provides
+	RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(ControlledSender controlledSender) {
+		return controlledSender.getRemoteDispatcher(StatusRequest.class);
+	}
+
+	@Provides
+	RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(ControlledSender controlledSender) {
+		return controlledSender.getRemoteDispatcher(StatusResponse.class);
 	}
 
 	@Provides

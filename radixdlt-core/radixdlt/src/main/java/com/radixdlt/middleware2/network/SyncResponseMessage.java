@@ -29,8 +29,9 @@ import java.util.Objects;
 /**
  * Message with sync atoms as a response to sync request
  */
-@SerializerId2("message.sync.response")
+@SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
+
 	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
 	private final DtoCommandsAndProof commands;
