@@ -29,14 +29,10 @@ import java.util.Set;
  */
 public interface Mempool<T, U> {
 	/**
-	 * Add a command to the local mempool.
-	 * Should be called after atom has been validated.
-	 *
-	 * @param command The command to add.
+	 * Add a transaction to the local mempool.
+	 * @param transaction The transaction to add.
 	 */
-	void add(T command) throws MempoolRejectedException;
-
-	List<Pair<T, Exception>> committed(List<T> committed);
+	void add(T transaction) throws MempoolRejectedException;
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
@@ -50,4 +46,6 @@ public interface Mempool<T, U> {
 	 * @return A list of commands for processing by consensus
 	 */
 	List<T> getCommands(int count, Set<U> seen);
+
+	List<Pair<T, Exception>> committed(List<T> committed);
 }

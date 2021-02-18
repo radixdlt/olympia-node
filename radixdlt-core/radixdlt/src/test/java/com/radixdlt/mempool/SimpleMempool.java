@@ -16,8 +16,6 @@
  */
 package com.radixdlt.mempool;
 
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.counters.SystemCounters;
@@ -34,10 +32,9 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Performs no validation
+ * Simple mempool which performs no validation and removes on commit.
  */
 public final class SimpleMempool<T, U> implements Mempool<T, U> {
-	@GuardedBy("lock")
 	private final LinkedHashMap<U, T> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
