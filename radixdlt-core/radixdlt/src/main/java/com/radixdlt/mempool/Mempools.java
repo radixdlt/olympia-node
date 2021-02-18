@@ -43,18 +43,8 @@ public class Mempools {
 			}
 
 			@Override
-			public void remove(T toRemove) {
-				// No-op
-			}
-
-			@Override
 			public List<T> getCommands(int count, Set<U> seen) {
 				return List.of();
-			}
-
-			@Override
-			public int count() {
-				return 0;
 			}
 		};
 	}

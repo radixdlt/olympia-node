@@ -38,8 +38,6 @@ public interface Mempool<T, U> {
 
 	List<Pair<T, Exception>> committed(List<T> committed);
 
-	void remove(T toRemove);
-
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
 	 * consensus.
@@ -52,11 +50,4 @@ public interface Mempool<T, U> {
 	 * @return A list of commands for processing by consensus
 	 */
 	List<T> getCommands(int count, Set<U> seen);
-
-	/**
-	 * Return approximate count of commands in the mempool.
-	 * Note that this value will be approximate, and will change dynamically
-	 * as atoms are added and removed.
-	 */
-	int count();
 }

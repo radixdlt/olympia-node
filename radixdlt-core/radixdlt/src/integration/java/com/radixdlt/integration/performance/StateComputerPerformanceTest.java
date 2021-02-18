@@ -29,6 +29,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.radix.TokenIssuance;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class StateComputerPerformanceTest {
     private static final Logger logger = LogManager.getLogger();
     @Rule
@@ -80,7 +82,7 @@ public class StateComputerPerformanceTest {
     }
 
     @Test
-    public void test() {
+    public void validate_that_full_mempool_doesnt_take_too_much_time() {
         createInjector(ecKeyPair).injectMembers(this);
         processor.start();
 
@@ -93,6 +95,11 @@ public class StateComputerPerformanceTest {
         runUntil(View.of(4000), () -> scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create()));
         long end1 = System.currentTimeMillis();
 
-        logger.info("No mempool time: {} Mempool time: {}", end0 - start0, end1 - start1);
+        long duration0 = end0 - start0;
+        long duration1 = end1 - start1;
+        double change = ((double) duration1) / duration0;
+        logger.info("Change: {} No-Mempool: {} Mempool: {}", change, duration0, duration1);
+
+        assertThat(change).isLessThan(2.0);
     }
 }

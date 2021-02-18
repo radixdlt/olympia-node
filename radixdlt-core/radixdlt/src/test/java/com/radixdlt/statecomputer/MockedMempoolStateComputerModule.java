@@ -31,7 +31,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -56,7 +56,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 		Random random,
 		Hasher hasher
 	) {
-		return new LocalMempool<>(maxSize, hasher::hash, systemCounters, random);
+		return new SimpleMempool<>(maxSize, hasher::hash, systemCounters, random);
 	}
 
 	@Provides

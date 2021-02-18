@@ -34,13 +34,9 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Local-only mempool.
- * <p>
- * Performs no validation and does not share contents with
- * network.  Threadsafe.
+ * Performs no validation
  */
-public final class LocalMempool<T, U> implements Mempool<T, U> {
-	private final Object lock = new Object();
+public final class SimpleMempool<T, U> implements Mempool<T, U> {
 	@GuardedBy("lock")
 	private final LinkedHashMap<U, T> data = Maps.newLinkedHashMap();
 
@@ -52,7 +48,7 @@ public final class LocalMempool<T, U> implements Mempool<T, U> {
 
 	private final Random random;
 
-	public LocalMempool(
+	public SimpleMempool(
 		@MempoolMaxSize int maxSize,
 		Function<T, U> functionToKey,
 		SystemCounters counters,
@@ -69,15 +65,13 @@ public final class LocalMempool<T, U> implements Mempool<T, U> {
 
 	@Override
 	public void add(T command) throws MempoolFullException, MempoolDuplicateException {
-		synchronized (this.lock) {
-			if (this.data.size() >= this.maxSize) {
-				throw new MempoolFullException(
-					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
-				);
-			}
-			if (null != this.data.put(functionToKey.apply(command), command)) {
-				throw new MempoolDuplicateException(String.format("Mempool already has command %s", functionToKey.apply(command)));
-			}
+		if (this.data.size() >= this.maxSize) {
+			throw new MempoolFullException(
+				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+			);
+		}
+		if (null != this.data.put(functionToKey.apply(command), command)) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", functionToKey.apply(command)));
 		}
 
 		updateCounts();
@@ -91,49 +85,34 @@ public final class LocalMempool<T, U> implements Mempool<T, U> {
 	}
 
 	@Override
-	public void remove(T toRemove) {
-	    this.data.remove(functionToKey.apply(toRemove));
-		updateCounts();
-	}
-
-	@Override
 	public List<T> getCommands(int count, Set<U> seen) {
-		synchronized (this.lock) {
-			int size = Math.min(count, this.data.size());
-			if (size > 0) {
-				List<T> commands = Lists.newArrayList();
-				var values = new ArrayList<>(this.data.values());
-				Collections.shuffle(values, random);
+		int size = Math.min(count, this.data.size());
+		if (size > 0) {
+			List<T> commands = Lists.newArrayList();
+			var values = new ArrayList<>(this.data.values());
+			Collections.shuffle(values, random);
 
-				Iterator<T> i = values.iterator();
-				while (commands.size() < size && i.hasNext()) {
-					T a = i.next();
-					if (!seen.contains(functionToKey.apply(a))) {
-						commands.add(a);
-					}
+			Iterator<T> i = values.iterator();
+			while (commands.size() < size && i.hasNext()) {
+				T a = i.next();
+				if (!seen.contains(functionToKey.apply(a))) {
+					commands.add(a);
 				}
-				return commands;
-			} else {
-				return Collections.emptyList();
 			}
-		}
-	}
-
-	@Override
-	public int count() {
-		synchronized (this.lock) {
-			return this.data.size();
+			return commands;
+		} else {
+			return Collections.emptyList();
 		}
 	}
 
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, count());
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
 		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), count(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
 	}
 }

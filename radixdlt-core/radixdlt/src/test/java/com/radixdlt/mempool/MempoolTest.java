@@ -20,9 +20,8 @@ package com.radixdlt.mempool;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.SingleNodeDeterministicNetworkModule;
@@ -61,6 +60,11 @@ import static org.mockito.Mockito.when;
 public class MempoolTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
+
+	@Inject private Hasher hasher;
+	@Inject private DeterministicMempoolProcessor processor;
+	@Inject private RadixEngineStateComputer stateComputer;
+	@Inject private SystemCounters systemCounters;
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
@@ -124,9 +128,7 @@ public class MempoolTest {
 	@Test
 	public void add_command_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 
@@ -135,16 +137,13 @@ public class MempoolTest {
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 	}
 
 	@Test
 	public void add_same_command_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -154,16 +153,13 @@ public class MempoolTest {
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 	}
 
 	@Test
 	public void add_conflicting_commands_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -175,15 +171,13 @@ public class MempoolTest {
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess2);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(2);
 	}
 
 	@Test
 	public void add_bad_command_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		final Command command = new Command(new byte[0]);
 
 		// Act
@@ -191,16 +185,13 @@ public class MempoolTest {
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
 	public void missing_dependency_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 1);
 
@@ -209,39 +200,32 @@ public class MempoolTest {
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 	}
 
 	@Test
 	public void replay_command_to_mempool() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
-		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
 		var proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
-		radixEngineStateComputer.commit(commandsAndProof, null);
+		stateComputer.commit(commandsAndProof, null);
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
 		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
 	public void mempool_removes_conflicts_on_commit() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -249,23 +233,19 @@ public class MempoolTest {
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
-		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
 		var proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
-		radixEngineStateComputer.commit(commandsAndProof, null);
+		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
 	public void mempool_removes_multiple_conflicts_on_commit() {
 		// Arrange
-		Injector injector = getInjector(ecKeyPair);
-		Hasher hasher = injector.getInstance(Hasher.class);
-		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+		getInjector(ecKeyPair).injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -275,14 +255,12 @@ public class MempoolTest {
 
 		// Act
 		Command command3 = createCommand(keyPair, hasher, 0, 1);
-		var radixEngineStateComputer = injector.getInstance(Key.get(new TypeLiteral<RadixEngineStateComputer>() { }));
 		var proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
-		radixEngineStateComputer.commit(commandsAndProof, null);
+		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 }
