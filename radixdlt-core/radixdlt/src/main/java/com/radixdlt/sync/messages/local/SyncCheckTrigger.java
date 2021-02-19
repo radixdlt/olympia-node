@@ -17,10 +17,16 @@
 
 package com.radixdlt.sync.messages.local;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * A message indicating that the sync service should start the sync check.
  */
 public final class SyncCheckTrigger {
+
+	private static AtomicInteger counter = new AtomicInteger();
+
+	private int n = counter.incrementAndGet();
 
 	public static SyncCheckTrigger create() {
 		return new SyncCheckTrigger();
@@ -31,7 +37,7 @@ public final class SyncCheckTrigger {
 
 	@Override
 	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
+		return String.format("%s{%s}", this.getClass().getSimpleName(), n);
 	}
 
 	@Override

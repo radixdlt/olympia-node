@@ -141,7 +141,10 @@ public final class LocalSyncService {
 		this.handlers = new ImmutableMap.Builder<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>>()
 			.put(handler(
 				IdleState.class, SyncCheckTrigger.class,
-				state -> unused -> this.initSyncCheck(state)
+				state -> unused -> {
+					log.info("Got sync check trigger while in idle state {}", unused);
+					return this.initSyncCheck(state);
+				}
 			))
 			.put(remoteHandler(
 				SyncCheckState.class, StatusResponse.class,
@@ -276,8 +279,9 @@ public final class LocalSyncService {
 	}
 
 	private SyncState goToIdleAndScheduleSyncCheck(SyncState currentState) {
-		log.info("Scheduling sync check in {} ms", syncConfig.syncCheckInterval());
-		this.syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create(), syncConfig.syncCheckInterval());
+		final var sc = SyncCheckTrigger.create();
+		log.info("Scheduling sync check {} in {} ms", sc, syncConfig.syncCheckInterval());
+		this.syncCheckTriggerDispatcher.dispatch(sc, syncConfig.syncCheckInterval());
 		return IdleState.init(currentState.getCurrentHeader());
 	}
 

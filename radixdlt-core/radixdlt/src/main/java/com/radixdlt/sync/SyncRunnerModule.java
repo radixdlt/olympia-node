@@ -40,10 +40,14 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
 
 public class SyncRunnerModule extends AbstractModule {
+
+	private static final Logger log = LogManager.getLogger();
 
 	@ProvidesIntoMap
 	@StringMapKey("sync")
@@ -80,10 +84,14 @@ public class SyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
-			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
-				SyncCheckTrigger.create(),
-				syncConfig.syncCheckInterval()
-			))
+			.onStart(() -> {
+				final var sc = SyncCheckTrigger.create();
+				log.info("Calling onStart sync runner module, scheduling sending sync check trigger {}", sc);
+				syncCheckTriggerDispatcher.dispatch(
+						sc,
+						syncConfig.syncCheckInterval()
+				);
+			})
 			.build("SyncManager " + self);
 	}
 }
