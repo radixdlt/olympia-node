@@ -24,7 +24,10 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.ModuleRunnerImpl;
 import com.radixdlt.environment.rx.RemoteEvent;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Module for receiving mempool commands
@@ -36,8 +39,12 @@ public final class MempoolReceiverModule extends AbstractModule {
 		Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
 		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
 	) {
+		Flowable<RemoteEvent<MempoolAddSuccess>> backpressured = mempoolCommands
+			.onBackpressureBuffer(5, null, BackpressureOverflowStrategy.DROP_LATEST)
+			.throttleLatest(50, TimeUnit.MILLISECONDS);
+
 		return ModuleRunnerImpl.builder()
-			.add(mempoolCommands, remoteEventProcessor)
+			.add(backpressured, remoteEventProcessor)
 			.build("MempoolReceiver");
 	}
 }
