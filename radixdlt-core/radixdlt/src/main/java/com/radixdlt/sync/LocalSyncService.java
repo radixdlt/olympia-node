@@ -53,6 +53,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -82,11 +83,11 @@ public final class LocalSyncService {
 
 	private static final Logger log = LogManager.getLogger();
 
-	private final EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher;
 	private final RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
 	private final ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private final RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
 	private final ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
+	private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
 	private final SyncConfig syncConfig;
 	private final SystemCounters systemCounters;
 	private final AddressBook addressBook;
@@ -104,11 +105,11 @@ public final class LocalSyncService {
 
 	@Inject
 	public LocalSyncService(
-		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
 		ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher,
 		RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
 		ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
+		ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		AddressBook addressBook,
@@ -121,11 +122,11 @@ public final class LocalSyncService {
 		InvalidSyncResponseSender invalidSyncedCommandsSender,
 		SyncState initialState
 	) {
-		this.syncCheckTriggerDispatcher = Objects.requireNonNull(syncCheckTriggerDispatcher);
 		this.statusRequestDispatcher = Objects.requireNonNull(statusRequestDispatcher);
 		this.syncCheckReceiveStatusTimeoutDispatcher = Objects.requireNonNull(syncCheckReceiveStatusTimeoutDispatcher);
 		this.syncRequestDispatcher = Objects.requireNonNull(syncRequestDispatcher);
 		this.syncRequestTimeoutDispatcher = Objects.requireNonNull(syncRequestTimeoutDispatcher);
+		this.syncLedgerUpdateTimeoutDispatcher = Objects.requireNonNull(syncLedgerUpdateTimeoutDispatcher);
 		this.syncConfig = Objects.requireNonNull(syncConfig);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -189,6 +190,10 @@ public final class LocalSyncService {
 			.put(handler(
 				SyncingState.class, LocalSyncRequest.class,
 				state -> request -> this.updateSyncingTarget(state, request)
+			))
+			.put(handler(
+				SyncingState.class, SyncLedgerUpdateTimeout.class,
+				state -> unused -> this.processSync(state)
 			))
 			.build();
 	}
@@ -372,7 +377,11 @@ public final class LocalSyncService {
 					.removeCandidate(sender)
 			);
 		} else {
-			// TODO: What if ledger update event never comes? Consider adding another timeout.
+			log.info("LocalSync: response processed successfully, sending verified sync response");
+			this.syncLedgerUpdateTimeoutDispatcher.dispatch(
+				SyncLedgerUpdateTimeout.create(),
+				500L
+			);
 			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
 			return currentState.clearWaitingFor();
 		}

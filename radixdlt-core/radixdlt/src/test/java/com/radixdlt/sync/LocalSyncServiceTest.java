@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -69,6 +70,7 @@ public class LocalSyncServiceTest {
 	private ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
 	private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
+	private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
 	private SyncConfig syncConfig;
 	private SystemCounters systemCounters;
 	private AddressBook addressBook;
@@ -87,6 +89,7 @@ public class LocalSyncServiceTest {
 		this.syncCheckReceiveStatusTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.syncRequestDispatcher = rmock(RemoteEventDispatcher.class);
 		this.syncRequestTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
+		this.syncLedgerUpdateTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.syncConfig = SyncConfig.of(1000L, 10, 10000L);
 		this.systemCounters = mock(SystemCounters.class);
 		this.addressBook = mock(AddressBook.class);
@@ -101,11 +104,11 @@ public class LocalSyncServiceTest {
 
 	private void setupSyncServiceWithState(SyncState syncState) {
 		this.localSyncService = new LocalSyncService(
-			syncCheckTriggerDispatcher,
 			statusRequestDispatcher,
 			syncCheckReceiveStatusTimeoutDispatcher,
 			syncRequestDispatcher,
 			syncRequestTimeoutDispatcher,
+			syncLedgerUpdateTimeoutDispatcher,
 			syncConfig,
 			systemCounters,
 			addressBook,
