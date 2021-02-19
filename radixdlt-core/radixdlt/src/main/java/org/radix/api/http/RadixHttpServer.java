@@ -17,6 +17,18 @@
 
 package org.radix.api.http;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.radix.api.jsonrpc.RadixJsonRpcPeer;
+import org.radix.api.jsonrpc.RadixJsonRpcServer;
+import org.radix.api.services.AtomsService;
+import org.radix.api.services.NetworkService;
+import org.radix.time.Time;
+import org.radix.universe.system.LocalSystem;
+
+import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
@@ -25,27 +37,35 @@ import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.google.common.io.CharStreams;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Base58;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.undertow.Handlers;
@@ -56,36 +76,18 @@ import io.undertow.server.RoutingHandler;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
+import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import io.undertow.websockets.core.WebSocketChannel;
 
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.radix.api.jsonrpc.RadixJsonRpcPeer;
-import org.radix.api.jsonrpc.RadixJsonRpcServer;
-import org.radix.api.services.AtomsService;
-import org.radix.api.services.NetworkService;
-import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import static com.radixdlt.utils.Base58.fromBase58;
 
 /**
- * TODO: Document me!
+ * Radix REST API
  */
+//TODO: eventually switch to Netty
 public final class RadixHttpServer {
 	public static final int DEFAULT_PORT = 8080;
 	public static final String CONTENT_TYPE_JSON = "application/json";
@@ -161,196 +163,208 @@ public final class RadixHttpServer {
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 	}
 
-    /**
-     * Get the set of currently connected peers
-     *
-     * @return The currently connected peers
-     */
-    public Set<RadixJsonRpcPeer> getPeers() {
-        return Collections.unmodifiableSet(peers.keySet());
-    }
+	private static void fallbackHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_FOUND);
+		exchange.getResponseSender().send(
+			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
+
+	private static void invalidMethodHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+		exchange.getResponseSender().send(
+			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
 
 	public void start() {
 		this.atomsService.start();
 
-		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
+		server = Undertow.builder()
+			.addHttpListener(port, "0.0.0.0")
+			.setHandler(configureRoutes())
+			.build();
 
-		// add all REST routes
-		addRestRoutesTo(handler);
+		server.start();
+	}
+
+	private HttpHandler configureRoutes() {
+		var handler = Handlers.routing(true); // add path params to query params with this flag
+
+		// System routes
+		handler.add(Methods.GET, "/api/system", this::respondWithSystem);
+		handler.add(Methods.GET, "/api/system/modules/api/tasks-waiting", this::respondWaitingTaskCount);
+		handler.add(Methods.GET, "/api/system/modules/api/websockets", this::respondWithWebSocketCount);
+
+		// delete method to disconnect all peers
+		//TODO: potentially blocking
+		handler.add(Methods.DELETE, "/api/system/modules/api/websockets", this::respondDisconnectAllPeers);
+
+		// Network routes
+		handler.add(Methods.GET, "/api/network", this::respondWithNetwork);
+		handler.add(Methods.GET, "/api/network/peers/live", this::respondWithLivePeers);
+		handler.add(Methods.GET, "/api/network/peers", this::respondWithPeers);
+		handler.add(Methods.GET, "/api/network/peers/{id}", this::respondWithSinglePeer);
+
+		// Universe routes
+		handler.add(Methods.GET, "/api/universe", this::respondWithUniverse);
+
+		// BFT routes
+		//TODO: potentially blocking
+		handler.add(Methods.PUT, "/api/bft/0", this::handleBftState);
+
+		// Chaos routes
+		handler.add(Methods.PUT, "/api/chaos/message-flooder", this::handleMessageFlood);
+		//TODO: potentially blocking
+		handler.add(Methods.PUT, "/api/chaos/mempool-filler", this::handleMempoolFill);
+		handler.add(Methods.GET, "/api/chaos/mempool-filler", this::respondWithMempoolFill);
+
+		// keep-alive route
+		handler.add(Methods.GET, "/api/ping", this::respondWithPong);
 
 		// handle POST requests
-		addPostRoutesTo(handler);
+		var rpcPostHandler = new RpcPostHandler();
+
+		// handle both /rpc and /rpc/ for usability
+		//TODO: potentially blocking
+		handler.add(Methods.POST, "/rpc", rpcPostHandler);
+		//TODO: potentially blocking
+		handler.add(Methods.POST, "/rpc/", rpcPostHandler);
 
 		// handle websocket requests (which also uses GET method)
-		handler.add(
-			Methods.GET,
-			"/rpc",
-			Handlers.websocket(new RadixHttpWebsocketHandler(this, jsonRpcServer, peers, atomsService, serialization))
-		);
+		handler.add(Methods.GET, "/rpc", createWebsocketHandler());
 
 		// add appropriate error handlers for meaningful error messages (undertow is silent by default)
-		handler.setFallbackHandler(exchange -> {
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send(
-				"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-			);
-		});
-		handler.setInvalidMethodHandler(exchange -> {
-			exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-			exchange.getResponseSender().send(
-				"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-			);
-		});
+		handler.setFallbackHandler(RadixHttpServer::fallbackHandler);
+		handler.setInvalidMethodHandler(RadixHttpServer::invalidMethodHandler);
 
+		configureTestRoutes(handler);
+
+		return wrapWithCorsFilter(handler);
+	}
+
+	private void configureTestRoutes(RoutingHandler handler) {
 		// if we are in a development universe, add the dev only routes
-		if (this.universe.isDevelopment() || this.universe.isTest()) {
-			addTestRoutesTo(handler);
+		if (!this.universe.isDevelopment() && !this.universe.isTest()) {
+			return;
 		}
 
-		Filter corsFilter = new Filter(handler);
+		handler.add(Methods.GET, "/api/vertices/committed", this::respondWithCommittedVertices);
+		handler.add(Methods.GET, "/api/vertices/highestqc", this::respondWithHighestQC);
+	}
+
+	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
+		var filter = new Filter(handler);
+
 		// Disable INFO logging for CORS filter, as it's a bit distracting
-		java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
-		corsFilter.setPolicyClass(AllowAll.class.getName());
-		corsFilter.setUrlPattern("^.*$");
-		server = Undertow.builder()
-				.addHttpListener(port, "0.0.0.0")
-				.setHandler(corsFilter)
-				.build();
-		server.start();
+		java.util.logging.Logger.getLogger(filter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
+		filter.setPolicyClass(AllowAll.class.getName());
+		filter.setUrlPattern("^.*$");
+
+		return filter;
+	}
+
+	//Non-blocking
+	private void respondWithMempoolFill(HttpServerExchange exchange) {
+		respond(jsonObject().put("address", mempoolFillerAddress), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithPong(final HttpServerExchange exchange) {
+		respond(jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp()), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithUniverse(final HttpServerExchange exchange) {
+		respond(this.apiSerializedUniverse, exchange);
+	}
+
+	//Non-blocking
+	private void respondWithSinglePeer(final HttpServerExchange exchange) {
+		respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithPeers(final HttpServerExchange exchange) {
+		respond(this.networkService.getPeers().toString(), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithLivePeers(final HttpServerExchange exchange) {
+		respond(this.networkService.getLivePeers().toString(), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithNetwork(final HttpServerExchange exchange) {
+		respond(this.networkService.getNetwork(), exchange);
+	}
+
+	//Potentially blocking
+	private void respondDisconnectAllPeers(final HttpServerExchange exchange) {
+		respond(this.disconnectAllPeers(), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithWebSocketCount(final HttpServerExchange exchange) {
+		respond(jsonObject().put("count", Collections.unmodifiableSet(peers.keySet()).size()), exchange);
+	}
+
+	//Non-blocking
+	private void respondWaitingTaskCount(final HttpServerExchange exchange) {
+		respond(jsonObject().put("count", atomsService.getWaitingCount()), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithSystem(final HttpServerExchange exchange) {
+		respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange);
+	}
+
+	//Non-blocking
+	private void respondWithHighestQC(final HttpServerExchange exchange) {
+		var highestQC = inMemorySystemInfo.getHighestQC();
+
+		if (highestQC == null) {
+			respond(jsonObject().put("error", "no qc"), exchange);
+		} else {
+			var highestQCJson = jsonObject()
+				.put("epoch", highestQC.getEpoch())
+				.put("view", highestQC.getView())
+				.put("vertexId", highestQC.getProposed().getVertexId());
+
+			respond(highestQCJson, exchange);
+		}
+	}
+
+	//Non-blocking
+	private void respondWithCommittedVertices(final HttpServerExchange exchange) {
+		var array = jsonArray();
+
+		inMemorySystemInfo.getCommittedVertices()
+			.stream()
+			.map(this::mapSingleVertex)
+			.forEachOrdered(array::put);
+		respond(array, exchange);
+	}
+
+	private JSONObject mapSingleVertex(final com.radixdlt.consensus.bft.VerifiedVertex v) {
+		return jsonObject()
+			.put("epoch", v.getParentHeader().getLedgerHeader().getEpoch())
+			.put("view", v.getView().number())
+			.put("hash", v.getId().toString());
+	}
+
+	private void respond(Object object, HttpServerExchange exchange) {
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.getResponseSender().send(object.toString());
+	}
+
+	private WebSocketProtocolHandshakeHandler createWebsocketHandler() {
+		return Handlers.websocket(new RadixHttpWebsocketHandler(this, jsonRpcServer, peers, atomsService, serialization));
 	}
 
 	public void stop() {
 		this.atomsService.stop();
 		this.server.stop();
-	}
-
-	private void addTestRoutesTo(RoutingHandler handler) {
-		addGetRoute("/api/vertices/committed", exchange -> {
-			List<VerifiedVertex> vertices = inMemorySystemInfo.getCommittedVertices();
-			JSONArray array = new JSONArray();
-			vertices.stream()
-				.map(v -> new JSONObject()
-					.put("epoch", v.getParentHeader().getLedgerHeader().getEpoch())
-					.put("view", v.getView().number())
-					.put("hash", v.getId().toString())
-				)
-				.forEachOrdered(array::put);
-			respond(array, exchange);
-		}, handler);
-
-		addGetRoute("/api/vertices/highestqc", exchange -> {
-			QuorumCertificate highestQC = inMemorySystemInfo.getHighestQC();
-			if (highestQC == null) {
-				JSONObject errorJson = new JSONObject();
-				errorJson.put("error", "no qc");
-				respond(errorJson, exchange);
-			} else {
-				JSONObject highestQCJson = new JSONObject();
-				highestQCJson.put("epoch", highestQC.getProposed().getLedgerHeader().getEpoch());
-				highestQCJson.put("view", highestQC.getView());
-				highestQCJson.put("vertexId", highestQC.getProposed().getVertexId());
-				respond(highestQCJson, exchange);
-			}
-		}, handler);
-	}
-
-	private void addPostRoutesTo(RoutingHandler handler) {
-		HttpHandler rpcPostHandler = new HttpHandler() {
-			@Override
-			public void handleRequest(HttpServerExchange exchange) {
-				// we need to be in another thread to do blocking io work, which is needed to extract the entire message body
-				if (exchange.isInIoThread()) {
-					exchange.dispatch(this);
-					return;
-				}
-
-				exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-				try {
-					exchange.getResponseSender().send(jsonRpcServer.handleChecked(exchange));
-				} catch (IOException e) {
-					exchange.setStatusCode(400);
-					exchange.getResponseSender().send("Invalid request: " + e.getMessage());
-				}
-			}
-		};
-		handler.add(Methods.POST, "/rpc", rpcPostHandler);
-		handler.add(Methods.POST, "/rpc/", rpcPostHandler); // handle both /rpc and /rpc/ for usability
-	}
-
-	private void addRestRoutesTo(RoutingHandler handler) {
-		// TODO: organize routes in a nicer way
-		// System routes
-		addRestSystemRoutesTo(handler);
-
-		// Network routes
-		addRestNetworkRoutesTo(handler);
-
-		addGetRoute("/api/universe", exchange
-			-> respond(this.apiSerializedUniverse, exchange), handler);
-
-		addGetRoute("/api/system/modules/api/tasks-waiting", exchange -> {
-			JSONObject waiting = new JSONObject();
-			waiting.put("count", atomsService.getWaitingCount());
-
-			respond(waiting, exchange);
-		}, handler);
-
-		addGetRoute("/api/system/modules/api/websockets", exchange -> {
-			JSONObject count = new JSONObject();
-			count.put("count", getPeers().size());
-			respond(count, exchange);
-		}, handler);
-
-		// delete method to disconnect all peers
-		addRoute("/api/system/modules/api/websockets", Methods.DELETE_STRING, exchange -> {
-			JSONObject result = this.disconnectAllPeers();
-			respond(result, exchange);
-		}, handler);
-
-		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
-
-		addRoute("/api/chaos/message-flooder", Methods.PUT_STRING, this::handleMessageFlood, handler);
-		addRoute("/api/chaos/mempool-filler", Methods.PUT_STRING, this::handleMempoolFill, handler);
-		addGetRoute("/api/chaos/mempool-filler", exchange
-			-> respond(new JSONObject().put("address", mempoolFillerAddress), exchange), handler);
-
-		// keep-alive
-		addGetRoute("/api/ping", exchange -> {
-			JSONObject obj = new JSONObject();
-			obj.put("response", "pong");
-			obj.put("timestamp", Time.currentTimestamp());
-			respond(obj, exchange);
-		}, handler);
-	}
-
-	private void addRestNetworkRoutesTo(RoutingHandler handler) {
-		addGetRoute("/api/network", exchange
-				-> respond(this.networkService.getNetwork(), exchange), handler);
-		addGetRoute("/api/network/peers/live", exchange
-				-> respond(this.networkService.getLivePeers().toString(), exchange), handler);
-		addGetRoute("/api/network/peers", exchange
-				-> respond(this.networkService.getPeers().toString(), exchange), handler);
-		addGetRoute("/api/network/peers/{id}", exchange
-				-> respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
-
-	}
-
-	private void addRestSystemRoutesTo(RoutingHandler handler) {
-		addGetRoute("/api/system", exchange
-				-> respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange), handler);
-	}
-
-	// helper methods for responding to an exchange with various objects for readability
-	private void respond(String object, HttpServerExchange exchange) {
-		exchange.getResponseSender().send(object);
-	}
-
-	private void respond(JSONObject object, HttpServerExchange exchange) {
-		exchange.getResponseSender().send(object.toString());
-	}
-
-	private void respond(JSONArray object, HttpServerExchange exchange) {
-		exchange.getResponseSender().send(object.toString());
 	}
 
 	/**
@@ -363,22 +377,19 @@ public final class RadixHttpServer {
 		peer.close();
 	}
 
-	/**
-	 * Disconnect all currently connected peers
-	 *
-	 * @return Json object containing disconnect information
-	 */
-	public JSONObject disconnectAllPeers() {
-		JSONObject result = new JSONObject();
-		JSONArray closed = new JSONArray();
+	private JSONObject disconnectAllPeers() {
+		var result = jsonObject();
+		var closed = jsonArray();
+		var peersCopy = new HashMap<>(peers);
+
 		result.put("closed", closed);
-		HashMap<RadixJsonRpcPeer, WebSocketChannel> peersCopy = new HashMap<>(peers);
 
 		peersCopy.forEach((peer, ws) -> {
-			JSONObject closedPeer = new JSONObject();
-			closedPeer.put("isOpen", ws.isOpen());
-			closedPeer.put("closedReason", ws.getCloseReason());
-			closedPeer.put("closedCode", ws.getCloseCode());
+			var closedPeer = jsonObject()
+				.put("isOpen", ws.isOpen())
+				.put("closedReason", ws.getCloseReason())
+				.put("closedCode", ws.getCloseCode());
+
 			closed.put(closedPeer);
 
 			closeAndRemovePeer(peer);
@@ -394,63 +405,61 @@ public final class RadixHttpServer {
 		return result;
 	}
 
-	/**
-	 * Handle PUT request for changing BFT state.
-	 * <p>
-	 * Put request takes two parameters:
-	 * <ul>
-	 *   <li><b>id</b> the ID of the BFT instance (must be {@code 0} for now)</li>
-	 *   <li><b>state</b> {@code true} to enable the specified instance id, otherwise
-	 *     the instance is disabled
-	 * </ul>
-	 *
-	 * @param exchange The {@link HttpServerExchange} to use
-	 * @throws IOException if an error occurs parsing form data
-	 */
-	private void handleBftState(HttpServerExchange exchange) throws IOException {
+	@FunctionalInterface
+	interface ThrowingConsumer<A> {
+		void accept(final A arg1) throws PublicKeyException;
+	}
+
+	private void withJSONRequestBody(
+		HttpServerExchange exchange,
+		ThrowingConsumer<JSONObject> bodyHandler
+	) throws IOException {
 		exchange.startBlocking();
-		try (InputStream httpStream = exchange.getInputStream();
-			InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
-			String requestBody = CharStreams.toString(httpStreamReader);
-			JSONObject values = new JSONObject(requestBody);
+
+		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
+			JSONObject values = new JSONObject(CharStreams.toString(httpStreamReader));
+
+			bodyHandler.accept(values);
+		} catch (JSONException e) {
+			exchange.setStatusCode(StatusCodes.UNPROCESSABLE_ENTITY);
+			return;
+		} catch (PublicKeyException e) {
+			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			return;
+		}
+
+		exchange.setStatusCode(StatusCodes.OK);
+	}
+
+	//Potentially blocking
+	private void handleBftState(HttpServerExchange exchange) throws IOException {
+		withJSONRequestBody(exchange, values -> {
 			if (values.getBoolean("state")) {
 				consensusRunner.start();
 			} else {
 				consensusRunner.stop();
 			}
-		}
-		exchange.setStatusCode(StatusCodes.OK);
+		});
 	}
 
+	//Potentially blocking
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-		try (InputStream httpStream = exchange.getInputStream();
-			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
-			String requestBody = CharStreams.toString(httpStreamReader);
-			JSONObject values = new JSONObject(requestBody);
+		withJSONRequestBody(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
-			this.mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
-		}
-
-		exchange.setStatusCode(StatusCodes.OK);
+			mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
+		});
 	}
 
-
+	//Non-blocking
 	private void handleMessageFlood(HttpServerExchange exchange) throws IOException {
-		exchange.startBlocking();
-		try (InputStream httpStream = exchange.getInputStream();
-			 InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
-			String requestBody = CharStreams.toString(httpStreamReader);
-			JSONObject values = new JSONObject(requestBody);
-			MessageFlooderUpdate update = MessageFlooderUpdate.create();
+		withJSONRequestBody(exchange, values -> {
+			var update = MessageFlooderUpdate.create();
 
-			boolean enabled = values.getBoolean("enabled");
-			if (enabled) {
-				JSONObject data = values.getJSONObject("data");
+			if (values.getBoolean("enabled")) {
+				var data = values.getJSONObject("data");
+
 				if (data.has("nodeKey")) {
-					String nodeKeyBase58 = data.getString("nodeKey");
-					BFTNode node = BFTNode.create(ECPublicKey.fromBytes(Base58.fromBase58(nodeKeyBase58)));
-					update = update.bftNode(node);
+					update = update.bftNode(createNodeByKey(data.getString("nodeKey")));
 				}
 
 				if (data.has("messagesPerSec")) {
@@ -463,57 +472,22 @@ public final class RadixHttpServer {
 			}
 
 			this.messageFloodUpdateEventDispatcher.dispatch(update);
-
-		} catch (PublicKeyException e) {
-			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-			return;
-		}
-		exchange.setStatusCode(StatusCodes.OK);
-	}
-
-	/**
-	 * Add a GET method route with JSON content a certain path and consumer to the given handler
-	 *
-	 * @param prefixPath       The prefix path
-	 * @param responseFunction The consumer that processes incoming exchanges
-	 * @param routingHandler   The routing handler to add the route to
-	 */
-	private static void addGetRoute(String prefixPath, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
-		addRoute(prefixPath, Methods.GET_STRING, responseFunction, routingHandler);
-	}
-
-	/**
-	 * Add a route with JSON content and a certain path, method, and consumer to the given handler
-	 *
-	 * @param prefixPath       The prefix path
-	 * @param method           The HTTP method
-	 * @param responseFunction The consumer that processes incoming exchanges
-	 * @param routingHandler   The routing handler to add the route to
-	 */
-	private static void addRoute(String prefixPath, String method, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
-		addRoute(prefixPath, method, CONTENT_TYPE_JSON, responseFunction::accept, routingHandler);
-	}
-
-	/**
-	 * Add a route with a certain path, method, content type and consumer to the given handler
-	 *
-	 * @param prefixPath       The prefix path
-	 * @param method           The HTTP method
-	 * @param contentType      The MIME type
-	 * @param responseFunction The consumer that processes incoming exchanges
-	 * @param routingHandler   The routing handler to add the route to
-	 */
-	private static void addRoute(
-		String prefixPath,
-		String method,
-		String contentType,
-		ManagedHttpExchangeConsumer responseFunction,
-		RoutingHandler routingHandler
-	) {
-		routingHandler.add(method, prefixPath, exchange -> {
-			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, contentType);
-			responseFunction.accept(exchange);
 		});
+	}
+
+	private BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {
+		return BFTNode.create(ECPublicKey.fromBytes(fromBase58(nodeKeyBase58)));
+	}
+
+	/**
+	 * Add a DELETE method route with JSON content a certain path and consumer to the given handler
+	 *
+	 * @param handler The routing handler to add the route to
+	 * @param path The prefix path
+	 * @param consumer The consumer that processes incoming exchanges
+	 */
+	private static void delete(RoutingHandler handler, String path, HttpHandler consumer) {
+		handler.add(Methods.DELETE, path, consumer);
 	}
 
 	/**
@@ -521,12 +495,35 @@ public final class RadixHttpServer {
 	 * Note that path parameters are prioritised over query parameters in the event of a conflict.
 	 *
 	 * @param exchange The exchange to get the parameter from
-	 * @param name     The name of the parameter
+	 * @param name The name of the parameter
+	 *
 	 * @return The parameter with the given name from the path or query parameters, or empty if it doesn't exist
 	 */
 	private static Optional<String> getParameter(HttpServerExchange exchange, String name) {
 		// our routing handler puts path params into query params by default so we don't need to include them manually
 		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
 	}
-}
 
+	private class RpcPostHandler implements HttpHandler {
+		@Override
+		public void handleRequest(HttpServerExchange exchange) {
+			// we need to be in another thread to do blocking io work, which is needed to extract the entire message body
+			if (exchange.isInIoThread()) {
+				exchange.dispatch(this);
+				return;
+			}
+
+			CompletableFuture
+				.supplyAsync(() -> jsonRpcServer.handleJsonRpc(exchange))
+				.whenComplete((response, exception) -> {
+					if (exception == null) {
+						exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+						exchange.getResponseSender().send(response);
+					} else {
+						exchange.setStatusCode(400);
+						exchange.getResponseSender().send("Invalid request: " + exception.getMessage());
+					}
+				});
+		}
+	}
+}
