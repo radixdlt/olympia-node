@@ -31,7 +31,6 @@ import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -58,16 +57,13 @@ public final class MempoolFillAndEmptyTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-    @Inject
-    private DeterministicEpochsConsensusProcessor processor;
+    @Inject private DeterministicEpochsConsensusProcessor processor;
     @Inject private DeterministicNetwork network;
     @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
     @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
     @Inject private SystemCounters systemCounters;
 
-    private Injector createInjector(ECKeyPair ecKeyPair) {
+    private Injector createInjector() {
         return Guice.createInjector(
                 new AbstractModule() {
                     @Override
@@ -82,7 +78,7 @@ public final class MempoolFillAndEmptyTest {
                         return TokenIssuance.of(mempoolFillerKey, TokenUnitConversions.unitsToSubunits(10000000000L));
                     }
                 },
-                new SingleNodeDeterministicNetworkModule(ecKeyPair),
+                new SingleNodeDeterministicNetworkModule(),
                 new MempoolFillerModule()
         );
     }
@@ -109,7 +105,7 @@ public final class MempoolFillAndEmptyTest {
 
     @Test
     public void check_that_full_mempool_empties_itself() {
-        createInjector(ecKeyPair).injectMembers(this);
+        createInjector().injectMembers(this);
         processor.start();
 
         mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(true));

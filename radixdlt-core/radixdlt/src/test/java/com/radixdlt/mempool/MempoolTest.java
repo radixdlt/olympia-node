@@ -66,11 +66,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 
-	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	private Injector getInjector(ECKeyPair ecKeyPair) {
-		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-
+	private Injector getInjector() {
 		return Guice.createInjector(
 			new AbstractModule() {
 				@Override
@@ -80,11 +76,11 @@ public class MempoolTest {
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
+						.to(folder.getRoot().getAbsolutePath());
 				}
 			},
 			new MempoolRelayerModule(),
-			new SingleNodeDeterministicNetworkModule(ecKeyPair)
+			new SingleNodeDeterministicNetworkModule()
 		);
 	}
 
@@ -128,7 +124,7 @@ public class MempoolTest {
 	@Test
 	public void add_command_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 
@@ -143,7 +139,7 @@ public class MempoolTest {
 	@Test
 	public void add_same_command_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -159,7 +155,7 @@ public class MempoolTest {
 	@Test
 	public void add_conflicting_commands_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -177,7 +173,7 @@ public class MempoolTest {
 	@Test
 	public void add_bad_command_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		final Command command = new Command(new byte[0]);
 
 		// Act
@@ -191,7 +187,7 @@ public class MempoolTest {
 	@Test
 	public void missing_dependency_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 1);
 
@@ -206,7 +202,7 @@ public class MempoolTest {
 	@Test
 	public void replay_command_to_mempool() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 		var proof = mock(VerifiedLedgerHeaderAndProof.class);
@@ -225,7 +221,7 @@ public class MempoolTest {
 	@Test
 	public void mempool_removes_conflicts_on_commit() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
@@ -245,7 +241,7 @@ public class MempoolTest {
 	@Test
 	public void mempool_removes_multiple_conflicts_on_commit() {
 		// Arrange
-		getInjector(ecKeyPair).injectMembers(this);
+		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);

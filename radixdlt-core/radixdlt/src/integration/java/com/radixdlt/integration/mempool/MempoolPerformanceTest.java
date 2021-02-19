@@ -28,6 +28,7 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.crypto.ECKeyPair;
@@ -57,14 +58,13 @@ public final class MempoolPerformanceTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
+    @Inject @Self private ECKeyPair self;
     @Inject private DeterministicEpochsConsensusProcessor processor;
     @Inject private DeterministicNetwork network;
     @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
     @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
 
-    private Injector createInjector(ECKeyPair ecKeyPair) {
+    private Injector createInjector() {
         return Guice.createInjector(
             new AbstractModule() {
                 @Override
@@ -79,7 +79,7 @@ public final class MempoolPerformanceTest {
                     return TokenIssuance.of(mempoolFillerKey, TokenUnitConversions.unitsToSubunits(10000000000L));
                 }
             },
-            new SingleNodeDeterministicNetworkModule(ecKeyPair),
+            new SingleNodeDeterministicNetworkModule(),
             new MempoolFillerModule()
         );
     }
@@ -104,7 +104,7 @@ public final class MempoolPerformanceTest {
 
     @Test
     public void validate_that_full_mempool_doesnt_take_too_much_time() {
-        createInjector(ecKeyPair).injectMembers(this);
+        createInjector().injectMembers(this);
         processor.start();
 
         long start0 = System.currentTimeMillis();

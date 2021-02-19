@@ -155,10 +155,11 @@ public class RecoveryLivenessTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
-			new PersistedNodeForTestingModule(ecKeyPair),
+			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
