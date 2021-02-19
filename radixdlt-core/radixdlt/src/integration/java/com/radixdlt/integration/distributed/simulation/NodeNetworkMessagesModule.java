@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -33,6 +34,7 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -55,6 +57,7 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
+		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -100,10 +103,5 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
 		return network.remoteEvents(DtoCommandsAndProof.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<MempoolAdd>> mempoolAdds(SimulatedNetworkImpl network) {
-		return network.remoteEvents(MempoolAdd.class);
 	}
 }

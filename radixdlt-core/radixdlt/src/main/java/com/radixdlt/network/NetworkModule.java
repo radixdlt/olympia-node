@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAdd;
@@ -115,7 +117,17 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<MempoolAdd>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
-		return messageCentralMempool.mempoolComands();
+    @Singleton
+	RxRemoteEnvironment rxRemoteEnvironment(MessageCentralMempool messageCentralMempool) {
+	    return new RxRemoteEnvironment() {
+			@Override
+			public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+				if (remoteEventClass != MempoolAdd.class) {
+					throw new IllegalStateException();
+				} else {
+					return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
+				}
+			}
+		};
 	}
 }
