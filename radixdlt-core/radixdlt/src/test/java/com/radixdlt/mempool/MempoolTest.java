@@ -22,9 +22,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MempoolRelayerModule;
-import com.radixdlt.SingleNodeDeterministicNetworkModule;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -68,9 +69,12 @@ public class MempoolTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
-			new AbstractModule() {
+			new SingleNodeAndPeersDeterministicNetworkModule(),
+			new MempoolRelayerModule(),
+				new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
@@ -78,9 +82,7 @@ public class MempoolTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath());
 				}
-			},
-			new MempoolRelayerModule(),
-			new SingleNodeDeterministicNetworkModule()
+			}
 		);
 	}
 
@@ -122,7 +124,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void add_command_to_mempool() {
+	public void add_remote_command_to_mempool() {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();

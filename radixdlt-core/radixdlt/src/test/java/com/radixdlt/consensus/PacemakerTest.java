@@ -23,7 +23,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.radixdlt.SingleNodeDeterministicNetworkModule;
+import com.google.inject.name.Names;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -60,15 +61,16 @@ public class PacemakerTest {
 
 	private Injector createRunner() {
 		return Guice.createInjector(
+			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
-			},
-			new SingleNodeDeterministicNetworkModule()
+			}
 		);
 	}
 

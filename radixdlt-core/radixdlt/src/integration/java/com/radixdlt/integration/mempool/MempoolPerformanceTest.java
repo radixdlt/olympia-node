@@ -22,7 +22,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.SingleNodeDeterministicNetworkModule;
+import com.google.inject.name.Names;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
@@ -66,9 +67,12 @@ public final class MempoolPerformanceTest {
 
     private Injector createInjector() {
         return Guice.createInjector(
+            new SingleNodeAndPeersDeterministicNetworkModule(),
+            new MempoolFillerModule(),
             new AbstractModule() {
                 @Override
                 protected void configure() {
+                    bindConstant().annotatedWith(Names.named("numPeers")).to(0);
                     bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
                     bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
@@ -78,9 +82,7 @@ public final class MempoolPerformanceTest {
                 private TokenIssuance mempoolFillerIssuance(@MempoolFillerKey ECPublicKey mempoolFillerKey) {
                     return TokenIssuance.of(mempoolFillerKey, TokenUnitConversions.unitsToSubunits(10000000000L));
                 }
-            },
-            new SingleNodeDeterministicNetworkModule(),
-            new MempoolFillerModule()
+            }
         );
     }
 

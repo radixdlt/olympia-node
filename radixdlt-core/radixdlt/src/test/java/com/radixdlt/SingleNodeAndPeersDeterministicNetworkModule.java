@@ -29,13 +29,16 @@ import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.network.addressbook.PeersView;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Module which injects a full one node network
  */
-public final class SingleNodeDeterministicNetworkModule extends AbstractModule {
+public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ECKeyPair.class).annotatedWith(Self.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
@@ -46,6 +49,12 @@ public final class SingleNodeDeterministicNetworkModule extends AbstractModule {
     @Named("universeKey")
     public ECKeyPair universeKey(@Self ECKeyPair self) {
         return self;
+    }
+
+    @Provides
+    @Singleton
+    public PeersView peers(@Named("numPeers") int numPeers) {
+        return () -> Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
     }
 
     @Provides
