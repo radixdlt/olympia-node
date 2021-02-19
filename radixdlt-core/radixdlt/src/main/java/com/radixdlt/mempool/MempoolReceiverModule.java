@@ -36,10 +36,10 @@ public final class MempoolReceiverModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("mempool")
 	private ModuleRunner mempoolReceiver(
-		Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
-		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
+		Flowable<RemoteEvent<MempoolAdd>> mempoolCommands,
+		RemoteEventProcessor<MempoolAdd> remoteEventProcessor
 	) {
-		Flowable<RemoteEvent<MempoolAddSuccess>> backpressured = mempoolCommands
+		Flowable<RemoteEvent<MempoolAdd>> backpressured = mempoolCommands
 			.onBackpressureBuffer(5, null, BackpressureOverflowStrategy.DROP_LATEST)
 			.throttleLatest(50, TimeUnit.MILLISECONDS);
 

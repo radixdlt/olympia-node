@@ -24,6 +24,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
@@ -64,7 +65,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private StateComputerLedger.StateComputer stateComputer(Mempool<Command, HashCode> mempool, Hasher hasher) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
-			public void addToMempool(Command command) {
+			public void addToMempool(Command command, BFTNode origin) {
 				try {
 					mempool.add(command);
 				} catch (MempoolRejectedException e) {

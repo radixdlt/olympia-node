@@ -21,7 +21,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -59,7 +59,7 @@ public class MessageCentralMempoolTest {
         final var command1 = mock(Command.class);
         final var command2 = mock(Command.class);
 
-        TestSubscriber<RemoteEvent<MempoolAddSuccess>> testObserver = messageCentralMempool.mempoolComands().test();
+        TestSubscriber<RemoteEvent<MempoolAdd>> testObserver = messageCentralMempool.mempoolComands().test();
         messageCentral.send(peer, new MempoolAtomAddedMessage(0, command1));
         messageCentral.send(peer, new MempoolAtomAddedMessage(0, command2));
 

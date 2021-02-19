@@ -125,7 +125,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public void addToMempool(Command command) {
+		public void addToMempool(Command command, BFTNode origin) {
 			// No-op
 		}
 

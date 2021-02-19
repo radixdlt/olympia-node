@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -57,6 +58,7 @@ import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -140,7 +142,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Command command) {
+	public void addToMempool(Command command, @Nullable BFTNode origin) {
 		ClientAtom clientAtom = command.map(payload -> {
 			try {
 				return serialization.fromDson(payload, ClientAtom.class);
@@ -159,14 +161,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempool.add(clientAtom);
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
-			log.warn("Mempool duplicate command: {}", e.getMessage());
+			log.warn("Mempool duplicate command: {} origin: {}", command, origin);
 			return;
 		} catch (MempoolRejectedException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 			return;
 		}
 
-		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(command));
+		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(command, origin));
 	}
 
 	@Override

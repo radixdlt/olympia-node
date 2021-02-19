@@ -19,16 +19,16 @@ package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolAdd;
 
 import javax.inject.Inject;
 
 public final class DeterministicMempoolProcessor implements DeterministicMessageProcessor {
-	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
+	private final RemoteEventProcessor<MempoolAdd> remoteEventProcessor;
 
 	@Inject
 	public DeterministicMempoolProcessor(
-		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
+		RemoteEventProcessor<MempoolAdd> remoteEventProcessor
 	) {
 		this.remoteEventProcessor = remoteEventProcessor;
 	}
@@ -40,8 +40,8 @@ public final class DeterministicMempoolProcessor implements DeterministicMessage
 
 	@Override
 	public void handleMessage(BFTNode origin, Object o) {
-		if (o instanceof MempoolAddSuccess) {
-			this.remoteEventProcessor.process(origin, (MempoolAddSuccess) o);
+		if (o instanceof MempoolAdd) {
+			this.remoteEventProcessor.process(origin, (MempoolAdd) o);
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + o.getClass().getName());
 		}

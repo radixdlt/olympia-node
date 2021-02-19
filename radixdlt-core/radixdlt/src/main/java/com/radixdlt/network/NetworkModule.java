@@ -36,6 +36,7 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
@@ -114,7 +115,7 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
+	private Flowable<RemoteEvent<MempoolAdd>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
 		return messageCentralMempool.mempoolComands();
 	}
 }

@@ -18,10 +18,12 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 
@@ -35,5 +37,10 @@ public class LedgerCommandGeneratorModule extends AbstractModule {
 	@ProcessOnDispatch
 	private EventProcessor<MempoolAdd> mempoolAddEventProcessor(StateComputerLedger stateComputerLedger) {
 		return stateComputerLedger.mempoolAddEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor(StateComputerLedger stateComputerLedger) {
+		return stateComputerLedger.mempoolAddRemoteEventProcessor();
 	}
 }

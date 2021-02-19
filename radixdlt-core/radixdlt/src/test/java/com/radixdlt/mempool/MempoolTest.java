@@ -24,7 +24,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.MempoolRelayerModule;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -139,8 +138,8 @@ public class MempoolTest {
 		Command command = createCommand(keyPair, hasher);
 
 		// Act
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -153,11 +152,11 @@ public class MempoolTest {
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -169,12 +168,12 @@ public class MempoolTest {
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
-		MempoolAddSuccess mempoolAddSuccess2 = MempoolAddSuccess.create(command2);
+		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(command2);
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
 		// Assert
@@ -188,8 +187,8 @@ public class MempoolTest {
 		final Command command = new Command(new byte[0]);
 
 		// Act
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -203,8 +202,8 @@ public class MempoolTest {
 		Command command = createCommand(keyPair, hasher, 1);
 
 		// Act
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -222,8 +221,8 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Act
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -235,8 +234,8 @@ public class MempoolTest {
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
@@ -255,10 +254,10 @@ public class MempoolTest {
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
-		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
+		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(getFirstPeer(), mempoolAdd);
 		Command command2 = createCommand(keyPair, hasher, 0, 3);
-		processor.handleMessage(getFirstPeer(), MempoolAddSuccess.create(command2));
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command2));
 
 		// Act
 		Command command3 = createCommand(keyPair, hasher, 0, 1);

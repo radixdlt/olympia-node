@@ -21,6 +21,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -74,14 +75,14 @@ public final class MessageCentralMempool {
 		}
 	}
 
-	public Flowable<RemoteEvent<MempoolAddSuccess>> mempoolComands() {
+	public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
 		return messageCentral.messagesOf(MempoolAtomAddedMessage.class)
 			.map(msg -> {
 				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
 				return RemoteEvent.create(
 					node,
-					MempoolAddSuccess.create(msg.getMessage().command()),
-					MempoolAddSuccess.class
+					MempoolAdd.create(msg.getMessage().command()),
+					MempoolAdd.class
 				);
 			});
 	}
