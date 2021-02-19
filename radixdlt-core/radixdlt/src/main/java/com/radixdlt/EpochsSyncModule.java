@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
@@ -132,7 +133,7 @@ public class EpochsSyncModule extends AbstractModule {
 
 	@Provides
 	private LocalSyncServiceFactory localSyncServiceFactory(
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
 		ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher,
 		RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,

@@ -23,6 +23,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
@@ -38,12 +39,15 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SyncRunnerModule extends AbstractModule {
 
@@ -53,7 +57,7 @@ public class SyncRunnerModule extends AbstractModule {
 	@StringMapKey("sync")
 	private ModuleRunner syncRunner(
 		@Self BFTNode self,
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
@@ -74,6 +78,9 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
+		final var executor =
+			Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("Sync"));
+
 		return ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
@@ -85,12 +92,19 @@ public class SyncRunnerModule extends AbstractModule {
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
 			.onStart(() -> {
-				final var sc = SyncCheckTrigger.create();
-				log.info("Calling onStart sync runner module, scheduling sending sync check trigger {}", sc);
-				syncCheckTriggerDispatcher.dispatch(
-						sc,
-						syncConfig.syncCheckInterval()
+				executor.scheduleWithFixedDelay(
+					() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),
+					syncConfig.syncCheckInterval(),
+					syncConfig.syncCheckInterval(),
+					TimeUnit.MILLISECONDS
 				);
+			})
+			.onStop(() -> {
+				try {
+					executor.awaitTermination(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			})
 			.build("SyncManager " + self);
 	}

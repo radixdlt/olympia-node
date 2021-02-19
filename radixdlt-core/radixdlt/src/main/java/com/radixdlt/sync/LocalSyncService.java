@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -81,7 +82,7 @@ public final class LocalSyncService {
 
 	private static final Logger log = LogManager.getLogger();
 
-	private final ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher;
+	private final EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher;
 	private final RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
 	private final ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private final RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
@@ -103,7 +104,7 @@ public final class LocalSyncService {
 
 	@Inject
 	public LocalSyncService(
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
 		ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher,
 		RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
@@ -263,8 +264,8 @@ public final class LocalSyncService {
 			return this.startSync(currentState, candidatePeers, maxPeerHeader);
 		})
 		.orElseGet(() -> {
-			// there is no peer ahead of us, retry the sync check after some delay
-			return this.goToIdleAndScheduleSyncCheck(currentState);
+			// there is no peer ahead of us, go to idle and wait for another sync check
+			return this.goToIdle(currentState);
 		});
 	}
 
@@ -273,15 +274,12 @@ public final class LocalSyncService {
 			// we didn't get all the responses but we have some, try to sync with what we have
 			return this.processPeerStatusResponsesAndStartSyncIfNeeded(currentState);
 		} else {
-			// we didn't get any response, retry the sync check after some delay
-			return this.goToIdleAndScheduleSyncCheck(currentState);
+			// we didn't get any response, go to idle and wait for another sync check
+			return this.goToIdle(currentState);
 		}
 	}
 
-	private SyncState goToIdleAndScheduleSyncCheck(SyncState currentState) {
-		final var sc = SyncCheckTrigger.create();
-		log.info("Scheduling sync check {} in {} ms", sc, syncConfig.syncCheckInterval());
-		this.syncCheckTriggerDispatcher.dispatch(sc, syncConfig.syncCheckInterval());
+	private SyncState goToIdle(SyncState currentState) {
 		return IdleState.init(currentState.getCurrentHeader());
 	}
 
@@ -299,8 +297,8 @@ public final class LocalSyncService {
 
 		if (isFullySynced(currentState)) {
 			log.info("LocalSync: Fully synced to {}", currentState.getTargetHeader());
-			// we're fully synced, scheduling another sync check
-			return this.goToIdleAndScheduleSyncCheck(currentState);
+			// we're fully synced, go to idle and wait for another sync check
+			return this.goToIdle(currentState);
 		}
 
 		if (currentState.waitingForResponse()) {

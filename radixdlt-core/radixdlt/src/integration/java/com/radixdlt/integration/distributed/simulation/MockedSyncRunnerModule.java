@@ -27,6 +27,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -45,10 +46,13 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A sync runner which doesn't involve epochs
@@ -69,7 +73,7 @@ public class MockedSyncRunnerModule extends AbstractModule {
 	@StringMapKey("sync")
 	private ModuleRunner syncRunner(
 		@Self BFTNode self,
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
@@ -90,6 +94,9 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
+		final var executor =
+			Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("Sync"));
+
 		return ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
@@ -100,10 +107,21 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
-			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
-				SyncCheckTrigger.create(),
-				syncConfig.syncCheckInterval()
-			))
+			.onStart(() -> {
+				executor.scheduleWithFixedDelay(
+					() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),
+					syncConfig.syncCheckInterval(),
+					syncConfig.syncCheckInterval(),
+					TimeUnit.MILLISECONDS
+				);
+			})
+			.onStop(() -> {
+				try {
+					executor.awaitTermination(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			})
 			.build("SyncManager " + self);
 	}
 
