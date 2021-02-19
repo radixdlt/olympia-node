@@ -29,11 +29,11 @@ import java.util.Objects;
  */
 public final class MempoolRelayer {
 	private final PeersView peersView;
-	private final RemoteEventDispatcher<MempoolAddSuccess> remoteEventDispatcher;
+	private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
 
 	@Inject
 	public MempoolRelayer(
-		RemoteEventDispatcher<MempoolAddSuccess> remoteEventDispatcher,
+		RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
 		PeersView peersView
 	) {
 		this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
@@ -41,8 +41,8 @@ public final class MempoolRelayer {
 	}
 
 	public EventProcessor<MempoolAddSuccess> mempoolAddedCommandEventProcessor() {
-		return cmd -> this.peersView.peers()
-			.stream().filter(p -> cmd.getOrigin().map(o -> !p.equals(o)).orElse(true))
-			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, cmd));
+		return mempoolAddSuccess -> this.peersView.peers()
+			.stream().filter(p -> mempoolAddSuccess.getOrigin().map(o -> !p.equals(o)).orElse(true))
+			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, MempoolAdd.create(mempoolAddSuccess.getCommand())));
 	}
 }

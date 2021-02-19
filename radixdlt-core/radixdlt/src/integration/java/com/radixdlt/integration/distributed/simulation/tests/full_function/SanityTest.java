@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.validator;
+package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
@@ -40,7 +40,7 @@ public class SanityTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
+		.fullFunctionNodes(View.of(10), 200)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

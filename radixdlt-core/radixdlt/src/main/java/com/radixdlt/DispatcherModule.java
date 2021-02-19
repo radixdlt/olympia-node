@@ -119,9 +119,9 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
-		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
+		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(
-				MempoolAddSuccess.class,
+				MempoolAdd.class,
 				CounterType.MEMPOOL_RELAYER_SENT_COUNT
 			)).in(Scopes.SINGLETON);
 

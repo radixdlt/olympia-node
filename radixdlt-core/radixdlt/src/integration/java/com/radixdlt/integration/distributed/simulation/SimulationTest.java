@@ -37,6 +37,7 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
@@ -332,6 +333,30 @@ public class SimulationTest {
 				@Override
 				protected void configure() {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+				}
+			});
+			return this;
+		}
+
+		public Builder fullFunctionNodes(
+			View epochHighView,
+			int syncPatienceMillis
+		) {
+			this.ledgerType = LedgerType.FULL_FUNCTION;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
+					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
+				}
+
+				@Provides
+				@Singleton
+				PeersView peersView() {
+					return () -> nodes.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 				}
 			});
 			return this;

@@ -37,6 +37,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 import io.reactivex.rxjava3.core.Flowable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
@@ -71,6 +72,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
 
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> mempoolAdd(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(MempoolAdd.class, network.remoteEventDispatcher(MempoolAdd.class));
+	}
+
 	@Provides
 	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(SimulatedNetworkImpl network) {
 		return network.remoteEventDispatcher(DtoLedgerHeaderAndProof.class);
@@ -94,5 +100,10 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
 		return network.remoteEvents(DtoCommandsAndProof.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<MempoolAdd>> mempoolAdds(SimulatedNetworkImpl network) {
+		return network.remoteEvents(MempoolAdd.class);
 	}
 }
