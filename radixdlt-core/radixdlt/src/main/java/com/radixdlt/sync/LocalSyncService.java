@@ -213,8 +213,6 @@ public final class LocalSyncService {
 	}
 
 	private SyncState processStatusResponse(SyncCheckState currentState, BFTNode peer, StatusResponse statusResponse) {
-		log.info("LocalSync: Received status response {} from peer {}", statusResponse, peer);
-
 		if (!currentState.hasAskedPeer(peer)) {
 			return currentState; // we didn't ask this peer
 		}
@@ -226,6 +224,7 @@ public final class LocalSyncService {
 		final var newState = currentState.withStatusResponse(peer, statusResponse);
 
 		if (newState.gotAllResponses()) {
+			log.info("LocalSync: Received all status responses, the last one is {} from peer {}", statusResponse, peer);
 			return processPeerStatusResponsesAndStartSyncIfNeeded(newState); // we've got all the responses
 		} else {
 			return newState;
