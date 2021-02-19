@@ -148,7 +148,8 @@ public class SimulationTest {
 			LEDGER_AND_LOCALMEMPOOL(false, true, true, true, false, false, false),
 			LEDGER_AND_EPOCHS(false, true, true, false, false, true, false),
 			LEDGER_AND_EPOCHS_AND_SYNC(false, true, true, false, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false);
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false),
+			FULL_FUNCTION(true, true, true, true, true, true, true);
 
 			private final boolean hasSharedMempool;
 			private final boolean hasConsensus;
@@ -499,6 +500,7 @@ public class SimulationTest {
 				ledgerType.hasConsensus,
 				ledgerType.hasLedger,
 				ledgerType.hasMempool,
+				ledgerType.hasSharedMempool,
 				ledgerType.hasRadixEngine,
 				ledgerType.hasEpochs,
 				ledgerType.hasSync

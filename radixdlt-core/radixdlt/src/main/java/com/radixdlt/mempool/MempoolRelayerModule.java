@@ -25,7 +25,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 
 /**
- * Module responsible for sending/receiving mempool messages to/from other nodes.
+ * Module responsible for sending mempool messages to other nodes.
  */
 public final class MempoolRelayerModule extends AbstractModule {
 

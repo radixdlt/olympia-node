@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -39,19 +40,22 @@ public final class FunctionalNodeModule extends AbstractModule {
 	private final boolean hasMempool;
 	private final boolean hasRadixEngine;
 
+	private final boolean hasMempoolRelayer;
+
 	private final boolean hasEpochs;
 
 	// FIXME: This is required for now for shared syncing, remove after refactor
 	private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
 	public FunctionalNodeModule() {
-		this(true, true, true, true, true, true);
+		this(true, true, true, true, true, true, true);
 	}
 
 	public FunctionalNodeModule(
 		boolean hasConsensus,
 		boolean hasLedger,
 		boolean hasMempool,
+		boolean hasMempoolRelayer,
 		boolean hasRadixEngine,
 		boolean hasEpochs,
 		boolean hasSync
@@ -59,6 +63,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 		this.hasConsensus = hasConsensus;
 		this.hasLedger = hasLedger;
 		this.hasMempool = hasMempool;
+		this.hasMempoolRelayer = hasMempoolRelayer;
 		this.hasRadixEngine = hasRadixEngine;
 		this.hasEpochs = hasEpochs;
 		this.hasSync = hasSync;
@@ -104,6 +109,10 @@ public final class FunctionalNodeModule extends AbstractModule {
 				}
 			} else {
 				install(new LedgerCommandGeneratorModule());
+
+				if (hasMempoolRelayer) {
+					install(new MempoolRelayerModule());
+				}
 
 				if (!hasRadixEngine) {
 					install(new MockedMempoolStateComputerModule());

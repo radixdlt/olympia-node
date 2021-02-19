@@ -73,8 +73,7 @@ public class MempoolTest {
 	private Injector getInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MempoolRelayerModule(),
-				new AbstractModule() {
+			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
