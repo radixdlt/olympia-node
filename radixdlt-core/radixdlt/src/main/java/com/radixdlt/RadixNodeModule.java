@@ -66,7 +66,8 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 		final long syncPatience = properties.get("sync.patience", 200);
-		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, syncPatience));
+		final long syncCheckInterval = properties.get("sync.sync_check_interval", 3000);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 5, syncCheckInterval));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 		bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
