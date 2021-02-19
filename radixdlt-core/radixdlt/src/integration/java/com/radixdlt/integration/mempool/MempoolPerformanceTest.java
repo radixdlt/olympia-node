@@ -123,6 +123,6 @@ public final class MempoolPerformanceTest {
         double change = ((double) duration1) / duration0;
         logger.info("Change: {} No-Mempool: {} Mempool: {}", change, duration0, duration1);
 
-        assertThat(change).isLessThan(2.0);
+        assertThat(change).isLessThan(4.0);
     }
 }

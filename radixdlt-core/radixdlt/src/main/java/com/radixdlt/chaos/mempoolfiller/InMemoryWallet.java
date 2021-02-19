@@ -19,6 +19,8 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -34,6 +36,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -144,16 +147,19 @@ public final class InMemoryWallet {
 				return createTransaction(mutableList, to, amount.isZero() ? UInt256.ONE : amount);
 			});
 
-	    var mutableList = new LinkedList<TransferrableTokensParticle>();
-	    particles.stream().filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
-			.limit(3)
-			.forEach(mutableList::add);
-		UInt256 dustAmount = mutableList.stream()
-			.map(TransferrableTokensParticle::getAmount)
-			.reduce(UInt256.ZERO, UInt256::add);
-		Stream<Optional<Atom>> dustAtom = Stream.of(createTransaction(mutableList, to, dustAmount.subtract(fee)));
+		List<TransferrableTokensParticle> dust = particles.stream().filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
+			.collect(Collectors.toList());
 
-		return Stream.concat(atoms, dustAtom)
+		Stream<Optional<Atom>> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
+			.map(LinkedList::new)
+			.map(mutableList -> {
+				UInt256 dustAmount = mutableList.stream()
+					.map(TransferrableTokensParticle::getAmount)
+					.reduce(UInt256.ZERO, UInt256::add);
+				return createTransaction(mutableList, to, dustAmount.subtract(fee));
+			});
+
+		return Stream.concat(atoms, dustAtoms)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.limit(max)
