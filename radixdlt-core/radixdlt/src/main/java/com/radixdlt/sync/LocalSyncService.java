@@ -276,6 +276,7 @@ public final class LocalSyncService {
 	}
 
 	private SyncState goToIdleAndScheduleSyncCheck(SyncState currentState) {
+		log.info("Scheduling sync check in {} ms", syncConfig.syncCheckInterval());
 		this.syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create(), syncConfig.syncCheckInterval());
 		return IdleState.init(currentState.getCurrentHeader());
 	}
@@ -302,14 +303,20 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
+		log.info("Processing sync, got {} candidates", currentState.candidatePeers().size());
 		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
-			.filter(addressBook::hasBftNodePeer)
+			.filter(p -> {
+				final var res = addressBook.hasBftNodePeer(p);
+				log.info("Checking if address book has peer {}: {}", p, res);
+				return res;
+			})
 			.findFirst();
 
 		return peerToUse
 			.map(peer -> this.sendSyncRequest(currentState, peer))
 			.orElseGet(() -> {
 				// there's no connected peer on our candidates list, starting a fresh sync check immediately
+				log.info("Processing sync but there's not peer to use, initializing another sync check");
 				return this.initSyncCheck(IdleState.init(currentState.getCurrentHeader()));
 			});
 	}
