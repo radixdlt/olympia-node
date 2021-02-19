@@ -46,6 +46,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -59,6 +60,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class MempoolTest {
+	private static final int NUM_PEERS = 2;
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -66,6 +69,7 @@ public class MempoolTest {
 	@Inject private DeterministicMempoolProcessor processor;
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
+	@Inject private PeersView peersView;
 
 	private Injector getInjector() {
 		return Guice.createInjector(
@@ -74,7 +78,7 @@ public class MempoolTest {
 				new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
@@ -84,6 +88,10 @@ public class MempoolTest {
 				}
 			}
 		);
+	}
+
+	private BFTNode getFirstPeer() {
+		return peersView.peers().get(0);
 	}
 
 	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
@@ -132,10 +140,11 @@ public class MempoolTest {
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
 	}
 
 	@Test
@@ -145,10 +154,10 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Act
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -161,12 +170,12 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
 		MempoolAddSuccess mempoolAddSuccess2 = MempoolAddSuccess.create(command2);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess2);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(2);
@@ -180,7 +189,7 @@ public class MempoolTest {
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -195,7 +204,7 @@ public class MempoolTest {
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -214,7 +223,7 @@ public class MempoolTest {
 
 		// Act
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
@@ -227,7 +236,7 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
@@ -247,9 +256,9 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher, 0, 2);
 		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
-		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+		processor.handleMessage(getFirstPeer(), mempoolAddSuccess);
 		Command command2 = createCommand(keyPair, hasher, 0, 3);
-		processor.handleMessage(BFTNode.random(), MempoolAddSuccess.create(command2));
+		processor.handleMessage(getFirstPeer(), MempoolAddSuccess.create(command2));
 
 		// Act
 		Command command3 = createCommand(keyPair, hasher, 0, 1);

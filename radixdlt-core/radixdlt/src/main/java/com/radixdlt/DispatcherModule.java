@@ -120,7 +120,10 @@ public class DispatcherModule extends AbstractModule {
 				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(
+				MempoolAddSuccess.class,
+				CounterType.MEMPOOL_RELAYER_SENT_COUNT
+			)).in(Scopes.SINGLETON);
 
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);

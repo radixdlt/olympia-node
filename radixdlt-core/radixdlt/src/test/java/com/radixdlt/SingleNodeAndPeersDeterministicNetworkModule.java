@@ -54,7 +54,8 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     @Provides
     @Singleton
     public PeersView peers(@Named("numPeers") int numPeers) {
-        return () -> Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
+        List<BFTNode> peers = Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
+        return () -> peers;
     }
 
     @Provides
@@ -64,9 +65,9 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     @Provides
     @Singleton
-    public DeterministicNetwork network(@Self BFTNode self) {
+    public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
         return new DeterministicNetwork(
-            List.of(self),
+            Stream.concat(Stream.of(self), peersView.peers().stream()).collect(Collectors.toList()),
             MessageSelector.firstSelector(),
             MessageMutator.nothing()
         );

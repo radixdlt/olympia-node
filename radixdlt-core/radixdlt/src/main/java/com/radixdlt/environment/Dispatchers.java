@@ -106,15 +106,32 @@ public final class Dispatchers {
 	private static final class RemoteDispatcherProvider<T> implements Provider<RemoteEventDispatcher<T>> {
 		@Inject
 		private Provider<Environment> environmentProvider;
+		@Inject
+		private SystemCounters systemCounters;
+		private final SystemCounters.CounterType counterType;
 		private final Class<T> c;
 
 		RemoteDispatcherProvider(Class<T> c) {
+		    this(c, null);
+		}
+
+		RemoteDispatcherProvider(
+			Class<T> c,
+			@Nullable SystemCounters.CounterType counterType
+		) {
 			this.c = c;
+			this.counterType = counterType;
 		}
 
 		@Override
 		public RemoteEventDispatcher<T> get() {
-			return environmentProvider.get().getRemoteDispatcher(c);
+			RemoteEventDispatcher<T> dispatcher = environmentProvider.get().getRemoteDispatcher(c);
+			return (node, e) -> {
+				dispatcher.dispatch(node, e);
+				if (counterType != null) {
+					systemCounters.increment(counterType);
+				}
+			};
 		}
 	}
 
@@ -140,5 +157,9 @@ public final class Dispatchers {
 
 	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
 		return new RemoteDispatcherProvider<>(c);
+	}
+
+	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c, SystemCounters.CounterType counterType) {
+		return new RemoteDispatcherProvider<>(c, counterType);
 	}
 }

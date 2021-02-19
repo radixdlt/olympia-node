@@ -124,6 +124,7 @@ public interface SystemCounters {
 		MEMPOOL_FAILURE_COUNT("mempool.failure_count"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
 
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
