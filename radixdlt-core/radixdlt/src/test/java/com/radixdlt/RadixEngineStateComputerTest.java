@@ -79,6 +79,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.MaxValidators;
+import com.radixdlt.statecomputer.MempoolAtomsRemoved;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -138,6 +139,8 @@ public class RadixEngineStateComputerTest {
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
+						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolAtomsRemoved>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(RegisteredValidators.class).toInstance(RegisteredValidators.create(stakes.keySet().stream().limit(2)));

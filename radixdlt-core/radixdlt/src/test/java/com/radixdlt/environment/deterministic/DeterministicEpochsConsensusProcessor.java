@@ -45,6 +45,7 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
+import com.radixdlt.statecomputer.MempoolAtomsRemoved;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Map;
@@ -161,6 +162,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		} else if (message instanceof AtomCommittedToLedger) {
 			// Don't need to process
 		} else if (message instanceof MempoolAddFailure) {
+			// Don't need to process
+		} else if (message instanceof MempoolAtomsRemoved) {
 			// Don't need to process
 		} else if (message instanceof InvalidProposedCommand) {
 			// Don't need to process

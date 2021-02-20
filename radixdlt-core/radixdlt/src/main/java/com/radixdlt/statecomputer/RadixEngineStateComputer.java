@@ -81,6 +81,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
+	private final EventDispatcher<MempoolAtomsRemoved> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
 
 	@Inject
@@ -94,7 +95,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Hasher hasher,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
-		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher
+		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
+		EventDispatcher<MempoolAtomsRemoved> mempoolAtomsRemovedEventDispatcher
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -110,6 +112,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
+		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -389,10 +392,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		List<Pair<ClientAtom, Exception>> removed = this.mempool.committed(atomsCommitted);
-		for (Pair<ClientAtom, Exception> removedAtom : removed) {
-			// TODO: Create more specific AtomRemovedFromMempool event
-			byte[] dson = serialization.toDson(removedAtom.getFirst(), DsonOutput.Output.ALL);
-			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(new Command(dson), removedAtom.getSecond()));
-		}
+		MempoolAtomsRemoved mempoolAtomsRemoved = MempoolAtomsRemoved.create(removed);
+		mempoolAtomsRemovedEventDispatcher.dispatch(mempoolAtomsRemoved);
 	}
 }

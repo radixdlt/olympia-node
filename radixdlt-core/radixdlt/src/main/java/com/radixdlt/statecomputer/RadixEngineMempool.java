@@ -139,7 +139,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 					checker.checkAndStore(clientAtom);
 				} catch (RadixEngineException e) {
 					if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-						removed.add(Pair.of(clientAtom, e));
+						removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(e)));
 						removeAtom(clientAtom);
 					}
 				} finally {

@@ -31,12 +31,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -50,7 +45,6 @@ import com.radixdlt.utils.Base58;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -61,7 +55,6 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,17 +111,13 @@ public final class RadixHttpServer {
 
 	@Inject
 	public RadixHttpServer(
+		AtomsService atomsService,
 		InMemorySystemInfo inMemorySystemInfo,
-		Observable<MempoolAddFailure> mempoolAddFailures,
-		Observable<AtomCommittedToLedger> ledgerCommitted,
 		Map<String, ModuleRunner> moduleRunners,
 		RadixEngine<LedgerAtom> radixEngine,
 		LedgerEntryStore store,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
 		EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -144,15 +133,7 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.atomsService = new AtomsService(
-			mempoolAddFailures,
-			ledgerCommitted,
-			store,
-			mempoolAddEventDispatcher,
-			commandToBinaryConverter,
-			clientAtomToBinaryConverter,
-			hasher
-		);
+		this.atomsService = atomsService;
 		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
 		this.mempoolFillerUpdateEventDispatcher = mempoolFillerUpdateEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(

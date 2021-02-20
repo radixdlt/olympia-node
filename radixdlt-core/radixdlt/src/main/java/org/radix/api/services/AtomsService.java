@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
@@ -31,6 +32,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.MempoolAtomsRemoved;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -88,12 +90,15 @@ public class AtomsService {
 	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final Observable<MempoolAtomsRemoved> mempoolAtomsRemoved;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<AtomCommittedToLedger> ledgerCommitted;
 
 	private final Hasher hasher;
 
+	@Inject
 	public AtomsService(
+		Observable<MempoolAtomsRemoved> mempoolAtomsRemoved,
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
@@ -102,6 +107,7 @@ public class AtomsService {
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Hasher hasher
 	) {
+		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
 		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
@@ -118,6 +124,13 @@ public class AtomsService {
 		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
 		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 	}
+
+    private void processSubmissionFailure(MempoolAtomsRemoved mempoolAtomsRemoved) {
+		mempoolAtomsRemoved.forEach((atom, e) -> {
+			final AID aid = atom.getAID();
+			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
+		});
+    }
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
 		ClientAtom clientAtom = failure.getCommand().map(payload -> {
@@ -145,6 +158,12 @@ public class AtomsService {
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
+
+		var mempoolAtomsRemovedDisposable = mempoolAtomsRemoved
+				.observeOn(Schedulers.io())
+				.subscribe(this::processSubmissionFailure);
+		this.disposable.add(mempoolAtomsRemovedDisposable);
+
 	}
 
 	public void stop() {
