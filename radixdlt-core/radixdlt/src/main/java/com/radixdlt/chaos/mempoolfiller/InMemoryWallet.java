@@ -39,6 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -54,10 +55,12 @@ public final class InMemoryWallet {
 	private final UInt256 balance;
 	private final TokDefParticleFactory factory;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private final Random random;
 
-	private InMemoryWallet(RRI tokenRRI, RadixAddress address, ImmutableList<TransferrableTokensParticle> particles) {
+	private InMemoryWallet(RRI tokenRRI, RadixAddress address, Random random, ImmutableList<TransferrableTokensParticle> particles) {
 		this.tokenRRI = tokenRRI;
 		this.address = address;
+		this.random = random;
 		this.particles = particles;
 		this.balance = particles.stream()
 			.map(TransferrableTokensParticle::getAmount)
@@ -73,11 +76,12 @@ public final class InMemoryWallet {
 		);
 	}
 
-	public static InMemoryWallet create(RRI tokenRRI, RadixAddress address) {
+	public static InMemoryWallet create(RRI tokenRRI, RadixAddress address, Random random) {
 		Objects.requireNonNull(tokenRRI);
 		Objects.requireNonNull(address);
+		Objects.requireNonNull(random);
 
-		return new InMemoryWallet(tokenRRI, address, ImmutableList.of());
+		return new InMemoryWallet(tokenRRI, address, random, ImmutableList.of());
 	}
 
 	public int getNumParticles() {
@@ -116,20 +120,20 @@ public final class InMemoryWallet {
 			return Optional.empty();
 		}
 		remainder.filter(r -> !r.isZero()).ifPresent(r -> {
-			TransferrableTokensParticle particle = factory.createTransferrable(address, r);
+			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 			mutableList.add(particle);
 			feeBuilder.addParticle(particle, Spin.UP);
 		});
 		atom.addParticleGroup(feeBuilder.build());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
-		builder.addParticle(factory.createTransferrable(to, amount), Spin.UP);
+		builder.addParticle(factory.createTransferrable(to, amount, random.nextLong()), Spin.UP);
 		Optional<UInt256> remainder2 = downParticles(amount, mutableList, p -> builder.addParticle(p, Spin.DOWN));
 		if (remainder2.isEmpty()) {
 			return Optional.empty();
 		}
 		remainder2.filter(r -> !r.isZero()).ifPresent(r -> {
-			TransferrableTokensParticle particle = factory.createTransferrable(address, r);
+			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 			mutableList.add(particle);
 			builder.addParticle(particle, Spin.UP);
 		});
@@ -178,6 +182,7 @@ public final class InMemoryWallet {
 		return new InMemoryWallet(
 			tokenRRI,
 			address,
+			random,
 			ImmutableList.<TransferrableTokensParticle>builder()
 				.addAll(particles)
 				.add(p)
@@ -197,6 +202,7 @@ public final class InMemoryWallet {
 		return new InMemoryWallet(
 			tokenRRI,
 			address,
+			random,
 			particles.stream()
 				.filter(particle -> !p.equals(particle))
 				.collect(ImmutableList.toImmutableList())

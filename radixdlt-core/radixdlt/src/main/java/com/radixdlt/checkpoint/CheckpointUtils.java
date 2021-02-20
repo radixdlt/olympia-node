@@ -81,7 +81,7 @@ public final class CheckpointUtils {
 
 		var issuedTokens = UInt384.from(selfIssuance);
 		if (!selfIssuance.isZero()) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(universeAddress, selfIssuance)));
+			particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(universeAddress, selfIssuance, 0)));
 		}
 		// Merge issuances so we only have one TTP per address
 		final var issuedAmounts = issuances.stream()
@@ -90,7 +90,7 @@ public final class CheckpointUtils {
 			final var amount = issuance.getValue();
 			if (!amount.isZero()) {
 				particles.add(SpunParticle.up(
-					tokDefParticleFactory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount)
+					tokDefParticleFactory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount, 0)
 				));
 				issuedTokens = issuedTokens.add(amount);
 			}

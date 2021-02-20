@@ -33,6 +33,8 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
+import java.util.Random;
+
 /**
  * Module responsible for the mempool filler chaos attack
  */
@@ -50,9 +52,10 @@ public final class MempoolFillerModule extends AbstractModule {
 	@ProvidesIntoSet
 	private StateReducer<?, ?> mempoolFillerWallet(
 		@NativeToken RRI tokenRRI,
-		@MempoolFillerKey RadixAddress mempoolFillerAddress
+		@MempoolFillerKey RadixAddress mempoolFillerAddress,
+		Random random
 	) {
-		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress);
+		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress, random);
 	}
 
 	@Provides
