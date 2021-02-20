@@ -25,15 +25,28 @@ import java.util.Optional;
  *
  * @param <T> The event class
  */
-public final class ProcessorOnRunner<T> {
+public final class EventProcessorOnRunner<T> {
     private final String runnerName;
     private final Class<T> eventClass;
     private final EventProcessor<T> processor;
+    private final long rateLimitDelayMs;
 
-    public ProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor) {
+    public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor) {
+        this(runnerName, eventClass, processor, 0);
+    }
+
+    public EventProcessorOnRunner(String runnerName, Class<T> eventClass, EventProcessor<T> processor, long rateLimitDelayMs) {
         this.runnerName = Objects.requireNonNull(runnerName);
         this.eventClass = Objects.requireNonNull(eventClass);
         this.processor = Objects.requireNonNull(processor);
+        if (rateLimitDelayMs < 0) {
+            throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
+        }
+        this.rateLimitDelayMs = rateLimitDelayMs;
+    }
+
+    public long getRateLimitDelayMs() {
+        return rateLimitDelayMs;
     }
 
     public String getRunnerName() {

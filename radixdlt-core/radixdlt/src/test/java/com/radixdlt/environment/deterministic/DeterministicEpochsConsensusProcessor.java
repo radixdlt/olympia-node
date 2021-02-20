@@ -36,7 +36,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.ProcessorOnRunner;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -62,7 +62,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	private final EpochManager epochManager;
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
-	private final Set<ProcessorOnRunner<?>> processorOnRunners;
+	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
@@ -79,7 +79,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor,
-		Set<ProcessorOnRunner<?>> processorOnRunners
+		Set<EventProcessorOnRunner<?>> processorOnRunners
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
@@ -122,7 +122,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 	private static <T> boolean execute(
 		T event,
-		ProcessorOnRunner<?> processor
+		EventProcessorOnRunner<?> processor
 	) {
 		Class<T> eventClass = (Class<T>) event.getClass();
 		Optional<EventProcessor<T>> ep = processor.getProcessor(eventClass);
@@ -166,7 +166,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			// Don't need to process
 		} else {
 			boolean found = false;
-			for (ProcessorOnRunner<?> p : processorOnRunners) {
+			for (EventProcessorOnRunner<?> p : processorOnRunners) {
 				found = execute(message, p) || found;
 			}
 			if (found) {

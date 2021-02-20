@@ -54,13 +54,9 @@ import java.util.Set;
 public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 	private final LinkedHashMap<AID, ClientAtom> data = Maps.newLinkedHashMap();
 	private final Map<Particle, Set<AID>> particleIndex = new HashMap<>();
-
 	private final int maxSize;
-
 	private final SystemCounters counters;
-
 	private final Random random;
-
 	private final RadixEngine<LedgerAtom> radixEngine;
 
 	@Inject
@@ -83,7 +79,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 	public void add(ClientAtom atom) throws MempoolRejectedException {
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
-					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
 			);
 		}
 
@@ -92,7 +88,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 			checker.checkAndStore(atom);
 		} catch (RadixEngineException e) {
 			if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-				throw new MempoolRejectedException(e.getMessage());
+				throw new RadixEngineMempoolException(e);
 			}
 		} finally {
 			radixEngine.deleteBranches();

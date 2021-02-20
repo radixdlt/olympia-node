@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.ProcessorOnRunner;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 
 /**
@@ -40,12 +40,12 @@ public final class MessageFlooderModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public ProcessorOnRunner<?> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
-		return new ProcessorOnRunner<>("chaos", MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
+	public EventProcessorOnRunner<?> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
+		return new EventProcessorOnRunner<>("chaos", MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
 	}
 
 	@Provides
-	public ProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
-		return new ProcessorOnRunner<>("chaos", ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
+	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
+		return new EventProcessorOnRunner<>("chaos", ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
 	}
 }

@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolCommandGeneratorModule;
+import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -109,7 +109,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 					install(new MockedStateComputerWithEpochsModule());
 				}
 			} else {
-				install(new MempoolCommandGeneratorModule());
+				install(new MempoolReceiverModule());
 
 				if (hasMempoolRelayer) {
 					install(new MempoolRelayerModule());

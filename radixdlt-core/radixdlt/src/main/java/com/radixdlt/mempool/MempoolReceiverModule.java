@@ -19,27 +19,47 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.ledger.StateComputerLedger;
 
-public class MempoolCommandGeneratorModule extends AbstractModule {
+public class MempoolReceiverModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(MempoolAdd.class);
 	}
 
 	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<MempoolAdd> mempoolAddEventProcessor(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger.mempoolAddEventProcessor();
+	private EventProcessorOnRunner<?> mempoolAddEventProcessor(
+		StateComputerLedger stateComputerLedger,
+		@MempoolThrottleMs long mempoolThrottleMs
+	) {
+		return new EventProcessorOnRunner<>(
+			"mempool",
+			MempoolAdd.class,
+			stateComputerLedger.mempoolAddEventProcessor(),
+			mempoolThrottleMs
+		);
 	}
 
 	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(StateComputerLedger stateComputerLedger) {
-		return new RemoteEventProcessorOnRunner<>("mempool", MempoolAdd.class, stateComputerLedger.mempoolAddRemoteEventProcessor());
+	private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
+		StateComputerLedger stateComputerLedger,
+		@MempoolThrottleMs long mempoolThrottleMs
+	) {
+		return new RemoteEventProcessorOnRunner<>(
+			"mempool",
+			MempoolAdd.class,
+			stateComputerLedger.mempoolAddRemoteEventProcessor(),
+			mempoolThrottleMs
+		);
 	}
 }

@@ -69,6 +69,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -127,6 +128,7 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MinValidators.class).to(1);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 				bind(RRI.class).annotatedWith(NativeToken.class).toInstance(stakeToken);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 				bind(Mempool.class).toInstance(mock(Mempool.class));

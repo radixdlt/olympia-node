@@ -27,6 +27,8 @@ import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
@@ -109,8 +111,9 @@ public class AtomStatusEpic {
 					data.put("message", e.getMessage());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof RadixEngineException) {
-					RadixEngineException reException = (RadixEngineException) e;
+				} else if (e instanceof RadixEngineMempoolException) {
+					RadixEngineMempoolException mempoolException = (RadixEngineMempoolException) e;
+					RadixEngineException reException = mempoolException.getException();
 					String pointerToIssue = reException.getDataPointer().toString();
 
 					JSONObject data = new JSONObject();
@@ -160,7 +163,7 @@ public class AtomStatusEpic {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
 
-					sendAtomSubmissionState.accept(null, data);
+					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
 				}
 			}
 		});

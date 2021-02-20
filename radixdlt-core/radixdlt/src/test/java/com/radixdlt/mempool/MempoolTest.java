@@ -38,6 +38,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicMempoolProcessor;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
@@ -54,7 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -66,6 +67,7 @@ public class MempoolTest {
 
 	@Inject private Hasher hasher;
 	@Inject private DeterministicMempoolProcessor processor;
+	@Inject private DeterministicNetwork network;
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
@@ -80,6 +82,7 @@ public class MempoolTest {
 					AddressBook addressBook = mock(AddressBook.class);
 					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath());
@@ -118,7 +121,7 @@ public class MempoolTest {
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
-	    ClientAtom atom = createAtom(keyPair, hasher, 0, 1);
+		ClientAtom atom = createAtom(keyPair, hasher, 0, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
@@ -137,11 +140,25 @@ public class MempoolTest {
 		Command command = createCommand(keyPair, hasher);
 
 		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command));
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+	}
+
+	@Test
+	public void relay_successful_add() {
+		// Arrange
+		getInjector().injectMembers(this);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher);
+
+		// Act
+		processor.handleMessage(null, MempoolAddSuccess.create(command, getFirstPeer()));
+
+		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
 	}
 

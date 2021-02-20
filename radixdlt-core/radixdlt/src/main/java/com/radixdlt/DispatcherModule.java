@@ -79,6 +79,10 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
@@ -163,12 +167,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
-
-		final var mempoolAddKey = new TypeLiteral<EventProcessor<MempoolAdd>>() { };
-		Multibinder.newSetBinder(binder(), mempoolAddKey, ProcessOnDispatch.class);
-
-		final var mempoolAddedCommandKey = new TypeLiteral<EventProcessor<MempoolAddSuccess>>() { };
-		Multibinder.newSetBinder(binder(), mempoolAddedCommandKey, ProcessOnDispatch.class);
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
@@ -421,22 +419,6 @@ public class DispatcherModule extends AbstractModule {
 			dispatcher.dispatch(epochViewUpdate);
 			processors.forEach(e -> e.process(epochViewUpdate));
 		};
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
-	) {
-		return cmd -> processors.forEach(e -> e.process(cmd));
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
-	) {
-		return cmd -> processors.forEach(e -> e.process(cmd));
 	}
 
 	@Provides

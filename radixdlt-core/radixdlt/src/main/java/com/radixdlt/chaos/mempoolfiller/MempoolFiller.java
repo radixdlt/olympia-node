@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
@@ -50,6 +51,7 @@ public final class MempoolFiller {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
 	private final ECKeyPair keyPair;
+	private final SystemCounters systemCounters;
 	private RadixAddress to = null;
 
 	@Inject
@@ -60,7 +62,8 @@ public final class MempoolFiller {
 		@Named("magic") int magic,
 		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher
+		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,
+		SystemCounters systemCounters
 	) {
 		this.keyPair = keyPair;
 		this.serialization = serialization;
@@ -69,6 +72,7 @@ public final class MempoolFiller {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.mempoolFillDispatcher = mempoolFillDispatcher;
+		this.systemCounters = systemCounters;
 	}
 
 	public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
@@ -97,7 +101,8 @@ public final class MempoolFiller {
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			Set<Atom> atoms = wallet.createParallelTransactions(to, 100);
-			logger.info("Mempool Filler (balance: {} particles: {}): Adding {} atoms to mempool...",
+			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
+				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
 				wallet.getNumParticles(),
 				atoms.size()

@@ -18,7 +18,7 @@
 package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.EventProcessorOnRunner;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -27,14 +27,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class DeterministicMempoolProcessor implements DeterministicMessageProcessor {
-	private final Map<Class<?>, List<RemoteEventProcessorOnRunner<?>>> runners;
+	private final Map<Class<?>, List<EventProcessorOnRunner<?>>> processors;
 
 	@Inject
 	public DeterministicMempoolProcessor(
-		Set<RemoteEventProcessorOnRunner<?>> remoteEventProcessorOnRunners
+		Set<EventProcessorOnRunner<?>> processorOnRunners
 	) {
-	    this.runners = remoteEventProcessorOnRunners.stream()
-			.collect(Collectors.<RemoteEventProcessorOnRunner<?>, Class<?>>groupingBy(RemoteEventProcessorOnRunner::getEventClass));
+		this.processors = processorOnRunners.stream()
+			.collect(Collectors.<EventProcessorOnRunner<?>, Class<?>>groupingBy(EventProcessorOnRunner::getEventClass));
 	}
 
 	@Override
@@ -44,11 +44,9 @@ public final class DeterministicMempoolProcessor implements DeterministicMessage
 
 	private <T> void execute(BFTNode sender, T event) {
 		Class<T> eventClass = (Class<T>) event.getClass();
-		List<RemoteEventProcessorOnRunner<?>> eventRunners = runners.get(eventClass);
-		if (eventRunners.isEmpty()) {
-			throw new IllegalStateException("Unknown message type: " + event.getClass());
-		}
-		eventRunners.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(sender, event)));
+
+		List<EventProcessorOnRunner<?>> eventProcessors = processors.get(eventClass);
+		eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
 	}
 
 	@Override

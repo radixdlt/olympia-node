@@ -25,6 +25,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import org.junit.Test;
 
@@ -77,6 +78,7 @@ public class RadixEngineModuleTest {
 			bindConstant().annotatedWith(MinValidators.class).to(1);
 			bindConstant().annotatedWith(MaxValidators.class).to(100);
 			bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+			bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 			bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(BFTValidatorSet.class).toInstance(this.validatorSet);

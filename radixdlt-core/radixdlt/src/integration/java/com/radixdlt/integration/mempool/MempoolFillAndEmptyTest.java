@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
@@ -32,12 +33,14 @@ import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import org.apache.logging.log4j.LogManager;
@@ -71,7 +74,9 @@ public final class MempoolFillAndEmptyTest {
             new AbstractModule() {
                 @Override
                 protected void configure() {
+                    bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
                     bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+                    bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
                     bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
                     bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));

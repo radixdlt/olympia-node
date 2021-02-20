@@ -20,8 +20,10 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.chaos.ChaosModule;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.checkpoint.CheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -30,9 +32,11 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.MempoolCommandGeneratorModule;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -70,6 +74,7 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 
+		bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
 		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
@@ -102,7 +107,7 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Ledger
 		install(new LedgerModule());
-		install(new MempoolCommandGeneratorModule());
+		install(new MempoolReceiverModule());
 
 		// Mempool Relay
 		install(new MempoolRelayerModule());
@@ -150,6 +155,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		if (properties.get("chaos.enable", false)) {
+			bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
 			install(new ChaosModule());
 		}
 	}

@@ -25,11 +25,24 @@ public class RemoteEventProcessorOnRunner<T> {
     private final String runnerName;
     private final Class<T> eventClass;
     private final RemoteEventProcessor<T> processor;
+    private final long rateLimitDelayMs;
 
     public RemoteEventProcessorOnRunner(String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor) {
+        this(runnerName, eventClass, processor, 0);
+    }
+
+    public RemoteEventProcessorOnRunner(String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor, long rateLimitDelayMs) {
         this.runnerName = Objects.requireNonNull(runnerName);
         this.eventClass = Objects.requireNonNull(eventClass);
         this.processor = Objects.requireNonNull(processor);
+        if (rateLimitDelayMs < 0) {
+            throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
+        }
+        this.rateLimitDelayMs = rateLimitDelayMs;
+    }
+
+    public long getRateLimitDelayMs() {
+        return rateLimitDelayMs;
     }
 
     public String getRunnerName() {
@@ -46,5 +59,10 @@ public class RemoteEventProcessorOnRunner<T> {
 
     public Class<T> getEventClass() {
         return eventClass;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s Processor %s", this.runnerName, this.processor);
     }
 }

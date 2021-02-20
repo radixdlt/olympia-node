@@ -20,23 +20,26 @@ package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.EventProcessorOnRunner;
 
 /**
  * Module responsible for sending mempool messages to other nodes.
  */
 public final class MempoolRelayerModule extends AbstractModule {
-
 	@Override
 	public void configure() {
 		bind(MempoolRelayer.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(MempoolAddSuccess.class);
 	}
 
 	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<MempoolAddSuccess> mempoolAddedCommandEventProcessor(MempoolRelayer mempoolRelayer) {
-		return mempoolRelayer.mempoolAddedCommandEventProcessor();
+	private EventProcessorOnRunner<?> mempoolAddEventProcessor(MempoolRelayer mempoolRelayer) {
+		return new EventProcessorOnRunner<>("mempool", MempoolAddSuccess.class, mempoolRelayer.mempoolAddedCommandEventProcessor());
 	}
 }
