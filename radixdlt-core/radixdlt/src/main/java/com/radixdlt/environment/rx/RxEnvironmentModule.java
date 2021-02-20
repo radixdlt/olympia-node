@@ -25,6 +25,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.ProcessorOnRunner;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
@@ -52,11 +54,13 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.ThreadFactories;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -97,6 +101,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Flowable<RemoteEvent<MempoolAdd>>>() { }).toProvider(new RemoteEventsProvider<>(MempoolAdd.class));
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<ProcessorOnRunner<?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() { });
 	}
 
 	@Provides
@@ -140,5 +145,37 @@ public class RxEnvironmentModule extends AbstractModule {
 		}
 
 		return builder.build("ChaosRunner");
+	}
+
+	private static <T> void addToBuilder(
+		Class<T> eventClass,
+		RxRemoteEnvironment rxEnvironment,
+		RemoteEventProcessorOnRunner<?> processor,
+		ModuleRunnerImpl.Builder builder
+	) {
+	   Flowable<RemoteEvent<T>> backPressuredEvents = rxEnvironment.remoteEvents(eventClass)
+			.onBackpressureBuffer(5, null, BackpressureOverflowStrategy.DROP_LATEST)
+			.throttleLatest(50, TimeUnit.MILLISECONDS);
+		processor.getProcessor(eventClass).ifPresent(p -> builder.add(backPressuredEvents, p));
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("mempool")
+	public ModuleRunner mempoolRunner(
+		@Self BFTNode self,
+		Set<RemoteEventProcessorOnRunner<?>> processors,
+		RxRemoteEnvironment rxRemoteEnvironment
+	) {
+		Set<Class<?>> eventClasses = processors.stream()
+			.filter(p -> p.getRunnerName().equals("mempool"))
+			.map(RemoteEventProcessorOnRunner::getEventClass)
+			.collect(Collectors.toSet());
+
+		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
+		for (Class<?> eventClass : eventClasses) {
+			processors.forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder));
+		}
+
+		return builder.build("MempoolRunner " + self);
 	}
 }

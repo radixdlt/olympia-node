@@ -34,9 +34,9 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -355,8 +355,11 @@ public class SimulationTest {
 
 				@Provides
 				@Singleton
-				PeersView peersView() {
-					return () -> nodes.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
 				}
 			});
 			return this;
@@ -559,9 +562,6 @@ public class SimulationTest {
 
 			// Runners
 			modules.add(new RxEnvironmentModule());
-			if (ledgerType.hasSharedMempool) {
-				modules.add(new MempoolReceiverModule());
-			}
 			if (ledgerType.hasConsensus) {
 				if (!ledgerType.hasEpochs) {
 					modules.add(new MockedConsensusRunnerModule());

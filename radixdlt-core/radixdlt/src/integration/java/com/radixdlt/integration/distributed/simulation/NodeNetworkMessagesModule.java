@@ -66,6 +66,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> mempoolAdd(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(MempoolAdd.class, network.remoteEventDispatcher(MempoolAdd.class));
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> vertexRequestDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(GetVerticesRequest.class, network.remoteEventDispatcher(GetVerticesRequest.class));
 	}
@@ -73,11 +78,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
-	}
-
-	@ProvidesIntoSet
-	private RxRemoteDispatcher<?> mempoolAdd(SimulatedNetworkImpl network) {
-		return RxRemoteDispatcher.create(MempoolAdd.class, network.remoteEventDispatcher(MempoolAdd.class));
 	}
 
 	@Provides
