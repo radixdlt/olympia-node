@@ -24,7 +24,11 @@ import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.Objects;
 
-public class RemoteEventsProvider<T> implements Provider<Flowable<RemoteEvent<T>>> {
+/**
+ * Provides remote event flowables from the rx environment
+ * @param <T> the class of the remote event
+ */
+public final class RemoteEventsProvider<T> implements Provider<Flowable<RemoteEvent<T>>> {
     @Inject
     private Provider<RxRemoteEnvironment> rxEnvironmentProvider;
     private final Class<T> c;

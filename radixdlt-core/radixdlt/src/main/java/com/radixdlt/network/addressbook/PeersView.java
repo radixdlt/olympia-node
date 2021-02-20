@@ -22,6 +22,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.List;
 
+/**
+ * Retrieve the node's current peers
+ */
 public interface PeersView {
     List<BFTNode> peers();
 }

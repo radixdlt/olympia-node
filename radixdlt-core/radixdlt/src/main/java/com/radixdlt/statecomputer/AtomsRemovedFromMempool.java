@@ -25,19 +25,38 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-public class MempoolAtomsRemoved {
-    private List<Pair<ClientAtom, Exception>> removed;
+/**
+ * Event describing atoms which have been removed from the mempool
+ * after a commit.
+ */
+public final class AtomsRemovedFromMempool {
+    private final List<Pair<ClientAtom, Exception>> removed;
 
-    private MempoolAtomsRemoved(List<Pair<ClientAtom, Exception>> removed) {
+    private AtomsRemovedFromMempool(List<Pair<ClientAtom, Exception>> removed) {
         this.removed = removed;
     }
 
-    public static MempoolAtomsRemoved create(List<Pair<ClientAtom, Exception>> removed) {
+    public static AtomsRemovedFromMempool create(List<Pair<ClientAtom, Exception>> removed) {
         Objects.requireNonNull(removed);
-        return new MempoolAtomsRemoved(removed);
+        return new AtomsRemovedFromMempool(removed);
     }
 
     public void forEach(BiConsumer<ClientAtom, Exception> biConsumer) {
         removed.forEach(p -> biConsumer.accept(p.getFirst(), p.getSecond()));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(removed);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof AtomsRemovedFromMempool)) {
+            return false;
+        }
+
+        AtomsRemovedFromMempool other = (AtomsRemovedFromMempool) o;
+        return Objects.equals(this.removed, other.removed);
     }
 }

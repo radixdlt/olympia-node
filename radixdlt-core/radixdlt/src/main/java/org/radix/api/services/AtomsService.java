@@ -32,7 +32,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.MempoolAtomsRemoved;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -90,7 +90,7 @@ public class AtomsService {
 	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final Observable<MempoolAtomsRemoved> mempoolAtomsRemoved;
+	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<AtomCommittedToLedger> ledgerCommitted;
 
@@ -98,7 +98,7 @@ public class AtomsService {
 
 	@Inject
 	public AtomsService(
-		Observable<MempoolAtomsRemoved> mempoolAtomsRemoved,
+		Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved,
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
@@ -125,12 +125,12 @@ public class AtomsService {
 		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 	}
 
-    private void processSubmissionFailure(MempoolAtomsRemoved mempoolAtomsRemoved) {
-		mempoolAtomsRemoved.forEach((atom, e) -> {
+	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
+		atomsRemovedFromMempool.forEach((atom, e) -> {
 			final AID aid = atom.getAID();
 			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
 		});
-    }
+	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
 		ClientAtom clientAtom = failure.getCommand().map(payload -> {

@@ -63,7 +63,7 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
-import com.radixdlt.statecomputer.MempoolAtomsRemoved;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -91,8 +91,8 @@ public class DispatcherModule extends AbstractModule {
 				true
 			))
 			.in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MempoolAtomsRemoved>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(MempoolAtomsRemoved.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })

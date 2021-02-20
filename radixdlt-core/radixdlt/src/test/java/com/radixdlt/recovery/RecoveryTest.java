@@ -135,7 +135,7 @@ public class RecoveryTest {
 				@Override
 				protected void configure() {
 					bind(PeersView.class).toInstance(List::of);
-				    bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);

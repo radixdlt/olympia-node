@@ -46,6 +46,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+/**
+ * Runs the chaos mempool filler and verifies that all operations are working normally
+ */
 public class MempoolFillTest {
 	private final ECKeyPair mempoolFillerKey = ECKeyPair.generateNew();
 

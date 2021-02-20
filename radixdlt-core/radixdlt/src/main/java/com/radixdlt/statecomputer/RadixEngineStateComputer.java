@@ -48,7 +48,6 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -81,7 +80,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
-	private final EventDispatcher<MempoolAtomsRemoved> mempoolAtomsRemovedEventDispatcher;
+	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
 
 	@Inject
@@ -96,7 +95,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
-		EventDispatcher<MempoolAtomsRemoved> mempoolAtomsRemovedEventDispatcher
+		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -392,7 +391,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		List<Pair<ClientAtom, Exception>> removed = this.mempool.committed(atomsCommitted);
-		MempoolAtomsRemoved mempoolAtomsRemoved = MempoolAtomsRemoved.create(removed);
-		mempoolAtomsRemovedEventDispatcher.dispatch(mempoolAtomsRemoved);
+		if (!removed.isEmpty()) {
+			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
+			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
+		}
 	}
 }

@@ -26,6 +26,9 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * A Peers view using an address book
+ */
 public final class AddressBookPeersView implements PeersView {
 	private final PeerWithSystem localPeer;
 	private final AddressBook addressBook;

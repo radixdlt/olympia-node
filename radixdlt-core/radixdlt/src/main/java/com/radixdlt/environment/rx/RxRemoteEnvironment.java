@@ -20,6 +20,9 @@ package com.radixdlt.environment.rx;
 
 import io.reactivex.rxjava3.core.Flowable;
 
+/**
+ * Provides remote events
+ */
 public interface RxRemoteEnvironment {
     <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass);
 }

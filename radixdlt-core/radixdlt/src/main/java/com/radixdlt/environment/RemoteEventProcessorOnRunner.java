@@ -21,7 +21,11 @@ package com.radixdlt.environment;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RemoteEventProcessorOnRunner<T> {
+/**
+ * Registration for a remote event processor to run on a certain runner
+ * @param <T> the class of the remote event
+ */
+public final class RemoteEventProcessorOnRunner<T> {
     private final String runnerName;
     private final Class<T> eventClass;
     private final RemoteEventProcessor<T> processor;

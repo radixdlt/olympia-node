@@ -115,8 +115,9 @@ public final class NetworkModule extends AbstractModule {
 		return validatorSync.requests();
 	}
 
+	// TODO: Clean this up, convert the rest of remote events into this
 	@Provides
-    @Singleton
+	@Singleton
 	RxRemoteEnvironment rxRemoteEnvironment(MessageCentralMempool messageCentralMempool) {
 	    return new RxRemoteEnvironment() {
 			@Override

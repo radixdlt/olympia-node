@@ -18,21 +18,16 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Exception from the Radix Engine mempool
- */
-public final class RadixEngineMempoolException extends MempoolRejectedException {
-    private final RadixEngineException exception;
-
-    public RadixEngineMempoolException(RadixEngineException exception) {
-        super(exception.getMessage());
-        this.exception = exception;
-    }
-
-    public RadixEngineException getException() {
-        return exception;
-    }
+public class AtomsRemovedFromMempoolTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(AtomsRemovedFromMempool.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

@@ -24,7 +24,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.MempoolAtomsRemoved;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.api.services.AtomsService;
 
@@ -40,6 +40,6 @@ public final class ApiModule extends AbstractModule {
 				.permitDuplicates();
 		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
-		eventBinder.addBinding().toInstance(MempoolAtomsRemoved.class);
+		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 	}
 }

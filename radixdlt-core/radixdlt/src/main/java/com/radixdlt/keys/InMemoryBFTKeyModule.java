@@ -28,14 +28,14 @@ import com.radixdlt.crypto.ECKeyPair;
  * In memory Hash signing and identity handling
  */
 public final class InMemoryBFTKeyModule extends AbstractModule {
-    @Provides
-    public HashSigner hashSigner(@Self ECKeyPair self) {
-        return self::sign;
-    }
+	@Provides
+	public HashSigner hashSigner(@Self ECKeyPair self) {
+		return self::sign;
+	}
 
-    @Provides
-    @Self
-    public BFTNode node(@Self ECKeyPair self) {
-        return BFTNode.create(self.getPublicKey());
-    }
+	@Provides
+	@Self
+	public BFTNode node(@Self ECKeyPair self) {
+		return BFTNode.create(self.getPublicKey());
+	}
 }
