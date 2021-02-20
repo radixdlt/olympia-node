@@ -17,37 +17,36 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.middleware2.converters.AtomConversionException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
 import org.radix.api.services.AtomsService;
 
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.statecomputer.CommittedAtom;
+
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
+import static org.radix.api.jsonrpc.AtomStatus.*;
+import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
+import static org.radix.api.jsonrpc.JsonRpcUtil.simpleResponse;
+
 /**
  * Epic used to manage streaming status notifications regarding an atom.
  */
 public class AtomStatusEpic {
-	/**
-	 * Interface for atom submission and return of results
-	 */
 	private final AtomsService atomsService;
-
-	/**
-	 * Stream of JSON RPC objects to be sent back in the same channel
-	 */
 	private final Consumer<JSONObject> callback;
-
 	private final ConcurrentHashMap<String, Disposable> observers = new ConcurrentHashMap<>();
 
 	public AtomStatusEpic(AtomsService atomsService, Consumer<JSONObject> callback) {
@@ -56,126 +55,121 @@ public class AtomStatusEpic {
 	}
 
 	public void action(JSONObject jsonRequest) {
-		final Object id = jsonRequest.get("id");
-		final JSONObject params = jsonRequest.getJSONObject("params");
-		final String subscriberId = jsonRequest.getJSONObject("params").getString("subscriberId");
+		final var id = jsonRequest.get("id");
+		final var params = jsonRequest.getJSONObject("params");
+		final var subscriberId = params.getString("subscriberId");
 
 		if (jsonRequest.getString("method").equals("Atoms.closeAtomStatusNotifications")) {
-			Disposable disposable = observers.remove(subscriberId);
-			if (disposable != null) {
-				disposable.dispose();
-			}
+			Optional.ofNullable(observers.remove(subscriberId))
+				.ifPresent(Disposable::dispose);
 
-			callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));
+			callback.accept(simpleResponse(id, "success", true));
 			return;
 		}
 
-		AID aid = AID.from(params.getString("aid"));
-		callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));
+		var aid = AID.from(params.getString("aid"));
+		callback.accept(simpleResponse(id, "success", true));
 
-		final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState = (status, data) -> {
-			JSONObject responseParams = new JSONObject();
-			responseParams.put("subscriberId", subscriberId);
-			responseParams.put("status", status.toString());
+		Optional.ofNullable(observers.remove(subscriberId)).ifPresent(Disposable::dispose);
+
+		observers.put(
+			subscriberId,
+			atomsService.subscribeAtomStatusNotifications(aid, new EpicAtomStatusListener(makeCallback(subscriberId), aid))
+		);
+	}
+
+	private BiConsumer<AtomStatus, JSONObject> makeCallback(final String subscriberId) {
+		return (status, data) -> {
+			var responseParams = jsonObject()
+				.put("subscriberId", subscriberId)
+				.put("status", status.toString());
+
 			if (data != null) {
 				responseParams.put("data", data);
 			}
-			JSONObject notification = new JSONObject();
-			notification.put("jsonrpc", "2.0");
-			notification.put("method", "Atoms.nextStatusEvent");
-			notification.put("params", responseParams);
-			callback.accept(notification);
+
+			callback.accept(notification("Atoms.nextStatusEvent", responseParams));
 		};
-
-		Disposable disposable = atomsService.subscribeAtomStatusNotifications(aid, new AtomStatusListener() {
-			@Override
-			public void onStored(CommittedAtom committedAtom) {
-				JSONObject data = new JSONObject();
-				data.put("aid", committedAtom.getAID());
-				// TODO: serialize vertexMetadata
-				VerifiedLedgerHeaderAndProof ledgerState = committedAtom.getStateAndProof();
-				data.put("stateVersion", ledgerState.getStateVersion());
-				data.put("epoch", ledgerState.getEpoch());
-				data.put("timestamp", ledgerState.timestamp());
-
-				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
-			}
-
-			@Override
-			public void onError(Throwable e) {
-				if (e instanceof AtomConversionException) {
-					AtomConversionException conversionException = (AtomConversionException) e;
-					String pointerToIssue = conversionException.getPointerToIssue();
-
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-					data.put("pointerToIssue", pointerToIssue);
-					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof RadixEngineMempoolException) {
-					RadixEngineMempoolException mempoolException = (RadixEngineMempoolException) e;
-					RadixEngineException reException = mempoolException.getException();
-					String pointerToIssue = reException.getDataPointer().toString();
-
-					JSONObject data = new JSONObject();
-					data.put("aid", aid);
-					data.put("message", reException.getMessage());
-					data.put("errorCode", reException.getErrorCode().toString());
-					data.put("pointerToIssue", pointerToIssue);
-
-					final AtomStatus atomStatus;
-					switch (reException.getErrorCode()) {
-						case CONVERSION_ERROR:
-						// Fall through
-						case CM_ERROR:
-						// Fall through
-						case HOOK_ERROR:
-							if (reException.getCmError() != null) {
-								data.put("cmError", reException.getCmError().getErrMsg());
-							}
-							atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-							break;
-
-						case VIRTUAL_STATE_CONFLICT:
-							atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-							break;
-						case MISSING_DEPENDENCY:
-							atomStatus = AtomStatus.MISSING_DEPENDENCY;
-							break;
-						case STATE_CONFLICT:
-							atomStatus = AtomStatus.CONFLICT_LOSER;
-							break;
-						default: // Don't send back unhandled exception
-							return;
-					}
-
-					sendAtomSubmissionState.accept(atomStatus, data);
-				} else if (e instanceof MempoolFullException) {
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-					// FIXME: Probably should be something different here, but decision deferred until later
-					sendAtomSubmissionState.accept(AtomStatus.DOES_NOT_EXIST, data);
-				} else if (e instanceof MempoolDuplicateException) {
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-					// FIXME: Probably should be something different here, but decision deferred until later
-					sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
-				} else {
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-
-					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				}
-			}
-		});
-
-		final Disposable lastDisposable = observers.remove(subscriberId);
-		if (lastDisposable != null) {
-			lastDisposable.dispose();
-		}
-		observers.put(subscriberId, disposable);
 	}
 
 	public void dispose() {
 		observers.forEachKey(100, subscriberId -> observers.remove(subscriberId).dispose());
+	}
+
+	private static class EpicAtomStatusListener implements AtomStatusListener {
+		private final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState;
+		private final AID aid;
+
+		public EpicAtomStatusListener(final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState, final AID aid) {
+			this.sendAtomSubmissionState = sendAtomSubmissionState;
+			this.aid = aid;
+		}
+
+		@Override
+		public void onStored(CommittedAtom committedAtom) {
+			var ledgerState = committedAtom.getStateAndProof();
+
+			sendAtomSubmissionState.accept(STORED, jsonObject()
+				.put("aid", committedAtom.getAID())
+				.put("stateVersion", ledgerState.getStateVersion())
+				.put("epoch", ledgerState.getEpoch())
+				.put("timestamp", ledgerState.timestamp()));
+		}
+
+		@Override
+		public void onError(Throwable e) {
+			if (e instanceof AtomConversionException) {
+				sendAtomSubmissionState.accept(
+					EVICTED_FAILED_CM_VERIFICATION,
+					fromException(e).put("pointerToIssue", ((AtomConversionException) e).getPointerToIssue())
+				);
+			} else if (e instanceof RadixEngineMempoolException) {
+				var exception = (RadixEngineMempoolException) e;
+				var reException = exception.getException();
+
+				var data = fromException(e)
+					.put("aid", aid)
+					.put("errorCode", reException.getErrorCode().toString())
+					.put("pointerToIssue", reException.getDataPointer().toString());
+
+				Optional.ofNullable(extractAtomStatus(reException, data))
+					.ifPresent(atomStatus -> sendAtomSubmissionState.accept(atomStatus, data));
+
+			} else if (e instanceof MempoolFullException) {
+				sendAtomSubmissionState.accept(MEMPOOL_FULL, fromException(e));
+			} else if (e instanceof MempoolDuplicateException) {
+				sendAtomSubmissionState.accept(MEMPOOL_DUPLICATE, fromException(e));
+			} else {
+				sendAtomSubmissionState.accept(null, fromException(e));
+			}
+		}
+
+		private JSONObject fromException(final Throwable e) {
+			return jsonObject().put("message", e.getMessage());
+		}
+
+		private AtomStatus extractAtomStatus(final RadixEngineException exception, final JSONObject data) {
+			switch (exception.getErrorCode()) {
+				case CONVERSION_ERROR:	// Fall through
+				case CM_ERROR: 			// Fall through
+				case HOOK_ERROR:
+					if (exception.getCmError() != null) {
+						data.put("cmError", exception.getCmError().getErrMsg());
+					}
+					return EVICTED_FAILED_CM_VERIFICATION;
+
+				case VIRTUAL_STATE_CONFLICT:
+					return EVICTED_FAILED_CM_VERIFICATION;
+
+				case MISSING_DEPENDENCY:
+					return MISSING_DEPENDENCY;
+
+				case STATE_CONFLICT:
+					return CONFLICT_LOSER;
+
+				default: // Don't send back unhandled exception
+					return null;
+			}
+		}
 	}
 }

@@ -119,8 +119,8 @@ public class AtomsService {
 	}
 
 	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
-		final CommittedAtom committedAtom = atomCommittedToLedger.getAtom();
-		final AID aid = committedAtom.getAID();
+		final var committedAtom = atomCommittedToLedger.getAtom();
+		final var aid = committedAtom.getAID();
 		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
 		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
 	}
@@ -172,7 +172,7 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
-		final Atom rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
+		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
 		byte[] payload = serialization.toDson(atom, Output.ALL);
 		Command command = new Command(payload);
@@ -187,7 +187,7 @@ public class AtomsService {
 
 	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = createAtomObserver(atomQuery, observer);
+			final var atomEventObserver = createAtomObserver(atomQuery, observer);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -208,16 +208,14 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	public JSONObject getAtomsByAtomId(AID atomId) throws JSONException {
-		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
-		if (ledgerEntryOptional.isPresent()) {
-			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
-			ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-			Atom apiAtom = ClientAtom.convertToApiAtom(clientAtom);
-			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
-		}
-		throw new RuntimeException("Atom not found");
+	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
+		return store.get(atomId)
+			.map(LedgerEntry::getContent)
+			.map(commandToBinaryConverter::toCommand)
+			.map(StoredCommittedCommand::getCommand)
+			.map(command -> command.map(clientAtomToBinaryConverter::toAtom))
+			.map(ClientAtom::convertToApiAtom)
+			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}
 
 	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {

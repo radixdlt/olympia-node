@@ -49,13 +49,13 @@ public class RadixJsonRpcServerTest {
 			mock(Universe.class)
 		);
 
-		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
+		JSONObject response = new JSONObject(server.handleRpc(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
 		assertThat(response.has("id")).isTrue();
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.INVALID_REQUEST_CODE);
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.INVALID_PARAMS);
 		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
 	}
 
@@ -78,7 +78,7 @@ public class RadixJsonRpcServerTest {
 			mock(AddressBook.class),
 			mock(Universe.class));
 
-		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
+		JSONObject response = new JSONObject(server.handleRpc(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isTrue();
 		assertThat(response.get("id")).isEqualTo(0);
@@ -100,13 +100,13 @@ public class RadixJsonRpcServerTest {
 			5
 		);
 
-		JSONObject response = new JSONObject(server.handleChecked("123456"));
+		JSONObject response = new JSONObject(server.handleRpc("123456"));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
 		assertThat(response.has("id")).isTrue();
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.OVERSIZED_REQUEST);
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.REQUEST_TOO_LONG);
 		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
 	}
 }

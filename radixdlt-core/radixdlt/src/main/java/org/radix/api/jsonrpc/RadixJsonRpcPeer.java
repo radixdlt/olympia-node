@@ -17,8 +17,6 @@
 
 package org.radix.api.jsonrpc;
 
-import java.util.function.BiConsumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
@@ -29,7 +27,16 @@ import org.radix.api.services.AtomsService;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 
-import io.undertow.websockets.core.BufferedTextMessage;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+
+import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
+import static org.radix.api.jsonrpc.JsonRpcUtil.PARSE_ERROR;
+import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
+import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
 
 /**
  * A Stateful JSON RPC 2.0 Server and Client for duplex communication
@@ -37,15 +44,17 @@ import io.undertow.websockets.core.BufferedTextMessage;
 public class RadixJsonRpcPeer {
 	private static final Logger LOGGER = LogManager.getLogger();
 
+	private static final Set<String> SUBSCRIPTION_METHODS = Set.of("Atoms.subscribe", "Atoms.cancel");
+	private static final Set<String> STATUS_METHODS =
+		Set.of("Atoms.getAtomStatusNotifications", "Atoms.closeAtomStatusNotifications");
+
 	private final BiConsumer<RadixJsonRpcPeer, String> callback;
 
 	/**
 	 * Epic for managing atom subscriptions
 	 */
 	private final AtomsSubscribeEpic atomsSubscribeEpic;
-
 	private final AtomStatusEpic atomStatusEpic;
-
 	private final RadixJsonRpcServer server;
 
 	public RadixJsonRpcPeer(
@@ -61,13 +70,14 @@ public class RadixJsonRpcPeer {
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(
 			atomsService,
 			serialization,
-			queryJson -> new AtomQuery(
-				RadixAddress.from(queryJson.getString("address")).euid()
-			),
+			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address")).euid()),
 			atomJson -> callback.accept(this, atomJson.toString())
 		);
 
-		callback.accept(this, JsonRpcUtil.notification("Radix.welcome", new JSONObject().put("message", "Hello!")).toString());
+		callback.accept(
+			this,
+			notification("Radix.welcome", jsonObject().put("message", "Radix JSON RPC Peer V1.0")).toString()
+		);
 	}
 
 	/**
@@ -75,58 +85,58 @@ public class RadixJsonRpcPeer {
 	 *
 	 * @param message The message
 	 */
-	// TODO: multithreading issues - should get resolved once we use a better async framework
-	public void onMessage(BufferedTextMessage message) {
-
-		final String msg = message.getData();
+	// TODO: multithreading issues ???
+	public void onMessage(String message) {
 
 		final JSONObject jsonRpcRequest;
 		try {
-			jsonRpcRequest = new JSONObject(msg);
+			jsonRpcRequest = new JSONObject(message);
 		} catch (JSONException e) {
-			callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, e.getMessage()).toString());
+			callback.accept(this, errorResponse(PARSE_ERROR, e.getMessage()).toString());
 			return;
 		}
 
-		if (!jsonRpcRequest.has("id")) {
-			callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, "JSON-RPC: No id").toString());
+		if (!ensureRequestHas(jsonRpcRequest, "id", "method", "params")) {
 			return;
 		}
 
-		if (!jsonRpcRequest.has("method")) {
-			callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, "JSON-RPC: No method").toString());
-			return;
-		}
+		final var jsonRpcMethod = jsonRpcRequest.getString("method");
 
-		if (!jsonRpcRequest.has("params")) {
-			callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, "JSON-RPC: No params").toString());
-			return;
-		}
+		if (STATUS_METHODS.contains(jsonRpcMethod) || SUBSCRIPTION_METHODS.contains(jsonRpcMethod)) {
+			if (!jsonRpcRequest.getJSONObject("params").has("subscriberId")) {
+				callback.accept(this, errorResponse(INVALID_PARAMS, "JSON-RPC: No subscriberId").toString());
+				return;
+			}
 
-		final String jsonRpcMethod = jsonRpcRequest.getString("method");
-
-		switch (jsonRpcMethod) {
-			case "Atoms.subscribe":
-			case "Atoms.cancel":
-				if (!jsonRpcRequest.getJSONObject("params").has("subscriberId")) {
-					callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, "JSON-RPC: No subscriberId").toString());
-					return;
-				}
-
+			if (SUBSCRIPTION_METHODS.contains(jsonRpcMethod)) {
 				atomsSubscribeEpic.action(jsonRpcRequest);
-				break;
-			case "Atoms.getAtomStatusNotifications":
-			case "Atoms.closeAtomStatusNotifications":
-				if (!jsonRpcRequest.getJSONObject("params").has("subscriberId")) {
-					callback.accept(this, JsonRpcUtil.errorResponse(null, -32000, "JSON-RPC: No subscriberId").toString());
-					break;
-				}
+			} else {
 				atomStatusEpic.action(jsonRpcRequest);
-				break;
-			default:
-				callback.accept(this, server.handleChecked(msg));
-				break;
+			}
+		} else {
+			CompletableFuture.supplyAsync(() -> server.handleRpc(message))
+				.whenComplete((result, exception) -> {
+					if (exception == null) {
+						callback.accept(RadixJsonRpcPeer.this, result);
+					} else {
+						callback.accept(
+							RadixJsonRpcPeer.this,
+							errorResponse(SERVER_ERROR, "unable to process request: " + message).toString()
+						);
+					}
+				});
+
 		}
+	}
+
+	private boolean ensureRequestHas(final JSONObject jsonRpcRequest, final String... names) {
+		for (var name : names) {
+			if (!jsonRpcRequest.has(name)) {
+				callback.accept(this, errorResponse(INVALID_PARAMS, "JSON-RPC: No " + name).toString());
+				return false;
+			}
+		}
+		return true;
 	}
 
 	// TODO: need to synchronize this with the whole peer

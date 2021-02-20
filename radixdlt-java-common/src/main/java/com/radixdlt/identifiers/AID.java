@@ -22,6 +22,7 @@ import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * An Atom ID, made up of 256 bits of a hash.
@@ -142,6 +143,14 @@ public final class AID implements Comparable<AID> {
 		}
 
 		return new AID(Bytes.fromHexString(hexBytes));
+	}
+
+	public static Optional<AID> fromString(String hexBytes) {
+		return Optional.ofNullable(hexBytes)
+			.filter(bytes -> bytes.length() == BYTES * 2)
+			.map(Bytes::fromHexString)
+			.filter(bytes -> bytes.length == HASH_BYTES)
+			.map(AID::new);
 	}
 
 	@Override

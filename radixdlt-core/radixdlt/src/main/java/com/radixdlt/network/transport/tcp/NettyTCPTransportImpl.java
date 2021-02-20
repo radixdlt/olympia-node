@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
 import hu.akarnokd.rxjava3.operators.FlowableTransformers;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -59,6 +60,8 @@ import io.netty.handler.codec.LengthFieldPrepender;
 
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger();
+
+	private static final int CHANNELS_BUFFER_SIZE = 128;
 
 	// Set this to true to see a detailed hexdump of sent/received data at runtime
 	private final boolean debugData;
@@ -203,6 +206,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		}
 
 		return channels
+			.onBackpressureBuffer(
+				CHANNELS_BUFFER_SIZE,
+				() -> log.error("TCP channels buffer overflow!"),
+				BackpressureOverflowStrategy.DROP_LATEST
+			)
 			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
 	}
 
