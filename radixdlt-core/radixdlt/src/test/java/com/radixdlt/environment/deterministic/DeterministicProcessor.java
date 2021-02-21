@@ -20,7 +20,6 @@ package com.radixdlt.environment.deterministic;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 
 import javax.inject.Inject;
