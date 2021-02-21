@@ -31,13 +31,14 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicMempoolProcessor;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -65,8 +66,9 @@ public class MempoolTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
+	@Inject @Self private BFTNode self;
 	@Inject private Hasher hasher;
-	@Inject private DeterministicMempoolProcessor processor;
+	@Inject private DeterministicProcessor processor;
 	@Inject private DeterministicNetwork network;
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
@@ -133,6 +135,22 @@ public class MempoolTest {
 	}
 
 	@Test
+	public void add_local_command_to_mempool() {
+		// Arrange
+		getInjector().injectMembers(this);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher);
+
+		// Act
+		processor.handleMessage(self, MempoolAdd.create(command));
+
+		// Assert
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(network.allMessages())
+				.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+	}
+
+	@Test
 	public void add_remote_command_to_mempool() {
 		// Arrange
 		getInjector().injectMembers(this);
@@ -149,14 +167,28 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void relay_successful_add() {
+	public void relay_successful_local_add() {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
 
 		// Act
-		processor.handleMessage(null, MempoolAddSuccess.create(command, getFirstPeer()));
+		processor.handleMessage(self, MempoolAddSuccess.create(command));
+
+		// Assert
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
+	}
+
+	@Test
+	public void relay_successful_remote_add() {
+		// Arrange
+		getInjector().injectMembers(this);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		Command command = createCommand(keyPair, hasher);
+
+		// Act
+		processor.handleMessage(self, MempoolAddSuccess.create(command, getFirstPeer()));
 
 		// Assert
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);

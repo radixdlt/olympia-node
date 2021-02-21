@@ -18,7 +18,10 @@
 package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -26,15 +29,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class DeterministicMempoolProcessor implements DeterministicMessageProcessor {
+public final class DeterministicProcessor implements DeterministicMessageProcessor {
+	private final BFTNode self;
 	private final Map<Class<?>, List<EventProcessorOnRunner<?>>> processors;
+	private final Map<Class<?>, List<RemoteEventProcessorOnRunner<?>>> remoteProcessors;
 
 	@Inject
-	public DeterministicMempoolProcessor(
-		Set<EventProcessorOnRunner<?>> processorOnRunners
+	public DeterministicProcessor(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processorOnRunners,
+		Set<RemoteEventProcessorOnRunner<?>> remoteEventProcessorOnRunners
 	) {
+		this.self = self;
 		this.processors = processorOnRunners.stream()
 			.collect(Collectors.<EventProcessorOnRunner<?>, Class<?>>groupingBy(EventProcessorOnRunner::getEventClass));
+		this.remoteProcessors = remoteEventProcessorOnRunners.stream()
+			.collect(Collectors.<RemoteEventProcessorOnRunner<?>, Class<?>>groupingBy(RemoteEventProcessorOnRunner::getEventClass));
 	}
 
 	@Override
@@ -45,8 +55,13 @@ public final class DeterministicMempoolProcessor implements DeterministicMessage
 	private <T> void execute(BFTNode sender, T event) {
 		Class<T> eventClass = (Class<T>) event.getClass();
 
-		List<EventProcessorOnRunner<?>> eventProcessors = processors.get(eventClass);
-		eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
+		if (sender.equals(self)) {
+			List<EventProcessorOnRunner<?>> eventProcessors = processors.get(eventClass);
+			eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(event)));
+		} else {
+			List<RemoteEventProcessorOnRunner<?>> eventProcessors = remoteProcessors.get(eventClass);
+			eventProcessors.forEach(p -> p.getProcessor(eventClass).ifPresent(r -> r.process(sender, event)));
+		}
 	}
 
 	@Override
