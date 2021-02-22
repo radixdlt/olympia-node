@@ -119,7 +119,7 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.priority = config.priority(1000);
-		this.messageBufferSize = config.messageBufferSize(2);
+		this.messageBufferSize = config.messageBufferSize(255);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}
