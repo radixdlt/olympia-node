@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -493,6 +492,10 @@ public final class LocalSyncService {
 
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
 		return (event) -> this.processEvent(LocalSyncRequest.class, event);
+	}
+
+	public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
+		return (event) -> this.processEvent(SyncLedgerUpdateTimeout.class, event);
 	}
 
 	private <T> void processEvent(Class<T> eventClass, T event) {

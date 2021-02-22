@@ -83,6 +83,8 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
 		Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
 		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
+		Observable<SyncCheckReceiveStatusTimeout> syncLedgerUpdateTimeouts,
+		EventProcessor<SyncCheckReceiveStatusTimeout> syncLedgerUpdateTimeoutProcessor,
 		Observable<LedgerUpdate> ledgerUpdates,
 		@ProcessWithSyncRunner Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors,
 		Flowable<RemoteEvent<StatusRequest>> remoteStatusRequests,
@@ -102,6 +104,7 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
 			.add(syncRequestTimeouts, syncRequestTimeoutProcessor)
+			.add(syncLedgerUpdateTimeouts, syncLedgerUpdateTimeoutProcessor)
 			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
 			.add(remoteStatusRequests, statusRequestProcessor)
 			.add(remoteStatusResponses, statusResponseProcessor)

@@ -23,6 +23,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.sync.LocalSyncService;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -114,6 +115,14 @@ public class EpochsLocalSyncService {
 
 	private void processSyncCheckReceiveStatusTimeout(SyncCheckReceiveStatusTimeout syncCheckReceiveStatusTimeout) {
 		this.localSyncService.syncCheckReceiveStatusTimeoutEventProcessor().process(syncCheckReceiveStatusTimeout);
+	}
+
+	public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
+		return this::processSyncLedgerUpdateTimeout;
+	}
+
+	private void processSyncLedgerUpdateTimeout(SyncLedgerUpdateTimeout syncLedgerUpdateTimeout) {
+		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(syncLedgerUpdateTimeout);
 	}
 
 	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {

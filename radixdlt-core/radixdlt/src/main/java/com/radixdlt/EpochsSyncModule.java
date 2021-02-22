@@ -112,6 +112,13 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@Provides
+	private EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor(
+			EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor();
+	}
+
+	@Provides
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
