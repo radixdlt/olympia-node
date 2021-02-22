@@ -57,7 +57,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final int CHANNELS_BUFFER_SIZE = 128;
+	private static final int CHANNELS_BUFFER_SIZE = 1;
 
 	// Set this to true to see a dump of packet data
 	protected static final boolean DEBUG_DATA = false;
@@ -119,7 +119,7 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.priority = config.priority(1000);
-		this.messageBufferSize = config.messageBufferSize(255);
+		this.messageBufferSize = config.messageBufferSize(2);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}

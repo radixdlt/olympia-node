@@ -61,7 +61,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final int CHANNELS_BUFFER_SIZE = 128;
+	private static final int CHANNELS_BUFFER_SIZE = 1;
 
 	// Set this to true to see a detailed hexdump of sent/received data at runtime
 	private final boolean debugData;
@@ -125,7 +125,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
-		this.messageBufferSize = config.messageBufferSize(255);
+		this.messageBufferSize = config.messageBufferSize(2);
 		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
