@@ -164,7 +164,7 @@ public class PeerManager {
 		this.heartbeatPeersIntervalMs = config.networkHeartbeatPeersInterval(10000);
 		this.heartbeatPeersDelayMs = config.networkHeartbeatPeersDelay(10000);
 
-		this.discoverPeersIntervalMs = config.networkDiscoverPeersInterval(10000);
+		this.discoverPeersIntervalMs = config.networkDiscoverPeersInterval(60000);
 		this.discoverPeersDelayMs = config.networkDiscoverPeersDelay(1000);
 
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);

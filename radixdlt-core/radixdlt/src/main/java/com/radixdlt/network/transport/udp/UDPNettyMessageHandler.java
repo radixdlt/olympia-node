@@ -67,9 +67,7 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 			.onBackpressureBuffer(
 				this.bufferSize,
 				() -> {
-					this.counters.increment(SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES);
-					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-					log.log(logLevel, "UDP msg buffer overflow, dropping msg");
+					log.info("UDP msg buffer overflow, dropping msg");
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
 			.map(this::parseMessage);
