@@ -193,7 +193,10 @@ public final class LocalSyncService {
 			))
 			.put(handler(
 				SyncingState.class, SyncLedgerUpdateTimeout.class,
-				state -> unused -> this.processSync(state)
+				state -> unused -> {
+					log.info("LocalSync: Handling SyncLedgerUpdateTimeout");
+					return this.processSync(state);
+				}
 			))
 			.build();
 	}
