@@ -71,6 +71,7 @@ public class EpochsSyncModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
 		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 

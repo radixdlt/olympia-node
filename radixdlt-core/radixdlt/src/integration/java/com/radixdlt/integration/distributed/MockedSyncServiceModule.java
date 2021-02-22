@@ -37,6 +37,7 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -63,6 +64,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 		bind(new TypeLiteral<EventProcessor<SyncCheckReceiveStatusTimeout>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<EventProcessor<SyncRequestTimeout>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<EventProcessor<SyncLedgerUpdateTimeout>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<StatusRequest>>() { }).toInstance((node, res) -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<StatusResponse>>() { }).toInstance((node, res) -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<SyncRequest>>() { }).toInstance((node, res) -> { });
@@ -74,6 +76,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
 	}
 
 	@ProvidesIntoSet
