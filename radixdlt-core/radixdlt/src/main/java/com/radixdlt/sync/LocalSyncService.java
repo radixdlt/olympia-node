@@ -301,6 +301,7 @@ public final class LocalSyncService {
 	}
 
 	private SyncState processSync(SyncingState currentState) {
+		log.info("LocalSync: process sync");
 		this.updateSyncTargetDiffCounter(currentState);
 
 		if (isFullySynced(currentState)) {
@@ -310,6 +311,7 @@ public final class LocalSyncService {
 		}
 
 		if (currentState.waitingForResponse()) {
+			log.info("LocalSync: already waiting for response");
 			return currentState; // we're already waiting for a response from peer
 		}
 
@@ -499,6 +501,8 @@ public final class LocalSyncService {
 			(Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
 		if (maybeHandler != null) {
 			this.syncState = maybeHandler.handle(this.syncState, event);
+		} else {
+			log.info("LocalSync: unhandled event {} in state {}", event, this.syncState.getClass().getSimpleName());
 		}
 	}
 
@@ -508,6 +512,8 @@ public final class LocalSyncService {
 			(Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
 		if (maybeHandler != null) {
 			this.syncState = maybeHandler.handle(this.syncState, peer, event);
+		} else {
+			log.info("LocalSync: unhandled remote event {} in state {}", event, this.syncState.getClass().getSimpleName());
 		}
 	}
 
