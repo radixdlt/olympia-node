@@ -87,6 +87,8 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 			RadixEngine.RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
 			checker.checkAndStore(atom);
 		} catch (RadixEngineException e) {
+			// Add atom anyway if just missing dependency
+			// TODO: limit length of time atom can live in mempool
 			if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
 				throw new RadixEngineMempoolException(e);
 			}
@@ -151,6 +153,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 		return removed;
 	}
 
+	// TODO: Order by highest fees paid
 	@Override
 	public List<ClientAtom> getCommands(int count, Set<AID> seen) {
 		int size = Math.min(count, this.data.size());
