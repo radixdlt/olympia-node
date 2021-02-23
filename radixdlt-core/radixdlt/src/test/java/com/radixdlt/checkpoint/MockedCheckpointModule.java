@@ -77,7 +77,7 @@ public final class MockedCheckpointModule extends AbstractModule {
 	@Provides
 	public ImmutableList<TokenIssuance> tokenIssuanceList(Set<TokenIssuance> tokenIssuanceSet) {
 		return tokenIssuanceSet.stream()
-			.sorted(Comparator.comparing(t -> t.receiver().toBase64()))
+			.sorted(Comparator.comparing(t -> t.receiver().toBase58()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
