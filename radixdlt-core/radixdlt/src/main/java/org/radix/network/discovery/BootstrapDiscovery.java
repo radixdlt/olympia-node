@@ -215,12 +215,14 @@ public class BootstrapDiscovery {
 
 	@VisibleForTesting
 	Optional<TransportInfo> toDefaultTransportInfo(String host) {
+		log.info("toDefaultTransportInfo {}", host);
 		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(defaultPort);
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
 		InetAddress resolved;
 		try {
 			resolved = InetAddress.getByName(hap.getHost());
+			log.info("resolved = {}", resolved);
 			return Optional.of(
 				TransportInfo.of(
 					TCPConstants.NAME,
