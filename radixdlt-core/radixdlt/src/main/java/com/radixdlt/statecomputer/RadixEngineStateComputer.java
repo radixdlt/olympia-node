@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
@@ -82,6 +83,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
+	private final SystemCounters systemCounters;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -95,7 +97,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
-		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher
+		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
+		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -112,6 +115,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -320,6 +324,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", clientAtom.toInstructionsString()), e);
+		}
+
+		final boolean isUserCommand = clientAtom.getCMInstruction().getMicroInstructions().stream()
+				.filter(CMMicroInstruction::isCheckSpin)
+				.map(CMMicroInstruction::getParticle)
+				.noneMatch(p -> p instanceof SystemParticle);
+		if (!isUserCommand) {
+			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
+		} else {
+			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
 		}
 
 		return clientAtom;

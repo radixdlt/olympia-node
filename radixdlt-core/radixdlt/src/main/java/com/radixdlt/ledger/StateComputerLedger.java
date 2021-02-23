@@ -252,7 +252,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
 			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
 			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {

@@ -18,9 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -52,8 +52,7 @@ public class MessageCentralMempoolTest {
         Peer peer = mock(Peer.class);
         when(peer.hasSystem()).thenReturn(true);
         RadixSystem system = mock(RadixSystem.class);
-        ECPublicKey key = mock(ECPublicKey.class);
-        when(key.euid()).thenReturn(EUID.ONE);
+        ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
         when(system.getKey()).thenReturn(key);
         when(peer.getSystem()).thenReturn(system);
         final var command1 = mock(Command.class);

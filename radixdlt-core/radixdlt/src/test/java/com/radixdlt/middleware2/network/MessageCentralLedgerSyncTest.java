@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
@@ -88,8 +89,7 @@ public class MessageCentralLedgerSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
@@ -108,8 +108,7 @@ public class MessageCentralLedgerSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);

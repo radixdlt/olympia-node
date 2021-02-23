@@ -110,7 +110,6 @@ public interface SystemCounters {
 
 		HASHED_BYTES("hashed.bytes"),
 
-		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
 		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
@@ -125,6 +124,9 @@ public interface SystemCounters {
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
 		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+
+		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
+		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
