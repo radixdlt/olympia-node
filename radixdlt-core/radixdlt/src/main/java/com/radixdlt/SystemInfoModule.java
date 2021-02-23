@@ -27,6 +27,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
@@ -94,7 +95,8 @@ public class SystemInfoModule extends AbstractModule {
 	@Singleton
 	private InfoSupplier infoSupplier(
 		SystemCounters counters,
-		InMemorySystemInfo infoStateManager
+		InMemorySystemInfo infoStateManager,
+		@PacemakerTimeout long pacemakerTimeout
 	) {
 		return () -> {
 			EpochView currentEpochView = infoStateManager.getCurrentView();
@@ -102,6 +104,9 @@ public class SystemInfoModule extends AbstractModule {
 			QuorumCertificate highQC = infoStateManager.getHighestQC();
 
 			return ImmutableMap.of(
+				"configuration", ImmutableMap.of(
+					"pacemakerTimeout", pacemakerTimeout
+				),
 				"epochManager", ImmutableMap.of(
 					"highQC", highQC != null ? ImmutableMap.of(
 						"epoch", highQC.getProposed().getLedgerHeader().getEpoch(),
