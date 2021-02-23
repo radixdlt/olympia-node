@@ -56,7 +56,7 @@ public final class RemoteSyncService {
 	private static final Logger log = LogManager.getLogger();
 
 	private final AddressBook addressBook;
-	private final LocalSyncService localSyncService; /* TODO(luk): remove this dependency */
+	private final LocalSyncService localSyncService; // TODO: consider removing this dependency
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
 	private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
@@ -116,7 +116,7 @@ public final class RemoteSyncService {
 			committedCommands.getHeader().toDto()
 		);
 
-		log.info("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
+		log.trace("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
 
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}

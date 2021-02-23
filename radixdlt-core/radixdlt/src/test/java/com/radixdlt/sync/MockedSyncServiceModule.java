@@ -19,6 +19,7 @@ package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -39,6 +40,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -137,5 +139,13 @@ public class MockedSyncServiceModule extends AbstractModule {
 				currentEpoch = request.getTarget().getEpoch();
 			}
 		};
+	}
+
+	@Provides
+	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor(
+		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher
+	) {
+		return (sender, ev) ->
+			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender)));
 	}
 }

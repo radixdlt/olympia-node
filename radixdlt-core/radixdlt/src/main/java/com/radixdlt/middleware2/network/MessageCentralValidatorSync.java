@@ -21,17 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
@@ -55,8 +50,7 @@ import java.util.function.BiFunction;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
-	SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
+public class MessageCentralValidatorSync implements SyncVerticesResponseSender, SyncVerticesRPCRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -164,47 +158,6 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 				return new GetVerticesErrorResponse(node, msg.highQC(), request);
 			}
 		);
-	}
-
-	@Override
-	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
-		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
-		peerMaybe.ifPresentOrElse(
-			p -> this.messageCentral.send(p, epochRequest),
-			() -> log.warn("{}: Peer {} not in address book when sending GetEpochRequest", this.self, node)
-		);
-	}
-
-	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);
-		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
-		peerMaybe.ifPresentOrElse(
-			p -> this.messageCentral.send(p, epochResponseMessage),
-			() -> log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node)
-		);
-	}
-
-	@Override
-	public Flowable<GetEpochRequest> epochRequests() {
-		return this.createFlowable(
-			GetEpochRequestMessage.class,
-			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
-		);
-	}
-
-	@Override
-	public Flowable<GetEpochResponse> epochResponses() {
-		return this.createFlowable(
-			GetEpochResponseMessage.class,
-			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
-		);
-	}
-
-	private <T extends Message, U> Flowable<U> createFlowable(Class<T> c, BiFunction<Peer, T, U> mapper) {
-		return this.messageCentral.messagesOf(c)
-			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
 	}
 
 	private <T extends Message, U> Flowable<U> createFlowable(

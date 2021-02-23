@@ -25,12 +25,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -67,8 +65,6 @@ public final class NetworkModule extends AbstractModule {
 
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages

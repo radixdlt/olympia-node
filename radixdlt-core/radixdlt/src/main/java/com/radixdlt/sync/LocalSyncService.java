@@ -478,7 +478,7 @@ public final class LocalSyncService {
 		return (peer, event) -> this.processRemoteEvent(SyncResponse.class, peer, event);
 	}
 
-	public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdate() {
+	public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
 		return (peer, event) -> this.processRemoteEvent(LedgerStatusUpdate.class, peer, event);
 	}
 

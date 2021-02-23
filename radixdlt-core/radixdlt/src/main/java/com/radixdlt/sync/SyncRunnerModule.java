@@ -35,6 +35,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -74,7 +75,9 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
 		RemoteEventProcessor<SyncRequest> remoteSyncRequestProcessor,
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
-		RemoteEventProcessor<SyncResponse> syncResponseProcessor
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor,
+		Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates,
+		RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor
 	) {
 		final var executor =
 			Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("Sync " + self));
@@ -90,6 +93,7 @@ public class SyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
+			.add(ledgerStatusUpdates, ledgerStatusUpdateProcessor)
 			.onStart(() -> {
 				executor.scheduleWithFixedDelay(
 					() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),

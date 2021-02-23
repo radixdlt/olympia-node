@@ -28,7 +28,6 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
-import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.FProposalsPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
@@ -80,15 +79,6 @@ public final class NetworkDroppers {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(Random random) {
 				return new MessageDropper(random, drops, Vote.class);
-			}
-		};
-	}
-
-	public static Module oneNodePerEpochResponseDropped() {
-		return new AbstractModule() {
-			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper() {
-				return new OneNodePerEpochResponseDropper();
 			}
 		};
 	}

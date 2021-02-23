@@ -42,6 +42,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -95,7 +96,9 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncRequest>> remoteSyncRequests,
 		RemoteEventProcessor<SyncRequest> remoteSyncRequestProcessor,
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
-		RemoteEventProcessor<SyncResponse> syncResponseProcessor
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor,
+		Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates,
+		RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor
 	) {
 		final var executor =
 			Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("Sync " + self));
@@ -111,21 +114,22 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
-				.onStart(() -> {
-					executor.scheduleWithFixedDelay(
-						() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),
-						syncConfig.syncCheckInterval(),
-						syncConfig.syncCheckInterval(),
-						TimeUnit.MILLISECONDS
-					);
-				})
-				.onStop(() -> {
-					try {
-						executor.awaitTermination(10L, TimeUnit.SECONDS);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
-				})
+			.add(ledgerStatusUpdates, ledgerStatusUpdateProcessor)
+			.onStart(() -> {
+				executor.scheduleWithFixedDelay(
+					() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),
+					syncConfig.syncCheckInterval(),
+					syncConfig.syncCheckInterval(),
+					TimeUnit.MILLISECONDS
+				);
+			})
+			.onStop(() -> {
+				try {
+					executor.awaitTermination(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			})
 			.build("SyncManager " + self);
 	}
 
@@ -184,5 +188,12 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return localSyncService.syncResponseEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.ledgerStatusUpdateEventProcessor();
 	}
 }

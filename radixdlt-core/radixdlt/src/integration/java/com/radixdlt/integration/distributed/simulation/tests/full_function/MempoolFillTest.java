@@ -59,7 +59,7 @@ public class MempoolFillTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.fullFunctionNodes(View.of(10), SyncConfig.of(200L, 10, 5000L))
+		.fullFunctionNodes(View.of(10), SyncConfig.of(800L, 10, 5000L))
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {
