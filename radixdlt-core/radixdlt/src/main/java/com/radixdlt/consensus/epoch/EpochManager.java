@@ -412,6 +412,7 @@ public final class EpochManager {
 			counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
 
 			// Send request for higher epoch proof
+			// TODO(luk): remove me?
 			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());
 			return;
 		}
@@ -481,6 +482,7 @@ public final class EpochManager {
 			log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", response, this.currentEpoch());
 
 			// Send request for higher epoch proof
+			// TODO(luk): remove me?
 			epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
 		} else {
 			// Current epoch

@@ -45,6 +45,7 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -75,6 +76,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<SyncCheckReceiveStatusTimeout>>() { })
 			.toProvider(new ObservableProvider<>(SyncCheckReceiveStatusTimeout.class));
 		bind(new TypeLiteral<Observable<SyncRequestTimeout>>() { }).toProvider(new ObservableProvider<>(SyncRequestTimeout.class));
+		bind(new TypeLiteral<Observable<SyncLedgerUpdateTimeout>>() { }).toProvider(new ObservableProvider<>(SyncLedgerUpdateTimeout.class));
 		bind(new TypeLiteral<Observable<LocalTimeoutOccurrence>>() { }).toProvider(new ObservableProvider<>(LocalTimeoutOccurrence.class));
 		bind(new TypeLiteral<Observable<EpochLocalTimeoutOccurrence>>() { })
 			.toProvider(new ObservableProvider<>(EpochLocalTimeoutOccurrence.class));

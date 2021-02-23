@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -62,11 +63,11 @@ public class LocalSyncServiceTest {
 
 	private LocalSyncService localSyncService;
 
-	private ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher;
 	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
 	private ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher;
 	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
 	private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
+	private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
 	private SyncConfig syncConfig;
 	private SystemCounters systemCounters;
 	private AddressBook addressBook;
@@ -80,11 +81,11 @@ public class LocalSyncServiceTest {
 
 	@Before
 	public void setUp() {
-		this.syncCheckTriggerDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.statusRequestDispatcher = rmock(RemoteEventDispatcher.class);
 		this.syncCheckReceiveStatusTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.syncRequestDispatcher = rmock(RemoteEventDispatcher.class);
 		this.syncRequestTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
+		this.syncLedgerUpdateTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.syncConfig = SyncConfig.of(1000L, 10, 10000L);
 		this.systemCounters = mock(SystemCounters.class);
 		this.addressBook = mock(AddressBook.class);
@@ -99,11 +100,11 @@ public class LocalSyncServiceTest {
 
 	private void setupSyncServiceWithState(SyncState syncState) {
 		this.localSyncService = new LocalSyncService(
-			syncCheckTriggerDispatcher,
 			statusRequestDispatcher,
 			syncCheckReceiveStatusTimeoutDispatcher,
 			syncRequestDispatcher,
 			syncRequestTimeoutDispatcher,
+			syncLedgerUpdateTimeoutDispatcher,
 			syncConfig,
 			systemCounters,
 			addressBook,
@@ -243,7 +244,6 @@ public class LocalSyncServiceTest {
 		);
 
 		verifyNoMoreInteractions(syncRequestDispatcher);
-		verify(syncCheckTriggerDispatcher, times(1)).dispatch(any(), eq(syncConfig.syncCheckInterval()));
 	}
 
 	@Test
@@ -271,7 +271,6 @@ public class LocalSyncServiceTest {
 		this.localSyncService.statusResponseEventProcessor().process(waiting2, StatusResponse.create(statusHeader2));
 
 		verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting1), any());
-		verifyNoMoreInteractions(syncCheckTriggerDispatcher);
 	}
 
 	@Test
@@ -314,7 +313,6 @@ public class LocalSyncServiceTest {
 		this.localSyncService.syncRequestTimeoutEventProcessor()
 			.process(SyncRequestTimeout.create(peer2, currentHeader));
 
-		verifyNoMoreInteractions(syncCheckTriggerDispatcher);
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
 
@@ -356,6 +354,7 @@ public class LocalSyncServiceTest {
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
 
+	// TODO(luk): fixme?
 	@Test
 	public void when_received_ledger_update_and_fully_synced__then_should_schedule_sync_check() {
 		final var currentHeader = createHeaderAtStateVersion(19L);
@@ -372,7 +371,6 @@ public class LocalSyncServiceTest {
 			new LedgerUpdate(new VerifiedCommandsAndProof(ImmutableList.of(), targetHeader))
 		);
 
-		verify(syncCheckTriggerDispatcher, times(1)).dispatch(any(), eq(syncConfig.syncCheckInterval()));
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
 

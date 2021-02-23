@@ -43,6 +43,7 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -74,6 +75,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
 		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
 		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
+		EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
@@ -101,6 +103,9 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			e -> syncCheckReceiveStatusTimeoutProcessor.process((SyncCheckReceiveStatusTimeout) e)
 		);
 		processorsBuilder.put(SyncRequestTimeout.class, e -> syncRequestTimeoutProcessor.process((SyncRequestTimeout) e));
+		processorsBuilder.put(SyncLedgerUpdateTimeout.class, e ->
+			syncLedgerUpdateTimeoutProcessor.process((SyncLedgerUpdateTimeout) e)
+		);
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));

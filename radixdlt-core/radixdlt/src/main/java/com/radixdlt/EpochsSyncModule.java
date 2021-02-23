@@ -45,6 +45,7 @@ import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -69,6 +70,7 @@ public class EpochsSyncModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
 		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
@@ -110,6 +112,13 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@Provides
+	private EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor();
+	}
+
+	@Provides
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
@@ -132,11 +141,11 @@ public class EpochsSyncModule extends AbstractModule {
 
 	@Provides
 	private LocalSyncServiceFactory localSyncServiceFactory(
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
 		ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher,
 		RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
 		ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
+		ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		AddressBook addressBook,
@@ -149,11 +158,11 @@ public class EpochsSyncModule extends AbstractModule {
 	) {
 		return (remoteSyncResponseValidatorSetVerifier, syncState) ->
 			new LocalSyncService(
-				syncCheckTriggerDispatcher,
 				statusRequestDispatcher,
 				syncCheckReceiveStatusTimeoutDispatcher,
 				syncRequestDispatcher,
 				syncRequestTimeoutDispatcher,
+				syncLedgerUpdateTimeoutDispatcher,
 				syncConfig,
 				systemCounters,
 				addressBook,

@@ -45,7 +45,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -71,8 +70,6 @@ public class MempoolTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					AddressBook addressBook = mock(AddressBook.class);
-					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(DatabaseLocation.class)

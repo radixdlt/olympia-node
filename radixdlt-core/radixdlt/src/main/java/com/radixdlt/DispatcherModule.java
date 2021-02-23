@@ -68,6 +68,7 @@ import java.util.Set;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -117,10 +118,12 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncRequestTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncRequestTimeout.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<SyncLedgerUpdateTimeout>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncLedgerUpdateTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckReceiveStatusTimeout.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckTrigger>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 

@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -37,7 +36,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
@@ -71,7 +69,6 @@ public class PacemakerTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(AddressBook.class).toInstance(mock(AddressBook.class));
 				}
 			},
 			new SingleNodeDeterministicNetworkModule(ecKeyPair)

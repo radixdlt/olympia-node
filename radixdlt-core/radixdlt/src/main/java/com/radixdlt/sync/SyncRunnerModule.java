@@ -23,7 +23,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -33,15 +33,19 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SyncRunnerModule extends AbstractModule {
 
@@ -49,7 +53,7 @@ public class SyncRunnerModule extends AbstractModule {
 	@StringMapKey("sync")
 	private ModuleRunner syncRunner(
 		@Self BFTNode self,
-		ScheduledEventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerDispatcher,
 		SyncConfig syncConfig,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
@@ -59,6 +63,8 @@ public class SyncRunnerModule extends AbstractModule {
 		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
 		Observable<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeouts,
 		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
+		Observable<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeouts,
+		EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor,
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors,
 		Flowable<RemoteEvent<StatusRequest>> remoteStatusRequests,
@@ -70,20 +76,35 @@ public class SyncRunnerModule extends AbstractModule {
 		Flowable<RemoteEvent<SyncResponse>> remoteSyncResponses,
 		RemoteEventProcessor<SyncResponse> syncResponseProcessor
 	) {
+		final var executor =
+			Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("Sync " + self));
+
 		return ModuleRunnerImpl.builder()
 			.add(localSyncRequests, syncRequestEventProcessor)
 			.add(syncCheckTriggers, syncCheckTriggerProcessor)
 			.add(syncCheckReceiveStatusTimeouts, syncCheckReceiveStatusTimeoutProcessor)
+			.add(syncLedgerUpdateTimeouts, syncLedgerUpdateTimeoutProcessor)
 			.add(syncRequestTimeouts, syncRequestTimeoutProcessor)
 			.add(ledgerUpdates, e -> ledgerUpdateProcessors.forEach(p -> p.process(e)))
 			.add(remoteStatusRequests, statusRequestProcessor)
 			.add(remoteStatusResponses, statusResponseProcessor)
 			.add(remoteSyncRequests, remoteSyncRequestProcessor)
 			.add(remoteSyncResponses, syncResponseProcessor)
-			.onStart(() -> syncCheckTriggerDispatcher.dispatch(
-				SyncCheckTrigger.create(),
-				syncConfig.syncCheckInterval()
-			))
+			.onStart(() -> {
+				executor.scheduleWithFixedDelay(
+					() -> syncCheckTriggerDispatcher.dispatch(SyncCheckTrigger.create()),
+					syncConfig.syncCheckInterval(),
+					syncConfig.syncCheckInterval(),
+					TimeUnit.MILLISECONDS
+				);
+			})
+			.onStop(() -> {
+				try {
+					executor.awaitTermination(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			})
 			.build("SyncManager " + self);
 	}
 }
