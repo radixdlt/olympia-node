@@ -330,7 +330,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				.filter(CMMicroInstruction::isCheckSpin)
 				.map(CMMicroInstruction::getParticle)
 				.noneMatch(p -> p instanceof SystemParticle);
-		if (!isUserCommand) {
+		if (isUserCommand) {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
