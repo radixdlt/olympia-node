@@ -235,8 +235,8 @@ public class SimulationTest {
 		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
 			this.maxValidators = maxValidators;
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
-					.limit(numNodes)
-					.collect(ImmutableList.toImmutableList());
+				.limit(numNodes)
+				.collect(ImmutableList.toImmutableList());
 
 			final var stakesIterator = repeatLast(initialStakes);
 			final var initialStakesMap = nodes.stream()
@@ -247,8 +247,8 @@ public class SimulationTest {
 			if (initialVset == null) {
 				throw new IllegalStateException(
 					String.format(
-							"Can't build a validator set between %s and %s validators from %s",
-							this.minValidators, numInitialValidators, initialStakesMap
+						"Can't build a validator set between %s and %s validators from %s",
+						this.minValidators, numInitialValidators, initialStakesMap
 					)
 				);
 			}
@@ -312,10 +312,10 @@ public class SimulationTest {
 				@Provides
 				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
-							indices.mapToObj(nodes::get)
-								.map(node -> BFTNode.create(node.getPublicKey()))
-								.map(node -> BFTValidator.from(node, UInt256.ONE))
-								.collect(Collectors.toList())));
+						indices.mapToObj(nodes::get)
+							.map(node -> BFTNode.create(node.getPublicKey()))
+							.map(node -> BFTValidator.from(node, UInt256.ONE))
+							.collect(Collectors.toList())));
 				}
 			});
 
@@ -528,9 +528,9 @@ public class SimulationTest {
 
 			// Nodes
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
-					initialNodesModule,
-					new SimulationNetworkModule(),
-					networkModule
+				initialNodesModule,
+				new SimulationNetworkModule(),
+				networkModule
 			).getInstance(SimulationNetwork.class);
 
 			// Runners
@@ -555,12 +555,12 @@ public class SimulationTest {
 			}
 
 			return new SimulationTest(
-					nodes,
-					simulationNetwork,
-					Modules.combine(modules.build()),
-					overrideModule,
-					byzantineModuleCreator.apply(this.nodes),
-					Modules.combine(testModules.build())
+				nodes,
+				simulationNetwork,
+				Modules.combine(modules.build()),
+				overrideModule,
+				byzantineModuleCreator.apply(this.nodes),
+				Modules.combine(testModules.build())
 			);
 		}
 	}
@@ -570,10 +570,10 @@ public class SimulationTest {
 	}
 
 	private Observable<Pair<Monitor, Optional<TestInvariantError>>> runChecks(
-			Set<SimulationNetworkActor> runners,
-			Map<Monitor, TestInvariant> checkers,
-			RunningNetwork runningNetwork,
-			Duration duration
+		Set<SimulationNetworkActor> runners,
+		Map<Monitor, TestInvariant> checkers,
+		RunningNetwork runningNetwork,
+		Duration duration
 	) {
 		List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions = checkers.keySet().stream()
 			.map(name -> {
@@ -599,7 +599,7 @@ public class SimulationTest {
 				.first(Optional.empty())
 				.map(result -> Pair.of(assertion.getFirst(), result))
 			)
-				.collect(Collectors.toList());
+			.collect(Collectors.toList());
 
 		return Single.merge(results).toObservable()
 			.doOnSubscribe(d -> runners.forEach(r -> r.start(runningNetwork)));
@@ -694,8 +694,8 @@ public class SimulationTest {
 		private final RunningNetwork network;
 
 		private RunningSimulationTest(
-				Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable,
-				RunningNetwork network
+			Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable,
+			RunningNetwork network
 		) {
 			this.resultObservable = resultObservable;
 			this.network = network;
@@ -707,9 +707,8 @@ public class SimulationTest {
 
 		public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {
 			return this.resultObservable
-					.blockingStream()
-					.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+				.blockingStream()
+				.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 		}
-
 	}
 }
