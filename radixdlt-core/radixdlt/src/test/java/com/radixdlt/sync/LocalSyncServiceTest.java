@@ -19,7 +19,14 @@ package com.radixdlt.sync;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyLong;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -351,12 +358,12 @@ public class LocalSyncServiceTest {
 		this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
 		verify(verifiedSender, times(1)).sendVerifiedSyncResponse(syncResponse);
+		verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
 
-	// TODO(luk): fixme?
 	@Test
-	public void when_received_ledger_update_and_fully_synced__then_should_schedule_sync_check() {
+	public void when_received_ledger_update_and_fully_synced__then_should_wait_for_another_sync_trigger() {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
@@ -372,6 +379,25 @@ public class LocalSyncServiceTest {
 		);
 
 		verifyNoMoreInteractions(syncRequestDispatcher);
+	}
+
+	@Test
+	public void when_ledger_update_timeout__then_should_continue_sync() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(21L);
+
+		final var peer1 = mock(BFTNode.class);
+		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1), targetHeader);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(
+			SyncLedgerUpdateTimeout.create()
+		);
+
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
 	}
 
 	private VerifiedLedgerHeaderAndProof createHeaderAtStateVersion(long version) {
