@@ -66,6 +66,7 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -90,11 +91,11 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
 				m -> {
-					if (m.getException() instanceof RadixEngineException) {
-						RadixEngineException e = (RadixEngineException) m.getException();
-						if (e.getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
+					if (m.getException() instanceof RadixEngineMempoolException) {
+						RadixEngineMempoolException e = (RadixEngineMempoolException) m.getException();
+						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
 							return CounterType.MEMPOOL_ERRORS_HOOK;
-						} else if (e.getErrorCode().equals(RadixEngineErrorCode.STATE_CONFLICT)) {
+						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.STATE_CONFLICT)) {
 							return CounterType.MEMPOOL_ERRORS_CONFLICT;
 						}
 					}
