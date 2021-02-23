@@ -128,16 +128,16 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	private static <T> void addToBuilder(
-			Class<T> eventClass,
-			RxRemoteEnvironment rxEnvironment,
-			RemoteEventProcessorOnRunner<?> processor,
-			ModuleRunnerImpl.Builder builder
+		Class<T> eventClass,
+		RxRemoteEnvironment rxEnvironment,
+		RemoteEventProcessorOnRunner<?> processor,
+		ModuleRunnerImpl.Builder builder
 	) {
 		final Flowable<RemoteEvent<T>> events;
 		if (processor.getRateLimitDelayMs() > 0) {
 			events = rxEnvironment.remoteEvents(eventClass)
-					.onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
-					.concatMap(e -> Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS).map(l -> e));
+				.onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
+				.concatMap(e -> Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS).map(l -> e));
 		} else {
 			events = rxEnvironment.remoteEvents(eventClass);
 		}
@@ -146,22 +146,21 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	private static <T> void addToBuilder(
-			Class<T> eventClass,
-			RxEnvironment rxEnvironment,
-			EventProcessorOnRunner<?> processor,
-			ModuleRunnerImpl.Builder builder
+		Class<T> eventClass,
+		RxEnvironment rxEnvironment,
+		EventProcessorOnRunner<?> processor,
+		ModuleRunnerImpl.Builder builder
 	) {
-		final Observable<T> events;
 		if (processor.getRateLimitDelayMs() > 0) {
-			events = rxEnvironment.getObservable(eventClass)
-					.toFlowable(BackpressureStrategy.DROP)
-					.concatMap(e -> Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS).map(l -> e))
-					.toObservable();
+			final Flowable<T> events = rxEnvironment.getObservable(eventClass)
+				.toFlowable(BackpressureStrategy.DROP)
+				.onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
+				.concatMap(e -> Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS).map(l -> e));
+			processor.getProcessor(eventClass).ifPresent(p -> builder.add(events, p));
 		} else {
-			events = rxEnvironment.getObservable(eventClass);
+			final Observable<T> events = rxEnvironment.getObservable(eventClass);
+			processor.getProcessor(eventClass).ifPresent(p -> builder.add(events, p));
 		}
-
-		processor.getProcessor(eventClass).ifPresent(p -> builder.add(events, p));
 	}
 
 	@ProvidesIntoMap

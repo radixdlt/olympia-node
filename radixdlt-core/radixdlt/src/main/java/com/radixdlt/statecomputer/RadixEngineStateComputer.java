@@ -189,6 +189,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (commands.isEmpty()) {
 			return null;
 		} else {
+			systemCounters.increment(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION);
 			byte[] dson = serialization.toDson(commands.get(0), Output.ALL);
 			return new Command(dson);
 		}

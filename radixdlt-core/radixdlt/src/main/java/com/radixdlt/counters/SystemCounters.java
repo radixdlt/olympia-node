@@ -126,6 +126,8 @@ public interface SystemCounters {
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
 		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+		MEMPOOL_ADD_SUCCESS("mempool.add_success"),
+		MEMPOOL_PROPOSED_TRANSACTION("mempool.proposed_transaction"),
 		MEMPOOL_ERRORS_HOOK("mempool.errors.hook"),
 		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
 		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),

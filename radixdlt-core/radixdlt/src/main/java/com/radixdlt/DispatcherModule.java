@@ -85,7 +85,11 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(
+				MempoolAddSuccess.class,
+				m -> CounterType.MEMPOOL_ADD_SUCCESS,
+				false
+			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
