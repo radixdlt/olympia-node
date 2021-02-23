@@ -74,7 +74,7 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 
-		bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+		bindConstant().annotatedWith(MempoolThrottleMs.class).to(100L);
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
 		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));

@@ -49,7 +49,6 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngineErrorCode;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
