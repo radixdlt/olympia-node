@@ -100,7 +100,7 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			Set<Atom> atoms = wallet.createParallelTransactions(to, 100);
+			Set<Atom> atoms = wallet.createParallelTransactions(to, 500);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
