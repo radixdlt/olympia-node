@@ -42,7 +42,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Periodically fills the mempool with valid transactions
@@ -115,7 +114,7 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			Set<Atom> atoms = wallet.createParallelTransactions(to, 1000);
+			List<Atom> atoms = wallet.createParallelTransactions(to, 15);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
@@ -130,15 +129,15 @@ public final class MempoolFiller {
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
-				int index = random.nextInt(peers.size());
-				/*if (index == peers.size()) {
+				int index = random.nextInt(peers.size() + 1);
+				if (index == peers.size()) {
 					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-				} else {*/
+				} else {
 					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), MempoolAdd.create(command));
-				//}
+				}
 			});
 
-			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 1000);
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
 		};
 	}
 }
