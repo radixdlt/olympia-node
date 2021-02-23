@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -36,9 +37,12 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncConfig;
 
 import java.util.Objects;
+
+import static org.mockito.Mockito.mock;
+
 
 /**
  * Helper class for modules to be used for recovery tests.
@@ -52,7 +56,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(200, 10, 3000));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 		bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 		bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
@@ -67,6 +71,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		// System
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+		bind(AddressBook.class).toInstance(mock(AddressBook.class));
 
 		install(new InMemoryBFTKeyModule(ecKeyPair));
 		install(new MockedCheckpointModule());

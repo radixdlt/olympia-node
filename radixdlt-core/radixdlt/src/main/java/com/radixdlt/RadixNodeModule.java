@@ -49,7 +49,7 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.store.DatabasePropertiesModule;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
 
@@ -68,9 +68,9 @@ public final class RadixNodeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
-
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
-		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
+		final long syncPatience = properties.get("sync.patience", 200);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, syncPatience));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 		bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));

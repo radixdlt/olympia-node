@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -34,10 +35,14 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.MockedCryptoModule;
+import com.radixdlt.MockedPersistenceStoreModule;
+import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.statecomputer.MockedValidatorComputersModule;
+import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
@@ -55,9 +60,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.MockedCryptoModule;
-import com.radixdlt.MockedPersistenceStoreModule;
-import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
@@ -80,7 +82,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -130,7 +132,7 @@ public class SimulationTest {
 		Module baseNodeModule,
 		Module overrideModule,
 		Map<ECKeyPair, Module> byzantineNodeModules,
-        Module testModule
+		Module testModule
 	) {
 		this.nodes = nodes;
 		this.simulationNetwork = simulationNetwork;
@@ -170,7 +172,7 @@ public class SimulationTest {
 				boolean hasEpochs,
 				boolean hasSync
 			) {
-			    this.hasSharedMempool = hasSharedMempool;
+				this.hasSharedMempool = hasSharedMempool;
 				this.hasConsensus = hasConsensus;
 				this.hasLedger = hasLedger;
 				this.hasMempool = hasMempool;
@@ -233,8 +235,8 @@ public class SimulationTest {
 		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
 			this.maxValidators = maxValidators;
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
-				.limit(numNodes)
-				.collect(ImmutableList.toImmutableList());
+					.limit(numNodes)
+					.collect(ImmutableList.toImmutableList());
 
 			final var stakesIterator = repeatLast(initialStakes);
 			final var initialStakesMap = nodes.stream()
@@ -245,18 +247,18 @@ public class SimulationTest {
 			if (initialVset == null) {
 				throw new IllegalStateException(
 					String.format(
-						"Can't build a validator set between %s and %s validators from %s",
-						this.minValidators, numInitialValidators, initialStakesMap
+							"Can't build a validator set between %s and %s validators from %s",
+							this.minValidators, numInitialValidators, initialStakesMap
 					)
 				);
 			}
 
 			final var bftNodes = initialStakesMap.keySet().stream()
-					.map(BFTNode::create)
-					.collect(ImmutableList.toImmutableList());
+				.map(BFTNode::create)
+				.collect(ImmutableList.toImmutableList());
 			final var validators = initialStakesMap.entrySet().stream()
-					.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
-					.collect(ImmutableList.toImmutableList());
+				.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
+				.collect(ImmutableList.toImmutableList());
 
 			this.initialNodesModule = new AbstractModule() {
 				@Override
@@ -311,9 +313,9 @@ public class SimulationTest {
 				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
-									.map(node -> BFTNode.create(node.getPublicKey()))
-									.map(node -> BFTValidator.from(node, UInt256.ONE))
-									.collect(Collectors.toList())));
+								.map(node -> BFTNode.create(node.getPublicKey()))
+								.map(node -> BFTValidator.from(node, UInt256.ONE))
+								.collect(Collectors.toList())));
 				}
 			});
 
@@ -325,12 +327,12 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndSync(int syncPatienceMillis) {
+		public Builder ledgerAndSync(SyncConfig syncConfig) {
 			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(SyncConfig.class).toInstance(syncConfig);
 				}
 			});
 			return this;
@@ -339,23 +341,23 @@ public class SimulationTest {
 		public Builder ledgerAndEpochsAndSync(
 			View epochHighView,
 			Function<Long, IntStream> epochToNodeIndexMapper,
-			int syncPatienceMillis
+			SyncConfig syncConfig
 		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(SyncConfig.class).toInstance(syncConfig);
 				}
 
 				@Provides
 				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
-						.map(node -> BFTNode.create(node.getPublicKey()))
-						.map(node -> BFTValidator.from(node, UInt256.ONE))
-						.collect(Collectors.toList())));
+							.map(node -> BFTNode.create(node.getPublicKey()))
+							.map(node -> BFTValidator.from(node, UInt256.ONE))
+							.collect(Collectors.toList())));
 				}
 			});
 			return this;
@@ -419,10 +421,10 @@ public class SimulationTest {
 				@Provides
 				LocalMempoolPeriodicSubmitter mempoolSubmittor(List<ECKeyPair> nodes) {
 					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-							new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+						new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 					return new LocalMempoolPeriodicSubmitter(
-							randomValidatorSubmitter,
-							nodeSelector
+						randomValidatorSubmitter,
+						nodeSelector
 					);
 				}
 			});
@@ -493,6 +495,7 @@ public class SimulationTest {
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedCryptoModule());
+			modules.add(new MockedAddressBookModule());
 
 			// Functional
 			modules.add(new FunctionalNodeModule(
@@ -525,9 +528,9 @@ public class SimulationTest {
 
 			// Nodes
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
-				initialNodesModule,
-				new SimulationNetworkModule(),
-				networkModule
+					initialNodesModule,
+					new SimulationNetworkModule(),
+					networkModule
 			).getInstance(SimulationNetwork.class);
 
 			// Runners
@@ -552,12 +555,12 @@ public class SimulationTest {
 			}
 
 			return new SimulationTest(
-				nodes,
-				simulationNetwork,
-				Modules.combine(modules.build()),
-				overrideModule,
-				byzantineModuleCreator.apply(this.nodes),
-				Modules.combine(testModules.build())
+					nodes,
+					simulationNetwork,
+					Modules.combine(modules.build()),
+					overrideModule,
+					byzantineModuleCreator.apply(this.nodes),
+					Modules.combine(testModules.build())
 			);
 		}
 	}
@@ -567,10 +570,10 @@ public class SimulationTest {
 	}
 
 	private Observable<Pair<Monitor, Optional<TestInvariantError>>> runChecks(
-		Set<SimulationNetworkActor> runners,
-		Map<Monitor, TestInvariant> checkers,
-		RunningNetwork runningNetwork,
-		Duration duration
+			Set<SimulationNetworkActor> runners,
+			Map<Monitor, TestInvariant> checkers,
+			RunningNetwork runningNetwork,
+			Duration duration
 	) {
 		List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions = checkers.keySet().stream()
 			.map(name -> {
@@ -596,31 +599,10 @@ public class SimulationTest {
 				.first(Optional.empty())
 				.map(result -> Pair.of(assertion.getFirst(), result))
 			)
-			.collect(Collectors.toList());
+				.collect(Collectors.toList());
 
 		return Single.merge(results).toObservable()
 			.doOnSubscribe(d -> runners.forEach(r -> r.start(runningNetwork)));
-	}
-
-	public static class TestResults {
-		private final Map<Monitor, Optional<TestInvariantError>> checkResults;
-		private final RunningNetwork network;
-
-		private TestResults(
-			Map<Monitor, Optional<TestInvariantError>> checkResults,
-			RunningNetwork network
-		) {
-			this.checkResults = checkResults;
-			this.network = network;
-		}
-
-		public Map<Monitor, Optional<TestInvariantError>> getCheckResults() {
-			return checkResults;
-		}
-
-		public RunningNetwork getNetwork() {
-			return network;
-		}
 	}
 
 	/**
@@ -630,8 +612,12 @@ public class SimulationTest {
 	 *
 	 * @return map of check results
 	 */
-	public TestResults run() {
-		return run(getConfiguredDuration());
+	public RunningSimulationTest run() {
+		return run(getConfiguredDuration(), ImmutableMap.of());
+	}
+
+	public RunningSimulationTest run(Duration duration) {
+		return run(duration, ImmutableMap.of());
 	}
 
 	/**
@@ -650,9 +636,13 @@ public class SimulationTest {
 	 * Returns a map from the check name to the result.
 	 *
 	 * @param duration duration to run test for
+	 * @param disabledModuleRunners a list of disabled module runners by node index
 	 * @return test results
 	 */
-	public TestResults run(Duration duration) {
+	public RunningSimulationTest run(
+		Duration duration,
+		ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners
+	) {
 	    Injector testInjector = Guice.createInjector(testModule);
 	    var runners = testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() { }));
 		var checkers = testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() { }));
@@ -664,16 +654,15 @@ public class SimulationTest {
 			overrideModule,
 			byzantineNodeModules
 		);
-		RunningNetwork runningNetwork = bftNetwork.start();
+		RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
-		Map<Monitor, Optional<TestInvariantError>> checkResults = runChecks(runners, checkers, runningNetwork, duration)
+		final var resultObservable = runChecks(runners, checkers, runningNetwork, duration)
 			.doFinally(() -> {
 				runners.forEach(SimulationNetworkActor::stop);
 				bftNetwork.stop();
-			})
-			.blockingStream()
-			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-		return new TestResults(checkResults, runningNetwork);
+			});
+
+		return new RunningSimulationTest(resultObservable, runningNetwork);
 	}
 
 	private static <T> Iterator<T> repeatLast(Iterable<T> iterable) {
@@ -697,5 +686,30 @@ public class SimulationTest {
 				return this.lastValue;
 			}
 		};
+	}
+
+	public static final class RunningSimulationTest {
+
+		private final Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable;
+		private final RunningNetwork network;
+
+		private RunningSimulationTest(
+				Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable,
+				RunningNetwork network
+		) {
+			this.resultObservable = resultObservable;
+			this.network = network;
+		}
+
+		public RunningNetwork getNetwork() {
+			return network;
+		}
+
+		public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {
+			return this.resultObservable
+					.blockingStream()
+					.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		}
+
 	}
 }

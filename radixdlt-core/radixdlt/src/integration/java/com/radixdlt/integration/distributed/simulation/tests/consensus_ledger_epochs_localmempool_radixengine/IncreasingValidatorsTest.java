@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -57,7 +56,9 @@ public class IncreasingValidatorsTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var runningTest = simulationTest.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

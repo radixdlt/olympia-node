@@ -33,10 +33,16 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
@@ -53,14 +59,20 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { }, ProcessWithSyncRunner.class);
-		bind(new TypeLiteral<EventProcessor<SyncInProgress>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<EventProcessor<SyncCheckTrigger>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<EventProcessor<SyncCheckReceiveStatusTimeout>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<EventProcessor<SyncRequestTimeout>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).toInstance((node, res) -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).toInstance((node, res) -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<StatusRequest>>() { }).toInstance((node, res) -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<StatusResponse>>() { }).toInstance((node, res) -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<SyncRequest>>() { }).toInstance((node, res) -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<SyncResponse>>() { }).toInstance((node, res) -> { });
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
-		eventBinder.addBinding().toInstance(SyncInProgress.class);
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
+		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
+		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 	}
 
