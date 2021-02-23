@@ -202,6 +202,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 						// TODO: Implement better error handling especially against Byzantine nodes.
 						// TODO: Exit process for now.
 						log.error("Unexpected exception occurred", e);
+						e.printStackTrace();
+						Thread.sleep(1000);
 						System.exit(-1);
 					});
 			} else {
@@ -211,6 +213,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 						// TODO: Implement better error handling especially against Byzantine nodes.
 						// TODO: Exit process for now.
 						log.error("Unexpected exception occurred", e);
+						e.printStackTrace();
+						Thread.sleep(1000);
 						System.exit(-1);
 					});
 			}
