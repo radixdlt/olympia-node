@@ -159,6 +159,13 @@ public class MockedSyncRunnerModule extends AbstractModule {
 	}
 
 	@Provides
+	private EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutEventProcessor(
+		LocalSyncService localSyncService
+	) {
+		return localSyncService.syncLedgerUpdateTimeoutProcessor();
+	}
+
+	@Provides
 	private EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor(
 		LocalSyncService localSyncService
 	) {
