@@ -21,22 +21,27 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -48,10 +53,14 @@ public final class MempoolFiller {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Hasher hasher;
 	private final int magic;
+
+	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
 	private final ECKeyPair keyPair;
 	private final SystemCounters systemCounters;
+	private final PeersView peersView;
+	private final Random random;
 	private RadixAddress to = null;
 
 	@Inject
@@ -62,7 +71,10 @@ public final class MempoolFiller {
 		@Named("magic") int magic,
 		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,
+		PeersView peersView,
+		Random random,
 		SystemCounters systemCounters
 	) {
 		this.keyPair = keyPair;
@@ -71,7 +83,10 @@ public final class MempoolFiller {
 		this.magic = magic;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;
 		this.mempoolFillDispatcher = mempoolFillDispatcher;
+		this.peersView = peersView;
+		this.random = random;
 		this.systemCounters = systemCounters;
 	}
 
@@ -100,19 +115,27 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			Set<Atom> atoms = wallet.createParallelTransactions(to, 500);
+			Set<Atom> atoms = wallet.createParallelTransactions(to, 1000);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
 				wallet.getNumParticles(),
 				atoms.size()
 			);
+
+			List<BFTNode> peers = peersView.peers();
 			atoms.forEach(atom -> {
 				atom.sign(keyPair, hasher);
 				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
-				this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+
+				int index = random.nextInt(peers.size());
+				/*if (index == peers.size()) {
+					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+				} else {*/
+					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), MempoolAdd.create(command));
+				//}
 			});
 
 			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 1000);
