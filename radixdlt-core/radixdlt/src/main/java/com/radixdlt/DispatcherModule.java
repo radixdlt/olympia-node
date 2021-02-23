@@ -48,6 +48,8 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.engine.RadixEngineErrorCode;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
@@ -87,7 +89,17 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
-				CounterType.MEMPOOL_FAILURE_COUNT,
+				m -> {
+					if (m.getException() instanceof RadixEngineException) {
+						RadixEngineException e = (RadixEngineException) m.getException();
+						if (e.getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
+							return CounterType.MEMPOOL_ERRORS_HOOK;
+						} else if (e.getErrorCode().equals(RadixEngineErrorCode.STATE_CONFLICT)) {
+							return CounterType.MEMPOOL_ERRORS_CONFLICT;
+						}
+					}
+					return CounterType.MEMPOOL_ERRORS_OTHER;
+				},
 				true
 			))
 			.in(Scopes.SINGLETON);
@@ -104,7 +116,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				NoVote.class,
-				CounterType.BFT_REJECTED,
+				v -> CounterType.BFT_REJECTED,
 				true
 			))
 			.in(Scopes.SINGLETON);
