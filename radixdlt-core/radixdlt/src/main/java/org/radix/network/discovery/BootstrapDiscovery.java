@@ -32,8 +32,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +49,8 @@ import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
+import static java.util.function.Predicate.not;
+
 public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
@@ -54,7 +58,8 @@ public class BootstrapDiscovery {
 	private static final Logger log = LogManager.getLogger();
 	private final int defaultPort;
 
-	private final ImmutableSet<TransportInfo> hosts;
+	private ImmutableSet<String> unresolvedHostNames;
+	private ImmutableSet<TransportInfo> hosts;
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -123,14 +128,14 @@ public class BootstrapDiscovery {
 
 		Whitelist whitelist = Whitelist.from(properties);
 
-		this.hosts = hostNames.stream()
+		this.hosts = ImmutableSet.of();
+		this.unresolvedHostNames = hostNames.stream()
 			.map(String::trim)
 			.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
 			.distinct()
-			.map(this::toDefaultTransportInfo)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
 			.collect(ImmutableSet.toImmutableSet());
+
+		this.resolveHostNames();
 	}
 
 	/**
@@ -206,11 +211,40 @@ public class BootstrapDiscovery {
 	 * @return A collection of transports for discovery hosts
 	 */
 	public Collection<TransportInfo> discoveryHosts() {
+		this.resolveHostNames();
+
 		List<TransportInfo> results = this.hosts.stream()
 			.collect(Collectors.toList());
 
 		Collections.shuffle(results);
 		return results;
+	}
+
+	private void resolveHostNames() {
+		if (this.unresolvedHostNames.isEmpty()) {
+			return;
+		}
+
+		final var newlyResolvedHosts = this.unresolvedHostNames.stream()
+			.map(host -> Pair.of(host, this.toDefaultTransportInfo(host)))
+			.filter(p -> p.getSecond().isPresent())
+			.collect(ImmutableSet.toImmutableSet());
+
+		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
+			.collect(ImmutableSet.toImmutableSet());
+
+		this.unresolvedHostNames = this.unresolvedHostNames.stream()
+			.filter(not(newlyResolvedHostsNames::contains))
+			.collect(ImmutableSet.toImmutableSet());
+
+		this.hosts = ImmutableSet.<TransportInfo>builder()
+			.addAll(this.hosts)
+			.addAll(
+				newlyResolvedHosts.stream()
+					.map(p -> p.getSecond().get())
+					.collect(Collectors.toSet())
+			)
+			.build();
 	}
 
 	@VisibleForTesting
