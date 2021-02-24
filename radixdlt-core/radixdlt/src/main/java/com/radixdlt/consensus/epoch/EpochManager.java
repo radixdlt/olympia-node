@@ -440,8 +440,7 @@ public final class EpochManager {
 				return;
 			}
 
-			log.info("Processing ViewUpdate: {}", epochViewUpdate);
-
+			log.trace("Processing ViewUpdate: {}", epochViewUpdate);
 			bftEventProcessor.processViewUpdate(epochViewUpdate.getViewUpdate());
 		};
 	}
