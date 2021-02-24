@@ -154,7 +154,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final ImmutableList<PreparedCommand> preparedCommands = prepared.stream()
 				.flatMap(PreparedVertex::successfulCommands)
 				.collect(ImmutableList.toImmutableList());
-		return stateComputer.getNextCommandFromMempool(preparedCommands);
+		synchronized (lock) {
+			return stateComputer.getNextCommandFromMempool(preparedCommands);
+		}
 	}
 
 	@Override
