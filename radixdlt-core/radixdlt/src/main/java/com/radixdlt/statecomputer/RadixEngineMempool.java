@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -41,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +50,7 @@ import java.util.Set;
  * A mempool which uses internal radix engine to be more efficient.
  */
 public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
-	private final LinkedHashMap<AID, ClientAtom> data = Maps.newLinkedHashMap();
+	private final HashMap<AID, ClientAtom> data = new HashMap<>();
 	private final Map<Particle, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
