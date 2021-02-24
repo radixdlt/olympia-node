@@ -20,7 +20,6 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -35,7 +34,6 @@ import com.radixdlt.sync.SyncState.IdleState;
 import com.radixdlt.sync.SyncState.SyncCheckState;
 import com.radixdlt.sync.SyncState.SyncingState;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -378,10 +376,10 @@ public final class LocalSyncService {
 	}
 
 	private boolean verifyResponse(SyncResponse syncResponse) {
-		final DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
-		final AccumulatorState start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
-		final AccumulatorState end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
-		final ImmutableList<HashCode> hashes = commandsAndProof.getCommands().stream()
+		final var commandsAndProof = syncResponse.getCommandsAndProof();
+		final var start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
+		final var end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
+		final var hashes = commandsAndProof.getCommands().stream()
 			.map(hasher::hash)
 			.collect(ImmutableList.toImmutableList());
 

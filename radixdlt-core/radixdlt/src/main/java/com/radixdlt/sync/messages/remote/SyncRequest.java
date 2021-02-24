@@ -51,7 +51,7 @@ public final class SyncRequest {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof SyncRequest)) {
 			return false;
 		}
 		SyncRequest that = (SyncRequest) o;

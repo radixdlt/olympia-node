@@ -18,6 +18,7 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.ledger.DtoCommandsAndProof;
+
 import java.util.Objects;
 
 /**
@@ -49,7 +50,7 @@ public final class SyncResponse {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof SyncResponse)) {
 			return false;
 		}
 		SyncResponse that = (SyncResponse) o;

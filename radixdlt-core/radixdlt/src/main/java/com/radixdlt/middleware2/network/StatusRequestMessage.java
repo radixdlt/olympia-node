@@ -47,7 +47,7 @@ public final class StatusRequestMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof StatusRequestMessage)) {
 			return false;
 		}
 		StatusRequestMessage that = (StatusRequestMessage) o;

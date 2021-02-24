@@ -18,8 +18,6 @@
 package com.radixdlt.sync.validation;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Objects;
@@ -37,8 +35,8 @@ public class RemoteSyncResponseValidatorSetVerifier {
 	}
 
 	public boolean verifyValidatorSet(SyncResponse syncResponse) {
-		final DtoCommandsAndProof dtoCommandsAndProof = syncResponse.getCommandsAndProof();
-		final ValidationState validationState = validatorSet.newValidationState();
+		final var dtoCommandsAndProof = syncResponse.getCommandsAndProof();
+		final var validationState = validatorSet.newValidationState();
 
 		dtoCommandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
 			validationState.addSignature(node, signature.timestamp(), signature.signature())

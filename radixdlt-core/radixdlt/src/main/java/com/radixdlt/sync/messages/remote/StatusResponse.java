@@ -50,7 +50,7 @@ public final class StatusResponse {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof StatusResponse)) {
 			return false;
 		}
 		StatusResponse that = (StatusResponse) o;

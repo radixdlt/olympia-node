@@ -80,27 +80,15 @@ public final class RemoteSyncService {
 	}
 
 	private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
-		final DtoLedgerHeaderAndProof remoteCurrentHeader = syncRequest.getHeader();
-		final VerifiedCommandsAndProof committedCommands;
-		try {
-			final long start = System.currentTimeMillis();
-			committedCommands = committedReader.getNextCommittedCommands(
-				remoteCurrentHeader,
-				syncConfig.responseBatchSize()
-			);
-			final long finish = System.currentTimeMillis();
-			systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
-		} catch (NextCommittedLimitReachedException e) {
-			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", remoteCurrentHeader);
-			return;
-		}
+		final var remoteCurrentHeader = syncRequest.getHeader();
+		final var committedCommands = getCommittedCommandsForSyncRequest(remoteCurrentHeader);
 
 		if (committedCommands == null) {
 			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.", remoteCurrentHeader, sender);
 			return;
 		}
 
-		DtoCommandsAndProof verifiable = new DtoCommandsAndProof(
+		final var verifiable = new DtoCommandsAndProof(
 			committedCommands.getCommands(),
 			remoteCurrentHeader,
 			committedCommands.getHeader().toDto()
@@ -109,6 +97,24 @@ public final class RemoteSyncService {
 		log.info("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
 
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
+	}
+
+	private VerifiedCommandsAndProof getCommittedCommandsForSyncRequest(DtoLedgerHeaderAndProof startHeader) {
+		try {
+			final var start = System.currentTimeMillis();
+
+			final var result = committedReader.getNextCommittedCommands(
+				startHeader,
+				syncConfig.responseBatchSize()
+			);
+
+			final var finish = System.currentTimeMillis();
+			systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
+
+			return result;
+		} catch (NextCommittedLimitReachedException e) {
+			return null;
+		}
 	}
 
 	public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {
