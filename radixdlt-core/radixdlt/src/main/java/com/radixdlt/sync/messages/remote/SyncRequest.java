@@ -27,39 +27,39 @@ import java.util.Objects;
  */
 public final class SyncRequest {
 
-    private final DtoLedgerHeaderAndProof header;
+	private final DtoLedgerHeaderAndProof header;
 
-    public static SyncRequest create(DtoLedgerHeaderAndProof header) {
-        return new SyncRequest(header);
-    }
+	public static SyncRequest create(DtoLedgerHeaderAndProof header) {
+		return new SyncRequest(header);
+	}
 
-    private SyncRequest(DtoLedgerHeaderAndProof header) {
-        this.header = header;
-    }
+	private SyncRequest(DtoLedgerHeaderAndProof header) {
+		this.header = header;
+	}
 
-    public DtoLedgerHeaderAndProof getHeader() {
-        return header;
-    }
+	public DtoLedgerHeaderAndProof getHeader() {
+		return header;
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        SyncRequest that = (SyncRequest) o;
-        return Objects.equals(header, that.header);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SyncRequest that = (SyncRequest) o;
+		return Objects.equals(header, that.header);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(header);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(header);
+	}
 }

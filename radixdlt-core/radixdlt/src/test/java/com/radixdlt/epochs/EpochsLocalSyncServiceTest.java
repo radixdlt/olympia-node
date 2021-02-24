@@ -64,8 +64,8 @@ public class EpochsLocalSyncServiceTest {
 		);
 	}
 
-    @Test
-    public void when_local_sync_request_for_previous_epoch__then_should_do_nothing() {
+	@Test
+	public void when_local_sync_request_for_previous_epoch__then_should_do_nothing() {
 		when(initialEpoch.getEpoch()).thenReturn(2L);
 
 		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
@@ -76,7 +76,7 @@ public class EpochsLocalSyncServiceTest {
 		processor.localSyncRequestEventProcessor().process(request);
 
 		verify(localSyncEventProcessor, never()).process(any());
-    }
+	}
 
 	@Test
 	public void when_local_sync_request_for_current_epoch__then_should_forward() {

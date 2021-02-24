@@ -22,28 +22,28 @@ package com.radixdlt.sync.messages.local;
  */
 public final class SyncCheckReceiveStatusTimeout {
 
-    public static SyncCheckReceiveStatusTimeout create() {
-        return new SyncCheckReceiveStatusTimeout();
-    }
+	public static SyncCheckReceiveStatusTimeout create() {
+		return new SyncCheckReceiveStatusTimeout();
+	}
 
-    private SyncCheckReceiveStatusTimeout() {
-    }
+	private SyncCheckReceiveStatusTimeout() {
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{}", this.getClass().getSimpleName());
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 	 return o != null && getClass() == o.getClass();
-    }
+	}
 
-    @Override
-    public int hashCode() {
-        return 1;
-    }
+	@Override
+	public int hashCode() {
+		return 1;
+	}
 }

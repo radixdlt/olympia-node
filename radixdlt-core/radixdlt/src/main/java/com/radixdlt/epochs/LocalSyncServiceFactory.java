@@ -25,8 +25,8 @@ import com.radixdlt.sync.SyncState;
  * A factory for creating LocalSyncService instances.
  */
 public interface LocalSyncServiceFactory {
-    LocalSyncService create(
-        RemoteSyncResponseValidatorSetVerifier remoteSyncResponseValidatorSetVerifier,
-        SyncState syncState
-    );
+	LocalSyncService create(
+		RemoteSyncResponseValidatorSetVerifier remoteSyncResponseValidatorSetVerifier,
+		SyncState syncState
+	);
 }
