@@ -297,6 +297,7 @@ public class EpochManagerTest {
 		// Arrange
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(1L);
+		when(proof.getSignersWithout(any())).thenReturn(ImmutableList.of());
 		GetEpochResponse response = new GetEpochResponse(BFTNode.random(), proof);
 
 		// Act

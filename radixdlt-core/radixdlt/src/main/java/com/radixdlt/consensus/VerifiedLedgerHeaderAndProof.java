@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
@@ -168,6 +170,12 @@ public final class VerifiedLedgerHeaderAndProof {
 
 	public TimestampedECDSASignatures getSignatures() {
 		return signatures;
+	}
+
+	public ImmutableList<BFTNode> getSignersWithout(BFTNode remove) {
+		return signatures.getSignatures().keySet().stream()
+			.filter(n -> !n.equals(remove))
+			.collect(ImmutableList.toImmutableList());
 	}
 
 	@Override
