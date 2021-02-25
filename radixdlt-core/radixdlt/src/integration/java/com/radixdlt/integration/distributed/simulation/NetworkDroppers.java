@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -115,6 +116,16 @@ public final class NetworkDroppers {
 					GetVerticesResponse.class,
 					GetVerticesErrorResponse.class,
 					GetVerticesRequest.class
+				);
+			}
+		};
+	}
+	public static Module dropAllProposals() {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper() {
+				return new MessageDropper(
+					Proposal.class
 				);
 			}
 		};
