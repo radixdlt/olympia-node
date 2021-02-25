@@ -284,7 +284,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		this.sendBFTSyncRequest(commitedView, committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-
 	public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
 		return this::processGetVerticesLocalTimeout;
 	}
@@ -502,6 +501,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 			listenersIterator.remove();
 		}
 
-		syncing.values().removeIf(state -> state.highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
+		syncing.entrySet().removeIf(e -> e.getValue().highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
 	}
 }
