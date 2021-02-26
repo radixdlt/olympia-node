@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -65,9 +64,10 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 	@Test
 	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run(Duration.ofSeconds(10));
+		final var runningTest = test.run(Duration.ofSeconds(10));
+		final var results = runningTest.awaitCompletion();
 
-		final var statistics = results.getNetwork().getSystemCounters().values().stream()
+		final var statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> LongStream.of(s.get(CounterType.BFT_TIMEOUT), s.get(CounterType.BFT_TIMED_OUT_VIEWS)))
 			.map(LongStream::summaryStatistics)
 			.collect(ImmutableList.toImmutableList());
@@ -81,7 +81,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 			assertEquals(s.getMin(), s.getMax());
 		});
 
-		assertThat(results.getCheckResults()).allSatisfy((name, error) ->
+		assertThat(results).allSatisfy((name, error) ->
 			AssertionsForClassTypes.assertThat(error).isNotPresent()
 		);
 	}
