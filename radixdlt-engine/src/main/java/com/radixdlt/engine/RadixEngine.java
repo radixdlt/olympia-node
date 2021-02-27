@@ -53,17 +53,20 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		private final BiFunction<U, V, U> outputReducer;
 		private final BiFunction<U, V, U> inputReducer;
 		private U curValue;
+		private boolean includeInBranches;
 
 		ApplicationStateComputer(
 			Class<V> particleClass,
 			U initialValue,
 			BiFunction<U, V, U> outputReducer,
-			BiFunction<U, V, U> inputReducer
+			BiFunction<U, V, U> inputReducer,
+			boolean includeInBranches
 		) {
 			this.particleClass = particleClass;
 			this.curValue = initialValue;
 			this.outputReducer = outputReducer;
 			this.inputReducer = inputReducer;
+			this.includeInBranches = includeInBranches;
 		}
 
 		ApplicationStateComputer<U, V, T> copy() {
@@ -71,7 +74,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				particleClass,
 				curValue,
 				outputReducer,
-				inputReducer
+				inputReducer,
+				includeInBranches
 			);
 		}
 
@@ -131,12 +135,13 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param <U> the class of the state
 	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer) {
+	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, boolean includeInBranches) {
 		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
 			stateReducer.particleClass(),
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
-			stateReducer.inputReducer()
+			stateReducer.inputReducer(),
+			includeInBranches
 		);
 
 		synchronized (stateUpdateEngineLock) {
@@ -230,7 +235,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public RadixEngineBranch<T> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
 			Map<Class<?>, ApplicationStateComputer<?, ?, T>> branchedStateComputers = new HashMap<>();
-			this.stateComputers.forEach((c, computer) -> branchedStateComputers.put(c, computer.copy()));
+			this.stateComputers.forEach((c, computer) -> {
+				if (computer.includeInBranches) {
+					branchedStateComputers.put(c, computer.copy());
+				}
+			});
 			RadixEngineBranch<T> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
