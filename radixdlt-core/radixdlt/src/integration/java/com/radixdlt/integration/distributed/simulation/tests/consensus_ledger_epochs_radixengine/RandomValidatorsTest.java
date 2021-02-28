@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -29,13 +29,16 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 
-import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class SanityTest {
+/**
+ * Randomly registers and unregisters nodes as validators
+ */
+public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(10, 2)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
@@ -49,15 +52,15 @@ public class SanityTest {
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		)
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())
-		.addMempoolCommittedChecker();
+		.addActor(NodeValidatorRandomRegistrator.class);
 
 	@Test
-	public void sanity_tests_should_pass() {
+	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
 		TestResults results = simulationTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
+
 }

@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.application.ValidatorRegistratorModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -120,6 +121,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 				} else {
 					install(new NoFeeModule());
 					install(new RadixEngineModule());
+					install(new ValidatorRegistratorModule());
 				}
 			}
 

@@ -23,6 +23,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
@@ -55,10 +56,10 @@ public class MempoolSanityTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			ApplicationMonitors.mempoolCommitted()
 		)
-		.addMempoolSubmissionsSteadyState(new IncrementalBytes())
-		.addMempoolCommittedChecker();
+		.addMempoolSubmissionsSteadyState(new IncrementalBytes());
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else

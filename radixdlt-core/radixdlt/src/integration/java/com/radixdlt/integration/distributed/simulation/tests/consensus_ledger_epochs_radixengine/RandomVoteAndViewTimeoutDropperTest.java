@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -34,6 +34,8 @@ import java.util.LongSummaryStatistics;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		)
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();
+		.addActor(NodeValidatorRandomRegistrator.class);
 
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {

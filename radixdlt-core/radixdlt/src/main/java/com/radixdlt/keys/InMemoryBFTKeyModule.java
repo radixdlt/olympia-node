@@ -19,18 +19,32 @@ package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * In memory Hash signing and identity handling
  */
 public final class InMemoryBFTKeyModule extends AbstractModule {
+	@Override
+    public void configure() {
+    	bind(HashSigner.class).annotatedWith(Names.named("RadixEngine")).to(HashSigner.class);
+	}
+
 	@Provides
 	public HashSigner hashSigner(@Self ECKeyPair self) {
 		return self::sign;
+	}
+
+	@Provides
+	@Self
+	RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode bftNode) {
+		return new RadixAddress((byte) magic, bftNode.getKey());
 	}
 
 	@Provides

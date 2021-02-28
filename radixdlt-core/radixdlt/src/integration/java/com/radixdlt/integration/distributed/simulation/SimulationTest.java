@@ -30,8 +30,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
@@ -39,6 +38,7 @@ import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
@@ -46,8 +46,6 @@ import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -56,9 +54,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.recovery.MockedRecoveryModule;
@@ -66,11 +61,7 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvaria
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
-import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
-import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
-import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
-import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -108,13 +99,8 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
-	private static final ECKeyPair UNIVERSE_KEY = ECKeyPair.generateNew();
-	private static final RadixAddress UNIVERSE_ADDRESS = new RadixAddress((byte) 0, UNIVERSE_KEY.getPublicKey());
-	private static final RRI NATIVE_TOKEN = RRI.of(UNIVERSE_ADDRESS, TokenDefinitionUtils.getNativeTokenShortCode());
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
-
-	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	public interface SimulationNetworkActor {
 		void start(RunningNetwork network);
@@ -152,7 +138,7 @@ public class SimulationTest {
 			LEDGER_AND_LOCALMEMPOOL(false, true, true, true, false, false, false),
 			LEDGER_AND_EPOCHS(false, true, true, false, false, true, false),
 			LEDGER_AND_EPOCHS_AND_SYNC(false, true, true, false, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, true, true, false),
 			FULL_FUNCTION(true, true, true, true, true, true, true);
 
 			private final boolean hasSharedMempool;
@@ -284,7 +270,7 @@ public class SimulationTest {
 		}
 
 		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
-			return numNodes(numNodes, numInitialValidators, numInitialValidators, initialStakes);
+			return numNodes(numNodes, numInitialValidators, maxValidators, initialStakes);
 		}
 
 		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators) {
@@ -297,11 +283,6 @@ public class SimulationTest {
 
 		public Builder numNodes(int numNodes) {
 			return numNodes(numNodes, numNodes);
-		}
-
-		public Builder maxValidators(int maxValidators) {
-			this.maxValidators = maxValidators;
-			return this;
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
@@ -357,6 +338,12 @@ public class SimulationTest {
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					install(new MockedCheckpointModule());
+				}
+
+				@Provides
+				@Self
+				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
+					return new RadixAddress((byte) magic, self.getKey());
 				}
 
 				@Provides
@@ -416,14 +403,30 @@ public class SimulationTest {
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(100);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					install(new MockedCheckpointModule());
 				}
+
+				@Provides
+				@Self
+				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
+					return new RadixAddress((byte) magic, self.getKey());
+				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+							.map(k -> BFTNode.create(k.getPublicKey()))
+							.filter(n -> !n.equals(self))
+							.collect(Collectors.toList());
+				}
 			});
+
 			return this;
 		}
 
@@ -459,75 +462,14 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addActor(SimulationNetworkActor actor) {
+		public Builder addActor(Class<? extends SimulationNetworkActor> c) {
 			this.testModules.add(new AbstractModule() {
 				public void configure() {
-					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class).addBinding().toInstance(actor);
+					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class).addBinding().to(c);
 				}
 			});
 			return this;
 		};
-
-		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
-			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				SimulationNetworkActor mempoolSubmittor(List<ECKeyPair> nodes) {
-					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-						new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
-					return new LocalMempoolPeriodicSubmitter(
-							randomValidatorSubmitter,
-							nodeSelector
-					);
-				}
-			});
-
-			return this;
-		}
-
-		public Builder addMempoolCommittedChecker() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.MEMPOOL_COMMITTED)
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
-					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
-				}
-			});
-
-			return this;
-		}
-
-		public Builder addRadixEngineValidatorRegisterMempoolSubmissions() {
-			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-			this.testModules.add(new AbstractModule() {
-				@Override
-				public void configure() {
-					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
-					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
-				}
-
-				@Provides
-				RadixEngineValidatorRegistrator radixEngineValidatorRegistrator(List<ECKeyPair> nodes) {
-					return new RadixEngineValidatorRegistrator(nodes);
-				}
-
-				@Provides
-				LocalMempoolPeriodicSubmitter mempoolSubmittor(RadixEngineValidatorRegistrator validatorRegistrator) {
-					return new LocalMempoolPeriodicSubmitter(
-						validatorRegistrator,
-						nodeSelector
-					);
-				}
-
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.VALIDATOR_REGISTERED)
-				TestInvariant registeredValidator(RadixEngineValidatorRegistrator validatorRegistrator) {
-					return new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions());
-				}
-			});
-
-			return this;
-		}
 
 		public SimulationTest build() {
 			final NodeEvents nodeEvents = new NodeEvents();
