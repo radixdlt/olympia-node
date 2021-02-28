@@ -45,6 +45,7 @@ import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 /**
@@ -88,7 +89,7 @@ public final class ValidatorRegistrator {
 	private void process(ValidatorRegistration registration) {
 		ValidatorState validatorState = radixEngine.getComputedState(ValidatorState.class);
 		if (registration.isRegister() == validatorState.isRegistered()) {
-			logger.info("Node is already {}", registration.isRegister() ? "registered." : "unregistered.");
+			logger.warn("Node is already {}", registration.isRegister() ? "registered." : "unregistered.");
 			return;
 		}
 
@@ -109,7 +110,11 @@ public final class ValidatorRegistrator {
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class, "self");
 			Optional<ParticleGroup> feeGroup = wallet.createFeeGroup();
 			if (feeGroup.isEmpty()) {
-				logger.info("No funds for fees");
+				BigDecimal balance = wallet.getBalance();
+				logger.warn("Cannot {} since balance too low: {}",
+					registration.isRegister() ? "register" : "unregister",
+					balance
+				);
 				return;
 			}
 			atom.addParticleGroup(feeGroup.get());

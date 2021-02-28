@@ -40,4 +40,9 @@ public final class ValidatorRegistration {
     public static ValidatorRegistration unregister() {
         return new ValidatorRegistration(false);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s{%s}", this.getClass().getSimpleName(), this.enabled);
+    }
 }

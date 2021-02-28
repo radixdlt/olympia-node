@@ -17,6 +17,9 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.application.ValidatorRegistrator;
+import com.radixdlt.consensus.bft.Self;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
@@ -105,7 +108,12 @@ public final class RadixHttpServer {
 	private Undertow server;
 	private final EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 	private final RadixEngine<LedgerAtom> radixEngine;
+
+	@Inject
+	@Self
+	private RadixAddress selfAddress;
 
 	@Inject(optional = true)
 	@MempoolFillerKey
@@ -120,6 +128,7 @@ public final class RadixHttpServer {
 		LedgerEntryStore store,
 		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
 		EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher,
+		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -138,6 +147,7 @@ public final class RadixHttpServer {
 		this.atomsService = atomsService;
 		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
 		this.mempoolFillerUpdateEventDispatcher = mempoolFillerUpdateEventDispatcher;
+		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
 			serialization,
@@ -206,6 +216,9 @@ public final class RadixHttpServer {
 		//TODO: potentially blocking
 		handler.add(Methods.PUT, "/api/chaos/mempool-filler", this::handleMempoolFill);
 		handler.add(Methods.GET, "/api/chaos/mempool-filler", this::respondWithMempoolFill);
+
+		handler.add(Methods.POST, "/node/validator", this::handleValidatorRegistration);
+		handler.add(Methods.GET, "/node", this::respondWithNode);
 
 		// keep-alive route
 		handler.add(Methods.GET, "/api/ping", this::respondWithPong);
@@ -338,6 +351,12 @@ public final class RadixHttpServer {
 		respond(array, exchange);
 	}
 
+	private void respondWithNode(HttpServerExchange exchange) {
+		var json = jsonObject()
+			.put("address", selfAddress);
+		respond(json, exchange);
+	}
+
 	private JSONObject mapSingleVertex(final com.radixdlt.consensus.bft.VerifiedVertex v) {
 		return jsonObject()
 			.put("epoch", v.getParentHeader().getLedgerHeader().getEpoch())
@@ -448,6 +467,15 @@ public final class RadixHttpServer {
 		withJSONRequestBody(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
 			mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.create(enabled));
+		});
+	}
+
+	private void handleValidatorRegistration(HttpServerExchange exchange) throws IOException {
+		withJSONRequestBody(exchange, values -> {
+			boolean enabled = values.getBoolean("enabled");
+			validatorRegistrationEventDispatcher.dispatch(
+				enabled ? ValidatorRegistration.register() : ValidatorRegistration.unregister()
+			);
 		});
 	}
 

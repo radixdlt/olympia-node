@@ -38,7 +38,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
