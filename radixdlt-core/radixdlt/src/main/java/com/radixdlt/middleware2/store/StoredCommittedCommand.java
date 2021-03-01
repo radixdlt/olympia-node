@@ -60,7 +60,7 @@ public final class StoredCommittedCommand {
 		return command;
 	}
 
-	public VerifiedLedgerHeaderAndProof getStateAndProof() {
+	public VerifiedLedgerHeaderAndProof getProof() {
 		return proof;
 	}
 

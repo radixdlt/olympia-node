@@ -19,7 +19,6 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -206,7 +205,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
 		return store.getLastCommitted()
 			.flatMap(store::get)
-			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
+			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getProof());
 	}
 
 	@Override
@@ -218,7 +217,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		);
 		if (cursor != null) {
 			return store.get(cursor.get())
-				.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
+				.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getProof());
 		} else {
 			return Optional.empty();
 		}
@@ -234,15 +233,20 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		}
 
 		// Limit the batch to within a single epoch
-		final int tailPosition;
-		if (cmdIsEndOfEpoch(storedCommittedCommands.get(0))) {
-			// Send this by itself
-			tailPosition = 0;
-		} else {
-			final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, this::cmdIsEndOfEpoch);
-			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
+        // TODO: Cleanup and move logic into lower layer
+		int epochChangeIndex = -1;
+		for (int i = 0; i < storedCommittedCommands.size(); i++) {
+			var cmd = storedCommittedCommands.get(i);
+			var cmdVersion = stateVersion + i + 1;
+			if (cmd.getProof().getRaw().isEndOfEpoch()
+				&& cmd.getProof().getStateVersion() == cmdVersion) {
+				epochChangeIndex = i;
+				break;
+			}
 		}
-		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
+
+		final int tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
+		final var nextHeader = storedCommittedCommands.get(tailPosition).getProof();
 		final var commands = storedCommittedCommands.stream()
 			.limit(tailPosition + 1L)
 			.map(StoredCommittedCommand::getCommand)
@@ -266,9 +270,5 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return Spin.UP;
 		}
 		return Spin.NEUTRAL;
-	}
-
-	private boolean cmdIsEndOfEpoch(StoredCommittedCommand cmd) {
-		return cmd.getStateAndProof().getRaw().isEndOfEpoch();
 	}
 }

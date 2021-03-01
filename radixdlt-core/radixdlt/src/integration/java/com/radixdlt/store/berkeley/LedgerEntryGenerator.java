@@ -30,8 +30,8 @@ import java.util.Random;
 
 public class LedgerEntryGenerator {
 	private final Random random = new Random(); // SecureRandom not required for test
-	private long stateVersion = 0;
-	private long proofVersion = 0;
+	private long nextStateVersion = 0;
+	private long nextProofVersion = 0;
 
 	public List<LedgerEntry> createLedgerEntries(int n) {
 		return createLedgerEntries(n, false);
@@ -42,16 +42,21 @@ public class LedgerEntryGenerator {
 	}
 
 	private List<LedgerEntry> createLedgerEntries(int n, boolean sameCommit) {
+		if (sameCommit) {
+			this.nextProofVersion += (n - 1);
+		}
+
 		// Super paranoid way of doing things
 		final var ledgerEntries = new LinkedHashMap<AID, LedgerEntry>(n);
 		while (ledgerEntries.size() < n) {
 			final var ledgerEntry = createLedgerEntry();
 			if (ledgerEntries.put(ledgerEntry.getAID(), ledgerEntry) == null && !sameCommit) {
-				this.proofVersion += 1;
+				this.nextProofVersion += 1;
 			}
 		}
+
 		if (sameCommit) {
-			this.proofVersion += 1;
+			this.nextProofVersion += 1;
 		}
 
 		// Make sure return list is ordered by state version.
@@ -65,8 +70,8 @@ public class LedgerEntryGenerator {
 
 		return new LedgerEntry(
 			DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
-			this.stateVersion++,
-			this.proofVersion,
+			this.nextStateVersion++,
+			this.nextProofVersion,
 			AID.from(pKey)
 		);
 	}
