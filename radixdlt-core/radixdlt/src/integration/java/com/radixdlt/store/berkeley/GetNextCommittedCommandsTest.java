@@ -134,7 +134,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(9);
+			.hasSize(10);
 	}
 
 	@Test
@@ -157,7 +157,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(9);
+			.hasSize(10);
 	}
 
 	@Test
@@ -169,7 +169,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(90);
+			.hasSize(91);
 	}
 
 	@Test

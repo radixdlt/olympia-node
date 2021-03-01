@@ -240,7 +240,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			tailPosition = 0;
 		} else {
 			final var epochChangeIndex = Iterables.indexOf(storedCommittedCommands, this::cmdIsEndOfEpoch);
-			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex - 1;
+			tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
 		}
 		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
 		final var commands = storedCommittedCommands.stream()
