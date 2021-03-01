@@ -168,7 +168,7 @@ public class AtomEventObserver {
 					ledgerEntry.ifPresent(
 						entry -> {
 							var committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
-							long timestamp = committedCommand.getStateAndProof().timestamp();
+							long timestamp = committedCommand.getProof().timestamp();
 							var clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 							atoms.add(Pair.of(clientAtom, timestamp));
 						}
