@@ -165,6 +165,52 @@ public class PendingVotesTest {
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}
 
+	@Test
+	public void when_submitting_a_duplicate_vote__then_can_be_replaced_if_has_timeout() {
+		final var vertexId1 = HashUtils.random256();
+		final var vertexId2 = HashUtils.random256();
+		final var vote1 = makeSignedVoteFor(mock(BFTNode.class), View.genesis(), vertexId1);
+		when(vote1.getTimeoutSignature()).thenReturn(Optional.empty());
+		when(vote1.isTimeout()).thenReturn(false);
+		final var vote2 = makeSignedVoteFor(mock(BFTNode.class), View.genesis(), vertexId2);
+		when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote2.isTimeout()).thenReturn(true);
+
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
+			Arrays.asList(
+				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
+				BFTValidator.from(vote2.getAuthor(), UInt256.ONE))
+		);
+
+		assertTrue(
+			this.pendingVotes.insertVote(vote1, validatorSet) instanceof VoteProcessingResult.VoteAccepted);
+
+		// submit duplicate vote, should fail
+		assertEquals(
+			VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE),
+			this.pendingVotes.insertVote(vote1, validatorSet)
+		);
+
+		// submit again, but this time with a timeout
+		when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote1.isTimeout()).thenReturn(true);
+
+		// should be accepted
+		assertEquals(
+			VoteProcessingResult.accepted(),
+			this.pendingVotes.insertVote(vote1, validatorSet)
+		);
+
+		// insert another timeout vote
+		final var result2 = this.pendingVotes.insertVote(vote2, validatorSet);
+
+		// and form a TC
+		assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
+
+		assertTrue(((VoteProcessingResult.QuorumReached) result2).getViewVotingResult()
+			instanceof ViewVotingResult.FormedTC);
+	}
+
 	private Vote makeSignedVoteFor(BFTNode author, View parentView, HashCode vertexId) {
 		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
 		when(vote.getSignature()).thenReturn(new ECDSASignature());

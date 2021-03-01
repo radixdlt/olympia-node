@@ -72,7 +72,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
-		SYNC_TO_COMMIT,
+		LEDGER_SYNC,
 		GET_QC_VERTICES
 	}
 
@@ -388,7 +388,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 			rebuildAndSyncQC(syncState);
 		} else {
 			ImmutableList<BFTNode> signers = syncState.committedProof.getSignersWithout(self);
-			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+			syncState.setSyncStage(SyncStage.LEDGER_SYNC);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
 					syncing = new ArrayList<>();

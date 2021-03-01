@@ -84,8 +84,12 @@ public class EpochsLocalSyncServiceProcessor {
 			this.outsideOfCurrentEpochRequests.values().stream().flatMap(List::stream)
 				.findFirst()
 				.ifPresent(request -> {
-					log.info("Epoch updated sending further sync requests to {}", request.getTargetNodes().get(0));
-					requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
+					log.info(
+						"Epoch updated {} sending further sync request {}",
+						ledgerUpdate,
+						request
+					);
+					processLocalSyncRequest(request);
 				});
 		} else {
 			this.currentHeader = ledgerUpdate.getBase().getTail();
