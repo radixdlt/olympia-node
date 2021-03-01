@@ -1,15 +1,16 @@
 package org.radix.universe.output;
 
-import com.radixdlt.utils.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.*;
 
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AWSSecretManager {
-    public static void createSecret(String secretName, String secretValue) {
+    public static void createSecret(String secretName, String secretValue, String network) {
         removeBouncyCastleSecurityProvider();
 
         Region region = Region.EU_WEST_2;
@@ -17,7 +18,7 @@ public class AWSSecretManager {
                 .region(region)
                 .build();
 
-        String secretARN = createNewSecret(secretsClient, secretName, secretValue);
+        String secretARN = createNewSecret(secretsClient, secretName, secretValue, network);
         System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
     }
@@ -77,11 +78,14 @@ public class AWSSecretManager {
 
     }
 
-    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, String secretValue) {
+    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, String secretValue, String network) {
+        List<Tag> tagList = buildTags(network, secretName);
+
         CreateSecretRequest secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
                 .secretString(secretValue)
+                .tags(tagList)
                 .build();
 
         CreateSecretResponse secretResponse = secretsClient.createSecret(secretRequest);
@@ -95,5 +99,37 @@ public class AWSSecretManager {
      */
     private static void removeBouncyCastleSecurityProvider() {
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+    }
+
+    private static List<Tag> buildTags(String network, String name) {
+        List<Tag> tagList = new ArrayList<>();
+
+        Tag envTypeTag = Tag.builder()
+                .key("radixdlt:environment-type")
+                .value("development")
+                .build();
+        Tag teamTag = Tag.builder()
+                .key("radixdlt:teamn")
+                .value("devops")
+                .build();
+        Tag appTag = Tag.builder()
+                .key("radixdlt:application")
+                .value("validator")
+                .build();
+        Tag nameTag = Tag.builder()
+                .key("radixdlt:name")
+                .value(name)
+                .build();
+        Tag networkTag = Tag.builder()
+                .key("radixdlt:network")
+                .value(network)
+                .build();
+
+        tagList.add(envTypeTag);
+        tagList.add(appTag);
+        tagList.add(teamTag);
+        tagList.add(nameTag);
+        tagList.add(networkTag);
+        return tagList;
     }
 }

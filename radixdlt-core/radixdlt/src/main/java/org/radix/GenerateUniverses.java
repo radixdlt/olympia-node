@@ -426,7 +426,7 @@ public final class GenerateUniverses {
         } else {
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-                AWSSecretManager.createSecret(secretName, jsonSecret);
+                AWSSecretManager.createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             } catch (SecretsManagerException e) {
