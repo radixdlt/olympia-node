@@ -22,8 +22,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
+import java.security.cert.CertificateException;
 import java.util.function.Consumer;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -180,6 +185,18 @@ public class GenerateUniversesTest {
 				"radix.particles.staked_tokens"
 			);
 	}
+
+//	@Test
+//	public void createAWSSecrets() throws IOException {
+//		// Need to do a first run before tests to ensure that logging
+//		// from static initialisation is not included in other tests.
+//		try (Capture stdOut = Capture.forOut();
+//			 Capture stdErr = Capture.forErr()) {
+//			GenerateUniverses.main(strings("-j", "-v", "3", "-p", "-as", "true", "-n", "testAA"));
+//			stdOut.toString();
+//			stdErr.toString();
+//		}
+//	}
 
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
