@@ -542,7 +542,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, DEFAULT);
 			}
 
-			if (ledgerEntries.size() <= limit) {
+			if (ledgerEntries.size() < limit) {
 				// Assume that the last entry is a complete commit
 				// if we ran out of entries at or before limit
 				return ImmutableList.copyOf(ledgerEntries);
