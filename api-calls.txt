@@ -1,0 +1,43 @@
+CLI:
+
+        //Register validator
+		api.registerValidator(api.getAddress(), delegators, infoUrl).blockUntilComplete();
+		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, allowedDelegators, url);
+
+
+        //Unregister validator
+		api.unregisterValidator(api.getAddress()).blockUntilComplete();
+		final UnregisterValidatorAction unregisterValidatorAction = new UnregisterValidatorAction(validator);
+
+        //Get stored atoms
+		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAid()));
+
+		//Create and mint token
+        transaction.stage(CreateTokenAction.create(
+		transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), amount));
+
+        //Show validator config
+		api.getAtomStore()
+				.getUpParticles(api.getAddress(), null)
+				.filter(particle -> particle instanceof RegisteredValidatorParticle)
+				.map(particle -> (RegisteredValidatorParticle) particle)
+				.findFirst()
+				.ifPresentOrElse(validator -> printDetails(validator, address),
+						() -> printfln("No active validator configuration at %s", address)
+				);
+
+        //Get messages
+		api.observeMessages().blockingSubscribe(it -> println("  " + it.toString()));
+
+Faucet
+		transaction.stage(TransferTokensAction.create(tokenRRI, api.getAddress(), recipient, amountToSend));
+		transaction.stage(PutUniqueIdAction.create(mutexAcquire));
+		sentRadsMsg.setMessage(String.format("Could not send you any (Reason: %s)", e.getMessage()));
+
+Register validator
+Unregister validator
+Get stored atoms
+Create and mint token
+Transfer token
+Set message
+Get messages for address ?

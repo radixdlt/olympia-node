@@ -22,31 +22,27 @@
 
 package com.radixdlt.faucet;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * A service which sends tokens to whoever sends it a message through
@@ -57,28 +53,31 @@ public class Faucet {
 
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String FAUCET_API_PORT_ENV_NAME     = "FAUCET_API_PORT";
+	private static final String FAUCET_API_PORT_ENV_NAME = "FAUCET_API_PORT";
 	private static final String FAUCET_IDENTITY_KEY_ENV_NAME = "FAUCET_IDENTITY_KEY";
-	private static final String FAUCET_TOKEN_RRI_ENV_NAME    = "FAUCET_TOKEN_RRI";
-	private static final String FAUCET_RATE_ENV_NAME         = "FAUCET_RATE";
-	private static final String FAUCET_AMOUNT_ENV_NAME       = "FAUCET_AMOUNT";
+	private static final String FAUCET_TOKEN_RRI_ENV_NAME = "FAUCET_TOKEN_RRI";
+	private static final String FAUCET_RATE_ENV_NAME = "FAUCET_RATE";
+	private static final String FAUCET_AMOUNT_ENV_NAME = "FAUCET_AMOUNT";
 
-	private static final double     DEFAULT_RATE     = 0.5; // 1 every 2 seconds
-	private static final BigDecimal DEFAULT_AMOUNT   = BigDecimal.valueOf(10); // 10 rads/request
-	private static final int        DEFAULT_API_PORT = 8079;
+	private static final double DEFAULT_RATE = 0.5; // 1 every 2 seconds
+	private static final BigDecimal DEFAULT_AMOUNT = BigDecimal.valueOf(10); // 10 rads/request
+	private static final int DEFAULT_API_PORT = 8079;
 
 	private static void logVersion() {
-		String branch  = "unknown-branch";
-		String commit  = "unknown-commit";
-		String display = "unknown-version";
-		try (InputStream is = Faucet.class.getResourceAsStream("/version.properties")) {
-			if (is != null) {
-				Properties p = new Properties();
-				p.load(is);
-				branch  = p.getProperty("VERSION_BRANCH",  branch);
-				commit  = p.getProperty("VERSION_COMMIT",  commit);
-				display = p.getProperty("VERSION_DISPLAY", display);
+		var branch = "unknown-branch";
+		var commit = "unknown-commit";
+		var display = "unknown-version";
+
+		try (var is = Faucet.class.getResourceAsStream("/version.properties")) {
+			if (is == null) {
+				throw new IOException("Resource /version.properties is unavailable");
 			}
+			var p = new Properties();
+			p.load(is);
+
+			branch = p.getProperty("VERSION_BRANCH", branch);
+			commit = p.getProperty("VERSION_COMMIT", commit);
+			display = p.getProperty("VERSION_DISPLAY", display);
 		} catch (IOException e) {
 			// Ignore exception
 		}
@@ -86,8 +85,9 @@ public class Faucet {
 	}
 
 	private static void syncToHead(RadixApplicationAPI api) {
-		final AtomicLong atomCount = new AtomicLong(1L); // Yes, this is what I want
-		Disposable atomAbserverDisposable = api.getAtomStore().getAtomObservations(api.getAddress())
+		final var atomCount = new AtomicLong(1L); // Yes, this is what I want
+		final var atomObserverDisposable = api.getAtomStore()
+			.getAtomObservations(api.getAddress())
 			.subscribeOn(Schedulers.computation())
 			.subscribe(
 				atomObs -> updateAtomObservations(atomCount, atomObs),
@@ -98,7 +98,7 @@ public class Faucet {
 			api.pullOnce(api.getAddress()).blockingAwait();
 			log.info("Sync complete, {} atoms. Starting.", atomCount.get());
 		} finally {
-			atomAbserverDisposable.dispose();
+			atomObserverDisposable.dispose();
 		}
 	}
 
@@ -111,58 +111,30 @@ public class Faucet {
 		}
 	}
 
+	private static <T> T fail(String message, Object... params) {
+		log.fatal(message, params);
+		System.exit(-1);
+		return null;
+	}
+
 	public static void main(String[] args) throws Exception {
 		logVersion();
 
-		// Bootstrap configuration
-		final BootstrapConfig config = RadixEnv.getBootstrapConfig();
+		final var api = loadApi();
+		final var source = createRequestSource();
+		final var tokenRRI = retrieveTokenRRI();
+		final var rateLimiter = prepareRateLimiter();
+		final var leakAmount = retrieveLeakAmount();
 
-		// API port
-		final String apiPortString = System.getenv(FAUCET_API_PORT_ENV_NAME);
-		final int apiPort = (apiPortString == null) ? DEFAULT_API_PORT : Integer.parseInt(apiPortString);
-
-		// Identity configuration
-		final String unencryptedKey = System.getenv(FAUCET_IDENTITY_KEY_ENV_NAME);
-		if (unencryptedKey == null) {
-			log.fatal("Identity must be set via env var: {}=<private-key-base64>", FAUCET_IDENTITY_KEY_ENV_NAME);
-			System.exit(-1);
-		}
-		final RadixIdentity faucetIdentity;
-		try {
-			faucetIdentity = RadixIdentities.fromPrivateKeyBase64(unencryptedKey);
-		} catch (Exception ex) {
-			log.fatal(String.format("Error while decoding identity key from %s", FAUCET_IDENTITY_KEY_ENV_NAME), ex);
-			System.exit(-1);
-			return;
-		}
-
-		// Token RRI configuration
-		final String tokenRRIString = System.getenv(FAUCET_TOKEN_RRI_ENV_NAME);
-		if (tokenRRIString == null) {
-			log.fatal("Token RRI must be set via env var: {}=<rri-of-token>", FAUCET_TOKEN_RRI_ENV_NAME);
-			System.exit(-1);
-		}
-		final RRI tokenRRI = RRI.from(tokenRRIString);
-
-		// Faucet delay configuration
-		final String faucetRateString = System.getenv(FAUCET_RATE_ENV_NAME);
-		final double rate = (faucetRateString == null) ? DEFAULT_RATE : Double.parseDouble(faucetRateString);
-		final RateLimiter rateLimiter = RateLimiter.create(rate);
-
-		// Faucet amount
-		final String faucetAmountString = System.getenv(FAUCET_AMOUNT_ENV_NAME);
-		final BigDecimal leakAmount = (faucetAmountString == null) ? DEFAULT_AMOUNT : new BigDecimal(faucetAmountString);
-
-		log.info("Faucet starting on port {}, granting {} {} at max rate {}/second", apiPort, leakAmount, tokenRRI, rate);
-
-		final RadixApplicationAPI api = RadixApplicationAPI.create(config, faucetIdentity);
+		log.info(
+			"Faucet starting on port {}, granting {} {} at max rate {}/second",
+			source.port(), leakAmount, tokenRRI, rateLimiter.getRate()
+		);
 
 		syncToHead(api);
 
-		FaucetHandler faucet = new FaucetHandler(api, tokenRRI, leakAmount, rateLimiter);
-		final Observable<Pair<RadixAddress, EUID>> apiSource = APITokenRequestSource.create(apiPort).requestSource();
-
-		faucet.run(apiSource);
+		new FaucetHandler(api, tokenRRI, leakAmount, rateLimiter)
+			.run(source.requestSource());
 
 		// Wait for threads to start
 		try {
@@ -170,6 +142,50 @@ public class Faucet {
 		} catch (InterruptedException e) {
 			// Ignored
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	private static RRI retrieveTokenRRI() {
+		return envVar(FAUCET_TOKEN_RRI_ENV_NAME)
+			.map(RRI::from)
+			.orElseGet(() -> fail("Token RRI must be set via env var: {}=<rri-of-token>", FAUCET_TOKEN_RRI_ENV_NAME));
+	}
+
+	private static BigDecimal retrieveLeakAmount() {
+		return envVar(FAUCET_AMOUNT_ENV_NAME).map(BigDecimal::new).orElse(DEFAULT_AMOUNT);
+	}
+
+	private static RateLimiter prepareRateLimiter() {
+		return RateLimiter.create(envVar(FAUCET_RATE_ENV_NAME).map(Double::parseDouble).orElse(DEFAULT_RATE));
+	}
+
+	private static APITokenRequestSource createRequestSource() {
+		return APITokenRequestSource.create(envVar(FAUCET_API_PORT_ENV_NAME).map(Integer::parseInt).orElse(DEFAULT_API_PORT));
+	}
+
+	private static RadixApplicationAPI loadApi() {
+		// Bootstrap configuration
+		final var config = RadixEnv.getBootstrapConfig();
+
+		// Identity configuration
+		final var faucetIdentity = envVar(FAUCET_IDENTITY_KEY_ENV_NAME)
+			.map(Faucet::toIdentity)
+			.orElseGet(() -> fail("Identity must be set via env var: {}=<private-key-base64>", FAUCET_IDENTITY_KEY_ENV_NAME));
+
+		return RadixApplicationAPI.create(config, faucetIdentity);
+	}
+
+	private static Optional<String> envVar(final String keyEnvName) {
+		return ofNullable(System.getenv(keyEnvName));
+	}
+
+	private static RadixIdentity toIdentity(final String unencryptedKey) {
+		try {
+			return RadixIdentities.fromPrivateKeyBase64(unencryptedKey);
+		} catch (Exception ex) {
+			log.fatal(String.format("Error while decoding identity key from %s", FAUCET_IDENTITY_KEY_ENV_NAME), ex);
+			System.exit(-1);
+			return null;
 		}
 	}
 }

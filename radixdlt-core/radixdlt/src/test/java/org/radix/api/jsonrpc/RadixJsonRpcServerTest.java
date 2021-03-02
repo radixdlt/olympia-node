@@ -17,39 +17,34 @@
 
 package org.radix.api.jsonrpc;
 
+import org.json.JSONObject;
+import org.junit.Test;
+import org.radix.api.services.AtomsService;
+import org.radix.api.services.LedgerService;
+import org.radix.api.services.NetworkService;
+import org.radix.api.services.SystemService;
+import org.radix.time.Time;
+
+import com.radixdlt.serialization.Serialization;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.universe.Universe;
-import org.json.JSONObject;
-import org.junit.Test;
-import org.radix.api.services.AtomsService;
-
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.serialization.Serialization;
-
-import org.radix.universe.system.LocalSystem;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
-		JSONObject request = new JSONObject();
-
-		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(EpochManagerRunner.class),
-			mock(Serialization.class),
-			mock(LedgerEntryStore.class),
+		var server = new RadixJsonRpcServer(
 			mock(AtomsService.class),
-			mock(LocalSystem.class),
-			mock(AddressBook.class),
-			mock(Universe.class)
+			mock(NetworkService.class),
+			mock(SystemService.class),
+			mock(LedgerService.class)
 		);
 
-		JSONObject response = new JSONObject(server.handleRpc(request.toString()));
+		var response = new JSONObject(server.handleRpc(jsonObject().toString()));
+
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
 		assertThat(response.has("id")).isTrue();
@@ -61,24 +56,26 @@ public class RadixJsonRpcServerTest {
 
 	@Test
 	public void when_send_json_rpc_request_ping__return_pong_and_timestamp() {
-		JSONObject request = new JSONObject()
+		var request = jsonObject()
 			.put("id", 0)
 			.put("method", "Ping")
-			.put("params", new JSONObject());
+			.put("params", jsonObject());
 
-		Serialization serializer = mock(Serialization.class);
+		var serializer = mock(Serialization.class);
 		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
 
-		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(EpochManagerRunner.class),
-			serializer,
-			mock(LedgerEntryStore.class),
-			mock(AtomsService.class),
-			mock(LocalSystem.class),
-			mock(AddressBook.class),
-			mock(Universe.class));
+		var systemService = mock(SystemService.class);
+		var pong = jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp());
+		when(systemService.getPong()).thenReturn(pong);
 
-		JSONObject response = new JSONObject(server.handleRpc(request.toString()));
+		var server = new RadixJsonRpcServer(
+			mock(AtomsService.class),
+			mock(NetworkService.class),
+			systemService,
+			mock(LedgerService.class)
+		);
+
+		var response = new JSONObject(server.handleRpc(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isTrue();
 		assertThat(response.get("id")).isEqualTo(0);
@@ -89,18 +86,15 @@ public class RadixJsonRpcServerTest {
 
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
-		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(EpochManagerRunner.class),
-			mock(Serialization.class),
-			mock(LedgerEntryStore.class),
+		var server = new RadixJsonRpcServer(
 			mock(AtomsService.class),
-			mock(LocalSystem.class),
-			mock(AddressBook.class),
-			mock(Universe.class),
+			mock(NetworkService.class),
+			mock(SystemService.class),
+			mock(LedgerService.class),
 			5
 		);
 
-		JSONObject response = new JSONObject(server.handleRpc("123456"));
+		var response = new JSONObject(server.handleRpc("123456"));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
 		assertThat(response.has("result")).isFalse();
 		assertThat(response.has("id")).isTrue();

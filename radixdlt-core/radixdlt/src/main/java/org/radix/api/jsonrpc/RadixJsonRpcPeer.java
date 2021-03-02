@@ -25,7 +25,6 @@ import org.radix.api.AtomQuery;
 import org.radix.api.services.AtomsService;
 
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.Serialization;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -60,7 +59,6 @@ public class RadixJsonRpcPeer {
 	public RadixJsonRpcPeer(
 		RadixJsonRpcServer server,
 		AtomsService atomsService,
-		Serialization serialization,
 		BiConsumer<RadixJsonRpcPeer, String> callback
 	) {
 		this.server = server;
@@ -69,7 +67,6 @@ public class RadixJsonRpcPeer {
 		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(
 			atomsService,
-			serialization,
 			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address")).euid()),
 			atomJson -> callback.accept(this, atomJson.toString())
 		);

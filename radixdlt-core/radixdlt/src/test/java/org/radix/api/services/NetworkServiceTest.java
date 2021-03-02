@@ -17,25 +17,30 @@
 
 package org.radix.api.services;
 
-import java.util.Optional;
-
-import com.radixdlt.consensus.Sha256Hasher;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import java.util.Optional;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class NetworkServiceTest {
-
 	private Serialization serialization;
 	private LocalSystem localSystem;
 	private AddressBook addressBook;
@@ -52,7 +57,7 @@ public class NetworkServiceTest {
 	@Test
 	public void testGetSelf() {
 		when(this.serialization.toJsonObject(any(), any())).thenReturn(new JSONObject());
-		JSONObject json = this.services.getSelf();
+		var json = this.services.getSelf();
 
 		assertNotNull(json);
 		assertTrue(json.has("system"));
@@ -62,7 +67,7 @@ public class NetworkServiceTest {
 
 	@Test
 	public void testGetPeerInvalid() {
-		JSONObject json = this.services.getPeer("");
+		var json = this.services.getPeer("");
 
 		assertNotNull(json);
 		assertTrue(json.isEmpty());
@@ -81,11 +86,13 @@ public class NetworkServiceTest {
 
 	@Test
 	public void testGetPeerPresent() {
-		PeerWithSystem p = mock(PeerWithSystem.class);
+		var p = mock(PeerWithSystem.class);
 		when(this.addressBook.peer(any(EUID.class))).thenReturn(Optional.of(p));
-		JSONObject serializedPeer = new JSONObject();
+
+		var serializedPeer = new JSONObject();
 		when(this.serialization.toJsonObject(any(), any())).thenReturn(serializedPeer);
-		JSONObject json = this.services.getPeer("0123456789abcdef0123456789abcdef");
+
+		var json = this.services.getPeer("0123456789abcdef0123456789abcdef");
 
 		assertNotNull(json);
 		assertSame(serializedPeer, json);

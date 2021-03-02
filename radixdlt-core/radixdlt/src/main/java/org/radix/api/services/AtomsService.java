@@ -78,7 +78,7 @@ public class AtomsService {
 	private final Object singleAtomObserversLock = new Object();
 	private final Map<AID, List<AtomStatusListener>> singleAtomObserversx = Maps.newHashMap();
 
-	private final Serialization serialization = DefaultSerialization.getInstance();
+	private final Serialization serialization;
 
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
@@ -97,7 +97,8 @@ public class AtomsService {
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		Hasher hasher
+		Hasher hasher,
+		Serialization serialization
 	) {
 		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
 		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
@@ -106,6 +107,11 @@ public class AtomsService {
 		this.disposable = new CompositeDisposable();
 		this.ledgerCommitted = ledgerCommitted;
 		this.hasher = hasher;
+		this.serialization = serialization;
+	}
+
+	public Serialization serialization() {
+		return serialization;
 	}
 
 	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
@@ -123,7 +129,7 @@ public class AtomsService {
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
-		ClientAtom clientAtom = failure.getCommand().map(payload -> {
+		var clientAtom = failure.getCommand().map(payload -> {
 			try {
 				return serialization.fromDson(payload, ClientAtom.class);
 			} catch (DeserializeException e) {
@@ -150,8 +156,8 @@ public class AtomsService {
 		this.disposable.add(submissionFailuresDisposable);
 
 		var mempoolAtomsRemovedDisposable = mempoolAtomsRemoved
-				.observeOn(Schedulers.io())
-				.subscribe(this::processSubmissionFailure);
+			.observeOn(Schedulers.io())
+			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(mempoolAtomsRemovedDisposable);
 
 	}
@@ -163,10 +169,11 @@ public class AtomsService {
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
 		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
-		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
-		byte[] payload = serialization.toDson(atom, Output.ALL);
-		Command command = new Command(payload);
+		final var atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
+
+		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+
 		return atom.getAID();
 	}
 
@@ -215,6 +222,7 @@ public class AtomsService {
 			addListener(this.singleAtomObserversx, aid, listener);
 		}
 	}
+
 	private void removeAtomStatusListener(AID aid, AtomStatusListener listener) {
 		synchronized (this.singleAtomObserversLock) {
 			removeListener(this.singleAtomObserversx, aid, listener);

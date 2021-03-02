@@ -34,12 +34,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static org.radix.api.jsonrpc.AtomStatus.CONFLICT_LOSER;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import static org.radix.api.jsonrpc.AtomStatus.*;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_DUPLICATE;
+import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_FULL;
+import static org.radix.api.jsonrpc.AtomStatus.MISSING_DEPENDENCY;
+import static org.radix.api.jsonrpc.AtomStatus.STORED;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
-import static org.radix.api.jsonrpc.JsonRpcUtil.simpleResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.successResponse;
 
 /**
  * Epic used to manage streaming status notifications regarding an atom.
@@ -63,12 +68,12 @@ public class AtomStatusEpic {
 			Optional.ofNullable(observers.remove(subscriberId))
 				.ifPresent(Disposable::dispose);
 
-			callback.accept(simpleResponse(id, "success", true));
+			callback.accept(successResponse(id));
 			return;
 		}
 
 		var aid = AID.from(params.getString("aid"));
-		callback.accept(simpleResponse(id, "success", true));
+		callback.accept(successResponse(id));
 
 		Optional.ofNullable(observers.remove(subscriberId)).ifPresent(Disposable::dispose);
 

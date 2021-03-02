@@ -18,40 +18,39 @@
 package org.radix.database;
 
 import com.google.inject.Inject;
-
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.Transaction;
-import com.radixdlt.utils.RadixConstants;
-
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Durability;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-
-import org.bouncycastle.util.Arrays;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.sleepycat.je.Durability.COMMIT_NO_SYNC;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
+import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
+import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_MAX;
+import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
+
 public final class DatabaseEnvironment {
 	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
-	private Environment environment = null;
+	private Environment environment;
 
 	@Inject
 	public DatabaseEnvironment(
 		@DatabaseLocation String databaseLocation,
 		@DatabaseCacheSize long cacheSize
 	) {
-		File dbhome = new File(databaseLocation);
-		dbhome.mkdir();
+		var dbHome = new File(databaseLocation);
+		dbHome.mkdir();
 
 		System.setProperty("je.disable.java.adler32", "true");
 
@@ -59,22 +58,20 @@ public final class DatabaseEnvironment {
 		environmentConfig.setTransactional(true);
 		environmentConfig.setAllowCreate(true);
 		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-		environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "true");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "true");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "true");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
+		environmentConfig.setDurability(COMMIT_NO_SYNC);
+		environmentConfig.setConfigParam(LOG_FILE_MAX, "100000000");
+		environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
+		environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
+		environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
+		environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
+		environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
+		environmentConfig.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
 		environmentConfig.setCacheSize(cacheSize);
 		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
-		this.environment = new Environment(dbhome, environmentConfig);
+		this.environment = new Environment(dbHome, environmentConfig);
 
-		DatabaseConfig primaryConfig = new DatabaseConfig();
-		primaryConfig.setAllowCreate(true);
-		primaryConfig.setTransactional(true);
+		var primaryConfig = new DatabaseConfig().setAllowCreate(true).setTransactional(true);
 
 		try {
 			this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
@@ -106,65 +103,5 @@ public final class DatabaseEnvironment {
 		}
 
 		return this.environment;
-	}
-
-	public OperationStatus put(Transaction transaction, String resource, String key, byte[] value) {
-		return this.put(transaction, resource, new DatabaseEntry(key.getBytes()), new DatabaseEntry(value));
-	}
-
-	public OperationStatus put(Transaction transaction, String resource, String key, DatabaseEntry value) {
-		return this.put(transaction, resource, new DatabaseEntry(key.getBytes()), value);
-	}
-
-	public OperationStatus put(Transaction transaction, String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0) {
-			throw new IllegalArgumentException("Resource can not be null or empty");
-		}
-
-		if (key == null || key.getData() == null || key.getData().length == 0) {
-			throw new IllegalArgumentException("Key can not be null or empty");
-		}
-
-		if (value == null || value.getData() == null || value.getData().length == 0) {
-			throw new IllegalArgumentException("Value can not be null or empty");
-		}
-
-		// Create a key specific to the database //
-		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
-
-		return this.metaDatabase.put(transaction.unwrap(), key, value);
-	}
-
-	public byte[] get(String resource, String key) {
-		DatabaseEntry value = new DatabaseEntry();
-
-		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS) {
-			return value.getData();
-		}
-
-		return null;
-	}
-
-	public OperationStatus get(String resource, String key, DatabaseEntry value) {
-		return this.get(resource, new DatabaseEntry(key.getBytes()), value);
-	}
-
-	public OperationStatus get(String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0) {
-			throw new IllegalArgumentException("Resource can not be null or empty");
-		}
-
-		if (key == null || key.getData() == null || key.getData().length == 0) {
-			throw new IllegalArgumentException("Key can not be null or empty");
-		}
-
-		if (value == null) {
-			throw new IllegalArgumentException("Value can not be null");
-		}
-
-		// Create a key specific to the database //
-		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
-
-		return this.metaDatabase.get(null, key, value, LockMode.READ_UNCOMMITTED);
 	}
 }

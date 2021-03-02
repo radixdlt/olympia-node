@@ -1,5 +1,5 @@
-/*
- * (C) Copyright 2020 Radix DLT Ltd
+package org.radix.api.services;/*
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,33 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api;
+import org.junit.Test;
 
-import com.radixdlt.identifiers.EUID;
+import static org.junit.Assert.*;
 
-import java.util.Set;
-
-public final class AtomQuery {
-	private final EUID destination;
-
-	public AtomQuery(EUID destination) {
-		this.destination = destination;
+public class AtomsServiceTest {
+	@Test
+	public void name() {
+		fail();
 	}
 
-	public EUID getDestination() {
-		return this.destination;
-	}
-
-	@Override
-	public String toString() {
-		return "AtomQuery: destination(" + this.destination + ")";
-	}
-
-	public boolean filter(Set<EUID> destinations) {
-		if (this.destination != null) {
-			return destinations.contains(this.destination);
-		}
-
-		return true;
-	}
 }
