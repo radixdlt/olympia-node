@@ -33,11 +33,11 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.universe.DevUniverseModule;
+import com.radixdlt.universe.DevUniverseConfigModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisAtomProvider;
-import com.radixdlt.universe.ProductionUniverseModule;
-import com.radixdlt.universe.TestUniverseModule;
+import com.radixdlt.universe.ProductionUniverseConfigModule;
+import com.radixdlt.universe.TestUniverseConfigModule;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -175,13 +175,13 @@ public final class GenerateUniverses {
 				protected void configure() {
 					switch (universeType) {
 						case PRODUCTION:
-                        	install(new ProductionUniverseModule());
+                        	install(new ProductionUniverseConfigModule());
                         	break;
 						case TEST:
-							install(new TestUniverseModule());
+							install(new TestUniverseConfigModule());
 							break;
 						case DEVELOPMENT:
-							install(new DevUniverseModule());
+							install(new DevUniverseConfigModule());
 							break;
 						default:
 							throw new IllegalArgumentException("Unknown universe type: " + universeType);

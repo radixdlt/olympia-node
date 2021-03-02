@@ -51,7 +51,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-public final class MockedCheckpointModule extends AbstractModule {
+public final class MockedRadixEngineCheckpointModule extends AbstractModule {
 	private static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> TOKEN_PERMISSIONS =
 		ImmutableMap.of(
 			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,

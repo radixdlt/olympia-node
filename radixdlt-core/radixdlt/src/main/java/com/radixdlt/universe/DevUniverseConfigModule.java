@@ -21,14 +21,14 @@ package com.radixdlt.universe;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
-public final class TestUniverseModule extends AbstractModule {
+public final class DevUniverseConfigModule extends AbstractModule {
 	@Provides
 	UniverseConfiguration universeConfiguration() {
 		return new UniverseConfiguration(
-			Universe.UniverseType.TEST,
-			"Radix Testnet",
-			"The Radix test Universe",
-			20000
+			Universe.UniverseType.DEVELOPMENT,
+            "Radix Devnet",
+            "The Radix dev Universe",
+            30000
 		);
 	}
 }

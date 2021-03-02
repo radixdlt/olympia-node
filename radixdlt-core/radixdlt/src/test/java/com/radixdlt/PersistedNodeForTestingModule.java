@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.statecomputer.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.MockedRadixEngineCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
@@ -60,7 +60,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
 		install(new InMemoryBFTKeyModule());
-		install(new MockedCheckpointModule());
+		install(new MockedRadixEngineCheckpointModule());
 		install(new CryptoModule());
 		install(new DeterministicEnvironmentModule());
 		install(new FunctionalNodeModule());

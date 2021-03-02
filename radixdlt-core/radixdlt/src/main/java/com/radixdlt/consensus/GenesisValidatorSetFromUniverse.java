@@ -120,7 +120,6 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 	}
 
 	private <T extends Particle> Stream<T> allParticles(Universe universe, Class<T> type, Spin spin) {
-		return universe.getGenesis().stream()
-			.flatMap(a -> a.particles(type, spin));
+		return universe.getGenesis().particles(type, spin);
 	}
 }

@@ -22,7 +22,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
-import com.radixdlt.statecomputer.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.MockedRadixEngineCheckpointModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
@@ -88,7 +88,7 @@ public class GetNextCommittedCommandsTest {
 	public void setup() {
 		this.injector = Guice.createInjector(
 			new CryptoModule(),
-			new MockedCheckpointModule(),
+			new MockedRadixEngineCheckpointModule(),
 			new PersistenceModule(),
 			new RadixEngineStoreModule(),
 			new AbstractModule() {

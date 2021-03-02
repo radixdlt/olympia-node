@@ -66,7 +66,7 @@ public final class RadixUniverseBuilder {
 			.type(this.universeConfiguration.getUniverseType())
 			.timestamp(this.universeTimestamp)
 			.creator(this.universeKey.getPublicKey())
-			.addAtom(universeAtom)
+			.setAtom(universeAtom)
 			.build();
 
 		Universe.sign(universe, this.universeKey, this.hasher);

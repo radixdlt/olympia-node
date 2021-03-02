@@ -20,15 +20,16 @@ package com.radixdlt.universe;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.universe.Universe.UniverseType;
 
-public final class DevUniverseModule extends AbstractModule {
+public final class ProductionUniverseConfigModule extends AbstractModule {
 	@Provides
 	UniverseConfiguration universeConfiguration() {
 		return new UniverseConfiguration(
-			Universe.UniverseType.DEVELOPMENT,
-            "Radix Devnet",
-            "The Radix dev Universe",
-            30000
+			UniverseType.PRODUCTION,
+			"Radix Mainnet",
+			"The Radix public Universe",
+			10000
 		);
 	}
 }

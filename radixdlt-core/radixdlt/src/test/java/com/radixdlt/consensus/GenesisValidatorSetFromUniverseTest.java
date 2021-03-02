@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
@@ -51,7 +50,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		final var genesis = new Atom();
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey, 1), Spin.DOWN);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -65,7 +64,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		final var genesis = new Atom();
 		genesis.addParticleGroupWith(validatorUnregistration(validatorKey, 1), Spin.UP);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -79,7 +78,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		final var genesis = new Atom();
 		genesis.addParticleGroupWith(staking(validatorKey, nativeToken, UInt256.ONE), Spin.DOWN);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -94,7 +93,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey, 1), Spin.UP);
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey, 1), Spin.UP);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -106,7 +105,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		final var nativeToken = mock(RRI.class);
 		final var genesis = new Atom();
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -120,7 +119,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		final var genesis = new Atom();
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey, 1), Spin.UP);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
@@ -135,7 +134,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey, 1), Spin.UP);
 		genesis.addParticleGroupWith(staking(validatorKey, nativeToken, UInt256.ONE), Spin.UP);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		final var vsetFromUniverse = new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken);
 
@@ -156,7 +155,7 @@ public class GenesisValidatorSetFromUniverseTest {
 		genesis.addParticleGroupWith(validatorRegistration(validatorKey2, 1), Spin.UP);
 		genesis.addParticleGroupWith(staking(validatorKey2, nativeToken, UInt256.TWO), Spin.UP);
 		final var universe = mock(Universe.class);
-		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+		when(universe.getGenesis()).thenReturn(genesis);
 
 		final var vsetFromUniverse = new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken);
 

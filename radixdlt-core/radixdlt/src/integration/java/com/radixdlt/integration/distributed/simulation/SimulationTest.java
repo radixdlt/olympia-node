@@ -36,7 +36,7 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.statecomputer.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.MockedRadixEngineCheckpointModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -356,7 +356,7 @@ public class SimulationTest {
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					install(new MockedCheckpointModule());
+					install(new MockedRadixEngineCheckpointModule());
 				}
 
 				@Provides
@@ -421,7 +421,7 @@ public class SimulationTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-					install(new MockedCheckpointModule());
+					install(new MockedRadixEngineCheckpointModule());
 				}
 			});
 			return this;
