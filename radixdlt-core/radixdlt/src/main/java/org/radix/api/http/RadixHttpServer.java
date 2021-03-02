@@ -56,9 +56,7 @@ import com.stijndewitt.undertow.cors.Filter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -182,11 +180,6 @@ public final class RadixHttpServer {
 		// System routes
 		handler.add(Methods.GET, "/api/system", this::respondWithSystem);
 		handler.add(Methods.GET, "/api/system/modules/api/tasks-waiting", this::respondWaitingTaskCount);
-		handler.add(Methods.GET, "/api/system/modules/api/websockets", this::respondWithWebSocketCount);
-
-		// delete method to disconnect all peers
-		//TODO: potentially blocking
-		handler.add(Methods.DELETE, "/api/system/modules/api/websockets", this::respondDisconnectAllPeers);
 
 		// Network routes
 		handler.add(Methods.GET, "/api/network", this::respondWithNetwork);
@@ -291,16 +284,6 @@ public final class RadixHttpServer {
 		respond(this.networkService.getNetwork(), exchange);
 	}
 
-	//Potentially blocking
-	private void respondDisconnectAllPeers(final HttpServerExchange exchange) {
-		respond(this.disconnectAllPeers(), exchange);
-	}
-
-	//Non-blocking
-	private void respondWithWebSocketCount(final HttpServerExchange exchange) {
-		respond(jsonObject().put("count", Collections.unmodifiableSet(peers.keySet()).size()), exchange);
-	}
-
 	//Non-blocking
 	private void respondWaitingTaskCount(final HttpServerExchange exchange) {
 		respond(jsonObject().put("count", atomsService.getWaitingCount()), exchange);
@@ -369,34 +352,6 @@ public final class RadixHttpServer {
 		peer.close();
 	}
 
-	private JSONObject disconnectAllPeers() {
-		var result = jsonObject();
-		var closed = jsonArray();
-		var peersCopy = new HashMap<>(peers);
-
-		result.put("closed", closed);
-
-		peersCopy.forEach((peer, ws) -> {
-			var closedPeer = jsonObject()
-				.put("isOpen", ws.isOpen())
-				.put("closedReason", ws.getCloseReason())
-				.put("closedCode", ws.getCloseCode());
-
-			closed.put(closedPeer);
-
-			closeAndRemovePeer(peer);
-			try {
-				ws.close();
-			} catch (IOException e) {
-				logger.error("Error while closing web socket", e);
-			}
-		});
-
-		result.put("closedCount", peersCopy.size());
-
-		return result;
-	}
-
 	@FunctionalInterface
 	interface ThrowingConsumer<A> {
 		void accept(final A arg1) throws PublicKeyException;
@@ -434,15 +389,6 @@ public final class RadixHttpServer {
 		});
 	}
 
-	private void handleMempoolFillView(HttpServerExchange exchange) {
-		InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-		JSONObject data = new JSONObject()
-			.put("address", mempoolFillerAddress)
-			.put("balance", wallet.getBalance())
-			.put("numParticles", wallet.getNumParticles());
-		exchange.getResponseSender().send(data.toString());
-	}
-
 	//Potentially blocking
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
 		withJSONRequestBody(exchange, values -> {
@@ -478,17 +424,6 @@ public final class RadixHttpServer {
 
 	private BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {
 		return BFTNode.create(ECPublicKey.fromBytes(fromBase58(nodeKeyBase58)));
-	}
-
-	/**
-	 * Add a DELETE method route with JSON content a certain path and consumer to the given handler
-	 *
-	 * @param handler The routing handler to add the route to
-	 * @param path The prefix path
-	 * @param consumer The consumer that processes incoming exchanges
-	 */
-	private static void delete(RoutingHandler handler, String path, HttpHandler consumer) {
-		handler.add(Methods.DELETE, path, consumer);
 	}
 
 	/**
