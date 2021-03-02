@@ -222,7 +222,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			hasher,
 			voteDispatcher,
 			timeSupplier,
-			initialViewUpdate
+			initialViewUpdate,
+			counters
 		);
 	}
 

@@ -48,6 +48,8 @@ import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
@@ -164,8 +166,22 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
-			new PersistedNodeForTestingModule(ecKeyPair),
+			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
+				@Override
+				protected void configure() {
+				    bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(PeersView.class).toInstance(List::of);
+					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
+				}
+
 				@ProvidesIntoSet
 				@ProcessOnDispatch
 				private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(@Self BFTNode node) {
@@ -176,17 +192,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@ProcessOnDispatch
 				private EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor(@Self BFTNode node) {
 					return nodeEvents.processor(node, ViewQuorumReached.class);
-				}
-
-				@Override
-				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}
 			}
 		);

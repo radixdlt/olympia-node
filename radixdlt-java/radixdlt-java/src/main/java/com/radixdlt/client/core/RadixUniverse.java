@@ -25,7 +25,7 @@ package com.radixdlt.client.core;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;

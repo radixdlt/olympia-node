@@ -289,14 +289,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		long particleIndex = 0;
 		long particleGroupIndex = 0;
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			// Treat check spin as the first push for now
 			if (!microInstruction.isCheckSpin()) {
 				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
 					particleGroupIndex++;
 					particleIndex = 0;
-				} else {
-					particleIndex++;
 				}
+
 				continue;
 			}
 
@@ -309,6 +307,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			checkedParticles.add(particle);
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			particleIndex++;
 
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);

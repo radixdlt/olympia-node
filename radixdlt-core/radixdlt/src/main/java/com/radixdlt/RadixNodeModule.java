@@ -20,8 +20,10 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.chaos.ChaosModule;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.checkpoint.CheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -30,12 +32,15 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.LedgerLocalMempoolModule;
-import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
@@ -68,6 +73,8 @@ public final class RadixNodeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
+
+		bindConstant().annotatedWith(MempoolThrottleMs.class).to(50L);
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
 		final long syncPatience = properties.get("sync.patience", 200);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
@@ -101,11 +108,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Ledger
 		install(new LedgerModule());
-		install(new LedgerCommandGeneratorModule());
-		install(new LedgerLocalMempoolModule());
+		install(new MempoolReceiverModule());
 
 		// Mempool Relay
-		install(new MempoolReceiverModule());
 		install(new MempoolRelayerModule());
 
 		// Sync
@@ -151,6 +156,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		if (properties.get("chaos.enable", false)) {
+			bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
 			install(new ChaosModule());
 		}
 	}

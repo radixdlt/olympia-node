@@ -19,23 +19,28 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRejectedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -46,13 +51,24 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool mempool, Hasher hasher) {
+	private Mempool<Command, HashCode> mempool(
+		@MempoolMaxSize int maxSize,
+		SystemCounters systemCounters,
+		Random random,
+		Hasher hasher
+	) {
+		return new SimpleMempool<>(maxSize, hasher::hash, systemCounters, random);
+	}
+
+	@Provides
+	@Singleton
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Command, HashCode> mempool, Hasher hasher) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
-			public void addToMempool(Command command) {
+			public void addToMempool(Command command, BFTNode origin) {
 				try {
 					mempool.add(command);
-				} catch (MempoolFullException | MempoolDuplicateException e) {
+				} catch (MempoolRejectedException e) {
 					log.error(e);
 				}
 			}
@@ -81,7 +97,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 			@Override
 			public void commit(VerifiedCommandsAndProof commands, VerifiedVertexStoreState vertexStoreState) {
-				commands.getCommands().forEach(cmd -> mempool.removeCommitted(hasher.hash(cmd)));
+				mempool.committed(commands.getCommands());
 			}
 		};
 	}

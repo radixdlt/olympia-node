@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import static org.radix.api.jsonrpc.AtomStatus.*;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -122,15 +123,16 @@ public class AtomStatusEpic {
 					EVICTED_FAILED_CM_VERIFICATION,
 					fromException(e).put("pointerToIssue", ((AtomConversionException) e).getPointerToIssue())
 				);
-			} else if (e instanceof RadixEngineException) {
-				var exception = (RadixEngineException) e;
+			} else if (e instanceof RadixEngineMempoolException) {
+				var exception = (RadixEngineMempoolException) e;
+				var reException = exception.getException();
 
 				var data = fromException(e)
 					.put("aid", aid)
-					.put("errorCode", exception.getErrorCode().toString())
-					.put("pointerToIssue", exception.getDataPointer().toString());
+					.put("errorCode", reException.getErrorCode().toString())
+					.put("pointerToIssue", reException.getDataPointer().toString());
 
-				Optional.ofNullable(extractAtomStatus(exception, data))
+				Optional.ofNullable(extractAtomStatus(reException, data))
 					.ifPresent(atomStatus -> sendAtomSubmissionState.accept(atomStatus, data));
 
 			} else if (e instanceof MempoolFullException) {

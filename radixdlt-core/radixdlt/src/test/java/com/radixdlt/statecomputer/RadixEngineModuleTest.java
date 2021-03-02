@@ -18,9 +18,14 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import org.junit.Test;
 
@@ -69,9 +74,11 @@ public class RadixEngineModuleTest {
 
 		@Override
 		protected void configure() {
-			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
-			bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-			bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(100);
+			bindConstant().annotatedWith(Names.named("magic")).to(1);
+			bindConstant().annotatedWith(MinValidators.class).to(1);
+			bindConstant().annotatedWith(MaxValidators.class).to(100);
+			bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+			bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 			bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(BFTValidatorSet.class).toInstance(this.validatorSet);
@@ -86,10 +93,15 @@ public class RadixEngineModuleTest {
 			bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));
+			bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 			bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 				.toInstance(TypedMocks.rmock(EventDispatcher.class));
+			bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 			bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
 				.toInstance(TypedMocks.rmock(EventDispatcher.class));
+			bind(SystemCounters.class).to(SystemCountersImpl.class);
 		}
 	}
 

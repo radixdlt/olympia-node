@@ -27,19 +27,19 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.mempool.atomadded")
-public final class MempoolAtomAddedMessage extends Message {
+@SerializerId2("message.mempool.atomadd")
+public final class MempoolAtomAddMessage extends Message {
 	@JsonProperty("command")
 	@DsonOutput(Output.ALL)
 	private final Command command;
 
-	MempoolAtomAddedMessage() {
+	MempoolAtomAddMessage() {
 		// Serializer only
 		super(0);
 		this.command = null;
 	}
 
-	public MempoolAtomAddedMessage(int magic, Command command) {
+	public MempoolAtomAddMessage(int magic, Command command) {
 		super(magic);
 		this.command = Objects.requireNonNull(command);
 	}
@@ -61,7 +61,7 @@ public final class MempoolAtomAddedMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		MempoolAtomAddedMessage that = (MempoolAtomAddedMessage) o;
+		MempoolAtomAddMessage that = (MempoolAtomAddMessage) o;
 		return Objects.equals(command, that.command)
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());

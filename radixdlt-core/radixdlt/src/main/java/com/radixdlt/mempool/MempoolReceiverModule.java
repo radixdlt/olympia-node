@@ -13,31 +13,53 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
 package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.rx.ModuleRunnerImpl;
-import com.radixdlt.environment.rx.RemoteEvent;
-import io.reactivex.rxjava3.core.Flowable;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.ledger.StateComputerLedger;
 
-/**
- * Module for receiving mempool commands
- */
-public final class MempoolReceiverModule extends AbstractModule {
-	@ProvidesIntoMap
-	@StringMapKey("mempool")
-	private ModuleRunner mempoolReceiver(
-		Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
-		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
+public class MempoolReceiverModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(MempoolAdd.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> mempoolAddEventProcessor(
+		StateComputerLedger stateComputerLedger,
+		@MempoolThrottleMs long mempoolThrottleMs
 	) {
-		return ModuleRunnerImpl.builder()
-			.add(mempoolCommands, remoteEventProcessor)
-			.build("MempoolReceiver");
+		return new EventProcessorOnRunner<>(
+			"mempool",
+			MempoolAdd.class,
+			stateComputerLedger.mempoolAddEventProcessor(),
+			mempoolThrottleMs
+		);
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
+		StateComputerLedger stateComputerLedger,
+		@MempoolThrottleMs long mempoolThrottleMs
+	) {
+		return new RemoteEventProcessorOnRunner<>(
+			"mempool",
+			MempoolAdd.class,
+			stateComputerLedger.mempoolAddRemoteEventProcessor(),
+			mempoolThrottleMs
+		);
 	}
 }

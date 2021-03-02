@@ -25,7 +25,7 @@ package com.radixdlt.cli;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.identifiers.RRI;
 import picocli.CommandLine;
 

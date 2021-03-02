@@ -23,20 +23,20 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.middleware2.network.MempoolAtomAddedMessage;
+import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MempoolAtomAddedMessageTest {
+public class MempoolAtomAddMessageTest {
 	private Command command;
-	private MempoolAtomAddedMessage message;
+	private MempoolAtomAddMessage message;
 
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
-		this.message = new MempoolAtomAddedMessage(12345, command);
+		this.message = new MempoolAtomAddMessage(12345, command);
 	}
 
 	@Test
@@ -46,12 +46,12 @@ public class MempoolAtomAddedMessageTest {
 
 	@Test
 	public void sensibleToString() {
-		assertThat(message.toString()).contains(MempoolAtomAddedMessage.class.getSimpleName());
+		assertThat(message.toString()).contains(MempoolAtomAddMessage.class.getSimpleName());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(MempoolAtomAddedMessage.class)
+		EqualsVerifier.forClass(MempoolAtomAddMessage.class)
 				.withIgnoredFields("instance")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())

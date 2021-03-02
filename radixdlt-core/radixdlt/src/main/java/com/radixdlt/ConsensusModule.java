@@ -207,7 +207,8 @@ public final class ConsensusModule extends AbstractModule {
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier,
-		ViewUpdate initialViewUpdate
+		ViewUpdate initialViewUpdate,
+        SystemCounters systemCounters
 	) {
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
 		return new Pacemaker(
@@ -224,7 +225,8 @@ public final class ConsensusModule extends AbstractModule {
 			hasher,
 			voteDispatcher,
 			timeSupplier,
-			initialViewUpdate
+			initialViewUpdate,
+			systemCounters
 		);
 	}
 
