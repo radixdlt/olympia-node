@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.checkpoint;
+package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -97,12 +97,14 @@ public final class MockedCheckpointModule extends AbstractModule {
 			CheckpointUtils.createTokenDefinition(
 				(byte) magic,
 				universeKey.getPublicKey(),
-				"NOSUCHTOKEN",
-				"Test",
-				"Testing Token",
-				"",
-				"",
-				TOKEN_PERMISSIONS,
+				new TokenDefinition(
+						"NOSUCHTOKEN",
+						"Test",
+						"Testing Token",
+						"",
+						"",
+						TOKEN_PERMISSIONS
+				),
 				UInt256.ZERO,
 				tokenIssuances
 			)

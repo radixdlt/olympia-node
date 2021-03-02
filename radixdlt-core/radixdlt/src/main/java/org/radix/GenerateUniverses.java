@@ -17,10 +17,29 @@
 
 package org.radix;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
+import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
+import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
+import com.radixdlt.universe.DevUniverseModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.GenesisAtomProvider;
+import com.radixdlt.universe.ProductionUniverseModule;
+import com.radixdlt.universe.TestUniverseModule;
+import com.radixdlt.universe.UniverseConfig;
+import com.radixdlt.universe.UniverseConfiguration;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
@@ -151,13 +170,57 @@ public final class GenerateUniverses {
 				"RADIX_UNIVERSE_KEY_PASSWORD"
 			);
 
-			final Pair<ECKeyPair, Universe> universe = RadixUniverseBuilder.forType(universeType)
-				.withKey(universeKey)
-				.withTimestamp(universeTimestamp)
-				.withTokenIssuance(tokenIssuances)
-				.withRegisteredValidators(validatorKeys)
-				.withStakeDelegations(stakeDelegations)
-				.build();
+			RadixUniverseBuilder radixUniverseBuilder = Guice.createInjector(new AbstractModule() {
+				@Override
+				protected void configure() {
+					switch (universeType) {
+						case PRODUCTION:
+                        	install(new ProductionUniverseModule());
+                        	break;
+						case TEST:
+							install(new TestUniverseModule());
+							break;
+						case DEVELOPMENT:
+							install(new DevUniverseModule());
+							break;
+						default:
+							throw new IllegalArgumentException("Unknown universe type: " + universeType);
+					}
+					install(new CryptoModule());
+					install(new RadixNativeTokenModule());
+
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
+					bind(UInt256.class).annotatedWith(Genesis.class)
+						.toInstance(UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)); // 1e9 rads
+                    bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
+						.toInstance(tokenIssuances);
+					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
+						.toInstance(stakeDelegations);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(validatorKeys);
+				}
+
+				@Provides
+				@Named("magic")
+				int magic(
+					@Named("universeKey") ECKeyPair universeKey,
+					@UniverseConfig long universeTimestamp,
+					UniverseConfiguration universeConfiguration
+				) {
+					return Universe.computeMagic(
+						universeKey.getPublicKey(),
+						universeTimestamp,
+						universeConfiguration.getPort(),
+						universeConfiguration.getUniverseType()
+					);
+				}
+			}).getInstance(RadixUniverseBuilder.class);
+
+			final Pair<ECKeyPair, Universe> universe = radixUniverseBuilder.build();
+
 			if (outputPrivateKeys) {
 				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
 				outputNumberedKeys("VALIDATOR_%s", validatorKeys);

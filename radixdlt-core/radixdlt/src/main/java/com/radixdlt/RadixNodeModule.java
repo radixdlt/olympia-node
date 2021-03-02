@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
-import com.radixdlt.checkpoint.CheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.CheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.checkpoint;
+package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;

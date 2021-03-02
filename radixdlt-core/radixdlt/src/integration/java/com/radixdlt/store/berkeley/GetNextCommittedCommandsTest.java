@@ -22,7 +22,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.MockedCheckpointModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;

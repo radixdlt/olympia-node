@@ -36,7 +36,7 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.MockedCheckpointModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
