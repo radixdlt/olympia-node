@@ -72,8 +72,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class GenerateUniverses {
-    private GenerateUniverses() {
-    }
+	private GenerateUniverses() { }
 
     private static final BigDecimal SUB_UNITS_BIG_DECIMAL
             = new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
@@ -150,7 +149,7 @@ public final class GenerateUniverses {
             if (validatorsCount <= 0) {
                 throw new IllegalArgumentException("There must be at least one validator");
             }
-//
+
             final ImmutableList<ECKeyPair> validatorKeys = getValidatorKeys(validatorsCount);
             final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
                     Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
