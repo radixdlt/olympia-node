@@ -56,7 +56,13 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 		}
 
 		Disposable subscribe(Scheduler s) {
-			return o.observeOn(s).subscribe(p::process);
+			return o.observeOn(s).subscribe(p::process, e -> {
+				// TODO: Implement better error handling especially against Byzantine nodes.
+				// TODO: Exit process for now.
+				e.printStackTrace();
+				Thread.sleep(1000);
+				System.exit(-1);
+			});
 		}
 	}
 

@@ -18,15 +18,15 @@
 package org.radix.serialization;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.middleware2.network.MempoolAtomAddedMessage;
+import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
 
-public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {
-	public MempoolAtomAddedMessageSerializeTest() {
-		super(MempoolAtomAddedMessage.class, MempoolAtomAddedMessageSerializeTest::get);
+public class MempoolAtomAddMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddMessage> {
+	public MempoolAtomAddMessageSerializeTest() {
+		super(MempoolAtomAddMessage.class, MempoolAtomAddMessageSerializeTest::get);
 	}
 
-	private static MempoolAtomAddedMessage get() {
+	private static MempoolAtomAddMessage get() {
 		final Command command = new Command(new byte[] {0, 1});
-		return new MempoolAtomAddedMessage(1, command);
+		return new MempoolAtomAddMessage(1, command);
 	}
 }

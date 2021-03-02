@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,14 +13,16 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.network;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -33,14 +35,17 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
+import com.radixdlt.network.addressbook.AddressBookPeersView;
+import com.radixdlt.network.addressbook.PeersView;
 import io.reactivex.rxjava3.core.Flowable;
 
 /**
@@ -67,11 +72,12 @@ public final class NetworkModule extends AbstractModule {
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
+		bind(PeersView.class).to(AddressBookPeersView.class);
 	}
 
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> mempoolAddedDispatcher(MessageCentralMempool messageCentralMempool) {
-		return RxRemoteDispatcher.create(MempoolAddSuccess.class, messageCentralMempool.commandRemoteEventDispatcher());
+		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.commandRemoteEventDispatcher());
 	}
 
 	@ProvidesIntoSet
@@ -109,8 +115,19 @@ public final class NetworkModule extends AbstractModule {
 		return validatorSync.requests();
 	}
 
+	// TODO: Clean this up, convert the rest of remote events into this
 	@Provides
-	private Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
-		return messageCentralMempool.mempoolComands();
+	@Singleton
+	RxRemoteEnvironment rxRemoteEnvironment(MessageCentralMempool messageCentralMempool) {
+	    return new RxRemoteEnvironment() {
+			@Override
+			public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+				if (remoteEventClass != MempoolAdd.class) {
+					throw new IllegalStateException();
+				} else {
+					return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
+				}
+			}
+		};
 	}
 }

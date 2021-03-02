@@ -48,6 +48,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
@@ -63,6 +64,8 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -79,23 +82,45 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(
+				MempoolAddSuccess.class,
+				m -> CounterType.MEMPOOL_ADD_SUCCESS,
+				false
+			)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
-				CounterType.MEMPOOL_FAILURE_COUNT,
+				m -> {
+					if (m.getException() instanceof RadixEngineMempoolException) {
+						RadixEngineMempoolException e = (RadixEngineMempoolException) m.getException();
+						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
+							return CounterType.MEMPOOL_ERRORS_HOOK;
+						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.STATE_CONFLICT)) {
+							return CounterType.MEMPOOL_ERRORS_CONFLICT;
+						}
+					}
+					return CounterType.MEMPOOL_ERRORS_OTHER;
+				},
 				true
 			))
 			.in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
+				.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				NoVote.class,
-				CounterType.BFT_REJECTED,
+				v -> CounterType.BFT_REJECTED,
 				true
 			))
 			.in(Scopes.SINGLETON);
@@ -117,8 +142,11 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 				.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 
-		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAddSuccess>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(
+				MempoolAdd.class,
+				CounterType.MEMPOOL_RELAYER_SENT_COUNT
+			)).in(Scopes.SINGLETON);
 
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
@@ -158,12 +186,6 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
-
-		final var mempoolAddKey = new TypeLiteral<EventProcessor<MempoolAdd>>() { };
-		Multibinder.newSetBinder(binder(), mempoolAddKey, ProcessOnDispatch.class);
-
-		final var mempoolAddedCommandKey = new TypeLiteral<EventProcessor<MempoolAddSuccess>>() { };
-		Multibinder.newSetBinder(binder(), mempoolAddedCommandKey, ProcessOnDispatch.class);
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
@@ -416,22 +438,6 @@ public class DispatcherModule extends AbstractModule {
 			dispatcher.dispatch(epochViewUpdate);
 			processors.forEach(e -> e.process(epochViewUpdate));
 		};
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
-	) {
-		return cmd -> processors.forEach(e -> e.process(cmd));
-	}
-
-	@Provides
-	@Singleton
-	private EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors
-	) {
-		return cmd -> processors.forEach(e -> e.process(cmd));
 	}
 
 	@Provides

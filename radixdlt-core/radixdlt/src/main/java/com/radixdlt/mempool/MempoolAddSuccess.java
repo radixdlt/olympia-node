@@ -18,45 +18,59 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Message indicating that a command was successfully added to the mempool
  */
 public final class MempoolAddSuccess {
-    private final Command command;
+	private final Command command;
+	private final BFTNode origin;
 
-    private MempoolAddSuccess(Command command) {
-        this.command = command;
-    }
+	private MempoolAddSuccess(Command command, BFTNode origin) {
+		this.command = command;
+		this.origin = origin;
+	}
 
-    public Command getCommand() {
-        return command;
-    }
+	public Command getCommand() {
+		return command;
+	}
 
-    public static MempoolAddSuccess create(Command command) {
-        Objects.requireNonNull(command);
-        return new MempoolAddSuccess(command);
-    }
+	public Optional<BFTNode> getOrigin() {
+		return Optional.ofNullable(origin);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(command);
-    }
+	public static MempoolAddSuccess create(Command command) {
+		Objects.requireNonNull(command);
+		return new MempoolAddSuccess(command, null);
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof MempoolAddSuccess)) {
-            return false;
-        }
+	public static MempoolAddSuccess create(Command command, BFTNode origin) {
+		Objects.requireNonNull(command);
+		return new MempoolAddSuccess(command, origin);
+	}
 
-        MempoolAddSuccess other = (MempoolAddSuccess) o;
-        return Objects.equals(this.command, other.command);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(command, origin);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.command);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof MempoolAddSuccess)) {
+			return false;
+		}
+
+		MempoolAddSuccess other = (MempoolAddSuccess) o;
+		return Objects.equals(this.command, other.command)
+			&& Objects.equals(this.origin, other.origin);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.command);
+	}
 }

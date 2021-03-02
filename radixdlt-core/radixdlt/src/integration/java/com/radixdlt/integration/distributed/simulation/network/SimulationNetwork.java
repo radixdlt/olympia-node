@@ -39,6 +39,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
@@ -132,7 +133,7 @@ public class SimulationNetwork {
 
 	public class SimulatedNetworkImpl implements
 		ProposalBroadcaster, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
-		SyncVerticesRPCRx, SyncEpochsRPCRx {
+		SyncVerticesRPCRx, SyncEpochsRPCRx, RxRemoteEnvironment {
 		private final Flowable<Object> myMessages;
 		private final BFTNode thisNode;
 
@@ -214,6 +215,7 @@ public class SimulationNetwork {
 			return myMessages.ofType(GetEpochResponse.class);
 		}
 
+		@Override
 		public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
 			return myMessages.ofType(RemoteEvent.class)
 				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, eventClass));

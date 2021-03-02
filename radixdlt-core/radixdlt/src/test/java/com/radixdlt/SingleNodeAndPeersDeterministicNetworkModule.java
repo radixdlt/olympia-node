@@ -19,8 +19,9 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.name.Names;
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -28,24 +29,33 @@ import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.network.addressbook.PeersView;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Module which injects a full one node network
  */
-public final class SingleNodeDeterministicNetworkModule extends AbstractModule {
-    private final ECKeyPair ecKeyPair;
-
-    public SingleNodeDeterministicNetworkModule(ECKeyPair ecKeyPair) {
-        this.ecKeyPair = Objects.requireNonNull(ecKeyPair);
-    }
-
+public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
     @Override
     protected void configure() {
-        bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ecKeyPair);
-        install(new PersistedNodeForTestingModule(ecKeyPair));
+        bind(ECKeyPair.class).annotatedWith(Self.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
+        install(new PersistedNodeForTestingModule());
+    }
+
+    @Provides
+    @Named("universeKey")
+    public ECKeyPair universeKey(@Self ECKeyPair self) {
+        return self;
+    }
+
+    @Provides
+    @Singleton
+    public PeersView peers(@Named("numPeers") int numPeers) {
+        List<BFTNode> peers = Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
+        return () -> peers;
     }
 
     @Provides
@@ -55,9 +65,9 @@ public final class SingleNodeDeterministicNetworkModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public DeterministicNetwork network(@Self BFTNode self) {
+    public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
         return new DeterministicNetwork(
-            List.of(self),
+            Stream.concat(Stream.of(self), peersView.peers().stream()).collect(Collectors.toList()),
             MessageSelector.firstSelector(),
             MessageMutator.nothing()
         );

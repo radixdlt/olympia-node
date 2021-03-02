@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.network.TimeSupplier;
@@ -38,18 +37,10 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncPatienceMillis;
 
-import java.util.Objects;
-
 /**
  * Helper class for modules to be used for recovery tests.
  */
 public final class PersistedNodeForTestingModule extends AbstractModule {
-	private final ECKeyPair ecKeyPair;
-
-	public PersistedNodeForTestingModule(ECKeyPair ecKeyPair) {
-		this.ecKeyPair = Objects.requireNonNull(ecKeyPair);
-	}
-
 	@Override
 	public void configure() {
 		bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
@@ -68,7 +59,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
-		install(new InMemoryBFTKeyModule(ecKeyPair));
+		install(new InMemoryBFTKeyModule());
 		install(new MockedCheckpointModule());
 		install(new CryptoModule());
 		install(new DeterministicEnvironmentModule());

@@ -31,12 +31,17 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
+import com.radixdlt.checkpoint.MockedCheckpointModule;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
@@ -52,7 +57,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.MockedCryptoModule;
@@ -148,7 +152,8 @@ public class SimulationTest {
 			LEDGER_AND_LOCALMEMPOOL(false, true, true, true, false, false, false),
 			LEDGER_AND_EPOCHS(false, true, true, false, false, true, false),
 			LEDGER_AND_EPOCHS_AND_SYNC(false, true, true, false, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false);
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false),
+			FULL_FUNCTION(true, true, true, true, true, true, true);
 
 			private final boolean hasSharedMempool;
 			private final boolean hasConsensus;
@@ -336,6 +341,36 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder fullFunctionNodes(
+			View epochHighView,
+			int syncPatienceMillis
+		) {
+			final ECKeyPair universeKey = ECKeyPair.generateNew();
+			this.ledgerType = LedgerType.FULL_FUNCTION;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
+					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
+					install(new MockedCheckpointModule());
+				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
+				}
+			});
+			return this;
+		}
+
 		public Builder ledgerAndEpochsAndSync(
 			View epochHighView,
 			Function<Long, IntStream> epochToNodeIndexMapper,
@@ -363,20 +398,37 @@ public class SimulationTest {
 
 		public Builder ledgerAndMempool() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
+			this.modules.add(new AbstractModule() {
+				public void configure() {
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+				}
+			});
 			return this;
 		}
 
 		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
+			final ECKeyPair universeKey = ECKeyPair.generateNew();
+
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
+					install(new MockedCheckpointModule());
 				}
 			});
+			return this;
+		}
+
+		public Builder addNodeModule(Module module) {
+			this.modules.add(module);
 			return this;
 		}
 
@@ -407,19 +459,22 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder addActor(SimulationNetworkActor actor) {
+			this.testModules.add(new AbstractModule() {
+				public void configure() {
+					Multibinder.newSetBinder(binder(), SimulationNetworkActor.class).addBinding().toInstance(actor);
+				}
+			});
+			return this;
+		};
+
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
-				@Override
-				public void configure() {
-					var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
-					multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
-				}
-
-				@Provides
-				LocalMempoolPeriodicSubmitter mempoolSubmittor(List<ECKeyPair> nodes) {
+				@ProvidesIntoSet
+				SimulationNetworkActor mempoolSubmittor(List<ECKeyPair> nodes) {
 					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-							new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+						new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 					return new LocalMempoolPeriodicSubmitter(
 							randomValidatorSubmitter,
 							nodeSelector
@@ -486,7 +541,6 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10); // Use constant timeout for now
 					bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class).toInstance(RateLimiter.create(50.0));
 					bind(NodeEvents.class).toInstance(nodeEvents);
 				}
@@ -499,6 +553,7 @@ public class SimulationTest {
 				ledgerType.hasConsensus,
 				ledgerType.hasLedger,
 				ledgerType.hasMempool,
+				ledgerType.hasSharedMempool,
 				ledgerType.hasRadixEngine,
 				ledgerType.hasEpochs,
 				ledgerType.hasSync
@@ -532,9 +587,6 @@ public class SimulationTest {
 
 			// Runners
 			modules.add(new RxEnvironmentModule());
-			if (ledgerType.hasSharedMempool) {
-				modules.add(new MempoolReceiverModule());
-			}
 			if (ledgerType.hasConsensus) {
 				if (!ledgerType.hasEpochs) {
 					modules.add(new MockedConsensusRunnerModule());

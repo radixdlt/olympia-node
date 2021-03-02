@@ -45,6 +45,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.counters.SystemCounters;
@@ -64,7 +65,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-	private Mempool mempool;
+	private Mempool<Command, AID> mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
@@ -98,7 +99,7 @@ public class StateComputerLedgerTest {
 
 	@Before
 	public void setup() {
-		this.mempool = mock(Mempool.class);
+		this.mempool = TypedMocks.rmock(Mempool.class);
 		// No type check issues with mocking generic here
 		this.stateComputer = mock(StateComputer.class);
 		this.counters = mock(SystemCounters.class);
@@ -245,7 +246,7 @@ public class StateComputerLedgerTest {
 
 		// Assert
 		verify(stateComputer, never()).commit(any(), any());
-		verify(mempool, never()).removeCommitted(any());
+		verify(mempool, never()).committed(any());
 		verify(ledgerUpdateSender, never()).dispatch(any());
 	}
 }

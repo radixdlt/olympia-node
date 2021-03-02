@@ -17,21 +17,12 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
-
 /**
  * Exception thrown when mempool rejects an atom.
  */
 public class MempoolRejectedException extends Exception {
 
-	private final Command command;
-
-	public MempoolRejectedException(Command command, String message) {
+	public MempoolRejectedException(String message) {
 		super(message);
-		this.command = command;
-	}
-
-	public Command command() {
-		return command;
 	}
 }

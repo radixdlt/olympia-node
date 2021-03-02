@@ -17,41 +17,42 @@
 
 package com.radixdlt.store;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.CommittedAtom;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 	}
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(Hasher hasher) {
+	private EngineStore<LedgerAtom> engineStore(
+		VerifiedCommandsAndProof genesisCheckpoint,
+		Serialization serialization
+	) throws DeserializeException {
 		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
-		final ClientAtom genesisAtom = ClientAtom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(0, 0, 0), Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(1, 0, 0), Spin.NEUTRAL)
-			),
-			hasher
-		);
-		inMemoryEngineStore.storeAtom(genesisAtom);
+		for (Command command : genesisCheckpoint.getCommands()) {
+			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
+			CommittedAtom committedAtom = new CommittedAtom(
+				clientAtom,
+				genesisCheckpoint.getHeader().getStateVersion(),
+				genesisCheckpoint.getHeader()
+			);
+			inMemoryEngineStore.storeAtom(committedAtom);
+		}
 		return inMemoryEngineStore;
 	}
 

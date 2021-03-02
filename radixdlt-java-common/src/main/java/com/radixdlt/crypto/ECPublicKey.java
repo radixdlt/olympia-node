@@ -25,6 +25,7 @@ import com.radixdlt.crypto.encryption.ECIES;
 import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.utils.Base58;
 import com.radixdlt.utils.Bytes;
 import org.bouncycastle.math.ec.ECPoint;
 
@@ -91,6 +92,10 @@ public final class ECPublicKey {
         return ECIES.encrypt(data, this);
     }
 
+    public String toBase58() {
+        return Base58.toBase58(this.publicKey);
+    }
+
     public String toBase64() {
         return Bytes.toBase64String(this.publicKey);
     }
@@ -114,7 +119,7 @@ public final class ECPublicKey {
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
+        return String.format("%s[%s]", getClass().getSimpleName(), toBase58());
     }
 
     private EUID computeUID() {

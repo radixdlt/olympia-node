@@ -24,14 +24,16 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+
+import java.util.Random;
 
 /**
  * Module responsible for the mempool filler chaos attack
@@ -39,7 +41,6 @@ import com.radixdlt.identifiers.RadixAddress;
 public final class MempoolFillerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
@@ -50,9 +51,10 @@ public final class MempoolFillerModule extends AbstractModule {
 	@ProvidesIntoSet
 	private StateReducer<?, ?> mempoolFillerWallet(
 		@NativeToken RRI tokenRRI,
-		@MempoolFillerKey RadixAddress mempoolFillerAddress
+		@MempoolFillerKey RadixAddress mempoolFillerAddress,
+		Random random
 	) {
-		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress);
+		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress, random);
 	}
 
 	@Provides
@@ -67,13 +69,14 @@ public final class MempoolFillerModule extends AbstractModule {
 		return keyPair.getPublicKey();
 	}
 
-	@Provides
-	public EventProcessor<MempoolFillerUpdate> messageFloodUpdateEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.messageFloodUpdateProcessor();
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>("chaos", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
 	}
 
-	@Provides
-	public EventProcessor<ScheduledMempoolFill> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.scheduledMempoolFillEventProcessor();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>("chaos", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
 	}
 }

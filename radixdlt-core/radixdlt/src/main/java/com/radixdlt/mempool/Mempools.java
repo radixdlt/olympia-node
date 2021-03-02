@@ -17,38 +17,35 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
-import java.util.Collections;
+import com.radixdlt.utils.Pair;
+
 import java.util.List;
 import java.util.Set;
 
 /**
  * Mempool which is always empty
  */
-public class EmptyMempool implements Mempool {
-	@Override
-	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-		// No-op
+public class Mempools {
+	private Mempools() {
+		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	@Override
-	public void removeCommitted(HashCode cmdHash) {
-		// No-op
-	}
+	public static <T, U> Mempool<T, U> empty() {
+		return new Mempool<>() {
+			@Override
+			public void add(T command) throws MempoolFullException, MempoolDuplicateException {
+			    // No-op
+			}
 
-	@Override
-	public void removeRejected(HashCode cmdHash) {
-		// No-op
-	}
+			@Override
+			public List<Pair<T, Exception>> committed(List<T> committed) {
+				return List.of();
+			}
 
-	@Override
-	public List<Command> getCommands(int count, Set<HashCode> seen) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int count() {
-		return 0;
+			@Override
+			public List<T> getCommands(int count, Set<U> seen) {
+				return List.of();
+			}
+		};
 	}
 }

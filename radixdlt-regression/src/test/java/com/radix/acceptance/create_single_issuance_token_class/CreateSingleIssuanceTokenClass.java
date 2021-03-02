@@ -18,7 +18,7 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
