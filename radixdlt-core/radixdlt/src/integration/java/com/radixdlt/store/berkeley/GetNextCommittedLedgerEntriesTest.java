@@ -114,7 +114,7 @@ public class GetNextCommittedLedgerEntriesTest {
 		final var entries = ledgerEntryStore.getNextCommittedLedgerEntries(-1, 10);
 		assertThat(entries)
 			.hasSize(10)
-			.extracting(le -> le.getProofVersion()).allMatch(v -> v == 0L);
+			.extracting(le -> le.getProofVersion()).allMatch(v -> v == 9L);
 	}
 
 	@Test
@@ -126,7 +126,7 @@ public class GetNextCommittedLedgerEntriesTest {
 		final var entries = ledgerEntryStore.getNextCommittedLedgerEntries(-1, 15);
 		assertThat(entries)
 			.hasSize(10)
-			.extracting(le -> le.getProofVersion()).allMatch(v -> v == 0L);
+			.extracting(le -> le.getProofVersion()).allMatch(v -> v == 9L);
 	}
 
 	@Test
@@ -139,7 +139,7 @@ public class GetNextCommittedLedgerEntriesTest {
 		assertThat(entries)
 			.hasSize(20)
 			.extracting(le -> le.getProofVersion())
-			.containsExactlyElementsOf(LongStream.range(0, 20).map(v -> v / 10).boxed().collect(Collectors.toList()));
+			.containsExactlyElementsOf(LongStream.range(0, 20).map(v -> 9 + (v / 10) * 10).boxed().collect(Collectors.toList()));
 	}
 
 	@Test
