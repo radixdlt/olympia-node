@@ -194,7 +194,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
 					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
-				    bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);

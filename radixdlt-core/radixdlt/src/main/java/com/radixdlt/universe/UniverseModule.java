@@ -31,6 +31,9 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.radix.universe.UniverseValidator;
 
+/**
+ * Module which manages universe configuration
+ */
 public final class UniverseModule extends AbstractModule {
     @Provides
     @Named("magic")

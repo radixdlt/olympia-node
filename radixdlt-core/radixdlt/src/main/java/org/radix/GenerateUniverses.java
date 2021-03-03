@@ -175,8 +175,8 @@ public final class GenerateUniverses {
 				protected void configure() {
 					switch (universeType) {
 						case PRODUCTION:
-                        	install(new ProductionUniverseConfigModule());
-                        	break;
+							install(new ProductionUniverseConfigModule());
+							break;
 						case TEST:
 							install(new TestUniverseConfigModule());
 							break;
@@ -193,7 +193,7 @@ public final class GenerateUniverses {
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
-                    bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuances);
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
 						.toInstance(stakeDelegations);

@@ -33,6 +33,9 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Genesis atom to be used with tests
+ */
 public final class MockedGenesisAtomModule extends AbstractModule {
 	@Override
 	public void configure() {

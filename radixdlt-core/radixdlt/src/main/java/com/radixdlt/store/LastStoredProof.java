@@ -27,6 +27,9 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Marks the proof as the last one stored
+ */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
