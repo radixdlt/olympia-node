@@ -166,6 +166,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
     }
 
 	@Override
+	public boolean containsAtom(CommittedAtom atom) {
+		return store.contains(atom.getAID());
+	}
+
+	@Override
 	public <U extends Particle, V> V compute(
 		Class<U> particleClass,
 		V initial,

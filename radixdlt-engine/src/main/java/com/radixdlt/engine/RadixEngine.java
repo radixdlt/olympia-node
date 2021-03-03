@@ -282,6 +282,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
+	public boolean contains(T atom) {
+		return engineStore.containsAtom(atom);
+	}
+
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
 

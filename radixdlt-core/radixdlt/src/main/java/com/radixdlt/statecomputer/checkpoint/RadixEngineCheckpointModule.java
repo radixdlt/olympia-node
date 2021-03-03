@@ -24,17 +24,9 @@ import com.google.inject.Singleton;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 
 /**
  * Configures the module in charge of "weak-subjectivity" or checkpoints
@@ -64,27 +56,5 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 			throw new IllegalStateException("More than one mutable supply token " + tokenName + " in genesis");
 		}
 		return rris.get(0);
-	}
-
-	@Provides
-	@Singleton
-	private VerifiedCommandsAndProof genesisCheckpoint(
-		Serialization serialization,
-		@Genesis Atom atom,
-		GenesisValidatorSetProvider initialValidatorSetProvider,
-		Hasher hasher
-	) {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
-		Command command = new Command(payload);
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
-			hasher.hash(command),
-			initialValidatorSetProvider.genesisValidatorSet()
-		);
-
-		return new VerifiedCommandsAndProof(
-			ImmutableList.of(command),
-			genesisLedgerHeader
-		);
 	}
 }
