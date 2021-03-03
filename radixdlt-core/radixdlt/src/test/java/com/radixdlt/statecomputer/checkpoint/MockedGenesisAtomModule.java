@@ -24,11 +24,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
@@ -36,6 +31,7 @@ import org.radix.TokenIssuance;
 
 import java.util.Comparator;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public final class MockedGenesisAtomModule extends AbstractModule {
 	@Override
@@ -44,27 +40,27 @@ public final class MockedGenesisAtomModule extends AbstractModule {
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(Atom.class).annotatedWith(Genesis.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
-		bind(UInt256.class).annotatedWith(Genesis.class)
-			.toInstance(UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9));
-	}
-
-	// TODO: Remove
-	@Provides
-	private GenesisValidatorSetProvider genesisValidatorSetProvider(@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys) {
-		return () -> BFTValidatorSet.from(genesisValidatorKeys.stream()
-			.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
 	}
 
 	@Provides
 	@Genesis
-	public ImmutableList<StakeDelegation> stakeDelegations() {
-		return ImmutableList.of();
+	public ImmutableList<StakeDelegation> stakeDelegations(
+		@Genesis ImmutableList<ECKeyPair> initialValidators
+	) {
+		return initialValidators.stream().map(v -> StakeDelegation.of(v, v.getPublicKey(), UInt256.ONE))
+			.collect(ImmutableList.toImmutableList());
 	}
 
 	@Provides
 	@Genesis
-	public ImmutableList<TokenIssuance> tokenIssuanceList(Set<TokenIssuance> tokenIssuanceSet) {
-		return tokenIssuanceSet.stream()
+	public ImmutableList<TokenIssuance> tokenIssuanceList(
+		Set<TokenIssuance> tokenIssuanceSet,
+		@Genesis ImmutableList<ECKeyPair> initialValidators
+	) {
+		return Stream.concat(
+			tokenIssuanceSet.stream(),
+			initialValidators.stream().map(v -> TokenIssuance.of(v.getPublicKey(), UInt256.ONE))
+		)
 			.sorted(Comparator.comparing(t -> t.receiver().toBase58()))
 			.collect(ImmutableList.toImmutableList());
 	}

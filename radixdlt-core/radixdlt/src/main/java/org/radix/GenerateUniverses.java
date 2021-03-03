@@ -193,8 +193,6 @@ public final class GenerateUniverses {
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
-					bind(UInt256.class).annotatedWith(Genesis.class)
-						.toInstance(UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)); // 1e9 rads
                     bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuances);
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)

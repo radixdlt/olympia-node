@@ -24,7 +24,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -33,12 +32,20 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.RegisteredValidators;
+import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -55,26 +62,38 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastStoredProof
 	VerifiedLedgerHeaderAndProof lastStoredProof(
+		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore store,
 		@Genesis Atom atom,
 		Hasher hasher,
 		Serialization serialization,
-		GenesisValidatorSetProvider initialValidatorSetProvider
-	) {
+		ValidatorSetBuilder validatorSetBuilder
+	) throws RadixEngineException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		if (!store.containsAID(genesisAtom.getAID())) {
+			RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
+			branch.checkAndStore(genesisAtom, PermissionLevel.SUPER_USER);
+			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
+				branch.getComputedState(RegisteredValidators.class),
+				branch.getComputedState(Stakes.class)
+			);
+			radixEngine.deleteBranches();
+
 			byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 			Command command = new Command(payload);
 			VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
 				hasher.hash(command),
-				initialValidatorSetProvider.genesisValidatorSet()
+				genesisValidatorSet
 			);
+			if (!genesisLedgerHeader.isEndOfEpoch()) {
+				throw new IllegalStateException("Genesis must be end of epoch");
+			}
 			CommittedAtom committedAtom = new CommittedAtom(
 				genesisAtom,
 				genesisLedgerHeader.getStateVersion(),
 				genesisLedgerHeader
 			);
-			store.storeAtom(committedAtom);
+			radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		}
 
 		return store.getLastVerifiedHeader().orElseThrow();
@@ -115,6 +134,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		Hasher hasher
 	) {
 		return ledgerEntryStore.loadLastVertexStoreState()
+			.filter(vertexStoreState -> vertexStoreState.getHighQC().highestQC().getEpoch() == lastEpochProof.getEpoch() + 1)
 			.map(serializedVertexStoreState -> {
 				UnverifiedVertex root = serializedVertexStoreState.getRoot();
 				HashCode rootVertexId = hasher.hash(root);

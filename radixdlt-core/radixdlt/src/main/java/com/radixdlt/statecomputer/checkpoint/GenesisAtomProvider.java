@@ -35,6 +35,7 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -43,7 +44,6 @@ import java.util.stream.Stream;
 public final class GenesisAtomProvider implements Provider<Atom> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
-	private final UInt256 selfIssuance;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
@@ -55,7 +55,6 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		@Named("magic") int magic,
 		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
 		@NativeToken TokenDefinition tokenDefinition,
-		@Genesis UInt256 selfIssuance,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
@@ -64,7 +63,6 @@ public final class GenesisAtomProvider implements Provider<Atom> {
     	this.magic = (byte) magic;
     	this.universeKey = universeKey;
 		this.tokenDefinition = tokenDefinition;
-    	this.selfIssuance = selfIssuance;
     	this.tokenIssuances = tokenIssuances;
     	this.validatorKeys = validatorKeys;
     	this.stakeDelegations = stakeDelegations;
@@ -90,11 +88,10 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			}
 		});
 		final var epochParticles = CheckpointUtils.createEpochUpdate();
-		final var xrdParticles = CheckpointUtils.createTokenDefinition(
+		final var xrdParticleGroups = CheckpointUtils.createTokenDefinition(
 			magic,
 			universeKey.getPublicKey(),
 			tokenDefinition,
-			selfIssuance,
 			tokenIssuances
 		);
 
@@ -102,21 +99,21 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			magic,
 			validatorKeys
 		);
-		final var stakingParticles = CheckpointUtils.createStakes(
+		final var stakingParticleGroups = CheckpointUtils.createStakes(
 			magic,
 			stakeDelegations,
-			xrdParticles
+			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
 		);
 
 		final var genesisAtom = new Atom(helloMessage());
-		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
-		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
+		xrdParticleGroups.forEach(genesisAtom::addParticleGroup);
 		if (!validatorParticles.isEmpty()) {
 			genesisAtom.addParticleGroup(ParticleGroup.of(validatorParticles));
 		}
-		if (!stakingParticles.isEmpty()) {
-			genesisAtom.addParticleGroup(ParticleGroup.of(stakingParticles));
+		if (!stakingParticleGroups.isEmpty()) {
+			stakingParticleGroups.forEach(genesisAtom::addParticleGroup);
 		}
+		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
 
 		final var signingKeys = Streams.concat(
 			Stream.of(this.universeKey),

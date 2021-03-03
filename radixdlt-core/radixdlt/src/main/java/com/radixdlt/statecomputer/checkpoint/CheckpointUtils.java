@@ -23,23 +23,29 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -58,59 +64,94 @@ public final class CheckpointUtils {
 		return particles.build();
 	}
 
-	public static ImmutableList<SpunParticle> createTokenDefinition(
+	private static Optional<UInt256> downTransferrableParticles(
+		UInt256 amount,
+		List<TransferrableTokensParticle> particles,
+		Consumer<TransferrableTokensParticle> onDown
+	) {
+		UInt256 spent = UInt256.ZERO;
+		while (spent.compareTo(amount) < 0 && !particles.isEmpty()) {
+			var particle = particles.remove(particles.size() - 1);
+			onDown.accept(particle);
+			spent = spent.add(particle.getAmount());
+		}
+
+		if (spent.compareTo(amount) < 0) {
+			return Optional.empty();
+		}
+
+		return Optional.of(spent.subtract(amount));
+	}
+
+
+	private static Optional<UInt256> downParticles(
+		UInt256 amount,
+		List<UnallocatedTokensParticle> particles,
+		Consumer<UnallocatedTokensParticle> onDown
+	) {
+		UInt256 spent = UInt256.ZERO;
+		while (spent.compareTo(amount) < 0 && !particles.isEmpty()) {
+			var particle = particles.remove(particles.size() - 1);
+			onDown.accept(particle);
+			spent = spent.add(particle.getAmount());
+		}
+
+		if (spent.compareTo(amount) < 0) {
+			return Optional.empty();
+		}
+
+		return Optional.of(spent.subtract(amount));
+	}
+
+	public static List<ParticleGroup> createTokenDefinition(
 		byte magic,
 		ECPublicKey key,
 		TokenDefinition tokenDefinition,
-		UInt256 selfIssuance,
 		ImmutableList<TokenIssuance> issuances
 	) {
 		final var universeAddress = new RadixAddress(magic, key);
 
 		final var tokenRRI = RRI.of(universeAddress, tokenDefinition.getSymbol());
-
-		final var particles = ImmutableList.<SpunParticle>builder();
-
-		particles.add(SpunParticle.down(new RRIParticle(tokenRRI)));
-		particles.add(SpunParticle.up(new MutableSupplyTokenDefinitionParticle(
-			tokenRRI,
-			tokenDefinition.getName(),
-			tokenDefinition.getDescription(),
-			tokenDefinition.getGranularity(),
-			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl(),
-			tokenDefinition.getTokenPermissions()
-		)));
-		TokDefParticleFactory tokDefParticleFactory = TokDefParticleFactory.create(
+		final var factory = TokDefParticleFactory.create(
 			tokenRRI, tokenDefinition.getTokenPermissions(), UInt256.ONE
 		);
 
-		var issuedTokens = UInt384.from(selfIssuance);
-		if (!selfIssuance.isZero()) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.createTransferrable(universeAddress, selfIssuance, 0)));
-		}
+		final var unallocated = factory.createUnallocated(UInt256.MAX_VALUE);
+		ParticleGroup tokDefParticleGroup = ParticleGroup.of(
+			SpunParticle.down(new RRIParticle(tokenRRI)),
+			SpunParticle.up(new MutableSupplyTokenDefinitionParticle(
+				tokenRRI,
+				tokenDefinition.getName(),
+				tokenDefinition.getDescription(),
+				tokenDefinition.getGranularity(),
+				tokenDefinition.getIconUrl(),
+				tokenDefinition.getTokenUrl(),
+				tokenDefinition.getTokenPermissions()
+			)),
+			SpunParticle.up(unallocated)
+		);
+
 		// Merge issuances so we only have one TTP per address
+		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
 		final var issuedAmounts = issuances.stream()
-				.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
+			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
+		var unallocatedParticles = Lists.newArrayList(unallocated);
 		for (final var issuance : issuedAmounts.entrySet()) {
 			final var amount = issuance.getValue();
 			if (!amount.isZero()) {
-				particles.add(SpunParticle.up(
-					tokDefParticleFactory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount, 0)
-				));
-				issuedTokens = issuedTokens.add(amount);
+				builder.addParticle(factory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount, 0), Spin.UP);
+				UInt256 remainder = downParticles(amount, unallocatedParticles, p -> builder.addParticle(p, Spin.DOWN)).orElseThrow();
+				if (!remainder.isZero()) {
+					UnallocatedTokensParticle particle = factory.createUnallocated(remainder);
+					unallocatedParticles.add(particle);
+					builder.addParticle(particle, Spin.UP);
+				}
 			}
 		}
-		if (!issuedTokens.getHigh().isZero()) {
-			// TokenOverflowException
-			throw new IllegalStateException("Too many issued tokens: " + issuedTokens);
-		}
-		if (!issuedTokens.getLow().equals(UInt256.MAX_VALUE)) {
-			particles.add(SpunParticle.up(tokDefParticleFactory.createUnallocated(UInt256.MAX_VALUE.subtract(issuedTokens.getLow()))));
-		}
-		return particles.build();
-	}
 
+		ParticleGroup issuanceParticleGroup = builder.build();
+		return List.of(tokDefParticleGroup, issuanceParticleGroup);
+	}
 
 	public static List<SpunParticle> createValidators(byte magic, ImmutableList<ECKeyPair> validatorKeys) {
 		final List<SpunParticle> validatorParticles = Lists.newArrayList();
@@ -124,7 +165,7 @@ public final class CheckpointUtils {
 		return validatorParticles;
 	}
 
-	public static List<SpunParticle> createStakes(
+	public static List<ParticleGroup> createStakes(
 		byte magic,
 		ImmutableList<StakeDelegation> delegations,
 		List<SpunParticle> xrdParticles
@@ -139,43 +180,48 @@ public final class CheckpointUtils {
 		final var stakesByKey = delegations.stream()
 			.collect(Collectors.groupingBy(sd -> sd.staker().getPublicKey(), ImmutableList.toImmutableList()));
 
-		final List<SpunParticle> stakeParticles = Lists.newArrayList();
+		Map<ECPublicKey, Long> delegateNonces = new HashMap<>();
+		delegations.stream().map(StakeDelegation::delegate).distinct()
+			.forEach(delegate -> delegateNonces.put(delegate, 1L));
+
+		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(xrdParticles.stream()
+			.map(SpunParticle::getParticle)
+			.filter(TransferrableTokensParticle.class::isInstance)
+			.map(TransferrableTokensParticle.class::cast)
+			.findAny().orElseThrow()
+		);
+
+		List<ParticleGroup> particleGroups = new ArrayList<>();
 		for (final var entry : stakesByKey.entrySet()) {
-			final var downParticle = tokensByKey.get(entry.getKey());
-			if (downParticle == null) {
-				// Has been checked previously - logic error introduced somewhere
-				throw new IllegalStateException("Unexpected missing token particle");
-			}
-			var delegatedAmount = UInt256.ZERO;
-			stakeParticles.add(SpunParticle.down(downParticle));
-			for (final var delegation : entry.getValue()) {
+			final var particles = Lists.newArrayList(tokensByKey.get(entry.getKey()));
+			final var delegationsOfKey = entry.getValue();
+
+			final var stakerAddress = new RadixAddress(magic, entry.getKey());
+
+			ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
+
+			for (final var delegation : delegationsOfKey) {
+				ECPublicKey delegate = delegation.delegate();
+				long nonce = delegateNonces.get(delegate);
+				RadixAddress delegateAddress = new RadixAddress(magic, delegate);
+				builder.addParticle(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce), Spin.DOWN);
+				builder.addParticle(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce + 1), Spin.UP);
+				delegateNonces.put(delegate, nonce + 1);
+
 				final var amount = delegation.amount();
-				final var stp = new StakedTokensParticle(
-					new RadixAddress(magic, delegation.delegate()),
-					new RadixAddress(magic, delegation.staker().getPublicKey()),
-					amount,
-					downParticle.getGranularity(),
-					downParticle.getTokDefRef(),
-					downParticle.getTokenPermissions()
-				);
-				stakeParticles.add(SpunParticle.up(stp));
-				delegatedAmount = delegatedAmount.add(amount);
+				builder.addParticle(factory.createStaked(delegateAddress, stakerAddress, amount, 0), Spin.UP);
+
+				UInt256 remainder = downTransferrableParticles(amount, particles, p -> builder.addParticle(p, Spin.DOWN))
+					.orElseThrow();
+				if (!remainder.isZero()) {
+					var particle = factory.createTransferrable(stakerAddress, remainder, System.nanoTime());
+					particles.add(particle);
+					builder.addParticle(particle, Spin.UP);
+				}
 			}
-			if (downParticle.getAmount().compareTo(delegatedAmount) < 0) {
-				// Has been previously checked to ensure no underflow - logic error
-				throw new IllegalStateException("Trying to delegate more than issued");
-			}
-			final var balance = downParticle.getAmount().subtract(delegatedAmount);
-			final var outputTtp = new TransferrableTokensParticle(
-				downParticle.getAddress(),
-				balance,
-				downParticle.getGranularity(),
-				downParticle.getTokDefRef(),
-				downParticle.getTokenPermissions()
-			);
-			stakeParticles.add(SpunParticle.up(outputTtp));
+			particleGroups.add(builder.build());
 		}
-		return stakeParticles;
+		return particleGroups;
 	}
 
 }

@@ -29,7 +29,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -101,10 +100,6 @@ public class RecoveryLivenessTest {
 	@Inject
 	@Genesis
 	private Atom genesisAtom;
-
-	// TODO: Remove
-	@Inject
-	private GenesisValidatorSetProvider genesisValidatorSetProvider;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -180,8 +175,6 @@ public class RecoveryLivenessTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
 					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
-					bind(GenesisValidatorSetProvider.class).toInstance(genesisValidatorSetProvider);
-
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);

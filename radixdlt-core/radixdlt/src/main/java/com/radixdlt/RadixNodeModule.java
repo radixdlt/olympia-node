@@ -133,9 +133,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineCheckpointModule());
 		install(new UniverseModule());
 
-		// Genesis validators
-		install(new GenesisValidatorSetFromUniverseModule());
-
 		// Fees
 		install(new TokenFeeModule());
 

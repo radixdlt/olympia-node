@@ -33,7 +33,6 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
@@ -112,10 +111,6 @@ public class RecoveryTest {
 	@Genesis
 	private Atom genesisAtom;
 
-	// TODO: Remove
-	@Inject
-	private GenesisValidatorSetProvider genesisValidatorSetProvider;
-
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
 		this.network = new DeterministicNetwork(
@@ -166,8 +161,6 @@ public class RecoveryTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
 					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
-					bind(GenesisValidatorSetProvider.class).toInstance(genesisValidatorSetProvider);
-
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
