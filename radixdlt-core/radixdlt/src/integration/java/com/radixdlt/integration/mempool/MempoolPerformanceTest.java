@@ -42,6 +42,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,6 +71,7 @@ public final class MempoolPerformanceTest {
     private Injector createInjector() {
         return Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(),
+            new MockedGenesisAtomModule(),
             new MempoolFillerModule(),
             new AbstractModule() {
                 @Override

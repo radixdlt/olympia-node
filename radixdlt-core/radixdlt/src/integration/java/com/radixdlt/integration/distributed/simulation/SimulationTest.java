@@ -36,7 +36,8 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.statecomputer.checkpoint.MockedRadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -356,7 +357,13 @@ public class SimulationTest {
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					install(new MockedRadixEngineCheckpointModule());
+					install(new MockedGenesisAtomModule());
+				}
+
+				@Provides
+				@Genesis
+				ImmutableList<ECKeyPair> validators() {
+					return nodes;
 				}
 
 				@Provides
@@ -421,7 +428,13 @@ public class SimulationTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-					install(new MockedRadixEngineCheckpointModule());
+					install(new MockedGenesisAtomModule());
+				}
+
+				@Provides
+				@Genesis
+				ImmutableList<ECKeyPair> validators() {
+					return nodes;
 				}
 			});
 			return this;

@@ -19,18 +19,25 @@ package com.radixdlt.integration.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -40,14 +47,14 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
-import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Base58;
@@ -91,11 +98,19 @@ public class RecoveryLivenessTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
+	@Inject
+	@Genesis
+	private Atom genesisAtom;
+
+	// TODO: Remove
+	@Inject
+	private GenesisValidatorSetProvider genesisValidatorSetProvider;
+
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ECKeyPair universeKey = ECKeyPair.generateNew();
-	private final List<ECKeyPair> nodeKeys;
+	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
 	private MessageMutator messageMutator;
 
@@ -103,7 +118,7 @@ public class RecoveryLivenessTest {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
-			.collect(Collectors.toList());
+			.collect(ImmutableList.toImmutableList());
 		this.epochCeilingView = epochCeilingView;
 	}
 
@@ -120,14 +135,16 @@ public class RecoveryLivenessTest {
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		Guice.createInjector(
+			new MockedGenesisAtomModule(),
+			new CryptoModule(),
 			new AbstractModule() {
 				@Override
-				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+			    public void configure() {
+				    bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 				}
-			},
-			new SafetyCheckerModule(),
-			new NodeEventsModule()
+			}
 		).injectMembers(this);
 
 		this.nodeCreators = nodeKeys.stream()
@@ -161,8 +178,11 @@ public class RecoveryLivenessTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(GenesisValidatorSetProvider.class).toInstance(genesisValidatorSetProvider);
+
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);

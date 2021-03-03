@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -30,6 +31,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,6 +58,13 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     public PeersView peers(@Named("numPeers") int numPeers) {
         List<BFTNode> peers = Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());
         return () -> peers;
+    }
+
+    @Provides
+    @Singleton
+    @Genesis
+    public ImmutableList<ECKeyPair> genesisValidators(@Self ECKeyPair self) {
+        return ImmutableList.of(self);
     }
 
     @Provides
