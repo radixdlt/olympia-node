@@ -21,15 +21,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.GenesisValidatorSetProvider;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
-import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
@@ -40,17 +44,25 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(
-		VerifiedCommandsAndProof genesisCheckpoint,
-		Serialization serialization
-	) throws DeserializeException {
+		@Genesis Atom atom,
+		Hasher hasher,
+		Serialization serialization,
+		GenesisValidatorSetProvider initialValidatorSetProvider
+	) {
 		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
-		for (Command command : genesisCheckpoint.getCommands()) {
-			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-			CommittedAtom committedAtom = new CommittedAtom(
-				clientAtom,
-				genesisCheckpoint.getHeader().getStateVersion(),
-				genesisCheckpoint.getHeader()
-			);
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		Command command = new Command(payload);
+		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+			hasher.hash(command),
+			initialValidatorSetProvider.genesisValidatorSet()
+		);
+		CommittedAtom committedAtom = new CommittedAtom(
+			genesisAtom,
+			genesisLedgerHeader.getStateVersion(),
+			genesisLedgerHeader
+		);
+		if (!inMemoryEngineStore.containsAtom(committedAtom)) {
 			inMemoryEngineStore.storeAtom(committedAtom);
 		}
 		return inMemoryEngineStore;

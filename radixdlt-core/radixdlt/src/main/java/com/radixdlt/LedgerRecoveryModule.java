@@ -22,6 +22,9 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -31,9 +34,15 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.Optional;
@@ -44,12 +53,40 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
+	@LastStoredProof
+	VerifiedLedgerHeaderAndProof lastStoredProof(
+		CommittedAtomsStore store,
+		@Genesis Atom atom,
+		Hasher hasher,
+		Serialization serialization,
+		GenesisValidatorSetProvider initialValidatorSetProvider
+	) {
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		if (!store.containsAID(genesisAtom.getAID())) {
+			byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+			Command command = new Command(payload);
+			VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+				hasher.hash(command),
+				initialValidatorSetProvider.genesisValidatorSet()
+			);
+			CommittedAtom committedAtom = new CommittedAtom(
+				genesisAtom,
+				genesisLedgerHeader.getStateVersion(),
+				genesisLedgerHeader
+			);
+			store.storeAtom(committedAtom);
+		}
+
+		return store.getLastVerifiedHeader().orElseThrow();
+	}
+
+	@Provides
+	@Singleton
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(
-		CommittedAtomsStore store,
-		VerifiedVertexStoreState vertexStoreState
+		VerifiedVertexStoreState vertexStoreState,
+		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
 	) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader().orElseThrow();
 		if (lastStoredProof.isEndOfEpoch()) {
 			return vertexStoreState.getRootHeader();
 		} else {
@@ -60,8 +97,10 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(CommittedAtomsStore store) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader().orElseThrow();
+	VerifiedLedgerHeaderAndProof lastEpochProof(
+		CommittedAtomsStore store,
+		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
+	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return lastStoredProof;
 		}
@@ -76,33 +115,33 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		Hasher hasher
 	) {
 		return ledgerEntryStore.loadLastVertexStoreState()
-				.map(serializedVertexStoreState -> {
-					UnverifiedVertex root = serializedVertexStoreState.getRoot();
-					HashCode rootVertexId = hasher.hash(root);
-					VerifiedVertex verifiedRoot = new VerifiedVertex(root, rootVertexId);
+			.map(serializedVertexStoreState -> {
+				UnverifiedVertex root = serializedVertexStoreState.getRoot();
+				HashCode rootVertexId = hasher.hash(root);
+				VerifiedVertex verifiedRoot = new VerifiedVertex(root, rootVertexId);
 
-					ImmutableList<VerifiedVertex> vertices = serializedVertexStoreState.getVertices().stream()
-							.map(v -> new VerifiedVertex(v, hasher.hash(v)))
-							.collect(ImmutableList.toImmutableList());
+				ImmutableList<VerifiedVertex> vertices = serializedVertexStoreState.getVertices().stream()
+					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
+					.collect(ImmutableList.toImmutableList());
 
-					return VerifiedVertexStoreState.create(
-							serializedVertexStoreState.getHighQC(),
-							verifiedRoot,
-							vertices,
-							serializedVertexStoreState.getHighestTC()
-					);
-				})
-				.orElseGet(() -> {
-					UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-					VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-					LedgerHeader nextLedgerHeader = LedgerHeader.create(
-							lastEpochProof.getEpoch() + 1,
-							View.genesis(),
-							lastEpochProof.getAccumulatorState(),
-							lastEpochProof.timestamp()
-					);
-					QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-					return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
-				});
+				return VerifiedVertexStoreState.create(
+					serializedVertexStoreState.getHighQC(),
+					verifiedRoot,
+					vertices,
+					serializedVertexStoreState.getHighestTC()
+				);
+			})
+			.orElseGet(() -> {
+				UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
+				VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+				LedgerHeader nextLedgerHeader = LedgerHeader.create(
+					lastEpochProof.getEpoch() + 1,
+					View.genesis(),
+					lastEpochProof.getAccumulatorState(),
+					lastEpochProof.timestamp()
+				);
+				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+				return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
+			});
 	}
 }

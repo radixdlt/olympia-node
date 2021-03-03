@@ -85,6 +85,4 @@ public class ConsensusRecoveryModule extends AbstractModule {
 			}
 		}).orElse(new SafetyState());
 	}
-
-
 }
