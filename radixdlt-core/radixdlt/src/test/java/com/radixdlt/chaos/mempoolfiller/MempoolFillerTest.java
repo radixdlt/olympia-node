@@ -38,7 +38,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -50,7 +49,6 @@ import org.junit.rules.TemporaryFolder;
 import org.radix.TokenIssuance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class MempoolFillerTest {
 	@Rule
@@ -76,8 +74,6 @@ public class MempoolFillerTest {
 
 					bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toInstance(ECKeyPair.generateNew());
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					AddressBook addressBook = mock(AddressBook.class);
-					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));

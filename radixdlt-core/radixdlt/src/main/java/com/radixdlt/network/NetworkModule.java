@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -36,8 +36,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
@@ -46,6 +44,10 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBookPeersView;
 import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
 
 /**
@@ -91,23 +93,43 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncRequestDispatcher();
 	}
 
 	@Provides
-	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncResponseDispatcher();
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.syncResponses();
+	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.statusRequestDispatcher();
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.statusResponseDispatcher();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<StatusRequest>> statusRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.statusRequests();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<StatusResponse>> statusResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.statusResponses();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<SyncRequest>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncRequests();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<SyncResponse>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncResponses();
 	}
 
 	@Provides

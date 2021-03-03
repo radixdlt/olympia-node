@@ -30,7 +30,6 @@ import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.Arrays;
@@ -89,8 +88,10 @@ public class FProposalsPerViewDropperTest {
 			})
 			.build();
 
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying(
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		assertThat(checkResults).hasEntrySatisfying(
 			Monitor.NO_TIMEOUTS,
 			error -> assertThat(error).isPresent()
 		);
@@ -103,8 +104,9 @@ public class FProposalsPerViewDropperTest {
 	@Test
 	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	@Test
@@ -112,8 +114,9 @@ public class FProposalsPerViewDropperTest {
 		SimulationTest test = bftTestBuilder
 			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
 			.build();
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	@Test
@@ -128,7 +131,8 @@ public class FProposalsPerViewDropperTest {
 				}
 			})
 			.build();
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying(Monitor.NO_TIMEOUTS, error -> assertThat(error).isPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+		assertThat(checkResults).hasEntrySatisfying(Monitor.NO_TIMEOUTS, error -> assertThat(error).isPresent());
 	}
 }

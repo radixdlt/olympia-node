@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -23,9 +23,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
- * A request to sync to a given version
+ * A request to sync ledger to a given version.
  */
 public final class LocalSyncRequest {
+
 	private final VerifiedLedgerHeaderAndProof target;
 	private final ImmutableList<BFTNode> targetNodes;
 
@@ -45,5 +46,22 @@ public final class LocalSyncRequest {
 	@Override
 	public String toString() {
 		return String.format("%s {%s target=%s}", this.getClass().getSimpleName(), target, targetNodes);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		LocalSyncRequest that = (LocalSyncRequest) o;
+		return Objects.equals(target, that.target) && Objects.equals(targetNodes, that.targetNodes);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(target, targetNodes);
 	}
 }

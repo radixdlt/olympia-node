@@ -30,7 +30,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.mempool.Mempools;
 import com.radixdlt.mempool.Mempool;
@@ -74,8 +73,8 @@ public class MempoolSanityTest {
 			})
 			.build();
 
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying(
+		final var checkResults = simulationTest.run().awaitCompletion();
+		assertThat(checkResults).hasEntrySatisfying(
 			Monitor.MEMPOOL_COMMITTED,
 			error -> assertThat(error).isPresent()
 		);
@@ -86,7 +85,7 @@ public class MempoolSanityTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var checkResults = simulationTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }
