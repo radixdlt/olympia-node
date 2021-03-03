@@ -26,9 +26,13 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.MacMismatchException;
 import com.radixdlt.crypto.exception.ECIESException;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.math.ec.ECPoint;
 
+import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -104,6 +108,244 @@ public final class ECIES {
 		} catch (Exception e) {
 			throw new ECIESException("Failed to decrypt", e);
 		}
+	}
+
+	public static final class ECAddDiffieHellmanKDF implements SymmetricKeyDerivationFunction {
+
+		public ECAddDiffieHellmanKDF() {}
+
+		public <S extends ECMultiplicationScalar> SecretKey derive(
+			ECPoint ephemeralPublicKeyPoint,
+			S blackPrivateKey,
+			ECPoint whitePublicKeyPoint
+		) {
+			var E = ephemeralPublicKeyPoint;
+			var a = blackPrivateKey;
+			var B = whitePublicKeyPoint;
+			var aB =  a.multiply(B).normalize();
+			var S = aB.add(E).normalize();
+			var x = S.getAffineXCoord();
+
+			var keyData = HashUtils.sha256(x.getEncoded()).asBytes();
+
+			return new SecretKeySpec(keyData, 0, keyData.length, "AES");
+		}
+	}
+
+	public static final class SealedBox {
+		byte[] nonce;
+		ECPublicKey ephemeralPublicKey;
+		byte [] tag;
+		byte[] ciphertext;
+
+		SealedBox(
+			byte[] nonce,
+			ECPublicKey ephemeralPublicKey,
+			byte [] tag,
+			byte[] ciphertext
+		) {
+			this.nonce = nonce;
+			this.ephemeralPublicKey = ephemeralPublicKey;
+			this.tag = tag;
+			this.ciphertext = ciphertext;
+		}
+
+		static final int pubKeyByteCount = 33;
+
+		public static SealedBox fromBytes(byte[] combined) {
+			// Sanity check length
+			int combinedByteCountExcludingCipherText = AESGCM.tagByteCount + AESGCM.nonceByteCount + pubKeyByteCount;
+			if (combined.length < combinedByteCountExcludingCipherText) {
+				throw new RuntimeException("bad length of combined");
+			}
+
+			try {
+				DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(combined));
+
+				// 1. Read the `nonce`
+				byte[] nonce = new byte[AESGCM.nonceByteCount];
+				inputStream.readFully(nonce);
+
+				// 2. Read the ephemeral public key
+				byte[] publicKeyRaw = new byte[pubKeyByteCount];
+				inputStream.readFully(publicKeyRaw);
+				ECPublicKey ephemeralPublicKey = ECPublicKey.fromBytes(publicKeyRaw);
+
+				// 3. Read tag
+				byte[] tag = new byte[AESGCM.tagByteCount];
+				inputStream.readFully(tag);
+
+				// 4. Read ciphertext
+				var cipherLength = combined.length - combinedByteCountExcludingCipherText;
+				byte[] ciphertext = new byte[cipherLength];
+				inputStream.readFully(ciphertext);
+
+				return new SealedBox(
+					nonce,
+					ephemeralPublicKey,
+					tag,
+					ciphertext
+				);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to decode Sealedbox", e);
+			}
+
+//			// Parse "nonce"
+//			var nonceData = Arrays.copyOfRange(combined, 0, AESGCM.nonceByteCount);
+//			assert(nonceData.length == AESGCM.nonceByteCount);
+//
+//			// Parse "ephemeral public key"
+//			var ephemeralPubKeyBytes = Arrays.copyOfRange(combined, AESGCM.nonceByteCount, AESGCM.nonceByteCount + pubKeyByteCount);
+//			assert(ephemeralPubKeyBytes.length == pubKeyByteCount);
+
+		}
+
+		/// The combined representation (nonce || ephemeralPublicKeyCompressed || tag || ciphertext)
+		byte[] combined() {
+			try {
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+				outputStream.write(nonce);
+				assert(ephemeralPublicKey.getBytes().length == pubKeyByteCount);
+				outputStream.write(ephemeralPublicKey.getBytes());
+				outputStream.write(tag);
+				outputStream.write(ciphertext);
+				return outputStream.toByteArray( );
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to combine bytes", e);
+			}
+		}
+	}
+
+	static final class AESGCM {
+
+		static final class AESSealedBox {
+			byte[] nonce;
+			byte [] tag;
+			byte[] ciphertext;
+
+			AESSealedBox(
+				byte[] nonce,
+				byte [] tag,
+				byte[] ciphertext
+			) {
+				this.nonce = nonce;
+				this.tag = tag;
+				this.ciphertext = ciphertext;
+			}
+
+			/// The combined representation (ciphertext || tag)
+			private byte[] cipherAndTag() {
+				try {
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+					outputStream.write(ciphertext);
+					outputStream.write(tag);
+					return outputStream.toByteArray( );
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to combine cipher and tag", e);
+				}
+			}
+		}
+
+		static final int tagByteCount = 16;
+		static final int nonceByteCount = 12;
+
+		public static AESSealedBox aesGCMSeal(
+			byte[] plaintext,
+			SecretKey symmetricKey,
+			byte[] nonce,
+			byte[] authenticationData
+		) {
+			assert(nonce.length == nonceByteCount);
+
+			try {
+				Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+				GCMParameterSpec spec = new GCMParameterSpec(tagByteCount * 8, nonce);
+				cipher.init(Cipher.ENCRYPT_MODE, symmetricKey, spec);
+				cipher.updateAAD(authenticationData);
+				byte[] ciphertextAndTag = cipher.doFinal(plaintext);
+
+				var ciphertext = Arrays.copyOfRange(ciphertextAndTag, 0, ciphertextAndTag.length - tagByteCount);
+				var tag = Arrays.copyOfRange(ciphertextAndTag, ciphertextAndTag.length - tagByteCount, ciphertextAndTag.length);
+
+				return new AESSealedBox(nonce, tag, ciphertext);
+			} catch (Exception error) {
+				throw new RuntimeException("Failed to get cipher");
+			}
+		}
+
+		public static byte[] aesGCMOpen(
+			AESSealedBox sealedBox,
+			SecretKey symmetricKey,
+			byte[] authenticationData
+		) {
+			try {
+				Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+				GCMParameterSpec spec = new GCMParameterSpec(tagByteCount * 8, sealedBox.nonce);
+				cipher.init(Cipher.DECRYPT_MODE, symmetricKey, spec);
+				cipher.updateAAD(authenticationData);
+				return cipher.doFinal(sealedBox.cipherAndTag());
+			} catch (Exception error) {
+				throw new RuntimeException("Failed to get cipher");
+			}
+		}
+	}
+
+	public static <S extends ECMultiplicationScalar, KDF extends SymmetricKeyDerivationFunction> SealedBox seal(
+		KDF symmetricKDF,
+		byte[] plaintext,
+		ECPublicKey whitePublicKey,
+		S blackPrivateKey
+	) throws ECIESException {
+		var nonce = new byte[12];
+		secureRandom.nextBytes(nonce);
+
+		var ephemeralKeyPair = ECKeyPair.generateNew();
+		var ephemeralPublicKey = ephemeralKeyPair.getPublicKey();
+
+		var symmetricKey = symmetricKDF.derive(
+			ephemeralPublicKey,
+			blackPrivateKey,
+			whitePublicKey
+		);
+
+		var symmetricSealedBox = AESGCM.aesGCMSeal(
+			plaintext,
+			symmetricKey,
+			nonce,
+			ephemeralPublicKey.getBytes()
+		);
+
+		return new SealedBox(
+			symmetricSealedBox.nonce,
+			ephemeralPublicKey,
+			symmetricSealedBox.tag,
+			symmetricSealedBox.ciphertext
+		);
+	}
+
+	public static <S extends ECMultiplicationScalar, KDF extends SymmetricKeyDerivationFunction> byte[] open(
+		KDF symmetricKDF,
+		SealedBox sealedBox,
+		ECPublicKey whitePublicKey,
+		S blackPrivateKey
+	) throws ECIESException {
+		var ephemeralPublicKey = sealedBox.ephemeralPublicKey;
+
+		var symmetricKey = symmetricKDF.derive(
+			ephemeralPublicKey,
+			blackPrivateKey,
+			whitePublicKey
+		);
+
+		return AESGCM.aesGCMOpen(
+			new AESGCM.AESSealedBox(
+				sealedBox.nonce,
+				sealedBox.tag,
+				sealedBox.ciphertext
+			),
+			symmetricKey,
+			ephemeralPublicKey.getBytes()
+		);
 	}
 
 	public static byte[] encrypt(byte[] data, ECPublicKey publicKey) throws ECIESException {

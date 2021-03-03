@@ -19,12 +19,15 @@ package com.radixdlt.crypto.encryption;
 
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.nio.charset.StandardCharsets;
 
@@ -147,5 +150,23 @@ public class ECIESTest {
 			throw new IllegalStateException("Can't create test key", e);
 		}
 	}
-}
+
+	@Test
+	public void test_cyon() throws PublicKeyException, PrivateKeyException, ECIESException {
+
+		var senderPubKey = ECPublicKey.fromBytes(Bytes.fromHexString("04DB4BFDF2B5CDAF06D83746D9C483C1DD0E2513B2F95A2AF176B7BCAC9733CD588FB3123601009C162881B1B3F024EFF9F07F7A1F5FCC0B1D811B19999A635FCA"));
+		var privateKey = ECKeyPair.fromPrivateKey(Bytes.fromHexString("4BA74772420949170E44338B5410B37C314BAD295FBE07C0D1A612A345E9E149"));
+		var encryptedMessage = Bytes.fromHexString("ee5c74e22e6f37a041c057920320a2fab2a78c18ea875c9699000a56bba4409da4ad617c41629be6ee30ccf6971117593f9091b54c4b7a782fc5a9cb768bcabb38c637ea20ae6efd9d7f60161f162cfe48e79e1db3cb3c802521e1bdea2be134ad0938ec52ec218a794e38b8f29620ff7e031e016eece8c477e14a6ccc188809e35023d07dd663fedff837");
+
+		var decryped = ECIES.open(
+			new ECIES.ECAddDiffieHellmanKDF(),
+			ECIES.SealedBox.fromBytes(encryptedMessage),
+			senderPubKey,
+			privateKey
+		);
+
+		var msg = new String(decryped, StandardCharsets.UTF_8);
+
+		assertEquals("Guten tag Joe! My nukes are 100 miles south west of Münich, don't tell anyone", msg);
+	}}
 
