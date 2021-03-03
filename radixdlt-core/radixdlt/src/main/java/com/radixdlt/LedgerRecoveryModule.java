@@ -31,7 +31,6 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -48,12 +47,9 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(
 		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint, // TODO: remove once genesis creation resolved
 		VerifiedVertexStoreState vertexStoreState
 	) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
-				.orElse(genesisCheckpoint.getHeader());
-
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader().orElseThrow();
 		if (lastStoredProof.isEndOfEpoch()) {
 			return vertexStoreState.getRootHeader();
 		} else {
@@ -64,13 +60,8 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(
-		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
-	) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
-				.orElse(genesisCheckpoint.getHeader());
-
+	VerifiedLedgerHeaderAndProof lastEpochProof(CommittedAtomsStore store) {
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader().orElseThrow();
 		if (lastStoredProof.isEndOfEpoch()) {
 			return lastStoredProof;
 		}
