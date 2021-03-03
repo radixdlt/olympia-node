@@ -101,7 +101,6 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 		// and must not fall behind too much
 		assertTrue(nodeCounters.get(CounterType.SYNC_TARGET_CURRENT_DIFF) < 200);
 		assertTrue(nodeCounters.get(CounterType.SYNC_PROCESSED) > 200);
-//		assertTrue(nodeCounters.get(CounterType.LEDGER_BFT_COMMANDS_PROCESSED) > 200);
 		assertTrue(nodeCounters.get(CounterType.LEDGER_STATE_VERSION) > 200);
 		// just to be sure that node wasn't a validator
 		assertEquals(0, nodeCounters.get(CounterType.BFT_PROPOSALS_MADE));
