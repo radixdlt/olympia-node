@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.PermissionLevel;
 
 /**
  * This module checks for constraints outside of the FSM constraint
@@ -31,5 +32,5 @@ public interface AtomChecker<T extends RadixEngineAtom> {
 	 * @param atom the atom to verify
 	 * @return result of the check
 	 */
-	Result check(T atom);
+	Result check(T atom, PermissionLevel permissionLevel);
 }

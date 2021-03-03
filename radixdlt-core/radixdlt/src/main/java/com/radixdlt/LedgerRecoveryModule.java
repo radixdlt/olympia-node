@@ -72,7 +72,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		if (!store.containsAID(genesisAtom.getAID())) {
 			RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
-			branch.checkAndStore(genesisAtom, PermissionLevel.SUPER_USER);
+			branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
 			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 				branch.getComputedState(RegisteredValidators.class),
 				branch.getComputedState(Stakes.class)
@@ -93,7 +93,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 				genesisLedgerHeader.getStateVersion(),
 				genesisLedgerHeader
 			);
-			radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
+			radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
 		}
 
 		return store.getLastVerifiedHeader().orElseThrow();

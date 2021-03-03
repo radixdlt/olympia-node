@@ -169,7 +169,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom);
+			Result hookResult = checker.check(atom, permissionLevel);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					RadixEngineErrorCode.HOOK_ERROR,
