@@ -186,18 +186,6 @@ public class GenerateUniversesTest {
 			);
 	}
 
-//	@Test
-//	public void createAWSSecrets() throws IOException {
-//		// Need to do a first run before tests to ensure that logging
-//		// from static initialisation is not included in other tests.
-//		try (Capture stdOut = Capture.forOut();
-//			 Capture stdErr = Capture.forErr()) {
-//			GenerateUniverses.main(strings("-j", "-v", "3", "-p", "-as", "true", "-n", "testAA"));
-//			stdOut.toString();
-//			stdErr.toString();
-//		}
-//	}
-
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
 	private static String[] strings(String...strings) {

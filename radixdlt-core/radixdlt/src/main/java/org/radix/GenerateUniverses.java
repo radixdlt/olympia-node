@@ -287,22 +287,11 @@ public final class GenerateUniverses {
         }
 
         if (helmUniverseOutput.getOutputHelmValues() || awsSecretsUniverseOutput.getEnableAwsSecrets()) {
-
-            System.out.format("outputHelmValues %s%n", helmUniverseOutput.getOutputHelmValues());
-            System.out.format("helmValuesPath %s%n", helmUniverseOutput.getHelmValuesPath());
-            System.out.format("enableAwsSecrets %s%n", awsSecretsUniverseOutput.getEnableAwsSecrets());
-            System.out.format("recreateAwsSecrets %s%n", awsSecretsUniverseOutput.getRecreateAwsSecrets());
-            System.out.format("networkName %s%n", awsSecretsUniverseOutput.getNetworkName());
-
             for (Map<String, Object> validator : validators) {
                 Map<String, Object> awsSecret = new HashMap<>();
                 String name = (String) validator.get("host");
-                String fileName = String.format("%s/%s-staker.yaml", helmUniverseOutput.getHelmValuesPath(), name);
-                String secretName = String.format("%s/%s/staker", awsSecretsUniverseOutput.getNetworkName(), name);
                 Map<String, Map<String, Object>> validatorsOut = new HashMap<>();
                 if (template.startsWith("VALIDATOR")) {
-                    fileName = String.format("%s/%s-validator.yaml", helmUniverseOutput.getHelmValuesPath(), name);
-                    secretName = String.format("%s/%s/validator", awsSecretsUniverseOutput.getNetworkName(), name);
                     List<String> seedsRemote = new ArrayList<>(nodeNames);
                     seedsRemote.remove(name);
                     validator.put("seedsRemote", Strings.join(seedsRemote, ','));
@@ -314,14 +303,23 @@ public final class GenerateUniverses {
                     awsSecret.put("key", validator.get("stakingKey"));
                 }
                 if (helmUniverseOutput.getOutputHelmValues()) {
+                    String fileName = String.format("%s/%s-staker.yaml", helmUniverseOutput.getHelmValuesPath(), name);
+                    if (template.startsWith("VALIDATOR")) {
+                        fileName = String.format("%s/%s-validator.yaml", helmUniverseOutput.getHelmValuesPath(), name);
+                    }
                     writeYamlOutput(fileName, validatorsOut);
+                    System.out.format("Helm value files created in %s%n", helmUniverseOutput.getHelmValuesPath());
                 } else if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+                    String secretName = String.format("%s/%s/staker", awsSecretsUniverseOutput.getNetworkName(), name);
+                    if (template.startsWith("VALIDATOR")) {
+                        secretName = String.format("%s/%s/validator", awsSecretsUniverseOutput.getNetworkName(), name);
+                    }
                     writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput);
+                    System.out.format("AWS secrets created for network %s %s%n", awsSecretsUniverseOutput.getEnableAwsSecrets(), awsSecretsUniverseOutput.getNetworkName());
                 }
             }
         }
     }
-
 
     private static void outputUniverse(
             boolean suppressDson,
