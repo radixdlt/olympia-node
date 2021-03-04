@@ -25,9 +25,9 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
@@ -64,8 +64,7 @@ public class AtomEventObserver {
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
 	private final LedgerEntryStore store;
-	private final CommandToBinaryConverter commandToBinaryConverter;
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private final Serialization serialization;
 	private final Hasher hasher;
 
 	private final Object syncLock = new Object();
@@ -77,16 +76,14 @@ public class AtomEventObserver {
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
 		LedgerEntryStore store,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
+		Serialization serialization,
 		Hasher hasher
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.executorService = executorService;
 		this.store = store;
-		this.commandToBinaryConverter = commandToBinaryConverter;
-		this.clientAtomToBinaryConverter = clientAtomToBinaryConverter;
+		this.serialization = serialization;
 		this.hasher = hasher;
 	}
 
@@ -147,6 +144,14 @@ public class AtomEventObserver {
 		partialSync(cursor, processedAtomIds);
 	}
 
+	private CommittedAtom deserialize(byte[] bytes) {
+		try {
+			return serialization.fromDson(bytes, CommittedAtom.class);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Deserialization of Command failed", e);
+		}
+	}
+
 	private void partialSync(SearchCursor cursor, final Set<AID> processedAtomIds) {
 		long count = 0;
 		try {
@@ -167,9 +172,9 @@ public class AtomEventObserver {
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							var committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
-							long timestamp = committedCommand.getProof().timestamp();
-							var clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+							var committedAtom = deserialize(entry.getContent());
+							long timestamp = committedAtom.getStateAndProof().timestamp();
+							var clientAtom = committedAtom.getClientAtom();
 							atoms.add(Pair.of(clientAtom, timestamp));
 						}
 					);

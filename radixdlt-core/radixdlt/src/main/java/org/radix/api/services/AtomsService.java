@@ -26,10 +26,8 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -45,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
@@ -84,8 +81,6 @@ public class AtomsService {
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
-	private final CommandToBinaryConverter commandToBinaryConverter;
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
 
@@ -103,16 +98,12 @@ public class AtomsService {
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Hasher hasher
 	) {
 		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
 		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
-		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
-		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
 		this.ledgerCommitted = ledgerCommitted;
 		this.hasher = hasher;
@@ -200,7 +191,7 @@ public class AtomsService {
 
 	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
 		return new AtomEventObserver(
-			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
+			atomQuery, observer, executorService, store, serialization, hasher
 		);
 	}
 
@@ -208,12 +199,19 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
+	private CommittedAtom deserialize(byte[] bytes) {
+		try {
+			return serialization.fromDson(bytes, CommittedAtom.class);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Deserialization of Command failed", e);
+		}
+	}
+
 	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
 			.map(LedgerEntry::getContent)
-			.map(commandToBinaryConverter::toCommand)
-			.map(StoredCommittedCommand::getCommand)
-			.map(command -> command.map(clientAtomToBinaryConverter::toAtom))
+			.map(this::deserialize)
+			.map(CommittedAtom::getClientAtom)
 			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}
