@@ -19,11 +19,15 @@ package com.radixdlt.test.chaos;
 
 import com.radixdlt.test.Cluster;
 import com.radixdlt.test.Conditions;
-import com.radixdlt.test.chaos.actions.*;
+import com.radixdlt.test.chaos.actions.MempoolFillAction;
+import com.radixdlt.test.chaos.actions.NetworkAction;
+import com.radixdlt.test.chaos.actions.ShutdownAction;
+import com.radixdlt.test.chaos.actions.RestartAction;
+import com.radixdlt.test.chaos.actions.ValidatorRegistrationAction;
+import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,20 +42,20 @@ public class ChaosTests {
 
     @Test
     public void pre_release_experiment() {
-        //Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
+        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
                 new NetworkAction(ansible, 0.2),
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
-                new MempoolFillAction(ansible, 0.6, 30),
+                new MempoolFillAction(ansible, 0.7, 30),
                 new ValidatorRegistrationAction(ansible, 0.1)
         );
 
         actions.forEach(Action::teardown);
         actions.forEach(Action::setup);
 
-        //Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
+        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
     }
 
 }

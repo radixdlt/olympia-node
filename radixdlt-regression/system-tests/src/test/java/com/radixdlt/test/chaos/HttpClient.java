@@ -2,10 +2,13 @@ package com.radixdlt.test.chaos;
 
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.test.chaos.actions.ActionFailedException;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.MediaType;
 import org.json.JSONObject;
 import org.junit.platform.commons.util.StringUtils;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -16,8 +19,8 @@ import java.util.Optional;
  */
 public class HttpClient {
 
-    private final static String MEMPOOL_FILLER_PATH = "/api/chaos/mempool-filler";
-    private final static String VALIDATOR_REGISTRATION_PATH = "/node/validator";
+    private static final String MEMPOOL_FILLER_PATH = "/api/chaos/mempool-filler";
+    private static final String VALIDATOR_REGISTRATION_PATH = "/node/validator";
 
     private final OkHttpClient okHttpClient;
     private final String protocol;
@@ -80,8 +83,8 @@ public class HttpClient {
 
     private JSONObject makeRequest(String host, String path, String method, String body) {
         String stringResponse;
-        RequestBody requestBody = StringUtils.isBlank(body) ? null :
-                RequestBody.create(MediaType.get("application/json"), body);
+        RequestBody requestBody = StringUtils.isBlank(body) ? null
+                : RequestBody.create(MediaType.get("application/json"), body);
         Request request = new Request.Builder()
                 .url(protocol + host + path)
                 .method(method, requestBody)
