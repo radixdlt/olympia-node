@@ -106,8 +106,6 @@ public class RadixEngineModule extends AbstractModule {
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		RegisteredValidators initialRegisteredValidators,
-		Stakes initialStakes,
 		Set<StateReducer<?, ?>> stateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
@@ -125,8 +123,8 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators));
-		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes));
+		radixEngine.addStateReducer(new ValidatorsReducer());
+		radixEngine.addStateReducer(new StakesReducer(stakeToken));
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
 		radixEngine.addStateReducer(new LastSystemParticleReducer());

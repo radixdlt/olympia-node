@@ -43,7 +43,6 @@ import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.SyncRunnerModule;
@@ -575,7 +574,6 @@ public class SimulationTest {
 			// Persistence
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
-				modules.add(new MockedValidatorComputersModule());
 			}
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
