@@ -260,6 +260,7 @@ public class RadixEngineStateComputerTest {
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(set ->
 			assertThat(set.getValidators())
+				.isNotEmpty()
 				.allMatch(v -> v.getNode().getKey().equals(unregisteredNode.getPublicKey())
 					|| registeredNodes.stream().anyMatch(k -> k.getPublicKey().equals(v.getNode().getKey())))
 		);
