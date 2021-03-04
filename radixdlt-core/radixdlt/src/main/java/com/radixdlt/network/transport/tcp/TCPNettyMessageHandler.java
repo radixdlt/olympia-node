@@ -120,12 +120,12 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 		if (cause instanceof TooLongFrameException) {
 			// Frame desynchronisation or possible interloper sending random data
 			log.info("Dropping desynchronised TCP connection from {}: {}", remoteAddress, cause.getMessage());
-			ctx.close();
 		} else if (cause instanceof IOException) {
 			log.info("IOException while receiving TCP data from {}: {}", remoteAddress, cause.getMessage());
 		} else {
 			log.error(() -> String.format("While receiving TCP data from %s", remoteAddress), cause);
 		}
+		ctx.close();
 	}
 
 	private static String formatSocketAddress(SocketAddress addr) {

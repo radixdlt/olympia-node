@@ -125,13 +125,14 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators));
-		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes));
-
+		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators), true);
+		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes), true);
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(new LastSystemParticleReducer());
+		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
 
-		stateReducers.forEach(radixEngine::addStateReducer);
+		// Additional state reducers are not required for consensus so don't need to include their
+		// state in transient branches;
+		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 
 		return radixEngine;
 	}
