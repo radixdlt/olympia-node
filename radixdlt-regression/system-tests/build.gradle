@@ -33,7 +33,6 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'org.json:json'
 
-    //testImplementation 'com.jcraft:jsch:0.1.53'
     testImplementation 'com.github.mwiede:jsch:0.1.61'
     testImplementation 'commons-io:commons-io:2.8.0'
 
