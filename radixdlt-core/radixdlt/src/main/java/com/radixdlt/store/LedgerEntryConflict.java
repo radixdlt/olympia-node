@@ -20,35 +20,36 @@ package com.radixdlt.store;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.statecomputer.CommittedAtom;
 
 import java.util.stream.Stream;
 
 public final class LedgerEntryConflict {
-	private final LedgerEntry ledgerEntry;
-	private final ImmutableMap<StoreIndex, LedgerEntry> conflictingLedgerEntries;
+	private final CommittedAtom ledgerEntry;
+	private final ImmutableMap<StoreIndex, CommittedAtom> conflictingLedgerEntries;
 
-	public LedgerEntryConflict(LedgerEntry ledgerEntry, ImmutableMap<StoreIndex, LedgerEntry> conflictingLedgerEntries) {
+	public LedgerEntryConflict(CommittedAtom ledgerEntry, ImmutableMap<StoreIndex, CommittedAtom> conflictingLedgerEntries) {
 		this.ledgerEntry = ledgerEntry;
 		this.conflictingLedgerEntries = conflictingLedgerEntries;
 	}
 
-	public LedgerEntry getLedgerEntry() {
+	public CommittedAtom getLedgerEntry() {
 		return ledgerEntry;
 	}
 
-	public ImmutableMap<StoreIndex, LedgerEntry> getConflictingLedgerEntries() {
+	public ImmutableMap<StoreIndex, CommittedAtom> getConflictingLedgerEntries() {
 		return conflictingLedgerEntries;
 	}
 
 	public ImmutableSet<AID> getConflictingAids() {
 		return conflictingLedgerEntries.values().stream()
-			.map(LedgerEntry::getAID)
+			.map(CommittedAtom::getAID)
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	public ImmutableSet<AID> getAllAids() {
 		return Stream.concat(Stream.of(ledgerEntry), conflictingLedgerEntries.values().stream())
-			.map(LedgerEntry::getAID)
+			.map(CommittedAtom::getAID)
 			.collect(ImmutableSet.toImmutableSet());
 	}
 

@@ -26,10 +26,8 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
@@ -122,7 +120,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final long timestamp = committedAtom.getStateAndProof().timestamp();
+		final long timestamp = committedAtom.getHeaderAndProof().timestamp();
 		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
 		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom, timestamp);
 		synchronized (this) {
@@ -144,14 +142,6 @@ public class AtomEventObserver {
 		partialSync(cursor, processedAtomIds);
 	}
 
-	private CommittedAtom deserialize(byte[] bytes) {
-		try {
-			return serialization.fromDson(bytes, CommittedAtom.class);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Deserialization of Command failed", e);
-		}
-	}
-
 	private void partialSync(SearchCursor cursor, final Set<AID> processedAtomIds) {
 		long count = 0;
 		try {
@@ -169,11 +159,10 @@ public class AtomEventObserver {
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<LedgerEntry> ledgerEntry = store.get(aid);
+					Optional<CommittedAtom> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
-						entry -> {
-							var committedAtom = deserialize(entry.getContent());
-							long timestamp = committedAtom.getStateAndProof().timestamp();
+						committedAtom -> {
+							long timestamp = committedAtom.getHeaderAndProof().timestamp();
 							var clientAtom = committedAtom.getClientAtom();
 							atoms.add(Pair.of(clientAtom, timestamp));
 						}

@@ -45,7 +45,6 @@ import java.util.concurrent.Executors;
 
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.function.Consumer;
@@ -199,18 +198,8 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	private CommittedAtom deserialize(byte[] bytes) {
-		try {
-			return serialization.fromDson(bytes, CommittedAtom.class);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Deserialization of Command failed", e);
-		}
-	}
-
 	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
-			.map(LedgerEntry::getContent)
-			.map(this::deserialize)
 			.map(CommittedAtom::getClientAtom)
 			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));

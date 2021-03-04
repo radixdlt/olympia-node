@@ -46,7 +46,6 @@ import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
@@ -129,18 +128,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		byte[] binaryAtom = serialization.toDson(committedAtom, DsonOutput.Output.PERSIST);
-		LedgerEntry ledgerEntry = new LedgerEntry(
-			binaryAtom,
-			committedAtom.getStateVersion(),
-			committedAtom.getStateAndProof().getStateVersion(),
-			committedAtom.getAID()
-		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
 
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
-			ledgerEntry,
+			committedAtom,
 			engineAtomIndices.getUniqueIndices(),
 			engineAtomIndices.getDuplicateIndices()
 		);
@@ -176,10 +168,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		V v = initial;
 		while (cursor != null) {
 			AID aid = cursor.get();
-			Optional<LedgerEntry> ledgerEntry = store.get(aid);
+			Optional<CommittedAtom> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
-				LedgerEntry entry = ledgerEntry.get();
-				final CommittedAtom committedAtom = deserialize(entry.getContent());
+				CommittedAtom committedAtom = ledgerEntry.get();
 				final ClientAtom clientAtom = committedAtom.getClientAtom();
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
@@ -200,7 +191,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
 		return store.getLastCommitted()
 			.flatMap(store::get)
-			.map(e -> deserialize(e.getContent()).getStateAndProof());
+			.map(CommittedAtom::getHeaderAndProof);
 	}
 
 	@Override
@@ -212,17 +203,14 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		);
 		if (cursor != null) {
 			return store.get(cursor.get())
-				.map(e -> deserialize(e.getContent()).getStateAndProof());
+				.map(CommittedAtom::getHeaderAndProof);
 		} else {
 			return Optional.empty();
 		}
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		ImmutableList<CommittedAtom> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, batchSize).stream()
-			.map(e -> deserialize(e.getContent()))
-			.collect(ImmutableList.toImmutableList());
-
+		ImmutableList<CommittedAtom> storedCommittedCommands = store.getNextCommittedAtoms(stateVersion, batchSize);
 		if (storedCommittedCommands.isEmpty()) {
 			return null;
 		}
@@ -233,15 +221,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		for (int i = 0; i < storedCommittedCommands.size(); i++) {
 			var cmd = storedCommittedCommands.get(i);
 			var cmdVersion = stateVersion + i + 1;
-			if (cmd.getStateAndProof().getRaw().isEndOfEpoch()
-				&& cmd.getStateAndProof().getStateVersion() == cmdVersion) {
+			if (cmd.getHeaderAndProof().isEndOfEpoch()
+				&& cmd.getHeaderAndProof().getStateVersion() == cmdVersion) {
 				epochChangeIndex = i;
 				break;
 			}
 		}
 
 		final int tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
-		final var nextHeader = storedCommittedCommands.get(tailPosition).getStateAndProof();
+		final var nextHeader = storedCommittedCommands.get(tailPosition).getHeaderAndProof();
 		final var commands = storedCommittedCommands.stream()
 			.limit(tailPosition + 1L)
 			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))

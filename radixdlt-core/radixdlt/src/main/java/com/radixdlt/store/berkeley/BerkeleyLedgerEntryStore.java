@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.statecomputer.CommittedAtom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
@@ -34,7 +35,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
@@ -204,7 +204,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<LedgerEntry> get(AID aid) {
+	public Optional<CommittedAtom> get(AID aid) {
 		return withTime(() -> {
 			try {
 				var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
@@ -214,7 +214,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					value.setData(atomLog.read(fromByteArray(value.getData())));
 
 					addBytesRead(value, key);
-					return Optional.of(restoreLedgerEntry(value.getData()));
+					return Optional.of(restoreCommittedAtom(value.getData()));
 				}
 			} catch (Exception e) {
 				fail("Get of atom '" + aid + "' failed", e);
@@ -236,7 +236,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public LedgerEntryStoreResult store(
 		Transaction tx,
-		LedgerEntry atom,
+		CommittedAtom atom,
 		Set<StoreIndex> uniqueIndices,
 		Set<StoreIndex> duplicateIndices
 	) {
@@ -415,7 +415,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private LedgerEntryStoreResult doStore(
-		LedgerEntry atom,
+		CommittedAtom atom,
 		LedgerEntryIndices indices,
 		com.sleepycat.je.Transaction transaction
 	) throws DeserializeException {
@@ -466,16 +466,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		byte[] ledgerEntryData, LedgerEntryIndices indices
 	) throws DeserializeException {
 		return new LedgerEntryConflict(
-			restoreLedgerEntry(ledgerEntryData),
+			restoreCommittedAtom(ledgerEntryData),
 			doGetConflictingAtoms(indices.getUniqueIndices(), null)
 		);
 	}
 
-	private ImmutableMap<StoreIndex, LedgerEntry> doGetConflictingAtoms(
+	private ImmutableMap<StoreIndex, CommittedAtom> doGetConflictingAtoms(
 		Set<StoreIndex> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var conflictingAtoms = ImmutableMap.<StoreIndex, LedgerEntry>builder();
+		var conflictingAtoms = ImmutableMap.<StoreIndex, CommittedAtom>builder();
 		try {
 			var key = entry();
 			var value = entry();
@@ -484,7 +484,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				key.setData(uniqueIndex.asKey());
 				if (uniqueIndicesDatabase.get(transaction, key, value, DEFAULT) == SUCCESS) {
 					addBytesRead(value, key);
-					conflictingAtoms.put(uniqueIndex, restoreLedgerEntry(value.getData()));
+					conflictingAtoms.put(uniqueIndex, restoreCommittedAtom(value.getData()));
 				}
 			}
 		} catch (Exception e) {
@@ -496,7 +496,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
+	public ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException {
 		final var start = System.nanoTime();
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (
@@ -504,12 +504,12 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			var uqCursor = uniqueIndicesDatabase.openCursor(null, null)
 		) {
 
-			final var ledgerEntries = Lists.<LedgerEntry>newArrayList();
+			final var atoms = Lists.<CommittedAtom>newArrayList();
 			final var atomSearchKey = toPKey(stateVersion + 1);
 
 			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, DEFAULT);
 
-			while (atomCursorStatus == SUCCESS && ledgerEntries.size() <= limit) {
+			while (atomCursorStatus == SUCCESS && atoms.size() <= limit) {
 				var atomId = getAidFromPKey(atomSearchKey);
 				try {
 					var key = entry(from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
@@ -520,7 +520,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					//  how should we handle it?
 					if (uqCursorStatus == SUCCESS) {
 						var offset = fromByteArray(value.getData());
-						ledgerEntries.add(restoreLedgerEntry(atomLog.read(offset)));
+						atoms.add(restoreCommittedAtom(atomLog.read(offset)));
 					}
 				} catch (Exception e) {
 					log.error(format("Unable to fetch ledger entry for Atom ID %s", atomId), e);
@@ -528,17 +528,17 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, DEFAULT);
 			}
 
-			if (ledgerEntries.size() < limit) {
+			if (atoms.size() < limit) {
 				// Assume that the last entry is a complete commit
 				// if we ran out of entries at or before limit
-				return ImmutableList.copyOf(ledgerEntries);
+				return ImmutableList.copyOf(atoms);
 			}
 
 			int lastIndex;
 			// Otherwise we search backwards for the change in state version
 			for (lastIndex = limit - 1; lastIndex >= 0; lastIndex--) {
-				final var proofVersion = ledgerEntries.get(lastIndex).getProofVersion();
-				final var cmdVersion = ledgerEntries.get(lastIndex).getStateVersion();
+				final var proofVersion = atoms.get(lastIndex).getHeaderAndProof().getStateVersion();
+				final var cmdVersion = atoms.get(lastIndex).getStateVersion();
 				if (proofVersion == cmdVersion) {
 					break;
 				}
@@ -548,7 +548,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				throw new NextCommittedLimitReachedException(limit);
 			}
 
-			return ImmutableList.copyOf(ledgerEntries.subList(0, lastIndex + 1));
+			return ImmutableList.copyOf(atoms.subList(0, lastIndex + 1));
 		} finally {
 			addTime(start, ELAPSED_BDB_LEDGER_ENTRIES, COUNT_BDB_LEDGER_ENTRIES);
 		}
@@ -720,8 +720,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private LedgerEntry restoreLedgerEntry(byte[] data) throws DeserializeException {
-		return serialization.fromDson(data, LedgerEntry.class);
+	private CommittedAtom restoreCommittedAtom(byte[] data) throws DeserializeException {
+		return serialization.fromDson(data, CommittedAtom.class);
 	}
 
 	private static void failIfNotSuccess(OperationStatus status, String message, Object object) {

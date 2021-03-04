@@ -78,7 +78,7 @@ public final class CommittedAtom implements LedgerAtom {
 		return clientAtom;
 	}
 
-	public VerifiedLedgerHeaderAndProof getStateAndProof() {
+	public VerifiedLedgerHeaderAndProof getHeaderAndProof() {
 		return proof;
 	}
 

@@ -107,13 +107,13 @@ public class AtomStatusEpic {
 
 		@Override
 		public void onStored(CommittedAtom committedAtom) {
-			var ledgerState = committedAtom.getStateAndProof();
+			var headerAndProof = committedAtom.getHeaderAndProof();
 
 			sendAtomSubmissionState.accept(STORED, jsonObject()
 				.put("aid", committedAtom.getAID())
-				.put("stateVersion", ledgerState.getStateVersion())
-				.put("epoch", ledgerState.getEpoch())
-				.put("timestamp", ledgerState.timestamp()));
+				.put("stateVersion", headerAndProof.getStateVersion())
+				.put("epoch", headerAndProof.getEpoch())
+				.put("timestamp", headerAndProof.timestamp()));
 		}
 
 		@Override
