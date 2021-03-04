@@ -96,7 +96,7 @@ public class MempoolRunnerTest {
 		MempoolAdd mempoolAdd = MempoolAdd.create(new Command(new byte[0]));
 		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
-		verify(stateComputer, timeout(100).times(1))
+		verify(stateComputer, timeout(1000).times(1))
 			.addToMempool(eq(mempoolAdd.getCommand()), isNull());
 	}
 }
