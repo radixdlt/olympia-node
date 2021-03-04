@@ -64,7 +64,7 @@ public class ChaosExperimentUtils {
     public static void waitSeconds(int seconds) {
         long start = System.currentTimeMillis();
         await().atMost(10, TimeUnit.MINUTES)
-                .until(() -> (System.currentTimeMillis() > start + 1000L * seconds));
+                .until(() -> (System.currentTimeMillis() > start + (1000L * seconds)));
     }
 
     public static String getSshIdentityLocation() {

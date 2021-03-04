@@ -48,7 +48,7 @@ public class ChaosTests {
                 new NetworkAction(ansible, 0.2),
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
-                new MempoolFillAction(ansible, 0.7, 30),
+                new MempoolFillAction(ansible, 0.8, 300),
                 new ValidatorRegistrationAction(ansible, 0.1)
         );
 
