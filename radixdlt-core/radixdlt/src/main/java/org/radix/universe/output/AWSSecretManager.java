@@ -1,6 +1,10 @@
 package org.radix.universe.output;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.*;
@@ -8,6 +12,7 @@ import software.amazon.awssdk.services.secretsmanager.model.*;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AWSSecretManager {
     public static void createSecret(String secretName, String secretValue, String network) {
@@ -35,7 +40,7 @@ public class AWSSecretManager {
         return secret;
     }
 
-    public static boolean checkIfSecretsExist(String secretName) {
+    public static boolean awsSecretExists(String secretName) {
         try {
             getSecret(secretName);
         } catch (SecretsManagerException e) {
@@ -91,7 +96,43 @@ public class AWSSecretManager {
         CreateSecretResponse secretResponse = secretsClient.createSecret(secretRequest);
         return secretResponse.arn();
     }
+    public static void createAWSSecret(
+        final Map<String, Object> awsSecret,
+        final String secretName,
+        final AWSSecretsUniverseOutput awsSecretsUniverseOutput
+    ) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            String jsonSecret = objectMapper.writeValueAsString(awsSecret);
+            AWSSecretManager.createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+        } catch (JsonProcessingException e) {
+            System.out.println(e);
+        } catch (SecretsManagerException e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+    }
 
+
+    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        if (awsSecretsUniverseOutput.getRecreateAwsSecrets()
+            && (!awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("betanet")
+                    || !awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("mainnet"))) {
+            System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
+            try {
+                String jsonSecret = objectMapper.writeValueAsString(awsSecret);
+                updateSecret(secretName, jsonSecret);
+            } catch (JsonProcessingException e) {
+                System.out.println(e);
+            } catch (SecretsManagerException e) {
+                System.err.println(e.awsErrorDetails().errorMessage());
+                System.exit(1);
+            }
+        } else {
+            System.out.format("Secret %s exists. It will not be created again %n", secretName);
+        }
+    }
     //This is needed or the connection to AWS fails with
     /*
         Unable to execute HTTP request: No X509TrustManager implementation available
