@@ -30,6 +30,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -52,6 +53,10 @@ public final class CommittedAtom implements LedgerAtom {
 	@DsonOutput(Output.ALL)
 	private final ClientAtom clientAtom;
 
+	@JsonProperty("proof_version")
+	@DsonOutput(Output.ALL)
+	private final long proofVersion;
+
 	// TODO: include commit signature proof
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
@@ -62,12 +67,25 @@ public final class CommittedAtom implements LedgerAtom {
 		this.clientAtom = null;
 		this.proof = null;
 		this.stateVersion = 0L;
+		this.proofVersion = 0L;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
+	private CommittedAtom(ClientAtom clientAtom, long stateVersion, long proofVersion, VerifiedLedgerHeaderAndProof proof) {
 		this.clientAtom = clientAtom;
 		this.stateVersion = stateVersion;
-		this.proof = Objects.requireNonNull(proof);
+		this.proof = proof;
+		this.proofVersion = proofVersion;
+	}
+
+	public static CommittedAtom create(ClientAtom clientAtom, VerifiedLedgerHeaderAndProof proof) {
+		return new CommittedAtom(clientAtom, proof.getStateVersion(), proof.getStateVersion(), proof);
+	}
+
+	public static CommittedAtom create(ClientAtom clientAtom, long stateVersion, long proofVersion) {
+		if (stateVersion == proofVersion) {
+			throw new IllegalArgumentException("stateVersion should not equal proofVersion.");
+		}
+		return new CommittedAtom(clientAtom, stateVersion, proofVersion, null);
 	}
 
 	public long getStateVersion() {
@@ -78,8 +96,8 @@ public final class CommittedAtom implements LedgerAtom {
 		return clientAtom;
 	}
 
-	public VerifiedLedgerHeaderAndProof getHeaderAndProof() {
-		return proof;
+	public Optional<VerifiedLedgerHeaderAndProof> getHeaderAndProof() {
+		return Optional.ofNullable(proof);
 	}
 
 	@Override
@@ -104,7 +122,7 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.clientAtom, this.stateVersion, this.proof);
+		return Objects.hash(this.clientAtom, this.stateVersion, this.proofVersion, this.proof);
 	}
 
 	@Override
@@ -116,13 +134,14 @@ public final class CommittedAtom implements LedgerAtom {
 		CommittedAtom other = (CommittedAtom) o;
 		return Objects.equals(other.clientAtom, this.clientAtom)
 			&& other.stateVersion == this.stateVersion
+			&& other.proofVersion == this.proofVersion
 			&& Objects.equals(other.proof, this.proof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s, stateVersion=%s proof=%s}",
-			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null, this.proof);
+		return String.format("%s{atom=%s, stateVersion=%s proofVersion=%s}",
+			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null, this.proofVersion);
 	}
 }
 

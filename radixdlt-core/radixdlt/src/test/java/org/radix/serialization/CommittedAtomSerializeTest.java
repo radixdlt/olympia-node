@@ -57,7 +57,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			new TimestampedECDSASignatures()
 		);
 
-		return new CommittedAtom(clientAtom, 0L, proof);
+		return CommittedAtom.create(clientAtom, proof);
 	}
 
 	private static CommittedAtom get() {

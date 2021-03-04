@@ -46,9 +46,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
 		for (Command command : genesisCheckpoint.getCommands()) {
 			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-			CommittedAtom committedAtom = new CommittedAtom(
+			CommittedAtom committedAtom = CommittedAtom.create(
 				clientAtom,
-				genesisCheckpoint.getHeader().getStateVersion(),
 				genesisCheckpoint.getHeader()
 			);
 			inMemoryEngineStore.storeAtom(committedAtom);

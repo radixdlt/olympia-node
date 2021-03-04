@@ -40,6 +40,7 @@ import org.radix.api.observable.AtomEventDto.AtomEventType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -120,9 +121,8 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final long timestamp = committedAtom.getHeaderAndProof().timestamp();
 		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom, timestamp);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -155,25 +155,23 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<Pair<ClientAtom, Long>> atoms = new ArrayList<>();
+				List<ClientAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
 					Optional<CommittedAtom> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						committedAtom -> {
-							long timestamp = committedAtom.getHeaderAndProof().timestamp();
 							var clientAtom = committedAtom.getClientAtom();
-							atoms.add(Pair.of(clientAtom, timestamp));
+							atoms.add(clientAtom);
 						}
 					);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(p -> p.mapFirst(ClientAtom::convertToApiAtom))
-						.filter(Pair::firstNonNull)
-						.map(p -> new AtomEventDto(AtomEventType.STORE, p.getFirst(), p.getSecond()));
+						.map(ClientAtom::convertToApiAtom)
+						.map(a -> new AtomEventDto(AtomEventType.STORE, a));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}

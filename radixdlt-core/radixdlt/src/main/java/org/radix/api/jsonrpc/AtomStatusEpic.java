@@ -111,9 +111,8 @@ public class AtomStatusEpic {
 
 			sendAtomSubmissionState.accept(STORED, jsonObject()
 				.put("aid", committedAtom.getAID())
-				.put("stateVersion", headerAndProof.getStateVersion())
-				.put("epoch", headerAndProof.getEpoch())
-				.put("timestamp", headerAndProof.timestamp()));
+				.put("stateVersion", committedAtom.getStateVersion())
+			);
 		}
 
 		@Override

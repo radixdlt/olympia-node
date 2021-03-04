@@ -191,7 +191,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
 		return store.getLastCommitted()
 			.flatMap(store::get)
-			.map(CommittedAtom::getHeaderAndProof);
+			.map(CommittedAtom::getHeaderAndProof)
+			.map(Optional::orElseThrow); // Last committed should always have a header/proof
 	}
 
 	@Override
@@ -203,34 +204,34 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		);
 		if (cursor != null) {
 			return store.get(cursor.get())
-				.map(CommittedAtom::getHeaderAndProof);
+				.map(CommittedAtom::getHeaderAndProof)
+				.map(Optional::orElseThrow); // Epoch change should always have a header/proof
 		} else {
 			return Optional.empty();
 		}
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		ImmutableList<CommittedAtom> storedCommittedCommands = store.getNextCommittedAtoms(stateVersion, batchSize);
-		if (storedCommittedCommands.isEmpty()) {
+		ImmutableList<CommittedAtom> atoms = store.getNextCommittedAtoms(stateVersion, batchSize);
+		if (atoms.isEmpty()) {
 			return null;
 		}
 
 		// Limit the batch to within a single epoch
         // TODO: Cleanup and move logic into lower layer
 		int epochChangeIndex = -1;
-		for (int i = 0; i < storedCommittedCommands.size(); i++) {
-			var cmd = storedCommittedCommands.get(i);
+		for (int i = 0; i < atoms.size(); i++) {
+			var cmd = atoms.get(i);
 			var cmdVersion = stateVersion + i + 1;
-			if (cmd.getHeaderAndProof().isEndOfEpoch()
-				&& cmd.getHeaderAndProof().getStateVersion() == cmdVersion) {
+			if (cmd.getHeaderAndProof().map(VerifiedLedgerHeaderAndProof::isEndOfEpoch).orElse(false)) {
 				epochChangeIndex = i;
 				break;
 			}
 		}
 
-		final int tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
-		final var nextHeader = storedCommittedCommands.get(tailPosition).getHeaderAndProof();
-		final var commands = storedCommittedCommands.stream()
+		final int tailPosition = epochChangeIndex < 0 ? atoms.size() - 1 : epochChangeIndex;
+		final var nextHeader = atoms.get(tailPosition).getHeaderAndProof().orElseThrow();
+		final var commands = atoms.stream()
 			.limit(tailPosition + 1L)
 			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
 			.collect(ImmutableList.toImmutableList());

@@ -537,9 +537,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			int lastIndex;
 			// Otherwise we search backwards for the change in state version
 			for (lastIndex = limit - 1; lastIndex >= 0; lastIndex--) {
-				final var proofVersion = atoms.get(lastIndex).getHeaderAndProof().getStateVersion();
-				final var cmdVersion = atoms.get(lastIndex).getStateVersion();
-				if (proofVersion == cmdVersion) {
+				if (atoms.get(lastIndex).getHeaderAndProof().isPresent()) {
 					break;
 				}
 			}

@@ -114,9 +114,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1, 1) == null) {
 			for (Command command : genesisCheckpoint.getCommands()) {
 				ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-				CommittedAtom committedAtom = new CommittedAtom(
+				CommittedAtom committedAtom = CommittedAtom.create(
 					clientAtom,
-					genesisCheckpoint.getHeader().getStateVersion(),
 					genesisCheckpoint.getHeader()
 				);
 				atomsStore.storeAtom(committedAtom);

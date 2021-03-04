@@ -319,7 +319,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		try {
-			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
+			final CommittedAtom committedAtom;
+			if (proof.getStateVersion() == version) {
+				committedAtom = CommittedAtom.create(clientAtom, proof);
+			} else {
+				committedAtom = CommittedAtom.create(clientAtom, version, proof.getStateVersion());
+			}
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
@@ -352,7 +357,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		List<ClientAtom> atomsCommitted = new ArrayList<>();
 
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
-			ClientAtom clientAtom = this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+			ClientAtom clientAtom = this.commitCommand(
+				firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof
+			);
 			atomsCommitted.add(clientAtom);
 
 			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();

@@ -235,6 +235,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return new CommittedAtom(clientAtom, stateVersion, proof);
+		return CommittedAtom.create(clientAtom, proof);
 	}
 }
