@@ -117,10 +117,9 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 import static java.lang.String.format;
 
 @Singleton
-public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
+public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String PENDING_DB_NAME = "tempo2.pending";
@@ -136,11 +135,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
-	private Database atoms; // TempoAtoms by primary keys (logical clock + AID bytes, no prefixes)
-	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
-	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
-	private Database atomIndices; // TempoAtomIndices by same primary keys
-	private Database pendingDatabase; // AIDs marked as 'pending'
+	private Database atomsDatabase; // Atoms by primary keys (logical clock + AID bytes, no prefixes)
+	private Database vertexStoreDatabase; // Vertex Store
+	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
+	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
 	private AppendLog atomLog; //Atom data append only log
 
 	@Inject
@@ -169,7 +167,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
 				env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
 				env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
-				env.truncateDatabase(transaction, ATOM_INDICES_DB_NAME, false);
 				env.truncateDatabase(transaction, PENDING_DB_NAME, false);
 				transaction.commit();
 			} catch (DatabaseNotFoundException e) {
@@ -190,11 +187,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 	@Override
 	public void close() {
-		safeClose(uniqueIndices);
-		safeClose(duplicatedIndices);
-		safeClose(atoms);
-		safeClose(atomIndices);
-		safeClose(pendingDatabase);
+		safeClose(uniqueIndicesDatabase);
+		safeClose(duplicatedIndicesDatabase);
+		safeClose(atomsDatabase);
+		safeClose(vertexStoreDatabase);
 
 		if (atomLog != null) {
 			atomLog.close();
@@ -205,7 +201,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	public boolean contains(AID aid) {
 		return withTime(() -> {
 			var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
-			return SUCCESS == uniqueIndices.get(null, key, null, DEFAULT);
+			return SUCCESS == uniqueIndicesDatabase.get(null, key, null, DEFAULT);
 		}, ELAPSED_BDB_LEDGER_CONTAINS, COUNT_BDB_LEDGER_CONTAINS);
 	}
 
@@ -216,7 +212,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 				var value = entry();
 
-				if (uniqueIndices.get(null, key, value, DEFAULT) == SUCCESS) {
+				if (uniqueIndicesDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
 					value.setData(atomLog.read(fromByteArray(value.getData())));
 
 					addBytesRead(value, key);
@@ -258,7 +254,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	@Override
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
 		return withTime(() -> {
-			try (var cursor = pendingDatabase.openCursor(null, null)) {
+			try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
 				var pKey = entry();
 				var value = entry();
 				var status = cursor.getLast(pKey, value, DEFAULT);
@@ -306,11 +302,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
-			atoms = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			uniqueIndices = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atoms, uniqueIndicesConfig);
-			duplicatedIndices = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atoms, duplicateIndicesConfig);
-			atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
-			pendingDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+			atomsDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomsDatabase, uniqueIndicesConfig);
+			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomsDatabase, duplicateIndicesConfig);
+			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 
 			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {
@@ -397,7 +392,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		var vertexEntry = serializeAll(vertexStoreState.toSerialized());
 
 		failIfNotSuccess(
-			pendingDatabase.put(transaction, vertexKey, vertexEntry),
+			vertexStoreDatabase.put(transaction, vertexKey, vertexEntry),
 			"Store of root vertex with ID",
 			rootId
 		);
@@ -406,14 +401,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	private void removeLastPending(com.sleepycat.je.Transaction transaction) {
-		try (var cursor = pendingDatabase.openCursor(transaction, null)) {
+		try (var cursor = vertexStoreDatabase.openCursor(transaction, null)) {
 			var pKey = entry();
 			var value = entry();
 			var status = cursor.getLast(pKey, value, DEFAULT);
 
 			if (status == SUCCESS) {
 				addBytesRead(value, pKey);
-				pendingDatabase.delete(transaction, pKey);
+				vertexStoreDatabase.delete(transaction, pKey);
 			}
 		} catch (Exception e) {
 			transaction.abort();
@@ -439,13 +434,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			var pKey = toPKey(PREFIX_COMMITTED, atom.getStateVersion(), aid);
 			var atomPosData = entry(Longs.toByteArray(offset));
 
-			failIfNotSuccess(atoms.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
+			failIfNotSuccess(atomsDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomData, pKey);
-
-			var indicesData = serialize(indices);
-
-			failIfNotSuccess(atomIndices.putNoOverwrite(transaction, pKey, indicesData), "LedgerEntry indices write for", aid);
-			addBytesWrite(indicesData, pKey);
 		} catch (IOException e) {
 			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
@@ -491,7 +481,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 			for (var uniqueIndex : indices) {
 				key.setData(uniqueIndex.asKey());
-				if (uniqueIndices.get(transaction, key, value, DEFAULT) == SUCCESS) {
+				if (uniqueIndicesDatabase.get(transaction, key, value, DEFAULT) == SUCCESS) {
 					addBytesRead(value, key);
 					conflictingAtoms.put(uniqueIndex, restoreLedgerEntry(value.getData()));
 				}
@@ -509,8 +499,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		final var start = System.nanoTime();
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (
-			var atomCursor = atoms.openCursor(null, null);
-			var uqCursor = uniqueIndices.openCursor(null, null)
+			var atomCursor = atomsDatabase.openCursor(null, null);
+			var uqCursor = uniqueIndicesDatabase.openCursor(null, null)
 		) {
 
 			final var ledgerEntries = Lists.<LedgerEntry>newArrayList();
@@ -620,7 +610,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	@Override
 	public Optional<AID> getLastCommitted() {
 		return withTime(() -> {
-			try (var cursor = atoms.openCursor(null, null)) {
+			try (var cursor = atomsDatabase.openCursor(null, null)) {
 				var pKey = entry();
 				var value = entry();
 
@@ -726,9 +716,9 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	private SecondaryCursor toSecondaryCursor(com.sleepycat.je.Transaction tx, LedgerIndexType type) {
 		switch (type) {
 			case UNIQUE:
-				return uniqueIndices.openCursor(tx, null);
+				return uniqueIndicesDatabase.openCursor(tx, null);
 			case DUPLICATE:
-				return duplicatedIndices.openCursor(tx, null);
+				return duplicatedIndicesDatabase.openCursor(tx, null);
 			default:
 				throw new IllegalStateException("Cursor type " + type + " not supported");
 		}
@@ -791,10 +781,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	private void addBytesWrite(DatabaseEntry entryA, DatabaseEntry entryB) {
 		long amount = (long) entryA.getSize() + (long) entryB.getSize();
 		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
-	}
-
-	private static long lcFromPKey(byte[] pKey) {
-		return fromByteArray(pKey, 1);
 	}
 
 	private static com.sleepycat.je.Transaction unwrap(Transaction tx) {
