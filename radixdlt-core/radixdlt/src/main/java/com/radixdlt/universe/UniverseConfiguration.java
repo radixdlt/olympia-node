@@ -22,6 +22,8 @@ import com.radixdlt.universe.Universe.UniverseType;
 
 /**
  * Universe configuration
+ * TODO: This seems unnecessary and should be removed at some point.
+ * TODO: name/description should move into genesis atom, port into config option
  */
 public final class UniverseConfiguration {
 	private final UniverseType universeType;

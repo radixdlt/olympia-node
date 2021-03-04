@@ -35,28 +35,28 @@ import org.radix.universe.UniverseValidator;
  * Module which manages universe configuration
  */
 public final class UniverseModule extends AbstractModule {
-    @Provides
-    @Named("magic")
-    private int magic(Universe universe) {
-        return universe.getMagic();
-    }
+	@Provides
+	@Named("magic")
+	private int magic(Universe universe) {
+		return universe.getMagic();
+	}
 
-    @Provides
-    @Singleton
-    private Universe universe(RuntimeProperties properties, Serialization serialization) {
-        try {
-            byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-            Universe u = serialization.fromDson(bytes, Universe.class);
-            UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
-            return u;
-        } catch (DeserializeException e) {
-            throw new IllegalStateException("Error while deserialising universe", e);
-        }
-    }
+	@Provides
+	@Singleton
+	private Universe universe(RuntimeProperties properties, Serialization serialization) {
+		try {
+			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
+			Universe u = serialization.fromDson(bytes, Universe.class);
+			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
+			return u;
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Error while deserialising universe", e);
+		}
+	}
 
-    @Provides
-    @Genesis
-    Atom genesisAtom(Universe universe) {
-        return universe.getGenesis();
-    }
+	@Provides
+	@Genesis
+	Atom genesisAtom(Universe universe) {
+		return universe.getGenesis();
+	}
 }

@@ -42,8 +42,8 @@ public final class RadixUniverseBuilder {
 	public RadixUniverseBuilder(
 		@Named("universeKey") ECKeyPair universeKey,
 		@UniverseConfig long universeTimestamp,
-        UniverseConfiguration universeConfiguration,
-        Provider<Atom> genesisAtomProvider,
+		UniverseConfiguration universeConfiguration,
+		Provider<Atom> genesisAtomProvider,
 		Hasher hasher
 	) {
 		this.universeKey = Objects.requireNonNull(universeKey);

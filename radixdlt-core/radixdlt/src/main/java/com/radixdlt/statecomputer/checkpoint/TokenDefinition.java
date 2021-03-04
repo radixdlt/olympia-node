@@ -38,12 +38,12 @@ public final class TokenDefinition {
 	private final Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions;
 
 	public TokenDefinition(
-        String symbol,
-        String name,
-        String description,
-        String iconUrl,
-        String tokenUrl,
-        Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
+		String symbol,
+		String name,
+		String description,
+		String iconUrl,
+		String tokenUrl,
+		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
 	) {
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);

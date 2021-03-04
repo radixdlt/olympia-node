@@ -50,7 +50,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	private final Hasher hasher;
 	private final TokenDefinition tokenDefinition;
 
-    @Inject
+	@Inject
 	public GenesisAtomProvider(
 		@Named("magic") int magic,
 		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
@@ -60,13 +60,13 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
 		Hasher hasher
 	) {
-    	this.magic = (byte) magic;
-    	this.universeKey = universeKey;
+		this.magic = (byte) magic;
+		this.universeKey = universeKey;
 		this.tokenDefinition = tokenDefinition;
-    	this.tokenIssuances = tokenIssuances;
-    	this.validatorKeys = validatorKeys;
-    	this.stakeDelegations = stakeDelegations;
-    	this.hasher = hasher;
+		this.tokenIssuances = tokenIssuances;
+		this.validatorKeys = validatorKeys;
+		this.stakeDelegations = stakeDelegations;
+		this.hasher = hasher;
 	}
 
 	@Override
