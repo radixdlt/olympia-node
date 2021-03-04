@@ -126,9 +126,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 	private static final String ATOM_LOG = "radix.ledger";
 
-	// TODO: Remove
-	private static final byte PREFIX_COMMITTED = 0b0000_0000;
-
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
@@ -431,7 +428,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
 
-			var pKey = toPKey(PREFIX_COMMITTED, atom.getStateVersion(), aid);
+			var pKey = toPKey(atom.getStateVersion(), aid);
 			var atomPosData = entry(Longs.toByteArray(offset));
 
 			failIfNotSuccess(atomsDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
@@ -504,16 +501,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		) {
 
 			final var ledgerEntries = Lists.<LedgerEntry>newArrayList();
-			final var atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
+			final var atomSearchKey = toPKey(stateVersion + 1);
 
 			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, DEFAULT);
 
 			while (atomCursorStatus == SUCCESS && ledgerEntries.size() <= limit) {
-				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
-					// if we've gone beyond committed keys, abort, as this is only for committed atoms
-					break;
-				}
-
 				var atomId = getAidFromPKey(atomSearchKey);
 				try {
 					var key = entry(from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
@@ -743,25 +735,23 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	static AID getAidFromPKey(DatabaseEntry pKey) {
-		return AID.from(pKey.getData(), Long.BYTES + 1); // prefix + LC
+		return AID.from(pKey.getData(), Long.BYTES); // prefix + LC
 	}
 
 	private static DatabaseEntry entry() {
 		return new DatabaseEntry();
 	}
 
-	private static DatabaseEntry toPKey(byte prefix, long logicalClock) {
-		var pKey = new byte[1 + Long.BYTES];
-		pKey[0] = prefix;
-		Longs.copyTo(logicalClock, pKey, 1);
+	private static DatabaseEntry toPKey(long logicalClock) {
+		var pKey = new byte[Long.BYTES];
+		Longs.copyTo(logicalClock, pKey, 0);
 		return entry(pKey);
 	}
 
-	private static DatabaseEntry toPKey(byte prefix, long logicalClock, AID aid) {
-		var pKey = new byte[1 + Long.BYTES + AID.BYTES];
-		pKey[0] = prefix;
-		Longs.copyTo(logicalClock, pKey, 1);
-		System.arraycopy(aid.getBytes(), 0, pKey, Long.BYTES + 1, AID.BYTES);
+	private static DatabaseEntry toPKey(long logicalClock, AID aid) {
+		var pKey = new byte[Long.BYTES + AID.BYTES];
+		Longs.copyTo(logicalClock, pKey, 0);
+		System.arraycopy(aid.getBytes(), 0, pKey, Long.BYTES, AID.BYTES);
 		return entry(pKey);
 	}
 
