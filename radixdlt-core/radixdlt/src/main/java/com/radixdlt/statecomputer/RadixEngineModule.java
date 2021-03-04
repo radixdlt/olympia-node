@@ -130,7 +130,6 @@ public class RadixEngineModule extends AbstractModule {
 
 		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators), true);
 		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes), true);
-
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
 		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
 

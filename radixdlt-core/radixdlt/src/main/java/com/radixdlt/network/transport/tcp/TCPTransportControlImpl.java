@@ -100,6 +100,13 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 				if (this.channelCount.getAndIncrement() < this.maxChannelCount) {
 					SocketChannel sch = (SocketChannel) ch;
 					InetSocketAddress remote = sch.remoteAddress();
+
+					if (remote == null || remote.getAddress() == null) {
+						log.error("Can't resolve channel's remote address. Closing connection.");
+						ctx.close();
+						return;
+					}
+
 					String host = remote.getAddress().getHostAddress();
 					int port = remote.getPort();
 					synchronized (lock) {
