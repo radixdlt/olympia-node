@@ -1,4 +1,4 @@
-package com.radixdlt.test.utils;
+package com.radixdlt.test.chaos.utils;
 
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;

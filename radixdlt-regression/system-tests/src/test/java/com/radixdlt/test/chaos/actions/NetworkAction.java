@@ -1,7 +1,7 @@
 package com.radixdlt.test.chaos.actions;
 
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
-import com.radixdlt.test.utils.ChaosExperimentUtils;
+import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
