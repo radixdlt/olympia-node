@@ -15,29 +15,34 @@ import java.util.List;
 import java.util.Map;
 
 public class AWSSecretManager {
-    public static void createSecret(String secretName, String secretValue, String network) {
+    private static Region defaultRegion = Region.EU_WEST_2;
+    public static void createSecret(String secretName, String secretValue, String network, Region region) {
         removeBouncyCastleSecurityProvider();
-
-        Region region = Region.EU_WEST_2;
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
-                .region(region)
-                .build();
+            .region(region)
+            .build();
 
         String secretARN = createNewSecret(secretsClient, secretName, secretValue, network);
         System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
+
+    }
+    public static void createSecret(String secretName, String secretValue, String network) {
+        createSecret(secretName, secretValue, network, defaultRegion);
     }
 
-    public static String getSecret(String secretName) {
+    public static String getSecret(String secretName, Region region) {
         removeBouncyCastleSecurityProvider();
 
-        Region region = Region.EU_WEST_2;
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
-                .region(region)
-                .build();
+            .region(region)
+            .build();
         String secret = getValue(secretsClient, secretName);
         secretsClient.close();
         return secret;
+    }
+    public static String getSecret(String secretName) {
+        return getSecret(secretName, defaultRegion);
     }
 
     public static boolean awsSecretExists(String secretName) {
@@ -53,15 +58,17 @@ public class AWSSecretManager {
         return true;
     }
 
-    public static void updateSecret(String secretName, String secretValue) {
+    public static void updateSecret(String secretName, String secretValue, Region region) {
         removeBouncyCastleSecurityProvider();
-        Region region = Region.EU_WEST_2;
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
-                .region(region)
-                .build();
+            .region(region)
+            .build();
 
         updateMySecret(secretsClient, secretName, secretValue);
         secretsClient.close();
+    }
+    public static void updateSecret(String secretName, String secretValue) {
+        updateSecret(secretName, secretValue, defaultRegion);
     }
 
     private static void updateMySecret(SecretsManagerClient secretsClient, String secretName, String secretValue) {
@@ -116,9 +123,7 @@ public class AWSSecretManager {
 
     public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
         ObjectMapper objectMapper = new ObjectMapper();
-        if (awsSecretsUniverseOutput.getRecreateAwsSecrets()
-            && (!awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("betanet")
-                    || !awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("mainnet"))) {
+        if (canBeUpdated(awsSecretsUniverseOutput)) {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
@@ -133,6 +138,13 @@ public class AWSSecretManager {
             System.out.format("Secret %s exists. It will not be created again %n", secretName);
         }
     }
+
+    private static boolean canBeUpdated(final AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
+        return awsSecretsUniverseOutput.getRecreateAwsSecrets()
+            && (!awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("betanet")
+                    || !awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("mainnet"));
+    }
+
     //This is needed or the connection to AWS fails with
     /*
         Unable to execute HTTP request: No X509TrustManager implementation available

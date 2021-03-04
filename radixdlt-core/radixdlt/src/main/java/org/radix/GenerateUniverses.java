@@ -91,18 +91,18 @@ public final class GenerateUniverses {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Options options = new Options();
-		options.addOption("h", "help", false, "Show usage information (this message)");
-		options.addOption("c", "no-cbor-output", false, "Suppress DSON output");
-		options.addOption("i", "issue-default-tokens", false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
-		options.addOption("j", "no-json-output", false, "Suppress JSON output");
-		options.addOption("k", "keystore", true, "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
-		options.addOption("p", "include-private-keys", false, "Include universe, validator and staking private keys in output");
-		options.addOption("S", "stake-amounts", true, "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
-		options.addOption("t", "universe-type", true, "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
-		options.addOption("T", "universe-timestamp", true, "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
-		options.addOption("v", "validator-count", true, "Specify number of validators to generate (required)");
+		options.addOption("h", "help",                   false, "Show usage information (this message)");
+		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
+		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
+		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
+		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
+		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
+		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
+		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
+		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
+		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
 		options.addOption("hc", "helm-configuration", true, "Generates Helm values for validators(default: " + DEFAULT_HELM_OUTPUT + ")");
-        options.addOption("d", "helm-output-directory", true, "Output dir to add Helm values files(default: " + DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY + ")");
+		options.addOption("d", "helm-output-directory", true, "Output dir to add Helm values files(default: " + DEFAULT_HELM_VALUES_OUTPUT_DIRECTORY + ")");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("n", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
@@ -185,7 +185,7 @@ public final class GenerateUniverses {
 			if (outputPrivateKeys) {
 				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
 				outputNumberedKeys("VALIDATOR_%s", validatorKeys, helmUniverseOutput, awsSecretsUniverseOutput);
-                outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker), helmUniverseOutput, awsSecretsUniverseOutput);
+				outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker), helmUniverseOutput, awsSecretsUniverseOutput);
 			}
 			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe, helmUniverseOutput, awsSecretsUniverseOutput);
 		} catch (ParseException e) {
