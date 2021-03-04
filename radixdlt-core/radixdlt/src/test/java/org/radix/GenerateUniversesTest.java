@@ -22,15 +22,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-import java.security.cert.CertificateException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.radix.universe.output.AWSSecretsUniverseOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -186,9 +186,77 @@ public class GenerateUniversesTest {
 			);
 	}
 
+//	@Test
+//	public void createAWSSecrets() throws IOException {
+//		// Need to do a first run before tests to ensure that logging
+//		// from static initialisation is not included in other tests.
+//		try (Capture stdOut = Capture.forOut();
+//			 Capture stdErr = Capture.forErr()) {
+//			GenerateUniverses.main(strings("-j", "-v", "2", "-p", "-as", "true", "-n", "test-01"));
+//			stdOut.toString();
+//			stdErr.toString();
+//		}
+//	}
+//
+
+	@Test
+	public void importData() throws IOException {
+		String network = "devopsnet";
+		Map<String, Object> universe = new HashMap<>();
+		Path file = Path.of("", "src/test/resources").resolve("rcnet");
+		List<String> content = Files.readAllLines(file);
+		String universeSecret = String.format("%s/universe", network);
+		AWSSecretsUniverseOutput awsSecretsUniverseOutput = new AWSSecretsUniverseOutput(true, false, network);
+		for (String line: content){
+			if( line.startsWith("RADIXDLT_UNIVERSE_PRIVKEY")){
+				universe.put("privKey", line.replace("RADIXDLT_UNIVERSE_PRIVKEY=", ""));
+			}
+			if( line.startsWith("RADIXDLT_UNIVERSE_TYPE")){
+				universe.put("type", line.replace("RADIXDLT_UNIVERSE_TYPE=", ""));
+			}
+			if( line.startsWith("RADIXDLT_UNIVERSE_PUBKEY")){
+				universe.put("pubkey", line.replace("RADIXDLT_UNIVERSE_PUBKEY=", ""));
+			}
+			if( line.startsWith("RADIXDLT_UNIVERSE_ADDRESS")){
+				universe.put("address", line.replace("RADIXDLT_UNIVERSE_ADDRESS=", ""));
+			}
+			if( line.startsWith("RADIXDLT_UNIVERSE_TOKEN")){
+				universe.put("token", line.replace("RADIXDLT_UNIVERSE_TOKEN=", ""));
+			}
+			if( line.startsWith("RADIXDLT_UNIVERSE")){
+				universe.put("value", line.replace("RADIXDLT_UNIVERSE=", ""));
+			}
+			if( line.startsWith("RADIXDLT_VALIDATOR_")){
+				String nodeID = line.replace("RADIXDLT_VALIDATOR_","").split("_")[0];
+				String keyName = String.format("RADIXDLT_VALIDATOR_%s_PRIVKEY=", nodeID);
+				String validatorSecret = String.format("%s/node%s/validator", network, nodeID);
+				Map<String, Object> validator = new HashMap<>();
+				validator.put("key", line.replace(keyName, ""));
+				System.out.println(validatorSecret);
+				System.out.println(validator);
+				System.out.println("-----------------");
+				GenerateUniverses.writeAWSSecret(validator, validatorSecret, awsSecretsUniverseOutput);
+			}
+			if( line.startsWith("RADIXDLT_STAKER_")){
+				String nodeID = line.replace("RADIXDLT_STAKER_","").split("_")[0];
+				String keyName = String.format("RADIXDLT_STAKER_%s_PRIVKEY=", nodeID);
+				String stackerSecret = String.format("%s/node%s/staker", network, nodeID);
+				Map<String, Object> stacking = new HashMap<>();
+				stacking.put("key", line.replace(keyName, ""));
+				System.out.println(stackerSecret);
+				System.out.println(stacking);
+				System.out.println("-----------------");
+				GenerateUniverses.writeAWSSecret(stacking, stackerSecret, awsSecretsUniverseOutput);
+			}
+		}
+
+		System.out.println(universe);
+		GenerateUniverses.writeAWSSecret(universe, universeSecret, awsSecretsUniverseOutput);
+	}
+
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
-	private static String[] strings(String...strings) {
+	private static String[] strings(String... strings) {
 		return strings;
 	}
 

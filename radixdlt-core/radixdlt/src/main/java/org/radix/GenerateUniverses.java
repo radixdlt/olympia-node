@@ -277,8 +277,9 @@ public final class GenerateUniverses {
 			Map<String, Object> validator = new HashMap<>();
 			String nodeName = String.format("node%s", n);
 			String keyname = String.format(template, n++);
-			System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
-			if (helmUniverseOutput.getOutputHelmValues() || awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+			if (!helmUniverseOutput.getOutputHelmValues() && !awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
+			} else if (helmUniverseOutput.getOutputHelmValues() || awsSecretsUniverseOutput.getEnableAwsSecrets()) {
 				nodeNames.add(nodeName);
 				validator.put("host", nodeName);
 				if (template.startsWith(VALIDATOR_PREFIX)) {
@@ -315,13 +316,13 @@ public final class GenerateUniverses {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
 			RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
 			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
-			System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
-			System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
-			System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
-			System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
-			System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
-
-			if (helmUniverseOutput.getOutputHelmValues() || awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+			if (!helmUniverseOutput.getOutputHelmValues() && !awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
+				System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
+				System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
+				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
+				System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
+			} else if (helmUniverseOutput.getOutputHelmValues() || awsSecretsUniverseOutput.getEnableAwsSecrets()) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
 				universe.put("type", type);
