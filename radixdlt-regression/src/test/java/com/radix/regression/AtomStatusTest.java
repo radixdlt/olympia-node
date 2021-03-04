@@ -72,12 +72,11 @@ public class AtomStatusTest {
 
 	@Test
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
-		for (Atom atom : RadixEnv.getBootstrapConfig().getConfig().getGenesis()) {
-			TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
-			this.rpcClient.getAtomStatus(atom.getAid()).subscribe(atomStatusTestObserver);
-			atomStatusTestObserver.awaitTerminalEvent();
-			atomStatusTestObserver.assertValue(AtomStatus.STORED);
-		}
+		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
+		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
+		this.rpcClient.getAtomStatus(atom.getAid()).subscribe(atomStatusTestObserver);
+		atomStatusTestObserver.awaitTerminalEvent();
+		atomStatusTestObserver.assertValue(AtomStatus.STORED);
 	}
 
 	@Test
