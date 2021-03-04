@@ -32,6 +32,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -41,12 +43,12 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService;
+	private final String threadName;
 	private final Object startLock = new Object();
 	private CompositeDisposable compositeDisposable;
 
 	private final List<Subscription<?>> subscriptions;
-	private final Runnable onStart;
-	private final Runnable onStop;
+	private final Consumer<ScheduledExecutorService> onStart;
 
 	private static class Subscription<T> {
 		final Observable<T> o;
@@ -68,19 +70,22 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 		}
 	}
 
-	private ModuleRunnerImpl(String threadName, List<Subscription<?>> subscriptions, Runnable onStart, Runnable onStop) {
+	private ModuleRunnerImpl(
+		String threadName,
+		List<Subscription<?>> subscriptions,
+		Consumer<ScheduledExecutorService> onStart
+	) {
 		this.subscriptions = subscriptions;
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
+		this.threadName = threadName;
 		this.onStart = onStart;
-		this.onStop = onStop;
 	}
 
 	public static class Builder {
 		private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
 
-		private Runnable onStart;
-		private Runnable onStop;
+		private Consumer<ScheduledExecutorService> onStart;
 
 		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
 			subscriptionsBuilder.add(new Subscription<>(o, p));
@@ -97,18 +102,13 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			return this;
 		}
 
-		public Builder onStart(Runnable r) {
+		public Builder onStart(Consumer<ScheduledExecutorService> r) {
 			this.onStart = r;
 			return this;
 		}
 
-		public Builder onStop(Runnable r) {
-			this.onStop = r;
-			return this;
-		}
-
 		public ModuleRunnerImpl build(String threadName) {
-			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build(), onStart, onStop);
+			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build(), onStart);
 		}
 	}
 
@@ -130,7 +130,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			this.compositeDisposable = new CompositeDisposable(disposables);
 
 			if (this.onStart != null) {
-				this.onStart.run();
+				this.onStart.accept(this.executorService);
 			}
 		}
 	}
@@ -142,10 +142,27 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 				compositeDisposable.dispose();
 				compositeDisposable = null;
 
-				if (this.onStop != null) {
-					this.onStop.run();
+				this.shutdownAndAwaitTermination();
+			}
+		}
+	}
+
+	private void shutdownAndAwaitTermination() {
+		this.executorService.shutdown(); // Disable new tasks from being submitted
+		try {
+			// Wait a while for existing tasks to terminate
+			if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+				this.executorService.shutdownNow(); // Cancel currently executing tasks
+				// Wait a while for tasks to respond to being cancelled
+				if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+					System.err.println("Pool " + this.threadName + " did not terminate");
 				}
 			}
+		} catch (InterruptedException ie) {
+			// (Re-)Cancel if current thread also interrupted
+			this.executorService.shutdownNow();
+			// Preserve interrupt status
+			Thread.currentThread().interrupt();
 		}
 	}
 }
