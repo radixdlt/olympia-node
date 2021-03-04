@@ -132,6 +132,7 @@ public interface SystemCounters {
 		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
 		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
 
+		RADIX_ENGINE_PROOFS("radix_engine.proofs"),
 		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
 		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 

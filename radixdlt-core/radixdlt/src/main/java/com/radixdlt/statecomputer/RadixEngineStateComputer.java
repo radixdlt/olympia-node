@@ -322,6 +322,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final CommittedAtom committedAtom;
 			if (proof.getStateVersion() == version) {
 				committedAtom = CommittedAtom.create(clientAtom, proof);
+				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_PROOFS);
 			} else {
 				committedAtom = CommittedAtom.create(clientAtom, version, proof.getStateVersion());
 			}
