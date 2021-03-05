@@ -650,12 +650,19 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		SearchCursor cursor = this.search(
 			StoreIndex.LedgerIndexType.UNIQUE,
 			new StoreIndex(EngineAtomIndices.IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-				LedgerSearchMode.EXACT
-			);
-			if (cursor != null) {
-			return this.get(cursor.get())
-				.map(CommittedAtom::getHeaderAndProof)
-				.map(Optional::orElseThrow); // Epoch change should always have a header/proof
+			LedgerSearchMode.EXACT
+		);
+		if (cursor != null) {
+			cursor.getStateVersion();
+			try (var proofCursor = proofDatabase.openCursor(null, null);) {
+				var value = entry();
+				var status = proofCursor.getFirst(toPKey(cursor.getStateVersion()), value, null);
+				if (status != SUCCESS) {
+					// Epoch change should always have a header/proof
+					throw new IllegalStateException("Missing epoch header");
+				}
+				return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
+			}
 		} else {
 			return Optional.empty();
 		}
