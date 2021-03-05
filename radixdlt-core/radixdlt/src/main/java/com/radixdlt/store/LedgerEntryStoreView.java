@@ -44,9 +44,12 @@ public interface LedgerEntryStoreView {
 
 	/**
 	 * Gets the last committed atom aid
+	 * TODO: Remove optional
 	 * @return The last committed atom aid
 	 */
-	Optional<VerifiedLedgerHeaderAndProof> getLastHeaderProof();
+	Optional<VerifiedLedgerHeaderAndProof> getLastHeader();
+
+	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
 	/**
 	 * Searches for a certain index.

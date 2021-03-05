@@ -34,7 +34,6 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
@@ -51,7 +50,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.Longs;
 import com.radixdlt.store.Transaction;
 
 import java.util.Objects;
@@ -115,14 +113,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {
 		persistentVertexStore.save(this.transaction, vertexStoreState);
-	}
-
-	private CommittedAtom deserialize(byte[] bytes) {
-		try {
-			return serialization.fromDson(bytes, CommittedAtom.class);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Deserialization of Command failed", e);
-		}
 	}
 
 	// TODO: Save proof in a separate index
@@ -189,23 +179,12 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
-		return store.getLastHeaderProof();
+		return store.getLastHeader();
 	}
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
-		SearchCursor cursor = store.search(
-			StoreIndex.LedgerIndexType.UNIQUE,
-			new StoreIndex(IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-			LedgerSearchMode.EXACT
-		);
-		if (cursor != null) {
-			return store.get(cursor.get())
-				.map(CommittedAtom::getHeaderAndProof)
-				.map(Optional::orElseThrow); // Epoch change should always have a header/proof
-		} else {
-			return Optional.empty();
-		}
+		return store.getEpochHeader(epoch);
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {

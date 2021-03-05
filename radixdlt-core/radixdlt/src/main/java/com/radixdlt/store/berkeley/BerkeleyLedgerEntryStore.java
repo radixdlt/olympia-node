@@ -18,6 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.statecomputer.CommittedAtom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -604,7 +605,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getLastHeaderProof() {
+	public Optional<VerifiedLedgerHeaderAndProof> getLastHeader() {
 		return withTime(() -> {
 			try (var cursor = atomDatabase.openCursor(null, null)) {
 				var pKey = entry();
@@ -621,6 +622,22 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					.map(a -> a.getHeaderAndProof().orElseThrow());
 			}
 		}, ELAPSED_BDB_LEDGER_LAST_COMMITTED, COUNT_BDB_LEDGER_LAST_COMMITTED);
+	}
+
+	@Override
+	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
+		SearchCursor cursor = this.search(
+			StoreIndex.LedgerIndexType.UNIQUE,
+			new StoreIndex(EngineAtomIndices.IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
+				LedgerSearchMode.EXACT
+			);
+			if (cursor != null) {
+			return this.get(cursor.get())
+				.map(CommittedAtom::getHeaderAndProof)
+				.map(Optional::orElseThrow); // Epoch change should always have a header/proof
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
