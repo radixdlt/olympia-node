@@ -213,22 +213,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		if (atoms.isEmpty()) {
 			return null;
 		}
-
-		// Limit the batch to within a single epoch
-        // TODO: Cleanup and move logic into lower layer
-		int epochChangeIndex = -1;
-		for (int i = 0; i < atoms.size(); i++) {
-			var cmd = atoms.get(i);
-			if (cmd.getHeaderAndProof().map(VerifiedLedgerHeaderAndProof::isEndOfEpoch).orElse(false)) {
-				epochChangeIndex = i;
-				break;
-			}
-		}
-
-		final int tailPosition = epochChangeIndex < 0 ? atoms.size() - 1 : epochChangeIndex;
-		final var nextHeader = atoms.get(tailPosition).getHeaderAndProof().orElseThrow();
+		final var nextHeader = atoms.get(atoms.size() - 1).getHeaderAndProof().orElseThrow();
 		final var commands = atoms.stream()
-			.limit(tailPosition + 1L)
 			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
 			.collect(ImmutableList.toImmutableList());
 		return new VerifiedCommandsAndProof(commands, nextHeader);

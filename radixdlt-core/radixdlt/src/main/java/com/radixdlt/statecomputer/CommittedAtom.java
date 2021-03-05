@@ -100,6 +100,10 @@ public final class CommittedAtom implements LedgerAtom {
 		return Optional.ofNullable(proof);
 	}
 
+	public boolean isLastAtomInEpoch() {
+		return getHeaderAndProof().map(VerifiedLedgerHeaderAndProof::isEndOfEpoch).orElse(false);
+	}
+
 	@Override
 	public CMInstruction getCMInstruction() {
 		return clientAtom.getCMInstruction();

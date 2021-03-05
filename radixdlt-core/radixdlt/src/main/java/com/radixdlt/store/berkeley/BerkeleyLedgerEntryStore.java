@@ -518,7 +518,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					//  how should we handle it?
 					if (uqCursorStatus == SUCCESS) {
 						var offset = fromByteArray(value.getData());
-						atoms.add(restoreCommittedAtom(atomLog.read(offset)));
+						var atom = restoreCommittedAtom(atomLog.read(offset));
+						atoms.add(atom);
+						if (atom.isLastAtomInEpoch()) {
+							break;
+						}
 					}
 				} catch (Exception e) {
 					log.error(format("Unable to fetch ledger entry for Atom ID %s", atomId), e);
