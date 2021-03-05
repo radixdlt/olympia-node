@@ -155,10 +155,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		V v = initial;
 		while (cursor != null) {
 			AID aid = cursor.get();
-			Optional<CommittedAtom> ledgerEntry = store.get(aid);
+			Optional<ClientAtom> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
-				CommittedAtom committedAtom = ledgerEntry.get();
-				final ClientAtom clientAtom = committedAtom.getClientAtom();
+				final ClientAtom clientAtom = ledgerEntry.get();
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
 						&& cmMicroInstruction.isCheckSpin()) {

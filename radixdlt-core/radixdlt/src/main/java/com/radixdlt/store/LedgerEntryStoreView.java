@@ -20,7 +20,7 @@ package com.radixdlt.store;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.middleware2.ClientAtom;
 
 import java.util.Optional;
 
@@ -40,7 +40,7 @@ public interface LedgerEntryStoreView {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<CommittedAtom> get(AID aid);
+	Optional<ClientAtom> get(AID aid);
 
 	/**
 	 * Gets the last committed atom aid
@@ -72,7 +72,7 @@ public interface LedgerEntryStoreView {
 	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Retrieve a chunk of {@link CommittedAtom} with state version greater than the given one
+	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter
 	 * @param limit the maximum count of ledger entries to return

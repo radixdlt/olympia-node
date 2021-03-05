@@ -200,7 +200,6 @@ public class AtomsService {
 
 	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
-			.map(CommittedAtom::getClientAtom)
 			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}

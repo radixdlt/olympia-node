@@ -20,9 +20,11 @@ package com.radixdlt.store.berkeley;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
@@ -65,6 +67,7 @@ import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -89,6 +92,8 @@ import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SAVE_TX;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SEARCH;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_STORE;
+import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED;
+import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CONTAINS;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CREATE_TX;
@@ -210,7 +215,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<CommittedAtom> get(AID aid) {
+	public Optional<ClientAtom> get(AID aid) {
 		return withTime(() -> {
 			try {
 				var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
@@ -220,7 +225,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					value.setData(atomLog.read(fromByteArray(value.getData())));
 
 					addBytesRead(value, key);
-					return Optional.of(deserializeOrElseFail(value.getData(), CommittedAtom.class));
+					return Optional.of(deserializeOrElseFail(value.getData(), ClientAtom.class));
 				}
 			} catch (Exception e) {
 				fail("Get of atom '" + aid + "' failed", e);
@@ -427,7 +432,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		com.sleepycat.je.Transaction transaction
 	) throws DeserializeException {
 		var aid = atom.getAID();
-		var atomData = serialize(atom);
+		var atomData = serialize(atom.getClientAtom());
 
 		try {
 			//Write atom data as soon as possible
@@ -443,9 +448,33 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			addBytesWrite(atomPosData, pKey);
 
 			atom.getHeaderAndProof().ifPresent(header -> {
-				var headerKey = toPKey(header.getStateVersion());
-				var headerData = entry(serialize(header));
-				failIfNotSuccess(proofDatabase.putNoOverwrite(transaction, headerKey, headerData), "Header write for", header);
+				var prevHeaderKey = entry();
+				var prevHeaderData = entry();
+
+				try (var proofCursor = proofDatabase.openCursor(transaction, null);) {
+					var status = proofCursor.getLast(prevHeaderKey, prevHeaderData, DEFAULT);
+					if (status == SUCCESS) {
+						status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
+						if (status == SUCCESS) {
+							long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
+							if (header.getStateVersion() - twoAwayStateVersion <= 10) {
+								// TODO: Remove deserialization
+								var prev = deserializeOrElseFail(
+									prevHeaderData.getData(), VerifiedLedgerHeaderAndProof.class
+								);
+								if (!prev.isEndOfEpoch()) {
+									proofCursor.getNext(prevHeaderKey, null, DEFAULT);
+									proofCursor.delete();
+									systemCounters.increment(COUNT_BDB_LEDGER_PROOFS_REMOVED);
+								}
+							}
+						}
+					}
+					final var headerKey = toPKey(header.getStateVersion());
+					final var headerData = entry(serialize(header));
+					failIfNotSuccess(proofCursor.putNoOverwrite(headerKey, headerData), "Header write for", header);
+					systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
+				}
 			});
 
 		} catch (IOException e) {
@@ -477,16 +506,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		byte[] ledgerEntryData, LedgerEntryIndices indices
 	) throws DeserializeException {
 		return new LedgerEntryConflict(
-			deserializeOrElseFail(ledgerEntryData, CommittedAtom.class),
+			deserializeOrElseFail(ledgerEntryData, ClientAtom.class),
 			doGetConflictingAtoms(indices.getUniqueIndices(), null)
 		);
 	}
 
-	private ImmutableMap<StoreIndex, CommittedAtom> doGetConflictingAtoms(
+	private ImmutableMap<StoreIndex, ClientAtom> doGetConflictingAtoms(
 		Set<StoreIndex> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var conflictingAtoms = ImmutableMap.<StoreIndex, CommittedAtom>builder();
+		var conflictingAtoms = ImmutableMap.<StoreIndex, ClientAtom>builder();
 		try {
 			var key = entry();
 			var value = entry();
@@ -495,7 +524,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				key.setData(uniqueIndex.asKey());
 				if (uniqueIndicesDatabase.get(transaction, key, value, DEFAULT) == SUCCESS) {
 					addBytesRead(value, key);
-					conflictingAtoms.put(uniqueIndex, deserializeOrElseFail(value.getData(), CommittedAtom.class));
+					conflictingAtoms.put(uniqueIndex, deserializeOrElseFail(value.getData(), ClientAtom.class));
 				}
 			}
 		} catch (Exception e) {
@@ -506,7 +535,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return conflictingAtoms.build();
 	}
 
-	private ImmutableList<CommittedAtom> getNextCommittedAtomsInternal(long stateVersion, int limit)
+	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion, int limit)
 		throws NextCommittedLimitReachedException {
 
 		final var start = System.nanoTime();
@@ -534,12 +563,12 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				if (headerCursorStatus == SUCCESS) {
 					throw new NextCommittedLimitReachedException(limit);
 				} else {
-					return ImmutableList.of();
+					return null;
 				}
 			}
 		}
 
-		final var atoms = ImmutableList.<CommittedAtom>builder();
+		final var atoms = ImmutableList.<ClientAtom>builder();
 		final var atomSearchKey = toPKey(stateVersion + 1);
 		final var atomPosData = entry();
 
@@ -547,18 +576,17 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
 			int count = 0;
 			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
-			CommittedAtom atom;
 			do {
 				if (atomCursorStatus != SUCCESS) {
 					throw new BerkeleyStoreException("Atom database search failure");
 				}
 				var offset = fromByteArray(atomPosData.getData());
-				atom = deserializeOrElseFail(atomLog.read(offset), CommittedAtom.class);
+				var atom = deserializeOrElseFail(atomLog.read(offset), ClientAtom.class);
 				atoms.add(atom);
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 				count++;
 			} while (count < atomCount);
-			return atoms.build();
+			return Pair.of(atoms.build(), nextHeader);
 		} catch (IOException e) {
 			throw new BerkeleyStoreException("Unable to read from atom store.", e);
 		} finally {
@@ -568,15 +596,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		ImmutableList<CommittedAtom> atoms = this.getNextCommittedAtomsInternal(stateVersion, batchSize);
-		if (atoms.isEmpty()) {
+		var atoms = this.getNextCommittedAtomsInternal(stateVersion, batchSize);
+		if (atoms == null) {
 			return null;
 		}
-		final var nextHeader = atoms.get(atoms.size() - 1).getHeaderAndProof().orElseThrow();
-		final var commands = atoms.stream()
-			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
+		final var commands = atoms.getFirst().stream()
+			.map(a -> new Command(serialization.toDson(a, DsonOutput.Output.PERSIST)))
 			.collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(commands, nextHeader);
+		return new VerifiedCommandsAndProof(commands, atoms.getSecond());
 	}
 
 	@Override

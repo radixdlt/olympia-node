@@ -118,7 +118,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 					clientAtom,
 					genesisCheckpoint.getHeader()
 				);
+				atomsStore.startTransaction();
 				atomsStore.storeAtom(committedAtom);
+				atomsStore.commitTransaction();
 			}
 		}
 
