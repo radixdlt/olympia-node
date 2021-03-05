@@ -132,7 +132,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
-	private Database atomsDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
+	private Database atomDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
 	private Database vertexStoreDatabase; // Vertex Store
 	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
@@ -186,7 +186,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public void close() {
 		safeClose(uniqueIndicesDatabase);
 		safeClose(duplicatedIndicesDatabase);
-		safeClose(atomsDatabase);
+		safeClose(atomDatabase);
 		safeClose(vertexStoreDatabase);
 
 		if (atomLog != null) {
@@ -299,9 +299,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
-			atomsDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomsDatabase, uniqueIndicesConfig);
-			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomsDatabase, duplicateIndicesConfig);
+			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomDatabase, uniqueIndicesConfig);
+			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig);
 			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 
 			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
@@ -423,7 +423,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 		try {
 			//Write atom data as soon as possible
-			var offset = atomLog.write(atomData.getData());
+			var offset = atomLog.write(atomData);
 
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
@@ -431,18 +431,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			var pKey = toPKey(atom.getStateVersion(), aid);
 			var atomPosData = entry(Longs.toByteArray(offset));
 
-			failIfNotSuccess(atomsDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
+			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
+			addBytesWrite(atomPosData, pKey);
 
-
-
-			addBytesWrite(atomData, pKey);
 		} catch (IOException e) {
 			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
 			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
 
-			return conflict(collectConflictingData(atomData.getData(), indices));
+			return conflict(collectConflictingData(atomData, indices));
 		} finally {
 			currentIndices.remove(aid);
 		}
@@ -453,8 +451,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return dbEnv.getEnvironment().beginTransaction(null, null);
 	}
 
-	private <T> DatabaseEntry serialize(T instance) {
-		return entry(serialization.toDson(instance, Output.PERSIST));
+	private <T> byte[] serialize(T instance) {
+		return serialization.toDson(instance, Output.PERSIST);
 	}
 
 	private <T> DatabaseEntry serializeAll(T instance) {
@@ -499,7 +497,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		final var start = System.nanoTime();
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (
-			var atomCursor = atomsDatabase.openCursor(null, null);
+			var atomCursor = atomDatabase.openCursor(null, null);
 			var uqCursor = uniqueIndicesDatabase.openCursor(null, null)
 		) {
 
@@ -603,7 +601,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public Optional<AID> getLastCommitted() {
 		return withTime(() -> {
-			try (var cursor = atomsDatabase.openCursor(null, null)) {
+			try (var cursor = atomDatabase.openCursor(null, null)) {
 				var pKey = entry();
 				var value = entry();
 
