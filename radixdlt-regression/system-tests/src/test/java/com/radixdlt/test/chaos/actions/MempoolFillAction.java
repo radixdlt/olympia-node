@@ -28,6 +28,7 @@ public class MempoolFillAction extends ActionWithLikelihood {
         String addressOfFiller = httpClient.getMempoolFillerAddress(fillerNode);
         httpClient.callFaucetForAddress(addressOfFiller);
         logger.info("Got tokens");
+        ChaosExperimentUtils.waitSeconds(5);
 
         httpClient.startMempoolFiller(fillerNode);
         logger.info("Mempool filler started");
