@@ -17,9 +17,9 @@
 
 package com.radixdlt.store;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.CommittedAtom;
 
 import java.util.Optional;
@@ -78,5 +78,5 @@ public interface LedgerEntryStoreView {
 	 * @param limit the maximum count of ledger entries to return
 	 * @return ledger entries satisfying the constraints
 	 */
-	ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException;
+	VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException;
 }

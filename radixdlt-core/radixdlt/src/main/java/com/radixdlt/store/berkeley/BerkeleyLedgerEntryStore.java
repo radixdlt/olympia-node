@@ -17,8 +17,11 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.CommittedAtom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -494,8 +497,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return conflictingAtoms.build();
 	}
 
-	@Override
-	public ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException {
+	private ImmutableList<CommittedAtom> getNextCommittedAtomsInternal(long stateVersion, int limit)
+		throws NextCommittedLimitReachedException {
 		final var start = System.nanoTime();
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (
@@ -553,6 +556,19 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		} finally {
 			addTime(start, ELAPSED_BDB_LEDGER_ENTRIES, COUNT_BDB_LEDGER_ENTRIES);
 		}
+	}
+
+	@Override
+	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
+		ImmutableList<CommittedAtom> atoms = this.getNextCommittedAtomsInternal(stateVersion, batchSize);
+		if (atoms.isEmpty()) {
+			return null;
+		}
+		final var nextHeader = atoms.get(atoms.size() - 1).getHeaderAndProof().orElseThrow();
+		final var commands = atoms.stream()
+			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
+			.collect(ImmutableList.toImmutableList());
+		return new VerifiedCommandsAndProof(commands, nextHeader);
 	}
 
 	@Override
