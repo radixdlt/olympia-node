@@ -38,8 +38,6 @@ import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
@@ -98,8 +96,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private CommittedAtomsStore committedAtomsStore(
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
 		Serialization serialization,
 		Hasher hasher,
@@ -109,8 +105,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
 			store,
 			persistentVertexStore,
-			commandToBinaryConverter,
-			clientAtomToBinaryConverter,
 			atomIndexer,
 			serialization,
 			hasher,
@@ -120,9 +114,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1, 1) == null) {
 			for (Command command : genesisCheckpoint.getCommands()) {
 				ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-				CommittedAtom committedAtom = new CommittedAtom(
+				CommittedAtom committedAtom = CommittedAtom.create(
 					clientAtom,
-					genesisCheckpoint.getHeader().getStateVersion(),
 					genesisCheckpoint.getHeader()
 				);
 				atomsStore.storeAtom(committedAtom);

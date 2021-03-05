@@ -48,7 +48,6 @@ public final class LedgerHeader {
 	@DsonOutput(Output.ALL)
 	private final long epoch;
 
-	// TODO: remove this
 	private final View view;
 
 	@JsonProperty("accumulator_state")

@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
-public class MempoolRunnerTest {
+public final class MempoolRunnerTest {
 	@Inject
 	private Map<String, ModuleRunner> moduleRunners;
 	@Inject
