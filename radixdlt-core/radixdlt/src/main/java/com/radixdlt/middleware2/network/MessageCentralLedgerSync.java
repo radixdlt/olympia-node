@@ -92,12 +92,12 @@ public final class MessageCentralLedgerSync {
 
 	public Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates() {
 		return this.messageCentral.messagesOf(LedgerStatusUpdateMessage.class)
-				.filter(m -> m.getPeer().hasSystem())
-				.map(m -> {
-					final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-					final var header = m.getMessage().getHeader();
-					return RemoteEvent.create(node, LedgerStatusUpdate.create(header), LedgerStatusUpdate.class);
-				});
+			.filter(m -> m.getPeer().hasSystem())
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var header = m.getMessage().getHeader();
+				return RemoteEvent.create(node, LedgerStatusUpdate.create(header), LedgerStatusUpdate.class);
+			});
 	}
 
 	public RemoteEventDispatcher<SyncRequest> syncRequestDispatcher() {

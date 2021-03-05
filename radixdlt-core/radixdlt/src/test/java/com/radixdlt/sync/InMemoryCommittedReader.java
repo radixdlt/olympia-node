@@ -27,7 +27,6 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;

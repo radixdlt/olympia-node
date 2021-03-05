@@ -29,6 +29,7 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
 import com.radixdlt.integration.distributed.simulation.network.FProposalsPerViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochLedgerStatusUpdateDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import java.util.function.Predicate;
@@ -83,6 +84,15 @@ public final class NetworkDroppers {
 		};
 	}
 
+	public static Module oneNodePerEpochLedgerStatusUpdateDropped() {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper() {
+				return new OneNodePerEpochLedgerStatusUpdateDropper();
+			}
+		};
+	}
+
 	public static Module bftSyncMessagesDropped(double dropRate) {
 		return new AbstractModule() {
 			@ProvidesIntoSet
@@ -110,6 +120,7 @@ public final class NetworkDroppers {
 			}
 		};
 	}
+
 	public static Module dropAllProposals() {
 		return new AbstractModule() {
 			@ProvidesIntoSet

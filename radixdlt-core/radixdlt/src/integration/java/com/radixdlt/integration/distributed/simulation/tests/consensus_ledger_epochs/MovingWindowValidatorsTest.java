@@ -19,48 +19,20 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.rx.ModuleRunnerImpl;
-import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import io.reactivex.rxjava3.core.Flowable;
 import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.addNodeModule(new AbstractModule() {
-			/** mocked runner that only processes LedgerStatusUpdates; required for epoch change push message */
-			@ProvidesIntoMap
-			@StringMapKey("ledger-status-updates")
-			private ModuleRunner ledgerStatusUpdatesRunner(
-				@Self BFTNode self,
-				Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates,
-				RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor
-			) {
-				return ModuleRunnerImpl.builder()
-					.add(ledgerStatusUpdates, ledgerStatusUpdateProcessor)
-					.build("LedgerStatusUpdatesRunner " + self);
-			}
-		})
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
@@ -85,7 +57,7 @@ public class MovingWindowValidatorsTest {
 			.pacemakerTimeout(5000)
 			.addTestModules(
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.timestampChecker(Duration.ofSeconds(10)),
+				ConsensusMonitors.timestampChecker(),
 				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();

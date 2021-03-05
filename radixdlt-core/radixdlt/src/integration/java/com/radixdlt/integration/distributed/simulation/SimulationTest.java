@@ -49,6 +49,7 @@ import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -109,7 +110,6 @@ import java.util.stream.Stream;
  */
 public class SimulationTest {
 	private static final ECKeyPair UNIVERSE_KEY = ECKeyPair.generateNew();
-	private static final RadixAddress UNIVERSE_ADDRESS = new RadixAddress((byte) 0, UNIVERSE_KEY.getPublicKey());
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
 
@@ -602,6 +602,8 @@ public class SimulationTest {
 				} else {
 					modules.add(new SyncRunnerModule());
 				}
+			} else if (ledgerType.hasEpochs && !ledgerType.hasSync){
+				modules.add(new MockedLedgerStatusUpdatesRunnerModule());
 			}
 
 			return new SimulationTest(
