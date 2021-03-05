@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SystemService;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
@@ -44,12 +45,13 @@ public class SystemController {
 	public SystemController(
 		final AtomsService atomsService,
 		final SystemService systemService,
-		final InMemorySystemInfo inMemorySystemInfo
+		final InMemorySystemInfo inMemorySystemInfo,
+		final boolean enableTestRoutes
 	) {
 		this.atomsService = atomsService;
 		this.systemService = systemService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.enableTestRoutes = inMemorySystemInfo != null;
+		this.enableTestRoutes = enableTestRoutes;
 	}
 
 	public void configureRoutes(final RoutingHandler handler) {
@@ -69,23 +71,50 @@ public class SystemController {
 		}
 	}
 
-	private void respondWithPong(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getPong());
-	}
-
-	private void respondWithUniverse(final HttpServerExchange exchange) {
-		respond(exchange, systemService.getUniverse());
-	}
-
-	private void respondWaitingTaskCount(final HttpServerExchange exchange) {
-		respond(exchange, jsonObject().put("count", atomsService.getWaitingCount()));
-	}
-
-	private void respondWithLocalSystem(final HttpServerExchange exchange) {
+	@VisibleForTesting
+	void respondWithLocalSystem(final HttpServerExchange exchange) {
 		respond(exchange, systemService.getLocalSystem());
 	}
 
-	private void respondWithHighestQC(final HttpServerExchange exchange) {
+	@VisibleForTesting
+	void respondWaitingTaskCount(final HttpServerExchange exchange) {
+		respond(exchange, jsonObject().put("count", atomsService.getWaitingCount()));
+	}
+
+	@VisibleForTesting
+	void respondWithPong(final HttpServerExchange exchange) {
+		respond(exchange, systemService.getPong());
+	}
+
+	@VisibleForTesting
+	void handleBftState(HttpServerExchange exchange) {
+		withBodyAsync(exchange, values -> {
+			if (values.getBoolean("state")) {
+				respond(exchange, systemService.bftStart());
+			} else {
+				respond(exchange, systemService.bftStop());
+			}
+		});
+	}
+
+	@VisibleForTesting
+	void respondWithUniverse(final HttpServerExchange exchange) {
+		respond(exchange, systemService.getUniverse());
+	}
+
+	@VisibleForTesting
+	void respondWithCommittedVertices(final HttpServerExchange exchange) {
+		var array = jsonArray();
+
+		inMemorySystemInfo.getCommittedVertices()
+			.stream()
+			.map(this::mapSingleVertex)
+			.forEachOrdered(array::put);
+		respond(exchange, array);
+	}
+
+	@VisibleForTesting
+	void respondWithHighestQC(final HttpServerExchange exchange) {
 		var highestQCJson = Optional.ofNullable(inMemorySystemInfo.getHighestQC())
 			.map(this::formatHighestQC)
 			.orElse(jsonObject().put("error", "no qc"));
@@ -98,26 +127,6 @@ public class SystemController {
 			.put("epoch", qc.getEpoch())
 			.put("view", qc.getView())
 			.put("vertexId", qc.getProposed().getVertexId());
-	}
-
-	private void respondWithCommittedVertices(final HttpServerExchange exchange) {
-		var array = jsonArray();
-
-		inMemorySystemInfo.getCommittedVertices()
-			.stream()
-			.map(this::mapSingleVertex)
-			.forEachOrdered(array::put);
-		respond(exchange, array);
-	}
-
-	private void handleBftState(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
-			if (values.getBoolean("state")) {
-				systemService.bftStart();
-			} else {
-				systemService.bftStop();
-			}
-		});
 	}
 
 	private JSONObject mapSingleVertex(final VerifiedVertex v) {

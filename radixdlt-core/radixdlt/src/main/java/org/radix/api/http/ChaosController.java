@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -58,22 +59,8 @@ public class ChaosController {
 		handler.get("/api/chaos/mempool-filler", this::respondWithMempoolFill);
 	}
 
-	private void respondWithMempoolFill(HttpServerExchange exchange) {
-		var mempoolFillerAddress = this.mempoolFillerAddress.get();
-
-		if (mempoolFillerAddress == null) {
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("Mempool filler address is not configured");
-		} else {
-			respond(exchange, jsonObject().put("address", mempoolFillerAddress));
-		}
-	}
-
-	private void handleMempoolFill(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> mempoolDispatcher.dispatch(MempoolFillerUpdate.create(values.getBoolean("enabled"))));
-	}
-
-	private void handleMessageFlood(HttpServerExchange exchange) {
+	@VisibleForTesting
+	void handleMessageFlood(HttpServerExchange exchange) {
 		withBodyAsync(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
@@ -95,6 +82,23 @@ public class ChaosController {
 
 			this.messageDispatcher.dispatch(update);
 		});
+	}
+
+	@VisibleForTesting
+	void handleMempoolFill(HttpServerExchange exchange) {
+		withBodyAsync(exchange, values -> mempoolDispatcher.dispatch(MempoolFillerUpdate.create(values.getBoolean("enabled"))));
+	}
+
+	@VisibleForTesting
+	void respondWithMempoolFill(HttpServerExchange exchange) {
+		var mempoolFillerAddress = this.mempoolFillerAddress.get();
+
+		if (mempoolFillerAddress == null) {
+			exchange.setStatusCode(StatusCodes.NOT_FOUND);
+			exchange.getResponseSender().send("Mempool filler address is not configured");
+		} else {
+			respond(exchange, jsonObject().put("address", mempoolFillerAddress));
+		}
 	}
 
 	private static BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {

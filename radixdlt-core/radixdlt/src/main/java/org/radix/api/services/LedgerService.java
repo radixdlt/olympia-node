@@ -58,7 +58,9 @@ public class LedgerService {
 		var result = jsonArray();
 
 		while (cursor != null) {
-			result.put(serialization.toJsonObject(cursor.get(), API));
+			//TODO: check what is returned from serialization
+			var jsonObject = serialization.toJsonObject(cursor.get(), API);
+			result.put(jsonObject);
 			cursor = cursor.next();
 		}
 

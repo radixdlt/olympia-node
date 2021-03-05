@@ -46,15 +46,18 @@ public class RestUtils {
 		}
 	}
 
-	private static CompletableFuture<Void> handleAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
-		return CompletableFuture
+	private static void handleAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		CompletableFuture
 			.runAsync(() -> handleBody(exchange, bodyHandler))
-			.whenComplete((__, err) -> sendResponse(exchange, err));
+			.whenComplete((__, err) -> sendStatusResponse(exchange, err));
 	}
 
-	public static void sendResponse(final HttpServerExchange exchange, final Throwable err) {
+	private static void sendStatusResponse(final HttpServerExchange exchange, final Throwable err) {
 		if (err == null) {
-			exchange.setStatusCode(StatusCodes.OK);
+			if (!exchange.isResponseStarted()) {
+				exchange.setStatusCode(StatusCodes.OK);
+				exchange.getResponseSender().send("{}");
+			}
 			return;
 		}
 
@@ -78,10 +81,10 @@ public class RestUtils {
 		}
 	}
 
-	public static void handleBody(final HttpServerExchange exchange, final ThrowingConsumer<JSONObject> bodyHandler) {
-		var blockingExchange = exchange.startBlocking();
+	private static void handleBody(final HttpServerExchange exchange, final ThrowingConsumer<JSONObject> bodyHandler) {
+		exchange.startBlocking();
 
-		try (var httpStreamReader = new InputStreamReader(blockingExchange.getInputStream(), StandardCharsets.UTF_8)) {
+		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
 			bodyHandler.accept(new JSONObject(CharStreams.toString(httpStreamReader)));
 		} catch (Exception t) {
 			throw new RuntimeException(t);

@@ -28,14 +28,12 @@ import org.radix.api.services.NetworkService;
 import org.radix.api.services.SystemService;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.ModuleRunner;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -85,8 +83,6 @@ public final class RadixJsonRpcServer {
 		LedgerService ledgerService,
 		long maxRequestSizeBytes
 	) {
-		Objects.requireNonNull(atomsService);
-
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 		this.systemHandler = new SystemHandler(systemService);
 		this.networkHandler = new NetworkHandler(networkService);
@@ -103,7 +99,7 @@ public final class RadixJsonRpcServer {
 
 		//General info
 		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
-		handlers.put("Network.getInfo", systemHandler::handleGetInfo);
+		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
 		handlers.put("Ping", systemHandler::handlePing);
 
 		//Network info
@@ -131,12 +127,15 @@ public final class RadixJsonRpcServer {
 	public String handleJsonRpc(HttpServerExchange exchange) {
 		try {
 			// Switch to blocking since we need to retrieve whole request body
-			exchange.setMaxEntitySize(maxRequestSizeBytes).startBlocking();
+			exchange.setMaxEntitySize(maxRequestSizeBytes);
+			exchange.startBlocking();
 
-			var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
-
+			var stream = exchange.getInputStream();
+			var reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+			var requestBody = CharStreams.toString(reader);
 			return handleRpc(requestBody);
 		} catch (IOException e) {
+			System.out.println(e.getMessage());
 			throw new IllegalStateException("RPC failed", e);
 		}
 	}

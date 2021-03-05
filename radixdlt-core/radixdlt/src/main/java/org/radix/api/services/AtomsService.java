@@ -63,6 +63,8 @@ import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import com.radixdlt.identifiers.AID;
 
+import static java.util.Optional.*;
+
 public class AtomsService {
 	private static final int NUMBER_OF_THREADS = 8;
 	/**
@@ -76,9 +78,7 @@ public class AtomsService {
 
 	private final Set<AtomEventObserver> atomEventObservers = Sets.newConcurrentHashSet();
 	private final Object singleAtomObserversLock = new Object();
-	private final Map<AID, List<AtomStatusListener>> singleAtomObserversx = Maps.newHashMap();
-
-	private final Serialization serialization;
+	private final Map<AID, List<AtomStatusListener>> singleAtomObservers = Maps.newHashMap();
 
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
@@ -89,6 +89,7 @@ public class AtomsService {
 	private final Observable<AtomCommittedToLedger> ledgerCommitted;
 
 	private final Hasher hasher;
+	private final Serialization serialization;
 
 	@Inject
 	public AtomsService(
@@ -115,33 +116,26 @@ public class AtomsService {
 	}
 
 	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
-		final var committedAtom = atomCommittedToLedger.getAtom();
-		final var aid = committedAtom.getAID();
-		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
-		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
-	}
+		var committedAtom = atomCommittedToLedger.getAtom();
 
-	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
-		atomsRemovedFromMempool.forEach((atom, e) -> {
-			final AID aid = atom.getAID();
-			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
-		});
+		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
+		getAtomStatusListeners(committedAtom.getAID()).forEach(listener -> listener.onStored(committedAtom));
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
-		var clientAtom = failure.getCommand().map(payload -> {
-			try {
-				return serialization.fromDson(payload, ClientAtom.class);
-			} catch (DeserializeException e) {
-				return null;
-			}
-		});
-		if (clientAtom == null) {
-			return;
-		}
+		failure.getCommand()
+			.map(this::toClientAtom)
+			.map(ClientAtom::getAID)
+			.map(this::getAtomStatusListeners)
+			.ifPresent(list -> list.forEach(listener -> listener.onError(failure.getException())));
+	}
 
-		final AID aid = clientAtom.getAID();
-		getAtomStatusListeners(aid).forEach(listener -> listener.onError(failure.getException()));
+	private Optional<ClientAtom> toClientAtom(final byte[] payload) {
+		try {
+			return of(serialization.fromDson(payload, ClientAtom.class));
+		} catch (DeserializeException e) {
+			return empty();
+		}
 	}
 
 	public void start() {
@@ -213,39 +207,36 @@ public class AtomsService {
 
 	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {
 		synchronized (this.singleAtomObserversLock) {
-			return getListeners(this.singleAtomObserversx, aid);
+			return getListeners(this.singleAtomObservers, aid);
 		}
 	}
 
 	private void addAtomStatusListener(AID aid, AtomStatusListener listener) {
 		synchronized (this.singleAtomObserversLock) {
-			addListener(this.singleAtomObserversx, aid, listener);
+			addListener(this.singleAtomObservers, aid, listener);
 		}
 	}
 
 	private void removeAtomStatusListener(AID aid, AtomStatusListener listener) {
 		synchronized (this.singleAtomObserversLock) {
-			removeListener(this.singleAtomObserversx, aid, listener);
+			removeListener(this.singleAtomObservers, aid, listener);
 		}
 	}
 
-	private <T> ImmutableList<T> getListeners(Map<AID, List<T>> listenersMap, AID aid) {
+	private static <T> ImmutableList<T> getListeners(Map<AID, List<T>> listenersMap, AID aid) {
 		List<T> listeners = listenersMap.get(aid);
 		return (listeners == null) ? ImmutableList.of() : ImmutableList.copyOf(listeners);
 	}
 
-	private <T> void addListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
+	private static <T> void addListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
 		List<T> listeners = listenersMap.computeIfAbsent(aid, id -> Lists.newArrayList());
 		listeners.add(listener);
 	}
 
-	private <T> void removeListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
-		List<T> listeners = listenersMap.get(aid);
-		if (listeners != null) {
-			listeners.remove(listener);
-			if (listeners.isEmpty()) {
-				listenersMap.remove(aid);
-			}
-		}
+	private static <T> void removeListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
+		ofNullable(listenersMap.get(aid)).stream()
+			.peek(listeners -> listeners.remove(listener))
+			.filter(List::isEmpty)
+			.findFirst().ifPresent(__ -> listenersMap.remove(aid));
 	}
 }

@@ -36,14 +36,14 @@ public class NetworkHandler {
 		return respond(request, networkService.getLivePeers());
 	}
 
+	public JSONObject handleGetPeers(JSONObject request) {
+		return respond(request, networkService.getPeers());
+	}
+
 	private JSONObject respond(final JSONObject request, final List<JSONObject> peers) {
 		var result = jsonArray();
 		peers.forEach(result::put);
 
 		return response(request, result);
-	}
-
-	public JSONObject handleGetPeers(JSONObject request) {
-		return respond(request, networkService.getPeers());
 	}
 }

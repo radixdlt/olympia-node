@@ -18,10 +18,8 @@
 package org.radix.api.http;
 
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
-import org.radix.api.services.AtomsService;
-import org.radix.api.services.LedgerService;
-import org.radix.api.services.NetworkService;
-import org.radix.api.services.SystemService;
+
+import com.google.common.annotations.VisibleForTesting;
 
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
@@ -33,20 +31,9 @@ public class RpcController {
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final RadixHttpWebsocketHandler websocketHandler;
 
-	public RpcController(
-		AtomsService atomsService,
-		NetworkService networkService,
-		SystemService systemService,
-		LedgerService ledgerService
-	) {
-		this.jsonRpcServer = new RadixJsonRpcServer(
-			atomsService,
-			networkService,
-			systemService,
-			ledgerService
-		);
-
-		this.websocketHandler = new RadixHttpWebsocketHandler(jsonRpcServer, atomsService);
+	public RpcController(RadixJsonRpcServer jsonRpcServer, RadixHttpWebsocketHandler websocketHandler) {
+		this.jsonRpcServer = jsonRpcServer;
+		this.websocketHandler = websocketHandler;
 	}
 
 	public void configureRoutes(RoutingHandler handler) {
@@ -56,8 +43,8 @@ public class RpcController {
 		handler.get("/rpc", Handlers.websocket(websocketHandler));
 	}
 
-
-	private void handleRpc(HttpServerExchange exchange) {
+	@VisibleForTesting
+	void handleRpc(HttpServerExchange exchange) {
 		respondAsync(exchange, () -> jsonRpcServer.handleJsonRpc(exchange));
 	}
 }

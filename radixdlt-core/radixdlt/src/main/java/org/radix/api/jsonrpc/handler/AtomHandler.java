@@ -50,7 +50,7 @@ public class AtomHandler {
 			request,
 			"aid",
 			(params, aid) -> AID.fromString(aid)
-				.flatMap(atomsService::getAtomsByAtomId)
+				.flatMap(atomsService::getAtomByAtomId)
 				.orElseGet(() -> errorResponse(
 					request.get("id"),
 					INVALID_PARAMS,

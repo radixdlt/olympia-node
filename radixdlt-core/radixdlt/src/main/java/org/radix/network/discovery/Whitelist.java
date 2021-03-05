@@ -29,18 +29,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Whitelist {
-	private static final Logger networkLog = LogManager.getLogger();
+	private static final Logger logger = LogManager.getLogger();
 
-	private Set<String> parameters = new HashSet<>();
+	private final Set<String> parameters = new HashSet<>();
 
 	public Whitelist(String parameters) {
 		if (parameters == null) {
 			return;
 		}
 
-		String[] split = parameters.split(",");
-
-		for (String parameter : split) {
+		for (var parameter : parameters.split(",")) {
 			if (parameter.trim().length() == 0) {
 				continue;
 			}
@@ -53,10 +51,10 @@ public class Whitelist {
 		String[] segments;
 		int[] output;
 
-		if (host.contains(".")) {			// IPV4 //
+		if (host.contains(".")) {            // IPV4 //
 			output = new int[4];
 			segments = host.split("\\.");
-		} else if (host.contains(":")) { 	// IPV6 //
+		} else if (host.contains(":")) {    // IPV6 //
 			output = new int[8];
 			segments = host.split(":");
 		} else {
@@ -69,35 +67,32 @@ public class Whitelist {
 				break;
 			}
 
-			output[s] = Integer.valueOf(segments[s]);
+			output[s] = Integer.parseInt(segments[s]);
 		}
 
 		return output;
 	}
 
-	private boolean isRange(String parameter) {
-		if (parameter.contains("-")) {
-			return true;
+	private boolean isInRange(String parameter, String address) {
+		if (!parameter.contains("-")) {
+			return false;
 		}
 
-		return false;
-	}
-
-	private boolean isInRange(String parameter, String address) {
-		String[] hosts = parameter.split("-");
+		var hosts = parameter.split("-");
 
 		if (hosts.length != 2) {
 			throw new IllegalStateException("Range is invalid");
 		}
 
-		int[] target = convert(address);
-		int[] low = convert(hosts[0]);
-		int[] high = convert(hosts[1]);
+		var target = convert(address);
+		var low = convert(hosts[0]);
+		var high = convert(hosts[1]);
 
 		if (low.length != high.length || target.length != low.length) {
 			return false;
 		}
 
+		//TODO: check if everything is OK with the logic inside, as `if (low[s] < high[s])`part does not look right
 		for (int s = 0; s < low.length; s++) {
 			if (low[s] < high[s]) {
 				int[] swap = low;
@@ -114,17 +109,13 @@ public class Whitelist {
 		return true;
 	}
 
-	private boolean isMask(String parameter) {
-		if (parameter.contains("*") || parameter.contains("::")) {
-			return true;
+	private boolean isMasked(String parameter, String address) {
+		if (!(parameter.contains("*") || parameter.contains("::"))) {
+			return false;
 		}
 
-		return false;
-	}
-
-	private boolean isMasked(String parameter, String address) {
-		int[] target = convert(address);
-		int[] mask = convert(parameter);
+		var target = convert(address);
+		var mask = convert(parameter);
 
 		if (target.length != mask.length) {
 			return false;
@@ -147,16 +138,15 @@ public class Whitelist {
 		}
 
 		try {
-			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
-			for (String parameter : parameters) {
-				if (parameter.equalsIgnoreCase(hostName)
-					|| isRange(parameter) && isInRange(parameter, hostAddress)
-					|| isMask(parameter) && isMasked(parameter, hostAddress)) {
+			var hostAddress = InetAddress.getByName(hostName).getHostAddress();
+
+			for (var parameter : parameters) {
+				if (parameter.equalsIgnoreCase(hostName) || isInRange(parameter, hostAddress) || isMasked(parameter, hostAddress)) {
 					return true;
 				}
 			}
 		} catch (UnknownHostException ex) {
-			networkLog.error("While checking whitelist", ex);
+			logger.error("While checking whitelist", ex);
 		}
 
 		return false;

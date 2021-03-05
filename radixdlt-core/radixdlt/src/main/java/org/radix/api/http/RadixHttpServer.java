@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.LedgerService;
 import org.radix.api.services.NetworkService;
@@ -118,12 +119,15 @@ public final class RadixHttpServer {
 		var networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
 		var ledgerService = new LedgerService(store, serialization);
 
+		var jsonRpcServer = new RadixJsonRpcServer(	atomsService, networkService, systemService, ledgerService);
+		var websocketHandler = new RadixHttpWebsocketHandler(jsonRpcServer, atomsService);
+
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 
 		boolean enableTestRoutes = universe.isDevelopment() || universe.isTest();
+		this.systemController = new SystemController(atomsService, systemService, inMemorySystemInfo, enableTestRoutes);
 
-		this.systemController = new SystemController(atomsService, systemService, enableTestRoutes ? inMemorySystemInfo : null);
-		this.rpcController = new RpcController(atomsService, networkService, systemService, ledgerService);
+		this.rpcController = new RpcController(jsonRpcServer, websocketHandler);
 		this.networkController = new NetworkController(networkService);
 		this.chaosController = new ChaosController(this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;

@@ -92,12 +92,6 @@ public class NetworkService {
 			.collect(Collectors.toList());
 	}
 
-	public JSONObject getLiveNIDS() {
-		var nids = jsonArray();
-		selfAndOthers(this.addressBook.recentPeers()).forEachOrdered(peer -> nids.put(peer.getNID().toString()));
-		return jsonObject().put("nids", nids);
-	}
-
 	public List<JSONObject> getPeers() {
 		return selfAndOthers(this.addressBook.peers())
 			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))

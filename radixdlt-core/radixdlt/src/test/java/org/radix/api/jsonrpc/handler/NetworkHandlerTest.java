@@ -1,4 +1,4 @@
-package org.radix.api.jsonrpc.handler;/*
+/*
  * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
@@ -14,9 +14,44 @@ package org.radix.api.jsonrpc.handler;/*
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package org.radix.api.jsonrpc.handler;
 
-import static org.junit.Assert.*;
+import org.json.JSONObject;
+import org.junit.Test;
+import org.radix.api.services.NetworkService;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class NetworkHandlerTest {
+	private final NetworkService networkService = mock(NetworkService.class);
+	private final NetworkHandler networkHandler = new NetworkHandler(networkService);
+	private final JSONObject request = jsonObject().put("id", 123);
 
+	@Test
+	public void testHandleGetLivePeers() {
+		when(networkService.getLivePeers()).thenReturn(List.of(jsonObject().put("single", "value")));
+
+		var result = networkHandler.handleGetLivePeers(request);
+
+		assertNotNull(result);
+
+		assertEquals("[{\"single\":\"value\"}]", result.get("result").toString());
+	}
+
+	@Test
+	public void testHandleGetPeers() {
+		when(networkService.getPeers()).thenReturn(List.of(jsonObject().put("another", "value")));
+
+		var result = networkHandler.handleGetPeers(request);
+
+		assertNotNull(result);
+
+		assertEquals("[{\"another\":\"value\"}]", result.get("result").toString());
+	}
 }

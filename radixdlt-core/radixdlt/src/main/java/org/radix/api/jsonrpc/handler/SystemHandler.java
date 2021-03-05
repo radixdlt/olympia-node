@@ -33,7 +33,7 @@ public class SystemHandler {
 		return response(request, systemService.getUniverse());
 	}
 
-	public JSONObject handleGetInfo(JSONObject request) {
+	public JSONObject handleGetLocalSystem(JSONObject request) {
 		return response(request, systemService.getLocalSystem());
 	}
 

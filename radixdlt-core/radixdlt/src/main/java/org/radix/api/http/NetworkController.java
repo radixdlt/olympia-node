@@ -19,6 +19,8 @@ package org.radix.api.http;
 
 import org.radix.api.services.NetworkService;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
@@ -39,19 +41,23 @@ public class NetworkController {
 		handler.get("/api/network/peers/{id}", this::respondWithSinglePeer);
 	}
 
-	private void respondWithSinglePeer(final HttpServerExchange exchange) {
-		respond(exchange, this.networkService.getPeer(getParameter(exchange, "id").orElse(null)));
-	}
-
-	private void respondWithPeers(final HttpServerExchange exchange) {
-		respond(exchange, this.networkService.getPeers().toString());
-	}
-
-	private void respondWithLivePeers(final HttpServerExchange exchange) {
-		respond(exchange, this.networkService.getLivePeers().toString());
-	}
-
-	private void respondWithNetwork(final HttpServerExchange exchange) {
+	@VisibleForTesting
+	void respondWithNetwork(final HttpServerExchange exchange) {
 		respond(exchange, this.networkService.getNetwork());
+	}
+
+	@VisibleForTesting
+	void respondWithLivePeers(final HttpServerExchange exchange) {
+		respond(exchange, this.networkService.getLivePeers());
+	}
+
+	@VisibleForTesting
+	void respondWithPeers(final HttpServerExchange exchange) {
+		respond(exchange, this.networkService.getPeers());
+	}
+
+	@VisibleForTesting
+	void respondWithSinglePeer(final HttpServerExchange exchange) {
+		respond(exchange, this.networkService.getPeer(getParameter(exchange, "id").orElse(null)));
 	}
 }
