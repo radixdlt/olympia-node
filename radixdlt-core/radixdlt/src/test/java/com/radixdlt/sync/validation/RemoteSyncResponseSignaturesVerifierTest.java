@@ -15,14 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.sync.validation;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
@@ -36,35 +35,25 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.InvalidSignaturesSender;
-import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.VerifiedSignaturesSender;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteSyncResponseSignaturesVerifierTest {
 	private RemoteSyncResponseSignaturesVerifier verifier;
-	private VerifiedSignaturesSender verifiedSignaturesSender;
-	private InvalidSignaturesSender invalidSignaturesSender;
 	private Hasher hasher;
 	private HashVerifier hashVerifier;
 
-	private RemoteSyncResponse response;
+	private SyncResponse response;
 	private HashCode headerHash;
 
 	@Before
 	public void setup() {
-		this.verifiedSignaturesSender = mock(VerifiedSignaturesSender.class);
-		this.invalidSignaturesSender = mock(InvalidSignaturesSender.class);
 		this.hasher = mock(Hasher.class);
 		this.hashVerifier = mock(HashVerifier.class);
-		this.verifier = new RemoteSyncResponseSignaturesVerifier(
-			verifiedSignaturesSender,
-			invalidSignaturesSender,
-			hasher,
-			hashVerifier
-		);
+		this.verifier = new RemoteSyncResponseSignaturesVerifier(hasher, hashVerifier);
 
-		this.response = mock(RemoteSyncResponse.class);
+		this.response = mock(SyncResponse.class);
 		DtoCommandsAndProof commandsAndProof = mock(DtoCommandsAndProof.class);
 		when(response.getCommandsAndProof()).thenReturn(commandsAndProof);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
@@ -86,19 +75,13 @@ public class RemoteSyncResponseSignaturesVerifierTest {
 	public void given_a_valid_response__when_process__then_should_send_valid() {
 		when(hashVerifier.verify(any(), eq(headerHash), any())).thenReturn(true);
 
-		this.verifier.processSyncResponse(response);
-
-		verify(verifiedSignaturesSender, times(1)).sendVerified(eq(response));
-		verify(invalidSignaturesSender, never()).sendInvalid(any());
+		assertTrue(this.verifier.verifyResponseSignatures(response));
 	}
 
 	@Test
 	public void given_an_invalid_response__when_process__then_should_send_invalid() {
 		when(hashVerifier.verify(any(), eq(headerHash), any())).thenReturn(false);
 
-		this.verifier.processSyncResponse(response);
-
-		verify(verifiedSignaturesSender, never()).sendVerified(any());
-		verify(invalidSignaturesSender, times(1)).sendInvalid(eq(response));
+        assertFalse(this.verifier.verifyResponseSignatures(response));
 	}
 }

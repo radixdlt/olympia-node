@@ -17,126 +17,163 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
-import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
-import com.radixdlt.epochs.SyncedEpochSender;
+import com.radixdlt.epochs.EpochsLocalSyncService;
+import com.radixdlt.epochs.LocalSyncServiceFactory;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.sync.RemoteSyncService;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.LocalSyncService;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
+
 import java.util.Comparator;
-import java.util.function.Function;
 
 /**
  * Epoch+Sync extension
  */
 public class EpochsSyncModule extends AbstractModule {
+
 	@Override
 	public void configure() {
-		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
-		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+		bind(EpochsLocalSyncService.class).in(Scopes.SINGLETON);
+
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
-		eventBinder.addBinding().toInstance(SyncInProgress.class);
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
+		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
+		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
 		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet
 	@ProcessWithSyncRunner
-	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
-		return epochsLocalSyncServiceProcessor.epochsLedgerUpdateEventProcessor();
+	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessorLocalSync(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.epochsLedgerUpdateEventProcessor();
 	}
 
 	@ProvidesIntoSet
 	@ProcessWithSyncRunner
-	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(
-		EpochsRemoteSyncResponseProcessor epochsRemoteSyncResponseProcessor
+	private EventProcessor<EpochsLedgerUpdate> ledgerUpdateEventProcessorRemoteSync(
+		RemoteSyncService remoteSyncService
 	) {
-		return epochsRemoteSyncResponseProcessor.epochsLedgerUpdateEventProcessor();
-	}
-
-
-	@Provides
-	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
-		return epochsLocalSyncServiceProcessor.localSyncRequestEventProcessor();
+		return update -> remoteSyncService.ledgerUpdateEventProcessor().process(update.getBase());
 	}
 
 	@Provides
-	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
-		return epochsLocalSyncServiceProcessor.syncTimeoutProcessor();
-	}
-
-	@Provides
-	private RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor(EpochsRemoteSyncResponseProcessor processor) {
-		return processor.syncResponseProcessor();
-	}
-
-	@Provides
-	SyncedEpochSender syncedEpochSender(EventDispatcher<VerifiedCommandsAndProof> commandsDispatcher) {
-		return header -> {
-			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-				ImmutableList.of(),
-				header
-			);
-
-			commandsDispatcher.dispatch(commandsAndProof);
-		};
-	}
-
-	@Provides
-	private Function<EpochChange, RemoteSyncResponseValidatorSetVerifier> accumulatorVerifierFactory(
-		VerifiedValidatorSetSender verifiedValidatorSetSender,
-		InvalidValidatorSetSender invalidValidatorSetSender
+	private EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochChange ->
-			new RemoteSyncResponseValidatorSetVerifier(
-				verifiedValidatorSetSender,
-				invalidValidatorSetSender,
-				epochChange.getBFTConfiguration().getValidatorSet()
-			);
+		return epochsLocalSyncService.syncCheckTriggerEventProcessor();
 	}
 
 	@Provides
-	private Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
-		Comparator<AccumulatorState> accumulatorComparator,
-		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
-		ScheduledEventDispatcher<SyncInProgress> syncTimeoutScheduler,
-		@SyncPatienceMillis int syncPatienceMillis,
-		SystemCounters systemCounters
+	private EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochChange ->
-			new LocalSyncServiceAccumulatorProcessor(
-				requestDispatcher,
-				syncTimeoutScheduler,
-				accumulatorComparator,
-				epochChange.getGenesisHeader(),
-				syncPatienceMillis,
-				systemCounters
+		return epochsLocalSyncService.syncCheckReceiveStatusTimeoutEventProcessor();
+	}
+
+	@Provides
+	private EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.syncRequestTimeoutEventProcessor();
+	}
+
+	@Provides
+	private EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor();
+	}
+
+	@Provides
+	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.localSyncRequestEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<StatusResponse> statusResponseEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.statusResponseEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<SyncResponse> syncResponseEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.syncResponseEventProcessor();
+	}
+
+	@Provides
+	private LocalSyncServiceFactory localSyncServiceFactory(
+		RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+		ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutDispatcher,
+		RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+		ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
+		ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
+		SyncConfig syncConfig,
+		SystemCounters systemCounters,
+		AddressBook addressBook,
+		Comparator<AccumulatorState> accComparator,
+		Hasher hasher,
+		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
+		LedgerAccumulatorVerifier accumulatorVerifier,
+		VerifiedSyncResponseSender verifiedSender,
+		InvalidSyncResponseSender invalidSyncedCommandsSender
+	) {
+		return (remoteSyncResponseValidatorSetVerifier, syncState) ->
+			new LocalSyncService(
+				statusRequestDispatcher,
+				syncCheckReceiveStatusTimeoutDispatcher,
+				syncRequestDispatcher,
+				syncRequestTimeoutDispatcher,
+				syncLedgerUpdateTimeoutDispatcher,
+				syncConfig,
+				systemCounters,
+				addressBook,
+				accComparator,
+				hasher,
+				remoteSyncResponseValidatorSetVerifier,
+				signaturesVerifier,
+				accumulatorVerifier,
+				verifiedSender,
+				invalidSyncedCommandsSender,
+				syncState
 			);
 	}
 }

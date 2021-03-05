@@ -55,7 +55,7 @@ public class BerkeleySearchCursor implements SearchCursor {
 
 	@Override
 	public AID get() {
-		return AID.from(this.primary, Long.BYTES + 1);
+		return AID.from(this.primary, Long.BYTES);
 	}
 
 	@Override

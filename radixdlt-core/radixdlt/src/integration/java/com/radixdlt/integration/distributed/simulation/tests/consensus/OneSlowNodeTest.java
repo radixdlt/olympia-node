@@ -22,7 +22,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -57,7 +56,9 @@ public class OneSlowNodeTest {
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

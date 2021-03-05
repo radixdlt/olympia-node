@@ -165,7 +165,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		if (committedAtom.getStateVersion() > 0) {
 			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, indicies));
 		}
-    }
+	}
 
 	public boolean containsAID(AID aid) {
 		return store.contains(aid);

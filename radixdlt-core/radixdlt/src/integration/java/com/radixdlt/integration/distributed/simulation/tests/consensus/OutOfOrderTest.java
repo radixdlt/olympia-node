@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.Collection;
 import java.util.List;
 import java.util.LongSummaryStatistics;
@@ -79,12 +78,14 @@ public final class OutOfOrderTest {
 		SimulationTest test = bftTestBuilder
 			.build();
 
-		TestResults results = test.run();
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 		logger.info(statistics);
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

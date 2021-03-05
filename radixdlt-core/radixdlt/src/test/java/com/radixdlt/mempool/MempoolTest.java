@@ -46,7 +46,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -83,8 +82,6 @@ public class MempoolTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
-					AddressBook addressBook = mock(AddressBook.class);
-					bind(AddressBook.class).toInstance(addressBook);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));

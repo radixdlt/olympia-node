@@ -15,15 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.sync.messages.local;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static com.radixdlt.utils.TypedMocks.rmock;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,5 +51,12 @@ public class LocalSyncRequestTest {
 	@Test
 	public void sensibleToString() {
 		assertThat(request.toString()).contains(LocalSyncRequest.class.getSimpleName());
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LocalSyncRequest.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }
