@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.sync.validation;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
@@ -27,6 +27,8 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -34,35 +36,18 @@ import java.util.Objects;
 /**
  * Verifies the signatures in a sync response
  */
-public final class RemoteSyncResponseSignaturesVerifier implements RemoteSyncResponseProcessor {
-	public interface VerifiedSignaturesSender {
-		void sendVerified(RemoteSyncResponse remoteSyncResponse);
-	}
+public final class RemoteSyncResponseSignaturesVerifier {
 
-	public interface InvalidSignaturesSender {
-		void sendInvalid(RemoteSyncResponse remoteSyncResponse);
-	}
-
-	private final VerifiedSignaturesSender verifiedSignaturesSender;
-	private final InvalidSignaturesSender invalidSignaturesSender;
 	private final Hasher hasher;
 	private final HashVerifier hashVerifier;
 
 	@Inject
-	public RemoteSyncResponseSignaturesVerifier(
-		VerifiedSignaturesSender verifiedSignaturesSender,
-		InvalidSignaturesSender invalidSignaturesSender,
-		Hasher hasher,
-		HashVerifier hashVerifier
-	) {
-		this.verifiedSignaturesSender = Objects.requireNonNull(verifiedSignaturesSender);
-		this.invalidSignaturesSender = Objects.requireNonNull(invalidSignaturesSender);
+	public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
 		this.hasher = Objects.requireNonNull(hasher);
 		this.hashVerifier = Objects.requireNonNull(hashVerifier);
 	}
 
-	@Override
-	public void processSyncResponse(RemoteSyncResponse syncResponse) {
+	public boolean verifyResponseSignatures(SyncResponse syncResponse) {
 		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
 		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
 
@@ -76,12 +61,11 @@ public final class RemoteSyncResponseSignaturesVerifier implements RemoteSyncRes
 			final HashCode voteDataHash = this.hasher.hash(timestampedVoteData);
 
 			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-				invalidSignaturesSender.sendInvalid(syncResponse);
-				return;
+				return false;
 			}
 		}
 
-		verifiedSignaturesSender.sendVerified(syncResponse);
+		return true;
 	}
 
 }

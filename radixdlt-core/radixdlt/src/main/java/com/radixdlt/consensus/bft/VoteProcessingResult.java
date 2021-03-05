@@ -27,128 +27,128 @@ import java.util.Objects;
  */
 public interface VoteProcessingResult {
 
-    static VoteAccepted accepted() {
-        return VoteAccepted.INSTANCE;
-    }
+	static VoteAccepted accepted() {
+		return VoteAccepted.INSTANCE;
+	}
 
-    static VoteRejected rejected(VoteRejected.VoteRejectedReason reason) {
-        return new VoteRejected(reason);
-    }
+	static VoteRejected rejected(VoteRejected.VoteRejectedReason reason) {
+		return new VoteRejected(reason);
+	}
 
-    static QuorumReached quorum(ViewVotingResult result) {
-        return new QuorumReached(result);
-    }
+	static QuorumReached quorum(ViewVotingResult result) {
+		return new QuorumReached(result);
+	}
 
-    static QuorumReached qcQuorum(QuorumCertificate qc) {
-        return quorum(ViewVotingResult.qc(qc));
-    }
+	static QuorumReached qcQuorum(QuorumCertificate qc) {
+		return quorum(ViewVotingResult.qc(qc));
+	}
 
-    static QuorumReached tcQuorum(TimeoutCertificate tc) {
-        return quorum(ViewVotingResult.tc(tc));
-    }
+	static QuorumReached tcQuorum(TimeoutCertificate tc) {
+		return quorum(ViewVotingResult.tc(tc));
+	}
 
-    /**
-     * Signifies that a vote has been accepted, but the quorum hasn't been reached.
-     */
-    final class VoteAccepted implements VoteProcessingResult {
+	/**
+	 * Signifies that a vote has been accepted, but the quorum hasn't been reached.
+	 */
+	final class VoteAccepted implements VoteProcessingResult {
 
-        public static final VoteAccepted INSTANCE = new VoteAccepted();
+		public static final VoteAccepted INSTANCE = new VoteAccepted();
 
-        private VoteAccepted() {
-        }
+		private VoteAccepted() {
+		}
 
-        @Override
-        public String toString() {
-            return "VoteAccepted";
-        }
+		@Override
+		public String toString() {
+			return "VoteAccepted";
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            return o != null && getClass() == o.getClass();
-        }
+		@Override
+		public boolean equals(Object o) {
+			return o != null && getClass() == o.getClass();
+		}
 
-        @Override
-        public int hashCode() {
-            return 1;
-        }
-    }
+		@Override
+		public int hashCode() {
+			return 1;
+		}
+	}
 
-    /**
-     * Signifies that a vote has been rejected.
-     */
-    final class VoteRejected implements VoteProcessingResult {
-        public enum VoteRejectedReason {
-            INVALID_AUTHOR, DUPLICATE_VOTE
-        }
+	/**
+	 * Signifies that a vote has been rejected.
+	 */
+	final class VoteRejected implements VoteProcessingResult {
+		public enum VoteRejectedReason {
+			INVALID_AUTHOR, DUPLICATE_VOTE
+		}
 
-        private final VoteRejectedReason reason;
+		private final VoteRejectedReason reason;
 
-        public VoteRejected(VoteRejectedReason reason) {
-            this.reason = Objects.requireNonNull(reason);
-        }
+		public VoteRejected(VoteRejectedReason reason) {
+			this.reason = Objects.requireNonNull(reason);
+		}
 
-        public VoteRejectedReason getReason() {
-            return this.reason;
-        }
+		public VoteRejectedReason getReason() {
+			return this.reason;
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            VoteRejected that = (VoteRejected) o;
-            return reason == that.reason;
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			VoteRejected that = (VoteRejected) o;
+			return reason == that.reason;
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(reason);
-        }
+		@Override
+		public int hashCode() {
+			return Objects.hash(reason);
+		}
 
-        @Override
-        public String toString() {
-            return String.format("VoteRejected{reason=%s}", reason);
-        }
-    }
+		@Override
+		public String toString() {
+			return String.format("VoteRejected{reason=%s}", reason);
+		}
+	}
 
-    /**
-     * Signifies that a vote has been accepted and quorum has been reached.
-     */
-    final class QuorumReached implements VoteProcessingResult {
+	/**
+	 * Signifies that a vote has been accepted and quorum has been reached.
+	 */
+	final class QuorumReached implements VoteProcessingResult {
 
-        private final ViewVotingResult viewVotingResult;
+		private final ViewVotingResult viewVotingResult;
 
-        public QuorumReached(ViewVotingResult viewVotingResult) {
-            this.viewVotingResult = Objects.requireNonNull(viewVotingResult);
-        }
+		public QuorumReached(ViewVotingResult viewVotingResult) {
+			this.viewVotingResult = Objects.requireNonNull(viewVotingResult);
+		}
 
-        public ViewVotingResult getViewVotingResult() {
-            return this.viewVotingResult;
-        }
+		public ViewVotingResult getViewVotingResult() {
+			return this.viewVotingResult;
+		}
 
-        @Override
-        public String toString() {
-            return String.format("QuorumReached{votingResult=%s}", viewVotingResult);
-        }
+		@Override
+		public String toString() {
+			return String.format("QuorumReached{votingResult=%s}", viewVotingResult);
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            QuorumReached that = (QuorumReached) o;
-            return Objects.equals(viewVotingResult, that.viewVotingResult);
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			QuorumReached that = (QuorumReached) o;
+			return Objects.equals(viewVotingResult, that.viewVotingResult);
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(viewVotingResult);
-        }
-    }
+		@Override
+		public int hashCode() {
+			return Objects.hash(viewVotingResult);
+		}
+	}
 }

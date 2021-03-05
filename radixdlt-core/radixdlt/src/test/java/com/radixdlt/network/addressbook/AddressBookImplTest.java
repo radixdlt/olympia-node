@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -330,7 +332,30 @@ public class AddressBookImplTest {
 
 		// ...and trying to find by old source should not be possible.
 		assertThat(this.addressbook.peer(sourceTransport1)).isEmpty();
+	}
 
+	@Test
+	public void testHasBftNodePeer() {
+		final var key1 = mock(ECPublicKey.class);
+		final var key2 = mock(ECPublicKey.class);
+
+		TransportInfo transportInfo1 = TransportInfo.of("DUMMY1", StaticTransportMetadata.empty());
+		RadixSystem system1 = mock(RadixSystem.class);
+		when(system1.getKey()).thenReturn(key1);
+		when(system1.getNID()).thenReturn(EUID.ONE);
+		when(system1.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo1));
+
+		PeerWithSystem peer1 = this.addressbook.addOrUpdatePeer(Optional.empty(), system1, transportInfo1);
+
+		peer1.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp()); // Now
+
+		final var bftNode1 = mock(BFTNode.class);
+		when(bftNode1.getKey()).thenReturn(key1);
+		assertTrue(this.addressbook.hasBftNodePeer(bftNode1));
+
+		final var bftNode2 = mock(BFTNode.class);
+		when(bftNode2.getKey()).thenReturn(key2);
+		assertFalse(this.addressbook.hasBftNodePeer(bftNode2));
 	}
 
 	// Type coercion
