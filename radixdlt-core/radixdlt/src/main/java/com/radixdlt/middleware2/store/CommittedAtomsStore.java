@@ -189,10 +189,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
-		return store.getLastCommitted()
-			.flatMap(store::get)
-			.map(CommittedAtom::getHeaderAndProof)
-			.map(Optional::orElseThrow); // Last committed should always have a header/proof
+		return store.getLastHeaderProof();
 	}
 
 	@Override
@@ -222,7 +219,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		int epochChangeIndex = -1;
 		for (int i = 0; i < atoms.size(); i++) {
 			var cmd = atoms.get(i);
-			var cmdVersion = stateVersion + i + 1;
 			if (cmd.getHeaderAndProof().map(VerifiedLedgerHeaderAndProof::isEndOfEpoch).orElse(false)) {
 				epochChangeIndex = i;
 				break;

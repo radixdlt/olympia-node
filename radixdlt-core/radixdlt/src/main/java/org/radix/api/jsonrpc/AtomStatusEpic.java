@@ -107,8 +107,6 @@ public class AtomStatusEpic {
 
 		@Override
 		public void onStored(CommittedAtom committedAtom) {
-			var headerAndProof = committedAtom.getHeaderAndProof();
-
 			sendAtomSubmissionState.accept(STORED, jsonObject()
 				.put("aid", committedAtom.getAID())
 				.put("stateVersion", committedAtom.getStateVersion())

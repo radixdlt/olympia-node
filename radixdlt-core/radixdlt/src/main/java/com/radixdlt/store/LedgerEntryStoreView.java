@@ -18,6 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.statecomputer.CommittedAtom;
 
@@ -45,7 +46,7 @@ public interface LedgerEntryStoreView {
 	 * Gets the last committed atom aid
 	 * @return The last committed atom aid
 	 */
-	Optional<AID> getLastCommitted();
+	Optional<VerifiedLedgerHeaderAndProof> getLastHeaderProof();
 
 	/**
 	 * Searches for a certain index.

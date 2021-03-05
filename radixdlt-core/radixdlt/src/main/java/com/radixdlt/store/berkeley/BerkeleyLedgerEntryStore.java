@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.CommittedAtom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -599,7 +600,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<AID> getLastCommitted() {
+	public Optional<VerifiedLedgerHeaderAndProof> getLastHeaderProof() {
 		return withTime(() -> {
 			try (var cursor = atomDatabase.openCursor(null, null)) {
 				var pKey = entry();
@@ -611,7 +612,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					.map(v -> {
 						addBytesRead(value, pKey);
 						return v;
-					});
+					})
+					.map(v -> get(v).orElseThrow())
+					.map(a -> a.getHeaderAndProof().orElseThrow());
 			}
 		}, ELAPSED_BDB_LEDGER_LAST_COMMITTED, COUNT_BDB_LEDGER_LAST_COMMITTED);
 	}
