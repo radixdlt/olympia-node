@@ -25,6 +25,10 @@ import com.google.inject.name.Names;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
@@ -205,6 +209,8 @@ public class GetNextCommittedCommandsTest {
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atom = new Atom("Atom for " + stateVersion); // Make hash different
+		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
+		atom.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
 		final var clientAtom = ClientAtom.convertFromApiAtom(atom, this.hasher);
 
 		final var proposedVertexId = HashUtils.random256();
@@ -238,6 +244,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return new CommittedAtom(clientAtom, stateVersion, proof);
+		return CommittedAtom.create(clientAtom, proof);
 	}
 }

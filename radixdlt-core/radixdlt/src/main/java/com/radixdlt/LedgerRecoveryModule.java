@@ -82,9 +82,8 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		var committedAtom = new CommittedAtom(
+		var committedAtom = CommittedAtom.create(
 			genesisAtom,
-			genesisLedgerHeader.getStateVersion(),
 			genesisLedgerHeader
 		);
 		radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);

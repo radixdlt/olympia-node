@@ -19,12 +19,12 @@ package com.radixdlt.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.store.LedgerEntry;
 
 import java.util.List;
 import java.util.Set;
@@ -68,7 +68,7 @@ public final class LedgerEntryIndices {
 		return this.duplicateIndices;
 	}
 
-	static LedgerEntryIndices makeIndices(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+	static LedgerEntryIndices makeIndices(CommittedAtom committedAtom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		List<StoreIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
 			.filter(index -> index.getPrefix() == ENTRY_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());
@@ -86,7 +86,7 @@ public final class LedgerEntryIndices {
 		allDuplicateIndices.addAll(duplicateIndices);
 
 		// add internal indices
-		allUniqueIndices.add(new StoreIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes()));
+		allUniqueIndices.add(new StoreIndex(ENTRY_INDEX_PREFIX, committedAtom.getAID().getBytes()));
 
 		return new LedgerEntryIndices(allUniqueIndices.build(), allDuplicateIndices.build());
 	}

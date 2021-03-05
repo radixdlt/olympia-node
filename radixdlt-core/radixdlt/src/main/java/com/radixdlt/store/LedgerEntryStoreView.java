@@ -18,7 +18,9 @@
 package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.statecomputer.CommittedAtom;
 
 import java.util.Optional;
 
@@ -38,13 +40,16 @@ public interface LedgerEntryStoreView {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<LedgerEntry> get(AID aid);
+	Optional<CommittedAtom> get(AID aid);
 
 	/**
 	 * Gets the last committed atom aid
+	 * TODO: Remove optional
 	 * @return The last committed atom aid
 	 */
-	Optional<AID> getLastCommitted();
+	Optional<VerifiedLedgerHeaderAndProof> getLastHeader();
+
+	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
 	/**
 	 * Searches for a certain index.
@@ -67,11 +72,11 @@ public interface LedgerEntryStoreView {
 	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Retrieve a chunk of {@link LedgerEntry} with state version greater than the given one
+	 * Retrieve a chunk of {@link CommittedAtom} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter
 	 * @param limit the maximum count of ledger entries to return
 	 * @return ledger entries satisfying the constraints
 	 */
-	ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException;
+	ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException;
 }

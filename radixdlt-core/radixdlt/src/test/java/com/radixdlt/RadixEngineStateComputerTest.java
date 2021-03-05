@@ -180,9 +180,8 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		CommittedAtom committedAtom = new CommittedAtom(
+		CommittedAtom committedAtom = CommittedAtom.create(
 			genesisAtom,
-			genesisLedgerHeader.getStateVersion(),
 			genesisLedgerHeader
 		);
 		radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);

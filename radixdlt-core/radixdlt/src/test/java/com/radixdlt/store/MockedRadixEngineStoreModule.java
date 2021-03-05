@@ -64,9 +64,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			hasher.hash(command),
 			validatorSet
 		);
-		CommittedAtom committedAtom = new CommittedAtom(
+		CommittedAtom committedAtom = CommittedAtom.create(
 			genesisAtom,
-			genesisLedgerHeader.getStateVersion(),
 			genesisLedgerHeader
 		);
 		if (!inMemoryEngineStore.containsAtom(committedAtom)) {

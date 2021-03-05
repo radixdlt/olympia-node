@@ -35,9 +35,9 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
@@ -46,13 +46,11 @@ import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.Longs;
 import com.radixdlt.store.Transaction;
 
 import java.util.Objects;
@@ -64,8 +62,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
-	private final CommandToBinaryConverter commandToBinaryConverter;
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
 	private final Hasher hasher;
 	private Transaction transaction;
@@ -78,8 +74,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
 		Serialization serialization,
 		Hasher hasher,
@@ -87,8 +81,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	) {
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
-		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
-		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.hasher = hasher;
@@ -128,26 +120,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		// TODO: Remove serialization/deserialization
-		byte[] payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
-		Command command = new Command(payload);
-
-		final VerifiedLedgerHeaderAndProof proof = committedAtom.getStateAndProof();
-		StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(command, proof);
-		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(storedCommittedCommand);
-		LedgerEntry ledgerEntry = new LedgerEntry(
-			binaryAtom,
-			committedAtom.getStateVersion(),
-			committedAtom.getStateAndProof().getStateVersion(),
-			committedAtom.getAID()
-		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
 
-		// TODO: Replace Store + Commit with a single commit
-		// TODO: How it's done depends on how mempool and prepare phases are implemented
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
-			ledgerEntry,
+			committedAtom,
 			engineAtomIndices.getUniqueIndices(),
 			engineAtomIndices.getDuplicateIndices()
 		);
@@ -192,11 +169,10 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		V v = initial;
 		while (cursor != null) {
 			AID aid = cursor.get();
-			Optional<LedgerEntry> ledgerEntry = store.get(aid);
+			Optional<CommittedAtom> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
-				LedgerEntry entry = ledgerEntry.get();
-				StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
-				ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+				CommittedAtom committedAtom = ledgerEntry.get();
+				final ClientAtom clientAtom = committedAtom.getClientAtom();
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
 						&& cmMicroInstruction.isCheckSpin()) {
@@ -214,53 +190,22 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
-		return store.getLastCommitted()
-			.flatMap(store::get)
-			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getProof());
+		return store.getLastHeader();
 	}
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
-		SearchCursor cursor = store.search(
-			StoreIndex.LedgerIndexType.UNIQUE,
-			new StoreIndex(IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-			LedgerSearchMode.EXACT
-		);
-		if (cursor != null) {
-			return store.get(cursor.get())
-				.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getProof());
-		} else {
-			return Optional.empty();
-		}
+		return store.getEpochHeader(epoch);
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		ImmutableList<StoredCommittedCommand> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, batchSize).stream()
-			.map(e -> commandToBinaryConverter.toCommand(e.getContent()))
-			.collect(ImmutableList.toImmutableList());
-
-		if (storedCommittedCommands.isEmpty()) {
+		ImmutableList<CommittedAtom> atoms = store.getNextCommittedAtoms(stateVersion, batchSize);
+		if (atoms.isEmpty()) {
 			return null;
 		}
-
-		// Limit the batch to within a single epoch
-        // TODO: Cleanup and move logic into lower layer
-		int epochChangeIndex = -1;
-		for (int i = 0; i < storedCommittedCommands.size(); i++) {
-			var cmd = storedCommittedCommands.get(i);
-			var cmdVersion = stateVersion + i + 1;
-			if (cmd.getProof().getRaw().isEndOfEpoch()
-				&& cmd.getProof().getStateVersion() == cmdVersion) {
-				epochChangeIndex = i;
-				break;
-			}
-		}
-
-		final int tailPosition = epochChangeIndex < 0 ? storedCommittedCommands.size() - 1 : epochChangeIndex;
-		final var nextHeader = storedCommittedCommands.get(tailPosition).getProof();
-		final var commands = storedCommittedCommands.stream()
-			.limit(tailPosition + 1L)
-			.map(StoredCommittedCommand::getCommand)
+		final var nextHeader = atoms.get(atoms.size() - 1).getHeaderAndProof().orElseThrow();
+		final var commands = atoms.stream()
+			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
 			.collect(ImmutableList.toImmutableList());
 		return new VerifiedCommandsAndProof(commands, nextHeader);
 	}
