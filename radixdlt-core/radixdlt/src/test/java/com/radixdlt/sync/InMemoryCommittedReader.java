@@ -36,7 +36,7 @@ import java.util.TreeMap;
  * A correct in memory committed reader used for testing
  */
 class InMemoryCommittedReader implements CommittedReader {
-
+	private final Object lock = new Object();
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
@@ -53,40 +53,53 @@ class InMemoryCommittedReader implements CommittedReader {
 
 	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
-			long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
-					: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-			for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
-				commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
-			}
+			synchronized (lock) {
+				var commands = update.getNewCommands();
+				long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
+				for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
+					int index = (int) (version - firstVersion);
+					commandsAndProof.put(
+						version,
+						new VerifiedCommandsAndProof(
+							commands.subList(index, commands.size()),
+							update.getTail()
+						)
+					);
+				}
 
-			if (update.getTail().isEndOfEpoch()) {
-				this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				if (update.getTail().isEndOfEpoch()) {
+					this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				}
 			}
 		};
 	}
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+		synchronized (lock) {
+			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 
-		if (entry != null) {
-			ImmutableList<Command> cmds = accumulatorVerifier
-				.verifyAndGetExtension(
-					start.getLedgerHeader().getAccumulatorState(),
-					entry.getValue().getCommands(),
-					hasher::hash,
-					entry.getValue().getHeader().getAccumulatorState()
-				).orElseThrow(() -> new RuntimeException());
+			if (entry != null) {
+				ImmutableList<Command> cmds = accumulatorVerifier
+					.verifyAndGetExtension(
+						start.getLedgerHeader().getAccumulatorState(),
+						entry.getValue().getCommands(),
+						hasher::hash,
+						entry.getValue().getHeader().getAccumulatorState()
+					).orElseThrow(() -> new RuntimeException());
 
-			return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
+				return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
+			}
+
+			return null;
 		}
-
-		return null;
 	}
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
-		return Optional.ofNullable(epochProofs.get(epoch));
+		synchronized (lock) {
+			return Optional.ofNullable(epochProofs.get(epoch));
+		}
 	}
 }
