@@ -22,7 +22,12 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.checkpoint.MockedCheckpointModule;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
@@ -202,6 +207,8 @@ public class GetNextCommittedCommandsTest {
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atom = new Atom("Atom for " + stateVersion); // Make hash different
+		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
+		atom.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
 		final var clientAtom = ClientAtom.convertFromApiAtom(atom, this.hasher);
 
 		final var proposedVertexId = HashUtils.random256();
