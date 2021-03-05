@@ -6,8 +6,7 @@ install: true
 addons:
   sonarcloud:
     organization: "radixdlt-github"
-    token:
-      secure: "n4ES9C3RIQKcFIcszi3cWV4nx7/8hBbH/1diTymtzhrDH+j7Mol3m13h8RUgNUJ7vIrbtNpoAAmgpFU7omQ+Gy+NOpD2vrzxuvTHsZIpWSduM9QAmjkO8NDUlNHbC+CNGVAMJvNldgja24v1neM1/z4he0g8vw3xUZSVqkPmXvbBYpn9wwpiW5KIHK7nyPgsILM+jCUxEughsGb2WAZBg4SGkpk2FcKaDOoeTRXqFL3r1iw6z4URSB7HA6jWlapUYPotxuvGsfvuvg41edWHFo0MaD6T5jae8orVaLGjQoNCR13Jfdv/37GCo/FnhbKsR+S6zGHCfaiLJywheypXT9OjJJ62AMMx6Sz6F9uXWypEcqm8Qq+eMlbVdiDzQf1eTjm8UMCeEnJlQQ7gBSFpiQdwX7hK92cD8peUi6kIEh/tuYiw1LK5AvwqMcWW/aO+7HwTttcheER4K1KbmYInIaNSt4Pluvh6/LEvYWjxFN4BeOG7zHJmi+CRorkW90Ya35WJvaschn/7DlrkvXk6kssFsFCTCannIO/2CW4srxoyI2vQQjG8V7OqpJ+/qHlyAh3VfkvC43Q/61pgkWbaOAW5ci5sm36WM5YqsuArFBSCxQvm9nQwooI7Ms/tEMQ/faUTqTLADpe++pgsx7btFzvFjADfi0UbN6aPfjtr/UQ="
+    token: ${SONAR_TOKEN}
 
 jdk:
   - openjdk11
