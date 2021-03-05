@@ -18,12 +18,15 @@
 package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.middleware2.LedgerAtom;
 
 import java.util.function.Supplier;
 
@@ -39,15 +42,18 @@ import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
 public class ChaosController {
+	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Supplier<RadixAddress> mempoolFillerAddress;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
 	public ChaosController(
+		final RadixEngine<LedgerAtom> radixEngine,
 		final Supplier<RadixAddress> mempoolFillerAddress,
 		final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		final EventDispatcher<MessageFlooderUpdate> messageDispatcher
 	) {
+		this.radixEngine = radixEngine;
 		this.mempoolFillerAddress = mempoolFillerAddress;
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;
@@ -97,7 +103,12 @@ public class ChaosController {
 			exchange.setStatusCode(StatusCodes.NOT_FOUND);
 			exchange.getResponseSender().send("Mempool filler address is not configured");
 		} else {
-			respond(exchange, jsonObject().put("address", mempoolFillerAddress));
+			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+
+			respond(exchange, jsonObject()
+				.put("address", mempoolFillerAddress)
+				.put("balance", wallet.getBalance())
+				.put("numParticles", wallet.getNumParticles()));
 		}
 	}
 

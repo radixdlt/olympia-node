@@ -41,6 +41,7 @@ import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntry;
@@ -67,6 +68,7 @@ import static com.radixdlt.serialization.DsonOutput.Output;
 public class AtomsServiceTest {
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final Hasher hasher = new RandomHasher();
+	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved = mock(Observable.class);
 	private final Observable<MempoolAddFailure> mempoolAddFailures = mock(Observable.class);
 	private final Observable<AtomCommittedToLedger> ledgerCommitted = mock(Observable.class);
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher = mock(EventDispatcher.class);
@@ -75,6 +77,7 @@ public class AtomsServiceTest {
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter = new ClientAtomToBinaryConverter(serialization);
 	private final CommandToBinaryConverter commandToBinaryConverter = new CommandToBinaryConverter(serialization);
 	private final AtomsService atomsService = new AtomsService(
+		mempoolAtomsRemoved,
 		mempoolAddFailures,
 		ledgerCommitted,
 		store,

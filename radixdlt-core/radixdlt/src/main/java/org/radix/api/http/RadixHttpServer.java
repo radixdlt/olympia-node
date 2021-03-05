@@ -78,7 +78,6 @@ public final class RadixHttpServer {
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	private Undertow server;
-	private final RadixEngine<LedgerAtom> radixEngine;
 
 	@Inject
 	@Self
@@ -119,16 +118,16 @@ public final class RadixHttpServer {
 		var networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
 		var ledgerService = new LedgerService(store, serialization);
 
-		var jsonRpcServer = new RadixJsonRpcServer(	atomsService, networkService, systemService, ledgerService);
+		var jsonRpcServer = new RadixJsonRpcServer(atomsService, networkService, systemService, ledgerService);
 		var websocketHandler = new RadixHttpWebsocketHandler(jsonRpcServer, atomsService);
 
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 
 		boolean enableTestRoutes = universe.isDevelopment() || universe.isTest();
 		this.systemController = new SystemController(atomsService, systemService, inMemorySystemInfo, enableTestRoutes);
-
 		this.rpcController = new RpcController(jsonRpcServer, websocketHandler);
 		this.networkController = new NetworkController(networkService);
+		this.chaosController = new ChaosController(radixEngine, this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
 		this.chaosController = new ChaosController(this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 	}

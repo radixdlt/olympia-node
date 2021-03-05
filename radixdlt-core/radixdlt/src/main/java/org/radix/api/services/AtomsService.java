@@ -18,7 +18,6 @@
 package org.radix.api.services;
 
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
@@ -63,7 +62,9 @@ import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import com.radixdlt.identifiers.AID;
 
-import static java.util.Optional.*;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 
 public class AtomsService {
 	private static final int NUMBER_OF_THREADS = 8;
@@ -170,7 +171,6 @@ public class AtomsService {
 
 		return atom.getAID();
 	}
-
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
 		addAtomStatusListener(aid, subscriber);
 		return () -> removeAtomStatusListener(aid, subscriber);
@@ -205,6 +205,40 @@ public class AtomsService {
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}
 
+	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
+		var committedAtom = atomCommittedToLedger.getAtom();
+
+		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
+		getAtomStatusListeners(committedAtom.getAID()).forEach(listener -> listener.onStored(committedAtom));
+	}
+
+	private void processSubmissionFailure(MempoolAddFailure failure) {
+		failure.getCommand()
+			.map(this::toClientAtom)
+			.map(ClientAtom::getAID)
+			.map(this::getAtomStatusListeners)
+			.ifPresent(list -> list.forEach(listener -> listener.onError(failure.getException())));
+	}
+
+	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
+		atomsRemovedFromMempool.forEach((atom, e) -> {
+			final AID aid = atom.getAID();
+			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
+		});
+	}
+
+	private Optional<ClientAtom> toClientAtom(final byte[] payload) {
+		try {
+			return of(serialization.fromDson(payload, ClientAtom.class));
+		} catch (DeserializeException e) {
+			return empty();
+		}
+	}
+
+	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
+		return new AtomEventObserver(
+			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
+		);
 	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {
 		synchronized (this.singleAtomObserversLock) {
 			return getListeners(this.singleAtomObservers, aid);

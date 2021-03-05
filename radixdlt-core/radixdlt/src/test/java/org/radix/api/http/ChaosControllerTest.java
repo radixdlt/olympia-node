@@ -20,15 +20,19 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.utils.Base58;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -51,10 +55,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ChaosControllerTest {
+	private final RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
 	private final Supplier<RadixAddress> mempoolFillerAddress = mock(Supplier.class);
 	private final EventDispatcher<MempoolFillerUpdate> mempool = mock(EventDispatcher.class);
 	private final EventDispatcher<MessageFlooderUpdate> message = mock(EventDispatcher.class);
-	private final ChaosController chaosController = new ChaosController(mempoolFillerAddress, mempool, message);
+	private final ChaosController chaosController = new ChaosController(radixEngine, mempoolFillerAddress, mempool, message);
 
 	@Test
 	public void routesAreConfigured() {
@@ -139,10 +144,18 @@ public class ChaosControllerTest {
 		var radixAddress = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 		when(mempoolFillerAddress.get()).thenReturn(radixAddress);
 
+		var wallet = mock(InMemoryWallet.class);
+		when(radixEngine.getComputedState(InMemoryWallet.class)).thenReturn(wallet);
+		when(wallet.getBalance()).thenReturn(BigDecimal.ONE);
+		when(wallet.getNumParticles()).thenReturn(7);
+
 		chaosController.respondWithMempoolFill(exchange);
 
 		latch.await();
-		assertEquals("{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\"}", arg.get());
+		assertEquals(
+			"{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\"balance\":1,\"numParticles\":7}",
+			arg.get()
+		);
 	}
 
 	@Test
