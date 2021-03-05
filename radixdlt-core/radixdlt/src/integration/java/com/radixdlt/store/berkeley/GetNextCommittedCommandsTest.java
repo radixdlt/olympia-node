@@ -22,7 +22,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
-import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.constraintmachine.Spin;

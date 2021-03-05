@@ -133,7 +133,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomsDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
-	private Database particlesDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
 	private Database vertexStoreDatabase; // Vertex Store
 	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
