@@ -61,7 +61,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
@@ -91,7 +90,6 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
-
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
@@ -602,7 +600,7 @@ public class SimulationTest {
 				} else {
 					modules.add(new SyncRunnerModule());
 				}
-			} else if (ledgerType.hasEpochs && !ledgerType.hasSync){
+			} else if (ledgerType.hasEpochs && !ledgerType.hasSync) {
 				modules.add(new MockedLedgerStatusUpdatesRunnerModule());
 			}
 
