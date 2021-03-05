@@ -499,39 +499,29 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private ImmutableList<CommittedAtom> getNextCommittedAtomsInternal(long stateVersion, int limit)
 		throws NextCommittedLimitReachedException {
-		final var start = System.nanoTime();
-		// when querying committed atoms, no need to worry about transaction as they aren't going away
-		try (
-			var atomCursor = atomDatabase.openCursor(null, null);
-			var uqCursor = uniqueIndicesDatabase.openCursor(null, null)
-		) {
 
+		// when querying committed atoms, no need to worry about transaction as they aren't going away
+		final var start = System.nanoTime();
+		try (var atomCursor = atomDatabase.openCursor(null, null)) {
 			final var atoms = Lists.<CommittedAtom>newArrayList();
 			final var atomSearchKey = toPKey(stateVersion + 1);
+			final var atomPosData = entry();
 
-			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, DEFAULT);
+			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
 
 			while (atomCursorStatus == SUCCESS && atoms.size() <= limit) {
 				var atomId = getAidFromPKey(atomSearchKey);
 				try {
-					var key = entry(from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
-					var value = entry();
-					var uqCursorStatus = uqCursor.getSearchKey(key, value, DEFAULT);
-
-					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
-					//  how should we handle it?
-					if (uqCursorStatus == SUCCESS) {
-						var offset = fromByteArray(value.getData());
-						var atom = restoreCommittedAtom(atomLog.read(offset));
-						atoms.add(atom);
-						if (atom.isLastAtomInEpoch()) {
-							break;
-						}
+					var offset = fromByteArray(atomPosData.getData());
+					var atom = restoreCommittedAtom(atomLog.read(offset));
+					atoms.add(atom);
+					if (atom.isLastAtomInEpoch()) {
+						break;
 					}
 				} catch (Exception e) {
 					log.error(format("Unable to fetch ledger entry for Atom ID %s", atomId), e);
 				}
-				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, DEFAULT);
+				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 			}
 
 			if (atoms.size() < limit) {
