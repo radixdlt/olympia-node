@@ -21,69 +21,75 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
+import com.radixdlt.sync.SyncState;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.RemoteSyncService;
+import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
-import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.InvalidAccumulatorSender;
-import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
-import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier;
-import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.InvalidSignaturesSender;
-import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.VerifiedSignaturesSender;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
-import com.radixdlt.sync.RemoteSyncServiceProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
+import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+
+import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
  */
 public class SyncServiceModule extends AbstractModule {
-	private static final int BATCH_SIZE = 100;
 
 	@Override
 	public void configure() {
-		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).to(RemoteSyncServiceProcessor.class);
-		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+		bind(LocalSyncService.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
-	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseSignaturesVerifier signaturesVerifier) {
-		return signaturesVerifier::processSyncResponse;
+	private SyncState initialSyncState(@LastProof VerifiedLedgerHeaderAndProof currentHeader) {
+		return SyncState.IdleState.init(currentHeader);
 	}
 
 	@Provides
-	private VerifiedSignaturesSender verifiedSignaturesSender(RemoteSyncResponseAccumulatorVerifier accumulatorVerifier) {
-		return accumulatorVerifier::processSyncResponse;
+	private RemoteEventProcessor<SyncRequest> syncRequestEventProcessor(
+		RemoteSyncService remoteSyncService
+	) {
+		return remoteSyncService.syncRequestEventProcessor();
 	}
 
 	@Provides
-	private InvalidSignaturesSender invalidSignaturesSender(SystemCounters counters) {
+	private RemoteEventProcessor<StatusRequest> statusRequestEventProcessor(
+		RemoteSyncService remoteSyncService
+	) {
+		return remoteSyncService.statusRequestEventProcessor();
+	}
+
+	@Provides
+	private InvalidSyncResponseSender invalidSyncResponseSender(SystemCounters counters) {
 		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 
 	@Provides
-	private InvalidValidatorSetSender invalidValidatorSetSender(SystemCounters counters) {
-		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
-	}
-
-	@Provides
-	private InvalidAccumulatorSender invalidAccumulatorSender(SystemCounters counters) {
-		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
-	}
-
-	@Provides
-	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(
+	private VerifiedSyncResponseSender verifiedSyncResponseSender(
 		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
 	) {
 		return resp -> {
@@ -110,29 +116,41 @@ public class SyncServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
+	private RemoteSyncService remoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher,
-		SystemCounters systemCounters
+		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
+		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
+		SystemCounters systemCounters,
+		Comparator<AccumulatorState> accComparator,
+		SyncConfig syncConfig,
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader
 	) {
-		return new RemoteSyncServiceProcessor(
+		return new RemoteSyncService(
 			committedReader,
+			statusResponseDispatcher,
 			syncResponseDispatcher,
-			BATCH_SIZE,
-			systemCounters
+			syncConfig,
+			systemCounters,
+			accComparator,
+			initialHeader
 		);
 	}
 
-	@Provides
-	RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(
-		VerifiedValidatorSetSender verifiedValidatorSetSender,
-		InvalidValidatorSetSender invalidValidatorSetSender,
-		BFTConfiguration initialConfiguration
+	@ProvidesIntoSet
+	@ProcessWithSyncRunner
+	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor(
+		RemoteSyncService remoteSyncService
 	) {
-		return new RemoteSyncResponseValidatorSetVerifier(
-			verifiedValidatorSetSender,
-			invalidValidatorSetSender,
-			initialConfiguration.getValidatorSet()
-		);
+		return remoteSyncService.ledgerUpdateEventProcessor();
+	}
+
+	@Provides
+	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(BFTConfiguration initialConfiguration) {
+		return new RemoteSyncResponseValidatorSetVerifier(initialConfiguration.getValidatorSet());
+	}
+
+	@Provides
+	private RemoteSyncResponseSignaturesVerifier signaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
+		return new RemoteSyncResponseSignaturesVerifier(hasher, hashVerifier);
 	}
 }

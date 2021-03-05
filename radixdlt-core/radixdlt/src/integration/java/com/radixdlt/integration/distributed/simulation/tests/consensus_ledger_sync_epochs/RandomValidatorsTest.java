@@ -19,39 +19,35 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class RandomValidatorsTest {
 	private static final int numNodes = 10;
+
+	private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
+		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), syncConfig) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.addTestModules(
@@ -86,23 +82,7 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
-
-	@Test
-	public void given_deterministic_randomized_validator_sets_with_incorrect_single_epoch_syncing__then_should_fail() {
-		SimulationTest bftTest = bftTestBuilder
-			.overrideWithIncorrectModule(new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
-						.to(RemoteSyncResponseValidatorSetVerifier.class);
-				}
-			})
-			.build();
-
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

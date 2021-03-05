@@ -34,6 +34,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class MempoolFillTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.fullFunctionNodes(View.of(10), 200)
+		.fullFunctionNodes(View.of(10), SyncConfig.of(800L, 10, 5000L))
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {
@@ -86,8 +87,8 @@ public class MempoolFillTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		SimulationTest.TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var results = simulationTest.run().awaitCompletion();
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -101,7 +102,7 @@ public class MempoolFillTest {
 			})
 			.build();
 
-		SimulationTest.TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
+		final var results = simulationTest.run().awaitCompletion();
+		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
 	}
 }

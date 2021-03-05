@@ -21,10 +21,12 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -48,46 +50,93 @@ public final class MessageCentralLedgerSync {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
-	public Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses() {
-		return this.messageCentral.messagesOf(SyncResponseMessage.class)
+	public Flowable<RemoteEvent<StatusRequest>> statusRequests() {
+		return this.messageCentral.messagesOf(StatusRequestMessage.class)
 			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-				return RemoteEvent.create(node, m.getMessage().getCommands(), DtoCommandsAndProof.class);
+				return RemoteEvent.create(node, StatusRequest.create(), StatusRequest.class);
 			});
 	}
 
-	public Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
+	public Flowable<RemoteEvent<StatusResponse>> statusResponses() {
+		return this.messageCentral.messagesOf(StatusResponseMessage.class)
+			.filter(m -> m.getPeer().hasSystem())
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()), StatusResponse.class);
+			});
+	}
+
+	public Flowable<RemoteEvent<SyncRequest>> syncRequests() {
 		return this.messageCentral.messagesOf(SyncRequestMessage.class)
 			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
 				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-				return RemoteEvent.create(node, m.getMessage().getCurrentHeader(), DtoLedgerHeaderAndProof.class);
+				final var msg = m.getMessage();
+				return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()), SyncRequest.class);
 			});
 	}
 
-	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {
+	public Flowable<RemoteEvent<SyncResponse>> syncResponses() {
+		return this.messageCentral.messagesOf(SyncResponseMessage.class)
+			.filter(m -> m.getPeer().hasSystem())
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var msg = m.getMessage();
+				return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()), SyncResponse.class);
+			});
+	}
+
+	public RemoteEventDispatcher<SyncRequest> syncRequestDispatcher() {
 		return this::sendSyncRequest;
 	}
 
-	private void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof header) {
+	private void sendSyncRequest(BFTNode node, SyncRequest syncRequest) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
-				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, header);
-				this.messageCentral.send(peer, syncRequestMessage);
+				final var msg = new SyncRequestMessage(this.magic, syncRequest.getHeader());
+				this.messageCentral.send(peer, msg);
 			}
 		});
 	}
 
-	public RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher() {
+	public RemoteEventDispatcher<SyncResponse> syncResponseDispatcher() {
 		return this::sendSyncResponse;
 	}
 
-	private void sendSyncResponse(BFTNode node, DtoCommandsAndProof commands) {
+	private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
-				final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);
-				this.messageCentral.send(peer, syncResponseMessage);
+				final var msg = new SyncResponseMessage(this.magic, syncResponse.getCommandsAndProof());
+				this.messageCentral.send(peer, msg);
+			}
+		});
+	}
+
+	public RemoteEventDispatcher<StatusRequest> statusRequestDispatcher() {
+		return this::sendStatusRequest;
+	}
+
+	private void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
+		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
+			if (peer.hasSystem()) {
+				final var msg = new StatusRequestMessage(this.magic);
+				this.messageCentral.send(peer, msg);
+			}
+		});
+	}
+
+	public RemoteEventDispatcher<StatusResponse> statusResponseDispatcher() {
+		return this::sendStatusResponse;
+	}
+
+	private void sendStatusResponse(BFTNode node, StatusResponse statusResponse) {
+		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
+			if (peer.hasSystem()) {
+				final var msg = new StatusResponseMessage(this.magic, statusResponse.getHeader());
+				this.messageCentral.send(peer, msg);
 			}
 		});
 	}
