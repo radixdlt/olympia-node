@@ -273,7 +273,6 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
-			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
@@ -281,6 +280,8 @@ public class RecoveryLivenessTest {
 				restartNode(nodeIndex);
 			}
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	@Test
@@ -292,7 +293,6 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
-			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			int nodeToRestart = processUntilNextCommittedEmitted(5000);
@@ -304,6 +304,8 @@ public class RecoveryLivenessTest {
 				}
 			}
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	@Test
@@ -315,7 +317,6 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
-			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
@@ -323,6 +324,8 @@ public class RecoveryLivenessTest {
 				restartNode(nodeIndex);
 			}
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	/**
@@ -346,7 +349,6 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
-			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
@@ -354,5 +356,7 @@ public class RecoveryLivenessTest {
 				restartNode(nodeIndex);
 			}
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 }
