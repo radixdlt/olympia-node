@@ -273,6 +273,7 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
+			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
@@ -291,6 +292,7 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
+			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			int nodeToRestart = processUntilNextCommittedEmitted(5000);
@@ -313,6 +315,7 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
+			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
@@ -343,6 +346,7 @@ public class RecoveryLivenessTest {
 
 			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
+			assertThat(nextEpochView.getView()).isLessThan(View.of(epochCeilingView * 2));
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
