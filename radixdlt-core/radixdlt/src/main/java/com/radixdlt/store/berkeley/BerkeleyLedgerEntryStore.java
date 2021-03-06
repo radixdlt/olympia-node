@@ -389,6 +389,50 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
+	private static DatabaseEntry toHeaderKey(VerifiedLedgerHeaderAndProof header) {
+		if (header.isEndOfEpoch()) {
+			return toPKey(header.getStateVersion(), header.getEpoch() + 1);
+		} else {
+			return toPKey(header.getStateVersion());
+		}
+	}
+
+	private static boolean headerKeyIsEndOfEpoch(DatabaseEntry entry) {
+		return entry.getData().length > Long.BYTES;
+	}
+
+	private void storeHeader(com.sleepycat.je.Transaction txn, VerifiedLedgerHeaderAndProof header) {
+		var prevHeaderKey = entry();
+		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
+			// Cannot remove end of epoch proofs
+			if (status == SUCCESS && !headerKeyIsEndOfEpoch(prevHeaderKey)) {
+				status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
+				if (status == SUCCESS) {
+					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
+					long versionDiff = header.getStateVersion() - twoAwayStateVersion;
+					if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
+						proofCursor.getNext(null, null, DEFAULT);
+						proofCursor.delete();
+						systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
+					}
+				}
+			}
+
+			final var headerKey = toHeaderKey(header);
+			final var headerData = entry(serialize(header));
+			this.putNoOverwriteOrElseThrow(
+				proofCursor,
+				headerKey,
+				headerData,
+				"Header write failed: " + header,
+				CounterType.COUNT_BDB_HEADER_BYTES_WRITE
+			);
+
+			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
+		}
+	}
+
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
 		LedgerEntryIndices indices,
@@ -404,49 +448,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
 
+			// Store atom indices
 			var pKey = toPKey(atom.getStateVersion(), aid);
 			var atomPosData = entry(Longs.toByteArray(offset));
-
 			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 
-			atom.getHeaderAndProof().ifPresent(header -> {
-				var prevHeaderKey = entry();
-				var prevHeaderData = entry();
-
-				try (var proofCursor = proofDatabase.openCursor(transaction, null);) {
-					var status = proofCursor.getLast(prevHeaderKey, prevHeaderData, DEFAULT);
-					if (status == SUCCESS) {
-						status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
-						if (status == SUCCESS) {
-							long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
-							long versionDiff = header.getStateVersion() - twoAwayStateVersion;
-							if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
-								// TODO: Remove deserialization
-								var prev = deserializeOrElseFail(
-									prevHeaderData.getData(), VerifiedLedgerHeaderAndProof.class
-								);
-								if (!prev.isEndOfEpoch()) {
-									proofCursor.getNext(null, null, DEFAULT);
-									proofCursor.delete();
-									systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
-								}
-							}
-						}
-					}
-					final var headerKey = toPKey(header.getStateVersion());
-					final var headerData = entry(serialize(header));
-					this.putNoOverwriteOrElseThrow(
-						proofCursor,
-						headerKey,
-						headerData,
-						"Header write failed: " + header,
-						CounterType.COUNT_BDB_HEADER_BYTES_WRITE
-					);
-
-					systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
-				}
-			});
+			// Store header/proof
+			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
 
 		} catch (IOException e) {
 			return ioFailure(e);
@@ -629,6 +638,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
+		// TODO: Remove this cursor/search
 		SearchCursor cursor = this.search(
 			StoreIndex.LedgerIndexType.UNIQUE,
 			new StoreIndex(EngineAtomIndices.IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
@@ -637,7 +647,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		if (cursor != null) {
 			try (var proofCursor = proofDatabase.openCursor(null, null);) {
 				var value = entry();
-				var status = proofCursor.getSearchKey(toPKey(cursor.getStateVersion()), value, null);
+				var status = proofCursor.getSearchKeyRange(toPKey(cursor.getStateVersion()), value, null);
 				if (status != SUCCESS) {
 					// Epoch change should always have a header/proof
 					throw new IllegalStateException("Missing epoch header");
@@ -781,6 +791,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static DatabaseEntry toPKey(long stateVersion) {
 		var pKey = new byte[Long.BYTES];
 		Longs.copyTo(stateVersion, pKey, 0);
+		return entry(pKey);
+	}
+
+	private static DatabaseEntry toPKey(long stateVersion, long epoch) {
+		var pKey = new byte[Long.BYTES * 2];
+		Longs.copyTo(stateVersion, pKey, 0);
+		Longs.copyTo(epoch, pKey, Long.BYTES);
 		return entry(pKey);
 	}
 
