@@ -535,13 +535,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return conflictingAtoms.build();
 	}
 
-	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion, int limit)
-		throws NextCommittedLimitReachedException {
+	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(
+		long stateVersion,
+		int limit
+	) throws NextCommittedLimitReachedException {
 
 		final var start = System.nanoTime();
 
+		com.sleepycat.je.Transaction txn = beginTransaction();
 		VerifiedLedgerHeaderAndProof nextHeader = null;
-		try (var proofCursor = proofDatabase.openCursor(null, null);) {
+		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
 			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
@@ -566,6 +569,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					return null;
 				}
 			}
+		} finally {
+			txn.commit();
 		}
 
 		final var atoms = ImmutableList.<ClientAtom>builder();
@@ -680,7 +685,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			LedgerSearchMode.EXACT
 		);
 		if (cursor != null) {
-			cursor.getStateVersion();
 			try (var proofCursor = proofDatabase.openCursor(null, null);) {
 				var value = entry();
 				var status = proofCursor.getSearchKey(toPKey(cursor.getStateVersion()), value, null);
