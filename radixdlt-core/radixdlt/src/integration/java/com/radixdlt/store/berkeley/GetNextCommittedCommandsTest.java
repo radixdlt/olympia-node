@@ -22,8 +22,10 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -47,7 +49,6 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -92,8 +93,9 @@ public class GetNextCommittedCommandsTest {
 	public void setup() {
 		this.injector = Guice.createInjector(
 			new CryptoModule(),
-			new MockedCheckpointModule(),
+			new MockedGenesisAtomModule(),
 			new PersistenceModule(),
+			new RadixEngineCheckpointModule(),
 			new RadixEngineStoreModule(),
 			new AbstractModule() {
 				@Override
@@ -102,9 +104,10 @@ public class GetNextCommittedCommandsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(GenesisValidatorSetProvider.class).toInstance(() -> BFTValidatorSet.from(List.of()));
 					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of());
 				}
 			}
 		);

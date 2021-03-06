@@ -31,7 +31,7 @@ public class NoFeeModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private AtomChecker<LedgerAtom> noFeeLedgerAtomChecker() {
-		return atom ->
+		return (atom, permissionLevel) ->
 			atom.getCMInstruction().getMicroInstructions().isEmpty()
 				? Result.error("atom has no instructions")
 				: Result.success();

@@ -22,13 +22,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -42,6 +45,8 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
@@ -59,6 +64,8 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LedgerEntryStore;
@@ -101,6 +108,10 @@ public class RecoveryTest {
 	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final long epochCeilingView;
 
+	@Inject
+	@Genesis
+	private Atom genesisAtom;
+
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
 		this.network = new DeterministicNetwork(
@@ -112,6 +123,20 @@ public class RecoveryTest {
 
 	@Before
 	public void setup() {
+		Guice.createInjector(
+			new MockedGenesisAtomModule(),
+			new CryptoModule(),
+			new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of(ecKeyPair));
+				}
+			}
+		).injectMembers(this);
+
 		this.currentInjector = createRunner(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
@@ -135,6 +160,8 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);

@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -69,6 +70,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		EngineAtomIndices getIndices(LedgerAtom atom);
 	}
 
+	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
@@ -140,6 +142,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		if (committedAtom.getStateVersion() > 0) {
 			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, indicies));
 		}
+	}
+
+	public boolean containsAID(AID aid) {
+		return store.contains(aid);
+	}
+
+	@Override
+	public boolean containsAtom(CommittedAtom atom) {
+		return store.contains(atom.getAID());
 	}
 
 	@Override

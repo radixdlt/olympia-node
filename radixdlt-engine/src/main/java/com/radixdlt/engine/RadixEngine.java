@@ -174,7 +174,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom);
+			Result hookResult = checker.check(atom, permissionLevel);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					RadixEngineErrorCode.HOOK_ERROR,
@@ -289,6 +289,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			stateCheckAndStoreInternal(atom);
 		}
+	}
+
+	public boolean contains(T atom) {
+		return engineStore.containsAtom(atom);
 	}
 
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {

@@ -37,15 +37,15 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.MockedValidatorComputersModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
@@ -339,6 +339,15 @@ public class SimulationTest {
 				protected void configure() {
 					bind(SyncConfig.class).toInstance(syncConfig);
 				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
+				}
 			});
 			return this;
 		}
@@ -358,7 +367,13 @@ public class SimulationTest {
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					install(new MockedCheckpointModule());
+					install(new MockedGenesisAtomModule());
+				}
+
+				@Provides
+				@Genesis
+				ImmutableList<ECKeyPair> validators() {
+					return nodes;
 				}
 
 				@Provides
@@ -394,6 +409,15 @@ public class SimulationTest {
 							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
 				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
+				}
 			});
 			return this;
 		}
@@ -423,7 +447,13 @@ public class SimulationTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-					install(new MockedCheckpointModule());
+					install(new MockedGenesisAtomModule());
+				}
+
+				@Provides
+				@Genesis
+				ImmutableList<ECKeyPair> validators() {
+					return nodes;
 				}
 			});
 			return this;
@@ -566,7 +596,6 @@ public class SimulationTest {
 			// Persistence
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
-				modules.add(new MockedValidatorComputersModule());
 			}
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());

@@ -165,27 +165,6 @@ public class GenerateUniversesTest {
 			);
 	}
 
-	@Test
-	public void testJson() throws IOException {
-		final String out;
-		final String err;
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-c", "-t", "test", "-v", "1"));
-			out = stdOut.toString();
-			err = stdErr.toString();
-		}
-		assertThat(err).isEmpty();
-		assertThat(out)
-			.hasLineCount(215)
-			.containsSubsequence(
-				":rri:/", "/XRD",
-				"radix.particles.mutable_supply_token_definition",
-				"radix.particles.registered_validator",
-				"radix.particles.staked_tokens"
-			);
-	}
-
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
 	private static String[] strings(String... strings) {
