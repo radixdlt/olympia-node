@@ -457,7 +457,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 						status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
 						if (status == SUCCESS) {
 							long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
-							if (header.getStateVersion() - twoAwayStateVersion <= 10) {
+							if (header.getStateVersion() - twoAwayStateVersion <= 50) {
 								// TODO: Remove deserialization
 								var prev = deserializeOrElseFail(
 									prevHeaderData.getData(), VerifiedLedgerHeaderAndProof.class
