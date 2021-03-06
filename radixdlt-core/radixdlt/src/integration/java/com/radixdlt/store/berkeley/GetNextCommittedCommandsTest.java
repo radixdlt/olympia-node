@@ -133,6 +133,7 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_over_epoch_boundary__commands_within_epoch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
@@ -144,6 +145,7 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_at_epoch_boundary__single_command_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
@@ -155,6 +157,7 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_to_store_limit__commands_within_limit_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
@@ -165,6 +168,7 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_over_epoch_boundary_from_middle__commands_within_epoch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 100);
 		generateAtoms(2, 101, 100);
 
@@ -176,10 +180,11 @@ public class GetNextCommittedCommandsTest {
 
 	@Test
 	public void when_request_within_epoch__full_batch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 200);
 		generateAtoms(2, 201, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(100);
 
 		assertThat(commands.getCommands())
 			.hasSize(100);
@@ -198,7 +203,9 @@ public class GetNextCommittedCommandsTest {
 
 	private void generateAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atom = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
+		this.committedAtomsStore.startTransaction();
 		this.committedAtomsStore.storeAtom(atom);
+		this.committedAtomsStore.commitTransaction();
 	}
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
