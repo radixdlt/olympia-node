@@ -473,7 +473,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					final var headerKey = toPKey(header.getStateVersion());
 					final var headerData = entry(serialize(header));
 					failIfNotSuccess(proofCursor.putNoOverwrite(headerKey, headerData), "Header write for", header);
-					systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
+					systemCounters.increment(COUNT_BDB_LEDGER_PROOFS_ADDED);
 				}
 			});
 

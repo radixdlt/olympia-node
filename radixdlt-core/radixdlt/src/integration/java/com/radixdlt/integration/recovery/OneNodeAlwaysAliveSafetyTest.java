@@ -53,7 +53,7 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Base58;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
