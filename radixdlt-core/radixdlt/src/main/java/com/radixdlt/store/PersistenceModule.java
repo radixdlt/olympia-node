@@ -51,7 +51,7 @@ public class PersistenceModule extends AbstractModule {
 
 	@Provides
 	StoreConfig storeConfig() {
-		return new StoreConfig(100);
+		return new StoreConfig(1000);
 	}
 
 	@ProvidesIntoSet
