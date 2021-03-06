@@ -683,7 +683,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			cursor.getStateVersion();
 			try (var proofCursor = proofDatabase.openCursor(null, null);) {
 				var value = entry();
-				var status = proofCursor.getFirst(toPKey(cursor.getStateVersion()), value, null);
+				var status = proofCursor.getSearchKey(toPKey(cursor.getStateVersion()), value, null);
 				if (status != SUCCESS) {
 					// Epoch change should always have a header/proof
 					throw new IllegalStateException("Missing epoch header");
