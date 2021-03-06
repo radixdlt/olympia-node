@@ -75,8 +75,7 @@ public interface LedgerEntryStoreView {
 	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter
-	 * @param limit the maximum count of ledger entries to return
 	 * @return ledger entries satisfying the constraints
 	 */
-	VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException;
+	VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion);
 }

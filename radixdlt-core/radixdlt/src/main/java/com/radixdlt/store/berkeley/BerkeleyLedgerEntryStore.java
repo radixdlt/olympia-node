@@ -24,6 +24,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.StoreConfig;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +46,6 @@ import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
@@ -139,6 +139,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
+	private final StoreConfig storeConfig;
 
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
@@ -153,11 +154,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public BerkeleyLedgerEntryStore(
 		Serialization serialization,
 		DatabaseEnvironment dbEnv,
+		StoreConfig storeConfig,
 		SystemCounters systemCounters
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.storeConfig = storeConfig;
 
 		this.open();
 	}
@@ -457,7 +460,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 						status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
 						if (status == SUCCESS) {
 							long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
-							if (header.getStateVersion() - twoAwayStateVersion <= 50) {
+							long versionDiff = header.getStateVersion() - twoAwayStateVersion;
+							if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
 								// TODO: Remove deserialization
 								var prev = deserializeOrElseFail(
 									prevHeaderData.getData(), VerifiedLedgerHeaderAndProof.class
@@ -535,40 +539,19 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return conflictingAtoms.build();
 	}
 
-	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(
-		long stateVersion,
-		int limit
-	) throws NextCommittedLimitReachedException {
-
+	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {
 		final var start = System.nanoTime();
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
-		VerifiedLedgerHeaderAndProof nextHeader = null;
+		final VerifiedLedgerHeaderAndProof nextHeader;
 		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
 			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
-			while (headerCursorStatus == SUCCESS) {
-				long headerStateVersion = Longs.fromByteArray(headerValue.getData());
-				if (headerStateVersion - stateVersion > limit) {
-					break;
-				}
-
-				nextHeader = deserializeOrElseFail(headerValue.getData(), VerifiedLedgerHeaderAndProof.class);
-				if (nextHeader.isEndOfEpoch()) {
-					break;
-				}
-
-				headerCursorStatus = proofCursor.getNext(headerSearchKey, headerValue, DEFAULT);
+			if (headerCursorStatus != SUCCESS) {
+				return null;
 			}
-
-			if (nextHeader == null) {
-				if (headerCursorStatus == SUCCESS) {
-					throw new NextCommittedLimitReachedException(limit);
-				} else {
-					return null;
-				}
-			}
+			nextHeader = deserializeOrElseFail(headerValue.getData(), VerifiedLedgerHeaderAndProof.class);
 		} finally {
 			txn.commit();
 		}
@@ -600,8 +583,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		var atoms = this.getNextCommittedAtomsInternal(stateVersion, batchSize);
+	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion) {
+		var atoms = this.getNextCommittedAtomsInternal(stateVersion);
 		if (atoms == null) {
 			return null;
 		}

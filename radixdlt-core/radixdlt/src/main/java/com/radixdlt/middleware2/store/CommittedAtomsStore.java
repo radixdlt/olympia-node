@@ -45,7 +45,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.store.Transaction;
 
@@ -183,17 +182,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return store.getEpochHeader(epoch);
 	}
 
-	public VerifiedCommandsAndProof getNextCommittedCommands(long start, int batchSize)
-		throws NextCommittedLimitReachedException {
-		return this.store.getNextCommittedAtoms(start, batchSize);
+	public VerifiedCommandsAndProof getNextCommittedCommands(long start) {
+		return this.store.getNextCommittedAtoms(start);
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
-		throws NextCommittedLimitReachedException {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		return this.getNextCommittedCommands(stateVersion, batchSize);
+		return this.getNextCommittedCommands(stateVersion);
 	}
 
 	@Override

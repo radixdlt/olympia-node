@@ -41,7 +41,6 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.function.BiFunction;
@@ -101,7 +100,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		Hasher hasher,
 		EventDispatcher<AtomCommittedToLedger> committedDispatcher,
 		VerifiedCommandsAndProof genesisCheckpoint
-	) throws NextCommittedLimitReachedException, DeserializeException {
+	) throws DeserializeException {
 		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
 			store,
 			persistentVertexStore,
@@ -111,7 +110,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			committedDispatcher
 		);
 
-		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1, 1) == null) {
+		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1) == null) {
 			for (Command command : genesisCheckpoint.getCommands()) {
 				ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 				CommittedAtom committedAtom = CommittedAtom.create(

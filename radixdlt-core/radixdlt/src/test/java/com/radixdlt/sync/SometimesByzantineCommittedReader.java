@@ -202,8 +202,8 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		VerifiedCommandsAndProof correctResult = correctReader.getNextCommittedCommands(start, batchSize);
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+		VerifiedCommandsAndProof correctResult = correctReader.getNextCommittedCommands(start);
 		// TODO: Make epoch sync byzantine as well
 		if (start.getLedgerHeader().isEndOfEpoch()) {
 			return correctResult;
