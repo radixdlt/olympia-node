@@ -339,6 +339,15 @@ public class SimulationTest {
 				protected void configure() {
 					bind(SyncConfig.class).toInstance(syncConfig);
 				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
+				}
 			});
 			return this;
 		}
@@ -399,6 +408,15 @@ public class SimulationTest {
 							.map(node -> BFTNode.create(node.getPublicKey()))
 							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
+				}
+
+				@Provides
+				@Singleton
+				PeersView peersView(@Self BFTNode self) {
+					return () -> nodes.stream()
+						.map(k -> BFTNode.create(k.getPublicKey()))
+						.filter(n -> !n.equals(self))
+						.collect(Collectors.toList());
 				}
 			});
 			return this;
