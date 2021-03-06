@@ -177,7 +177,7 @@ public class RecoveryLivenessTest {
 					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(PeersView.class).toInstance(List::of);
+					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
