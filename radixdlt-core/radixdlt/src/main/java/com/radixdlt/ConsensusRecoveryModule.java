@@ -77,7 +77,13 @@ public class ConsensusRecoveryModule extends AbstractModule {
 				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
 			if (safetyStateEpoch > initialEpoch.getEpoch()) {
-				throw new IllegalStateException("Last vote is in a future epoch.");
+				throw new IllegalStateException(
+					String.format(
+						"Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+						safetyStateEpoch,
+						initialEpoch.getEpoch()
+					)
+				);
 			} else if (safetyStateEpoch == initialEpoch.getEpoch()) {
 				return Optional.of(safetyState);
 			} else {
