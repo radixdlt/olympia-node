@@ -83,6 +83,8 @@ public interface SystemCounters {
 		COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
 		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
 
+		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
+
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),

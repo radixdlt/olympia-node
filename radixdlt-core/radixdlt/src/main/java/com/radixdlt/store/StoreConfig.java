@@ -18,6 +18,9 @@
 
 package com.radixdlt.store;
 
+/**
+ * Specifies high level configuration options for persistent storage
+ */
 public final class StoreConfig {
 	private final int minimumProofBlockSize;
 	public StoreConfig(int minimumProofBlockSize) {
