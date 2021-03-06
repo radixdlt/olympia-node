@@ -21,7 +21,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.StoreConfig;
@@ -72,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -103,6 +103,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
+	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String ATOM_LOG = "radix.ledger";
 
 	private final Serialization serialization;
@@ -113,7 +114,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
-	private Database proofDatabase;
+	private Database headerDatabase;
+	private Database epochHeaderDatabase;
 	private Database vertexStoreDatabase; // Vertex Store
 	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
@@ -147,6 +149,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
 				env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
 				env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
+				env.truncateDatabase(transaction, PROOF_DB_NAME, false);
+				env.truncateDatabase(transaction, EPOCH_PROOF_DB_NAME, false);
 				env.truncateDatabase(transaction, PENDING_DB_NAME, false);
 				transaction.commit();
 			} catch (DatabaseNotFoundException e) {
@@ -170,7 +174,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		safeClose(uniqueIndicesDatabase);
 		safeClose(duplicatedIndicesDatabase);
 		safeClose(atomDatabase);
-		safeClose(proofDatabase);
+
+		safeClose(epochHeaderDatabase);
+		safeClose(headerDatabase);
+
 		safeClose(vertexStoreDatabase);
 
 		if (atomLog != null) {
@@ -284,7 +291,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
+			headerDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
+			epochHeaderDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, headerDatabase, buildEpochProofConfig());
 			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomDatabase, uniqueIndicesConfig);
 			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig);
 			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
@@ -298,6 +306,19 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// TODO implement integrity check
 			// TODO perhaps we should implement recovery instead?
 		}
+	}
+
+	private SecondaryConfig buildEpochProofConfig() {
+		return (SecondaryConfig) new SecondaryConfig()
+			.setKeyCreator(
+				(secondary, key, data, result) -> {
+					OptionalLong epoch = headerKeyEpoch(key);
+					epoch.ifPresent(e -> result.setData(Longs.toByteArray(e)));
+					return epoch.isPresent();
+				}
+			)
+			.setAllowCreate(true)
+			.setTransactional(true);
 	}
 
 	private DatabaseConfig buildPendingConfig() {
@@ -397,16 +418,20 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private static boolean headerKeyIsEndOfEpoch(DatabaseEntry entry) {
-		return entry.getData().length > Long.BYTES;
+	private static OptionalLong headerKeyEpoch(DatabaseEntry entry) {
+		if (entry.getData().length == Long.BYTES) {
+			return OptionalLong.empty();
+		}
+
+		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
 	private void storeHeader(com.sleepycat.je.Transaction txn, VerifiedLedgerHeaderAndProof header) {
 		var prevHeaderKey = entry();
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+		try (var proofCursor = headerDatabase.openCursor(txn, null);) {
 			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
 			// Cannot remove end of epoch proofs
-			if (status == SUCCESS && !headerKeyIsEndOfEpoch(prevHeaderKey)) {
+			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
 				status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
 				if (status == SUCCESS) {
 					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
@@ -520,7 +545,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
 		final VerifiedLedgerHeaderAndProof nextHeader;
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+		try (var proofCursor = headerDatabase.openCursor(txn, null);) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
 			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
@@ -622,7 +647,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getLastHeader() {
 		return withTime(() -> {
-			try (var proofCursor = proofDatabase.openCursor(null, null);) {
+			try (var proofCursor = headerDatabase.openCursor(null, null);) {
 				var pKey = entry();
 				var value = entry();
 
@@ -638,25 +663,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
-		// TODO: Remove this cursor/search
-		SearchCursor cursor = this.search(
-			StoreIndex.LedgerIndexType.UNIQUE,
-			new StoreIndex(EngineAtomIndices.IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-			LedgerSearchMode.EXACT
-		);
-		if (cursor != null) {
-			try (var proofCursor = proofDatabase.openCursor(null, null);) {
-				var value = entry();
-				var status = proofCursor.getSearchKeyRange(toPKey(cursor.getStateVersion()), value, null);
-				if (status != SUCCESS) {
-					// Epoch change should always have a header/proof
-					throw new IllegalStateException("Missing epoch header");
-				}
-				return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
-			}
-		} else {
+		var value = entry();
+		var status = epochHeaderDatabase.get(null, toPKey(epoch), value, null);
+		if (status != SUCCESS) {
 			return Optional.empty();
 		}
+
+		return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
 	}
 
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
