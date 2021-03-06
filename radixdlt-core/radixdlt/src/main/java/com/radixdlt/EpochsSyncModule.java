@@ -36,7 +36,7 @@ import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.LocalSyncService;
@@ -148,7 +148,7 @@ public class EpochsSyncModule extends AbstractModule {
 		ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
-		AddressBook addressBook,
+		PeersView peersView,
 		Comparator<AccumulatorState> accComparator,
 		Hasher hasher,
 		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
@@ -165,7 +165,7 @@ public class EpochsSyncModule extends AbstractModule {
 				syncLedgerUpdateTimeoutDispatcher,
 				syncConfig,
 				systemCounters,
-				addressBook,
+				peersView,
 				accComparator,
 				hasher,
 				remoteSyncResponseValidatorSetVerifier,

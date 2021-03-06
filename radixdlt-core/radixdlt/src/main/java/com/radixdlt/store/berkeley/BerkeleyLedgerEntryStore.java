@@ -486,7 +486,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
 			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
-			transaction.abort();
+			if (transaction != null) {
+				transaction.abort();
+			}
 
 			return conflict(collectConflictingData(atomData, indices));
 		} finally {

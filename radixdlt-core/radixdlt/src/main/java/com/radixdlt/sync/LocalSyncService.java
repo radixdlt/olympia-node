@@ -30,21 +30,22 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.sync.SyncState.IdleState;
 import com.radixdlt.sync.SyncState.SyncCheckState;
 import com.radixdlt.sync.SyncState.SyncingState;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.network.addressbook.AddressBook;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -87,7 +88,7 @@ public final class LocalSyncService {
 	private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
 	private final SyncConfig syncConfig;
 	private final SystemCounters systemCounters;
-	private final AddressBook addressBook;
+	private final PeersView peersView;
 	private final Comparator<AccumulatorState> accComparator;
 	private final Hasher hasher;
 	private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
@@ -109,7 +110,7 @@ public final class LocalSyncService {
 		ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
-		AddressBook addressBook,
+		PeersView peersView,
 		Comparator<AccumulatorState> accComparator,
 		Hasher hasher,
 		RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
@@ -126,7 +127,7 @@ public final class LocalSyncService {
 		this.syncLedgerUpdateTimeoutDispatcher = Objects.requireNonNull(syncLedgerUpdateTimeoutDispatcher);
 		this.syncConfig = Objects.requireNonNull(syncConfig);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
-		this.addressBook = Objects.requireNonNull(addressBook);
+		this.peersView = Objects.requireNonNull(peersView);
 		this.accComparator = Objects.requireNonNull(accComparator);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
@@ -207,11 +208,10 @@ public final class LocalSyncService {
 	}
 
 	private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
-		final var allPeers = this.addressBook.peers().collect(Collectors.toList());
+		final var allPeers = new ArrayList<>(this.peersView.peers());
 		Collections.shuffle(allPeers);
 		return allPeers.stream()
 			.limit(this.syncConfig.syncCheckMaxPeers())
-			.map(peer -> BFTNode.create(peer.getSystem().getKey()))
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
@@ -305,8 +305,9 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
+		List<BFTNode> currentPeers = this.peersView.peers();
 		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
-			.filter(addressBook::hasBftNodePeer)
+			.filter(currentPeers::contains)
 			.findFirst();
 
 		return peerToUse

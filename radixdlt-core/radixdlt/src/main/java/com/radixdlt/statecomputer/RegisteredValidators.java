@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Wrapper class for registered validators
@@ -31,14 +30,6 @@ public final class RegisteredValidators {
 
     private RegisteredValidators(ImmutableSet<ECPublicKey> validators) {
         this.validators = validators;
-    }
-
-    public static RegisteredValidators create(ImmutableSet<ECPublicKey> validators) {
-        return new RegisteredValidators(validators);
-    }
-
-    public static RegisteredValidators create(Stream<ECPublicKey> validators) {
-        return new RegisteredValidators(validators.collect(ImmutableSet.toImmutableSet()));
     }
 
     public static RegisteredValidators create() {

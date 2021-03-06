@@ -41,13 +41,6 @@ public class UniverseValidationTest {
 		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testLoadingUniverseHasImmutableGenesis() throws Exception {
-		byte[] bytes = Bytes.fromBase64String(universeBase64());
-		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-		universe.getGenesis().add(new Atom());
-	}
-
 	private String universeBase64() throws IOException {
 		final var properties = new Properties();
 		try (final var input = this.getClass().getResourceAsStream(PROPERTIES_FILE)) {

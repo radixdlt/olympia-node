@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,17 +13,22 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.universe;
 
-/**
- * Ordered Execution level which specifies what level of permission the
- * constraint machine is running on. Depending on this level, some particle
- * transitions may be allowed or not.
- */
-public enum PermissionLevel {
-	USER,
-	SUPER_USER,
-	SYSTEM // ordering matters
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+
+public final class DevUniverseConfigModule extends AbstractModule {
+	@Provides
+	UniverseConfiguration universeConfiguration() {
+		return new UniverseConfiguration(
+			Universe.UniverseType.DEVELOPMENT,
+			"Radix Devnet",
+			"The Radix dev Universe",
+			30000
+		);
+	}
 }

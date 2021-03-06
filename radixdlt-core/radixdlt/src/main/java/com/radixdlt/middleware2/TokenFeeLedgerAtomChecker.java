@@ -21,6 +21,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
@@ -70,7 +71,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom) {
+	public Result check(LedgerAtom atom, PermissionLevel permissionLevel) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
@@ -86,6 +87,10 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			.filter(CMMicroInstruction::isCheckSpin)
 			.allMatch(i -> i.getParticle() instanceof SystemParticle)
 		) {
+			return Result.success();
+		}
+
+		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
 			return Result.success();
 		}
 

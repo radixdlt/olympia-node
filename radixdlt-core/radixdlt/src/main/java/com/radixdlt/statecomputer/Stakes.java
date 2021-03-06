@@ -36,11 +36,6 @@ public final class Stakes {
         this.stakedAmounts = stakedAmounts;
     }
 
-    public static Stakes create(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
-        Objects.requireNonNull(stakedAmounts);
-        return new Stakes(stakedAmounts);
-    }
-
     public static Stakes create() {
         return new Stakes(ImmutableMap.of());
     }

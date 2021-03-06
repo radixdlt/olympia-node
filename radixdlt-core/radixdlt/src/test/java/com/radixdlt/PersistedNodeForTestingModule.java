@@ -22,7 +22,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -30,7 +29,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
@@ -38,8 +36,6 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * Helper class for modules to be used for recovery tests.
@@ -62,10 +58,8 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		// System
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-		bind(AddressBook.class).toInstance(mock(AddressBook.class));
 
 		install(new InMemoryBFTKeyModule());
-		install(new MockedCheckpointModule());
 		install(new CryptoModule());
 		install(new DeterministicEnvironmentModule());
 		install(new FunctionalNodeModule());

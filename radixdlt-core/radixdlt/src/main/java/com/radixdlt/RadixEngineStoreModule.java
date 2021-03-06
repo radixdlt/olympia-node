@@ -22,25 +22,17 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.function.BiFunction;
@@ -51,6 +43,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
+		bind(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -65,6 +58,11 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 				CommittedAtom committedAtom = (CommittedAtom) ledgerAtom;
 				committedAtomsStore.storeAtom(committedAtom);
+			}
+
+			@Override
+			public boolean containsAtom(LedgerAtom atom) {
+				return committedAtomsStore.containsAtom((CommittedAtom) atom);
 			}
 
 			@Override
@@ -88,41 +86,5 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private AtomIndexer buildAtomIndexer(Serialization serialization, Hasher hasher) {
 		return atom -> EngineAtomIndices.from(atom, serialization, hasher);
-	}
-
-	@Provides
-	@Singleton
-	private CommittedAtomsStore committedAtomsStore(
-		LedgerEntryStore store,
-		PersistentVertexStore persistentVertexStore,
-		AtomIndexer atomIndexer,
-		Serialization serialization,
-		Hasher hasher,
-		EventDispatcher<AtomCommittedToLedger> committedDispatcher,
-		VerifiedCommandsAndProof genesisCheckpoint
-	) throws DeserializeException {
-		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
-			store,
-			persistentVertexStore,
-			atomIndexer,
-			serialization,
-			hasher,
-			committedDispatcher
-		);
-
-		if (atomsStore.getNextCommittedCommands(genesisCheckpoint.getHeader().getStateVersion() - 1) == null) {
-			for (Command command : genesisCheckpoint.getCommands()) {
-				ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-				CommittedAtom committedAtom = CommittedAtom.create(
-					clientAtom,
-					genesisCheckpoint.getHeader()
-				);
-				atomsStore.startTransaction();
-				atomsStore.storeAtom(committedAtom);
-				atomsStore.commitTransaction();
-			}
-		}
-
-		return atomsStore;
 	}
 }

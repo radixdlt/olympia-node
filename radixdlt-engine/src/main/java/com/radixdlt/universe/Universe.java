@@ -18,7 +18,6 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -33,7 +32,6 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Objects;
 
 @SerializerId2("radix.universe")
@@ -50,7 +48,7 @@ public class Universe {
 		private UniverseType type;
 		private Long timestamp;
 		private ECPublicKey creator;
-		private final ImmutableList.Builder<Atom> genesis = ImmutableList.builder();
+		private Atom atom;
 
 		private Builder() {
 			// Nothing to do here
@@ -136,20 +134,9 @@ public class Universe {
 		 * @param genesisAtom The atom to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder addAtom(Atom genesisAtom) {
+		public Builder setAtom(Atom genesisAtom) {
 			Objects.requireNonNull(genesisAtom);
-			this.genesis.add(genesisAtom);
-			return this;
-		}
-
-		/**
-		 * Adds a list of atoms to the genesis atom list.
-		 *
-		 * @param genesisAtoms The atoms to add to the genesis atom list.
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder addAtoms(Iterable<? extends Atom> genesisAtoms) {
-			genesisAtoms.forEach(this::addAtom);
+			this.atom = genesisAtom;
 			return this;
 		}
 
@@ -228,7 +215,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private ImmutableList<Atom> genesis;
+	private Atom genesis;
 
 	private ECPublicKey creator;
 
@@ -249,7 +236,7 @@ public class Universe {
 		this.type = builder.type;
 		this.timestamp = builder.timestamp.longValue();
 		this.creator = builder.creator;
-		this.genesis = builder.genesis.build();
+		this.genesis = builder.atom;
 	}
 
 	/**
@@ -331,7 +318,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public List<Atom> getGenesis() {
+	public Atom getGenesis() {
 		return genesis;
 	}
 
