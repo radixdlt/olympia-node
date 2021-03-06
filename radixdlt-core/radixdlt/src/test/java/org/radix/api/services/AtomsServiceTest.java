@@ -37,14 +37,10 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.RandomHasher;
 
@@ -74,16 +70,12 @@ public class AtomsServiceTest {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher = mock(EventDispatcher.class);
 	private final LedgerEntryStore store = mock(LedgerEntryStore.class);
 
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter = new ClientAtomToBinaryConverter(serialization);
-	private final CommandToBinaryConverter commandToBinaryConverter = new CommandToBinaryConverter(serialization);
 	private final AtomsService atomsService = new AtomsService(
 		mempoolAtomsRemoved,
 		mempoolAddFailures,
 		ledgerCommitted,
 		store,
 		mempoolAddEventDispatcher,
-		commandToBinaryConverter,
-		clientAtomToBinaryConverter,
 		hasher,
 		serialization
 	);
@@ -103,7 +95,7 @@ public class AtomsServiceTest {
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
 		var aid = Atom.aidOf(atom, hasher);
-		var optionalLedgerEntry = Optional.of(createLedgerEntry(atom));
+		var optionalLedgerEntry = Optional.of(createCommittedAtom(atom));
 
 		when(store.get(aid)).thenReturn(optionalLedgerEntry);
 
@@ -128,30 +120,17 @@ public class AtomsServiceTest {
 		return new Atom(List.of(group1), Map.of(), "Test message");
 	}
 
-	private LedgerEntry createLedgerEntry(final Atom atom) {
-		var clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-		var stateVersion = 1L;
+	private CommittedAtom createCommittedAtom(final Atom atom) {
+		final var clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		var ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		var proof = new VerifiedLedgerHeaderAndProof(
-			new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader),
-			new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader),
-			1L,
-			HashUtils.random256(), ledgerHeader,
+			BFTHeader.ofGenesisAncestor(ledgerHeader),
+			BFTHeader.ofGenesisAncestor(ledgerHeader),
+			0L, HashUtils.random256(), ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
 
-		var committedAtom = new CommittedAtom(clientAtom, stateVersion, proof);
-		var payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
-		var command = new Command(payload);
-		var storedCommittedCommand = new StoredCommittedCommand(command, committedAtom.getStateAndProof());
-		var binaryAtom = commandToBinaryConverter.toLedgerEntryContent(storedCommittedCommand);
-
-		return new LedgerEntry(
-			binaryAtom,
-			committedAtom.getStateVersion(),
-			committedAtom.getStateAndProof().getStateVersion(),
-			committedAtom.getAID()
-		);
+		return CommittedAtom.create(clientAtom, proof);
 	}
 }

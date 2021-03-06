@@ -28,6 +28,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.RadixEngineMempoolException;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,8 +36,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.radix.api.jsonrpc.AtomStatus.CONFLICT_LOSER;
-import com.radixdlt.statecomputer.RadixEngineMempoolException;
-import static org.radix.api.jsonrpc.AtomStatus.*;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_DUPLICATE;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_FULL;
@@ -152,8 +151,8 @@ public class AtomStatusEpic {
 
 		private AtomStatus extractAtomStatus(final RadixEngineException exception, final JSONObject data) {
 			switch (exception.getErrorCode()) {
-				case CONVERSION_ERROR:	// Fall through
-				case CM_ERROR: 			// Fall through
+				case CONVERSION_ERROR:    // Fall through
+				case CM_ERROR:            // Fall through
 				case HOOK_ERROR:
 					if (exception.getCmError() != null) {
 						data.put("cmError", exception.getCmError().getErrMsg());

@@ -17,23 +17,36 @@
 
 package org.radix.api.services;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.radix.api.AtomQuery;
+import org.radix.api.observable.AtomEventObserver;
+import org.radix.api.observable.Disposable;
+import org.radix.api.observable.ObservedAtomEvents;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.LedgerEntryStore;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,26 +54,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
-
 import java.util.function.Consumer;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.radix.api.AtomQuery;
-import org.radix.api.observable.AtomEventObserver;
-import org.radix.api.observable.Disposable;
-import org.radix.api.observable.ObservedAtomEvents;
-import com.radixdlt.identifiers.AID;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -116,29 +114,6 @@ public class AtomsService {
 		return serialization;
 	}
 
-	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
-		var committedAtom = atomCommittedToLedger.getAtom();
-
-		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
-		getAtomStatusListeners(committedAtom.getAID()).forEach(listener -> listener.onStored(committedAtom));
-	}
-
-	private void processSubmissionFailure(MempoolAddFailure failure) {
-		failure.getCommand()
-			.map(this::toClientAtom)
-			.map(ClientAtom::getAID)
-			.map(this::getAtomStatusListeners)
-			.ifPresent(list -> list.forEach(listener -> listener.onError(failure.getException())));
-	}
-
-	private Optional<ClientAtom> toClientAtom(final byte[] payload) {
-		try {
-			return of(serialization.fromDson(payload, ClientAtom.class));
-		} catch (DeserializeException e) {
-			return empty();
-		}
-	}
-
 	public void start() {
 		var lastStoredAtomDisposable = ledgerCommitted
 			.observeOn(Schedulers.io())
@@ -171,6 +146,7 @@ public class AtomsService {
 
 		return atom.getAID();
 	}
+
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
 		addAtomStatusListener(aid, subscriber);
 		return () -> removeAtomStatusListener(aid, subscriber);
@@ -189,20 +165,20 @@ public class AtomsService {
 		};
 	}
 
-	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
-		return new AtomEventObserver(
-			atomQuery, observer, executorService, store, serialization, hasher
-		);
-	}
-
 	public long getWaitingCount() {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
+	public Optional<JSONObject> getAtomByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
 			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
+	}
+
+	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
+		return new AtomEventObserver(
+			atomQuery, observer, executorService, store, serialization, hasher
+		);
 	}
 
 	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
@@ -235,10 +211,6 @@ public class AtomsService {
 		}
 	}
 
-	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
-		return new AtomEventObserver(
-			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
-		);
 	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {
 		synchronized (this.singleAtomObserversLock) {
 			return getListeners(this.singleAtomObservers, aid);

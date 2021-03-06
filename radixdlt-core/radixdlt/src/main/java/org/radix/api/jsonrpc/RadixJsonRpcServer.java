@@ -107,12 +107,12 @@ public final class RadixJsonRpcServer {
 		handlers.put("Network.getPeers", networkHandler::handleGetPeers);
 
 		//Atom submission/retrieval
-		//TODO: check and fix method naming
+		//TODO: check and fix method naming?
 		handlers.put("Atoms.submitAtom", atomHandler::handleSubmitAtom);
 		handlers.put("Ledger.getAtom", atomHandler::handleGetAtom);
 
 		//Ledger
-		//TODO: check and fix method naming
+		//TODO: check and fix method naming?
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 		handlers.put("Ledger.getAtoms", ledgerHandler::handleGetAtoms);
 	}
@@ -130,12 +130,9 @@ public final class RadixJsonRpcServer {
 			exchange.setMaxEntitySize(maxRequestSizeBytes);
 			exchange.startBlocking();
 
-			var stream = exchange.getInputStream();
-			var reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-			var requestBody = CharStreams.toString(reader);
+			var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
 			return handleRpc(requestBody);
 		} catch (IOException e) {
-			System.out.println(e.getMessage());
 			throw new IllegalStateException("RPC failed", e);
 		}
 	}

@@ -120,11 +120,11 @@ public class Faucet {
 	public static void main(String[] args) throws Exception {
 		logVersion();
 
-		final var api = loadApi();
-		final var source = createRequestSource();
-		final var tokenRRI = retrieveTokenRRI();
-		final var rateLimiter = prepareRateLimiter();
-		final var leakAmount = retrieveLeakAmount();
+		var api = loadApi();
+		var source = createRequestSource();
+		var tokenRRI = retrieveTokenRRI();
+		var rateLimiter = prepareRateLimiter();
+		var leakAmount = retrieveLeakAmount();
 
 		log.info(
 			"Faucet starting on port {}, granting {} {} at max rate {}/second",
