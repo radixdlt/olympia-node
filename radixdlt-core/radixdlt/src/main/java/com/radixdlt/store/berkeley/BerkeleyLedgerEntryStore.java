@@ -437,8 +437,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
 					long versionDiff = header.getStateVersion() - twoAwayStateVersion;
 					if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
-						proofCursor.getNext(null, null, DEFAULT);
-						proofCursor.delete();
+						executeOrElseThrow(() -> proofCursor.getNext(null, null, DEFAULT), "Missing next.");
+						executeOrElseThrow(proofCursor::delete, "Could not delete header.");
 						systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
 					}
 				}
@@ -841,6 +841,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
 	}
 
+	private static void executeOrElseThrow(Supplier<OperationStatus> execute, String errorMessage) {
+		OperationStatus status = execute.get();
+		if (status != SUCCESS) {
+			throw new BerkeleyStoreException(errorMessage);
+		}
+	}
+
 	private void putNoOverwriteOrElseThrow(
 		Cursor cursor,
 		DatabaseEntry key,
@@ -857,10 +864,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		String errorMessage,
 		CounterType additionalCounterType
 	) {
-		OperationStatus status = cursor.putNoOverwrite(key, value);
-		if (status != SUCCESS) {
-			throw new BerkeleyStoreException(errorMessage);
-		}
+		executeOrElseThrow(() -> cursor.putNoOverwrite(key, value), errorMessage);
 		long amount = (long) key.getSize() + (long) value.getSize();
 		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
 		if (additionalCounterType != null) {
