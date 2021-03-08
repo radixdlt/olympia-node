@@ -48,7 +48,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.Transaction;
@@ -81,8 +80,6 @@ import java.util.function.Supplier;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
 import static com.radixdlt.store.LedgerEntryStoreResult.success;
-import static com.radixdlt.store.LedgerSearchMode.EXACT;
-import static com.radixdlt.store.LedgerSearchMode.RANGE;
 import static com.radixdlt.store.berkeley.AtomSecondaryCreator.creator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -112,14 +109,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final Map<Long, Set<StoreIndex>> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
+	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
+
 	private Database atomIdDatabase; // Atoms by AID; Append-only
 
 	private Database particleDatabase; // Write/Delete
-	private Database proofDatabase; // Write/Delete
-	private Database vertexStoreDatabase; // Vertex Store; Write/Delete
+	private Database vertexStoreDatabase; // Write/Delete
 
-	private SecondaryDatabase epochHeaderDatabase;
-	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
+	private Database proofDatabase; // Write/Delete
+	private SecondaryDatabase epochProofDatabase;
+
 	private AppendLog atomLog; //Atom data append only log
 
 	@Inject
@@ -179,7 +178,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		safeClose(atomIdDatabase);
 		safeClose(particleDatabase);
 
-		safeClose(epochHeaderDatabase);
+		safeClose(epochProofDatabase);
 		safeClose(proofDatabase);
 
 		safeClose(vertexStoreDatabase);
@@ -297,7 +296,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
 			atomIdDatabase = env.openDatabase(null, ATOM_ID_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
-			epochHeaderDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
+			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig);
 
 			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
@@ -473,6 +472,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			particleDatabase.putNoOverwrite(txn, particleKey, upEntry());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
 			particleDatabase.put(txn, particleKey, downEntry());
+		} else {
+			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
 	}
 
@@ -590,9 +591,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public SearchCursor search(StoreIndex index, LedgerSearchMode mode) {
+	public SearchCursor search(StoreIndex index) {
 		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
 
 		return withTime(() -> {
 			try (var databaseCursor = toSecondaryCursor(null)) {
@@ -600,14 +600,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				var key = entry(index.asKey());
 				var data = entry();
 
-				if (mode == EXACT) {
-					if (databaseCursor.getSearchKey(key, pKey, data, DEFAULT) == SUCCESS) {
-						return new BerkeleySearchCursor(this, pKey.getData(), key.getData(), data.getData());
-					}
-				} else if (mode == RANGE) {
-					if (databaseCursor.getSearchKeyRange(key, pKey, null, DEFAULT) == SUCCESS) {
-						return new BerkeleySearchCursor(this, pKey.getData(), key.getData(), data.getData());
-					}
+				if (databaseCursor.getSearchKey(key, pKey, data, DEFAULT) == SUCCESS) {
+					return new BerkeleySearchCursor(this, pKey.getData(), key.getData(), data.getData());
 				}
 
 				return null;
@@ -616,23 +610,15 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public boolean contains(Transaction tx, StoreIndex index, LedgerSearchMode mode) {
+	public boolean contains(Transaction tx, StoreIndex index) {
 		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
 
 		return withTime(() -> {
 			try (var databaseCursor = toSecondaryCursor(unwrap(tx))) {
 				var pKey = entry();
 				var key = entry(index.asKey());
 
-				switch (mode) {
-					case EXACT:
-						return databaseCursor.getSearchKey(key, pKey, null, DEFAULT) == SUCCESS;
-					case RANGE:
-						return databaseCursor.getSearchKeyRange(key, pKey, null, DEFAULT) == SUCCESS;
-					default:
-						return false;
-				}
+				return databaseCursor.getSearchKeyRange(key, pKey, null, DEFAULT) == SUCCESS;
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
 	}
@@ -670,7 +656,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
 		var value = entry();
-		var status = epochHeaderDatabase.get(null, toPKey(epoch), value, null);
+		var status = epochProofDatabase.get(null, toPKey(epoch), value, null);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}

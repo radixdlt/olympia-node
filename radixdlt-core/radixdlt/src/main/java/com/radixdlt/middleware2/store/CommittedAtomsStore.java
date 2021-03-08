@@ -41,7 +41,6 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -150,7 +149,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
 		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(storeIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(storeIndex);
 
 		V v = initial;
 		while (cursor != null) {

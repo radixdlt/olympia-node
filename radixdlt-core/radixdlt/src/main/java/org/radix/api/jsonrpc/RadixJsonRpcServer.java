@@ -30,7 +30,6 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.universe.Universe;
 
@@ -319,7 +318,7 @@ public final class RadixJsonRpcServer {
 
 				var index = new StoreIndex(IndexType.DESTINATION.getValue(), address.euid().toByteArray());
 				var collectedAids = new ArrayList<>();
-				var cursor = ledger.search(index, LedgerSearchMode.EXACT);
+				var cursor = ledger.search(index);
 
 				while (cursor != null) {
 					collectedAids.add(cursor.get());
