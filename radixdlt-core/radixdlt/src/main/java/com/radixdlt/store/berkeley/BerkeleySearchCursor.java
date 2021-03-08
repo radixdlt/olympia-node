@@ -19,7 +19,6 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.utils.Longs;
 import org.bouncycastle.util.Arrays;
 
@@ -29,21 +28,16 @@ import java.util.Objects;
  * A Tempo implementation of a {@link SearchCursor}
  */
 public class BerkeleySearchCursor implements SearchCursor {
-	private final StoreIndex.LedgerIndexType type;
 	private final byte[] primary;
 	private final byte[] index;
+	private final byte[] data;
 	private final BerkeleyLedgerEntryStore store;
 
-	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, StoreIndex.LedgerIndexType type, byte[] primary, byte[] index) {
-		this.type = type;
+	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, byte[] primary, byte[] index, byte[] data) {
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
 		this.store = store;
-	}
-
-	@Override
-	public StoreIndex.LedgerIndexType getType() {
-		return this.type;
+		this.data = data;
 	}
 
 	public byte[] getPrimary() {
@@ -61,7 +55,7 @@ public class BerkeleySearchCursor implements SearchCursor {
 
 	@Override
 	public AID get() {
-		return AID.from(this.primary, Long.BYTES);
+		return AID.from(this.data, Long.BYTES);
 	}
 
 	@Override

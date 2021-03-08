@@ -319,7 +319,7 @@ public final class RadixJsonRpcServer {
 
 				var index = new StoreIndex(IndexType.DESTINATION.getValue(), address.euid().toByteArray());
 				var collectedAids = new ArrayList<>();
-				var cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+				var cursor = ledger.search(index, LedgerSearchMode.EXACT);
 
 				while (cursor != null) {
 					collectedAids.add(cursor.get());

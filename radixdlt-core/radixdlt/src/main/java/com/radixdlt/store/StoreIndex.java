@@ -137,8 +137,4 @@ public final class StoreIndex implements Comparable<StoreIndex> {
 		}
 		return 0;
 	}
-
-	public enum LedgerIndexType {
-		UNIQUE, DUPLICATE
-	}
 }

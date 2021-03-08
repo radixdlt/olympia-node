@@ -56,22 +56,20 @@ public interface LedgerEntryStoreView {
 	/**
 	 * Searches for a certain index.
 	 *
-	 * @param type The type of index
 	 * @param index The index
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	SearchCursor search(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	SearchCursor search(StoreIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Checks whether a certain index is contained in this ledger.
 	 *
-	 * @param type The type of index
 	 * @param index The index
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	boolean contains(Transaction tx, StoreIndex index, LedgerSearchMode mode);
 
 	Spin getSpin(Transaction tx, Particle particle);
 

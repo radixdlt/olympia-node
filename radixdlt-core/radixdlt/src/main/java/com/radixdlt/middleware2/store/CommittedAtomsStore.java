@@ -45,7 +45,6 @@ import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.store.Transaction;
 
@@ -151,7 +150,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
 		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(storeIndex, LedgerSearchMode.EXACT);
 
 		V v = initial;
 		while (cursor != null) {

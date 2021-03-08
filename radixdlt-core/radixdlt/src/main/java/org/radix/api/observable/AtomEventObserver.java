@@ -135,8 +135,7 @@ public class AtomEventObserver {
 				atomQuery.getDestination().toByteArray()
 			);
 
-		SearchCursor cursor =
-			store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(destinationIndex, LedgerSearchMode.EXACT);
 
 		Set<AID> processedAtomIds = Sets.newHashSet();
 		partialSync(cursor, processedAtomIds);
