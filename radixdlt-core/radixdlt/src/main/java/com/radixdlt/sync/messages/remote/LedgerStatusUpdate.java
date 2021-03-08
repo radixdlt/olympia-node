@@ -26,39 +26,39 @@ import java.util.Objects;
  */
 public final class LedgerStatusUpdate {
 
-    private final VerifiedLedgerHeaderAndProof header;
+	private final VerifiedLedgerHeaderAndProof header;
 
-    public static LedgerStatusUpdate create(VerifiedLedgerHeaderAndProof header) {
-        return new LedgerStatusUpdate(header);
-    }
+	public static LedgerStatusUpdate create(VerifiedLedgerHeaderAndProof header) {
+		return new LedgerStatusUpdate(header);
+	}
 
-    private LedgerStatusUpdate(VerifiedLedgerHeaderAndProof header) {
-        this.header = header;
-    }
+	private LedgerStatusUpdate(VerifiedLedgerHeaderAndProof header) {
+		this.header = header;
+	}
 
-    public VerifiedLedgerHeaderAndProof getHeader() {
-        return header;
-    }
+	public VerifiedLedgerHeaderAndProof getHeader() {
+		return header;
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        LedgerStatusUpdate that = (LedgerStatusUpdate) o;
-        return Objects.equals(header, that.header);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		LedgerStatusUpdate that = (LedgerStatusUpdate) o;
+		return Objects.equals(header, that.header);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(header);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(header);
+	}
 }
