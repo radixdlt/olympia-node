@@ -17,8 +17,8 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -73,7 +73,7 @@ public interface LedgerEntryStoreView {
 	 */
 	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
-	Spin getSpin(Transaction tx, HashCode particleId);
+	Spin getSpin(Transaction tx, Particle particle);
 
 	/**
 	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one

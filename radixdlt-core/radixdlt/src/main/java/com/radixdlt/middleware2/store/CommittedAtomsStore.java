@@ -197,6 +197,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		return store.getSpin(this.transaction, hasher.hash(particle));
+		return store.getSpin(this.transaction, particle);
 	}
 }

@@ -21,6 +21,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -466,13 +467,25 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
+	private DatabaseEntry upEntry() {
+		return entry(new byte[0]);
+	}
+
+	private DatabaseEntry downEntry() {
+		return entry(new byte[] {1});
+	}
+
+	private Spin entryToSpin(DatabaseEntry e) {
+		return e.getData().length > 0 ? Spin.DOWN : Spin.UP;
+	}
+
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
 		HashCode particleId = hasher.hash(instruction.getParticle());
 		var particleKey = entry(particleId.asBytes());
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-			upParticleDatabase.putNoOverwrite(txn, particleKey, entry(new byte[0]));
+			upParticleDatabase.putNoOverwrite(txn, particleKey, upEntry());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			upParticleDatabase.put(txn, particleKey, entry(new byte[0]));
+			upParticleDatabase.put(txn, particleKey, downEntry());
 		}
 	}
 
@@ -636,12 +649,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Spin getSpin(Transaction tx, HashCode particleId) {
+	public Spin getSpin(Transaction tx, Particle particle) {
+		var particleId = hasher.hash(particle);
 		var key = entry(particleId.asBytes());
 		var value = entry();
 		var status = upParticleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
 		if (status == SUCCESS) {
-			return value.getData().length > 0 ? Spin.DOWN : Spin.UP;
+			return entryToSpin(value);
 		} else {
 			return Spin.NEUTRAL;
 		}
