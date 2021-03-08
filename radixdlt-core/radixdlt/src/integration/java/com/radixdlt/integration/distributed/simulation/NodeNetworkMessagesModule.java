@@ -99,9 +99,9 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return network.remoteEventDispatcher(StatusResponse.class);
 	}
 
-	@ProvidesIntoSet
-	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
-		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
+	@Provides
+	private RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(LedgerStatusUpdate.class);
 	}
 
 	@Provides

@@ -38,6 +38,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
@@ -56,6 +57,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.Base58;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -134,8 +136,8 @@ public class RecoveryLivenessTest {
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
-			    public void configure() {
-				    bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+				public void configure() {
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 				}
@@ -193,11 +195,23 @@ public class RecoveryLivenessTest {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		stopDatabase(this.nodes.set(index, injector));
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+	}
 
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+	private void initSync() {
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+			final var injector = nodeCreators.get(nodeIndex).get();
+			withThreadCtx(injector, () -> {
+				// need to manually init sync check, normally sync runner schedules it periodically
+				injector.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
+			});
+		}
+	}
+
+	private void withThreadCtx(Injector injector, Runnable r) {
+		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
 		try {
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+			r.run();
 		} finally {
 			ThreadContext.remove("bftNode");
 		}
@@ -279,6 +293,7 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
 
 		assertThat(epochView.getEpoch()).isGreaterThan(1);
@@ -303,6 +318,7 @@ public class RecoveryLivenessTest {
 					restartNode(nodeIndex);
 				}
 			}
+			initSync();
 		}
 
 		assertThat(epochView.getEpoch()).isGreaterThan(1);
@@ -323,6 +339,7 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
 
 		assertThat(epochView.getEpoch()).isGreaterThan(1);
@@ -355,6 +372,7 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
 
 		assertThat(epochView.getEpoch()).isGreaterThan(1);
