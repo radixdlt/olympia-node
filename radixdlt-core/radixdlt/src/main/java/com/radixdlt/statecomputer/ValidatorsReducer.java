@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.engine.StateReducer;
 
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -28,10 +27,8 @@ import java.util.function.Supplier;
  * Reduces particles to Registered Validators
  */
 public final class ValidatorsReducer implements StateReducer<RegisteredValidators, RegisteredValidatorParticle> {
-    private final Supplier<RegisteredValidators> initial;
 
-    public ValidatorsReducer(Supplier<RegisteredValidators> initial) {
-        this.initial = Objects.requireNonNull(initial);
+    public ValidatorsReducer() {
     }
 
     @Override
@@ -46,7 +43,7 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
 
     @Override
     public Supplier<RegisteredValidators> initial() {
-        return initial;
+        return RegisteredValidators::create;
     }
 
     @Override

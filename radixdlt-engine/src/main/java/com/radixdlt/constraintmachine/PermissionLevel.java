@@ -24,5 +24,6 @@ package com.radixdlt.constraintmachine;
  */
 public enum PermissionLevel {
 	USER,
-	SUPER_USER // ordering matters
+	SUPER_USER,
+	SYSTEM // ordering matters
 }

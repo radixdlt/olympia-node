@@ -62,6 +62,18 @@ public final class TokDefParticleFactory {
 		);
 	}
 
+	public StakedTokensParticle createStaked(RadixAddress delegate, RadixAddress address, UInt256 amount, long nonce) {
+		return new StakedTokensParticle(
+			delegate,
+			address,
+			amount,
+			granularity,
+			tokDefRef,
+			tokenPermissions,
+			nonce
+		);
+	}
+
 	public static TokDefParticleFactory create(
 		RRI tokDefRef,
 		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions,
@@ -72,5 +84,9 @@ public final class TokDefParticleFactory {
 		Objects.requireNonNull(granularity);
 
 		return new TokDefParticleFactory(tokDefRef, tokenPermissions, granularity);
+	}
+
+	public static TokDefParticleFactory createFrom(TransferrableTokensParticle particle) {
+		return new TokDefParticleFactory(particle.getTokDefRef(), particle.getTokenPermissions(), particle.getGranularity());
 	}
 }

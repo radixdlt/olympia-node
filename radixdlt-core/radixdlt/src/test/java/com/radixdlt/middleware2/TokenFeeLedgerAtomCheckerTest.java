@@ -29,6 +29,7 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.FeeTable;
@@ -87,7 +88,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -99,7 +100,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("instructions");
 	}
 
@@ -111,7 +112,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
 	}
 
@@ -135,7 +136,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
-		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -156,7 +157,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
-		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -178,7 +179,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
 	}
 
@@ -199,6 +200,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
-		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 }

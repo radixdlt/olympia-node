@@ -30,6 +30,8 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	 */
 	void storeAtom(T atom);
 
+	boolean containsAtom(T atom);
+
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.
 	 * Must implement this until we get rid of optimistic concurrency.

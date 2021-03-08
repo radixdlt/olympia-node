@@ -37,7 +37,7 @@ import com.radixdlt.store.LastEpochProof;
 import java.util.Optional;
 
 /**
- * Manages consensus recovery on restarts
+ * Manages consensus recovery on startup
  */
 public class ConsensusRecoveryModule extends AbstractModule {
 	@Provides
@@ -85,6 +85,4 @@ public class ConsensusRecoveryModule extends AbstractModule {
 			}
 		}).orElse(new SafetyState());
 	}
-
-
 }
