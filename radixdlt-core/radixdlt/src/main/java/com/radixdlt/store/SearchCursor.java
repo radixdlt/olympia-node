@@ -32,10 +32,4 @@ public interface SearchCursor {
 	AID get();
 
 	SearchCursor next();
-
-	SearchCursor previous();
-
-	SearchCursor first();
-
-	SearchCursor last();
 }

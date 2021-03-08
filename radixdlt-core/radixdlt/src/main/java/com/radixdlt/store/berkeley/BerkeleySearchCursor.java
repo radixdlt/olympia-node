@@ -62,19 +62,4 @@ public class BerkeleySearchCursor implements SearchCursor {
 	public SearchCursor next() {
 		return this.store.getNext(this);
 	}
-
-	@Override
-	public SearchCursor previous() {
-		return this.store.getPrev(this);
-	}
-
-	@Override
-	public SearchCursor first() {
-		return this.store.getFirst(this);
-	}
-
-	@Override
-	public SearchCursor last() {
-		return this.store.getLast(this);
-	}
 }
