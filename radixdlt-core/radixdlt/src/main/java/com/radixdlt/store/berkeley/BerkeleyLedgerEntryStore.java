@@ -17,8 +17,11 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
@@ -101,12 +104,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String PENDING_DB_NAME = "tempo2.pending";
-	private static final String ATOMS_DB_NAME = "tempo2.atoms";
+	private static final String ATOMS_DB_NAME = "radx.atom_db";
+	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String ATOM_LOG = "radix.ledger";
 
 	private final Serialization serialization;
+	private final Hasher hasher;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
@@ -114,6 +119,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
+	private Database upParticleDatabase;
 	private Database headerDatabase;
 	private Database epochHeaderDatabase;
 	private Database vertexStoreDatabase; // Vertex Store
@@ -124,11 +130,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Inject
 	public BerkeleyLedgerEntryStore(
 		Serialization serialization,
+		Hasher hasher,
 		DatabaseEnvironment dbEnv,
 		StoreConfig storeConfig,
 		SystemCounters systemCounters
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
+		this.hasher = Objects.requireNonNull(hasher);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.storeConfig = storeConfig;
@@ -174,6 +182,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		safeClose(uniqueIndicesDatabase);
 		safeClose(duplicatedIndicesDatabase);
 		safeClose(atomDatabase);
+		safeClose(upParticleDatabase);
 
 		safeClose(epochHeaderDatabase);
 		safeClose(headerDatabase);
@@ -291,6 +300,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			upParticleDatabase = env.openDatabase(null, UP_PARTICLE_DB_NAME, primaryConfig);
 			headerDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
 			epochHeaderDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, headerDatabase, buildEpochProofConfig());
 			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomDatabase, uniqueIndicesConfig);
@@ -478,6 +488,18 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			var atomPosData = entry(Longs.toByteArray(offset));
 			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
+
+			atom.getCMInstruction().getMicroInstructions().stream()
+				.filter(CMMicroInstruction::isPush)
+				.forEach(i -> {
+					HashCode particleId = hasher.hash(i.getParticle());
+					var particleKey = entry(particleId.asBytes());
+					if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+						upParticleDatabase.putNoOverwrite(transaction, particleKey, entry(new byte[0]));
+					} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
+						upParticleDatabase.delete(transaction, particleKey);
+					}
+				});
 
 			// Store header/proof
 			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
