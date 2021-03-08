@@ -21,6 +21,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
@@ -237,12 +238,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public LedgerEntryStoreResult store(
 		Transaction tx,
 		CommittedAtom atom,
-		Set<StoreIndex> uniqueIndices,
 		Set<StoreIndex> duplicateIndices
 	) {
 		return withTime(() -> {
 			try {
-				return doStore(atom, makeIndices(atom, uniqueIndices, duplicateIndices), unwrap(tx));
+				return doStore(atom, makeIndices(atom, duplicateIndices), unwrap(tx));
 			} catch (Exception e) {
 				throw new BerkeleyStoreException("Commit of atom failed", e);
 			}
@@ -475,7 +475,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
 			upParticleDatabase.putNoOverwrite(txn, particleKey, entry(new byte[0]));
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			upParticleDatabase.delete(txn, particleKey);
+			upParticleDatabase.put(txn, particleKey, entry(new byte[0]));
 		}
 	}
 
@@ -673,11 +673,15 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public boolean containsParticle(Transaction tx, HashCode particleId) {
+	public Spin getSpin(Transaction tx, HashCode particleId) {
 		var key = entry(particleId.asBytes());
 		var value = entry();
 		var status = upParticleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
-		return status == SUCCESS;
+		if (status == SUCCESS) {
+			return value.getData().length > 0 ? Spin.DOWN : Spin.UP;
+		} else {
+			return Spin.NEUTRAL;
+		}
 	}
 
 	@Override

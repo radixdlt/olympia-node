@@ -29,7 +29,6 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SerializerId2("tempo.indices")
 public final class LedgerEntryIndices {
@@ -68,8 +67,8 @@ public final class LedgerEntryIndices {
 		return this.duplicateIndices;
 	}
 
-	static LedgerEntryIndices makeIndices(CommittedAtom committedAtom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		List<StoreIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
+	static LedgerEntryIndices makeIndices(CommittedAtom committedAtom, Set<StoreIndex> duplicateIndices) {
+		List<StoreIndex> offendingIndices = duplicateIndices.stream()
 			.filter(index -> index.getPrefix() == ENTRY_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());
 		if (!offendingIndices.isEmpty()) {
@@ -82,7 +81,6 @@ public final class LedgerEntryIndices {
 		ImmutableSet.Builder<StoreIndex> allDuplicateIndices = ImmutableSet.builder();
 
 		// add application indices
-		allUniqueIndices.addAll(uniqueIndices);
 		allDuplicateIndices.addAll(duplicateIndices);
 
 		// add internal indices
