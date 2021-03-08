@@ -35,7 +35,6 @@ import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -46,7 +45,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerSearchMode;
@@ -79,25 +77,18 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.store.LedgerEntryStoreResult.conflict;
 import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
 import static com.radixdlt.store.LedgerEntryStoreResult.success;
 import static com.radixdlt.store.LedgerSearchMode.EXACT;
 import static com.radixdlt.store.LedgerSearchMode.RANGE;
-import static com.radixdlt.store.StoreIndex.from;
 import static com.radixdlt.store.berkeley.AtomSecondaryCreator.creator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
-import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
-import static com.radixdlt.store.berkeley.LedgerEntryIndices.makeIndices;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.LockMode.READ_COMMITTED;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
-
-import static java.lang.String.format;
 
 @Singleton
 public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
@@ -118,14 +109,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
+	private final Map<AID, Set<StoreIndex>> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
 	private Database upParticleDatabase;
 	private Database headerDatabase;
 	private Database epochHeaderDatabase;
 	private Database vertexStoreDatabase; // Vertex Store
-	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
+	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by AID
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
 	private AppendLog atomLog; //Atom data append only log
 
@@ -199,7 +190,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public boolean contains(AID aid) {
 		return withTime(() -> {
-			var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
+			var key = entry(aid.getBytes());
 			return SUCCESS == uniqueIndicesDatabase.get(null, key, null, DEFAULT);
 		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
 	}
@@ -208,7 +199,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public Optional<ClientAtom> get(AID aid) {
 		return withTime(() -> {
 			try {
-				var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
+				var key = entry(aid.getBytes());
 				var value = entry();
 
 				if (uniqueIndicesDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
@@ -242,7 +233,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	) {
 		return withTime(() -> {
 			try {
-				return doStore(atom, makeIndices(atom, duplicateIndices), unwrap(tx));
+				return doStore(atom, duplicateIndices, unwrap(tx));
 			} catch (Exception e) {
 				throw new BerkeleyStoreException("Commit of atom failed", e);
 			}
@@ -341,7 +332,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private SecondaryConfig buildDuplicatesConfig() {
 		return (SecondaryConfig) new SecondaryConfig()
-			.setMultiKeyCreator(creator(currentIndices, LedgerEntryIndices::getDuplicateIndices))
+			.setMultiKeyCreator(creator(currentIndices))
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setSortedDuplicates(true);
@@ -349,7 +340,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private SecondaryConfig buildUniqueIndicesConfig() {
 		return (SecondaryConfig) new SecondaryConfig()
-			.setMultiKeyCreator(creator(currentIndices, LedgerEntryIndices::getUniqueIndices))
+			.setKeyCreator(
+				(secondary, key, data, result) -> {
+					AID aid = getAidFromPKey(key);
+					result.setData(aid.getBytes());
+					return true;
+				}
+			)
 			.setAllowCreate(true)
 			.setTransactional(true);
 	}
@@ -481,9 +478,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
-		LedgerEntryIndices indices,
+		Set<StoreIndex> indices,
 		com.sleepycat.je.Transaction transaction
-	) throws DeserializeException {
+	) {
 		var aid = atom.getAID();
 		var atomData = serialize(atom.getClientAtom());
 
@@ -515,8 +512,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			if (transaction != null) {
 				transaction.abort();
 			}
-
-			return conflict(collectConflictingData(atomData, indices));
+			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
 		} finally {
 			currentIndices.remove(aid);
 		}
@@ -533,39 +529,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private <T> DatabaseEntry serializeAll(T instance) {
 		return entry(serialization.toDson(instance, Output.ALL));
-	}
-
-	private LedgerEntryConflict collectConflictingData(
-		byte[] ledgerEntryData, LedgerEntryIndices indices
-	) throws DeserializeException {
-		return new LedgerEntryConflict(
-			deserializeOrElseFail(ledgerEntryData, ClientAtom.class),
-			doGetConflictingAtoms(indices.getUniqueIndices(), null)
-		);
-	}
-
-	private ImmutableMap<StoreIndex, ClientAtom> doGetConflictingAtoms(
-		Set<StoreIndex> indices,
-		com.sleepycat.je.Transaction transaction
-	) {
-		var conflictingAtoms = ImmutableMap.<StoreIndex, ClientAtom>builder();
-		try {
-			var key = entry();
-			var value = entry();
-
-			for (var uniqueIndex : indices) {
-				key.setData(uniqueIndex.asKey());
-				if (uniqueIndicesDatabase.get(transaction, key, value, DEFAULT) == SUCCESS) {
-					addBytesRead(value, key);
-					conflictingAtoms.put(uniqueIndex, deserializeOrElseFail(value.getData(), ClientAtom.class));
-				}
-			}
-		} catch (Exception e) {
-			var indicesText = indices.stream().map(StoreIndex::toHexString).collect(Collectors.joining(", "));
-			fail(format("Failed getting conflicting atom for unique indices %s: '%s'", indicesText, e.toString()), e);
-		}
-
-		return conflictingAtoms.build();
 	}
 
 	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {

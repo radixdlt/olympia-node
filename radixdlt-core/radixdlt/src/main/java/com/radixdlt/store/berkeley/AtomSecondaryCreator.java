@@ -48,10 +48,7 @@ class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
 		indices.forEach(index -> secondaries.add(BerkeleyLedgerEntryStore.entry(index.asKey())));
 	}
 
-	public static AtomSecondaryCreator creator(
-		Map<AID, LedgerEntryIndices> atomIndices,
-		Function<LedgerEntryIndices, Set<StoreIndex>> indexer
-	) {
+	public static AtomSecondaryCreator creator(Map<AID, Set<StoreIndex>> atomIndices) {
 		return new AtomSecondaryCreator(
 			key -> {
 				var ledgerEntryIndices = atomIndices.get(BerkeleyLedgerEntryStore.getAidFromPKey(key));
@@ -61,7 +58,7 @@ class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
 						"Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available"
 					);
 				}
-				return indexer.apply(ledgerEntryIndices);
+				return ledgerEntryIndices;
 			}
 		);
 	}
