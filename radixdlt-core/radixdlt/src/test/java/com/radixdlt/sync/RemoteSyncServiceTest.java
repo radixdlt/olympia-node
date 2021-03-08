@@ -42,8 +42,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -51,8 +51,8 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +61,7 @@ import org.radix.universe.system.RadixSystem;
 public class RemoteSyncServiceTest {
 
 	private RemoteSyncService processor;
-	private AddressBook addressBook;
+	private PeersView peersView;
 	private LocalSyncService localSyncService;
 	private CommittedReader reader;
 	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
@@ -70,7 +70,7 @@ public class RemoteSyncServiceTest {
 
 	@Before
 	public void setUp() {
-		this.addressBook = mock(AddressBook.class);
+		this.peersView = mock(PeersView.class);
 		this.localSyncService = mock(LocalSyncService.class);
 		this.reader = mock(CommittedReader.class);
 		this.statusResponseDispatcher =  rmock(RemoteEventDispatcher.class);
@@ -83,7 +83,7 @@ public class RemoteSyncServiceTest {
 		when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
 
 		this.processor = new RemoteSyncService(
-			addressBook,
+			peersView,
 			localSyncService,
 			reader,
 			statusResponseDispatcher,
@@ -166,7 +166,7 @@ public class RemoteSyncServiceTest {
 		final var peer2BftNode = BFTNode.create(peer2.getSystem().getKey());
 		when(validatorSet.containsNode(peer2BftNode)).thenReturn(false);
 
-		when(this.addressBook.peers()).thenReturn(Stream.of(peer1, peer2));
+		when(this.peersView.peers()).thenReturn(List.of(peer1BftNode, peer2BftNode));
 
 		processor.ledgerUpdateEventProcessor().process(ledgerUpdate);
 

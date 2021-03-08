@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 import static java.util.function.Predicate.not;
 
-import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -55,7 +55,7 @@ import org.apache.logging.log4j.Logger;
 public final class RemoteSyncService {
 	private static final Logger log = LogManager.getLogger();
 
-	private final AddressBook addressBook;
+	private final PeersView peersView;
 	private final LocalSyncService localSyncService; // TODO: consider removing this dependency
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
@@ -70,7 +70,7 @@ public final class RemoteSyncService {
 	private BFTValidatorSet currentValidatorSet;
 
 	public RemoteSyncService(
-		AddressBook addressBook,
+		PeersView peersView,
 		LocalSyncService localSyncService,
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
@@ -82,7 +82,7 @@ public final class RemoteSyncService {
 		VerifiedLedgerHeaderAndProof initialHeader,
 		BFTValidatorSet initialValidatorSet
 	) {
-		this.addressBook = Objects.requireNonNull(addressBook);
+		this.peersView = Objects.requireNonNull(peersView);
 		this.localSyncService = Objects.requireNonNull(localSyncService);
 		this.committedReader = Objects.requireNonNull(committedReader);
 		this.syncConfig = Objects.requireNonNull(syncConfig);
@@ -167,8 +167,8 @@ public final class RemoteSyncService {
 
 		final var statusUpdate = LedgerStatusUpdate.create(header);
 
-		final var nonValidatorPeers = this.addressBook.peers()
-			.map(peer -> BFTNode.create(peer.getSystem().getKey()))
+		final var nonValidatorPeers = this.peersView.peers().stream()
+			.map(peer -> BFTNode.create(peer.getKey()))
 			.filter(not(this.currentValidatorSet::containsNode))
 			.collect(Collectors.toList());
 

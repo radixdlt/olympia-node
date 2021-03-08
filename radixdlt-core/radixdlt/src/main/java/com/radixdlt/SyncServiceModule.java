@@ -37,7 +37,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
@@ -119,7 +119,7 @@ public class SyncServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RemoteSyncService remoteSyncServiceProcessor(
-		AddressBook addressBook,
+		PeersView peersView,
 		LocalSyncService localSyncService,
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
@@ -132,7 +132,7 @@ public class SyncServiceModule extends AbstractModule {
 		BFTConfiguration initialConfiguration
 	) {
 		return new RemoteSyncService(
-			addressBook,
+			peersView,
 			localSyncService,
 			committedReader,
 			statusResponseDispatcher,
