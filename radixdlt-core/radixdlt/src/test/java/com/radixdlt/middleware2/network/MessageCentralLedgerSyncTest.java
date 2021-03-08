@@ -38,6 +38,7 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -84,6 +85,19 @@ public class MessageCentralLedgerSyncTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(SyncResponse.class));
+		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
+	}
+
+	@Test
+	public void when_send_ledger_status_update__then_magic_should_be_same_as_universe() {
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(node.getKey()).thenReturn(key);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
+		when(peer.hasSystem()).thenReturn(true);
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
+		messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(node, mock(LedgerStatusUpdate.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -171,6 +172,29 @@ public class RemoteSyncServiceTest {
 		processor.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
 		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer2BftNode), eq(LedgerStatusUpdate.create(tail)));
+		verifyNoMoreInteractions(statusUpdateDispatcher);
+	}
+
+	@Test
+	public void when_ledger_update_but_syncing__then_dont_send_status_update() {
+		final var tail = mock(VerifiedLedgerHeaderAndProof.class);
+		final var ledgerUpdate = mock(LedgerUpdate.class);
+		final var accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(2L);
+		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
+		when(ledgerUpdate.getTail()).thenReturn(tail);
+
+		final var validatorSet = mock(BFTValidatorSet.class);
+		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+
+		when(this.localSyncService.getSyncState())
+			.thenReturn(SyncState.SyncingState.init(
+				mock(VerifiedLedgerHeaderAndProof.class),
+				ImmutableList.of(),
+				mock(VerifiedLedgerHeaderAndProof.class))
+			);
+
+		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusUpdateDispatcher);
 	}
 
