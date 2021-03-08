@@ -93,6 +93,7 @@ import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.makeIndices;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
+import static com.sleepycat.je.LockMode.READ_COMMITTED;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 import static java.lang.String.format;
@@ -468,6 +469,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
+	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
+		HashCode particleId = hasher.hash(instruction.getParticle());
+		var particleKey = entry(particleId.asBytes());
+		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+			upParticleDatabase.putNoOverwrite(txn, particleKey, entry(new byte[0]));
+		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
+			upParticleDatabase.delete(txn, particleKey);
+		}
+	}
+
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
 		LedgerEntryIndices indices,
@@ -489,17 +500,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 
+			// Update particles
 			atom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isPush)
-				.forEach(i -> {
-					HashCode particleId = hasher.hash(i.getParticle());
-					var particleKey = entry(particleId.asBytes());
-					if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-						upParticleDatabase.putNoOverwrite(transaction, particleKey, entry(new byte[0]));
-					} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-						upParticleDatabase.delete(transaction, particleKey);
-					}
-				});
+				.forEach(i -> this.updateParticle(transaction, i));
 
 			// Store header/proof
 			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
@@ -666,6 +670,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				}
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
+	}
+
+	@Override
+	public boolean containsParticle(Transaction tx, HashCode particleId) {
+		var key = entry(particleId.asBytes());
+		var value = entry();
+		var status = upParticleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		return status == SUCCESS;
 	}
 
 	@Override

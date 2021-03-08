@@ -83,12 +83,21 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
-	private boolean particleExists(Particle particle, boolean isInput) {
+	private boolean particleIsUp(Particle particle) {
+		return store.containsParticle(this.transaction, hasher.hash(particle));
+	}
+
+	private boolean particleIsDown(Particle particle) {
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
-		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
+			EngineAtomIndices.IndexType.PARTICLE_DOWN,
 			Particle.euidOf(particle, hasher)
 		);
-		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+		return store.contains(
+			this.transaction,
+			StoreIndex.LedgerIndexType.UNIQUE,
+			new StoreIndex(indexableBytes),
+			LedgerSearchMode.EXACT
+		);
 	}
 
 	@Override
@@ -206,9 +215,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		if (particleExists(particle, true)) {
+		if (particleIsDown(particle)) {
 			return Spin.DOWN;
-		} else if (particleExists(particle, false)) {
+		} else if (particleIsUp(particle)) {
 			return Spin.UP;
 		}
 		return Spin.NEUTRAL;

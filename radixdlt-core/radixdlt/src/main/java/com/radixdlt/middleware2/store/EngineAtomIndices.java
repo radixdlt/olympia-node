@@ -23,7 +23,6 @@ import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
@@ -33,7 +32,6 @@ import java.util.Set;
 
 public class EngineAtomIndices {
 	public enum IndexType {
-		PARTICLE_UP((byte) 2),
 		PARTICLE_DOWN((byte) 3),
 		PARTICLE_CLASS((byte) 4),
 		UID((byte) 5),
@@ -63,24 +61,11 @@ public class EngineAtomIndices {
 		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 
 		radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isPush)
-				.forEach(i -> {
-					Spin nextSpin = i.getNextSpin();
-					final IndexType indexType;
-					switch (nextSpin) {
-						case UP:
-							indexType = IndexType.PARTICLE_UP;
-							break;
-						case DOWN:
-							indexType = IndexType.PARTICLE_DOWN;
-							break;
-						default:
-							throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
-					}
-
-					final byte[] indexableBytes = toByteArray(indexType, Particle.euidOf(i.getParticle(), hasher));
-					uniqueIndices.add(new StoreIndex(indexableBytes));
-				});
+			.filter(i -> i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN)
+			.forEach(i -> {
+				final byte[] indexableBytes = toByteArray(IndexType.PARTICLE_DOWN, Particle.euidOf(i.getParticle(), hasher));
+				uniqueIndices.add(new StoreIndex(indexableBytes));
+			});
 
 
 		final ImmutableSet<EUID> destinations = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()

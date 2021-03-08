@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -70,6 +71,8 @@ public interface LedgerEntryStoreView {
 	 * @return The resulting ledger cursor
 	 */
 	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+
+	boolean containsParticle(Transaction tx, HashCode particleId);
 
 	/**
 	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one
