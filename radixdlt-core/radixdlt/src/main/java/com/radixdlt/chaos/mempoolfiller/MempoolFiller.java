@@ -94,6 +94,7 @@ public final class MempoolFiller {
 	public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
 		return u -> {
 			u.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
+			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
 			if (u.enabled() == (to != null)) {
 				return;

@@ -18,6 +18,7 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -25,20 +26,22 @@ import java.util.OptionalInt;
  */
 public final class MempoolFillerUpdate {
     private final int parallelTransactions;
+    private final boolean sendToSelf;
 
-    private MempoolFillerUpdate(int parallelTransactions) {
+    private MempoolFillerUpdate(int parallelTransactions, boolean sendToSelf) {
         this.parallelTransactions = parallelTransactions;
+        this.sendToSelf = sendToSelf;
     }
 
-    public static MempoolFillerUpdate enable(int parallelTransactions) {
+    public static MempoolFillerUpdate enable(int parallelTransactions, boolean sendToSelf) {
     	if (parallelTransactions < 0) {
     	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
         }
-        return new MempoolFillerUpdate(parallelTransactions);
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf);
     }
 
     public static MempoolFillerUpdate disable() {
-        return new MempoolFillerUpdate(-1);
+        return new MempoolFillerUpdate(-1, false);
     }
 
     public boolean enabled() {
@@ -49,9 +52,13 @@ public final class MempoolFillerUpdate {
         return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
     }
 
+    public Optional<Boolean> sendToSelf() {
+        return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(parallelTransactions);
+        return Objects.hash(parallelTransactions, sendToSelf);
     }
 
     @Override
@@ -61,6 +68,7 @@ public final class MempoolFillerUpdate {
         }
 
         MempoolFillerUpdate other = (MempoolFillerUpdate) o;
-        return this.parallelTransactions == other.parallelTransactions;
+        return this.parallelTransactions == other.parallelTransactions
+            && this.sendToSelf == other.sendToSelf;
     }
 }
