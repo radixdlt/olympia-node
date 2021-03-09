@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -79,29 +78,29 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
 
-	@Provides
-	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(SyncRequest.class);
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> syncRequestDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(SyncRequest.class, network.remoteEventDispatcher(SyncRequest.class));
 	}
 
-	@Provides
-	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(SyncResponse.class);
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> syncResponseDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(SyncResponse.class, network.remoteEventDispatcher(SyncResponse.class));
 	}
 
-	@Provides
-	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(StatusRequest.class);
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> statusRequestDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(StatusRequest.class, network.remoteEventDispatcher(StatusRequest.class));
 	}
 
-	@Provides
-	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(StatusResponse.class);
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> statusResponseDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(StatusResponse.class, network.remoteEventDispatcher(StatusResponse.class));
 	}
 
-	@Provides
-	private RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(LedgerStatusUpdate.class);
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
 	}
 
 	@Provides

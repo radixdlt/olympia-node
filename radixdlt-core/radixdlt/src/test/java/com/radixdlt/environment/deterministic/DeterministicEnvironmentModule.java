@@ -41,7 +41,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 
 /**
@@ -88,11 +87,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	@Provides
 	RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(ControlledSender controlledSender) {
 		return controlledSender.getRemoteDispatcher(StatusResponse.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(LedgerStatusUpdate.class);
 	}
 
 	@Provides
