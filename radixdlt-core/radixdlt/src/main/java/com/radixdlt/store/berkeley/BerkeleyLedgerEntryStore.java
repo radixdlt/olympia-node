@@ -518,7 +518,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			}
 			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
 		} finally {
-			currentIndices.remove(aid);
+			currentIndices.remove(atom.getStateVersion());
 		}
 		return success();
 	}
