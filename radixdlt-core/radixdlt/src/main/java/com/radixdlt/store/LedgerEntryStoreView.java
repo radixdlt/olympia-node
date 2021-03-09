@@ -25,6 +25,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * A read-only view of a specific LedgerEntryStore
@@ -53,21 +54,13 @@ public interface LedgerEntryStoreView {
 
 	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
-	/**
-	 * Searches for a certain index.
-	 *
-	 * @param index The index
-	 * @return The resulting ledger cursor
-	 */
-	SearchCursor search(StoreIndex index);
+	SearchCursor search(byte[] destination);
 
-	/**
-	 * Checks whether a certain index is contained in this ledger.
-	 *
-	 * @param index The index
-	 * @return The resulting ledger cursor
-	 */
-	boolean contains(Transaction tx, StoreIndex index);
+	<U extends Particle, V> V reduceUpParticles(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer
+	);
 
 	Spin getSpin(Transaction tx, Particle particle);
 

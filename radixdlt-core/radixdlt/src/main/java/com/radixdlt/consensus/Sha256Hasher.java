@@ -40,6 +40,11 @@ public class Sha256Hasher implements Hasher {
 	}
 
 	@Override
+	public int bytes() {
+		return 32;
+	}
+
+	@Override
 	public HashCode hash(Object o) {
 		return HashUtils.sha256(serialization.toDson(o, DsonOutput.Output.HASH));
 	}

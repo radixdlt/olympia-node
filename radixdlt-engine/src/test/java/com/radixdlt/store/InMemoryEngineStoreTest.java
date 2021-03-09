@@ -40,7 +40,7 @@ public class InMemoryEngineStoreTest {
 	@Test
 	public void when_empty__then_can_retrieve_state() {
 		Object state = mock(Object.class);
-		Object nextState = this.store.compute(Particle.class, state, (o, p) -> mock(Object.class), (o, p) -> mock(Object.class));
+		Object nextState = this.store.compute(Particle.class, state, (o, p) -> mock(Object.class));
 		assertThat(state).isEqualTo(nextState);
 	}
 
@@ -57,7 +57,7 @@ public class InMemoryEngineStoreTest {
 		this.store.storeAtom(atom);
 		Object state = mock(Object.class);
 		Object expectedState = mock(Object.class);
-		Object nextState = this.store.compute(Particle.class, state, (o, p) -> expectedState, (o, p) -> mock(Object.class));
+		Object nextState = this.store.compute(Particle.class, state, (o, p) -> expectedState);
 		assertThat(expectedState).isEqualTo(nextState);
 	}
 

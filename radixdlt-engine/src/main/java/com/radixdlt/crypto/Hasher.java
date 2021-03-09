@@ -23,6 +23,7 @@ import com.google.common.hash.HashCode;
  * An object capable of hashing an object
  */
 public interface Hasher {
+	int bytes();
 
 	/**
 	 * Serializes and hashes an arbitrary object into a byte array.
