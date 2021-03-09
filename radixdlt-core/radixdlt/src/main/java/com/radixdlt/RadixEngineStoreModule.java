@@ -69,10 +69,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 			public <U extends Particle, V> V compute(
 				Class<U> particleClass,
 				V initial,
-				BiFunction<V, U, V> outputReducer,
-				BiFunction<V, U, V> inputReducer
+				BiFunction<V, U, V> outputReducer
 			) {
-				return committedAtomsStore.compute(particleClass, initial, outputReducer, inputReducer);
+				return committedAtomsStore.compute(particleClass, initial, outputReducer);
 			}
 
 			@Override

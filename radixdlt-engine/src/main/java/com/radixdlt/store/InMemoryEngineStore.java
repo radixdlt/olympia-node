@@ -63,8 +63,7 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 	public <U extends Particle, V> V compute(
 		Class<U> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer,
-		BiFunction<V, U, V> inputReducer
+		BiFunction<V, U, V> outputReducer
 	) {
 		V v = initial;
 		synchronized (lock) {
@@ -73,8 +72,6 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 				if (particleClass.isInstance(particle)) {
 					if (spinParticle.getSecond().equals(Spin.UP)) {
 						v = outputReducer.apply(v, particleClass.cast(particle));
-					} else {
-						v = inputReducer.apply(v, particleClass.cast(particle));
 					}
 				}
 			}

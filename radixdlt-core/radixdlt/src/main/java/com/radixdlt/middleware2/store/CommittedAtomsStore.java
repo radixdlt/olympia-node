@@ -22,25 +22,17 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -52,12 +44,10 @@ import java.util.function.BiFunction;
 import java.util.Optional;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
-	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
 	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
-	private final Hasher hasher;
 	private Transaction transaction;
 
 	public interface AtomIndexer {
@@ -69,15 +59,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
 		AtomIndexer atomIndexer,
-		Serialization serialization,
-		Hasher hasher,
 		EventDispatcher<AtomCommittedToLedger> committedDispatcher
 	) {
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.hasher = hasher;
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
@@ -103,7 +89,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		persistentVertexStore.save(this.transaction, vertexStoreState);
 	}
 
-	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
@@ -142,8 +127,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public <U extends Particle, V> V compute(
 		Class<U> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer,
-		BiFunction<V, U, V> inputReducer
+		BiFunction<V, U, V> outputReducer
 	) {
 		return store.reduceUpParticles(particleClass, initial, outputReducer);
 	}
