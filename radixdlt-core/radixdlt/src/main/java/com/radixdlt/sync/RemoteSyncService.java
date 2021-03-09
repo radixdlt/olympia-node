@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
@@ -33,13 +32,10 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static java.util.function.Predicate.not;
-
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -68,7 +64,6 @@ public final class RemoteSyncService {
 	private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
 	private VerifiedLedgerHeaderAndProof currentHeader;
-	private BFTValidatorSet currentValidatorSet;
 
 	@Inject
 	public RemoteSyncService(
@@ -81,8 +76,7 @@ public final class RemoteSyncService {
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
-		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
-		BFTValidatorSet initialValidatorSet
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader
 	) {
 		this.peersView = Objects.requireNonNull(peersView);
 		this.localSyncService = Objects.requireNonNull(localSyncService);
@@ -96,7 +90,6 @@ public final class RemoteSyncService {
 		this.ledgerStatusUpdateSendRateLimiter = RateLimiter.create(syncConfig.maxLedgerUpdatesRate());
 
 		this.currentHeader = initialHeader;
-		this.currentValidatorSet = initialValidatorSet;
 	}
 
 	public RemoteEventProcessor<SyncRequest> syncRequestEventProcessor() {
@@ -147,7 +140,6 @@ public final class RemoteSyncService {
 		final VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
-			ledgerUpdate.getNextValidatorSet().ifPresent(newValidatorSet -> this.currentValidatorSet = newValidatorSet);
 			this.sendStatusUpdateToSomePeers(updatedHeader);
 		}
 	}
@@ -159,14 +151,10 @@ public final class RemoteSyncService {
 
 		final var statusUpdate = LedgerStatusUpdate.create(header);
 
-		final var nonValidatorPeers = this.peersView.peers().stream()
-			.map(peer -> BFTNode.create(peer.getKey()))
-			.filter(not(this.currentValidatorSet::containsNode))
-			.collect(Collectors.toList());
+		final var currentPeers = new ArrayList<>(this.peersView.peers());
+		Collections.shuffle(currentPeers);
 
-		Collections.shuffle(nonValidatorPeers);
-
-		nonValidatorPeers.stream()
+		currentPeers.stream()
 			.limit(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
 			.forEach(peer -> {
 				if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {

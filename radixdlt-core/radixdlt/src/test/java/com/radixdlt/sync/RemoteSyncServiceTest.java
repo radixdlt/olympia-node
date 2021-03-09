@@ -91,8 +91,7 @@ public class RemoteSyncServiceTest {
 			SyncConfig.of(5000L, 10, 5000L, 10, 50),
 			mock(SystemCounters.class),
 			Comparator.comparingLong(AccumulatorState::getStateVersion),
-			initialHeader,
-			mock(BFTValidatorSet.class));
+			initialHeader);
 	}
 
 	@Test
@@ -143,7 +142,7 @@ public class RemoteSyncServiceTest {
 	}
 
 	@Test
-	public void when_ledger_update__then_send_status_update_to_non_validator_peers() {
+	public void when_ledger_update__then_send_status_update_to_random_peers() {
 		final var tail = mock(VerifiedLedgerHeaderAndProof.class);
 		final var ledgerUpdate = mock(LedgerUpdate.class);
 		final var accumulatorState = mock(AccumulatorState.class);
@@ -151,25 +150,21 @@ public class RemoteSyncServiceTest {
 		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
 		when(ledgerUpdate.getTail()).thenReturn(tail);
 
-		final var validatorSet = mock(BFTValidatorSet.class);
-		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
-
 		when(this.localSyncService.getSyncState())
 			.thenReturn(SyncState.IdleState.init(mock(VerifiedLedgerHeaderAndProof.class)));
 
 		final var peer1 = createPeer();
 		final var peer1BftNode = BFTNode.create(peer1.getSystem().getKey());
-		when(validatorSet.containsNode(peer1BftNode)).thenReturn(true);
 
 		final var peer2 = createPeer();
 		final var peer2BftNode = BFTNode.create(peer2.getSystem().getKey());
-		when(validatorSet.containsNode(peer2BftNode)).thenReturn(false);
 
 		when(this.peersView.peers()).thenReturn(List.of(peer1BftNode, peer2BftNode));
 
 		processor.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
 		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer2BftNode), eq(LedgerStatusUpdate.create(tail)));
+		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer1BftNode), eq(LedgerStatusUpdate.create(tail)));
 		verifyNoMoreInteractions(statusUpdateDispatcher);
 	}
 
