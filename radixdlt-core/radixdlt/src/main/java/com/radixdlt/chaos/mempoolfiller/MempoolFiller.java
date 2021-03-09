@@ -62,6 +62,7 @@ public final class MempoolFiller {
 	private final Random random;
 	private RadixAddress to = null;
 	private int numTransactions;
+	private boolean sendToSelf = false;
 
 	@Inject
 	public MempoolFiller(
@@ -131,7 +132,7 @@ public final class MempoolFiller {
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
-				int index = random.nextInt(peers.size() + 1);
+				int index = random.nextInt(sendToSelf ? peers.size() + 1: peers.size());
 				if (index == peers.size()) {
 					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 				} else {
@@ -139,7 +140,7 @@ public final class MempoolFiller {
 				}
 			});
 
-			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 100);
 		};
 	}
 }
