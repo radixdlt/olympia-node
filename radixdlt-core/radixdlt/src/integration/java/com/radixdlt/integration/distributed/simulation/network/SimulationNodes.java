@@ -18,6 +18,8 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -33,13 +35,13 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 
-import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -47,6 +49,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.util.function.Predicate.not;
 
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
@@ -116,20 +121,33 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs();
 
-		EventDispatcher<MempoolAdd> getDispatcher(BFTNode node);
+		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 
 		Map<BFTNode, SystemCounters> getSystemCounters();
+
+		void runModule(int nodeIndex, String name);
 	}
 
-	public RunningNetwork start() {
-		List<ModuleRunner> moduleRunners = this.nodeInstances.stream()
-			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
-			.collect(Collectors.toList());
+	public RunningNetwork start(ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners) {
+		final var moduleRunnersPerNode =
+			IntStream.range(0, this.nodeInstances.size())
+				.mapToObj(i -> {
+					final var injector = this.nodeInstances.get(i);
+					final var moduleRunners =
+						injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+					return Pair.of(i, moduleRunners);
+				})
+				.collect(ImmutableList.toImmutableList());
 
-		for (ModuleRunner moduleRunner : moduleRunners) {
-			moduleRunner.start();
+		for (var pair : moduleRunnersPerNode) {
+			final var nodeDisabledModuleRunners =
+				disabledModuleRunners.getOrDefault(pair.getFirst(), ImmutableSet.of());
+
+			pair.getSecond().entrySet().stream()
+				.filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
+				.forEach(e -> e.getValue().start());
 		}
 
 		final List<BFTNode> bftNodes = this.nodeInstances.stream()
@@ -191,10 +209,9 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public EventDispatcher<MempoolAdd> getDispatcher(BFTNode node) {
+			public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
 				int index = getNodes().indexOf(node);
-				var literal = new TypeLiteral<EventDispatcher<MempoolAdd>>() { };
-				return nodeInstances.get(index).getInstance(Key.get(literal));
+				return nodeInstances.get(index).getInstance(Environment.class).getDispatcher(eventClass);
 			}
 
 			@Override
@@ -209,6 +226,14 @@ public class SimulationNodes {
 						node -> node,
 						node -> nodeInstances.get(bftNodes.indexOf(node)).getInstance(SystemCounters.class)
 					));
+			}
+
+			@Override
+			public void runModule(int nodeIndex, String name) {
+				nodeInstances.get(nodeIndex)
+					.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
+					.get(name)
+					.start();
 			}
 		};
 	}

@@ -22,7 +22,13 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
@@ -43,7 +49,6 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -88,8 +93,9 @@ public class GetNextCommittedCommandsTest {
 	public void setup() {
 		this.injector = Guice.createInjector(
 			new CryptoModule(),
-			new MockedCheckpointModule(),
+			new MockedGenesisAtomModule(),
 			new PersistenceModule(),
+			new RadixEngineCheckpointModule(),
 			new RadixEngineStoreModule(),
 			new AbstractModule() {
 				@Override
@@ -98,9 +104,10 @@ public class GetNextCommittedCommandsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(GenesisValidatorSetProvider.class).toInstance(() -> BFTValidatorSet.from(List.of()));
 					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of());
 				}
 			}
 		);
@@ -134,7 +141,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(9);
+			.hasSize(10);
 	}
 
 	@Test
@@ -157,7 +164,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(9);
+			.hasSize(10);
 	}
 
 	@Test
@@ -169,7 +176,7 @@ public class GetNextCommittedCommandsTest {
 		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
 
 		assertThat(commands.getCommands())
-			.hasSize(90);
+			.hasSize(91);
 	}
 
 	@Test
@@ -202,6 +209,8 @@ public class GetNextCommittedCommandsTest {
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atom = new Atom("Atom for " + stateVersion); // Make hash different
+		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
+		atom.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
 		final var clientAtom = ClientAtom.convertFromApiAtom(atom, this.hasher);
 
 		final var proposedVertexId = HashUtils.random256();
@@ -235,6 +244,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return new CommittedAtom(clientAtom, stateVersion, proof);
+		return CommittedAtom.create(clientAtom, proof);
 	}
 }

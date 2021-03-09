@@ -31,6 +31,7 @@ import org.radix.universe.system.LocalSystem;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
@@ -38,19 +39,16 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -58,16 +56,13 @@ import com.stijndewitt.undertow.cors.Filter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -108,6 +103,7 @@ public final class RadixHttpServer {
 	private Undertow server;
 	private final EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+	private final RadixEngine<LedgerAtom> radixEngine;
 
 	@Inject(optional = true)
 	@MempoolFillerKey
@@ -115,16 +111,13 @@ public final class RadixHttpServer {
 
 	@Inject
 	public RadixHttpServer(
+		AtomsService atomsService,
 		InMemorySystemInfo inMemorySystemInfo,
-		Observable<MempoolAddFailure> mempoolAddFailures,
-		Observable<AtomCommittedToLedger> ledgerCommitted,
 		Map<String, ModuleRunner> moduleRunners,
+		RadixEngine<LedgerAtom> radixEngine,
 		LedgerEntryStore store,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageFloodUpdateEventDispatcher,
 		EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -139,15 +132,8 @@ public final class RadixHttpServer {
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(
-			mempoolAddFailures,
-			ledgerCommitted,
-			store,
-			mempoolAddEventDispatcher,
-			commandToBinaryConverter,
-			clientAtomToBinaryConverter,
-			hasher
-		);
+		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.atomsService = atomsService;
 		this.messageFloodUpdateEventDispatcher = messageFloodUpdateEventDispatcher;
 		this.mempoolFillerUpdateEventDispatcher = mempoolFillerUpdateEventDispatcher;
 		this.jsonRpcServer = new RadixJsonRpcServer(
@@ -194,11 +180,6 @@ public final class RadixHttpServer {
 		// System routes
 		handler.add(Methods.GET, "/api/system", this::respondWithSystem);
 		handler.add(Methods.GET, "/api/system/modules/api/tasks-waiting", this::respondWaitingTaskCount);
-		handler.add(Methods.GET, "/api/system/modules/api/websockets", this::respondWithWebSocketCount);
-
-		// delete method to disconnect all peers
-		//TODO: potentially blocking
-		handler.add(Methods.DELETE, "/api/system/modules/api/websockets", this::respondDisconnectAllPeers);
 
 		// Network routes
 		handler.add(Methods.GET, "/api/network", this::respondWithNetwork);
@@ -266,7 +247,11 @@ public final class RadixHttpServer {
 
 	//Non-blocking
 	private void respondWithMempoolFill(HttpServerExchange exchange) {
-		respond(jsonObject().put("address", mempoolFillerAddress), exchange);
+		InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
+		respond(jsonObject()
+			.put("address", mempoolFillerAddress)
+			.put("balance", wallet.getBalance())
+			.put("numParticles", wallet.getNumParticles()), exchange);
 	}
 
 	//Non-blocking
@@ -297,16 +282,6 @@ public final class RadixHttpServer {
 	//Non-blocking
 	private void respondWithNetwork(final HttpServerExchange exchange) {
 		respond(this.networkService.getNetwork(), exchange);
-	}
-
-	//Potentially blocking
-	private void respondDisconnectAllPeers(final HttpServerExchange exchange) {
-		respond(this.disconnectAllPeers(), exchange);
-	}
-
-	//Non-blocking
-	private void respondWithWebSocketCount(final HttpServerExchange exchange) {
-		respond(jsonObject().put("count", Collections.unmodifiableSet(peers.keySet()).size()), exchange);
 	}
 
 	//Non-blocking
@@ -375,34 +350,6 @@ public final class RadixHttpServer {
 	/*package*/ void closeAndRemovePeer(RadixJsonRpcPeer peer) {
 		peers.remove(peer);
 		peer.close();
-	}
-
-	private JSONObject disconnectAllPeers() {
-		var result = jsonObject();
-		var closed = jsonArray();
-		var peersCopy = new HashMap<>(peers);
-
-		result.put("closed", closed);
-
-		peersCopy.forEach((peer, ws) -> {
-			var closedPeer = jsonObject()
-				.put("isOpen", ws.isOpen())
-				.put("closedReason", ws.getCloseReason())
-				.put("closedCode", ws.getCloseCode());
-
-			closed.put(closedPeer);
-
-			closeAndRemovePeer(peer);
-			try {
-				ws.close();
-			} catch (IOException e) {
-				logger.error("Error while closing web socket", e);
-			}
-		});
-
-		result.put("closedCount", peersCopy.size());
-
-		return result;
 	}
 
 	@FunctionalInterface
@@ -477,17 +424,6 @@ public final class RadixHttpServer {
 
 	private BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {
 		return BFTNode.create(ECPublicKey.fromBytes(fromBase58(nodeKeyBase58)));
-	}
-
-	/**
-	 * Add a DELETE method route with JSON content a certain path and consumer to the given handler
-	 *
-	 * @param handler The routing handler to add the route to
-	 * @param path The prefix path
-	 * @param consumer The consumer that processes incoming exchanges
-	 */
-	private static void delete(RoutingHandler handler, String path, HttpHandler consumer) {
-		handler.add(Methods.DELETE, path, consumer);
 	}
 
 	/**

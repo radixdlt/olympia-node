@@ -21,37 +21,56 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.utils.UInt256;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 	}
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(Hasher hasher) {
+	private EngineStore<LedgerAtom> engineStore(
+		@Genesis Atom atom,
+		Hasher hasher,
+		Serialization serialization,
+		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
+	) {
 		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
-		final ClientAtom genesisAtom = ClientAtom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(0, 0, 0), Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(1, 0, 0), Spin.NEUTRAL)
-			),
-			hasher
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		Command command = new Command(payload);
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
+				.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
+		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+			hasher.hash(command),
+			validatorSet
 		);
-		inMemoryEngineStore.storeAtom(genesisAtom);
+		CommittedAtom committedAtom = CommittedAtom.create(
+			genesisAtom,
+			genesisLedgerHeader
+		);
+		if (!inMemoryEngineStore.containsAtom(committedAtom)) {
+			inMemoryEngineStore.storeAtom(committedAtom);
+		}
 		return inMemoryEngineStore;
 	}
 

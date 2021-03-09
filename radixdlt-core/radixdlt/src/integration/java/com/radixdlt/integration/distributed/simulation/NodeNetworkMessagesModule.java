@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -33,10 +34,14 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.mempool.MempoolAdd;
 import io.reactivex.rxjava3.core.Flowable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
@@ -54,11 +59,17 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
+		bind(RxRemoteEnvironment.class).to(SimulatedNetworkImpl.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	private SimulatedNetworkImpl network(@Self BFTNode node) {
 		return simulationNetwork.getNetwork(node);
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> mempoolAdd(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(MempoolAdd.class, network.remoteEventDispatcher(MempoolAdd.class));
 	}
 
 	@ProvidesIntoSet
@@ -72,13 +83,23 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(DtoLedgerHeaderAndProof.class);
+	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(SyncRequest.class);
 	}
 
 	@Provides
-	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(DtoCommandsAndProof.class);
+	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(SyncResponse.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(StatusRequest.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(StatusResponse.class);
 	}
 
 	@Provides
@@ -87,12 +108,23 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(DtoLedgerHeaderAndProof.class);
+	private Flowable<RemoteEvent<SyncRequest>> syncRequests(SimulatedNetworkImpl network) {
+		return network.remoteEvents(SyncRequest.class);
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(DtoCommandsAndProof.class);
+	private Flowable<RemoteEvent<SyncResponse>> syncResponses(SimulatedNetworkImpl network) {
+		return network.remoteEvents(SyncResponse.class);
 	}
+
+	@Provides
+	private Flowable<RemoteEvent<StatusRequest>> statusRequests(SimulatedNetworkImpl network) {
+		return network.remoteEvents(StatusRequest.class);
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<StatusResponse>> statusResponses(SimulatedNetworkImpl network) {
+		return network.remoteEvents(StatusResponse.class);
+	}
+
 }

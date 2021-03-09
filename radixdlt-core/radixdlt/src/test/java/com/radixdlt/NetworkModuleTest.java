@@ -36,6 +36,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import java.util.Arrays;

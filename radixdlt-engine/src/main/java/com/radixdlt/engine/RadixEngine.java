@@ -53,17 +53,20 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		private final BiFunction<U, V, U> outputReducer;
 		private final BiFunction<U, V, U> inputReducer;
 		private U curValue;
+		private boolean includeInBranches;
 
 		ApplicationStateComputer(
 			Class<V> particleClass,
 			U initialValue,
 			BiFunction<U, V, U> outputReducer,
-			BiFunction<U, V, U> inputReducer
+			BiFunction<U, V, U> inputReducer,
+			boolean includeInBranches
 		) {
 			this.particleClass = particleClass;
 			this.curValue = initialValue;
 			this.outputReducer = outputReducer;
 			this.inputReducer = inputReducer;
+			this.includeInBranches = includeInBranches;
 		}
 
 		ApplicationStateComputer<U, V, T> copy() {
@@ -71,7 +74,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				particleClass,
 				curValue,
 				outputReducer,
-				inputReducer
+				inputReducer,
+				includeInBranches
 			);
 		}
 
@@ -131,12 +135,13 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param <U> the class of the state
 	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer) {
+	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, boolean includeInBranches) {
 		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
 			stateReducer.particleClass(),
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
-			stateReducer.inputReducer()
+			stateReducer.inputReducer(),
+			includeInBranches
 		);
 
 		synchronized (stateUpdateEngineLock) {
@@ -169,7 +174,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom);
+			Result hookResult = checker.check(atom, permissionLevel);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					RadixEngineErrorCode.HOOK_ERROR,
@@ -230,7 +235,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public RadixEngineBranch<T> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
 			Map<Class<?>, ApplicationStateComputer<?, ?, T>> branchedStateComputers = new HashMap<>();
-			this.stateComputers.forEach((c, computer) -> branchedStateComputers.put(c, computer.copy()));
+			this.stateComputers.forEach((c, computer) -> {
+				if (computer.includeInBranches) {
+					branchedStateComputers.put(c, computer.copy());
+				}
+			});
 			RadixEngineBranch<T> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
@@ -282,6 +291,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
+	public boolean contains(T atom) {
+		return engineStore.containsAtom(atom);
+	}
+
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
 
@@ -289,14 +302,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		long particleIndex = 0;
 		long particleGroupIndex = 0;
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			// Treat check spin as the first push for now
 			if (!microInstruction.isCheckSpin()) {
 				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
 					particleGroupIndex++;
 					particleIndex = 0;
-				} else {
-					particleIndex++;
 				}
+
 				continue;
 			}
 
@@ -309,6 +320,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			checkedParticles.add(particle);
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			particleIndex++;
 
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);

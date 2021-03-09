@@ -177,8 +177,8 @@ subprojects {
             dependency 'org.json:json:20180813'
 
             dependency 'com.github.radixdlt:jackson-databind:feature~strict-property-ordering-downgraded-version-SNAPSHOT'
-
             dependency 'com.fasterxml.jackson.core:jackson-core:2.11.3'
+            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.1'
             dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.11.3'
             dependency('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.11.3') {
                 exclude 'org.json:json'

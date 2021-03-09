@@ -42,7 +42,7 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 	@Override
 	public Command nextCommand() {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 1, keyPair.getPublicKey());
+		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		RRI rri = RRI.of(address, "test");
 		RRIParticle rriParticle = new RRIParticle(rri, 0);

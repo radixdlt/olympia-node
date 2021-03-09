@@ -22,10 +22,11 @@
 
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -120,10 +121,9 @@ public final class RadixUniverse {
 		WebSockets webSockets
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		config.getGenesis().forEach(atom ->
-			atom.addresses()
-				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())))
-		);
+		Atom atom = config.getGenesis();
+		atom.addresses()
+			.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())));
 
 		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);
 
@@ -171,8 +171,7 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream()
-			.flatMap(atom -> atom.particles(Spin.UP))
+		this.nativeToken = config.getGenesis().particles(Spin.UP)
 			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
 			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()

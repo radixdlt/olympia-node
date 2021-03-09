@@ -61,7 +61,8 @@ public final class TransitionToken<I extends Particle, N extends UsedData, O ext
 
 	@Override
 	public String toString() {
-		return inputClass.getSimpleName() + " " + inputUsedClass + " " + outputClass.getSimpleName() + " " + outputUsedClass;
+		return inputClass.getSimpleName() + " " + inputUsedClass.getRawType().getSimpleName()
+			+ " " + outputClass.getSimpleName() + " " + outputUsedClass.getRawType().getSimpleName();
 	}
 
 	@Override

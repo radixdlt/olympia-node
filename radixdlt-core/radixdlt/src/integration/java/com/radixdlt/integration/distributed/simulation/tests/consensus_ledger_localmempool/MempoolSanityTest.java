@@ -19,7 +19,10 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
@@ -27,9 +30,8 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
-import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempools;
 import com.radixdlt.mempool.Mempool;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -66,13 +68,13 @@ public class MempoolSanityTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(Mempool.class).to(EmptyMempool.class);
+					bind(new TypeLiteral<Mempool<Command, HashCode>>() { }).toInstance(Mempools.empty());
 				}
 			})
 			.build();
 
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying(
+		final var checkResults = simulationTest.run().awaitCompletion();
+		assertThat(checkResults).hasEntrySatisfying(
 			Monitor.MEMPOOL_COMMITTED,
 			error -> assertThat(error).isPresent()
 		);
@@ -83,7 +85,7 @@ public class MempoolSanityTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var checkResults = simulationTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

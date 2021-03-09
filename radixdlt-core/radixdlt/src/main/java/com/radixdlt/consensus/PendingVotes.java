@@ -55,22 +55,26 @@ public final class PendingVotes {
 	static final class PreviousVote {
 		private final View view;
 		private final HashCode hash;
+		private final boolean isTimeout;
 
-		PreviousVote(View view, HashCode hash) {
+		PreviousVote(View view, HashCode hash, boolean isTimeout) {
 			this.view = view;
 			this.hash = hash;
+			this.isTimeout = isTimeout;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.view, this.hash);
+			return Objects.hash(this.view, this.hash, this.isTimeout);
 		}
 
 		@Override
 		public boolean equals(Object obj) {
 			if (obj instanceof PreviousVote) {
 				PreviousVote that = (PreviousVote) obj;
-				return Objects.equals(this.view, that.view) && Objects.equals(this.hash, that.hash);
+				return Objects.equals(this.view, that.view)
+					&& Objects.equals(this.hash, that.hash)
+					&& this.isTimeout == that.isTimeout;
 			}
 			return false;
 		}
@@ -105,7 +109,7 @@ public final class PendingVotes {
 			return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
 		}
 
-		if (!replacePreviousVote(node, voteView, voteDataHash)) {
+		if (!replacePreviousVote(node, voteView, vote, voteDataHash)) {
 			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
 		}
 
@@ -160,8 +164,8 @@ public final class PendingVotes {
 		}
 	}
 
-	private boolean replacePreviousVote(BFTNode author, View voteView, HashCode voteHash) {
-		final PreviousVote thisVote = new PreviousVote(voteView, voteHash);
+	private boolean replacePreviousVote(BFTNode author, View voteView, Vote vote, HashCode voteHash) {
+		final PreviousVote thisVote = new PreviousVote(voteView, voteHash, vote.isTimeout());
 		final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
 		if (previousVote == null) {
 			// No previous vote for this author, all good here
@@ -184,10 +188,17 @@ public final class PendingVotes {
 			}
 		}
 
-		// If the validator already voted in this view for something else,
-		// then it should be slashed, once we have that infrastructure in place.
-		// In any case, equivocating votes should not be counted.
-		return !voteView.equals(previousVote.view);
+		if (voteView.equals(previousVote.view)) {
+			// If the validator already voted in this view for something else,
+			// then the only valid possibility is a non-timeout vote being replaced by a timeout vote
+			// on the same vote data.
+			return vote.isTimeout()
+				&& !previousVote.isTimeout
+				&& thisVote.hash.equals(previousVote.hash);
+		} else {
+			// all good if vote is for a different view
+			return true;
+		}
 	}
 
 	@VisibleForTesting

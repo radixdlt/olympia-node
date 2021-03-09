@@ -48,6 +48,8 @@ public interface SystemCounters {
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
+		PACEMAKER_VIEW("pacemaker.view"),
+
 		// Count of database accesses
 		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
 		COUNT_BDB_LEDGER_CREATE_TX("count.bdb.ledger.create_tx"),
@@ -110,7 +112,6 @@ public interface SystemCounters {
 
 		HASHED_BYTES("hashed.bytes"),
 
-		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
 		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
@@ -121,9 +122,19 @@ public interface SystemCounters {
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
 
-		MEMPOOL_FAILURE_COUNT("mempool.failure_count"),
+
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+		MEMPOOL_ADD_SUCCESS("mempool.add_success"),
+		MEMPOOL_PROPOSED_TRANSACTION("mempool.proposed_transaction"),
+		MEMPOOL_ERRORS_HOOK("mempool.errors.hook"),
+		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
+		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
+
+		RADIX_ENGINE_PROOFS("radix_engine.proofs"),
+		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
+		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),

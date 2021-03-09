@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;

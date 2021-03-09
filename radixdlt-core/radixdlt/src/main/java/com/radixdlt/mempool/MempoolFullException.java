@@ -17,14 +17,12 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
-
 /**
  * Exception thrown when an attempt to add new items would
  * exceed the mempool's maximum capacity.
  */
 public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Command command, String message) {
-		super(command, message);
+	public MempoolFullException(String message) {
+		super(message);
 	}
 }

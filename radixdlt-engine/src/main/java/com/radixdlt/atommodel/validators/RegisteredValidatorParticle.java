@@ -59,8 +59,8 @@ public final class RegisteredValidatorParticle extends Particle {
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
-		this.address = address;
-		this.allowedDelegators = allowedDelegators;
+		this.address = Objects.requireNonNull(address);
+		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
 		this.url = url;
 		this.nonce = nonce;
 	}
@@ -71,7 +71,7 @@ public final class RegisteredValidatorParticle extends Particle {
 	}
 
 	public boolean allowsDelegator(RadixAddress delegator) {
-		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
+		return this.allowedDelegators == null || this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
 	}
 
 	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {

@@ -45,7 +45,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,7 +72,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
-		SYNC_TO_COMMIT,
+		LEDGER_SYNC,
 		GET_QC_VERTICES
 	}
 
@@ -284,7 +284,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		this.sendBFTSyncRequest(commitedView, committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-
 	public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
 		return this::processGetVerticesLocalTimeout;
 	}
@@ -388,8 +387,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
-			ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
-			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+			ImmutableList<BFTNode> signers = syncState.committedProof.getSignersWithout(self);
+			syncState.setSyncStage(SyncStage.LEDGER_SYNC);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
 					syncing = new ArrayList<>();
@@ -502,6 +501,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 			listenersIterator.remove();
 		}
 
-		syncing.values().removeIf(state -> state.highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
+		syncing.entrySet().removeIf(e -> e.getValue().highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
 	}
 }

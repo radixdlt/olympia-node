@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
@@ -25,12 +26,11 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -43,10 +43,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.function.Consumer;
@@ -82,31 +80,29 @@ public class AtomsService {
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
-	private final CommandToBinaryConverter commandToBinaryConverter;
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<AtomCommittedToLedger> ledgerCommitted;
 
 	private final Hasher hasher;
 
+	@Inject
 	public AtomsService(
+		Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved,
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		Observable<AtomCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Hasher hasher
 	) {
+		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
 		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
-		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
-		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
 		this.ledgerCommitted = ledgerCommitted;
 		this.hasher = hasher;
@@ -117,6 +113,13 @@ public class AtomsService {
 		final var aid = committedAtom.getAID();
 		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
 		getAtomStatusListeners(aid).forEach(listener -> listener.onStored(committedAtom));
+	}
+
+	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
+		atomsRemovedFromMempool.forEach((atom, e) -> {
+			final AID aid = atom.getAID();
+			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
+		});
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
@@ -145,6 +148,12 @@ public class AtomsService {
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
+
+		var mempoolAtomsRemovedDisposable = mempoolAtomsRemoved
+				.observeOn(Schedulers.io())
+				.subscribe(this::processSubmissionFailure);
+		this.disposable.add(mempoolAtomsRemovedDisposable);
+
 	}
 
 	public void stop() {
@@ -181,7 +190,7 @@ public class AtomsService {
 
 	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
 		return new AtomEventObserver(
-			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
+			atomQuery, observer, executorService, store, serialization, hasher
 		);
 	}
 
@@ -191,10 +200,7 @@ public class AtomsService {
 
 	public Optional<JSONObject> getAtomsByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
-			.map(LedgerEntry::getContent)
-			.map(commandToBinaryConverter::toCommand)
-			.map(StoredCommittedCommand::getCommand)
-			.map(command -> command.map(clientAtomToBinaryConverter::toAtom))
+			.map(CommittedAtom::getClientAtom)
 			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}

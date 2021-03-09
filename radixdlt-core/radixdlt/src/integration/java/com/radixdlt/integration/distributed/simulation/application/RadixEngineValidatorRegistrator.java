@@ -60,7 +60,7 @@ public final class RadixEngineValidatorRegistrator implements CommandGenerator {
 
 	@Override
 	public Command nextCommand() {
-		byte magic = 1;
+		byte magic = 0;
 		ECKeyPair keyPair = nodes.get(current % nodes.size());
 		current++;
 		RadixAddress address = new RadixAddress(magic, keyPair.getPublicKey());

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.PreparedVertex;
@@ -37,6 +38,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -90,7 +92,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface StateComputer {
-		void addToMempool(Command command);
+		void addToMempool(Command command, BFTNode origin);
 		Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared);
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -131,10 +133,18 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
+	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
+		return (node, mempoolAdd) -> {
+			synchronized (lock) {
+				stateComputer.addToMempool(mempoolAdd.getCommand(), node);
+			}
+		};
+	}
+
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand());
+				stateComputer.addToMempool(mempoolAdd.getCommand(), null);
 			}
 		};
 	}
@@ -144,7 +154,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final ImmutableList<PreparedCommand> preparedCommands = prepared.stream()
 				.flatMap(PreparedVertex::successfulCommands)
 				.collect(ImmutableList.toImmutableList());
-		return stateComputer.getNextCommandFromMempool(preparedCommands);
+		synchronized (lock) {
+			return stateComputer.getNextCommandFromMempool(preparedCommands);
+		}
 	}
 
 	@Override
@@ -242,7 +254,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
 			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
 			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {

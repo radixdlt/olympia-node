@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
@@ -141,9 +142,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		HashCode vertexId0 = mock(HashCode.class);
 		HashCode vertexId1 = mock(HashCode.class);
@@ -162,9 +161,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		UnverifiedVertex vertex1 = mock(UnverifiedVertex.class);
 
@@ -182,9 +179,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		final var highQc1 = mock(HighQC.class);
 		final var highQc2 = mock(HighQC.class);

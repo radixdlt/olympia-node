@@ -75,7 +75,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -207,7 +207,8 @@ public final class ConsensusModule extends AbstractModule {
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier,
-		ViewUpdate initialViewUpdate
+		ViewUpdate initialViewUpdate,
+        SystemCounters systemCounters
 	) {
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
 		return new Pacemaker(
@@ -224,7 +225,8 @@ public final class ConsensusModule extends AbstractModule {
 			hasher,
 			voteDispatcher,
 			timeSupplier,
-			initialViewUpdate
+			initialViewUpdate,
+			systemCounters
 		);
 	}
 

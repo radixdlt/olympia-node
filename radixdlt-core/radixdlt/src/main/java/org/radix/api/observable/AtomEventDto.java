@@ -45,16 +45,11 @@ public final class AtomEventDto extends BasicContainer {
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(Output.ALL)
-	private final long timestamp;
-
 	private AtomEventType type;
 
-	public AtomEventDto(AtomEventType type, Atom atom, long timestamp) {
+	public AtomEventDto(AtomEventType type, Atom atom) {
 		this.type = type;
 		this.atom = atom;
-		this.timestamp = timestamp;
 	}
 
 	public Atom getAtom() {
@@ -85,13 +80,12 @@ public final class AtomEventDto extends BasicContainer {
 			return false;
 		}
 		AtomEventDto that = (AtomEventDto) o;
-		return timestamp == that.timestamp
-			&& Objects.equals(atom, that.atom)
+		return Objects.equals(atom, that.atom)
 			&& type == that.type;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(atom, timestamp, type);
+		return Objects.hash(atom, type);
 	}
 }
