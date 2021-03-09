@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.DatabaseEntry;
@@ -48,20 +47,17 @@ class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
 		indices.forEach(index -> secondaries.add(BerkeleyLedgerEntryStore.entry(index.asKey())));
 	}
 
-	public static AtomSecondaryCreator creator(
-		Map<AID, LedgerEntryIndices> atomIndices,
-		Function<LedgerEntryIndices, Set<StoreIndex>> indexer
-	) {
+	public static AtomSecondaryCreator creator(Map<Long, Set<StoreIndex>> atomIndices) {
 		return new AtomSecondaryCreator(
 			key -> {
-				var ledgerEntryIndices = atomIndices.get(BerkeleyLedgerEntryStore.getAidFromPKey(key));
+				var ledgerEntryIndices = atomIndices.get(Longs.fromByteArray(key.getData()));
 
 				if (ledgerEntryIndices == null) {
 					throw new IllegalStateException(
 						"Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available"
 					);
 				}
-				return indexer.apply(ledgerEntryIndices);
+				return ledgerEntryIndices;
 			}
 		);
 	}
