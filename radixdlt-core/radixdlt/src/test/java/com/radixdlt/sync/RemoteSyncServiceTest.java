@@ -50,7 +50,6 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -139,33 +138,6 @@ public class RemoteSyncServiceTest {
 		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
 		when(reader.getNextCommittedCommands(any())).thenReturn(null);
 		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
-	}
-
-	@Test
-	public void when_ledger_update__then_send_status_update_to_random_peers() {
-		final var tail = mock(VerifiedLedgerHeaderAndProof.class);
-		final var ledgerUpdate = mock(LedgerUpdate.class);
-		final var accumulatorState = mock(AccumulatorState.class);
-		when(accumulatorState.getStateVersion()).thenReturn(2L);
-		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
-		when(ledgerUpdate.getTail()).thenReturn(tail);
-
-		when(this.localSyncService.getSyncState())
-			.thenReturn(SyncState.IdleState.init(mock(VerifiedLedgerHeaderAndProof.class)));
-
-		final var peer1 = createPeer();
-		final var peer1BftNode = BFTNode.create(peer1.getSystem().getKey());
-
-		final var peer2 = createPeer();
-		final var peer2BftNode = BFTNode.create(peer2.getSystem().getKey());
-
-		when(this.peersView.peers()).thenReturn(List.of(peer1BftNode, peer2BftNode));
-
-		processor.ledgerUpdateEventProcessor().process(ledgerUpdate);
-
-		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer2BftNode), eq(LedgerStatusUpdate.create(tail)));
-		verify(statusUpdateDispatcher, times(1)).dispatch(eq(peer1BftNode), eq(LedgerStatusUpdate.create(tail)));
-		verifyNoMoreInteractions(statusUpdateDispatcher);
 	}
 
 	@Test
