@@ -18,22 +18,17 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.store.StoreIndex;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.utils.Longs;
 
 import java.util.Set;
 
 public class EngineAtomIndices {
 	public enum IndexType {
-		PARTICLE_CLASS((byte) 4),
-		UID((byte) 5),
 		DESTINATION((byte) 6);
 
 		byte value;
@@ -53,7 +48,7 @@ public class EngineAtomIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	public static EngineAtomIndices from(RadixEngineAtom radixEngineAtom, Serialization serialization, Hasher hasher) {
+	public static EngineAtomIndices from(RadixEngineAtom radixEngineAtom) {
 		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 
 		final ImmutableSet<EUID> destinations = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
@@ -66,19 +61,6 @@ public class EngineAtomIndices {
 		for (EUID euid : destinations) {
 			duplicateIndices.add(new StoreIndex(toByteArray(IndexType.DESTINATION, euid)));
 		}
-
-		radixEngineAtom.getCMInstruction().getMicroInstructions().stream().filter(CMMicroInstruction::isCheckSpin)
-			.forEach(checkSpin -> {
-				// TODO: Remove
-				// This does not handle nested particle classes.
-				// If that ever becomes a problem, this is the place to fix it.
-				// TODO Should probably not be using serialization for this
-				final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
-				final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-				duplicateIndices.add(new StoreIndex(
-					IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)
-				));
-			});
 		return new EngineAtomIndices(duplicateIndices.build());
 	}
 
