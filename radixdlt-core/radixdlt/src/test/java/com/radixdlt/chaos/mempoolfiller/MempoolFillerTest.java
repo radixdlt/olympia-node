@@ -98,7 +98,7 @@ public class MempoolFillerTest {
 		getInjector().injectMembers(this);
 
 		// Act
-		processor.handleMessage(self, MempoolFillerUpdate.create(true));
+		processor.handleMessage(self, MempoolFillerUpdate.enable(15));
 		processor.handleMessage(self, ScheduledMempoolFill.create());
 
 		// Assert
