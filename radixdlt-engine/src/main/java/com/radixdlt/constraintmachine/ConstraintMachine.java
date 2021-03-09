@@ -214,7 +214,8 @@ public final class ConstraintMachine {
 				new CMError(
 					dp,
 					CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
-					validationState
+					validationState,
+					validationState.toString()
 				)
 			);
 		}
@@ -242,7 +243,8 @@ public final class ConstraintMachine {
 				new CMError(
 					dp,
 					CMErrorCode.MISSING_TRANSITION_PROCEDURE,
-					validationState
+					validationState,
+					"TransitionToken{" + transitionToken + "}"
 				)
 			);
 		}
@@ -391,7 +393,8 @@ public final class ConstraintMachine {
 							new CMError(
 								DataPointer.ofParticleGroup(particleGroupIndex),
 								CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-								validationState
+								validationState,
+								validationState.toString()
 							)
 						);
 					}

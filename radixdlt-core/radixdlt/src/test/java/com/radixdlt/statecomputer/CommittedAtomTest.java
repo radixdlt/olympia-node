@@ -44,12 +44,11 @@ public class CommittedAtomTest {
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getMessage()).thenReturn("test message");
 		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
-		this.committedAtom = new CommittedAtom(clientAtom, 12345L, proof);
+		this.committedAtom = CommittedAtom.create(clientAtom, proof);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(committedAtom.getStateVersion()).isEqualTo(12345L);
 		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
 		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());

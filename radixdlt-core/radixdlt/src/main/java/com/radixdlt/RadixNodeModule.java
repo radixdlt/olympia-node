@@ -25,7 +25,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.application.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
-import com.radixdlt.checkpoint.CheckpointModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -59,6 +59,7 @@ import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.Universe;
 
+import com.radixdlt.universe.UniverseModule;
 import org.radix.universe.system.LocalSystem;
 
 /**
@@ -131,10 +132,8 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineStoreModule());
 
 		// Checkpoints
-		install(new CheckpointModule());
-
-		// Genesis validators
-		install(new GenesisValidatorSetFromUniverseModule());
+		install(new RadixEngineCheckpointModule());
+		install(new UniverseModule());
 
 		// Fees
 		install(new TokenFeeModule());

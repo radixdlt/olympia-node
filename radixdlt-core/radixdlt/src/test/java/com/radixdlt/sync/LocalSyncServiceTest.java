@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
@@ -35,7 +34,6 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -45,12 +43,11 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.network.addressbook.AddressBook;
 
 import java.util.Comparator;
-import java.util.stream.Stream;
+import java.util.List;
 
-import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
@@ -64,7 +61,6 @@ import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.utils.RandomHasher;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.universe.system.RadixSystem;
 
 public class LocalSyncServiceTest {
 
@@ -77,7 +73,7 @@ public class LocalSyncServiceTest {
 	private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
 	private SyncConfig syncConfig;
 	private SystemCounters systemCounters;
-	private AddressBook addressBook;
+	private PeersView peersView;
 	private Comparator<AccumulatorState> accComparator;
 	private Hasher hasher;
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
@@ -95,7 +91,7 @@ public class LocalSyncServiceTest {
 		this.syncLedgerUpdateTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
 		this.syncConfig = SyncConfig.of(1000L, 10, 10000L);
 		this.systemCounters = mock(SystemCounters.class);
-		this.addressBook = mock(AddressBook.class);
+		this.peersView = mock(PeersView.class);
 		this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
 		this.hasher = new RandomHasher();
 		this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
@@ -114,7 +110,7 @@ public class LocalSyncServiceTest {
 			syncLedgerUpdateTimeoutDispatcher,
 			syncConfig,
 			systemCounters,
-			addressBook,
+			peersView,
 			accComparator,
 			hasher,
 			validatorSetVerifier,
@@ -132,16 +128,16 @@ public class LocalSyncServiceTest {
 		final var peer2 = createPeer();
 		final var peer3 = createPeer();
 
-		when(addressBook.peers()).thenReturn(Stream.of(peer1, peer2, peer3));
+		when(peersView.peers()).thenReturn(List.of(peer1, peer2, peer3));
 
 		final VerifiedLedgerHeaderAndProof currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.setupSyncServiceWithState(SyncState.IdleState.init(currentHeader));
 
 		this.localSyncService.syncCheckTriggerEventProcessor().process(SyncCheckTrigger.create());
 
-		verify(statusRequestDispatcher, times(1)).dispatch(eq(BFTNode.create(peer1.getSystem().getKey())), any());
-		verify(statusRequestDispatcher, times(1)).dispatch(eq(BFTNode.create(peer2.getSystem().getKey())), any());
-		verify(statusRequestDispatcher, times(1)).dispatch(eq(BFTNode.create(peer3.getSystem().getKey())), any());
+		verify(statusRequestDispatcher, times(1)).dispatch(eq(peer1), any());
+		verify(statusRequestDispatcher, times(1)).dispatch(eq(peer2), any());
+		verify(statusRequestDispatcher, times(1)).dispatch(eq(peer2), any());
 	}
 
 	@Test
@@ -154,7 +150,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(SyncState.SyncingState.init(currentHeader, ImmutableList.of(), currentHeader));
 		this.localSyncService.syncCheckTriggerEventProcessor().process(SyncCheckTrigger.create());
 
-		verifyNoMoreInteractions(addressBook);
+		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusRequestDispatcher);
 	}
 
@@ -170,7 +166,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(SyncState.SyncingState.init(currentHeader, ImmutableList.of(), currentHeader));
 		this.localSyncService.statusResponseEventProcessor().process(sender, StatusResponse.create(statusHeader));
 
-		verifyNoMoreInteractions(addressBook);
+		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestTimeoutDispatcher);
@@ -186,7 +182,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer)));
 		this.localSyncService.statusResponseEventProcessor().process(unexpectedPeer, StatusResponse.create(statusHeader));
 
-		verifyNoMoreInteractions(addressBook);
+		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestTimeoutDispatcher);
@@ -206,7 +202,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(syncState);
 		this.localSyncService.statusResponseEventProcessor().process(alreadyReceivedPeer, StatusResponse.create(statusHeader));
 
-		verifyNoMoreInteractions(addressBook);
+		verifyNoMoreInteractions(peersView);
 		verifyNoMoreInteractions(statusRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestDispatcher);
 		verifyNoMoreInteractions(syncRequestTimeoutDispatcher);
@@ -226,7 +222,7 @@ public class LocalSyncServiceTest {
 			currentHeader, ImmutableSet.of(waiting1, waiting2, waiting3));
 		this.setupSyncServiceWithState(syncState);
 
-		when(addressBook.hasBftNodePeer(waiting2)).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(waiting2));
 
 		this.localSyncService.statusResponseEventProcessor().process(waiting1, StatusResponse.create(statusHeader1));
 		this.localSyncService.statusResponseEventProcessor().process(waiting2, StatusResponse.create(statusHeader2));
@@ -239,7 +235,7 @@ public class LocalSyncServiceTest {
 	public void when_status_timeout_with_no_responses__then_should_reschedule_another_check() {
 		final VerifiedLedgerHeaderAndProof currentHeader = createHeaderAtStateVersion(10L);
 		final BFTNode waiting1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(waiting1)).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(waiting1));
 
 		final var syncState = SyncState.SyncCheckState.init(
 			currentHeader, ImmutableSet.of(waiting1));
@@ -259,9 +255,8 @@ public class LocalSyncServiceTest {
 		final VerifiedLedgerHeaderAndProof statusHeader1 = createHeaderAtStateVersion(12L);
 		final VerifiedLedgerHeaderAndProof statusHeader2 = createHeaderAtStateVersion(20L);
 		final BFTNode waiting1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(waiting1)).thenReturn(true);
 		final BFTNode waiting2 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(waiting2)).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(waiting1, waiting2));
 
 		final var syncState = SyncState.SyncCheckState.init(
 			currentHeader, ImmutableSet.of(waiting1, waiting2));
@@ -286,9 +281,8 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
 		final var peer1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
 		final var peer2 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer2))).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
 
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
 		final var syncState = SyncState.SyncingState.init(
@@ -307,9 +301,8 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
 		final var peer1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
 		final var peer2 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer2))).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(peer1, peer2));
 
 		final var originalCandidates = ImmutableList.of(peer1, peer2);
 		final var syncState = SyncState.SyncingState.init(
@@ -329,7 +322,7 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
 		final var peer1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(peer1));
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
@@ -368,7 +361,7 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(20L);
 
 		final var peer1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(peer1));
 
 		final var syncState = SyncState.SyncingState.init(
 				currentHeader, ImmutableList.of(peer1), targetHeader).withWaitingFor(peer1);
@@ -387,7 +380,7 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(21L);
 
 		final var peer1 = mock(BFTNode.class);
-		when(addressBook.hasBftNodePeer(eq(peer1))).thenReturn(true);
+		when(peersView.peers()).thenReturn(List.of(peer1));
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader);
@@ -408,11 +401,7 @@ public class LocalSyncServiceTest {
 		return header;
 	}
 
-	private PeerWithSystem createPeer() {
-		final var peer = mock(PeerWithSystem.class);
-		final var system = mock(RadixSystem.class);
-		when(peer.getSystem()).thenReturn(system);
-		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
-		return peer;
+	private BFTNode createPeer() {
+		return BFTNode.random();
 	}
 }

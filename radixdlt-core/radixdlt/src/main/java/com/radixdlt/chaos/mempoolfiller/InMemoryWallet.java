@@ -93,7 +93,7 @@ public final class InMemoryWallet {
 		return TokenUnitConversions.subunitsToUnits(balance);
 	}
 
-	private Optional<UInt256> downParticles(
+	private static Optional<UInt256> downParticles(
 		UInt256 amount,
 		LinkedList<TransferrableTokensParticle> particles,
 		Consumer<TransferrableTokensParticle> onDown
