@@ -90,8 +90,6 @@ public final class LocalSystem extends RadixSystem {
 		);
 	}
 
-	// FIXME: *Really* need a better way of configuring this other than hardcoding here
-	// Should also have the option of overriding "port", rather than always using universe port
 	private static ImmutableList<TransportInfo> defaultTransports(String host, int port) {
 		return ImmutableList.of(
 			TransportInfo.of(
