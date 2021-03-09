@@ -72,7 +72,7 @@ public final class ValidatorRegistrator {
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-        EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
 		this.hasher = hasher;

@@ -62,7 +62,7 @@ public final class ValidatorRegistratorModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(ValidatorRegistrator validatorRegistrator) {
+	public EventProcessorOnRunner<?> validatorRegistrator(ValidatorRegistrator validatorRegistrator) {
 		return new EventProcessorOnRunner<>(
 			"application",
 			ValidatorRegistration.class,

@@ -32,7 +32,7 @@ import com.radixdlt.identifiers.RadixAddress;
  */
 public final class InMemoryBFTKeyModule extends AbstractModule {
 	@Override
-    public void configure() {
+	public void configure() {
     	bind(HashSigner.class).annotatedWith(Names.named("RadixEngine")).to(HashSigner.class);
 	}
 

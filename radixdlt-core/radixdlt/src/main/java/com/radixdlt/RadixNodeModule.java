@@ -156,7 +156,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		// Application
-        install(new ValidatorRegistratorModule());
+		install(new ValidatorRegistratorModule());
 
 		if (properties.get("chaos.enable", false)) {
 			bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
