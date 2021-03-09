@@ -54,27 +54,13 @@ public interface LedgerEntryStoreView {
 
 	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
-	/**
-	 * Searches for a certain index.
-	 *
-	 * @param index The index
-	 * @return The resulting ledger cursor
-	 */
-	SearchCursor search(StoreIndex index);
+	SearchCursor search(byte[] destination);
 
 	<U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,
 		V initial,
 		BiFunction<V, U, V> outputReducer
 	);
-
-	/**
-	 * Checks whether a certain index is contained in this ledger.
-	 *
-	 * @param index The index
-	 * @return The resulting ledger cursor
-	 */
-	boolean contains(Transaction tx, StoreIndex index);
 
 	Spin getSpin(Transaction tx, Particle particle);
 

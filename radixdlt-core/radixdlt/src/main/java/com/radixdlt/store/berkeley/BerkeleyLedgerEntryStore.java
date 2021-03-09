@@ -51,7 +51,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
@@ -110,7 +109,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private final Map<Long, Set<StoreIndex>> currentIndices = new ConcurrentHashMap<>();
+	private final Map<Long, Set<byte[]>> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
@@ -239,7 +238,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public LedgerEntryStoreResult store(
 		Transaction tx,
 		CommittedAtom atom,
-		Set<StoreIndex> duplicateIndices
+		Set<byte[]> duplicateIndices
 	) {
 		return withTime(() -> {
 			try {
@@ -556,7 +555,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
-		Set<StoreIndex> indices,
+		Set<byte[]> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
@@ -668,13 +667,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public SearchCursor search(StoreIndex index) {
+	public SearchCursor search(byte[] index) {
 		Objects.requireNonNull(index, "index is required");
 
 		return withTime(() -> {
 			try (var databaseCursor = toSecondaryCursor(null)) {
 				var pKey = entry();
-				var key = entry(index.asKey());
+				var key = entry(index);
 				var data = entry();
 
 				if (databaseCursor.getSearchKey(key, pKey, data, DEFAULT) == SUCCESS) {
@@ -684,20 +683,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				return null;
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
-	}
-
-	@Override
-	public boolean contains(Transaction tx, StoreIndex index) {
-		Objects.requireNonNull(index, "index is required");
-
-		return withTime(() -> {
-			try (var databaseCursor = toSecondaryCursor(unwrap(tx))) {
-				var pKey = entry();
-				var key = entry(index.asKey());
-
-				return databaseCursor.getSearchKeyRange(key, pKey, null, DEFAULT) == SUCCESS;
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
 	}
 
 	@Override

@@ -26,8 +26,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
@@ -77,11 +75,5 @@ public class RadixEngineStoreModule extends AbstractModule {
 				return committedAtomsStore.getSpin(particle);
 			}
 		};
-	}
-
-	@Provides
-	@Singleton
-	private AtomIndexer buildAtomIndexer() {
-		return EngineAtomIndices::from;
 	}
 }

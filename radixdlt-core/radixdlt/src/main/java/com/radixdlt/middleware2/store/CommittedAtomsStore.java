@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.environment.EventDispatcher;
@@ -30,7 +31,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.EngineStore;
@@ -42,28 +42,22 @@ import com.radixdlt.store.Transaction;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
-	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
 	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
 	private Transaction transaction;
 
-	public interface AtomIndexer {
-		EngineAtomIndices getIndices(LedgerAtom atom);
-	}
-
 	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
-		AtomIndexer atomIndexer,
 		EventDispatcher<AtomCommittedToLedger> committedDispatcher
 	) {
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
-		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
@@ -91,26 +85,25 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
+		final ImmutableSet<EUID> destinations = committedAtom.getCMInstruction().getMicroInstructions().stream()
+			.filter(CMMicroInstruction::isCheckSpin)
+			.map(CMMicroInstruction::getParticle)
+			.flatMap(p -> p.getDestinations().stream())
+			.collect(ImmutableSet.toImmutableSet());
 
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
 			committedAtom,
-			engineAtomIndices.getDuplicateIndices()
+			destinations.stream().map(EUID::toByteArray).collect(Collectors.toSet())
 		);
 		if (!result.isSuccess()) {
 			throw new IllegalStateException("Unable to store atom");
 		}
 
-		final ImmutableSet<EUID> indicies = engineAtomIndices.getDuplicateIndices().stream()
-			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
-			.map(e -> EngineAtomIndices.toEUID(e.asKey()))
-			.collect(ImmutableSet.toImmutableSet());
-
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (committedAtom.getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, indicies));
+			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, destinations));
 		}
 	}
 

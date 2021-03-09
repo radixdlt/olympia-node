@@ -32,7 +32,7 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	LedgerEntryStoreResult store(
 		Transaction tx,
 		CommittedAtom atom,
-		Set<StoreIndex> duplicateIndices
+		Set<byte[]> duplicateIndices
 	);
 
 	void reset();

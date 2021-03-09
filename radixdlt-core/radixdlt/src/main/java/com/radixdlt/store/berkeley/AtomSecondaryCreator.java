@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.SecondaryDatabase;
@@ -29,9 +28,9 @@ import java.util.Set;
 import java.util.function.Function;
 
 class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
-	private final Function<DatabaseEntry, Set<StoreIndex>> indexer;
+	private final Function<DatabaseEntry, Set<byte[]>> indexer;
 
-	private AtomSecondaryCreator(Function<DatabaseEntry, Set<StoreIndex>> indexer) {
+	private AtomSecondaryCreator(Function<DatabaseEntry, Set<byte[]>> indexer) {
 		this.indexer = Objects.requireNonNull(indexer, "indexer is required");
 	}
 
@@ -43,11 +42,11 @@ class AtomSecondaryCreator implements SecondaryMultiKeyCreator {
 		Set<DatabaseEntry> secondaries
 	) {
 		// key should be primary key where first 8 bytes is the long clock
-		Set<StoreIndex> indices = indexer.apply(key);
-		indices.forEach(index -> secondaries.add(BerkeleyLedgerEntryStore.entry(index.asKey())));
+		Set<byte[]> indices = indexer.apply(key);
+		indices.forEach(index -> secondaries.add(BerkeleyLedgerEntryStore.entry(index)));
 	}
 
-	public static AtomSecondaryCreator creator(Map<Long, Set<StoreIndex>> atomIndices) {
+	public static AtomSecondaryCreator creator(Map<Long, Set<byte[]>> atomIndices) {
 		return new AtomSecondaryCreator(
 			key -> {
 				var ledgerEntryIndices = atomIndices.get(Longs.fromByteArray(key.getData()));
