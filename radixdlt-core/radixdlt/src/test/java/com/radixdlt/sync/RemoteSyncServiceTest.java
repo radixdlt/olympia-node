@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,7 +36,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
@@ -60,12 +58,13 @@ public class RemoteSyncServiceTest {
 		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
 
 		this.processor = new RemoteSyncService(reader, statusResponseDispatcher, syncResponseDispatcher,
-			SyncConfig.of(5000L, 10, 5000L, 1), mock(SystemCounters.class), rmock(Comparator.class),
-			mock(VerifiedLedgerHeaderAndProof.class));
+			mock(SystemCounters.class), rmock(Comparator.class),
+			mock(VerifiedLedgerHeaderAndProof.class)
+		);
 	}
 
 	@Test
-	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
+	public void when_remote_sync_request__then_process_it() {
 		SyncRequest request = mock(SyncRequest.class);
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
@@ -79,7 +78,7 @@ public class RemoteSyncServiceTest {
 		VerifiedLedgerHeaderAndProof verifiedHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedHeader.toDto()).thenReturn(header);
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
-		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
+		when(reader.getNextCommittedCommands(any())).thenReturn(verifiedCommandsAndProof);
 		processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
 		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
 	}
@@ -99,7 +98,7 @@ public class RemoteSyncServiceTest {
 	}
 
 	@Test
-	public void when_remote_sync_request_and_null_return__then_dont_do_anything() throws NextCommittedLimitReachedException {
+	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
@@ -107,7 +106,7 @@ public class RemoteSyncServiceTest {
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
-		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
+		when(reader.getNextCommittedCommands(any())).thenReturn(null);
 		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 }

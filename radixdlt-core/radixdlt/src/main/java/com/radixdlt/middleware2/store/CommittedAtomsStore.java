@@ -17,10 +17,8 @@
 
 package com.radixdlt.middleware2.store;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -35,7 +33,6 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.CommittedAtom;
@@ -44,12 +41,9 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.store.Transaction;
 
@@ -87,14 +81,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
-	private boolean particleExists(Particle particle, boolean isInput) {
-		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
-		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
-			Particle.euidOf(particle, hasher)
-		);
-		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
-	}
-
 	@Override
 	public void startTransaction() {
 		this.transaction = store.createTransaction();
@@ -125,7 +111,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
 			committedAtom,
-			engineAtomIndices.getUniqueIndices(),
 			engineAtomIndices.getDuplicateIndices()
 		);
 		if (!result.isSuccess()) {
@@ -164,15 +149,14 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
 		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(storeIndex);
 
 		V v = initial;
 		while (cursor != null) {
 			AID aid = cursor.get();
-			Optional<CommittedAtom> ledgerEntry = store.get(aid);
+			Optional<ClientAtom> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
-				CommittedAtom committedAtom = ledgerEntry.get();
-				final ClientAtom clientAtom = committedAtom.getClientAtom();
+				final ClientAtom clientAtom = ledgerEntry.get();
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
 						&& cmMicroInstruction.isCheckSpin()) {
@@ -198,33 +182,19 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return store.getEpochHeader(epoch);
 	}
 
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
-		ImmutableList<CommittedAtom> atoms = store.getNextCommittedAtoms(stateVersion, batchSize);
-		if (atoms.isEmpty()) {
-			return null;
-		}
-		final var nextHeader = atoms.get(atoms.size() - 1).getHeaderAndProof().orElseThrow();
-		final var commands = atoms.stream()
-			.map(a -> new Command(serialization.toDson(a.getClientAtom(), DsonOutput.Output.PERSIST)))
-			.collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(commands, nextHeader);
+	public VerifiedCommandsAndProof getNextCommittedCommands(long start) {
+		return this.store.getNextCommittedAtoms(start);
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
-		throws NextCommittedLimitReachedException {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		return this.getNextCommittedCommands(stateVersion, batchSize);
+		return this.getNextCommittedCommands(stateVersion);
 	}
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		if (particleExists(particle, true)) {
-			return Spin.DOWN;
-		} else if (particleExists(particle, false)) {
-			return Spin.UP;
-		}
-		return Spin.NEUTRAL;
+		return store.getSpin(this.transaction, particle);
 	}
 }

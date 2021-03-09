@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
@@ -33,7 +34,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Comparator;
 import java.util.Objects;
 
-import com.radixdlt.store.NextCommittedLimitReachedException;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -50,23 +51,21 @@ public final class RemoteSyncService {
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
 	private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
-	private final SyncConfig syncConfig;
 	private final SystemCounters systemCounters;
 	private final Comparator<AccumulatorState> accComparator;
 
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
+	@Inject
 	public RemoteSyncService(
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
 		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
-		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
-		VerifiedLedgerHeaderAndProof initialHeader
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader
 	) {
 		this.committedReader = Objects.requireNonNull(committedReader);
-		this.syncConfig = Objects.requireNonNull(syncConfig);
 		this.statusResponseDispatcher = Objects.requireNonNull(statusResponseDispatcher);
 		this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
 		this.systemCounters = systemCounters;
@@ -100,21 +99,11 @@ public final class RemoteSyncService {
 	}
 
 	private VerifiedCommandsAndProof getCommittedCommandsForSyncRequest(DtoLedgerHeaderAndProof startHeader) {
-		try {
-			final var start = System.currentTimeMillis();
-
-			final var result = committedReader.getNextCommittedCommands(
-				startHeader,
-				syncConfig.responseBatchSize()
-			);
-
-			final var finish = System.currentTimeMillis();
-			systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
-
-			return result;
-		} catch (NextCommittedLimitReachedException e) {
-			return null;
-		}
+		final var start = System.currentTimeMillis();
+		final var result = committedReader.getNextCommittedCommands(startHeader);
+		final var finish = System.currentTimeMillis();
+		systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
+		return result;
 	}
 
 	public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

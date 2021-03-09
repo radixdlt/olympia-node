@@ -60,6 +60,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
 		RadixEngine<LedgerAtom> radixEngine,
+		CommittedAtomsStore store,
 		ClientAtom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
 		Serialization serialization,
@@ -86,7 +87,9 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			genesisAtom,
 			genesisLedgerHeader
 		);
+		store.startTransaction();
 		radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
+		store.commitTransaction();
 	}
 
 	@Provides
@@ -102,7 +105,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	) throws RadixEngineException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		if (!store.containsAID(genesisAtom.getAID())) {
-			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
+			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 
 		return store.getLastVerifiedHeader().orElseThrow();
