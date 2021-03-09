@@ -156,6 +156,9 @@ public final class Radix {
 		final ModuleRunner mempoolReceiverRunner = moduleRunners.get("mempool");
 		mempoolReceiverRunner.start();
 
+		final ModuleRunner applicationRunner = moduleRunners.get("application");
+		applicationRunner.start();
+
 		final ModuleRunner chaosRunner = moduleRunners.get("chaos");
 		if (chaosRunner != null) {
 			chaosRunner.start();
