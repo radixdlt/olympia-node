@@ -24,6 +24,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -137,6 +138,7 @@ public final class Radix {
 	}
 
 	public static void start(RuntimeProperties properties) {
+		long start = System.currentTimeMillis();
 		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
 
 		// setup networking
@@ -164,12 +166,17 @@ public final class Radix {
 		httpServer.start();
 
 		final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
+		long finish = System.currentTimeMillis();
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
+		log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
+
 		if (properties.get("consensus.start_on_boot", true)) {
 			final ModuleRunner consensusRunner = moduleRunners.get("consensus");
 			consensusRunner.start();
-			log.info("Node '{}' started successfully", self);
+			log.info("Consensus '{}' started successfully", self);
 		} else {
-			log.info("Node '{}' ready, waiting for start signal", self);
+			log.info("Consensus '{}' ready, waiting for start signal", self);
 		}
 	}
 

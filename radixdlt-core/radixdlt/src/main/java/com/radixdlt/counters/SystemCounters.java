@@ -114,6 +114,8 @@ public interface SystemCounters {
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
+		STARTUP_TIME_MS("startup.time_ms"),
+
 		HASHED_BYTES("hashed.bytes"),
 
 		LEDGER_STATE_VERSION("ledger.state_version"),
