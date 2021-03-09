@@ -80,7 +80,7 @@ public class ChaosExperimentUtils {
 
     public static void waitSeconds(int seconds) {
         long start = System.currentTimeMillis();
-        await().atMost(10, TimeUnit.MINUTES)
+        await().atMost(50, TimeUnit.MINUTES)
                 .until(() -> (System.currentTimeMillis() > start + (1000L * seconds)));
     }
 
