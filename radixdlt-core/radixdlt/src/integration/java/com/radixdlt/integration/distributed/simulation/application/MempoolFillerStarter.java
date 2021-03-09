@@ -31,7 +31,7 @@ public final class MempoolFillerStarter implements SimulationTest.SimulationNetw
     public void start(SimulationNodes.RunningNetwork network) {
         EventDispatcher<MempoolFillerUpdate> dispatcher = network
                 .getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
-        dispatcher.dispatch(MempoolFillerUpdate.enable(15));
+        dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
     }
 
     @Override
