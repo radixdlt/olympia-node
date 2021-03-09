@@ -412,7 +412,7 @@ public final class RadixHttpServer {
 	private void handleMempoolFill(HttpServerExchange exchange) throws IOException {
 		withJSONRequestBody(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
-			var update = enabled ? MempoolFillerUpdate.enable(50) : MempoolFillerUpdate.disable();
+			var update = enabled ? MempoolFillerUpdate.enable(100) : MempoolFillerUpdate.disable();
 			mempoolFillerUpdateEventDispatcher.dispatch(update);
 		});
 	}
