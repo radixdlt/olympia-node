@@ -15,11 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -46,10 +47,10 @@ public class SanityTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			ApplicationMonitors.mempoolCommitted()
 		)
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())
-		.addMempoolCommittedChecker();
+		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
 
 	@Test
 	public void sanity_tests_should_pass() {

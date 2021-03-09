@@ -112,20 +112,32 @@ public final class InMemoryWallet {
 		return Optional.of(spent.subtract(amount));
 	}
 
-	private Optional<Atom> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
-		Atom atom = new Atom();
+	public Optional<ParticleGroup> createFeeGroup() {
+		return createFeeGroup(new LinkedList<>(particles));
+	}
+
+	private Optional<ParticleGroup> createFeeGroup(LinkedList<TransferrableTokensParticle> mutableList) {
 		ParticleGroup.ParticleGroupBuilder feeBuilder = ParticleGroup.builder();
 		feeBuilder.addParticle(factory.createUnallocated(fee), Spin.UP);
 		Optional<UInt256> remainder = downParticles(fee, mutableList, p -> feeBuilder.addParticle(p, Spin.DOWN));
-		if (remainder.isEmpty()) {
+		return remainder.map(r -> {
+		    if (!r.isZero()) {
+				TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
+				mutableList.add(particle);
+				feeBuilder.addParticle(particle, Spin.UP);
+		    }
+
+		    return feeBuilder.build();
+		});
+	}
+
+	private Optional<Atom> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
+		Atom atom = new Atom();
+		Optional<ParticleGroup> feeGroup = createFeeGroup(mutableList);
+		if (feeGroup.isEmpty()) {
 			return Optional.empty();
 		}
-		remainder.filter(r -> !r.isZero()).ifPresent(r -> {
-			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
-			mutableList.add(particle);
-			feeBuilder.addParticle(particle, Spin.UP);
-		});
-		atom.addParticleGroup(feeBuilder.build());
+		atom.addParticleGroup(feeGroup.get());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
 		builder.addParticle(factory.createTransferrable(to, amount, random.nextLong()), Spin.UP);
