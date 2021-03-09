@@ -61,6 +61,8 @@ public final class MempoolFiller {
 	private final PeersView peersView;
 	private final Random random;
 	private RadixAddress to = null;
+	private int numTransactions;
+	private boolean sendToSelf = false;
 
 	@Inject
 	public MempoolFiller(
@@ -91,8 +93,9 @@ public final class MempoolFiller {
 
 	public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
 		return u -> {
+			u.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
+
 			if (u.enabled() == (to != null)) {
-				logger.info("Mempool Filler: not updating");
 				return;
 			}
 
@@ -114,7 +117,7 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			List<Atom> atoms = wallet.createParallelTransactions(to, 15);
+			List<Atom> atoms = wallet.createParallelTransactions(to, numTransactions);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
@@ -129,7 +132,7 @@ public final class MempoolFiller {
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
-				int index = random.nextInt(peers.size() + 1);
+				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
 				if (index == peers.size()) {
 					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 				} else {
@@ -137,7 +140,7 @@ public final class MempoolFiller {
 				}
 			});
 
-			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 100);
 		};
 	}
 }

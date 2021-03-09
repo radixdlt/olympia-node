@@ -23,17 +23,15 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
+import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.sync.SyncConfig;
@@ -82,18 +80,7 @@ public class MempoolFillTest {
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		)
-		.addActor(new SimulationTest.SimulationNetworkActor() {
-			@Override
-			public void start(SimulationNodes.RunningNetwork network) {
-				EventDispatcher<MempoolFillerUpdate> dispatcher = network
-					.getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
-				dispatcher.dispatch(MempoolFillerUpdate.create(true));
-			}
-
-			@Override
-			public void stop() {
-			}
-		});
+		.addActor(MempoolFillerStarter.class);
 
 	@Test
 	public void sanity_tests_should_pass() {

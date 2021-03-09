@@ -219,7 +219,7 @@ public final class Atom {
 		return this.signatures.get(id);
 	}
 
-	private void setSignature(EUID id, ECDSASignature signature) {
+	public void setSignature(EUID id, ECDSASignature signature) {
 		this.signatures.put(id, signature);
 	}
 

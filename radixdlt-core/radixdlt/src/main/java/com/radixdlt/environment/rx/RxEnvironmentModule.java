@@ -221,4 +221,25 @@ public class RxEnvironmentModule extends AbstractModule {
 
 		return builder.build("MempoolRunner " + self);
 	}
+
+	@ProvidesIntoMap
+	@StringMapKey("application")
+	@Singleton
+	public ModuleRunner applicationRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment
+	) {
+		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
+
+		Set<Class<?>> eventClasses = processors.stream()
+			.filter(p -> p.getRunnerName().equals("application"))
+			.map(EventProcessorOnRunner::getEventClass)
+			.collect(Collectors.toSet());
+		for (Class<?> eventClass : eventClasses) {
+			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
+		}
+
+		return builder.build("ApplicationRunner " + self);
+	}
 }

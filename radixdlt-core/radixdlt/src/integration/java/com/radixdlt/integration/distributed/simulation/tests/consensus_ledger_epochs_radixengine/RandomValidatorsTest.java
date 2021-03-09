@@ -15,68 +15,51 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
-import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.List;
-import java.util.LongSummaryStatistics;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.MapUtils;
+
+import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class RandomVoteAndViewTimeoutDropperTest {
+/**
+ * Randomly registers and unregisters nodes as validators
+ */
+public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8, 4)
+		.numNodes(10, 2)
 		.networkModules(
 			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed(),
-			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
+			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.addTestModules(
 			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+			ConsensusMonitors.noTimeouts(),
+			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		)
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();
+		.addActor(NodeValidatorRandomRegistrator.class);
 
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder.build();
-		final var runningTest = simulationTest.run();
-		final var checkResults = runningTest.awaitCompletion();
+		SimulationTest simulationTest = bftTestBuilder
+			.build();
 
-		List<CounterType> counterTypes = List.of(
-			CounterType.BFT_VERTEX_STORE_FORKS,
-			CounterType.BFT_PROCESSED,
-			CounterType.BFT_TIMEOUT,
-			CounterType.LEDGER_STATE_VERSION
-		);
-
-		Map<CounterType, LongSummaryStatistics> statistics = counterTypes.stream()
-			.collect(Collectors.toMap(
-				counterType -> counterType,
-				counterType -> runningTest.getNetwork().getSystemCounters().values()
-					.stream()
-					.mapToLong(s -> s.get(counterType)).summaryStatistics())
-			);
-
-		MapUtils.debugPrint(System.out, "statistics", statistics);
-
-		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		final var checkResults = simulationTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
+
 }

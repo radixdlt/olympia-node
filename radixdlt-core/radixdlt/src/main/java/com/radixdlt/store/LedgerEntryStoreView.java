@@ -18,6 +18,8 @@
 package com.radixdlt.store;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
@@ -54,22 +56,20 @@ public interface LedgerEntryStoreView {
 	/**
 	 * Searches for a certain index.
 	 *
-	 * @param type The type of index
 	 * @param index The index
-	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	SearchCursor search(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	SearchCursor search(StoreIndex index);
 
 	/**
 	 * Checks whether a certain index is contained in this ledger.
 	 *
-	 * @param type The type of index
 	 * @param index The index
-	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	boolean contains(Transaction tx, StoreIndex index);
+
+	Spin getSpin(Transaction tx, Particle particle);
 
 	/**
 	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one

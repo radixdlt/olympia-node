@@ -71,14 +71,6 @@ public final class LocalSystem extends RadixSystem {
 		return this.infoSupplier.getInfo();
 	}
 
-	// Property "processors" - 1 getter
-	// No obvious improvements here
-	@JsonProperty("processors")
-	@DsonOutput(Output.API)
-	int getJsonProcessors() {
-		return Runtime.getRuntime().availableProcessors();
-	}
-
 	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, Universe universe, String host) {
 		return new LocalSystem(
 			infoSupplier,

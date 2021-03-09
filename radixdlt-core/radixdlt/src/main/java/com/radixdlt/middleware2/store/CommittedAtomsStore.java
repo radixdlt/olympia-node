@@ -41,11 +41,9 @@ import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.store.Transaction;
 
@@ -83,14 +81,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
-	private boolean particleExists(Particle particle, boolean isInput) {
-		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
-		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
-			Particle.euidOf(particle, hasher)
-		);
-		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
-	}
-
 	@Override
 	public void startTransaction() {
 		this.transaction = store.createTransaction();
@@ -121,7 +111,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
 			committedAtom,
-			engineAtomIndices.getUniqueIndices(),
 			engineAtomIndices.getDuplicateIndices()
 		);
 		if (!result.isSuccess()) {
@@ -160,7 +149,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
 		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
+		SearchCursor cursor = store.search(storeIndex);
 
 		V v = initial;
 		while (cursor != null) {
@@ -206,11 +195,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		if (particleExists(particle, true)) {
-			return Spin.DOWN;
-		} else if (particleExists(particle, false)) {
-			return Spin.UP;
-		}
-		return Spin.NEUTRAL;
+		return store.getSpin(this.transaction, particle);
 	}
 }

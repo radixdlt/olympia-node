@@ -24,20 +24,16 @@ import org.radix.universe.system.LocalSystem;
 import com.google.common.io.CharStreams;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.universe.Universe;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,8 +54,6 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.listToArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.methodNotFoundResponse;
-
-import static com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -138,7 +132,6 @@ public final class RadixJsonRpcServer {
 		handlers.put("Atoms.submitAtom", this::handleSubmitAtom);
 		handlers.put("Atoms.getAtomStatus", this::handleGetAtomStatus);
 		handlers.put("Ledger.getAtom", this::handleGetAtom);
-		handlers.put("Ledger.getAtoms", this::handleGetAtoms);
 	}
 
 	/**
@@ -308,24 +301,5 @@ public final class RadixJsonRpcServer {
 						INVALID_PARAMS,
 						"Atom with AID '" + params.getString("aid") + "' not found"
 					))));
-	}
-
-	//TODO: potentially blocking
-	private JSONObject handleGetAtoms(JSONObject request) {
-		return ifParametersPresent(request, paramsObject ->
-			ifParameterPresent(request, paramsObject, "address", params -> {
-				final var addressString = params.getString("address");
-				final var address = RadixAddress.from(addressString);
-
-				var index = new StoreIndex(IndexType.DESTINATION.getValue(), address.euid().toByteArray());
-				var collectedAids = new ArrayList<>();
-				var cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
-
-				while (cursor != null) {
-					collectedAids.add(cursor.get());
-					cursor = cursor.next();
-				}
-				return fillListResponse(request, collectedAids);
-			}));
 	}
 }
