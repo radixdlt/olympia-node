@@ -45,7 +45,6 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	<U extends Particle, V> V compute(
 		Class<U> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer,
-		BiFunction<V, U, V> inputReducer
+		BiFunction<V, U, V> outputReducer
 	);
 }

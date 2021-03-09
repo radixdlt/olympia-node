@@ -25,12 +25,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -126,13 +124,7 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		StoreIndex destinationIndex =
-			new StoreIndex(
-				EngineAtomIndices.IndexType.DESTINATION.getValue(),
-				atomQuery.getDestination().toByteArray()
-			);
-
-		SearchCursor cursor = store.search(destinationIndex);
+		SearchCursor cursor = store.search(atomQuery.getDestination().toByteArray());
 		Set<AID> processedAtomIds = Sets.newHashSet();
 		partialSync(cursor, processedAtomIds);
 	}

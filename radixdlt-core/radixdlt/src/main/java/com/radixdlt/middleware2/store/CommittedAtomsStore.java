@@ -25,22 +25,14 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -50,34 +42,22 @@ import com.radixdlt.store.Transaction;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
-	private final Serialization serialization;
-	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
 	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
-	private final Hasher hasher;
 	private Transaction transaction;
-
-	public interface AtomIndexer {
-		EngineAtomIndices getIndices(LedgerAtom atom);
-	}
 
 	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		PersistentVertexStore persistentVertexStore,
-		AtomIndexer atomIndexer,
-		Serialization serialization,
-		Hasher hasher,
 		EventDispatcher<AtomCommittedToLedger> committedDispatcher
 	) {
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
-		this.atomIndexer = Objects.requireNonNull(atomIndexer);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.hasher = hasher;
 		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
@@ -103,29 +83,27 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		persistentVertexStore.save(this.transaction, vertexStoreState);
 	}
 
-	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
+		final ImmutableSet<EUID> destinations = committedAtom.getCMInstruction().getMicroInstructions().stream()
+			.filter(CMMicroInstruction::isCheckSpin)
+			.map(CMMicroInstruction::getParticle)
+			.flatMap(p -> p.getDestinations().stream())
+			.collect(ImmutableSet.toImmutableSet());
 
 		LedgerEntryStoreResult result = store.store(
 			this.transaction,
 			committedAtom,
-			engineAtomIndices.getDuplicateIndices()
+			destinations.stream().map(EUID::toByteArray).collect(Collectors.toSet())
 		);
 		if (!result.isSuccess()) {
 			throw new IllegalStateException("Unable to store atom");
 		}
 
-		final ImmutableSet<EUID> indicies = engineAtomIndices.getDuplicateIndices().stream()
-			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
-			.map(e -> EngineAtomIndices.toEUID(e.asKey()))
-			.collect(ImmutableSet.toImmutableSet());
-
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (committedAtom.getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, indicies));
+			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, destinations));
 		}
 	}
 
@@ -142,35 +120,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public <U extends Particle, V> V compute(
 		Class<U> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer,
-		BiFunction<V, U, V> inputReducer
+		BiFunction<V, U, V> outputReducer
 	) {
-		final String idForClass = serialization.getIdForClass(particleClass);
-		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
-		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(storeIndex);
-
-		V v = initial;
-		while (cursor != null) {
-			AID aid = cursor.get();
-			Optional<ClientAtom> ledgerEntry = store.get(aid);
-			if (ledgerEntry.isPresent()) {
-				final ClientAtom clientAtom = ledgerEntry.get();
-				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
-					if (particleClass.isInstance(cmMicroInstruction.getParticle())
-						&& cmMicroInstruction.isCheckSpin()) {
-						if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
-							v = outputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
-						} else {
-							v = inputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
-						}
-					}
-				}
-			}
-			cursor = cursor.next();
-		}
-		return v;
+		return store.reduceUpParticles(particleClass, initial, outputReducer);
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {

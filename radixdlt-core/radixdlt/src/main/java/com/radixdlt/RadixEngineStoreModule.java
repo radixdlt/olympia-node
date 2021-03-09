@@ -24,13 +24,9 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -69,10 +65,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 			public <U extends Particle, V> V compute(
 				Class<U> particleClass,
 				V initial,
-				BiFunction<V, U, V> outputReducer,
-				BiFunction<V, U, V> inputReducer
+				BiFunction<V, U, V> outputReducer
 			) {
-				return committedAtomsStore.compute(particleClass, initial, outputReducer, inputReducer);
+				return committedAtomsStore.compute(particleClass, initial, outputReducer);
 			}
 
 			@Override
@@ -80,11 +75,5 @@ public class RadixEngineStoreModule extends AbstractModule {
 				return committedAtomsStore.getSpin(particle);
 			}
 		};
-	}
-
-	@Provides
-	@Singleton
-	private AtomIndexer buildAtomIndexer(Serialization serialization, Hasher hasher) {
-		return atom -> EngineAtomIndices.from(atom, serialization, hasher);
 	}
 }

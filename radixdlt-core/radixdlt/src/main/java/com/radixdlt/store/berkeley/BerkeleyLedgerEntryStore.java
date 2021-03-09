@@ -24,9 +24,11 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.utils.Pair;
@@ -49,7 +51,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
@@ -75,6 +76,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -95,6 +97,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "radx.atom_db";
+	private static final String PARTICLE_DB_NAME = "radix.particle_db";
 	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
@@ -106,7 +109,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private final Map<Long, Set<StoreIndex>> currentIndices = new ConcurrentHashMap<>();
+	private final Map<Long, Set<byte[]>> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
@@ -114,6 +117,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private Database atomIdDatabase; // Atoms by AID; Append-only
 
 	private Database particleDatabase; // Write/Delete
+	private SecondaryDatabase upParticleDatabase; // Write/Delete
+
 	private Database vertexStoreDatabase; // Write/Delete
 
 	private Database proofDatabase; // Write/Delete
@@ -175,7 +180,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public void close() {
 		safeClose(duplicatedIndicesDatabase);
 		safeClose(atomDatabase);
+
 		safeClose(atomIdDatabase);
+
+		safeClose(upParticleDatabase);
 		safeClose(particleDatabase);
 
 		safeClose(epochProofDatabase);
@@ -230,7 +238,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public LedgerEntryStoreResult store(
 		Transaction tx,
 		CommittedAtom atom,
-		Set<StoreIndex> duplicateIndices
+		Set<byte[]> duplicateIndices
 	) {
 		return withTime(() -> {
 			try {
@@ -285,6 +293,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		var primaryConfig = buildPrimaryConfig();
 		var duplicateIndicesConfig = buildDuplicatesConfig();
 		var pendingConfig = buildPendingConfig();
+		var upParticleConfig = buildUpParticleConfig();
 
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
@@ -292,12 +301,17 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			particleDatabase = env.openDatabase(null, UP_PARTICLE_DB_NAME, primaryConfig);
+			duplicatedIndicesDatabase = env.openSecondaryDatabase(
+				null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig
+			);
+
+			particleDatabase = env.openDatabase(null, PARTICLE_DB_NAME, primaryConfig);
+			upParticleDatabase = env.openSecondaryDatabase(null, UP_PARTICLE_DB_NAME, particleDatabase, upParticleConfig);
+
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
 			atomIdDatabase = env.openDatabase(null, ATOM_ID_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
-			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig);
 
 			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {
@@ -308,6 +322,23 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// TODO implement integrity check
 			// TODO perhaps we should implement recovery instead?
 		}
+	}
+
+	private SecondaryConfig buildUpParticleConfig() {
+		return (SecondaryConfig) new SecondaryConfig()
+			.setKeyCreator(
+				(secondary, key, data, result) -> {
+					if (entryToSpin(data) == Spin.DOWN) {
+						return false;
+					}
+
+					result.setData(data.getData(), 0, EUID.BYTES);
+					return true;
+				}
+			)
+			.setSortedDuplicates(true)
+			.setAllowCreate(true)
+			.setTransactional(true);
 	}
 
 	private SecondaryConfig buildEpochProofConfig() {
@@ -453,25 +484,70 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private DatabaseEntry upEntry() {
-		return entry(new byte[0]);
+	public <U extends Particle, V> V reduceUpParticles(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer
+	) {
+		final String idForClass = serialization.getIdForClass(particleClass);
+		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+		final byte[] indexableBytes = numericClassId.toByteArray();
+
+		V v = initial;
+		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+			var index = entry(indexableBytes);
+			var value = entry();
+			var status = particleCursor.getSearchKey(index, null, value, null);
+			while (status == SUCCESS) {
+				// TODO: Remove memcpy
+				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
+				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+				U particle = deserializeOrElseFail(serializedParticle, particleClass);
+				v = outputReducer.apply(v, particle);
+				status = particleCursor.getNextDup(index, null, value, null);
+			}
+		}
+
+		return v;
+	}
+
+	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {
+		HashCode particleId = hasher.hash(particle);
+		var particleKey = particleId.asBytes();
+
+		final String idForClass = serialization.getIdForClass(particle.getClass());
+		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+		final byte[] indexableBytes = numericClassId.toByteArray();
+
+		byte[] serializedParticle = serialize(particle);
+		var value = new byte[EUID.BYTES + serializedParticle.length];
+		System.arraycopy(indexableBytes, 0, value, 0, EUID.BYTES);
+		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);
+
+		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
+	}
+
+
+	private void downParticle(com.sleepycat.je.Transaction txn, Particle particle) {
+		HashCode particleId = hasher.hash(particle);
+		var particleKey = particleId.asBytes();
+		// TODO: check for up Particle state
+		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
 	private DatabaseEntry downEntry() {
-		return entry(new byte[] {1});
+		return entry(new byte[0]);
 	}
 
 	private Spin entryToSpin(DatabaseEntry e) {
-		return e.getData().length > 0 ? Spin.DOWN : Spin.UP;
+		return e.getData().length == 0 ? Spin.DOWN : Spin.UP;
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
-		HashCode particleId = hasher.hash(instruction.getParticle());
-		var particleKey = entry(particleId.asBytes());
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-			particleDatabase.putNoOverwrite(txn, particleKey, upEntry());
+			upParticle(txn, instruction.getParticle());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			particleDatabase.put(txn, particleKey, downEntry());
+			downParticle(txn, instruction.getParticle());
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
@@ -479,7 +555,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
-		Set<StoreIndex> indices,
+		Set<byte[]> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
@@ -591,13 +667,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public SearchCursor search(StoreIndex index) {
+	public SearchCursor search(byte[] index) {
 		Objects.requireNonNull(index, "index is required");
 
 		return withTime(() -> {
 			try (var databaseCursor = toSecondaryCursor(null)) {
 				var pKey = entry();
-				var key = entry(index.asKey());
+				var key = entry(index);
 				var data = entry();
 
 				if (databaseCursor.getSearchKey(key, pKey, data, DEFAULT) == SUCCESS) {
@@ -607,20 +683,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				return null;
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
-	}
-
-	@Override
-	public boolean contains(Transaction tx, StoreIndex index) {
-		Objects.requireNonNull(index, "index is required");
-
-		return withTime(() -> {
-			try (var databaseCursor = toSecondaryCursor(unwrap(tx))) {
-				var pKey = entry();
-				var key = entry(index.asKey());
-
-				return databaseCursor.getSearchKeyRange(key, pKey, null, DEFAULT) == SUCCESS;
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
 	}
 
 	@Override
