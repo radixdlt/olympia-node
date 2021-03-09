@@ -79,26 +79,26 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, Universe universe, String host) {
+	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, String host, int port) {
 		return new LocalSystem(
 			infoSupplier,
 			self.getKey(),
 			Radix.AGENT,
 			Radix.AGENT_VERSION,
 			Radix.PROTOCOL_VERSION,
-			defaultTransports(universe, host)
+			defaultTransports(host, port)
 		);
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
 	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports(Universe universe, String host) {
+	private static ImmutableList<TransportInfo> defaultTransports(String host, int port) {
 		return ImmutableList.of(
 			TransportInfo.of(
 				TCPConstants.NAME,
 				StaticTransportMetadata.of(
 					TCPConstants.METADATA_HOST, host,
-					TCPConstants.METADATA_PORT, String.valueOf(universe.getPort())
+					TCPConstants.METADATA_PORT, String.valueOf(port)
 				)
 			)
 		);
