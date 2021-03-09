@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
@@ -30,31 +29,21 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
 import com.radixdlt.sync.SyncState;
-import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
-import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
-
-import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -64,6 +53,7 @@ public class SyncServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(LocalSyncService.class).in(Scopes.SINGLETON);
+		bind(RemoteSyncService.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -114,36 +104,6 @@ public class SyncServiceModule extends AbstractModule {
 
 			syncCommandsDispatcher.dispatch(verified);
 		};
-	}
-
-	@Provides
-	@Singleton
-	private RemoteSyncService remoteSyncServiceProcessor(
-		PeersView peersView,
-		LocalSyncService localSyncService,
-		CommittedReader committedReader,
-		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
-		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
-		RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
-		SystemCounters systemCounters,
-		Comparator<AccumulatorState> accComparator,
-		SyncConfig syncConfig,
-		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
-		BFTConfiguration initialConfiguration
-	) {
-		return new RemoteSyncService(
-			peersView,
-			localSyncService,
-			committedReader,
-			statusResponseDispatcher,
-			syncResponseDispatcher,
-			statusUpdateDispatcher,
-			syncConfig,
-			systemCounters,
-			accComparator,
-			initialHeader,
-			initialConfiguration.getValidatorSet()
-		);
 	}
 
 	@ProvidesIntoSet

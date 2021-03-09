@@ -21,16 +21,14 @@ package com.radixdlt.sync;
  * Configuration parameters for ledger sync.
  */
 public interface SyncConfig {
-
 	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100, 10, 50);
+		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
 	}
 
 	static SyncConfig of(
 		long requestTimeout,
 		int syncCheckMaxPeers,
 		long syncCheckInterval,
-		int responseBatchSize,
 		int ledgerStatusUpdateMaxPeersToNotify,
 		double maxLedgerUpdatesRate
 	) {
@@ -53,11 +51,6 @@ public interface SyncConfig {
 			@Override
 			public long syncRequestTimeout() {
 				return requestTimeout;
-			}
-
-			@Override
-			public int responseBatchSize() {
-				return responseBatchSize;
 			}
 
 			@Override
@@ -91,11 +84,6 @@ public interface SyncConfig {
 	 * A timeout for peer sync request.
 	 */
 	long syncRequestTimeout();
-
-	/**
-	 * Maximum number of elements to return in the sync response.
-	 */
-	int responseBatchSize();
 
 	/**
 	 * Maximum number of peers to send the LedgerStatusUpdate message to.

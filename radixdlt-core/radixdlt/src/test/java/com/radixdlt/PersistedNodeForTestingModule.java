@@ -34,6 +34,7 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 
 /**

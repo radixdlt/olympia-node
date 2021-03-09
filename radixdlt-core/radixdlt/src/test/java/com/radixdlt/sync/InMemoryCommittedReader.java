@@ -75,7 +75,7 @@ class InMemoryCommittedReader implements CommittedReader {
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
 		synchronized (lock) {
 			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);

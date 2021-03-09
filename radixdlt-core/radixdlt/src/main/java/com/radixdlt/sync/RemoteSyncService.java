@@ -18,6 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -40,7 +41,7 @@ import java.util.stream.Collectors;
 import static java.util.function.Predicate.not;
 
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.store.NextCommittedLimitReachedException;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -69,6 +70,7 @@ public final class RemoteSyncService {
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private BFTValidatorSet currentValidatorSet;
 
+	@Inject
 	public RemoteSyncService(
 		PeersView peersView,
 		LocalSyncService localSyncService,
@@ -79,7 +81,7 @@ public final class RemoteSyncService {
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
-		VerifiedLedgerHeaderAndProof initialHeader,
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
 		BFTValidatorSet initialValidatorSet
 	) {
 		this.peersView = Objects.requireNonNull(peersView);
@@ -122,21 +124,11 @@ public final class RemoteSyncService {
 	}
 
 	private VerifiedCommandsAndProof getCommittedCommandsForSyncRequest(DtoLedgerHeaderAndProof startHeader) {
-		try {
-			final var start = System.currentTimeMillis();
-
-			final var result = committedReader.getNextCommittedCommands(
-				startHeader,
-				syncConfig.responseBatchSize()
-			);
-
-			final var finish = System.currentTimeMillis();
-			systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
-
-			return result;
-		} catch (NextCommittedLimitReachedException e) {
-			return null;
-		}
+		final var start = System.currentTimeMillis();
+		final var result = committedReader.getNextCommittedCommands(startHeader);
+		final var finish = System.currentTimeMillis();
+		systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
+		return result;
 	}
 
 	public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

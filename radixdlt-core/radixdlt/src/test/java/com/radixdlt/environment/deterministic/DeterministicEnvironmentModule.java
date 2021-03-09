@@ -34,14 +34,9 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.StatusRequest;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -67,26 +62,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
-	}
-
-	@Provides
-	RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(SyncRequest.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(SyncResponse.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(StatusRequest.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(StatusResponse.class);
 	}
 
 	@Provides
