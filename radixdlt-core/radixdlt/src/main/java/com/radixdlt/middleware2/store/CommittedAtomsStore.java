@@ -145,32 +145,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		BiFunction<V, U, V> outputReducer,
 		BiFunction<V, U, V> inputReducer
 	) {
-		final String idForClass = serialization.getIdForClass(particleClass);
-		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
-		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
-		SearchCursor cursor = store.search(storeIndex);
-
-		V v = initial;
-		while (cursor != null) {
-			AID aid = cursor.get();
-			Optional<ClientAtom> ledgerEntry = store.get(aid);
-			if (ledgerEntry.isPresent()) {
-				final ClientAtom clientAtom = ledgerEntry.get();
-				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
-					if (particleClass.isInstance(cmMicroInstruction.getParticle())
-						&& cmMicroInstruction.isCheckSpin()) {
-						if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
-							v = outputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
-						} else {
-							v = inputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
-						}
-					}
-				}
-			}
-			cursor = cursor.next();
-		}
-		return v;
+		return store.reduceUpParticles(particleClass, initial, outputReducer);
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {

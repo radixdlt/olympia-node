@@ -25,6 +25,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * A read-only view of a specific LedgerEntryStore
@@ -60,6 +61,12 @@ public interface LedgerEntryStoreView {
 	 * @return The resulting ledger cursor
 	 */
 	SearchCursor search(StoreIndex index);
+
+	<U extends Particle, V> V reduceUpParticles(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer
+	);
 
 	/**
 	 * Checks whether a certain index is contained in this ledger.
