@@ -159,13 +159,8 @@ public class AtomEventObserver {
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<CommittedAtom> ledgerEntry = store.get(aid);
-					ledgerEntry.ifPresent(
-						committedAtom -> {
-							var clientAtom = committedAtom.getClientAtom();
-							atoms.add(clientAtom);
-						}
-					);
+					Optional<ClientAtom> ledgerEntry = store.get(aid);
+					ledgerEntry.ifPresent(atoms::add);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {

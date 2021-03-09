@@ -17,16 +17,21 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.StoreConfig;
+import com.radixdlt.utils.Pair;
+import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -41,7 +46,6 @@ import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
@@ -63,45 +67,17 @@ import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_CONTAINS;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_CONTAINS_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_CREATE_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_ENTRIES;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_GET;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_GET_FIRST;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_GET_LAST;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_GET_NEXT;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_GET_PREV;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_LAST_COMMITTED;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_LAST_VERTEX;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SAVE;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SAVE_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_SEARCH;
-import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_BDB_LEDGER_STORE;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CONTAINS;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_CREATE_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_ENTRIES;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_GET;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_GET_FIRST;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_GET_LAST;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_GET_NEXT;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_GET_PREV;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_LAST_COMMITTED;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SAVE;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SAVE_TX;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_SEARCH;
-import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_BDB_LEDGER_STORE;
 import static com.radixdlt.store.LedgerEntryStoreResult.conflict;
 import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
 import static com.radixdlt.store.LedgerEntryStoreResult.success;
@@ -126,15 +102,20 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
+	private static final String PROOF_DB_NAME = "radix.proof_db";
+	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String ATOM_LOG = "radix.ledger";
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
+	private final StoreConfig storeConfig;
 
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atomDatabase; // Atoms by primary keys (state version + AID bytes, no prefixes)
+	private Database headerDatabase;
+	private Database epochHeaderDatabase;
 	private Database vertexStoreDatabase; // Vertex Store
 	private SecondaryDatabase uniqueIndicesDatabase; // Atoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
@@ -144,11 +125,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public BerkeleyLedgerEntryStore(
 		Serialization serialization,
 		DatabaseEnvironment dbEnv,
+		StoreConfig storeConfig,
 		SystemCounters systemCounters
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.storeConfig = storeConfig;
 
 		this.open();
 	}
@@ -166,6 +149,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
 				env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
 				env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
+				env.truncateDatabase(transaction, PROOF_DB_NAME, false);
+				env.truncateDatabase(transaction, EPOCH_PROOF_DB_NAME, false);
 				env.truncateDatabase(transaction, PENDING_DB_NAME, false);
 				transaction.commit();
 			} catch (DatabaseNotFoundException e) {
@@ -189,6 +174,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		safeClose(uniqueIndicesDatabase);
 		safeClose(duplicatedIndicesDatabase);
 		safeClose(atomDatabase);
+
+		safeClose(epochHeaderDatabase);
+		safeClose(headerDatabase);
+
 		safeClose(vertexStoreDatabase);
 
 		if (atomLog != null) {
@@ -201,11 +190,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return withTime(() -> {
 			var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 			return SUCCESS == uniqueIndicesDatabase.get(null, key, null, DEFAULT);
-		}, ELAPSED_BDB_LEDGER_CONTAINS, COUNT_BDB_LEDGER_CONTAINS);
+		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
 	}
 
 	@Override
-	public Optional<CommittedAtom> get(AID aid) {
+	public Optional<ClientAtom> get(AID aid) {
 		return withTime(() -> {
 			try {
 				var key = entry(from(ENTRY_INDEX_PREFIX, aid.getBytes()));
@@ -215,22 +204,22 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					value.setData(atomLog.read(fromByteArray(value.getData())));
 
 					addBytesRead(value, key);
-					return Optional.of(restoreCommittedAtom(value.getData()));
+					return Optional.of(deserializeOrElseFail(value.getData(), ClientAtom.class));
 				}
 			} catch (Exception e) {
 				fail("Get of atom '" + aid + "' failed", e);
 			}
 
 			return Optional.empty();
-		}, ELAPSED_BDB_LEDGER_GET, COUNT_BDB_LEDGER_GET);
+		}, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
 	}
 
 	@Override
 	public Transaction createTransaction() {
 		return withTime(
 			() -> wrap(beginTransaction()),
-			ELAPSED_BDB_LEDGER_CREATE_TX,
-			COUNT_BDB_LEDGER_CREATE_TX
+			CounterType.ELAPSED_BDB_LEDGER_CREATE_TX,
+			CounterType.COUNT_BDB_LEDGER_CREATE_TX
 		);
 	}
 
@@ -247,7 +236,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			} catch (Exception e) {
 				throw new BerkeleyStoreException("Commit of atom failed", e);
 			}
-		}, ELAPSED_BDB_LEDGER_STORE, COUNT_BDB_LEDGER_STORE);
+		}, CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -269,15 +258,15 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					return Optional.empty();
 				}
 			}
-		}, ELAPSED_BDB_LEDGER_LAST_VERTEX, COUNT_BDB_LEDGER_LAST_VERTEX);
+		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 	}
 
 	@Override
 	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
 		withTime(
 			() -> doSave(transaction.unwrap(), vertexStoreState),
-			ELAPSED_BDB_LEDGER_SAVE_TX,
-			COUNT_BDB_LEDGER_SAVE_TX
+			CounterType.ELAPSED_BDB_LEDGER_SAVE_TX,
+			CounterType.COUNT_BDB_LEDGER_SAVE_TX
 		);
 	}
 
@@ -287,7 +276,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			var transaction = beginTransaction();
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
-		}, ELAPSED_BDB_LEDGER_SAVE, COUNT_BDB_LEDGER_SAVE);
+		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
 	}
 
 	private void open() {
@@ -302,6 +291,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			headerDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
+			epochHeaderDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, headerDatabase, buildEpochProofConfig());
 			uniqueIndicesDatabase = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, atomDatabase, uniqueIndicesConfig);
 			duplicatedIndicesDatabase = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig);
 			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
@@ -315,6 +306,19 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// TODO implement integrity check
 			// TODO perhaps we should implement recovery instead?
 		}
+	}
+
+	private SecondaryConfig buildEpochProofConfig() {
+		return (SecondaryConfig) new SecondaryConfig()
+			.setKeyCreator(
+				(secondary, key, data, result) -> {
+					OptionalLong epoch = headerKeyEpoch(key);
+					epoch.ifPresent(e -> result.setData(Longs.toByteArray(e)));
+					return epoch.isPresent();
+				}
+			)
+			.setAllowCreate(true)
+			.setTransactional(true);
 	}
 
 	private DatabaseConfig buildPendingConfig() {
@@ -384,34 +388,73 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private void doSave(com.sleepycat.je.Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
-		removeLastPending(transaction);
-
 		var rootId = vertexStoreState.getRoot().getId();
 		var vertexKey = entry(rootId.asBytes());
 		var vertexEntry = serializeAll(vertexStoreState.toSerialized());
 
-		failIfNotSuccess(
-			vertexStoreDatabase.put(transaction, vertexKey, vertexEntry),
-			"Store of root vertex with ID",
-			rootId
-		);
-
-		addBytesWrite(vertexEntry, vertexKey);
-	}
-
-	private void removeLastPending(com.sleepycat.je.Transaction transaction) {
 		try (var cursor = vertexStoreDatabase.openCursor(transaction, null)) {
-			var pKey = entry();
-			var value = entry();
-			var status = cursor.getLast(pKey, value, DEFAULT);
-
+			var status = cursor.getLast(null, null, DEFAULT);
 			if (status == SUCCESS) {
-				addBytesRead(value, pKey);
-				vertexStoreDatabase.delete(transaction, pKey);
+				cursor.delete();
 			}
+
+			this.putNoOverwriteOrElseThrow(
+				cursor,
+				vertexKey,
+				vertexEntry,
+				"Store of root vertex with ID " + rootId
+			);
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Commit of atom failed", e);
+		}
+	}
+
+	private static DatabaseEntry toHeaderKey(VerifiedLedgerHeaderAndProof header) {
+		if (header.isEndOfEpoch()) {
+			return toPKey(header.getStateVersion(), header.getEpoch() + 1);
+		} else {
+			return toPKey(header.getStateVersion());
+		}
+	}
+
+	private static OptionalLong headerKeyEpoch(DatabaseEntry entry) {
+		if (entry.getData().length == Long.BYTES) {
+			return OptionalLong.empty();
+		}
+
+		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
+	}
+
+	private void storeHeader(com.sleepycat.je.Transaction txn, VerifiedLedgerHeaderAndProof header) {
+		var prevHeaderKey = entry();
+		try (var proofCursor = headerDatabase.openCursor(txn, null);) {
+			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
+			// Cannot remove end of epoch proofs
+			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
+				status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
+				if (status == SUCCESS) {
+					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
+					long versionDiff = header.getStateVersion() - twoAwayStateVersion;
+					if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
+						executeOrElseThrow(() -> proofCursor.getNext(null, null, DEFAULT), "Missing next.");
+						executeOrElseThrow(proofCursor::delete, "Could not delete header.");
+						systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
+					}
+				}
+			}
+
+			final var headerKey = toHeaderKey(header);
+			final var headerData = entry(serialize(header));
+			this.putNoOverwriteOrElseThrow(
+				proofCursor,
+				headerKey,
+				headerData,
+				"Header write failed: " + header,
+				CounterType.COUNT_BDB_HEADER_BYTES_WRITE
+			);
+
+			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
 		}
 	}
 
@@ -421,7 +464,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		com.sleepycat.je.Transaction transaction
 	) throws DeserializeException {
 		var aid = atom.getAID();
-		var atomData = serialize(atom);
+		var atomData = serialize(atom.getClientAtom());
 
 		try {
 			//Write atom data as soon as possible
@@ -430,11 +473,14 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// put indices in temporary map for key creator to pick up
 			currentIndices.put(aid, indices);
 
+			// Store atom indices
 			var pKey = toPKey(atom.getStateVersion(), aid);
 			var atomPosData = entry(Longs.toByteArray(offset));
-
 			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
+
+			// Store header/proof
+			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
 
 		} catch (IOException e) {
 			return ioFailure(e);
@@ -467,16 +513,16 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		byte[] ledgerEntryData, LedgerEntryIndices indices
 	) throws DeserializeException {
 		return new LedgerEntryConflict(
-			restoreCommittedAtom(ledgerEntryData),
+			deserializeOrElseFail(ledgerEntryData, ClientAtom.class),
 			doGetConflictingAtoms(indices.getUniqueIndices(), null)
 		);
 	}
 
-	private ImmutableMap<StoreIndex, CommittedAtom> doGetConflictingAtoms(
+	private ImmutableMap<StoreIndex, ClientAtom> doGetConflictingAtoms(
 		Set<StoreIndex> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var conflictingAtoms = ImmutableMap.<StoreIndex, CommittedAtom>builder();
+		var conflictingAtoms = ImmutableMap.<StoreIndex, ClientAtom>builder();
 		try {
 			var key = entry();
 			var value = entry();
@@ -485,7 +531,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				key.setData(uniqueIndex.asKey());
 				if (uniqueIndicesDatabase.get(transaction, key, value, DEFAULT) == SUCCESS) {
 					addBytesRead(value, key);
-					conflictingAtoms.put(uniqueIndex, restoreCommittedAtom(value.getData()));
+					conflictingAtoms.put(uniqueIndex, deserializeOrElseFail(value.getData(), ClientAtom.class));
 				}
 			}
 		} catch (Exception e) {
@@ -496,65 +542,59 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return conflictingAtoms.build();
 	}
 
-	@Override
-	public ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException {
+	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {
 		final var start = System.nanoTime();
-		// when querying committed atoms, no need to worry about transaction as they aren't going away
-		try (
-			var atomCursor = atomDatabase.openCursor(null, null);
-			var uqCursor = uniqueIndicesDatabase.openCursor(null, null)
-		) {
 
-			final var atoms = Lists.<CommittedAtom>newArrayList();
-			final var atomSearchKey = toPKey(stateVersion + 1);
-
-			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, DEFAULT);
-
-			while (atomCursorStatus == SUCCESS && atoms.size() <= limit) {
-				var atomId = getAidFromPKey(atomSearchKey);
-				try {
-					var key = entry(from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
-					var value = entry();
-					var uqCursorStatus = uqCursor.getSearchKey(key, value, DEFAULT);
-
-					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
-					//  how should we handle it?
-					if (uqCursorStatus == SUCCESS) {
-						var offset = fromByteArray(value.getData());
-						var atom = restoreCommittedAtom(atomLog.read(offset));
-						atoms.add(atom);
-						if (atom.isLastAtomInEpoch()) {
-							break;
-						}
-					}
-				} catch (Exception e) {
-					log.error(format("Unable to fetch ledger entry for Atom ID %s", atomId), e);
-				}
-				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, DEFAULT);
+		com.sleepycat.je.Transaction txn = beginTransaction();
+		final VerifiedLedgerHeaderAndProof nextHeader;
+		try (var proofCursor = headerDatabase.openCursor(txn, null);) {
+			final var headerSearchKey = toPKey(stateVersion + 1);
+			final var headerValue = entry();
+			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
+			if (headerCursorStatus != SUCCESS) {
+				return null;
 			}
-
-			if (atoms.size() < limit) {
-				// Assume that the last entry is a complete commit
-				// if we ran out of entries at or before limit
-				return ImmutableList.copyOf(atoms);
-			}
-
-			int lastIndex;
-			// Otherwise we search backwards for the change in state version
-			for (lastIndex = limit - 1; lastIndex >= 0; lastIndex--) {
-				if (atoms.get(lastIndex).getHeaderAndProof().isPresent()) {
-					break;
-				}
-			}
-
-			if (lastIndex < 0) {
-				throw new NextCommittedLimitReachedException(limit);
-			}
-
-			return ImmutableList.copyOf(atoms.subList(0, lastIndex + 1));
+			nextHeader = deserializeOrElseFail(headerValue.getData(), VerifiedLedgerHeaderAndProof.class);
 		} finally {
-			addTime(start, ELAPSED_BDB_LEDGER_ENTRIES, COUNT_BDB_LEDGER_ENTRIES);
+			txn.commit();
 		}
+
+		final var atoms = ImmutableList.<ClientAtom>builder();
+		final var atomSearchKey = toPKey(stateVersion + 1);
+		final var atomPosData = entry();
+
+		try (var atomCursor = atomDatabase.openCursor(null, null)) {
+			int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
+			int count = 0;
+			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
+			do {
+				if (atomCursorStatus != SUCCESS) {
+					throw new BerkeleyStoreException("Atom database search failure");
+				}
+				var offset = fromByteArray(atomPosData.getData());
+				var atom = deserializeOrElseFail(atomLog.read(offset), ClientAtom.class);
+				atoms.add(atom);
+				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
+				count++;
+			} while (count < atomCount);
+			return Pair.of(atoms.build(), nextHeader);
+		} catch (IOException e) {
+			throw new BerkeleyStoreException("Unable to read from atom store.", e);
+		} finally {
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
+		}
+	}
+
+	@Override
+	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion) {
+		var atoms = this.getNextCommittedAtomsInternal(stateVersion);
+		if (atoms == null) {
+			return null;
+		}
+		final var commands = atoms.getFirst().stream()
+			.map(a -> new Command(serialization.toDson(a, DsonOutput.Output.PERSIST)))
+			.collect(ImmutableList.toImmutableList());
+		return new VerifiedCommandsAndProof(commands, atoms.getSecond());
 	}
 
 	@Override
@@ -580,7 +620,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 				return null;
 			}
-		}, ELAPSED_BDB_LEDGER_SEARCH, COUNT_BDB_LEDGER_SEARCH);
+		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
 	}
 
 	@Override
@@ -603,43 +643,35 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 						return false;
 				}
 			}
-		}, ELAPSED_BDB_LEDGER_CONTAINS_TX, COUNT_BDB_LEDGER_CONTAINS_TX);
+		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
 	}
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getLastHeader() {
 		return withTime(() -> {
-			try (var cursor = atomDatabase.openCursor(null, null)) {
+			try (var proofCursor = headerDatabase.openCursor(null, null);) {
 				var pKey = entry();
 				var value = entry();
 
-				return Optional.of(cursor.getLast(pKey, value, DEFAULT))
+				return Optional.of(proofCursor.getLast(pKey, value, DEFAULT))
 					.filter(status -> status == SUCCESS)
-					.map(status -> getAidFromPKey(pKey))
-					.map(v -> {
+					.map(status -> {
 						addBytesRead(value, pKey);
-						return v;
-					})
-					.map(v -> get(v).orElseThrow())
-					.map(a -> a.getHeaderAndProof().orElseThrow());
+						return deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class);
+					});
 			}
-		}, ELAPSED_BDB_LEDGER_LAST_COMMITTED, COUNT_BDB_LEDGER_LAST_COMMITTED);
+		}, CounterType.ELAPSED_BDB_LEDGER_LAST_COMMITTED, CounterType.COUNT_BDB_LEDGER_LAST_COMMITTED);
 	}
 
 	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
-		SearchCursor cursor = this.search(
-			StoreIndex.LedgerIndexType.UNIQUE,
-			new StoreIndex(EngineAtomIndices.IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
-				LedgerSearchMode.EXACT
-			);
-			if (cursor != null) {
-			return this.get(cursor.get())
-				.map(CommittedAtom::getHeaderAndProof)
-				.map(Optional::orElseThrow); // Epoch change should always have a header/proof
-		} else {
+		var value = entry();
+		var status = epochHeaderDatabase.get(null, toPKey(epoch), value, null);
+		if (status != SUCCESS) {
 			return Optional.empty();
 		}
+
+		return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
 	}
 
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
@@ -658,7 +690,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			} catch (Exception ex) {
 				throw new BerkeleyStoreException("Error while advancing cursor", ex);
 			}
-		}, ELAPSED_BDB_LEDGER_GET_NEXT, COUNT_BDB_LEDGER_GET_NEXT);
+		}, CounterType.ELAPSED_BDB_LEDGER_GET_NEXT, CounterType.COUNT_BDB_LEDGER_GET_NEXT);
 	}
 
 	BerkeleySearchCursor getPrev(BerkeleySearchCursor cursor) {
@@ -677,7 +709,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			} catch (Exception ex) {
 				throw new BerkeleyStoreException("Error while advancing cursor", ex);
 			}
-		}, ELAPSED_BDB_LEDGER_GET_PREV, COUNT_BDB_LEDGER_GET_PREV);
+		}, CounterType.ELAPSED_BDB_LEDGER_GET_PREV, CounterType.COUNT_BDB_LEDGER_GET_PREV);
 	}
 
 	BerkeleySearchCursor getFirst(BerkeleySearchCursor cursor) {
@@ -702,7 +734,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			} catch (Exception ex) {
 				throw new BerkeleyStoreException("Error while advancing cursor", ex);
 			}
-		}, ELAPSED_BDB_LEDGER_GET_FIRST, COUNT_BDB_LEDGER_GET_FIRST);
+		}, CounterType.ELAPSED_BDB_LEDGER_GET_FIRST, CounterType.COUNT_BDB_LEDGER_GET_FIRST);
 	}
 
 	BerkeleySearchCursor getLast(BerkeleySearchCursor cursor) {
@@ -727,7 +759,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			} catch (Exception ex) {
 				throw new BerkeleyStoreException("Error while advancing cursor", ex);
 			}
-		}, ELAPSED_BDB_LEDGER_GET_LAST, COUNT_BDB_LEDGER_GET_LAST);
+		}, CounterType.ELAPSED_BDB_LEDGER_GET_LAST, CounterType.COUNT_BDB_LEDGER_GET_LAST);
 	}
 
 	private SecondaryCursor toSecondaryCursor(com.sleepycat.je.Transaction tx, LedgerIndexType type) {
@@ -741,8 +773,12 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private CommittedAtom restoreCommittedAtom(byte[] data) throws DeserializeException {
-		return serialization.fromDson(data, CommittedAtom.class);
+	private <T> T deserializeOrElseFail(byte[] data, Class<T> c) {
+		try {
+			return serialization.fromDson(data, c);
+		} catch (DeserializeException e) {
+			throw new BerkeleyStoreException("Could not deserialize", e);
+		}
 	}
 
 	private static void failIfNotSuccess(OperationStatus status, String message, Object object) {
@@ -767,15 +803,22 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return new DatabaseEntry();
 	}
 
-	private static DatabaseEntry toPKey(long logicalClock) {
+	private static DatabaseEntry toPKey(long stateVersion) {
 		var pKey = new byte[Long.BYTES];
-		Longs.copyTo(logicalClock, pKey, 0);
+		Longs.copyTo(stateVersion, pKey, 0);
 		return entry(pKey);
 	}
 
-	private static DatabaseEntry toPKey(long logicalClock, AID aid) {
+	private static DatabaseEntry toPKey(long stateVersion, long epoch) {
+		var pKey = new byte[Long.BYTES * 2];
+		Longs.copyTo(stateVersion, pKey, 0);
+		Longs.copyTo(epoch, pKey, Long.BYTES);
+		return entry(pKey);
+	}
+
+	private static DatabaseEntry toPKey(long stateVersion, AID aid) {
 		var pKey = new byte[Long.BYTES + AID.BYTES];
-		Longs.copyTo(logicalClock, pKey, 0);
+		Longs.copyTo(stateVersion, pKey, 0);
 		System.arraycopy(aid.getBytes(), 0, pKey, Long.BYTES, AID.BYTES);
 		return entry(pKey);
 	}
@@ -796,6 +839,37 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private void addBytesWrite(DatabaseEntry entryA, DatabaseEntry entryB) {
 		long amount = (long) entryA.getSize() + (long) entryB.getSize();
 		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
+	}
+
+	private static void executeOrElseThrow(Supplier<OperationStatus> execute, String errorMessage) {
+		OperationStatus status = execute.get();
+		if (status != SUCCESS) {
+			throw new BerkeleyStoreException(errorMessage);
+		}
+	}
+
+	private void putNoOverwriteOrElseThrow(
+		Cursor cursor,
+		DatabaseEntry key,
+		DatabaseEntry value,
+		String errorMessage
+	) {
+		this.putNoOverwriteOrElseThrow(cursor, key, value, errorMessage, null);
+	}
+
+	private void putNoOverwriteOrElseThrow(
+		Cursor cursor,
+		DatabaseEntry key,
+		DatabaseEntry value,
+		String errorMessage,
+		CounterType additionalCounterType
+	) {
+		executeOrElseThrow(() -> cursor.putNoOverwrite(key, value), errorMessage);
+		long amount = (long) key.getSize() + (long) value.getSize();
+		systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
+		if (additionalCounterType != null) {
+			systemCounters.add(additionalCounterType, amount);
+		}
 	}
 
 	private static com.sleepycat.je.Transaction unwrap(Transaction tx) {

@@ -30,9 +30,11 @@ public interface SearchCursor {
 	 */
 	StoreIndex.LedgerIndexType getType();
 
+	long getStateVersion();
+
 	/**
 	 * Gets the current AID at this cursor
- 	 * @return The current AID
+	 * @return The current AID
 	 */
 	AID get();
 

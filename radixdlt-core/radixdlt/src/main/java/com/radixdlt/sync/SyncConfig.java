@@ -23,10 +23,6 @@ package com.radixdlt.sync;
 public interface SyncConfig {
 
 	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 100);
-	}
-
-	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval, int responseBatchSize) {
 		return new SyncConfig() {
 			@Override
 			public long syncCheckReceiveStatusTimeout() {
@@ -46,11 +42,6 @@ public interface SyncConfig {
 			@Override
 			public long syncRequestTimeout() {
 				return requestTimeout;
-			}
-
-			@Override
-			public int responseBatchSize() {
-				return responseBatchSize;
 			}
 		};
 	}
@@ -74,9 +65,4 @@ public interface SyncConfig {
 	 * A timeout for peer sync request.
 	 */
 	long syncRequestTimeout();
-
-	/**
-	 * Maximum number of elements to return in the sync response.
-	 */
-	int responseBatchSize();
 }

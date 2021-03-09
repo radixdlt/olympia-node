@@ -45,7 +45,7 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.PersistenceModule;
+import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.BFTHeader;
@@ -68,7 +68,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.NextCommittedLimitReachedException;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,68 +123,68 @@ public class GetNextCommittedCommandsTest {
 	}
 
 	@Test
-	public void when_request_from_empty_store__null_returned() throws NextCommittedLimitReachedException {
+	public void when_request_from_empty_store__null_returned() {
 		// No atoms generated
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
 
 		assertThat(commands).isNull();
 	}
 
 	@Test
-	public void when_request_over_epoch_boundary__commands_within_epoch_returned()
-		throws NextCommittedLimitReachedException {
+	public void when_request_over_epoch_boundary__commands_within_epoch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
 	}
 
 	@Test
-	public void when_request_at_epoch_boundary__single_command_returned()
-		throws NextCommittedLimitReachedException {
+	public void when_request_at_epoch_boundary__single_command_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
 
 		assertThat(commands.getCommands())
 			.hasSize(1);
 	}
 
 	@Test
-	public void when_request_to_store_limit__commands_within_limit_returned()
-		throws NextCommittedLimitReachedException {
+	public void when_request_to_store_limit__commands_within_limit_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
 	}
 
 	@Test
-	public void when_request_over_epoch_boundary_from_middle__commands_within_epoch_returned()
-		throws NextCommittedLimitReachedException {
+	public void when_request_over_epoch_boundary_from_middle__commands_within_epoch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 100);
 		generateAtoms(2, 101, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
 
 		assertThat(commands.getCommands())
 			.hasSize(91);
 	}
 
 	@Test
-	public void when_request_within_epoch__full_batch_returned()
-		throws NextCommittedLimitReachedException {
+	public void when_request_within_epoch__full_batch_returned() {
+		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 200);
 		generateAtoms(2, 201, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9, 100);
+		final var commands = this.committedAtomsStore.getNextCommittedCommands(100);
 
 		assertThat(commands.getCommands())
 			.hasSize(100);
@@ -204,7 +203,9 @@ public class GetNextCommittedCommandsTest {
 
 	private void generateAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atom = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
+		this.committedAtomsStore.startTransaction();
 		this.committedAtomsStore.storeAtom(atom);
+		this.committedAtomsStore.commitTransaction();
 	}
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {

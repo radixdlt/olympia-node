@@ -20,6 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
+import com.radixdlt.utils.Longs;
 import org.bouncycastle.util.Arrays;
 
 import java.util.Objects;
@@ -51,6 +52,11 @@ public class BerkeleySearchCursor implements SearchCursor {
 
 	public byte[] getIndex() {
 		return this.index;
+	}
+
+	@Override
+	public long getStateVersion() {
+		return Longs.fromByteArray(this.primary, 0);
 	}
 
 	@Override
