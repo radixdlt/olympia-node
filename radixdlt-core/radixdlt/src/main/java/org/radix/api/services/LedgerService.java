@@ -23,7 +23,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.StoreIndex;
 
 import static org.radix.api.jsonrpc.AtomStatus.DOES_NOT_EXIST;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
@@ -31,10 +30,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
-import static com.radixdlt.middleware2.store.EngineAtomIndices.IndexType.DESTINATION;
 import static com.radixdlt.serialization.DsonOutput.Output.API;
-import static com.radixdlt.store.LedgerSearchMode.EXACT;
-import static com.radixdlt.store.StoreIndex.LedgerIndexType.DUPLICATE;
 
 public class LedgerService {
 	private final LedgerEntryStore ledger;
@@ -53,8 +49,7 @@ public class LedgerService {
 
 	public JSONObject getAtoms(final JSONObject request, final String addressString) {
 		var address = RadixAddress.from(addressString);
-		var index = new StoreIndex(DESTINATION.getValue(), address.euid().toByteArray());
-		var cursor = ledger.search(DUPLICATE, index, EXACT);
+		var cursor = ledger.search(address.euid().toByteArray());
 		var result = jsonArray();
 
 		while (cursor != null) {

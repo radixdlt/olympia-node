@@ -24,9 +24,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex.LedgerIndexType;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -84,7 +82,7 @@ public class LedgerServiceTest {
 		var aid1 = AID.from(HashUtils.random256().asBytes());
 		var aid2 = AID.from(HashUtils.random256().asBytes());
 		var cursor = mock(SearchCursor.class);
-		when(ledger.search(eq(LedgerIndexType.DUPLICATE), any(), eq(LedgerSearchMode.EXACT))).thenReturn(cursor);
+		when(ledger.search(any())).thenReturn(cursor);
 		when(cursor.get()).thenReturn(aid0, aid1, aid2);
 		when(cursor.next()).thenReturn(cursor, cursor, null);
 

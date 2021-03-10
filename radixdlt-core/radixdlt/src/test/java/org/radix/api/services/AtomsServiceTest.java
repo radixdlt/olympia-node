@@ -21,14 +21,7 @@ import org.junit.Test;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
@@ -40,7 +33,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.RandomHasher;
 
@@ -95,9 +87,9 @@ public class AtomsServiceTest {
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
 		var aid = Atom.aidOf(atom, hasher);
-		var optionalLedgerEntry = Optional.of(createCommittedAtom(atom));
+		var optionalClientAtom = Optional.of(ClientAtom.convertFromApiAtom(atom, hasher));
 
-		when(store.get(aid)).thenReturn(optionalLedgerEntry);
+		when(store.get(aid)).thenReturn(optionalClientAtom);
 
 		var result = atomsService.getAtomByAtomId(aid);
 
@@ -118,19 +110,5 @@ public class AtomsServiceTest {
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));
 
 		return new Atom(List.of(group1), Map.of(), "Test message");
-	}
-
-	private CommittedAtom createCommittedAtom(final Atom atom) {
-		final var clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-
-		var ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
-		var proof = new VerifiedLedgerHeaderAndProof(
-			BFTHeader.ofGenesisAncestor(ledgerHeader),
-			BFTHeader.ofGenesisAncestor(ledgerHeader),
-			0L, HashUtils.random256(), ledgerHeader,
-			new TimestampedECDSASignatures()
-		);
-
-		return CommittedAtom.create(clientAtom, proof);
 	}
 }

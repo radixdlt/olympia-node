@@ -92,7 +92,12 @@ public final class ChaosController {
 
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> mempoolDispatcher.dispatch(MempoolFillerUpdate.create(values.getBoolean("enabled"))));
+		withBodyAsync(exchange, values -> {
+			var fillerUpdate = values.getBoolean("enabled")
+							   ? MempoolFillerUpdate.enable(15, true)
+							   : MempoolFillerUpdate.disable();
+			mempoolDispatcher.dispatch(fillerUpdate);
+		});
 	}
 
 	@VisibleForTesting

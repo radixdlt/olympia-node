@@ -26,6 +26,7 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.application.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
@@ -75,6 +76,7 @@ public final class RadixHttpServer {
 	private final int port;
 	private final ChaosController chaosController;
 	private final RpcController rpcController;
+	private final NodeController nodeController;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	private Undertow server;
@@ -111,7 +113,6 @@ public final class RadixHttpServer {
 		requireNonNull(radixEngine);
 
 		this.atomsService = atomsService;
-		this.radixEngine = radixEngine;
 
 		var consensusRunner = requireNonNull(moduleRunners.get("consensus"));
 		var systemService = new SystemService(serialization, universe, localSystem, consensusRunner);
@@ -127,8 +128,9 @@ public final class RadixHttpServer {
 		this.systemController = new SystemController(atomsService, systemService, inMemorySystemInfo, enableTestRoutes);
 		this.rpcController = new RpcController(jsonRpcServer, websocketHandler);
 		this.networkController = new NetworkController(networkService);
+		this.nodeController = new NodeController(selfAddress, validatorRegistrationEventDispatcher);
 		this.chaosController = new ChaosController(radixEngine, this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
-		this.chaosController = new ChaosController(this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
+
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 	}
 
@@ -168,10 +170,7 @@ public final class RadixHttpServer {
 		networkController.configureRoutes(handler);
 		chaosController.configureRoutes(handler);
 		rpcController.configureRoutes(handler);
-
-
-		handler.add(Methods.POST, "/node/validator", this::handleValidatorRegistration);
-		handler.add(Methods.GET, "/node", this::respondWithNode);
+		nodeController.configureRoutes(handler);
 
 		handler.setFallbackHandler(RadixHttpServer::fallbackHandler);
 		handler.setInvalidMethodHandler(RadixHttpServer::invalidMethodHandler);
@@ -188,20 +187,6 @@ public final class RadixHttpServer {
 		filter.setUrlPattern("^.*$");
 
 		return filter;
-	}
-	private void respondWithNode(HttpServerExchange exchange) {
-		var json = jsonObject()
-			.put("address", selfAddress);
-		respond(json, exchange);
-	}
-
-	private void handleValidatorRegistration(HttpServerExchange exchange) throws IOException {
-		withJSONRequestBody(exchange, values -> {
-			boolean enabled = values.getBoolean("enabled");
-			validatorRegistrationEventDispatcher.dispatch(
-				enabled ? ValidatorRegistration.register() : ValidatorRegistration.unregister()
-			);
-		});
 	}
 
 	public void stop() {
