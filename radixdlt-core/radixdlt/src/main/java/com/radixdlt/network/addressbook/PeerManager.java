@@ -268,11 +268,11 @@ public class PeerManager {
 	}
 
 	private void handleHeartbeatPeersMessage(Peer peer, SystemMessage heartBeatMessage) {
-		log.trace("Received SystemMessage from {}", peer);
+		log.debug("Received SystemMessage from {}", peer);
 	}
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
-		log.trace("Received PeersMessage from {}", peer);
+		log.debug("Received PeersMessage from {}", peer);
 		List<PeerWithSystem> peers = peersMessage.getPeers();
 		if (peers != null) {
 			List<PeerWithSystem> unknownPeers = peers.stream()
@@ -310,7 +310,7 @@ public class PeerManager {
 	}
 
 	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
-		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		log.debug("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
@@ -322,7 +322,7 @@ public class PeerManager {
 	}
 
 	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
-		log.trace("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		log.debug("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			synchronized (this.probes) {
 				Long ourNonce = this.probes.get(peer);
@@ -331,7 +331,7 @@ public class PeerManager {
 					long rtt = System.nanoTime() - message.getPayload();
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
-						log.trace("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
+						log.debug("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
 						if (nonce != 0L) {
 							log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
@@ -375,7 +375,7 @@ public class PeerManager {
 
 					this.probes.put(peer, nonce);
 					this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-					log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+					log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 					messageCentral.send(peer, ping);
 					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
 					return true;
