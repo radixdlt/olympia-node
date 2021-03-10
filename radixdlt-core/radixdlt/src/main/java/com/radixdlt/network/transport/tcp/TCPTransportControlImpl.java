@@ -49,7 +49,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.ChannelHandler.Sharable;
 
 /**
- * A {@link TransportControl} interface for TCP transport.
  * <p>
  * Note that this interface only supports one "application" per IP address.
  * The reasoning behind this is that it is not possible to determine whether
@@ -217,7 +216,8 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		// Requires "lock" to be held
 		void removePending(String host) {
 			if (null != this.pendingMap.remove(host)) {
-				log.debug("Remove pending {}", host);
+				log.debug("Remove pending {} pendingSize {}", host, this.pendingMap.size());
+				log.debug("Still pending {}", this.pendingMap.keySet());
 			}
 		}
 
