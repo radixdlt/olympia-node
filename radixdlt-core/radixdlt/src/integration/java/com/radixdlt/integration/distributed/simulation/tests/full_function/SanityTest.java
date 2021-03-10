@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -57,10 +58,10 @@ public class SanityTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			ApplicationMonitors.mempoolCommitted()
 		)
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())
-		.addMempoolCommittedChecker();
+		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
 
 	@Test
 	public void sanity_tests_should_pass() {

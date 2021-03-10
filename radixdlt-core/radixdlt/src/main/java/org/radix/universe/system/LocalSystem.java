@@ -35,7 +35,6 @@ import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.universe.Universe;
 
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
@@ -69,14 +68,6 @@ public final class LocalSystem extends RadixSystem {
 	@DsonOutput(Output.API)
 	public Map<String, Object> getInfo() {
 		return this.infoSupplier.getInfo();
-	}
-
-	// Property "processors" - 1 getter
-	// No obvious improvements here
-	@JsonProperty("processors")
-	@DsonOutput(Output.API)
-	int getJsonProcessors() {
-		return Runtime.getRuntime().availableProcessors();
 	}
 
 	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, String host, int port) {

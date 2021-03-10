@@ -57,7 +57,7 @@ public class OneNodeFallingBehindTest {
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(30, TimeUnit.SECONDS),
-			ConsensusMonitors.vertexRequestRate(50), // Conservative check
+			ConsensusMonitors.vertexRequestRate(100), // Conservative check, TODO: too conservative
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		);

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,11 +13,13 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.store;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -28,8 +30,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.radix.database.DatabaseEnvironment;
@@ -47,6 +47,11 @@ public class PersistenceModule extends AbstractModule {
 		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
 		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
 		bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	StoreConfig storeConfig() {
+		return new StoreConfig(1000);
 	}
 
 	@ProvidesIntoSet

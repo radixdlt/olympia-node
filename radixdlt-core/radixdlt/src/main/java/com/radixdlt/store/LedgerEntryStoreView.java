@@ -17,12 +17,15 @@
 
 package com.radixdlt.store;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.ClientAtom;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * A read-only view of a specific LedgerEntryStore
@@ -40,7 +43,7 @@ public interface LedgerEntryStoreView {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<CommittedAtom> get(AID aid);
+	Optional<ClientAtom> get(AID aid);
 
 	/**
 	 * Gets the last committed atom aid
@@ -51,32 +54,21 @@ public interface LedgerEntryStoreView {
 
 	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
-	/**
-	 * Searches for a certain index.
-	 *
-	 * @param type The type of index
-	 * @param index The index
-	 * @param mode The mode
-	 * @return The resulting ledger cursor
-	 */
-	SearchCursor search(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	SearchCursor search(byte[] destination);
+
+	<U extends Particle, V> V reduceUpParticles(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer
+	);
+
+	Spin getSpin(Transaction tx, Particle particle);
 
 	/**
-	 * Checks whether a certain index is contained in this ledger.
-	 *
-	 * @param type The type of index
-	 * @param index The index
-	 * @param mode The mode
-	 * @return The resulting ledger cursor
-	 */
-	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
-
-	/**
-	 * Retrieve a chunk of {@link CommittedAtom} with state version greater than the given one
+	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter
-	 * @param limit the maximum count of ledger entries to return
 	 * @return ledger entries satisfying the constraints
 	 */
-	ImmutableList<CommittedAtom> getNextCommittedAtoms(long stateVersion, int limit) throws NextCommittedLimitReachedException;
+	VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion);
 }

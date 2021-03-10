@@ -25,14 +25,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -40,7 +36,6 @@ import org.radix.api.observable.AtomEventDto.AtomEventType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -129,15 +124,7 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		StoreIndex destinationIndex =
-			new StoreIndex(
-				EngineAtomIndices.IndexType.DESTINATION.getValue(),
-				atomQuery.getDestination().toByteArray()
-			);
-
-		SearchCursor cursor =
-			store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
-
+		SearchCursor cursor = store.search(atomQuery.getDestination().toByteArray());
 		Set<AID> processedAtomIds = Sets.newHashSet();
 		partialSync(cursor, processedAtomIds);
 	}
@@ -159,13 +146,8 @@ public class AtomEventObserver {
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<CommittedAtom> ledgerEntry = store.get(aid);
-					ledgerEntry.ifPresent(
-						committedAtom -> {
-							var clientAtom = committedAtom.getClientAtom();
-							atoms.add(clientAtom);
-						}
-					);
+					Optional<ClientAtom> ledgerEntry = store.get(aid);
+					ledgerEntry.ifPresent(atoms::add);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {

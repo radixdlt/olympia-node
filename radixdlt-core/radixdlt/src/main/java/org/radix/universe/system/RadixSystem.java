@@ -51,10 +51,6 @@ public class RadixSystem extends BasicContainer {
 
 	private String agent;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(Output.ALL)
-	private long timestamp;
-
 	@JsonProperty("transports")
 	@DsonOutput(Output.ALL)
 	private ImmutableList<TransportInfo> transports;
@@ -67,10 +63,8 @@ public class RadixSystem extends BasicContainer {
 		this.agent = "unknown";
 		this.agentVersion = 0;
 		this.protocolVersion = 0;
-		this.timestamp = 0;
 		this.transports = ImmutableList.of();
 		this.key = null;
-
 	}
 
 	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports) {
@@ -93,10 +87,6 @@ public class RadixSystem extends BasicContainer {
 
 	public int getProtocolVersion() {
 		return this.protocolVersion;
-	}
-
-	public long getTimestamp() {
-		return this.timestamp;
 	}
 
 	public boolean hasTransports() {
@@ -174,7 +164,6 @@ public class RadixSystem extends BasicContainer {
 		RadixSystem that = (RadixSystem) o;
 		return agentVersion == that.agentVersion
 			&& protocolVersion == that.protocolVersion
-			&& timestamp == that.timestamp
 			&& Objects.equals(agent, that.agent)
 			&& Objects.equals(transports, that.transports)
 			&& Objects.equals(key, that.key);
@@ -182,6 +171,6 @@ public class RadixSystem extends BasicContainer {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(agentVersion, protocolVersion, agent, timestamp, transports, key);
+		return Objects.hash(agentVersion, protocolVersion, agent, transports, key);
 	}
 }

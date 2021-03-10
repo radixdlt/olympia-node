@@ -27,9 +27,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
 import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -90,6 +92,13 @@ public class SimulationNodes {
 				private BFTNode self() {
 					return BFTNode.create(self.getPublicKey());
 				}
+
+				@Provides
+				@Named("RadixEngine")
+				HashSigner hashSigner() {
+					return self::sign;
+				}
+
 			},
 			new NodeNetworkMessagesModule(underlyingNetwork),
 			baseModule

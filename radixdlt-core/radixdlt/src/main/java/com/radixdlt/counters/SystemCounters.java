@@ -71,6 +71,8 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_BYTES_READ("count.bdb.ledger.bytes.read"),
 		COUNT_BDB_LEDGER_BYTES_WRITE("count.bdb.ledger.bytes.write"),
 		COUNT_BDB_LEDGER_DELETES("count.bdb.ledger.deletes"),
+		COUNT_BDB_LEDGER_PROOFS_ADDED("count.bdb.ledger.proofs.added"),
+		COUNT_BDB_LEDGER_PROOFS_REMOVED("count.bdb.ledger.proofs.removed"),
 
 		COUNT_BDB_ADDRESS_BOOK_TOTAL("count.bdb.address_book.total"),
 		COUNT_BDB_ADDRESS_BOOK_BYTES_READ("count.bdb.address_book.bytes.read"),
@@ -80,6 +82,8 @@ public interface SystemCounters {
 		COUNT_BDB_SAFETY_STATE_TOTAL("count.bdb.safety_state.total"),
 		COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
 		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
+
+		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
@@ -110,6 +114,8 @@ public interface SystemCounters {
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
+		STARTUP_TIME_MS("startup.time_ms"),
+
 		HASHED_BYTES("hashed.bytes"),
 
 		LEDGER_STATE_VERSION("ledger.state_version"),
@@ -132,7 +138,6 @@ public interface SystemCounters {
 		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
 		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
 
-		RADIX_ENGINE_PROOFS("radix_engine.proofs"),
 		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
 		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 

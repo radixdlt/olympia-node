@@ -83,6 +83,11 @@ public class MockedCryptoModule extends AbstractModule {
 		AtomicBoolean running = new AtomicBoolean(false);
 		Hasher hasher = new Hasher() {
 			@Override
+			public int bytes() {
+				return 32;
+			}
+
+			@Override
 			public HashCode hash(Object o) {
 				byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
 				return this.hashBytes(dson);

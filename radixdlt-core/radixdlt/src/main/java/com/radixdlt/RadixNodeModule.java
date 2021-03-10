@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.application.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.network.transport.tcp.TCPConfiguration;
@@ -55,6 +56,7 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.store.DatabasePropertiesModule;
+import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
 
@@ -153,6 +155,9 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new TCPTransportModule(properties));
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
+
+		// Application
+		install(new ValidatorRegistratorModule());
 
 		if (properties.get("chaos.enable", false)) {
 			bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);

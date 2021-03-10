@@ -46,6 +46,11 @@ public final class CryptoModule extends AbstractModule {
 			private Sha256Hasher hasher = new Sha256Hasher(serialization);
 
 			@Override
+			public int bytes() {
+				return 32;
+			}
+
+			@Override
 			public HashCode hash(Object o) {
 				// Call hashBytes to ensure counters incremented
 				return this.hashBytes(serialization.toDson(o, Output.HASH));

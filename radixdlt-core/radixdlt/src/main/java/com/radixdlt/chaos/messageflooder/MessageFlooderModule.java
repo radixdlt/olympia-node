@@ -18,7 +18,6 @@
 package com.radixdlt.chaos.messageflooder;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -44,7 +43,7 @@ public final class MessageFlooderModule extends AbstractModule {
 		return new EventProcessorOnRunner<>("chaos", MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
 		return new EventProcessorOnRunner<>("chaos", ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
 	}
