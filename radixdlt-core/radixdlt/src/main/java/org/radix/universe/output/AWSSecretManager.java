@@ -201,9 +201,10 @@ public class AWSSecretManager {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
                 if (compress){
                     byte[] compressedBytes = compressData(jsonSecret);
-                    jsonSecret = new String(compressedBytes, StandardCharsets.UTF_8);
+                    updateBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes));
+                } else{
+                    updateSecret(secretName, jsonSecret);
                 }
-                updateSecret(secretName, jsonSecret);
             } catch (JsonProcessingException e) {
                 System.out.println(e);
             } catch (SecretsManagerException e) {
