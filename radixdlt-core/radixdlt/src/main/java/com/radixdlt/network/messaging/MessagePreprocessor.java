@@ -81,7 +81,9 @@ class MessagePreprocessor {
 		final byte[] messageBytes = inboundMessage.message();
 		this.counters.add(CounterType.NETWORKING_RECEIVED_BYTES, messageBytes.length);
 		final Message message = deserialize(messageBytes);
-		return processMessage(inboundMessage.source(), message);
+		final var res = processMessage(inboundMessage.source(), message);
+		log.debug("Preprocessing msg from {}, result is {}", inboundMessage.source(), res);
+		return res;
 	}
 
 	Optional<Pair<Peer, Message>> processMessage(TransportInfo source, Message message) {
@@ -101,6 +103,7 @@ class MessagePreprocessor {
 			if (message instanceof SystemMessage) {
 				peer = handleSystemMessage(peer, source, (SystemMessage) message);
 				if (!peer.isPresent()) {
+					log.debug("Ignore system message peer not present");
 					return Optional.empty();
 				}
 			} else if (message instanceof SignedMessage && !handleSignedMessage(peer, (SignedMessage) message)) {
@@ -140,18 +143,21 @@ class MessagePreprocessor {
 			log.trace("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));
+				log.debug("Ignore msg: null or zero NID");
 				return Optional.empty();
 			}
 			if (systemMessage.getSystem().getAgentVersion() <= Radix.REFUSE_AGENT_VERSION) {
 				peer.ban(String.format("Old peer %s %s:%s", peer, system.getAgent(), system.getProtocolVersion()));
+				log.debug("Ignore msg: wrong agent version");
 				return Optional.empty();
 			}
 			if (system.getNID().equals(this.localSystem.getNID())) {
 				// Just quietly ignore messages from self
-				log.trace("Ignoring {} message from self", messageType);
+				log.debug("Ignoring {} message from self", messageType);
 				return Optional.empty();
 			}
 			if (checkPeerBanned(system.getNID(), messageType)) {
+				log.debug("Ignore msg: peer banned");
 				return Optional.empty();
 			}
 			return Optional.of(peer);

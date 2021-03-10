@@ -95,6 +95,7 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				data = new byte[length];
 				buf.readBytes(data);
 			}
+			log.debug("Received raw message from {}", sender);
 			this.rawMessageSink.onNext(Pair.of(sender, data));
 		} else if (logRateLimiter.tryAcquire()) {
 			String type = socketSender == null ? null : socketSender.getClass().getName();
