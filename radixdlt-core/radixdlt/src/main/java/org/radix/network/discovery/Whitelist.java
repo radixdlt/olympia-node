@@ -29,16 +29,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Whitelist {
-	private static final Logger logger = LogManager.getLogger();
+	private static final Logger networkLog = LogManager.getLogger();
 
-	private final Set<String> parameters = new HashSet<>();
+	private Set<String> parameters = new HashSet<>();
 
 	public Whitelist(String parameters) {
 		if (parameters == null) {
 			return;
 		}
 
-		for (var parameter : parameters.split(",")) {
+		String[] split = parameters.split(",");
+
+		for (String parameter : split) {
 			if (parameter.trim().length() == 0) {
 				continue;
 			}
@@ -67,32 +69,35 @@ public class Whitelist {
 				break;
 			}
 
-			output[s] = Integer.parseInt(segments[s]);
+			output[s] = Integer.valueOf(segments[s]);
 		}
 
 		return output;
 	}
 
-	private boolean isInRange(String parameter, String address) {
-		if (!parameter.contains("-")) {
+	private boolean isRange(String parameter) {
+		if (parameter.contains("-")) {
+			return true;
+		}
+
 			return false;
 		}
 
-		var hosts = parameter.split("-");
+	private boolean isInRange(String parameter, String address) {
+		String[] hosts = parameter.split("-");
 
 		if (hosts.length != 2) {
 			throw new IllegalStateException("Range is invalid");
 		}
 
-		var target = convert(address);
-		var low = convert(hosts[0]);
-		var high = convert(hosts[1]);
+		int[] target = convert(address);
+		int[] low = convert(hosts[0]);
+		int[] high = convert(hosts[1]);
 
 		if (low.length != high.length || target.length != low.length) {
 			return false;
 		}
 
-		//TODO: check if everything is OK with the logic inside, as `if (low[s] < high[s])`part does not look right
 		for (int s = 0; s < low.length; s++) {
 			if (low[s] < high[s]) {
 				int[] swap = low;
@@ -109,13 +114,17 @@ public class Whitelist {
 		return true;
 	}
 
-	private boolean isMasked(String parameter, String address) {
-		if (!(parameter.contains("*") || parameter.contains("::"))) {
+	private boolean isMask(String parameter) {
+		if (parameter.contains("*") || parameter.contains("::")) {
+			return true;
+		}
+
 			return false;
 		}
 
-		var target = convert(address);
-		var mask = convert(parameter);
+	private boolean isMasked(String parameter, String address) {
+		int[] target = convert(address);
+		int[] mask = convert(parameter);
 
 		if (target.length != mask.length) {
 			return false;
@@ -138,15 +147,16 @@ public class Whitelist {
 		}
 
 		try {
-			var hostAddress = InetAddress.getByName(hostName).getHostAddress();
-
-			for (var parameter : parameters) {
-				if (parameter.equalsIgnoreCase(hostName) || isInRange(parameter, hostAddress) || isMasked(parameter, hostAddress)) {
+			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
+			for (String parameter : parameters) {
+				if (parameter.equalsIgnoreCase(hostName)
+					|| isRange(parameter) && isInRange(parameter, hostAddress)
+					|| isMask(parameter) && isMasked(parameter, hostAddress)) {
 					return true;
 				}
 			}
 		} catch (UnknownHostException ex) {
-			logger.error("While checking whitelist", ex);
+			networkLog.error("While checking whitelist", ex);
 		}
 
 		return false;

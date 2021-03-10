@@ -27,7 +27,7 @@ import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respondAsync;
 
-public class RpcController {
+public final class RpcController {
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final RadixHttpWebsocketHandler websocketHandler;
 

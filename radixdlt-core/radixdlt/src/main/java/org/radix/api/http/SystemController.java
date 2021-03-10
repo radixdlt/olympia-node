@@ -36,7 +36,7 @@ import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public class SystemController {
+public final class SystemController {
 	private final AtomsService atomsService;
 	private final SystemService systemService;
 	private final InMemorySystemInfo inMemorySystemInfo;

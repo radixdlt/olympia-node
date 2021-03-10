@@ -17,47 +17,50 @@
 
 package org.radix.network.discovery;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.google.inject.Inject;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Inject;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
-	private static final Logger log = LogManager.getLogger();
 
+	private static final Logger log = LogManager.getLogger();
 	private final int defaultPort;
-	private final Set<TransportInfo> hosts;
+
+	private final ImmutableSet<TransportInfo> hosts;
 
 	/**
-	 * Safely converts the data received by the find-nodes to a potential hostname.
-	 * <p>
+	 * Safely converts the data recieved by the find-nodes to a potential hostname.
+	 *
 	 * Potential: only limited validation (the character set) is validated by this function.
-	 * <p>
+	 *
 	 * Accepted chars:
 	 * - contained in IPv4 addresses: [0-9.]
 	 * - contained in IPv6 addresses: [a-zA-Z0-9:]
@@ -87,13 +90,38 @@ public class BootstrapDiscovery {
 
 		this.defaultPort = universe.getPort();
 
-		checkBypassTLSHandshake(properties);
+		// allow nodes to connect to others, bypassing TLS handshake
+		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
+		log.info("Allowing TLS handshake bypass...");
+		SSLFix.trustAllHosts();
+	}
 
-		var hostNames = collectHostnames(properties, retries, cooldown, connectionTimeout, readTimeout);
+		List<String> hostNames = Lists.newArrayList();
+		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
+			unparsedURL = unparsedURL.trim();
+			if (unparsedURL.isEmpty()) {
+				continue;
+			}
+			try {
+				// if host is an URL - we should GET the node from the given URL
+				URL url = new URL(unparsedURL);
+				if (!url.getProtocol().equals("https")) {
+					throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
+				}
 
-		hostNames.addAll(List.of(properties.get("network.seeds", "").split(",")));
+				String host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
+				if (host != null) {
+				log.info("seeding from random host: {}", host);
+				hostNames.add(host);
+				}
+			} catch (MalformedURLException ignoreConcreteHost) {
+				// concrete host addresses end up here.
+			}
+		}
 
-		var whitelist = Whitelist.from(properties);
+		hostNames.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
+
+		Whitelist whitelist = Whitelist.from(properties);
 
 		this.hosts = hostNames.stream()
 			.map(String::trim)
@@ -102,63 +130,12 @@ public class BootstrapDiscovery {
 			.map(this::toDefaultTransportInfo)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
-			.collect(Collectors.toUnmodifiableSet());
-	}
-
-	private void checkBypassTLSHandshake(final RuntimeProperties properties) {
-		if (properties.get("network.discovery.allow_tls_bypass", 0) != 1) {
-			return;
-		}
-
-		log.info("Allowing TLS handshake bypass...");
-		SSLFix.trustAllHosts();
-	}
-
-	private List<String> collectHostnames(
-		final RuntimeProperties properties,
-		final int retries,
-		final int cooldown,
-		final int connectionTimeout,
-		final int readTimeout
-	) {
-		var hostNames = Lists.<String>newArrayList();
-
-		for (var urlString : properties.get("network.discovery.urls", "").split(",")) {
-			urlString = urlString.trim();
-
-			if (urlString.isEmpty()) {
-				continue;
-			}
-
-			try {
-				// if host is an URL - we should GET the node from the given URL
-				var url = toURL(urlString);
-				var host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
-
-				if (host == null) {
-					continue;
-				}
-
-				log.info("seeding from random host: {}", host);
-				hostNames.add(host);
-			} catch (MalformedURLException ignoreConcreteHost) {
-				// concrete host addresses end up here.
-			}
-		}
-		return hostNames;
-	}
-
-	private URL toURL(final String urlString) throws MalformedURLException {
-		var url = new URL(urlString);
-		if (!url.getProtocol().equals("https")) {
-			throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
-		}
-		return url;
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
 	 * GET a node from the given node discovery service.
-	 * <p>
+	 *
 	 * The node service:
 	 * - might return a stale node
 	 * - might be temporary unreachable
@@ -168,13 +145,12 @@ public class BootstrapDiscovery {
 	String getNextNode(URL nodeFinderURL, int retries, int cooldown, int connectionTimeout, int readTimeout) {
 		long attempt = 0;
 		byte[] buf = new byte[MAX_DNS_NAME_OCTETS];
-
 		while (attempt++ != retries) { // NOTE: -1 => infinite number of attempts (in practice)
 			String host = null;
-
+			BufferedInputStream input = null;
 			try {
 				// open connection
-				var conn = nodeFinderURL.openConnection();
+				URLConnection conn = nodeFinderURL.openConnection();
 				// spoof User-Agents otherwise some CDNs do not let us through.
 				conn.setRequestProperty("User-Agent", "curl/7.54.0");
 				conn.setAllowUserInteraction(false); // no follow symlinks - just plain old direct links
@@ -184,9 +160,8 @@ public class BootstrapDiscovery {
 				conn.connect();
 
 				// read data
-				try (var input = new BufferedInputStream(conn.getInputStream())) {
+				input = new BufferedInputStream(conn.getInputStream());
 					int n = input.read(buf);
-
 					if (n > 0) {
 						host = toHost(buf, n);
 						if (host != null) {
@@ -194,11 +169,9 @@ public class BootstrapDiscovery {
 							// use TCP for exchanging data.  Needs resolving when we have a
 							// workable mechanism for node connectivity checking.
 							//testConnection(host, checkPort, connectionTimeout);
-							//TODO: send PING and wait for PONG
 							return host;
 						}
 					}
-				}
 			} catch (IOException e) {
 				// rejected, offline, etc. - this is expected
 				log.info("host is not reachable", e);
@@ -206,6 +179,14 @@ public class BootstrapDiscovery {
 				// rejected, offline, etc. - this is expected
 				log.warn("invalid host returned by node finder: " + host, e);
 				break;
+			} finally {
+				if (input != null) {
+					try {
+						input.close();
+					} catch (IOException ignoredExceptionOnClose) {
+						// Ignored
+					}
+				}
 			}
 
 			try {
@@ -225,18 +206,21 @@ public class BootstrapDiscovery {
 	 * @return A collection of transports for discovery hosts
 	 */
 	public Collection<TransportInfo> discoveryHosts() {
-		var results = new ArrayList<>(this.hosts);
+		List<TransportInfo> results = this.hosts.stream()
+			.collect(Collectors.toList());
+
 		Collections.shuffle(results);
 		return results;
 	}
 
 	@VisibleForTesting
 	Optional<TransportInfo> toDefaultTransportInfo(String host) {
-		var hap = HostAndPort.fromString(host).withDefaultPort(defaultPort);
+		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(defaultPort);
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
+		InetAddress resolved;
 		try {
-			var resolved = InetAddress.getByName(hap.getHost());
+			resolved = InetAddress.getByName(hap.getHost());
 			return Optional.of(
 				TransportInfo.of(
 					TCPConstants.NAME,

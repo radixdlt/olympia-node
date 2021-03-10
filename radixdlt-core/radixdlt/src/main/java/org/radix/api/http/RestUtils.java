@@ -35,10 +35,12 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 
-public class RestUtils {
+public final class RestUtils {
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
-	private RestUtils() {}
+	private RestUtils() {
+		throw new IllegalStateException("Can't construct");
+	}
 
 	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {

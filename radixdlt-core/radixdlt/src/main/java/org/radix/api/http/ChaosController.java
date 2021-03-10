@@ -41,7 +41,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
-public class ChaosController {
+public final class ChaosController {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Supplier<RadixAddress> mempoolFillerAddress;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;

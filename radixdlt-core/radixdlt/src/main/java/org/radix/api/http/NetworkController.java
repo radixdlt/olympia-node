@@ -27,7 +27,7 @@ import io.undertow.server.RoutingHandler;
 import static org.radix.api.http.RestUtils.getParameter;
 import static org.radix.api.http.RestUtils.respond;
 
-public class NetworkController {
+public final class NetworkController {
 	private final NetworkService networkService;
 
 	public NetworkController(NetworkService networkService) {
