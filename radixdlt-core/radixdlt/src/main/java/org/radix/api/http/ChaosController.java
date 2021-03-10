@@ -18,7 +18,9 @@
 package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -28,6 +30,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.LedgerAtom;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.undertow.server.HttpServerExchange;
@@ -43,18 +46,19 @@ import static com.radixdlt.utils.Base58.fromBase58;
 
 public final class ChaosController {
 	private final RadixEngine<LedgerAtom> radixEngine;
-	private final Supplier<RadixAddress> mempoolFillerAddress;
+	private final Optional<RadixAddress> mempoolFillerAddress;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
+	@Inject
 	public ChaosController(
+		@MempoolFillerKey final Optional<RadixAddress> mempoolFillerAddress,
 		final RadixEngine<LedgerAtom> radixEngine,
-		final Supplier<RadixAddress> mempoolFillerAddress,
 		final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		final EventDispatcher<MessageFlooderUpdate> messageDispatcher
 	) {
-		this.radixEngine = radixEngine;
 		this.mempoolFillerAddress = mempoolFillerAddress;
+		this.radixEngine = radixEngine;
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;
 	}
@@ -102,19 +106,17 @@ public final class ChaosController {
 
 	@VisibleForTesting
 	void respondWithMempoolFill(HttpServerExchange exchange) {
-		var mempoolFillerAddress = this.mempoolFillerAddress.get();
-
-		if (mempoolFillerAddress == null) {
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("Mempool filler address is not configured");
-		} else {
+		mempoolFillerAddress.ifPresentOrElse(addr -> {
 			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
-
 			respond(exchange, jsonObject()
-				.put("address", mempoolFillerAddress)
+				.put("address", addr)
 				.put("balance", wallet.getBalance())
 				.put("numParticles", wallet.getNumParticles()));
-		}
+		},
+		() -> {
+			exchange.setStatusCode(StatusCodes.NOT_FOUND);
+			exchange.getResponseSender().send("Mempool filler address is not configured");
+		});
 	}
 
 	private static BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {

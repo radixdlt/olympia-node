@@ -18,10 +18,14 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -41,5 +45,8 @@ public final class ApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
+
+		// Set empty optional as default
+		OptionalBinder.newOptionalBinder(binder(), Key.get(RadixAddress.class, MempoolFillerKey.class));
 	}
 }

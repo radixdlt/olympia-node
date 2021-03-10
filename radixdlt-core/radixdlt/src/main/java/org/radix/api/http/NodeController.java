@@ -18,7 +18,9 @@
 package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -31,11 +33,15 @@ import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public class NodeController {
+public final class NodeController {
 	private final RadixAddress selfAddress;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
-	public NodeController(RadixAddress selfAddress, EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher) {
+	@Inject
+	public NodeController(
+		@Self RadixAddress selfAddress,
+		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
+	) {
 		this.selfAddress = selfAddress;
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 	}

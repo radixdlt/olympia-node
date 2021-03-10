@@ -56,13 +56,16 @@ import static org.mockito.Mockito.when;
 
 public class ChaosControllerTest {
 	private final RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
-	private final Supplier<RadixAddress> mempoolFillerAddress = mock(Supplier.class);
+	private final Optional<RadixAddress> emptyMempoolFillerAddress = Optional.empty();
+	private final Optional<RadixAddress> mempoolFillerAddress = Optional.of(
+		RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x")
+	);
 	private final EventDispatcher<MempoolFillerUpdate> mempool = mock(EventDispatcher.class);
 	private final EventDispatcher<MessageFlooderUpdate> message = mock(EventDispatcher.class);
-	private final ChaosController chaosController = new ChaosController(radixEngine, mempoolFillerAddress, mempool, message);
 
 	@Test
 	public void routesAreConfigured() {
+		final ChaosController chaosController = new ChaosController(mempoolFillerAddress, radixEngine, mempool, message);
 		var handler = mock(RoutingHandler.class);
 		chaosController.configureRoutes(handler);
 
@@ -73,6 +76,7 @@ public class ChaosControllerTest {
 
 	@Test
 	public void testHandleMessageFlood() throws InterruptedException {
+		final ChaosController chaosController = new ChaosController(mempoolFillerAddress, radixEngine, mempool, message);
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
@@ -103,6 +107,7 @@ public class ChaosControllerTest {
 
 	@Test
 	public void testHandleMempoolFill() throws InterruptedException {
+		final ChaosController chaosController = new ChaosController(mempoolFillerAddress, radixEngine, mempool, message);
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
@@ -128,10 +133,10 @@ public class ChaosControllerTest {
 
 	@Test
 	public void testRespondWithMempoolFillAddressWhenAddressIsAvailable() throws InterruptedException {
+		final ChaosController chaosController = new ChaosController(mempoolFillerAddress, radixEngine, mempool, message);
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
 		var exchange = createExchange(
 			"",
 			invocation -> {
@@ -140,9 +145,6 @@ public class ChaosControllerTest {
 				return null;
 			}
 		);
-
-		var radixAddress = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-		when(mempoolFillerAddress.get()).thenReturn(radixAddress);
 
 		var wallet = mock(InMemoryWallet.class);
 		when(radixEngine.getComputedState(InMemoryWallet.class)).thenReturn(wallet);
@@ -160,6 +162,8 @@ public class ChaosControllerTest {
 
 	@Test
 	public void testRespondWithMempoolFillAddressWhenAddressIsNotAvailable() throws InterruptedException {
+		final ChaosController chaosController = new ChaosController(emptyMempoolFillerAddress, radixEngine, mempool, message);
+
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
@@ -172,8 +176,6 @@ public class ChaosControllerTest {
 				return null;
 			}
 		);
-
-		when(mempoolFillerAddress.get()).thenReturn(null);
 
 		chaosController.respondWithMempoolFill(exchange);
 
