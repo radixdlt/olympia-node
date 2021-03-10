@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.secretsmanager.model.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,33 +20,25 @@ import java.util.zip.GZIPOutputStream;
 
 public class AWSSecretManager {
     private static Region defaultRegion = Region.EU_WEST_2;
-    public static void createBinarySecret(String secretName, SdkBytes secretValue, String network, Region region) {
+
+    public static void createSecret(String secretName, Object secretValue, String network, Region region, Boolean binarySecret) {
         removeBouncyCastleSecurityProvider();
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
             .region(region)
             .build();
 
-        String secretARN = createNewBinarySecret(secretsClient, secretName, secretValue, network);
+        String secretARN = createNewSecret(secretsClient, secretName, secretValue, network, binarySecret);
         System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
 
-    }
-    public static void createSecret(String secretName, String secretValue, String network, Region region) {
-        removeBouncyCastleSecurityProvider();
-        SecretsManagerClient secretsClient = SecretsManagerClient.builder()
-            .region(region)
-            .build();
-
-        String secretARN = createNewSecret(secretsClient, secretName, secretValue, network);
-        System.out.println("Secret created with ARN " + secretARN);
-        secretsClient.close();
-
-    }
-    public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
-        createBinarySecret(secretName, secretValue, network, defaultRegion);
     }
     public static void createSecret(String secretName, String secretValue, String network) {
-        createSecret(secretName, secretValue, network, defaultRegion);
+        Boolean binarySecret = false;
+        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
+    }
+    public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
+        Boolean binarySecret = true;
+        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
     }
 
     public static String getSecret(String secretName, Region region) {
@@ -131,32 +122,30 @@ public class AWSSecretManager {
 
     }
 
-    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, String secretValue, String network) {
+    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, Boolean binarySecret) {
         List<Tag> tagList = buildTags(network, secretName);
-
-        CreateSecretRequest secretRequest = CreateSecretRequest.builder()
+		CreateSecretRequest secretRequest;
+        if (Boolean.TRUE.equals(binarySecret)){
+        secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
-                .secretString(secretValue)
+                .secretBinary((SdkBytes) secretValue)
                 .tags(tagList)
                 .build();
+        }else{
+            secretRequest = CreateSecretRequest.builder()
+                .name(secretName)
+                .description("Validator keys")
+                .secretString((String)secretValue)
+                .tags(tagList)
+                .build();
+        }
+
 
         CreateSecretResponse secretResponse = secretsClient.createSecret(secretRequest);
         return secretResponse.arn();
     }
-    private static String createNewBinarySecret(SecretsManagerClient secretsClient, String secretName, SdkBytes secretValue, String network) {
-        List<Tag> tagList = buildTags(network, secretName);
 
-        CreateSecretRequest secretRequest = CreateSecretRequest.builder()
-                .name(secretName)
-                .description("Validator keys")
-                .secretBinary(secretValue)
-                .tags(tagList)
-                .build();
-
-        CreateSecretResponse secretResponse = secretsClient.createSecret(secretRequest);
-        return secretResponse.arn();
-    }
     public static void createAWSSecret(
         final Map<String, Object> awsSecret,
         final String secretName,
@@ -166,7 +155,7 @@ public class AWSSecretManager {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-            if (compress){
+            if (Boolean.TRUE.equals(compress)){
                 byte[] compressedBytes = compressData(jsonSecret);
                 AWSSecretManager.createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
             } else {
@@ -199,7 +188,7 @@ public class AWSSecretManager {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-                if (compress){
+                if (Boolean.TRUE.equals(compress)){
                     byte[] compressedBytes = compressData(jsonSecret);
                     updateBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes));
                 } else{

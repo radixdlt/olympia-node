@@ -36,17 +36,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class GenerateUniversesTest {
 
-//	@BeforeClass
-//	public static void firstRun() throws IOException {
-//		// Need to do a first run before tests to ensure that logging
-//		// from static initialisation is not included in other tests.
-//		try (Capture stdOut = Capture.forOut();
-//			 Capture stdErr = Capture.forErr()) {
-//			GenerateUniverses.main(strings("-c", "-j", "-v", "1"));
-//			stdOut.toString();
-//			stdErr.toString();
-//		}
-//	}
+	@BeforeClass
+	public static void firstRun() throws IOException {
+		// Need to do a first run before tests to ensure that logging
+		// from static initialisation is not included in other tests.
+		try (Capture stdOut = Capture.forOut();
+			 Capture stdErr = Capture.forErr()) {
+			GenerateUniverses.main(strings("-c", "-j", "-v", "1"));
+			stdOut.toString();
+			stdErr.toString();
+		}
+	}
 
 	@Test
 	public void testInvalidOpt() throws IOException {
@@ -163,16 +163,6 @@ public class GenerateUniversesTest {
 				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
 				"RADIXDLT_UNIVERSE=", "\n"
 			);
-	}
-
-	@Test
-	public void testCompression() throws IOException {
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-j","-p", "-v", "20", "-n", "milestonenet", "-as", "true", "-rs", "true"));
-			stdOut.toString();
-			stdErr.toString();
-		}
 	}
 
 	// Largely to combat checkstyle whining about "whitespace after {"
