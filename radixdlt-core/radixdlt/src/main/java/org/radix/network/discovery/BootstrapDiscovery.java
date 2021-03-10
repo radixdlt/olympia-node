@@ -25,20 +25,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -49,8 +48,6 @@ import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
-import static java.util.function.Predicate.not;
-
 public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
@@ -58,8 +55,8 @@ public class BootstrapDiscovery {
 	private static final Logger log = LogManager.getLogger();
 	private final int defaultPort;
 
-	private ImmutableSet<String> unresolvedHostNames;
-	private ImmutableSet<TransportInfo> hosts;
+	private Set<String> unresolvedHostNames = new HashSet<>();
+	private Set<TransportInfo> hosts = new HashSet<>();
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -128,12 +125,12 @@ public class BootstrapDiscovery {
 
 		Whitelist whitelist = Whitelist.from(properties);
 
-		this.hosts = ImmutableSet.of();
-		this.unresolvedHostNames = hostNames.stream()
-			.map(String::trim)
-			.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
-			.distinct()
-			.collect(ImmutableSet.toImmutableSet());
+		this.unresolvedHostNames.addAll(
+			hostNames.stream()
+				.map(String::trim)
+				.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
+				.collect(Collectors.toSet())
+		);
 
 		this.resolveHostNames();
 	}
@@ -212,10 +209,7 @@ public class BootstrapDiscovery {
 	 */
 	public Collection<TransportInfo> discoveryHosts() {
 		this.resolveHostNames();
-
-		List<TransportInfo> results = this.hosts.stream()
-			.collect(Collectors.toList());
-
+		final var results = new ArrayList<>(this.hosts);
 		Collections.shuffle(results);
 		return results;
 	}
@@ -233,18 +227,13 @@ public class BootstrapDiscovery {
 		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
 			.collect(ImmutableSet.toImmutableSet());
 
-		this.unresolvedHostNames = this.unresolvedHostNames.stream()
-			.filter(not(newlyResolvedHostsNames::contains))
-			.collect(ImmutableSet.toImmutableSet());
+		this.unresolvedHostNames.removeAll(newlyResolvedHostsNames);
 
-		this.hosts = ImmutableSet.<TransportInfo>builder()
-			.addAll(this.hosts)
-			.addAll(
-				newlyResolvedHosts.stream()
-					.map(p -> p.getSecond().get())
-					.collect(Collectors.toSet())
-			)
-			.build();
+		this.hosts.addAll(
+			newlyResolvedHosts.stream()
+				.map(p -> p.getSecond().get())
+				.collect(Collectors.toSet())
+		);
 	}
 
 	@VisibleForTesting
