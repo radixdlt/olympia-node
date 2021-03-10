@@ -17,6 +17,7 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.utils.Base58;
 import java.util.Map;
 import java.util.Objects;
@@ -99,6 +100,10 @@ public class RadixSystem extends BasicContainer {
 
 	public ECPublicKey getKey() {
 		return key;
+	}
+
+	public BFTNode getBFTNode() {
+		return BFTNode.create(key);
 	}
 
 	public EUID getNID() {

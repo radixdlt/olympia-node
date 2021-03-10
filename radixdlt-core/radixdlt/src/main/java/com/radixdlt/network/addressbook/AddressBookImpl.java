@@ -335,6 +335,7 @@ public class AddressBookImpl implements AddressBook {
 	private PeerWithSystem newPeer(RadixSystem system, TransportInfo source) {
 		PeerWithSystem newPeer = new PeerWithSystem(system);
 		handleUpdatedPeers(Locking.withSupplierLock(this.peersLock, () -> addUpdatePeerInternal(newPeer, source)));
+		log.info("New Peer: {} source: {} size: {}", system, source, peersByNid.size());
 		return newPeer;
 	}
 

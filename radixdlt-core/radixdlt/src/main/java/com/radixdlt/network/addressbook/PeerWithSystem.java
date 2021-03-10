@@ -117,7 +117,7 @@ public final class PeerWithSystem extends Peer {
 			.findFirst()
 			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
 			.orElse("None");
-		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionInfo);
+		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getBFTNode(), connectionInfo);
 	}
 
 	@Override
