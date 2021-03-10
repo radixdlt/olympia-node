@@ -160,7 +160,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 				}
 
 				LinkedList<SocketChannel> items = this.channelMap.get(host);
-				log.info("Items for host {} = {}", host, items);
+				log.trace("Items for host {} = {}", host, items);
 
 				final SocketChannel channel;
 				if (items != null && !items.isEmpty()) {

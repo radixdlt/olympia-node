@@ -155,7 +155,7 @@ public class RadixSystem extends BasicContainer {
 
 	@Override
 	public String toString() {
-		return key == null ? "null" : key.euid().toString();
+		return key == null ? "null" : getBFTNode().toString();
 	}
 
 	@Override
