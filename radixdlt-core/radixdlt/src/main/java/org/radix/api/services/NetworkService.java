@@ -88,7 +88,18 @@ public class NetworkService {
 
 	public List<JSONObject> getLivePeers() {
 		return selfAndOthers(this.addressBook.recentPeers())
-			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
+			.map(peer -> {
+				var json = jsonObject()
+					.put("key", peer.getSystem().getKey());
+
+				peer.getSystem().supportedTransports().filter(t -> t.name().equals("TCP")).forEach(t -> {
+					String port = t.metadata().get("port");
+					String host = t.metadata().get("host");
+					json.put("endpoint", host + ":" + port);
+				});
+
+				return json;
+			})
 			.collect(Collectors.toList());
 	}
 
