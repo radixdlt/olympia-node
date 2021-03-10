@@ -96,6 +96,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
+				log.info("Channel active {}", ctx.channel().remoteAddress());
 				this.counters.increment(CounterType.NETWORKING_TCP_OPENED);
 				if (this.channelCount.getAndIncrement() < this.maxChannelCount) {
 					SocketChannel sch = (SocketChannel) ch;
@@ -110,6 +111,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					String host = remote.getAddress().getHostAddress();
 					int port = remote.getPort();
 					synchronized (lock) {
+						log.info("Remove pending and add channel {}", ch.remoteAddress());
 						removePending(formatAddress(host, port));
 						addChannel(host, sch);
 					}
@@ -153,11 +155,12 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 
 				CompletableFuture<TransportOutboundConnection> pending = this.pendingMap.get(hostAndPort);
 				if (pending != null) {
-					log.trace("Reuse pending {}", hostAndPort);
+					log.debug("Reuse pending {}", hostAndPort);
 					return pending;
 				}
 
 				LinkedList<SocketChannel> items = this.channelMap.get(host);
+				log.info("Items for host {} = {}", host, items);
 
 				final SocketChannel channel;
 				if (items != null && !items.isEmpty()) {
@@ -169,23 +172,24 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					ChannelFuture cf = transport.createChannel(host, Integer.parseInt(port));
 					final CompletableFuture<TransportOutboundConnection> cfsr0 = new CompletableFuture<>();
 					final CompletableFuture<TransportOutboundConnection> cfsr = cfsr0.whenComplete((obc, t) -> {
-						log.trace("Completed");
+						log.debug("Completed");
 						if (t != null) {
 							// If we are completing exceptionally, then we need to remove the pending connection
 							synchronized (lock) {
+								log.debug("Remove pending t != null");
 								removePending(hostAndPort);
 							}
 						}
 					});
-					log.trace("Add pending {}", hostAndPort);
+					log.debug("Add pending {}", hostAndPort);
 					this.pendingMap.put(hostAndPort, cfsr);
 					cf.addListener(f -> {
 						Throwable cause = f.cause();
 						if (cause == null) {
-							log.trace("Listener completed");
+							log.debug("Listener completed");
 							cfsr0.complete(outboundFactory.create(cf.channel(), metadata));
 						} else {
-							log.trace("Listener completed exceptionally");
+							log.debug("Listener completed exceptionally");
 							cfsr0.completeExceptionally(cause);
 						}
 					});
@@ -196,6 +200,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		}
 
 		void closeAll() {
+			log.debug("Close all");
 			final List<ChannelFuture> futures = Lists.newArrayList();
 			synchronized (lock) {
 				for (LinkedList<SocketChannel> channels : this.channelMap.values()) {
@@ -212,7 +217,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		// Requires "lock" to be held
 		void removePending(String host) {
 			if (null != this.pendingMap.remove(host)) {
-				log.trace("Remove pending {}", host);
+				log.debug("Remove pending {}", host);
 			}
 		}
 
