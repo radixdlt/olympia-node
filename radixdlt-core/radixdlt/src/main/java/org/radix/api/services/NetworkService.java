@@ -65,8 +65,7 @@ public class NetworkService {
 		var result = jsonObject();
 		var peersByTransport = new TreeMap<String, Set<Peer>>(); // sorted by transport name
 
-		selfAndOthers(this.addressBook.recentPeers())
-			.forEachOrdered(p -> addPeerToMap(p, peersByTransport));
+		selfAndOthers(this.addressBook.recentPeers()).forEachOrdered(p -> addPeerToMap(p, peersByTransport));
 
 		peersByTransport.entrySet().forEach(entry -> processEntry(result, entry));
 
@@ -84,20 +83,13 @@ public class NetworkService {
 	}
 
 	private void addPeerToMap(Peer peer, Map<String, Set<Peer>> pbt) {
-		peer.supportedTransports()
-			.forEachOrdered(ti -> pbt.computeIfAbsent(ti.name(), k -> new HashSet<>()).add(peer));
+		peer.supportedTransports().forEachOrdered(ti -> pbt.computeIfAbsent(ti.name(), k -> new HashSet<>()).add(peer));
 	}
 
 	public List<JSONObject> getLivePeers() {
 		return selfAndOthers(this.addressBook.recentPeers())
 			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
-	}
-
-	public JSONObject getLiveNIDS() {
-		var nids = jsonArray();
-		selfAndOthers(this.addressBook.recentPeers()).forEachOrdered(peer -> nids.put(peer.getNID().toString()));
-		return jsonObject().put("nids", nids);
 	}
 
 	public List<JSONObject> getPeers() {
@@ -109,16 +101,18 @@ public class NetworkService {
 	public JSONObject getPeer(String id) {
 		try {
 			var euid = EUID.valueOf(id);
+
 			if (euid.equals(EUID.fromHash(this.localPeerHash))) {
 				return serialization.toJsonObject(this.localPeer, Output.API);
 			}
+
 			return this.addressBook.peer(euid)
 				.map(peer -> serialization.toJsonObject(peer, Output.API))
 				.orElseGet(JSONObject::new);
 		} catch (IllegalArgumentException ex) {
 			// Ignore, return empty object
+			return jsonObject();
 		}
-		return jsonObject();
 	}
 
 	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
