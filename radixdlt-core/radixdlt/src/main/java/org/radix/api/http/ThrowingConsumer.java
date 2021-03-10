@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,13 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.services;
+package org.radix.api.http;
 
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
-
-public interface SingleAtomListener {
-	void onStored();
-	void onStoredFailure(RadixEngineException e);
-	void onError(AID atomId, Throwable e);
+@FunctionalInterface
+interface ThrowingConsumer<A> {
+	void accept(final A arg1) throws Exception;
 }

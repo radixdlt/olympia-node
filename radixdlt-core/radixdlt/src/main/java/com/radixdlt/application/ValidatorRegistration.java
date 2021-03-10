@@ -18,31 +18,51 @@
 
 package com.radixdlt.application;
 
+import java.util.Objects;
+
 /**
  * Event signaling whether a node should be registered/unregistered
  * as a validator
  */
 public final class ValidatorRegistration {
-    private final boolean enabled;
+	private final boolean enabled;
 
-    private ValidatorRegistration(boolean enabled) {
-        this.enabled = enabled;
-    }
+	private ValidatorRegistration(boolean enabled) {
+		this.enabled = enabled;
+	}
 
-    public boolean isRegister() {
-        return enabled;
-    }
+	public boolean isRegister() {
+		return enabled;
+	}
 
-    public static ValidatorRegistration register() {
-        return new ValidatorRegistration(true);
-    }
+	public static ValidatorRegistration register() {
+		return new ValidatorRegistration(true);
+	}
 
-    public static ValidatorRegistration unregister() {
-        return new ValidatorRegistration(false);
-    }
+	public static ValidatorRegistration unregister() {
+		return new ValidatorRegistration(false);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{%s}", this.getClass().getSimpleName(), this.enabled);
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{%s}", this.getClass().getSimpleName(), this.enabled);
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof ValidatorRegistration)) {
+			return false;
+		}
+
+		return this.enabled == ((ValidatorRegistration) o).enabled;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(enabled);
+	}
 }

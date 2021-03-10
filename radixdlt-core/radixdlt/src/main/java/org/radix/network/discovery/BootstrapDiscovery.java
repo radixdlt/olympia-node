@@ -65,7 +65,7 @@ public class BootstrapDiscovery {
 	 * - contained in IPv4 addresses: [0-9.]
 	 * - contained in IPv6 addresses: [a-zA-Z0-9:]
 	 * - contained in non-internationalized DNS names: [a-zA-Z0-9]
-	 *   https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
+	 * https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
 	 */
 	@VisibleForTesting
 	static String toHost(byte[] buf, int len) {
@@ -92,9 +92,9 @@ public class BootstrapDiscovery {
 
 		// allow nodes to connect to others, bypassing TLS handshake
 		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
-			log.info("Allowing TLS handshake bypass...");
-			SSLFix.trustAllHosts();
-		}
+		log.info("Allowing TLS handshake bypass...");
+		SSLFix.trustAllHosts();
+	}
 
 		List<String> hostNames = Lists.newArrayList();
 		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
@@ -111,8 +111,8 @@ public class BootstrapDiscovery {
 
 				String host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
 				if (host != null) {
-					log.info("seeding from random host: {}",  host);
-					hostNames.add(host);
+				log.info("seeding from random host: {}", host);
+				hostNames.add(host);
 				}
 			} catch (MalformedURLException ignoreConcreteHost) {
 				// concrete host addresses end up here.
@@ -161,17 +161,17 @@ public class BootstrapDiscovery {
 
 				// read data
 				input = new BufferedInputStream(conn.getInputStream());
-				int n = input.read(buf);
-				if (n > 0) {
-					host = toHost(buf, n);
-					if (host != null) {
-						// FIXME - Disable broken connection testing now that we no longer
-						// use TCP for exchanging data.  Needs resolving when we have a
-						// workable mechanism for node connectivity checking.
-						//testConnection(host, checkPort, connectionTimeout);
-						return host;
+					int n = input.read(buf);
+					if (n > 0) {
+						host = toHost(buf, n);
+						if (host != null) {
+							// FIXME - Disable broken connection testing now that we no longer
+							// use TCP for exchanging data.  Needs resolving when we have a
+							// workable mechanism for node connectivity checking.
+							//testConnection(host, checkPort, connectionTimeout);
+							return host;
+						}
 					}
-				}
 			} catch (IOException e) {
 				// rejected, offline, etc. - this is expected
 				log.info("host is not reachable", e);

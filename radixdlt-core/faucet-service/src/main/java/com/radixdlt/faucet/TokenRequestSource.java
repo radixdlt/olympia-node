@@ -34,4 +34,8 @@ import io.reactivex.Observable;
 @FunctionalInterface
 interface TokenRequestSource {
 	Observable<Pair<RadixAddress, EUID>> requestSource();
+
+	default int port() {
+		return 0;
+	}
 }
