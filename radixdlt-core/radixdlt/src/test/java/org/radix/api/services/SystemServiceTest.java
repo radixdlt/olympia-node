@@ -84,7 +84,7 @@ public class SystemServiceTest {
 
 		assertNotNull(result);
 		assertEquals(":str:Radix Devnet", result.getString("name"));
-		assertEquals(":str:The Radix development Universe", result.getString("description"));
+		assertEquals(":str:The Radix dev Universe", result.getString("description"));
 	}
 
 	@Test
