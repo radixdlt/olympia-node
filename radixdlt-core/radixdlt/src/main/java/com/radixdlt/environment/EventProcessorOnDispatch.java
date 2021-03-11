@@ -13,25 +13,31 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.environment;
 
-/**
- * Keys for different monitor checks
- */
-public enum Monitor {
-    SAFETY,
-    LIVENESS,
-    NO_TIMEOUTS,
-    DIRECT_PARENTS,
-    NONE_COMMITTED,
-    CONSENSUS_TO_LEDGER_PROCESSED,
-    EPOCH_CEILING_VIEW,
-    LEDGER_IN_ORDER,
-    TIMESTAMP_CHECK,
-    MEMPOOL_COMMITTED,
-    VERTEX_REQUEST_RATE,
-    VALIDATOR_REGISTERED,
-    RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS
+import java.util.Optional;
+
+public final class EventProcessorOnDispatch<T> {
+	private final Class<T> eventClass;
+	private final EventProcessor<T> processor;
+
+	public EventProcessorOnDispatch(Class<T> eventClass, EventProcessor<T> processor) {
+		this.eventClass = eventClass;
+		this.processor = processor;
+	}
+
+	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+		if (c.equals(eventClass)) {
+			return Optional.of((EventProcessor<U>) processor);
+		}
+
+		return Optional.empty();
+	}
+
+	public Class<T> getEventClass() {
+		return eventClass;
+	}
 }

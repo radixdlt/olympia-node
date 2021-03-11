@@ -33,6 +33,7 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
+import com.radixdlt.integration.distributed.simulation.invariants.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.sync.SyncConfig;
@@ -79,7 +80,8 @@ public class MempoolFillTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands()
 		)
 		.addActor(MempoolFillerStarter.class);
 

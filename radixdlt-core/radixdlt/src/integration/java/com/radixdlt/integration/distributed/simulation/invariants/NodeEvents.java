@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -41,5 +42,9 @@ public final class NodeEvents {
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
 		return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
+	}
+
+	public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+		return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
 	}
 }
