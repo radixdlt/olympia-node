@@ -25,6 +25,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +76,8 @@ public final class MessageCentralMempool {
 	}
 
 	public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
-		return messageCentral.messagesOf(MempoolAtomAddMessage.class)
+		return messageCentral
+			.messagesOf(MempoolAtomAddMessage.class)
 			.map(msg -> {
 				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
 				return RemoteEvent.create(
@@ -83,6 +85,7 @@ public final class MessageCentralMempool {
 					MempoolAdd.create(msg.getMessage().command()),
 					MempoolAdd.class
 				);
-			});
+			})
+			.toFlowable(BackpressureStrategy.BUFFER);
 	}
 }

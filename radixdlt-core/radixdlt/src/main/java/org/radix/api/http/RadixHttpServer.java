@@ -26,14 +26,9 @@ import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.application.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -45,7 +40,6 @@ import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -54,10 +48,7 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.logging.Logger.getLogger;
@@ -77,13 +68,8 @@ public final class RadixHttpServer {
 	private final ChaosController chaosController;
 	private final RpcController rpcController;
 	private final NodeController nodeController;
-	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	private Undertow server;
-
-	@Inject
-	@Self
-	private RadixAddress selfAddress;
 
 	@Inject(optional = true)
 	@MempoolFillerKey
@@ -96,9 +82,8 @@ public final class RadixHttpServer {
 		Map<String, ModuleRunner> moduleRunners,
 		RadixEngine<LedgerAtom> radixEngine,
 		LedgerEntryStore store,
-		EventDispatcher<MessageFlooderUpdate> messageEventDispatcher,
-		EventDispatcher<MempoolFillerUpdate> mempoolEventDispatcher,
-		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher,
+		NodeController nodeController,
+		ChaosController chaosController,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -125,17 +110,11 @@ public final class RadixHttpServer {
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 
 		boolean enableTestRoutes = universe.isDevelopment() || universe.isTest();
+		this.nodeController = nodeController;
+		this.chaosController = chaosController;
 		this.systemController = new SystemController(atomsService, systemService, inMemorySystemInfo, enableTestRoutes);
 		this.rpcController = new RpcController(jsonRpcServer, websocketHandler);
 		this.networkController = new NetworkController(networkService);
-		this.nodeController = new NodeController(selfAddress, validatorRegistrationEventDispatcher);
-		this.chaosController = new ChaosController(radixEngine, this::getMempoolFillerAddress, mempoolEventDispatcher, messageEventDispatcher);
-
-		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
-	}
-
-	private RadixAddress getMempoolFillerAddress() {
-		return mempoolFillerAddress;
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
