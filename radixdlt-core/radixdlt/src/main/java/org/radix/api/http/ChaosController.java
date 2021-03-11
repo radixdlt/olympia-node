@@ -98,7 +98,7 @@ public final class ChaosController {
 	void handleMempoolFill(HttpServerExchange exchange) {
 		withBodyAsync(exchange, values -> {
 			var fillerUpdate = values.getBoolean("enabled")
-							   ? MempoolFillerUpdate.enable(15, true)
+							   ? MempoolFillerUpdate.enable(100, true)
 							   : MempoolFillerUpdate.disable();
 			mempoolDispatcher.dispatch(fillerUpdate);
 		});
