@@ -45,6 +45,14 @@ public final class RestUtils {
 	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {
 			exchange.dispatch(() -> handleAsync(exchange, bodyHandler));
+		} else {
+			try {
+				handleBody(exchange, bodyHandler);
+			} catch (Exception e) {
+				sendStatusResponse(exchange, e);
+				return;
+			}
+			sendStatusResponse(exchange, null);
 		}
 	}
 
