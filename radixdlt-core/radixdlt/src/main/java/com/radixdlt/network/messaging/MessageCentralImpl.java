@@ -25,9 +25,8 @@ import java.util.Optional;
 
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Pair;
+import io.reactivex.rxjava3.core.Flowable;
 import java.util.stream.Collectors;
-
-import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -68,7 +67,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
-	private final Observable<Pair<Peer, Message>> peerMessages;
+	private final Flowable<Pair<Peer, Message>> peerMessages;
 
 	// Outbound message handling
 	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
@@ -130,11 +129,11 @@ final class MessageCentralImpl implements MessageCentral {
 		);
 		this.outboundThreadPool.start();
 
-		List<Observable<InboundMessage>> inboundMessages = this.transports.stream()
+		List<Flowable<InboundMessage>> inboundMessages = this.transports.stream()
 			.map(Transport::start)
 			.collect(Collectors.toList());
 
-		this.peerMessages = Observable.merge(inboundMessages)
+		this.peerMessages = Flowable.merge(inboundMessages)
 			.map(this.messagePreprocessor::process)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
@@ -143,7 +142,7 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	@Override
-	public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
+	public <T extends Message> Flowable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
 		return this.peerMessages
 			.filter(p -> messageType.isInstance(p.getSecond()))
 			.map(p -> new MessageFromPeer<>(p.getFirst(), messageType.cast(p.getSecond())));

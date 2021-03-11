@@ -90,7 +90,7 @@ public class NetworkService {
 		return selfAndOthers(this.addressBook.recentPeers())
 			.map(peer -> {
 				var json = jsonObject()
-					.put("key", peer.getSystem().getKey().toBase58());
+					.put("key", peer.getSystem().getKey());
 
 				peer.getSystem().supportedTransports().filter(t -> t.name().equals("TCP")).forEach(t -> {
 					String port = t.metadata().get("port");

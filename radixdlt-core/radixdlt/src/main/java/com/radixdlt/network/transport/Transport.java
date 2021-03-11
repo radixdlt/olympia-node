@@ -20,7 +20,7 @@ package com.radixdlt.network.transport;
 import java.io.Closeable;
 
 import com.radixdlt.network.messaging.InboundMessage;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Transport interface for various transport implementations.
@@ -75,5 +75,5 @@ public interface Transport extends Closeable {
 	 *
 	 * @return A Flowable of inbound messages
 	 */
-	Observable<InboundMessage> start();
+	Flowable<InboundMessage> start();
 }
