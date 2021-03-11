@@ -21,7 +21,7 @@ import java.util.zip.GZIPOutputStream;
 public class AWSSecretManager {
     private static Region defaultRegion = Region.EU_WEST_2;
 
-    public static void createSecret(String secretName, Object secretValue, String network, Region region, Boolean binarySecret) {
+    public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
         removeBouncyCastleSecurityProvider();
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
             .region(region)
@@ -33,11 +33,11 @@ public class AWSSecretManager {
 
     }
     public static void createSecret(String secretName, String secretValue, String network) {
-        Boolean binarySecret = false;
+        boolean binarySecret = false;
         createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
     }
     public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
-        Boolean binarySecret = true;
+        boolean binarySecret = true;
         createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
     }
 
@@ -122,7 +122,7 @@ public class AWSSecretManager {
 
     }
 
-    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, Boolean binarySecret) {
+    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, boolean binarySecret) {
         List<Tag> tagList = buildTags(network, secretName);
 		CreateSecretRequest secretRequest;
         if (binarySecret){
