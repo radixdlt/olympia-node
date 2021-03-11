@@ -25,6 +25,7 @@ import com.radixdlt.client.core.network.HttpClients;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,10 +71,13 @@ public class ChaosExperimentUtils {
                     .method("POST", RequestBody.create(MediaType.get("application/json"), payload))
                     .url("https://radixdlt.grafana.net/api/annotations")
                     .build();
+            Response response = null;
             try {
-                HttpClients.getSslAllTrustingClient().newCall(annotationRequest).execute();
+                response = HttpClients.getSslAllTrustingClient().newCall(annotationRequest).execute();
             } catch (IOException e) {
                 logger.error(e);
+            } finally {
+                response.close();
             }
         }
     }
