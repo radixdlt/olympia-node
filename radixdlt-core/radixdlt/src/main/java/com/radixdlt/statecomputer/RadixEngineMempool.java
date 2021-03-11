@@ -85,11 +85,8 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 			RadixEngine.RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
 			checker.checkAndStore(atom);
 		} catch (RadixEngineException e) {
-			// Add atom anyway if just missing dependency
-			// TODO: limit length of time atom can live in mempool
-			if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-				throw new RadixEngineMempoolException(e);
-			}
+			// TODO: allow missing dependency atoms to live for a certain amount of time
+			throw new RadixEngineMempoolException(e);
 		} finally {
 			radixEngine.deleteBranches();
 		}
@@ -138,10 +135,8 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 					RadixEngine.RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
 					checker.checkAndStore(clientAtom);
 				} catch (RadixEngineException e) {
-					if (e.getErrorCode() != RadixEngineErrorCode.MISSING_DEPENDENCY) {
-						removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(e)));
-						removeAtom(clientAtom);
-					}
+					removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(e)));
+					removeAtom(clientAtom);
 				} finally {
 					radixEngine.deleteBranches();
 				}
