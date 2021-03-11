@@ -117,7 +117,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 				var clientAtom = data.remove(aid);
 				// TODO: Cleanup
 				removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(
-					new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, "State conflict", DataPointer.ofAtom())
+					new RadixEngineException(clientAtom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", DataPointer.ofAtom())
 				)));
 			});
 
