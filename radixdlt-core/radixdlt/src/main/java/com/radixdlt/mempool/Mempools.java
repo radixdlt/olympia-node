@@ -30,7 +30,7 @@ public class Mempools {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static <T, U> Mempool<T, U> empty() {
+	public static <T> Mempool<T> empty() {
 		return new Mempool<>() {
 			@Override
 			public void add(T command) throws MempoolFullException, MempoolDuplicateException {
@@ -43,7 +43,7 @@ public class Mempools {
 			}
 
 			@Override
-			public List<T> getCommands(int count, Set<U> seen) {
+			public List<T> getCommands(int count, Set<T> seen) {
 				return List.of();
 			}
 		};

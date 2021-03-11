@@ -50,7 +50,7 @@ import java.util.stream.Stream;
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
-public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
+public final class RadixEngineMempool implements Mempool<ClientAtom> {
 	private final HashMap<AID, ClientAtom> data = new HashMap<>();
 	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
@@ -127,7 +127,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<ClientAtom> getCommands(int count, Set<AID> seen) {
+	public List<ClientAtom> getCommands(int count, Set<ClientAtom> prepared) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
 			List<ClientAtom> commands = Lists.newArrayList();
@@ -137,7 +137,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 			Iterator<ClientAtom> i = values.iterator();
 			while (commands.size() < size && i.hasNext()) {
 				ClientAtom a = i.next();
-				if (!seen.contains(a.getAID())) {
+				if (!prepared.contains(a)) {
 					commands.add(a);
 				}
 			}

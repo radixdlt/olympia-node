@@ -27,7 +27,7 @@ import java.util.Set;
  * Note that conceptually, a mempoolcan be thought of as a list indexable
  * by hash.
  */
-public interface Mempool<T, U> {
+public interface Mempool<T> {
 	/**
 	 * Add a transaction to the local mempool.
 	 * @param transaction The transaction to add.
@@ -45,7 +45,7 @@ public interface Mempool<T, U> {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<T> getCommands(int count, Set<U> seen);
+	List<T> getCommands(int count, Set<T> seen);
 
 	List<Pair<T, Exception>> committed(List<T> committed);
 }
