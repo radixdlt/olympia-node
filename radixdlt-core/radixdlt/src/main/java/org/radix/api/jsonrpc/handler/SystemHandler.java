@@ -20,12 +20,15 @@ package org.radix.api.jsonrpc.handler;
 import org.json.JSONObject;
 import org.radix.api.services.SystemService;
 
+import com.google.inject.Inject;
+
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
 public class SystemHandler {
 	private final SystemService systemService;
 
-	public SystemHandler(final SystemService systemService) {
+	@Inject
+	public SystemHandler(SystemService systemService) {
 		this.systemService = systemService;
 	}
 

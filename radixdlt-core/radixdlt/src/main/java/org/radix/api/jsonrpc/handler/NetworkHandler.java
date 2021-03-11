@@ -20,6 +20,8 @@ package org.radix.api.jsonrpc.handler;
 import org.json.JSONObject;
 import org.radix.api.services.NetworkService;
 
+import com.google.inject.Inject;
+
 import java.util.List;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
@@ -28,6 +30,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 public class NetworkHandler {
 	private final NetworkService networkService;
 
+	@Inject
 	public NetworkHandler(final NetworkService networkService) {
 		this.networkService = networkService;
 	}

@@ -26,6 +26,7 @@ import com.radixdlt.utils.Base58;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -93,9 +94,17 @@ public final class RadixAddress {
 		return from(raw);
 	}
 
-	// TODO: remove clone
+	public static Optional<RadixAddress> fromString(String address) {
+		try {
+			byte[] raw = Base58.fromBase58(address);
+			return Optional.of(from(raw));
+		} catch (Exception e) {
+			return Optional.empty();
+		}
+	}
+
 	public byte[] toByteArray() {
-		return addressBytes.clone();
+		return Arrays.copyOf(addressBytes, addressBytes.length);
 	}
 
 	public ECPublicKey getPublicKey() {

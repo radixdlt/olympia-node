@@ -25,6 +25,7 @@ import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
 
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,14 +50,17 @@ public class AtomsSubscribeEpic {
 	private final ConcurrentHashMap<String, Disposable> observers = new ConcurrentHashMap<>();
 	private final AtomsService atomsService;
 	private final Consumer<JSONObject> callback;
+	private final Serialization serialization;
 	private final Function<JSONObject, AtomQuery> queryMapper;
 
 	public AtomsSubscribeEpic(
 		AtomsService atomsService,
+		Serialization serialization,
 		Function<JSONObject, AtomQuery> queryMapper,
 		Consumer<JSONObject> callback
 	) {
 		this.atomsService = atomsService;
+		this.serialization = serialization;
 		this.queryMapper = queryMapper;
 		this.callback = callback;
 	}
@@ -113,7 +117,7 @@ public class AtomsSubscribeEpic {
 		final var atomEventsJson = jsonArray();
 
 		observedAtoms.atomEvents()
-			.map(event -> atomsService.serialization().toJsonObject(event, Output.WIRE))
+			.map(event -> serialization.toJsonObject(event, Output.WIRE))
 			.forEach(atomEventsJson::put);
 
 		onAtomUpdate(subscriberId, atomEventsJson, observedAtoms.isHead());

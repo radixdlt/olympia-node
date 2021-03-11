@@ -19,15 +19,18 @@ package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.handler.AtomHandler;
+import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
 import org.radix.api.services.AtomsService;
+import org.radix.api.services.HighLevelApiService;
 import org.radix.api.services.LedgerService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.SystemService;
 
 import com.google.common.io.CharStreams;
+import com.google.inject.Inject;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -66,28 +69,33 @@ public final class RadixJsonRpcServer {
 	private final NetworkHandler networkHandler;
 	private final AtomHandler atomHandler;
 	private final LedgerHandler ledgerHandler;
+	private final HighLevelApiHandler highLevelApiHandler;
 
+	@Inject
 	public RadixJsonRpcServer(
-		AtomsService atomsService,
-		NetworkService networkService,
-		SystemService systemService,
-		LedgerService ledgerService
+		SystemHandler systemHandler,
+		NetworkHandler networkHandler,
+		AtomHandler atomHandler,
+		LedgerHandler ledgerHandler,
+		HighLevelApiHandler highLevelApiHandler
 	) {
-		this(atomsService, networkService, systemService, ledgerService, DEFAULT_MAX_REQUEST_SIZE);
+		this(systemHandler, networkHandler, atomHandler, ledgerHandler, highLevelApiHandler, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		AtomsService atomsService,
-		NetworkService networkService,
-		SystemService systemService,
-		LedgerService ledgerService,
+		SystemHandler systemHandler,
+		NetworkHandler networkHandler,
+		AtomHandler atomHandler,
+		LedgerHandler ledgerHandler,
+		HighLevelApiHandler highLevelApiHandler,
 		long maxRequestSizeBytes
 	) {
+		this.systemHandler = systemHandler;
+		this.networkHandler = networkHandler;
+		this.atomHandler = atomHandler;
+		this.ledgerHandler = ledgerHandler;
+		this.highLevelApiHandler = highLevelApiHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
-		this.systemHandler = new SystemHandler(systemService);
-		this.networkHandler = new NetworkHandler(networkService);
-		this.atomHandler = new AtomHandler(atomsService);
-		this.ledgerHandler = new LedgerHandler(ledgerService);
 
 		fillHandlers();
 	}
@@ -115,6 +123,13 @@ public final class RadixJsonRpcServer {
 		//TODO: check and fix method naming?
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 		handlers.put("Ledger.getAtoms", ledgerHandler::handleGetAtoms);
+
+		//High level API's
+		handlers.put("radix.universeMagic", highLevelApiHandler::handleUniverseMagic);
+		handlers.put("radix.nativeToken", highLevelApiHandler::handleNativeToken);
+		handlers.put("radix.tokenBalances", highLevelApiHandler::handleTokenBalances);
+		handlers.put("radix.executedTransactions", highLevelApiHandler::handleExecutedTransactions);
+		handlers.put("radix.transactionStatus", highLevelApiHandler::handleTransactionStatus);
 	}
 
 	/**
