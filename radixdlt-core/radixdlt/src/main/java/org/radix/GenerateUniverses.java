@@ -343,7 +343,7 @@ public final class GenerateUniverses {
 		int n = 0;
 		List<Map<String, Object>> validators = new ArrayList<>();
 		final String VALIDATOR_PREFIX = "VALIDATOR";
-		Boolean compress = false;
+		boolean compress = false;
 		List<String> nodeNames = new ArrayList<>();
 		for (ECKeyPair k : keys) {
 			Map<String, Object> validator = new HashMap<>();
@@ -409,7 +409,7 @@ public final class GenerateUniverses {
 					String filename = String.format("%s/universe.yaml", helmUniverseOutput.getHelmValuesPath());
 					writeYamlOutput(filename, config);
 				} else if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
-					Boolean compress = true;
+					boolean compress = true;
 					String secretName = String.format("%s/universe", awsSecretsUniverseOutput.getNetworkName());
 					writeAWSSecret(universe, secretName, awsSecretsUniverseOutput, compress);
 				}
@@ -455,7 +455,7 @@ public final class GenerateUniverses {
 		}
 	}
 
-	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, Boolean compress) {
+	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
 		if (AWSSecretManager.awsSecretExists(secretName)) {
 			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
 		} else {
@@ -496,7 +496,7 @@ public final class GenerateUniverses {
 		final String validatorPrefix,
 		final String template,
 		final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
-		Boolean compress
+		boolean compress
 	) {
 		for (Map<String, Object> validator : validators) {
 			Map<String, Object> awsSecret = new HashMap<>();

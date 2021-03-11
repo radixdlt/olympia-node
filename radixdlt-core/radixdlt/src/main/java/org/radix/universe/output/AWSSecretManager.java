@@ -125,7 +125,7 @@ public class AWSSecretManager {
     private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, Boolean binarySecret) {
         List<Tag> tagList = buildTags(network, secretName);
 		CreateSecretRequest secretRequest;
-        if (Boolean.TRUE.equals(binarySecret)){
+        if (binarySecret){
         secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
@@ -150,12 +150,12 @@ public class AWSSecretManager {
         final Map<String, Object> awsSecret,
         final String secretName,
         final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
-        Boolean compress
+        boolean compress
     ) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-            if (Boolean.TRUE.equals(compress)){
+            if (compress){
                 byte[] compressedBytes = compressData(jsonSecret);
                 AWSSecretManager.createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
             } else {
@@ -182,13 +182,13 @@ public class AWSSecretManager {
         return compressed;
     }
 
-    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, Boolean compress) {
+    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (canBeUpdated(awsSecretsUniverseOutput)) {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-                if (Boolean.TRUE.equals(compress)){
+                if (compress){
                     byte[] compressedBytes = compressData(jsonSecret);
                     updateBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes));
                 } else{
