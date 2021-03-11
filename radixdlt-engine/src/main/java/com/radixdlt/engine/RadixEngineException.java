@@ -31,7 +31,7 @@ public final class RadixEngineException extends Exception {
 	private final DataPointer dp;
 	private final CMError cmError;
 
-	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
+	public RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
 		this(errorCode, message, dp, null);
 	}
 

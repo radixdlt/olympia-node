@@ -204,6 +204,10 @@ public final class ClientAtom implements LedgerAtom {
 		return new CMInstruction(instructions, signatures);
 	}
 
+	public Stream<CMMicroInstruction> uniqueInstructions() {
+		return instructions.stream().filter(CMMicroInstruction::isPush);
+	}
+
 	@Override
 	public HashCode getWitness() {
 		return witness;

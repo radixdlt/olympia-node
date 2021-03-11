@@ -253,7 +253,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
