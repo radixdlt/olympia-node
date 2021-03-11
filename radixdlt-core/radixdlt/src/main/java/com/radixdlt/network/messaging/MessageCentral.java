@@ -19,7 +19,7 @@ package com.radixdlt.network.messaging;
 
 import java.io.IOException;
 
-import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.SystemMessage;
 
@@ -57,7 +57,7 @@ public interface MessageCentral {
 	 * @param messageType the message type
 	 * @return a Flowable of inbound peer messages
 	 */
-	<T extends Message> Flowable<MessageFromPeer<T>> messagesOf(Class<T> messageType);
+	<T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType);
 
     /**
      * Closes this {@code MessageCentral} and releases any system resources associated

@@ -29,6 +29,7 @@ import com.radixdlt.network.messaging.InboundMessage;
 import hu.akarnokd.rxjava3.operators.FlowableTransformers;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
@@ -150,7 +151,7 @@ final class NettyUDPTransportImpl implements Transport {
 	}
 
 	@Override
-	public Flowable<InboundMessage> start() {
+	public Observable<InboundMessage> start() {
 		if (log.isInfoEnabled()) {
 			log.info("UDP transport {}", localAddress());
 		}
@@ -198,7 +199,8 @@ final class NettyUDPTransportImpl implements Transport {
 				() -> log.error("UDP channels buffer overflow!"),
 				BackpressureOverflowStrategy.DROP_LATEST
 			)
-			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
+			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false))
+			.toObservable();
 	}
 
 	@Override
