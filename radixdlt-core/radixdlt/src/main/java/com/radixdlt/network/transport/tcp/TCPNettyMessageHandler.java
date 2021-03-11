@@ -27,7 +27,6 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +51,6 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 
 	private final PublishProcessor<Pair<InetSocketAddress, byte[]>> rawMessageSink = PublishProcessor.create();
-	private final Flowable<InboundMessage> inboundMessages;
 
 	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
@@ -62,20 +60,20 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 	TCPNettyMessageHandler(SystemCounters counters, int bufferSize) {
 		this.counters = counters;
 		this.bufferSize = bufferSize;
-		this.inboundMessages = rawMessageSink
+	}
+
+	Flowable<InboundMessage> inboundMessageRx() {
+		return rawMessageSink
 			.onBackpressureBuffer(
 				this.bufferSize,
 				() -> {
 					this.counters.increment(CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-					Level logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-					log.log(logLevel, "TCP msg buffer overflow, dropping msg");
+					if (droppedMessagesRateLimiter.tryAcquire()) {
+						log.warn("TCP msg buffer overflow, dropping msg");
+					}
 				},
 				BackpressureOverflowStrategy.DROP_LATEST)
 			.map(this::parseMessage);
-	}
-
-	Flowable<InboundMessage> inboundMessageRx() {
-		return inboundMessages;
 	}
 
 	void shutdownRx() {

@@ -26,11 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
-import hu.akarnokd.rxjava3.operators.FlowableTransformers;
-import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.processors.PublishProcessor;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,6 +53,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import com.radixdlt.utils.streams.RoundRobinBackpressuredProcessor;
 
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger();
@@ -92,7 +89,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
 
-	private final PublishProcessor<Flowable<InboundMessage>> channels = PublishProcessor.create();
+	private final RoundRobinBackpressuredProcessor<InboundMessage> inboundMessageSink =
+		new RoundRobinBackpressuredProcessor<>();
 
 	private final TCPTransportControl control;
 
@@ -205,13 +203,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-		return channels
-			.onBackpressureBuffer(
-				CHANNELS_BUFFER_SIZE,
-				() -> log.error("TCP channels buffer overflow!"),
-				BackpressureOverflowStrategy.DROP_LATEST
-			)
-			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
+		return Flowable.fromPublisher(inboundMessageSink);
 	}
 
 	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
@@ -231,7 +223,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		}
 
 		final var messageHandler = new TCPNettyMessageHandler(this.counters, this.messageBufferSize);
-		channels.onNext(messageHandler.inboundMessageRx());
+		this.inboundMessageSink.subscribeTo(messageHandler.inboundMessageRx());
 
 		ch.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
