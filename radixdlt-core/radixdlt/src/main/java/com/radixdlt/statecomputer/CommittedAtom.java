@@ -104,7 +104,7 @@ public final class CommittedAtom implements LedgerAtom {
 	@Override
 	public String toString() {
 		return String.format("%s{atom=%s, stateVersion=%s}",
-			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null);
+			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, stateVersion);
 	}
 }
 

@@ -17,7 +17,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -37,21 +36,22 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
 public final class RadixEngineMempool implements Mempool<ClientAtom> {
-	private final HashMap<AID, ClientAtom> data = new HashMap<>();
+	private final ConcurrentHashMap<AID, ClientAtom> data = new ConcurrentHashMap<>();
 	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
@@ -82,6 +82,10 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 			);
 		}
 
+		if (this.data.containsKey(atom.getAID())) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", atom.getAID()));
+		}
+
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
 			checker.checkAndStore(atom);
@@ -92,20 +96,17 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 			radixEngine.deleteBranches();
 		}
 
+		this.data.put(atom.getAID(), atom);
+
 		atom.uniqueInstructions()
 			.forEach(i -> particleIndex.merge(i, Set.of(atom.getAID()), Sets::union));
-
-
-		if (null != this.data.put(atom.getAID(), atom)) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", atom.getAID()));
-		}
 
 		updateCounts();
 	}
 
 	@Override
 	public List<Pair<ClientAtom, Exception>> committed(List<ClientAtom> commands) {
-		commands.forEach(c -> data.remove(c.getAID()));
+		commands.forEach(a -> data.remove(a.getAID()));
 		final List<Pair<ClientAtom, Exception>> removed = new ArrayList<>();
 		commands.stream()
 			.flatMap(ClientAtom::uniqueInstructions)
@@ -116,9 +117,16 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 			.forEach(aid -> {
 				var clientAtom = data.remove(aid);
 				// TODO: Cleanup
-				removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(
-					new RadixEngineException(clientAtom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", DataPointer.ofAtom())
-				)));
+				if (clientAtom != null) {
+					removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(
+						new RadixEngineException(
+							clientAtom,
+							RadixEngineErrorCode.STATE_CONFLICT,
+							"State conflict",
+							DataPointer.ofAtom()
+						)
+					)));
+				}
 			});
 
 		updateCounts();
@@ -128,23 +136,15 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 	// TODO: Order by highest fees paid
 	@Override
 	public List<ClientAtom> getCommands(int count, Set<ClientAtom> prepared) {
-		int size = Math.min(count, this.data.size());
-		if (size > 0) {
-			List<ClientAtom> commands = Lists.newArrayList();
-			var values = new ArrayList<>(this.data.values());
-			Collections.shuffle(values, random);
+		var copy = new HashSet<>(data.keySet());
+		prepared.stream()
+			.flatMap(ClientAtom::uniqueInstructions)
+			.distinct()
+			.flatMap(i -> particleIndex.getOrDefault(i, Set.of()).stream())
+			.distinct()
+			.forEach(copy::remove);
 
-			Iterator<ClientAtom> i = values.iterator();
-			while (commands.size() < size && i.hasNext()) {
-				ClientAtom a = i.next();
-				if (!prepared.contains(a)) {
-					commands.add(a);
-				}
-			}
-			return commands;
-		} else {
-			return Collections.emptyList();
-		}
+		return copy.stream().map(data::get).limit(count).collect(Collectors.toList());
 	}
 
 	private void updateCounts() {
