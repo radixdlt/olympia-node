@@ -64,7 +64,7 @@ import com.radixdlt.integration.distributed.simulation.application.BFTValidatorS
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;

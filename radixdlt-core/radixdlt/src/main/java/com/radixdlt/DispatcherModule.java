@@ -134,6 +134,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				InvalidProposedCommand.class,
+				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
 				true
 			)).in(Scopes.SINGLETON);
 

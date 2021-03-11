@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.integration.invariants.SafetyChecker;
 import com.radixdlt.utils.Pair;

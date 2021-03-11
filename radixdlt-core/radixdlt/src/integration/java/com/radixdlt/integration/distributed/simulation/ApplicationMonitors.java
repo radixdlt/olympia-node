@@ -25,7 +25,7 @@ import com.radixdlt.integration.distributed.simulation.application.CommittedChec
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
 import com.radixdlt.utils.Pair;
 
 /**

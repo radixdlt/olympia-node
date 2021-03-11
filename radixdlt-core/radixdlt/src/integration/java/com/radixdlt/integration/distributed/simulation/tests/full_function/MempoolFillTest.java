@@ -24,6 +24,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
@@ -87,8 +88,16 @@ public class MempoolFillTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		final var results = simulationTest.run().awaitCompletion();
+		final var runningTest = simulationTest.run();
+		final var results = runningTest.awaitCompletion();
+
+		// Post conditions
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		long invalidCommandsCount = runningTest.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+			.mapToLong(l -> l)
+			.sum();
+		assertThat(invalidCommandsCount).isZero();
 	}
 
 	@Test

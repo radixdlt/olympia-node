@@ -25,7 +25,7 @@ import com.radixdlt.integration.distributed.simulation.application.TimestampChec
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
