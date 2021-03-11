@@ -76,9 +76,12 @@ import org.apache.commons.cli.ParseException;
 import org.radix.universe.output.AWSSecretManager;
 import org.radix.universe.output.AWSSecretsUniverseOutput;
 import org.radix.universe.output.HelmUniverseOutput;
+
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.time.Instant;
 
@@ -87,6 +90,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.zip.GZIPOutputStream;
 
 public final class GenerateUniverses {
 	private GenerateUniverses() { }
@@ -339,7 +343,7 @@ public final class GenerateUniverses {
 		int n = 0;
 		List<Map<String, Object>> validators = new ArrayList<>();
 		final String VALIDATOR_PREFIX = "VALIDATOR";
-
+		boolean compress = false;
 		List<String> nodeNames = new ArrayList<>();
 		for (ECKeyPair k : keys) {
 			Map<String, Object> validator = new HashMap<>();
@@ -361,7 +365,7 @@ public final class GenerateUniverses {
 		}
 
 		if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
-			generateAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsUniverseOutput);
+			generateAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsUniverseOutput, compress);
 		}
 		if (helmUniverseOutput.getOutputHelmValues()) {
 			generateHelmFiles(validators, VALIDATOR_PREFIX, template, nodeNames, helmUniverseOutput);
@@ -405,8 +409,9 @@ public final class GenerateUniverses {
 					String filename = String.format("%s/universe.yaml", helmUniverseOutput.getHelmValuesPath());
 					writeYamlOutput(filename, config);
 				} else if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
+					boolean compress = true;
 					String secretName = String.format("%s/universe", awsSecretsUniverseOutput.getNetworkName());
-					writeAWSSecret(universe, secretName, awsSecretsUniverseOutput);
+					writeAWSSecret(universe, secretName, awsSecretsUniverseOutput, compress);
 				}
 			}
 		}
@@ -450,11 +455,11 @@ public final class GenerateUniverses {
 		}
 	}
 
-	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
+	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
 		if (AWSSecretManager.awsSecretExists(secretName)) {
-			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput);
+			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
 		} else {
-			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput);
+			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
 		}
 	}
 
@@ -490,7 +495,8 @@ public final class GenerateUniverses {
 		final List<Map<String, Object>> validators,
 		final String validatorPrefix,
 		final String template,
-		final AWSSecretsUniverseOutput awsSecretsUniverseOutput
+		final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
+		boolean compress
 	) {
 		for (Map<String, Object> validator : validators) {
 			Map<String, Object> awsSecret = new HashMap<>();
@@ -504,7 +510,7 @@ public final class GenerateUniverses {
 			if (template.startsWith(validatorPrefix)) {
 				secretName = String.format("%s/%s/validator", awsSecretsUniverseOutput.getNetworkName(), name);
 			}
-			writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput);
+			writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
 			System.out.format(
 				"AWS secrets created for network %s %s%n",
 				awsSecretsUniverseOutput.getEnableAwsSecrets(),

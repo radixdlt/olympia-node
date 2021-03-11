@@ -5,30 +5,40 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 public class AWSSecretManager {
     private static Region defaultRegion = Region.EU_WEST_2;
-    public static void createSecret(String secretName, String secretValue, String network, Region region) {
+
+    public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
         removeBouncyCastleSecurityProvider();
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
             .region(region)
             .build();
 
-        String secretARN = createNewSecret(secretsClient, secretName, secretValue, network);
+        String secretARN = createNewSecret(secretsClient, secretName, secretValue, network, binarySecret);
         System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
 
     }
     public static void createSecret(String secretName, String secretValue, String network) {
-        createSecret(secretName, secretValue, network, defaultRegion);
+        boolean binarySecret = false;
+        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
+    }
+    public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
+        boolean binarySecret = true;
+        createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
     }
 
     public static String getSecret(String secretName, Region region) {
@@ -58,6 +68,16 @@ public class AWSSecretManager {
         return true;
     }
 
+    public static void updateBinarySecret(String secretName, SdkBytes secretValue, Region region) {
+        removeBouncyCastleSecurityProvider();
+        SecretsManagerClient secretsClient = SecretsManagerClient.builder()
+            .region(region)
+            .build();
+
+        updateMyBinarySecret(secretsClient, secretName, secretValue);
+        secretsClient.close();
+    }
+
     public static void updateSecret(String secretName, String secretValue, Region region) {
         removeBouncyCastleSecurityProvider();
         SecretsManagerClient secretsClient = SecretsManagerClient.builder()
@@ -67,6 +87,9 @@ public class AWSSecretManager {
         updateMySecret(secretsClient, secretName, secretValue);
         secretsClient.close();
     }
+    public static void updateBinarySecret(String secretName, SdkBytes secretValue) {
+        updateBinarySecret(secretName, secretValue, defaultRegion);
+    }
     public static void updateSecret(String secretName, String secretValue) {
         updateSecret(secretName, secretValue, defaultRegion);
     }
@@ -75,6 +98,15 @@ public class AWSSecretManager {
         UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
                 .secretId(secretName)
                 .secretString(secretValue)
+                .build();
+
+        secretsClient.updateSecret(secretRequest);
+    }
+
+    private static void updateMyBinarySecret(SecretsManagerClient secretsClient, String secretName, SdkBytes secretValue) {
+        UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
+                .secretId(secretName)
+                .secretBinary(secretValue)
                 .build();
 
         secretsClient.updateSecret(secretRequest);
@@ -90,48 +122,85 @@ public class AWSSecretManager {
 
     }
 
-    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, String secretValue, String network) {
+    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, boolean binarySecret) {
         List<Tag> tagList = buildTags(network, secretName);
-
-        CreateSecretRequest secretRequest = CreateSecretRequest.builder()
+		CreateSecretRequest secretRequest;
+        if (binarySecret){
+        secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
-                .secretString(secretValue)
+                .secretBinary((SdkBytes) secretValue)
                 .tags(tagList)
                 .build();
+        }else{
+            secretRequest = CreateSecretRequest.builder()
+                .name(secretName)
+                .description("Validator keys")
+                .secretString((String)secretValue)
+                .tags(tagList)
+                .build();
+        }
+
 
         CreateSecretResponse secretResponse = secretsClient.createSecret(secretRequest);
         return secretResponse.arn();
     }
+
     public static void createAWSSecret(
         final Map<String, Object> awsSecret,
         final String secretName,
-        final AWSSecretsUniverseOutput awsSecretsUniverseOutput
+        final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
+        boolean compress
     ) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-            AWSSecretManager.createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+            if (compress){
+                byte[] compressedBytes = compressData(jsonSecret);
+                AWSSecretManager.createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
+            } else {
+                AWSSecretManager.createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+            }
         } catch (JsonProcessingException e) {
             System.out.println(e);
         } catch (SecretsManagerException e) {
             System.err.println(e.awsErrorDetails().errorMessage());
             System.exit(1);
+        } catch (IOException e) {
+            System.out.println(e);
+            System.exit(1);
         }
     }
 
+    private static byte[] compressData(String data) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length());
+        GZIPOutputStream gzip = new GZIPOutputStream(bos);
+        gzip.write(data.getBytes());
+        gzip.close();
+        byte[] compressed = bos.toByteArray();
+        bos.close();
+        return compressed;
+    }
 
-    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
+    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (canBeUpdated(awsSecretsUniverseOutput)) {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-                updateSecret(secretName, jsonSecret);
+                if (compress){
+                    byte[] compressedBytes = compressData(jsonSecret);
+                    updateBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes));
+                } else{
+                    updateSecret(secretName, jsonSecret);
+                }
             } catch (JsonProcessingException e) {
                 System.out.println(e);
             } catch (SecretsManagerException e) {
                 System.err.println(e.awsErrorDetails().errorMessage());
+                System.exit(1);
+            } catch (IOException e) {
+                System.out.println(e);
                 System.exit(1);
             }
         } else {
