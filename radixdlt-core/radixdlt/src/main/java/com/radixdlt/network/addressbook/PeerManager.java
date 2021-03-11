@@ -287,6 +287,7 @@ public class PeerManager {
 		}
 	}
 
+	//TODO: incoming message is completely ignored. Perhaps we need to at least validate its universe.
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
 		log.trace("Received GetPeersMessage from {}", peer);
 		try {

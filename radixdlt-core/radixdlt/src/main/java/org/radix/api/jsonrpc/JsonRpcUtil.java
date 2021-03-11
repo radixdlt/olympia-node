@@ -21,11 +21,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
-
-import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A collection of utilities for the Json RPC API
@@ -47,7 +45,7 @@ public final class JsonRpcUtil {
 
 	public static Optional<JSONObject> jsonObject(String data) {
 		try {
-			return Optional.ofNullable(new JSONObject(data));
+			return Optional.of(new JSONObject(data));
 		} catch (JSONException e) {
 			return Optional.empty();
 		}
@@ -61,20 +59,12 @@ public final class JsonRpcUtil {
 		return new JSONArray();
 	}
 
-	public static JSONArray listToArray(Serialization serialization, final List<?> list) {
-		var resultArray = jsonArray();
-		list.stream()
-			.map(o -> serialization.toJsonObject(o, DsonOutput.Output.API))
-			.forEach(resultArray::put);
-		return resultArray;
-	}
-
 	public static JSONObject methodNotFoundResponse(Object id) {
 		return errorResponse(id, METHOD_NOT_FOUND, "Method not found");
 	}
 
 	public static JSONObject errorResponse(Object id, int code, String message, JSONObject data) {
-		return commonFields(id).put("error", jsonObject().put("code", code).put("message", message).put("data", data));
+		return errorResponse(id, code, message).put("data", data);
 	}
 
 	public static JSONObject errorResponse(Object id, int code, String message) {
@@ -92,15 +82,43 @@ public final class JsonRpcUtil {
 			.put("params", params);
 	}
 
-	public static JSONObject response(Object id, JSONObject result) {
-		return commonFields(id).put("result", result);
+	public static JSONObject successResponse(Object id) {
+		return commonFields(id).put("result", jsonObject().put("success", true));
 	}
 
-	public static JSONObject simpleResponse(Object id, String key, boolean value) {
-		return response(id, jsonObject().put(key, value));
-	}
-
-	public static JSONObject commonFields(final Object id) {
+	private static JSONObject commonFields(final Object id) {
 		return jsonObject().put("id", id).put("jsonrpc", "2.0");
+	}
+
+	public static JSONObject response(final JSONObject request, final Object result) {
+		return commonFields(request.get("id")).put("result", result);
+	}
+
+	public static JSONObject withNamedParameter(
+		final JSONObject request,
+		final String name,
+		final BiFunction<JSONObject, String, JSONObject> fn
+	) {
+		return withParameters(request, params -> {
+			if (!params.has(name)) {
+				return errorResponse(request.get("id"), SERVER_ERROR, "Field '" + name + "' not present in params");
+			} else {
+				return fn.apply(params, params.getString(name));
+			}
+		});
+	}
+
+	public static JSONObject withParameters(final JSONObject request, final Function<JSONObject, JSONObject> fn) {
+		if (!request.has("params")) {
+			return errorResponse(request.get("id"), SERVER_ERROR, "params field is required");
+		}
+
+		final Object paramsObject = request.get("params");
+
+		if (!(paramsObject instanceof JSONObject)) {
+			return errorResponse(request.get("id"), SERVER_ERROR, "params field must be a JSON object");
+		}
+
+		return fn.apply((JSONObject) paramsObject);
 	}
 }

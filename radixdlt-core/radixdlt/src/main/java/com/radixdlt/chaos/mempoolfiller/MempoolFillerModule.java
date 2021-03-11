@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoOptional;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
 import com.radixdlt.environment.EventProcessorOnRunner;
@@ -57,7 +58,7 @@ public final class MempoolFillerModule extends AbstractModule {
 		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress, random);
 	}
 
-	@Provides
+	@ProvidesIntoOptional(ProvidesIntoOptional.Type.ACTUAL)
 	@MempoolFillerKey
 	private RadixAddress mempoolFillerAddress(@MempoolFillerKey ECPublicKey pubKey, @Named("magic") int magic) {
 		return new RadixAddress((byte) magic, pubKey);

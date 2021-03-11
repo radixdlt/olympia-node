@@ -42,6 +42,7 @@ import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.functions.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -204,6 +205,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 
 	private <T extends Message, U> Flowable<U> createFlowable(Class<T> c, BiFunction<Peer, T, U> mapper) {
 		return this.messageCentral.messagesOf(c)
+			.toFlowable(BackpressureStrategy.BUFFER)
 			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
 	}
 
@@ -213,6 +215,7 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 		BiFunction<Peer, T, U> mapper
 	) {
 		return this.messageCentral.messagesOf(c)
+			.toFlowable(BackpressureStrategy.BUFFER)
 			.filter(filter)
 			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
 	}

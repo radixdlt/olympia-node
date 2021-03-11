@@ -22,24 +22,23 @@
 
 package com.radixdlt.faucet;
 
-import java.security.SecureRandom;
-import java.util.Deque;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
+
+import java.security.SecureRandom;
+import java.util.Deque;
+import java.util.Optional;
+
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 
@@ -52,11 +51,13 @@ final class APITokenRequestSource implements TokenRequestSource {
 	private final Undertow server;
 	private final Subject<Pair<RadixAddress, EUID>> requests;
 	private final SecureRandom random;
+	private final int port;
 
 	/**
 	 * Creates a new {@code FaucetAPI} listening on the specified port.
 	 *
 	 * @param apiPort The port to listen on
+	 *
 	 * @return A newly created {@code FaucetAPI}
 	 */
 	static APITokenRequestSource create(int apiPort) {
@@ -74,6 +75,16 @@ final class APITokenRequestSource implements TokenRequestSource {
 	}
 
 	/**
+	 * Returns port at which observable is listening.
+	 *
+	 * @return port number
+	 */
+	@Override
+	public int port() {
+		return port;
+	}
+
+	/**
 	 * Stops the server.
 	 */
 	void stop() {
@@ -83,25 +94,14 @@ final class APITokenRequestSource implements TokenRequestSource {
 	private APITokenRequestSource(int port) {
 		this.requests = BehaviorSubject.create();
 		this.random = new SecureRandom();
+		this.port = port;
 
-		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
+		var handler = Handlers.routing(true); // add path params to query params with this flag
 
 		handler.add(Methods.GET, "/api/v1/getTokens/{address}", this::getTokens);
 
 		// add appropriate error handlers for meaningful error messages (undertow is silent by default)
-		handler.setFallbackHandler(exchange -> {
-			logger.debug(
-				"No matching path found for {} {} from {}",
-				exchange.getRequestMethod(),
-				exchange.getRequestPath(),
-				exchange.getSourceAddress()
-			);
-
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send(
-				"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-			);
-		});
+		handler.setFallbackHandler(this::fallbackHandler);
 
 		this.server = Undertow.builder()
 			.addHttpListener(port, "0.0.0.0")
@@ -111,32 +111,50 @@ final class APITokenRequestSource implements TokenRequestSource {
 		this.server.start();
 	}
 
+	private void fallbackHandler(final HttpServerExchange exchange) {
+		logger.debug(
+			"No matching path found for {} {} from {}",
+			exchange.getRequestMethod(),
+			exchange.getRequestPath(),
+			exchange.getSourceAddress()
+		);
+
+		exchange.setStatusCode(StatusCodes.NOT_FOUND);
+		exchange.getResponseSender().send(
+			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
+
 	private void getTokens(HttpServerExchange exchange) {
-		try {
-			Optional<RadixAddress> address = Optional.ofNullable(exchange.getQueryParameters().get("address"))
-				.map(Deque::getFirst)
-				.map(RadixAddress::from);
-			if (address.isPresent()) {
-				Pair<RadixAddress, EUID> result = Pair.of(address.get(), randomEuid());
-				logger.debug(
-					"Queuing request {}, address {} from {}",
-					result.getSecond(),
-					result.getFirst(),
-					exchange.getSourceAddress()
-				);
-				this.requests.onNext(result);
-				exchange.setStatusCode(StatusCodes.OK);
-				exchange.getResponseSender().send(result.getSecond().toString());
-			} else {
-				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-				exchange.getResponseSender().send("Address must be specified");
-				logger.debug("Missing address in request from {}", exchange.getSourceAddress());
-			}
-		} catch (ArrayIndexOutOfBoundsException | IllegalArgumentException | NoSuchElementException e) {
-			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-			exchange.getResponseSender().send("Invalid address");
-			logger.debug(String.format("Bad request from %s", exchange.getSourceAddress()), e);
-		}
+		parameter(exchange, "address")
+			.map(RadixAddress::from)
+			.ifPresentOrElse(
+				address -> handleExistingAddress(exchange, address),
+				() -> handleMissingAddress(exchange)
+			);
+	}
+
+	private void handleExistingAddress(final HttpServerExchange exchange, final RadixAddress address) {
+		var result = Pair.of(address, randomEuid());
+		logger.debug(
+			"Queuing request {}, address {} from {}",
+			result.getSecond(),
+			result.getFirst(),
+			exchange.getSourceAddress()
+		);
+		this.requests.onNext(result);
+		exchange.setStatusCode(StatusCodes.OK);
+		exchange.getResponseSender().send(result.getSecond().toString());
+	}
+
+	private void handleMissingAddress(final HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+		exchange.getResponseSender().send("Address must be specified");
+		logger.debug("Missing address in request from {}", exchange.getSourceAddress());
+	}
+
+	private Optional<String> parameter(final HttpServerExchange exchange, final String key) {
+		return Optional.ofNullable(exchange.getQueryParameters().get(key)).map(Deque::getFirst);
 	}
 
 	private EUID randomEuid() {
