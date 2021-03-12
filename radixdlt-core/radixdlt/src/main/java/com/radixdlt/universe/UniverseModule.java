@@ -29,7 +29,12 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
+import org.apache.logging.log4j.util.Strings;
 import org.radix.universe.UniverseValidator;
+import org.radix.utils.IOUtils;
+
+import java.io.FileInputStream;
+import java.io.IOException;
 
 /**
  * Module which manages universe configuration
@@ -43,14 +48,25 @@ public final class UniverseModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Universe universe(RuntimeProperties properties, Serialization serialization) {
-		try {
-			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			Universe u = serialization.fromDson(bytes, Universe.class);
-			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
-			return u;
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Error while deserialising universe", e);
+	private Universe universe(RuntimeProperties properties, Serialization serialization) throws IOException {
+		var universeString = properties.get("universe");
+		var universe = Strings.isNotBlank(universeString)
+			? loadFromString(universeString, serialization)
+			: loadFromFile(properties, serialization);
+
+		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
+		return universe;
+	}
+
+	private Universe loadFromString(String universeString, Serialization serialization) throws DeserializeException {
+		var bytes = Bytes.fromBase64String(universeString);
+		return serialization.fromDson(bytes, Universe.class);
+	}
+
+	private Universe loadFromFile(RuntimeProperties properties, Serialization serialization) throws IOException {
+		var universeFileName = properties.get("universe.location", ".//universe.json");
+		try (var universeInput = new FileInputStream(universeFileName)) {
+			return serialization.fromJson(IOUtils.toString(universeInput), Universe.class);
 		}
 	}
 
