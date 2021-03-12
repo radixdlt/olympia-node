@@ -17,7 +17,6 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
@@ -42,6 +41,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,21 +53,17 @@ import java.util.stream.Stream;
 public final class InMemoryWallet {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
-	private final ImmutableList<TransferrableTokensParticle> particles;
-	private final UInt256 balance;
+	private final Set<TransferrableTokensParticle> particles;
 	private final TokDefParticleFactory factory;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 	private final Random random;
 
-	private InMemoryWallet(RRI tokenRRI, RadixAddress address, Random random, ImmutableList<TransferrableTokensParticle> particles) {
+	private InMemoryWallet(RRI tokenRRI, RadixAddress address, Random random, Set<TransferrableTokensParticle> particles) {
 		this.tokenRRI = tokenRRI;
 		this.address = address;
 		this.random = random;
 		this.particles = particles;
-		this.balance = particles.stream()
-			.map(TransferrableTokensParticle::getAmount)
-			.reduce(UInt256::add)
-			.orElse(UInt256.ZERO);
+
 		this.factory = TokDefParticleFactory.create(
 			tokenRRI,
 			ImmutableMap.of(
@@ -82,7 +79,7 @@ public final class InMemoryWallet {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(random);
 
-		return new InMemoryWallet(tokenRRI, address, random, ImmutableList.of());
+		return new InMemoryWallet(tokenRRI, address, random, Collections.newSetFromMap(new ConcurrentHashMap<>()));
 	}
 
 	public int getNumParticles() {
@@ -90,6 +87,11 @@ public final class InMemoryWallet {
 	}
 
 	public BigDecimal getBalance() {
+		var balance = particles.stream()
+			.map(TransferrableTokensParticle::getAmount)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
+
 		return TokenUnitConversions.subunitsToUnits(balance);
 	}
 
@@ -186,42 +188,27 @@ public final class InMemoryWallet {
 			.collect(Collectors.toList());
 	}
 
-	public InMemoryWallet addParticle(TransferrableTokensParticle p) {
+	public void addParticle(TransferrableTokensParticle p) {
 		if (!p.getTokDefRef().equals(tokenRRI)) {
-			return this;
+			return;
 		}
 
 		if (!address.equals(p.getAddress())) {
-			return this;
+			return;
 		}
 
-		return new InMemoryWallet(
-			tokenRRI,
-			address,
-			random,
-			ImmutableList.<TransferrableTokensParticle>builder()
-				.addAll(particles)
-				.add(p)
-				.build()
-		);
+		particles.add(p);
 	}
 
-	public InMemoryWallet removeParticle(TransferrableTokensParticle p) {
+	public void removeParticle(TransferrableTokensParticle p) {
 		if (!p.getTokDefRef().equals(tokenRRI)) {
-			return this;
+			return;
 		}
 
 		if (!address.equals(p.getAddress())) {
-			return this;
+			return;
 		}
 
-		return new InMemoryWallet(
-			tokenRRI,
-			address,
-			random,
-			particles.stream()
-				.filter(particle -> !p.equals(particle))
-				.collect(ImmutableList.toImmutableList())
-		);
+		particles.remove(p);
 	}
 }
