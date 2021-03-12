@@ -26,6 +26,7 @@ import com.radixdlt.test.chaos.actions.ValidatorRegistrationAction;
 import com.radixdlt.test.chaos.actions.ShutdownAction;
 import com.radixdlt.test.chaos.actions.MempoolFillAction;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
+import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        logger.info("==============================\n\n" + System.getenv("HTTP_API_BASIC_AUTH") + "\n\n==============================");
+        ChaosExperimentUtils.annotateGrafana("TEST TEST");
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
@@ -53,10 +54,8 @@ public class ChaosExperiments {
                 new ValidatorRegistrationAction(ansible, 0.2)
         );
 
-        //actions.forEach(Action::teardown);
+        actions.forEach(Action::teardown);
         //actions.forEach(Action::setup);
-
-        System.out.println("asd;ljkmasdlkj");
 
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
     }
