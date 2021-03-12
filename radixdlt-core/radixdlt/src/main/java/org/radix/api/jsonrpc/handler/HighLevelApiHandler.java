@@ -31,6 +31,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -151,7 +152,7 @@ public class HighLevelApiHandler {
 
 	private final ConcurrentMap<AID, AtomStatus> atomStatuses = new ConcurrentHashMap<>();
 
-	private static final Random random = new Random();
+	private static final SecureRandom random = new SecureRandom();
 	private static final AtomStatus[] STATUSES = AtomStatus.values();
 	private static final int LIMIT = STATUSES.length;
 	private JSONObject stubTransactionStatus(AID aid) {
@@ -192,7 +193,7 @@ public class HighLevelApiHandler {
 
 		public static SingleTransaction generate() {
 			var atomId = AID.from(HashUtils.random(AID.BYTES).asBytes());
-			var sentAt = Instant.now().minus(random.nextInt(60*24) + 1, ChronoUnit.MINUTES);
+			var sentAt = Instant.now().minus(random.nextInt(60*24) + 1L, ChronoUnit.MINUTES);
 			var fee = UInt256.from(random.nextInt(1000));
 			var actions = IntStream.range(0, random.nextInt(5) + 1)
 				.mapToObj(n -> randomAction()).collect(Collectors.toList());
