@@ -41,15 +41,4 @@ public class LedgerHandlerTest {
 
 		assertEquals("{\"content\":\"abc\"}", response.toString());
 	}
-
-	@Test
-	public void testHandleGetAtoms() {
-		var jsonAtom = jsonObject().put("address", "23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-		var request = jsonObject().put("id", 124).put("params", jsonAtom);
-		when(ledgerService.getAtoms(any(), any())).thenReturn(jsonObject().put("content", "abc"));
-
-		var response = ledgerHandler.handleGetAtoms(request);
-
-		assertEquals("{\"content\":\"abc\"}", response.toString());
-	}
 }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
@@ -124,12 +125,12 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		SearchCursor cursor = store.search(atomQuery.getDestination().toByteArray());
+		SearchCursor cursor = store.search();
 		Set<AID> processedAtomIds = Sets.newHashSet();
-		partialSync(cursor, processedAtomIds);
+		partialSync(atomQuery.getDestination(), cursor, processedAtomIds);
 	}
 
-	private void partialSync(SearchCursor cursor, final Set<AID> processedAtomIds) {
+	private void partialSync(EUID destination, SearchCursor cursor, final Set<AID> processedAtomIds) {
 		long count = 0;
 		try {
 			while (cursor != null) {
@@ -138,7 +139,7 @@ public class AtomEventObserver {
 				}
 
 				if (count >= 200) {
-					delaySync(cursor, processedAtomIds);
+					delaySync(destination, cursor, processedAtomIds);
 					return;
 				}
 
@@ -146,8 +147,15 @@ public class AtomEventObserver {
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<ClientAtom> ledgerEntry = store.get(aid);
-					ledgerEntry.ifPresent(atoms::add);
+					ClientAtom ledgerEntry = store.get(aid).orElseThrow();
+					if (ledgerEntry
+							.uniqueInstructions()
+							.map(CMMicroInstruction::getParticle)
+							.flatMap(p -> p.getDestinations().stream())
+							.anyMatch(destination::equals)
+					) {
+						atoms.add(ledgerEntry);
+					}
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
@@ -182,7 +190,7 @@ public class AtomEventObserver {
 		}
 	}
 
-	private void delaySync(SearchCursor cursor, Set<AID> processedAtomIds) {
+	private void delaySync(EUID destination, SearchCursor cursor, Set<AID> processedAtomIds) {
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> {
 				// Hack to throttle back high amounts of atom reads
@@ -193,7 +201,7 @@ public class AtomEventObserver {
 					// Re-interrupt and continue
 					Thread.currentThread().interrupt();
 				}
-				this.partialSync(cursor, processedAtomIds);
+				this.partialSync(destination, cursor, processedAtomIds);
 			}, executorService);
 		}
 	}

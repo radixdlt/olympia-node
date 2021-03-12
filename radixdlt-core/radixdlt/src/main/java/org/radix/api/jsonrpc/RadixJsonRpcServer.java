@@ -122,7 +122,6 @@ public final class RadixJsonRpcServer {
 		//Ledger
 		//TODO: check and fix method naming?
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
-		handlers.put("Ledger.getAtoms", ledgerHandler::handleGetAtoms);
 
 		//High level API's
 		handlers.put("radix.universeMagic", highLevelApiHandler::handleUniverseMagic);

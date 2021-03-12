@@ -85,8 +85,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		final ImmutableSet<EUID> destinations = committedAtom.getCMInstruction().getMicroInstructions().stream()
-			.filter(CMMicroInstruction::isCheckSpin)
+		final ImmutableSet<EUID> destinations = committedAtom.getClientAtom()
+			.uniqueInstructions()
 			.map(CMMicroInstruction::getParticle)
 			.flatMap(p -> p.getDestinations().stream())
 			.collect(ImmutableSet.toImmutableSet());
