@@ -24,10 +24,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.utils.Pair;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -67,8 +67,9 @@ final class MessageCentralImpl implements MessageCentral {
 	private final List<Transport> transports;
 
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
+	private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
 
-	private final Observable<Pair<Peer, Message>> peerMessages;
+	private final Observable<MessageFromPeer<Message>> peerMessages;
 
 	// Outbound message handling
 	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
@@ -135,18 +136,42 @@ final class MessageCentralImpl implements MessageCentral {
 			.collect(Collectors.toList());
 
 		this.peerMessages = Observable.merge(inboundMessages)
-			.map(this.messagePreprocessor::process)
+			.map(this::processInboundMessage)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.publish()
 			.autoConnect();
 	}
 
+	private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
+		try {
+			return this.messagePreprocessor.process(inboundMessage).fold(
+				error -> {
+					final var logLevel =
+						discardedInboundMessagesLogRateLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+					log.log(logLevel, "Dropping inbound message from {} because of {}", inboundMessage.source(), error);
+					return Optional.empty();
+				},
+				messageFromPeer -> {
+					if (log.isTraceEnabled()) {
+						log.trace("Received from {}: {}", hostId(messageFromPeer.getPeer()), messageFromPeer.getMessage());
+					}
+					return Optional.of(messageFromPeer);
+				}
+			);
+		} catch (Exception ex) {
+			final var msg = String.format("Message preprocessing from %s failed", inboundMessage.source());
+			log.error(msg, ex);
+			return Optional.empty();
+		}
+	}
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
 		return this.peerMessages
-			.filter(p -> messageType.isInstance(p.getSecond()))
-			.map(p -> new MessageFromPeer<>(p.getFirst(), messageType.cast(p.getSecond())));
+			.filter(p -> messageType.isInstance(p.getMessage()))
+			.map(p -> (MessageFromPeer<T>) p);
 	}
 
 	@Override
@@ -184,5 +209,12 @@ final class MessageCentralImpl implements MessageCentral {
 		} catch (IOException e) {
 			log.error(String.format("Error closing transport %s", t), e);
 		}
+	}
+
+	private String hostId(Peer peer) {
+		return peer.supportedTransports()
+			.findFirst()
+			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
+			.orElse("None");
 	}
 }

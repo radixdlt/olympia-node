@@ -141,10 +141,10 @@ public interface SystemCounters {
 		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
 		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 
-		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
-		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
 		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
+		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
+		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
+		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
