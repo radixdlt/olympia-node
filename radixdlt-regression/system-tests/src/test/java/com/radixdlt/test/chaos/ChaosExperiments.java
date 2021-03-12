@@ -42,7 +42,7 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        System.out.println("==============================\n\n" + System.getenv("HTTP_API_BASIC_AUTH") + "\n\n==============================");
+        logger.info("==============================\n\n" + System.getenv("HTTP_API_BASIC_AUTH") + "\n\n==============================");
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
