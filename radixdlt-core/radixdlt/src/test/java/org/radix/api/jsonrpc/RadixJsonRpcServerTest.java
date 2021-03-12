@@ -19,10 +19,11 @@ package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
 import org.junit.Test;
-import org.radix.api.services.AtomsService;
-import org.radix.api.services.LedgerService;
-import org.radix.api.services.NetworkService;
-import org.radix.api.services.SystemService;
+import org.radix.api.jsonrpc.handler.AtomHandler;
+import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
+import org.radix.api.jsonrpc.handler.LedgerHandler;
+import org.radix.api.jsonrpc.handler.NetworkHandler;
+import org.radix.api.jsonrpc.handler.SystemHandler;
 import org.radix.time.Time;
 
 import com.radixdlt.serialization.Serialization;
@@ -32,15 +33,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
 public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_with_no_id__return_json_error_response() {
 		var server = new RadixJsonRpcServer(
-			mock(AtomsService.class),
-			mock(NetworkService.class),
-			mock(SystemService.class),
-			mock(LedgerService.class)
+			mock(SystemHandler.class),
+			mock(NetworkHandler.class),
+			mock(AtomHandler.class),
+			mock(LedgerHandler.class),
+			mock(HighLevelApiHandler.class)
 		);
 
 		var response = new JSONObject(server.handleRpc(jsonObject().toString()));
@@ -64,15 +67,16 @@ public class RadixJsonRpcServerTest {
 		var serializer = mock(Serialization.class);
 		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
 
-		var systemService = mock(SystemService.class);
+		var systemHandler = mock(SystemHandler.class);
 		var pong = jsonObject().put("response", "pong").put("timestamp", Time.currentTimestamp());
-		when(systemService.getPong()).thenReturn(pong);
+		when(systemHandler.handlePing(any())).thenReturn(response(request, pong));
 
 		var server = new RadixJsonRpcServer(
-			mock(AtomsService.class),
-			mock(NetworkService.class),
-			systemService,
-			mock(LedgerService.class)
+			systemHandler,
+			mock(NetworkHandler.class),
+			mock(AtomHandler.class),
+			mock(LedgerHandler.class),
+			mock(HighLevelApiHandler.class)
 		);
 
 		var response = new JSONObject(server.handleRpc(request.toString()));
@@ -87,10 +91,11 @@ public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
 		var server = new RadixJsonRpcServer(
-			mock(AtomsService.class),
-			mock(NetworkService.class),
-			mock(SystemService.class),
-			mock(LedgerService.class),
+			mock(SystemHandler.class),
+			mock(NetworkHandler.class),
+			mock(AtomHandler.class),
+			mock(LedgerHandler.class),
+			mock(HighLevelApiHandler.class),
 			5
 		);
 

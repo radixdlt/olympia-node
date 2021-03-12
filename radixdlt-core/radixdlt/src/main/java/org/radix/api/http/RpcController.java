@@ -20,6 +20,7 @@ package org.radix.api.http;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
@@ -31,6 +32,7 @@ public final class RpcController {
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final RadixHttpWebsocketHandler websocketHandler;
 
+	@Inject
 	public RpcController(RadixJsonRpcServer jsonRpcServer, RadixHttpWebsocketHandler websocketHandler) {
 		this.jsonRpcServer = jsonRpcServer;
 		this.websocketHandler = websocketHandler;

@@ -22,9 +22,11 @@ import org.radix.api.services.AtomsService;
 import org.radix.api.services.SystemService;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.universe.Universe;
 
 import java.util.Optional;
 
@@ -42,16 +44,17 @@ public final class SystemController {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final boolean enableTestRoutes;
 
+	@Inject
 	public SystemController(
-		final AtomsService atomsService,
-		final SystemService systemService,
-		final InMemorySystemInfo inMemorySystemInfo,
-		final boolean enableTestRoutes
+		AtomsService atomsService,
+		SystemService systemService,
+		InMemorySystemInfo inMemorySystemInfo,
+		Universe universe
 	) {
 		this.atomsService = atomsService;
 		this.systemService = systemService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.enableTestRoutes = enableTestRoutes;
+		this.enableTestRoutes = universe.isDevelopment() || universe.isTest();
 	}
 
 	public void configureRoutes(final RoutingHandler handler) {

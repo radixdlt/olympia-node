@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -47,6 +48,7 @@ public class NetworkService {
 	private final PeerWithSystem localPeer;
 	private final HashCode localPeerHash;
 
+	@Inject
 	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook, Hasher hasher) {
 		this.serialization = serialization;
 		this.localSystem = localSystem;

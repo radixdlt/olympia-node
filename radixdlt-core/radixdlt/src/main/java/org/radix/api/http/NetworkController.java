@@ -20,6 +20,7 @@ package org.radix.api.http;
 import org.radix.api.services.NetworkService;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -30,6 +31,7 @@ import static org.radix.api.http.RestUtils.respond;
 public final class NetworkController {
 	private final NetworkService networkService;
 
+	@Inject
 	public NetworkController(NetworkService networkService) {
 		this.networkService = networkService;
 	}
