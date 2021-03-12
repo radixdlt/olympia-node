@@ -152,7 +152,7 @@ public class MessagePreprocessorTest extends RadixTest {
 		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
-		assertTrue(result.isRight());
+		assertTrue(result.toOptional().isPresent());
 	}
 
 	@Test
@@ -163,7 +163,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 		// execution is terminated before message.getSystem() method
 		verify(testMessage, times(0)).getSystem();
 	}
@@ -181,7 +181,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 	}
 
 	@Test
@@ -209,8 +209,8 @@ public class MessagePreprocessorTest extends RadixTest {
 		final var result1 = messagePreprocessor.processMessage(transportInfo1, testMessage1);
 		final var result2 = messagePreprocessor.processMessage(transportInfo2, testMessage2);
 
-		assertTrue(result1.isEmpty());
-		assertTrue(result2.isEmpty());
+		assertTrue(result1.toOptional().isEmpty());
+		assertTrue(result2.toOptional().isEmpty());
 		String banMessage = "%s:SystemMessage gave null NID";
 		String msg1 = String.format(banMessage, peer1);
 		String msg2 = String.format(banMessage, peer2);
@@ -232,7 +232,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 		String banMessage = "Old peer " + peer1 + " /Radix:/2710000:100";
 		verify(peer1, times(1)).ban(banMessage);
 	}
@@ -247,7 +247,7 @@ public class MessagePreprocessorTest extends RadixTest {
 		doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 	}
 
 	@Test
@@ -259,7 +259,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 		verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
 	}
 
@@ -270,7 +270,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isRight());
+		assertTrue(result.toOptional().isPresent());
 	}
 
 	@Test
@@ -281,7 +281,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 		verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
 	}
 
@@ -292,7 +292,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(mock(TransportInfo.class), testMessage);
 
-		assertTrue(result.isEmpty());
+		assertTrue(result.toOptional().isEmpty());
 	}
 
 	@Test
@@ -301,7 +301,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isRight());
+		assertTrue(result.toOptional().isPresent());
 	}
 
 	private RadixSystem makeSystem(EUID nid) {
