@@ -110,10 +110,6 @@ public class AtomsService {
 		this.serialization = serialization;
 	}
 
-	public Serialization serialization() {
-		return serialization;
-	}
-
 	public void start() {
 		var lastStoredAtomDisposable = ledgerCommitted
 			.observeOn(Schedulers.io())

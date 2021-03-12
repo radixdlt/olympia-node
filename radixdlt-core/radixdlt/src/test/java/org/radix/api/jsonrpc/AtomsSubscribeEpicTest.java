@@ -89,13 +89,11 @@ public class AtomsSubscribeEpicTest {
 
 		var serializer = mock(Serialization.class);
 		var jsonAtom = mock(JSONObject.class);
-
-		when(atomsService.serialization()).thenReturn(serializer);
 		when(serializer.toJsonObject(same(atom), any())).thenReturn(jsonAtom);
 
 		var callback = mock(ConsumerJSONObject.class);
 		var atomQuery = mock(AtomQuery.class);
-		var epic = new AtomsSubscribeEpic(atomsService, json -> atomQuery, callback);
+		var epic = new AtomsSubscribeEpic(atomsService, serializer, json -> atomQuery, callback);
 
 		epic.action(SUBSCRIBE_REQUEST);
 

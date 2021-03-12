@@ -402,7 +402,10 @@ public final class GenerateUniverses {
 				universe.put("pubkey", k.getPublicKey().toBase64());
 				universe.put("address", universeAddress.toString());
 				universe.put("token", tokenRri.toString());
-				universe.put("value", Bytes.toBase64String(universeBytes));
+
+				JSONObject universeJson = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+				universe.put("value", universeJson.toString());
+
 				config.put("universe", universe);
 
 				if (helmUniverseOutput.getOutputHelmValues()) {

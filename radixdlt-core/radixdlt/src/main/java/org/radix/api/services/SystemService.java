@@ -21,12 +21,17 @@ import org.json.JSONObject;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
+import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
+import java.util.Map;
+
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+
+import static java.util.Objects.requireNonNull;
 
 public class SystemService {
 	private final Serialization serialization;
@@ -34,16 +39,17 @@ public class SystemService {
 	private final LocalSystem localSystem;
 	private final ModuleRunner consensusRunner;
 
+	@Inject
 	public SystemService(
-		final Serialization serialization,
-		final Universe universe,
-		final LocalSystem localSystem,
-		final ModuleRunner consensusRunner
+		Serialization serialization,
+		Universe universe,
+		LocalSystem localSystem,
+		Map<String, ModuleRunner> moduleRunners
 	) {
 		this.serialization = serialization;
 		this.universe = universe;
 		this.localSystem = localSystem;
-		this.consensusRunner = consensusRunner;
+		this.consensusRunner = requireNonNull(moduleRunners.get("consensus"));
 	}
 
 	public JSONObject getUniverse() {
