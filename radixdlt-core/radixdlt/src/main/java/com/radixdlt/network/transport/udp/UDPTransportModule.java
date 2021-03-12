@@ -31,7 +31,6 @@ import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 
 /**
  * Guice configuration for the UDP transport subsystem.
@@ -62,7 +61,7 @@ public class UDPTransportModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private NatHandler natHandlerProvider(HostIp hostip, Universe universe) {
+	private NatHandler natHandlerProvider(HostIp hostip, UDPConfiguration udpConfiguration) {
 		return hostip.hostIp()
 			.map(hostName -> {
 				try {
@@ -71,7 +70,7 @@ public class UDPTransportModule extends AbstractModule {
 					throw new IllegalStateException("Could not determine host IP address", ex);
 				}
 			})
-			.map(hostAddress -> NatHandlerRemoteImpl.create(hostAddress, universe.getPort(), System::currentTimeMillis))
+			.map(hostAddress -> NatHandlerRemoteImpl.create(hostAddress, udpConfiguration.networkPort(30000), System::currentTimeMillis))
 			.orElseThrow(() -> new IllegalStateException("Could not determine host IP address"));
 	}
 

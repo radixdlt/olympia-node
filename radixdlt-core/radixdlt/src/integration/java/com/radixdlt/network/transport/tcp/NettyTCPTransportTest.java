@@ -40,7 +40,6 @@ import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class NettyTCPTransportTest {
@@ -57,7 +56,6 @@ public class NettyTCPTransportTest {
 	@Before
 	public void setup() {
 		universe = mock(Universe.class);
-		doReturn(30000).when(universe).getPort();
 
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);

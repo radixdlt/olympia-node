@@ -269,15 +269,6 @@ public class Universe {
 	}
 
 	/**
-	 * The default TCP/UDP port for the Universe.
-	 *
-	 * @return
-	 */
-	public int getPort() {
-		return port;
-	}
-
-	/**
 	 * The UTC 'BigBang' timestamp for the Universe.
 	 *
 	 * @return

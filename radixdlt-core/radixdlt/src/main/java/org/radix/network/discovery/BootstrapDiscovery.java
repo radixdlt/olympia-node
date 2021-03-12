@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +46,6 @@ import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 
 public class BootstrapDiscovery {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
@@ -80,7 +80,7 @@ public class BootstrapDiscovery {
 	}
 
 	@Inject
-	public BootstrapDiscovery(RuntimeProperties properties, Universe universe) {
+	public BootstrapDiscovery(RuntimeProperties properties, TCPConfiguration tcpConfiguration) {
 		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
 		int retries = properties.get("network.discovery.connection.retries", 30);
 		// NOTE: min is 10 seconds - we don't allow less
@@ -88,7 +88,7 @@ public class BootstrapDiscovery {
 		int connectionTimeout = properties.get("network.discovery.connection.timeout", 60000);
 		int readTimeout = properties.get("network.discovery.read.timeout", 60000);
 
-		this.defaultPort = universe.getPort();
+		this.defaultPort = tcpConfiguration.networkPort(30000);
 
 		// allow nodes to connect to others, bypassing TLS handshake
 		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {

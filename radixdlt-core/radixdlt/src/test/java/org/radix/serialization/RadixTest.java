@@ -51,8 +51,6 @@ public abstract class RadixTest {
 
 		universe = mock(Universe.class);
 		when(universe.getMagic()).thenReturn(2);
-		when(universe.getPort()).thenReturn(8080);
-
 
 		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
