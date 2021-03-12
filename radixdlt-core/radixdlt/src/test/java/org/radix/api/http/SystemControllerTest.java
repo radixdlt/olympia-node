@@ -23,7 +23,10 @@ import org.radix.api.services.AtomsService;
 import org.radix.api.services.SystemService;
 import org.radix.time.Time;
 
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.universe.Universe;
+import com.radixdlt.universe.Universe.UniverseType;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -51,7 +54,17 @@ public class SystemControllerTest {
 	private final AtomsService atomsService = mock(AtomsService.class);
 	private final SystemService systemService = mock(SystemService.class);
 	private final InMemorySystemInfo inMemorySystemInfo = mock(InMemorySystemInfo.class);
-	private final SystemController systemController = new SystemController(atomsService, systemService, inMemorySystemInfo, true);
+	private final Universe universe =
+		Universe.newBuilder()
+			.type(UniverseType.DEVELOPMENT)
+			.name("Name")
+			.description("Description")
+			.port(30000)
+			.timestamp(System.currentTimeMillis())
+			.creator(ECKeyPair.generateNew().getPublicKey())
+			.build();
+	private final SystemController systemController =
+		new SystemController(atomsService, systemService, inMemorySystemInfo, universe);
 
 	@Test
 	public void routesAreConfigured() {

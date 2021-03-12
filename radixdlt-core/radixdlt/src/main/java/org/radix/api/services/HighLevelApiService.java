@@ -15,28 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.jsonrpc.handler;
-
-import org.json.JSONObject;
-import org.radix.api.services.LedgerService;
+package org.radix.api.services;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.universe.Universe;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
-
-public class LedgerHandler {
-	private final LedgerService ledgerService;
+public class HighLevelApiService {
+	private final Universe universe;
+	private final RadixAddress radixAddress;
 
 	@Inject
-	public LedgerHandler(LedgerService ledgerService) {
-		this.ledgerService = ledgerService;
+	public HighLevelApiService(Universe universe, @Self RadixAddress radixAddress) {
+		this.universe = universe;
+		this.radixAddress = radixAddress;
 	}
 
-	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
+	public int getUniverseMagic() {
+		return universe.getMagic();
 	}
 
-	public JSONObject handleGetAtoms(JSONObject request) {
-		return withRequiredParameter(request, "address", (params, address) -> ledgerService.getAtoms(request, address));
+	public RadixAddress getAddress() {
+		return radixAddress;
 	}
 }

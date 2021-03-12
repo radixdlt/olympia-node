@@ -19,6 +19,7 @@ package org.radix.api.services;
 
 import org.json.JSONObject;
 
+import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
@@ -36,6 +37,7 @@ public class LedgerService {
 	private final LedgerEntryStore ledger;
 	private final Serialization serialization;
 
+	@Inject
 	public LedgerService(final LedgerEntryStore ledger, final Serialization serialization) {
 		this.ledger = ledger;
 		this.serialization = serialization;

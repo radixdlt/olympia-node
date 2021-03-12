@@ -23,6 +23,9 @@ import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 
+import com.google.inject.Inject;
+import com.radixdlt.serialization.Serialization;
+
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,10 +45,13 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers = new ConcurrentHashMap<>();
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final AtomsService atomsService;
+	private final Serialization serialization;
 
-	RadixHttpWebsocketHandler(RadixJsonRpcServer jsonRpcServer, AtomsService atomsService) {
+	@Inject
+	public RadixHttpWebsocketHandler(RadixJsonRpcServer jsonRpcServer, AtomsService atomsService, Serialization serialization) {
 		this.jsonRpcServer = jsonRpcServer;
 		this.atomsService = atomsService;
+		this.serialization = serialization;
 	}
 
 	@Override
@@ -59,7 +65,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 	}
 
 	private RadixJsonRpcPeer createPeer(final WebSocketChannel channel) {
-		return new RadixJsonRpcPeer(jsonRpcServer, atomsService, (p, msg) -> peerCallback(channel, p, msg));
+		return new RadixJsonRpcPeer(jsonRpcServer, atomsService, serialization, (p, msg) -> peerCallback(channel, p, msg));
 	}
 
 	private AbstractReceiveListener createListener(final RadixJsonRpcPeer peer) {
