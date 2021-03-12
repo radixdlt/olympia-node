@@ -403,8 +403,8 @@ public final class GenerateUniverses {
 				universe.put("address", universeAddress.toString());
 				universe.put("token", tokenRri.toString());
 
-				JSONObject universe_json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
-				universe.put("value", universe_json.toString());
+				JSONObject universeJson = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+				universe.put("value", universeJson.toString());
 
 				config.put("universe", universe);
 
