@@ -35,7 +35,6 @@ import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.universe.Universe;
 
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
@@ -71,26 +70,24 @@ public final class LocalSystem extends RadixSystem {
 		return this.infoSupplier.getInfo();
 	}
 
-	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, Universe universe, String host) {
+	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, String host, int port) {
 		return new LocalSystem(
 			infoSupplier,
 			self.getKey(),
 			Radix.AGENT,
 			Radix.AGENT_VERSION,
 			Radix.PROTOCOL_VERSION,
-			defaultTransports(universe, host)
+			defaultTransports(host, port)
 		);
 	}
 
-	// FIXME: *Really* need a better way of configuring this other than hardcoding here
-	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports(Universe universe, String host) {
+	private static ImmutableList<TransportInfo> defaultTransports(String host, int port) {
 		return ImmutableList.of(
 			TransportInfo.of(
 				TCPConstants.NAME,
 				StaticTransportMetadata.of(
 					TCPConstants.METADATA_HOST, host,
-					TCPConstants.METADATA_PORT, String.valueOf(universe.getPort())
+					TCPConstants.METADATA_PORT, String.valueOf(port)
 				)
 			)
 		);
