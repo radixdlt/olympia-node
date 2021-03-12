@@ -27,6 +27,7 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.sync.SyncConfig;
@@ -59,6 +60,7 @@ public class SanityTest {
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands(),
 			ApplicationMonitors.mempoolCommitted()
 		)
 		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());

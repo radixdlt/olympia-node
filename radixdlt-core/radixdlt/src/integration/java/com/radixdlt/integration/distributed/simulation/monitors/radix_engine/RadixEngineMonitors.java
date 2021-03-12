@@ -28,6 +28,9 @@ import com.radixdlt.integration.distributed.simulation.monitors.EventNeverOccurs
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 
+/**
+ * Monitors which check for radix engine related functionality
+ */
 public final class RadixEngineMonitors {
 	private RadixEngineMonitors() {
 		throw new IllegalStateException("Cannot instantiate.");
