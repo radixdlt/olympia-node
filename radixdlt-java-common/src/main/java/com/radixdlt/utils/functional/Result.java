@@ -182,7 +182,7 @@ public interface Result<T> {
 		return new ResultFail<R>(value);
 	}
 
-	class ResultOk<R> implements Result<R> {
+	final class ResultOk<R> implements Result<R> {
 		private final R value;
 
 		protected ResultOk(final R value) {
@@ -243,7 +243,7 @@ public interface Result<T> {
 		}
 	}
 
-	class ResultFail<R> implements Result<R> {
+	final class ResultFail<R> implements Result<R> {
 		private final Failure value;
 
 		protected ResultFail(final Failure value) {

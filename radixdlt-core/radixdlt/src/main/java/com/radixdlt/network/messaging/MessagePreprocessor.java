@@ -18,7 +18,6 @@
 package com.radixdlt.network.messaging;
 
 import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.FailureType;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -191,12 +190,6 @@ final class MessagePreprocessor {
 	}
 
 	private <T> Result<T> fail(String msg) {
-		return Result.fail(Failure.failure(MessagePreprocessorFailure.INSTANCE, msg));
-	}
-
-	static final class MessagePreprocessorFailure implements FailureType {
-		static final MessagePreprocessorFailure INSTANCE = new MessagePreprocessorFailure();
-		private MessagePreprocessorFailure() {
-		}
+		return Result.fail(Failure.failure(msg));
 	}
 }

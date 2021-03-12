@@ -17,56 +17,44 @@
 
 package com.radixdlt.utils.functional;
 
-import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-public interface Failure {
-    FailureType type();
-    String message();
+public final class Failure {
 
-    default <T> Result<T> asResult() {
-        return Result.fail(this);
-    }
+	private final String message;
 
-    static Failure failure(final FailureType type, final String format, final Object... params) {
-        return failure(type, MessageFormat.format(format, params));
-    }
+	private Failure(String message) {
+		this.message = message;
+	}
 
-    static Failure failure(final FailureType type, final String message) {
-        return new Failure() {
-            @Override
-            public FailureType type() {
-                return type;
-            }
+	public String message() {
+		return message;
+	}
 
-            @Override
-            public String message() {
-                return message;
-            }
+	@Override
+	public int hashCode() {
+		return Objects.hash(message);
+	}
 
-            @Override
-            public int hashCode() {
-                return Objects.hash(type, message);
-            }
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == this) {
+			return true;
+		}
 
-            @Override
-            public boolean equals(final Object obj) {
-                if (obj == this) {
-                    return true;
-                }
+		return (obj instanceof Failure)
+			&& Objects.equals(((Failure) obj).message(), message);
+	}
 
-                return (obj instanceof Failure)
-                       && (Objects.equals(((Failure) obj).type(), type) && Objects.equals(((Failure) obj).message(), message));
-            }
+	@Override
+	public String toString() {
+		return new StringJoiner(", ", "Error(", ")")
+			.add(message)
+			.toString();
+	}
 
-            @Override
-            public String toString() {
-                return new StringJoiner(", ", "Error(", ")")
-                        .add(type.toString())
-                        .add(message)
-                        .toString();
-            }
-        };
-    }
+	public static Failure failure(final String message) {
+		return new Failure(message);
+	}
 }
