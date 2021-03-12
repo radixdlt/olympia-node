@@ -43,7 +43,6 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        ChaosExperimentUtils.annotateGrafana("TEST TEST");
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
@@ -55,7 +54,7 @@ public class ChaosExperiments {
         );
 
         actions.forEach(Action::teardown);
-        //actions.forEach(Action::setup);
+        actions.forEach(Action::setup);
 
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
     }
