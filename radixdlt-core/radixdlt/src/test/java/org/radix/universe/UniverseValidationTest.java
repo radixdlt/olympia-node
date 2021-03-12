@@ -29,7 +29,7 @@ import com.radixdlt.utils.Bytes;
 
 /**
  * Checks that "universe" property in resource
- * default.config can be deserialised and validated.
+ * default.config can be deserialized and validated.
  */
 public class UniverseValidationTest {
 	private static final String PROPERTIES_FILE = "/default.config";

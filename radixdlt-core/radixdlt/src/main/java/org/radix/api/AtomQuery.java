@@ -28,10 +28,6 @@ public final class AtomQuery {
 		this.destination = destination;
 	}
 
-	public AtomQuery() {
-		this.destination = null;
-	}
-
 	public EUID getDestination() {
 		return this.destination;
 	}

@@ -62,7 +62,7 @@ public class MempoolFillTest {
 			@Override
 			protected void configure() {
 				bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toInstance(mempoolFillerKey);
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+				bindConstant().annotatedWith(MempoolThrottleMs.class).to(200L);
 				bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
 				install(new MempoolFillerModule());
 			}

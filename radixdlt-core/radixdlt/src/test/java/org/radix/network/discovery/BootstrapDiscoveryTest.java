@@ -84,6 +84,7 @@ public class BootstrapDiscoveryTest {
 	public void testToHost() {
 		for (int b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; b++) {
 			byte[] buf = new byte[] { (byte) b };
+
 			if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-.".indexOf(0xff & b) != -1) {
 				assertEquals(new String(buf, StandardCharsets.US_ASCII), BootstrapDiscovery.toHost(buf, buf.length));
 			} else {

@@ -37,7 +37,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
-import static org.radix.api.jsonrpc.JsonRpcUtil.simpleResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.successResponse;
 
 /**
  * Epic responsible for converting JSON RPC atom subscribe request to JSON RPC notifications
@@ -104,15 +104,13 @@ public class AtomsSubscribeEpic {
 			return;
 		}
 
-		callback.accept(simpleResponse(id, "success", true));
+		callback.accept(successResponse(id));
 		observers.computeIfAbsent(subscriberId, __ -> initSubscription(subscriberId, queryMapper.apply(query)));
 	}
 
 	private Disposable initSubscription(final String subscriberId, final AtomQuery atomQuery) {
 		return atomsService.getAtomEvents(atomQuery)
-			.subscribe(observedAtoms -> {
-				subscriber(subscriberId, observedAtoms);
-			});
+			.subscribe(observedAtoms -> subscriber(subscriberId, observedAtoms));
 	}
 
 	private void subscriber(final String subscriberId, final ObservedAtomEvents observedAtoms) {
@@ -127,6 +125,6 @@ public class AtomsSubscribeEpic {
 
 	private void cancelSubscription(final String subscriberId, final Object id) {
 		Optional.ofNullable(observers.remove(subscriberId)).ifPresent(Disposable::dispose);
-		callback.accept(simpleResponse(id, "success", true));
+		callback.accept(successResponse(id));
 	}
 }

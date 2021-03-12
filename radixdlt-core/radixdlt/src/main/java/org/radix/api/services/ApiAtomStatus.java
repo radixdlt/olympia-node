@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -17,11 +17,29 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
+import org.radix.api.jsonrpc.AtomStatus;
 
-public interface SingleAtomListener {
-	void onStored();
-	void onStoredFailure(RadixEngineException e);
-	void onError(AID atomId, Throwable e);
+public enum ApiAtomStatus {
+	PENDING,
+	CONFIRMED,
+	FAILED;
+
+
+	public static ApiAtomStatus fromAtomStatus(AtomStatus atomStatus) {
+		switch (atomStatus) {
+			case DOES_NOT_EXIST:
+			case EVICTED_FAILED_CM_VERIFICATION:
+			case MISSING_DEPENDENCY:
+			case MEMPOOL_FULL:
+			case MEMPOOL_DUPLICATE:
+			case CONFLICT_LOSER:
+				return FAILED;
+			case PENDING_CM_VERIFICATION:
+				return PENDING;
+			case STORED:
+				return CONFIRMED;
+			default:
+				throw new IllegalStateException("Unknown atom status " + atomStatus);
+		}
+	}
 }
