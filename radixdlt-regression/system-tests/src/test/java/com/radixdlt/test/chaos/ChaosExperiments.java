@@ -53,8 +53,10 @@ public class ChaosExperiments {
                 new ValidatorRegistrationAction(ansible, 0.2)
         );
 
-        actions.forEach(Action::teardown);
-        actions.forEach(Action::setup);
+        //actions.forEach(Action::teardown);
+        //actions.forEach(Action::setup);
+
+        System.out.println("asd;ljkmasdlkj");
 
         Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
     }
