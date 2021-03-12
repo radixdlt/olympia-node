@@ -30,8 +30,6 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 
 	LedgerEntryStoreResult store(Transaction tx, CommittedAtom atom);
 
-	void reset();
-
 	void close();
 
 	Optional<SerializedVertexStoreState> loadLastVertexStoreState();

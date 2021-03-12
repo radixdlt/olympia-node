@@ -58,12 +58,10 @@ import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
@@ -132,38 +130,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		this.storeConfig = storeConfig;
 
 		this.open();
-	}
-
-	@Override
-	public void reset() {
-		dbEnv.withLock(() -> {
-			com.sleepycat.je.Transaction transaction = null;
-			try {
-				// This SuppressWarnings here is valid, as ownership of the underlying
-				// resource is not changed here, the resource is just accessed.
-				@SuppressWarnings("resource")
-				var env = dbEnv.getEnvironment();
-				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
-				env.truncateDatabase(transaction, ATOM_ID_DB_NAME, false);
-				env.truncateDatabase(transaction, PROOF_DB_NAME, false);
-				env.truncateDatabase(transaction, EPOCH_PROOF_DB_NAME, false);
-				env.truncateDatabase(transaction, VERTEX_STORE_DB_NAME, false);
-				transaction.commit();
-			} catch (DatabaseNotFoundException e) {
-				if (transaction != null) {
-					transaction.abort();
-				}
-
-				log.warn("Error while resetting database, database not found", e);
-			} catch (Exception e) {
-				if (transaction != null) {
-					transaction.abort();
-				}
-
-				throw new BerkeleyStoreException("Error while resetting databases", e);
-			}
-		});
 	}
 
 	@Override
