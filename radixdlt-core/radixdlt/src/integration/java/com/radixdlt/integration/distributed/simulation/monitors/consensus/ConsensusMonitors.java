@@ -13,23 +13,24 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.integration.distributed.simulation.Monitor;
+import com.radixdlt.integration.distributed.simulation.MonitorKey;
+import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.EventNeverOccursInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.monitors.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 
 import java.time.Duration;
@@ -47,7 +48,7 @@ public final class ConsensusMonitors {
     public static Module timestampChecker(Duration maxDelay) {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.TIMESTAMP_CHECK)
+            @MonitorKey(Monitor.CONSENSUS_TIMESTAMP_CHECK)
             public TestInvariant timestampsInvariant() {
                 return new TimestampChecker(maxDelay);
             }
@@ -57,7 +58,7 @@ public final class ConsensusMonitors {
     public static Module vertexRequestRate(int permitsPerSecond) {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.VERTEX_REQUEST_RATE)
+            @MonitorKey(Monitor.CONSENSUS_VERTEX_REQUEST_RATE)
             TestInvariant vertexRequestRateInvariant(NodeEvents nodeEvents) {
                 return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
             }
@@ -71,7 +72,7 @@ public final class ConsensusMonitors {
     public static Module liveness(long duration, TimeUnit timeUnit) {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.LIVENESS)
+            @MonitorKey(Monitor.CONSENSUS_LIVENESS)
             TestInvariant livenessInvariant(NodeEvents nodeEvents) {
                 return new LivenessInvariant(nodeEvents, duration, timeUnit);
             }
@@ -81,7 +82,7 @@ public final class ConsensusMonitors {
     public static Module safety() {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.SAFETY)
+            @MonitorKey(Monitor.CONSENSUS_SAFETY)
             TestInvariant safetyInvariant(NodeEvents nodeEvents) {
                 return new SafetyInvariant(nodeEvents);
             }
@@ -91,9 +92,15 @@ public final class ConsensusMonitors {
     public static Module noTimeouts() {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.NO_TIMEOUTS)
+            @MonitorKey(Monitor.CONSENSUS_NO_TIMEOUTS)
             TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
-                return new NoTimeoutsInvariant(nodeEvents);
+                return new EventNeverOccursInvariant<>(nodeEvents, LocalTimeoutOccurrence.class);
+            }
+
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.CONSENSUS_NO_EPOCH_TIMEOUTS)
+            TestInvariant noEpochTimeoutsInvariant(NodeEvents nodeEvents) {
+                return new EventNeverOccursInvariant<>(nodeEvents, EpochLocalTimeoutOccurrence.class);
             }
         };
     }
@@ -101,7 +108,7 @@ public final class ConsensusMonitors {
     public static Module directParents() {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.DIRECT_PARENTS)
+            @MonitorKey(Monitor.CONSENSUS_DIRECT_PARENTS)
             TestInvariant directParentsInvariant() {
                 return new AllProposalsHaveDirectParentsInvariant();
             }
@@ -111,9 +118,9 @@ public final class ConsensusMonitors {
     public static Module noneCommitted() {
         return new AbstractModule() {
             @ProvidesIntoMap
-            @MonitorKey(Monitor.NONE_COMMITTED)
+            @MonitorKey(Monitor.CONSENSUS_NONE_COMMITTED)
             TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
-                return new NoneCommittedInvariant(nodeEvents);
+                return new EventNeverOccursInvariant<>(nodeEvents, BFTCommittedUpdate.class);
             }
         };
     }

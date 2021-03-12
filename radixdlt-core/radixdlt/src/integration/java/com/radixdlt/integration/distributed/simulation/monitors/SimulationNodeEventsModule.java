@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants;
+package com.radixdlt.integration.distributed.simulation.monitors;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;

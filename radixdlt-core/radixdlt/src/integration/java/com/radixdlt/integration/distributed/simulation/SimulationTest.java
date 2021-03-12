@@ -36,7 +36,7 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.integration.distributed.simulation.invariants.SimulationNodeEventsModule;
+import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.MockedCryptoModule;
@@ -65,7 +65,7 @@ import com.radixdlt.integration.distributed.simulation.application.BFTValidatorS
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
-import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;

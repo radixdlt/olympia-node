@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants;
+package com.radixdlt.integration.distributed.simulation.monitors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;

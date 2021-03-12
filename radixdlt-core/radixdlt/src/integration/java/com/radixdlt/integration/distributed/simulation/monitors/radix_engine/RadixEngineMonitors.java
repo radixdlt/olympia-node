@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.radix_engine;
+package com.radixdlt.integration.distributed.simulation.monitors.radix_engine;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
@@ -24,7 +24,9 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.MonitorKey;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.monitors.EventNeverOccursInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
 
 public final class RadixEngineMonitors {
 	private RadixEngineMonitors() {
@@ -36,7 +38,7 @@ public final class RadixEngineMonitors {
 			@ProvidesIntoMap
 			@MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
 			TestInvariant registeredValidator(NodeEvents nodeEvents) {
-				return new NoInvalidProposedCommandsInvariant(nodeEvents);
+				return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedCommand.class);
 			}
 		};
 	}

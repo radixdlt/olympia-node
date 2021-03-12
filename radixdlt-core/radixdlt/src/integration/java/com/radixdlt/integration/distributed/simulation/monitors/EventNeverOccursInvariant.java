@@ -16,32 +16,36 @@
  *
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.radix_engine;
+package com.radixdlt.integration.distributed.simulation.monitors;
 
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
-import com.radixdlt.statecomputer.InvalidProposedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
-public class NoInvalidProposedCommandsInvariant implements TestInvariant {
+/**
+ * Checks that an event of a certain class never occurs in a system
+ * @param <T> the class of the event to check for
+ */
+public final class EventNeverOccursInvariant<T> implements TestInvariant {
 	private final NodeEvents nodeEvents;
+	private final Class<T> eventClass;
 
-	public NoInvalidProposedCommandsInvariant(NodeEvents nodeEvents) {
+	public EventNeverOccursInvariant(NodeEvents nodeEvents, Class<T> eventClass) {
 		this.nodeEvents = nodeEvents;
+		this.eventClass = eventClass;
 	}
 
 	@Override
-	public Observable<TestInvariant.TestInvariantError> check(SimulationNodes.RunningNetwork network) {
+	public Observable<TestInvariantError> check(SimulationNodes.RunningNetwork network) {
 		return Observable.<TestInvariant.TestInvariantError>create(
-			emitter -> {
+			emitter ->
 				this.nodeEvents.addListener(
 					(node, event) -> emitter.onNext(new TestInvariant.TestInvariantError(
-						"Invalid proposed command at node " + node + " " + event)
+						"Event " + event + " occurred at node " + node)
 					),
-					InvalidProposedCommand.class
-				);
-			})
+					eventClass
+				)
+			)
 			.serialize();
 	}
 }

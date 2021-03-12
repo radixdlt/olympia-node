@@ -13,16 +13,18 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed.simulation.monitors.ledger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.radixdlt.integration.distributed.simulation.invariants.NodeEvents;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
+import com.radixdlt.integration.distributed.simulation.Monitor;
+import com.radixdlt.integration.distributed.simulation.MonitorKey;
+import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 
 /**
  * Monitors which checks things in the ledger module

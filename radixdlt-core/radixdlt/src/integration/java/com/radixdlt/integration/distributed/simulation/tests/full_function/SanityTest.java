@@ -19,9 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
