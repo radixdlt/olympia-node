@@ -149,6 +149,13 @@ dependencies {
     implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
+    implementation 'io.vavr:vavr:1.0.0-alpha-3'
+
+    compileOnly 'org.projectlombok:lombok:1.18.16'
+    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    testCompileOnly 'org.projectlombok:lombok:1.18.16'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.16'
+
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.objenesis:objenesis'
     testImplementation 'org.javassist:javassist'

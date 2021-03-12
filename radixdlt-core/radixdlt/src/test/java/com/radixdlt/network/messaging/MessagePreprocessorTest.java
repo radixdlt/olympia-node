@@ -49,7 +49,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -153,7 +152,7 @@ public class MessagePreprocessorTest extends RadixTest {
 		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
-		assertTrue(result.isPresent());
+		assertTrue(result.isRight());
 	}
 
 	@Test
@@ -167,7 +166,6 @@ public class MessagePreprocessorTest extends RadixTest {
 		assertTrue(result.isEmpty());
 		// execution is terminated before message.getSystem() method
 		verify(testMessage, times(0)).getSystem();
-		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
 	}
 
 	@Test
@@ -184,10 +182,6 @@ public class MessagePreprocessorTest extends RadixTest {
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
 		assertTrue(result.isEmpty());
-		// Received message not counted as processed
-		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_RECEIVED);
-		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
-		verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_PROCESSED);
 	}
 
 	@Test
@@ -276,7 +270,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isPresent());
+		assertTrue(result.isRight());
 	}
 
 	@Test
@@ -307,7 +301,7 @@ public class MessagePreprocessorTest extends RadixTest {
 
 		final var result = messagePreprocessor.processMessage(transportInfo1, testMessage);
 
-		assertTrue(result.isPresent());
+		assertTrue(result.isRight());
 	}
 
 	private RadixSystem makeSystem(EUID nid) {
