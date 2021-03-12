@@ -25,6 +25,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
@@ -32,7 +33,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.radix.universe.UniverseValidator;
 import org.radix.utils.IOUtils;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -50,20 +50,24 @@ public final class UniverseModule extends AbstractModule {
 	@Singleton
 	private Universe universe(RuntimeProperties properties, Serialization serialization) throws IOException {
 		var universeString = properties.get("universe");
-		final Universe u;
-		// TODO: better way of managing universes
-		if (Strings.isNotBlank(universeString)) {
-			byte[] bytes = Bytes.fromBase64String(universeString);
-			u = serialization.fromDson(bytes, Universe.class);
-		} else {
-			var universeFileName = properties.get("universe.location", ".//universe.json");
-			var file = new File(universeFileName);
-			try (FileInputStream universeInput = new FileInputStream(file)) {
-				u = serialization.fromJson(IOUtils.toString(universeInput), Universe.class);
-			}
+		var universe = Strings.isNotBlank(universeString)
+			? loadFromString(universeString, serialization)
+			: loadFromFile(properties, serialization);
+
+		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
+		return universe;
+	}
+
+	private Universe loadFromString(String universeString, Serialization serialization) throws DeserializeException {
+		var bytes = Bytes.fromBase64String(universeString);
+		return serialization.fromDson(bytes, Universe.class);
+	}
+
+	private Universe loadFromFile(RuntimeProperties properties, Serialization serialization) throws IOException {
+		var universeFileName = properties.get("universe.location", ".//universe.json");
+		try (var universeInput = new FileInputStream(universeFileName)) {
+			return serialization.fromJson(IOUtils.toString(universeInput), Universe.class);
 		}
-		UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
-		return u;
 	}
 
 	@Provides
