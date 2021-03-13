@@ -55,7 +55,6 @@ public class Conditions {
             RemoteBFTTest test = RemoteBFTTest.builder()
                     .network(RemoteBFTNetworkBridge.of(network))
                     .waitUntilResponsive()
-                    .startConsensusOnRun()
                     .assertLiveness(5, nodesToIgnore)
                     .build();
             test.runBlocking(20, TimeUnit.SECONDS);
