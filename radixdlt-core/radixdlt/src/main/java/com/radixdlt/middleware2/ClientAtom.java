@@ -73,23 +73,17 @@ public final class ClientAtom implements LedgerAtom {
 
 	private final ImmutableList<CMMicroInstruction> instructions;
 
-	@JsonProperty("aid")
-	@DsonOutput({Output.ALL})
-	private final AID aid;
-
 	@JsonProperty("witness")
 	@DsonOutput({Output.ALL})
 	private final HashCode witness;
 
 	@JsonCreator
 	private ClientAtom(
-		@JsonProperty("aid") AID aid,
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("witness") HashCode witness,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures,
 		@JsonProperty("message") String message
 	) {
-		this.aid = aid;
 		this.witness = witness;
 		this.instructions = toInstructions(byteInstructions);
 		this.signatures = signatures == null ? ImmutableMap.of() : signatures;
@@ -101,18 +95,15 @@ public final class ClientAtom implements LedgerAtom {
 		this.message = null;
 		this.signatures = null;
 		this.instructions = null;
-		this.aid = null;
 		this.witness = null;
 	}
 
 	private ClientAtom(
-		AID aid,
 		HashCode witness,
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		String message
 	) {
-		this.aid = Objects.requireNonNull(aid);
 		this.witness = Objects.requireNonNull(witness);
 		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
@@ -126,9 +117,7 @@ public final class ClientAtom implements LedgerAtom {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		serializedInstructions(instructions).forEach(outputStream::writeBytes);
 		HashCode witness = hasher.hashBytes(outputStream.toByteArray());
-		AID aid = AID.from(witness.asBytes());
 		return new ClientAtom(
-			aid,
 			witness,
 			instructions,
 			ImmutableMap.of(),
@@ -211,7 +200,7 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public AID getAID() {
-		return aid;
+		return AID.from(witness.asBytes());
 	}
 
 	@Override
@@ -221,7 +210,7 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(aid);
+		return Objects.hash(witness);
 	}
 
 	@Override
@@ -231,7 +220,7 @@ public final class ClientAtom implements LedgerAtom {
 		}
 
 		ClientAtom other = (ClientAtom) o;
-		return Objects.equals(this.aid, other.aid);
+		return Objects.equals(this.witness, other.witness);
 	}
 
 	static List<ParticleGroup> toParticleGroups(
@@ -286,7 +275,6 @@ public final class ClientAtom implements LedgerAtom {
 	public static ClientAtom convertFromApiAtom(Atom atom, Hasher hasher) {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
 		return new ClientAtom(
-			Atom.aidOf(atom, hasher),
 			hasher.hash(atom),
 			instructions,
 			ImmutableMap.copyOf(atom.getSignatures()),
@@ -296,7 +284,7 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return String.format("%s {aid=%s}", this.getClass().getSimpleName(), this.aid);
+		return String.format("%s {witness=%s}", this.getClass().getSimpleName(), this.witness);
 	}
 
 	public String toInstructionsString() {

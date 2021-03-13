@@ -45,7 +45,7 @@ public class ClientAtomTest {
 		EqualsVerifier
 			.forClass(ClientAtom.class)
 			// Only AID is compared.
-			.withIgnoredFields("message", "instructions", "signatures", "witness")
+			.withIgnoredFields("message", "instructions", "signatures")
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
