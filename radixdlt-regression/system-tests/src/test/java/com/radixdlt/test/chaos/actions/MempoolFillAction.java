@@ -22,7 +22,7 @@ public class MempoolFillAction extends ActionWithLikelihood {
     @Override
     public void setupImplementation() {
         String fillerNode = getAnsible().getRandomNodeHost();
-        logger.info("Starting mempool filler with {}", fillerNode);
+        logger.info("Starting mempool filler from {}", fillerNode);
         ChaosExperimentUtils.annotateGrafana("mempool filler " + fillerNode);
 
         String addressOfFiller = httpClient.getMempoolFillerAddress(fillerNode);

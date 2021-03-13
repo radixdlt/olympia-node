@@ -32,8 +32,8 @@ public class RestartAction extends ActionWithLikelihood {
 
     @Override
     public void setupImplementation() {
-        logger.info("Restarting a random node...");
         String randomHost = getAnsible().getRandomNodeHost();
+        logger.info("Restarting a random node ({})", randomHost);
         ChaosExperimentUtils.runCommandOverSsh(randomHost, "docker restart radixdlt_core_1");
         ChaosExperimentUtils.annotateGrafana("docker restart " + randomHost);
     }

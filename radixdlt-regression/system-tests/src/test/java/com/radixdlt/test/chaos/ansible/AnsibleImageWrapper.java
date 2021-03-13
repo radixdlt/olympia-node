@@ -102,6 +102,7 @@ public class AnsibleImageWrapper {
         if (nodeAddresses == null) {
             nodeAddresses = Sets.newHashSet();
             String playbookOutput = runPlaybook("check.yml", "check");
+            System.out.println("\n\n" + playbookOutput + " \n\n");
             Matcher matcher = Pattern.compile("(?<=\\[).+?(?=\\])").matcher(playbookOutput);
             while (matcher.find()) {
                 String raw = matcher.group(0);
