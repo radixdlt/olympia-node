@@ -46,7 +46,7 @@ public class ChaosExperiments {
     public void pre_release_experiment() {
         System.out.println(Joiner.on("\n").join(ansible.getNodeAddressList()));
 
-        /*Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
+        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
                 new NetworkAction(ansible, 0.4),
@@ -59,7 +59,7 @@ public class ChaosExperiments {
         actions.forEach(Action::teardown);
         actions.forEach(Action::setup);
 
-        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());*/
+        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
     }
 
 }
