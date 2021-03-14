@@ -109,7 +109,6 @@ public class TokenDefinitionsReducerTest {
 		UnallocatedTokensParticle unallocatedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(unallocatedTokensParticle.getAmount()).thenReturn(UInt256.MAX_VALUE.subtract(hundred));
 		when(unallocatedTokensParticle.getTokDefRef()).thenReturn(tokenRef);
-		when(unallocatedTokensParticle.euid()).thenReturn(EUID.ONE);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), tokenDefinitionParticle);

@@ -25,13 +25,9 @@ package com.radixdlt.client.core.atoms.particles;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.crypto.HashUtils;
 
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -51,32 +47,5 @@ public abstract class Particle {
 		// Nothing for now
 	}
 
-	public final byte[] toDson() {
-		return Serialize.getInstance().toDson(this, Output.HASH);
-	}
-
-	public final HashCode getHash() {
-		return HashUtils.sha256(toDson());
-	}
-
-	public final EUID euid() {
-		return EUID.fromHash(this.getHash());
-	}
-
 	public abstract Set<EUID> getDestinations();
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof Particle)) {
-			return false;
-		}
-
-		Particle particle = (Particle) o;
-		return this.getHash().equals(particle.getHash());
-	}
-
-	@Override
-	public int hashCode() {
-		return this.getHash().hashCode();
-	}
 }

@@ -285,7 +285,6 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.euid()).thenReturn(EUID.ONE);
 		when(particle.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-		when(particle.euid()).thenReturn(EUID.ONE);
 		Atom atom = Atom.create(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));

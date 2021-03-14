@@ -79,4 +79,22 @@ public final class UnregisteredValidatorParticle extends Particle implements Acc
 	public Set<RadixAddress> getAddresses() {
 		return ImmutableSet.of(address);
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.address, this.nonce);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof UnregisteredValidatorParticle)) {
+			return false;
+		}
+		final var that = (UnregisteredValidatorParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.address, that.address);
+	}
 }

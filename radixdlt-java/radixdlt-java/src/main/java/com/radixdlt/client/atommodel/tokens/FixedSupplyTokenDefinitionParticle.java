@@ -155,4 +155,28 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 			String.valueOf(this.rri), name, description,
 			String.valueOf(supply), String.valueOf(granularity));
 	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof FixedSupplyTokenDefinitionParticle)) {
+			return false;
+		}
+		var that = (FixedSupplyTokenDefinitionParticle) o;
+		return Objects.equals(rri, that.rri)
+			&& Objects.equals(name, that.name)
+			&& Objects.equals(description, that.description)
+			&& Objects.equals(supply, that.supply)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(iconUrl, that.iconUrl)
+			&& Objects.equals(url, that.url);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(rri, name, description, supply, granularity, iconUrl, url);
+	}
 }

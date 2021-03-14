@@ -163,4 +163,26 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 			nonce
 		);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof TransferrableTokensParticle)) {
+			return false;
+		}
+		TransferrableTokensParticle that = (TransferrableTokensParticle) o;
+		return nonce == that.nonce
+			&& Objects.equals(address, that.address)
+			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(amount, that.amount)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address, tokenDefinitionReference, granularity, nonce, amount, tokenPermissions);
+	}
 }

@@ -166,4 +166,35 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		return String.format("%s[%s:%s:%s:%s:%s:%s]", getClass().getSimpleName(), tokenDefinitionReference, amount,
 			granularity, address, delegateAddress, nonce);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof StakedTokensParticle)) {
+			return false;
+		}
+		StakedTokensParticle that = (StakedTokensParticle) o;
+		return nonce == that.nonce
+			&& Objects.equals(delegateAddress, that.delegateAddress)
+			&& Objects.equals(address, that.address)
+			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(amount, that.amount)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+			delegateAddress,
+			address,
+			tokenDefinitionReference,
+			granularity,
+			nonce,
+			amount,
+			tokenPermissions
+		);
+	}
 }

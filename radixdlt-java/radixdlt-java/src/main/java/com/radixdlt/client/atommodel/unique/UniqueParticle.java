@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.atommodel.unique;
 
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -73,5 +74,21 @@ public final class UniqueParticle extends Particle implements Identifiable {
 	@Override
 	public RRI getRRI() {
 		return RRI.of(address, name);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.name, this.address, this.nonce);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof UniqueParticle)) {
+			return false;
+		}
+		final var that = (UniqueParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.name, that.name)
+			&& Objects.equals(this.address, that.address);
 	}
 }

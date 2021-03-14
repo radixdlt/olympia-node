@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -181,5 +182,29 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		return String.format("%s[%s (%s:%s), (%s:%s)]", getClass().getSimpleName(),
 			String.valueOf(this.rri), name, description,
 			String.valueOf(granularity), tokenPermissionsStr);
+	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof MutableSupplyTokenDefinitionParticle)) {
+			return false;
+		}
+		var that = (MutableSupplyTokenDefinitionParticle) o;
+		return Objects.equals(rri, that.rri)
+			&& Objects.equals(name, that.name)
+			&& Objects.equals(description, that.description)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(iconUrl, that.iconUrl)
+			&& Objects.equals(url, that.url)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(rri, name, description, granularity, iconUrl, url, tokenPermissions);
 	}
 }

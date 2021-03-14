@@ -79,4 +79,20 @@ public final class RRIParticle extends Particle implements Accountable {
 		return String.format("%s[(%s:%s)]",
 			getClass().getSimpleName(), rri, nonce);
 	}
+
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.rri, this.nonce);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof RRIParticle)) {
+			return false;
+		}
+		final var that = (RRIParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.rri, that.rri);
+	}
 }
