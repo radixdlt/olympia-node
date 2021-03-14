@@ -18,6 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -32,10 +33,19 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
-public final class Particles {
-	private Particles() {
+public final class Addresses {
+	private Addresses() {
 		throw new IllegalStateException("Cannot instantiate.");
+	}
+
+	public static Stream<RadixAddress> ofAtom(Atom atom) {
+		return atom.spunParticles()
+			.map(SpunParticle::getParticle)
+			.map(Addresses::getShardables)
+			.flatMap(Set::stream)
+			.distinct();
 	}
 
 	public static Set<RadixAddress> getShardables(Particle p) {

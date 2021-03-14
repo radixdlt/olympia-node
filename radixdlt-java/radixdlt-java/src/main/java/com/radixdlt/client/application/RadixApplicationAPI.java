@@ -77,7 +77,7 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.atoms.Particles;
+import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -1364,7 +1364,7 @@ public class RadixApplicationAPI {
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
 				for (SpunParticle sp : pg.getParticles()) {
-					for (RadixAddress address : Particles.getShardables(sp.getParticle())) {
+					for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 						}
@@ -1382,7 +1382,7 @@ public class RadixApplicationAPI {
 		 */
 		public void stage(ParticleGroup particleGroup) {
 			for (SpunParticle sp : particleGroup.getParticles()) {
-				for (RadixAddress address : Particles.getShardables(sp.getParticle())) {
+				for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 					}

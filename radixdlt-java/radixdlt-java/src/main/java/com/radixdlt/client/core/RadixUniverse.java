@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
@@ -122,7 +123,7 @@ public final class RadixUniverse {
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		Atom atom = config.getGenesis();
-		atom.addresses()
+		Addresses.ofAtom(atom)
 			.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())));
 
 		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);

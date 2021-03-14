@@ -40,12 +40,10 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import com.radixdlt.identifiers.RadixAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -145,14 +143,6 @@ public final class Atom {
 
 	public Stream<Particle> particles(Spin spin) {
 		return this.spunParticles().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
-	}
-
-	public Stream<RadixAddress> addresses() {
-		return this.spunParticles()
-			.map(SpunParticle::getParticle)
-			.map(Particles::getShardables)
-			.flatMap(Set::stream)
-			.distinct();
 	}
 
 	public Map<String, ECDSASignature> getSignatures() {
