@@ -29,7 +29,7 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;

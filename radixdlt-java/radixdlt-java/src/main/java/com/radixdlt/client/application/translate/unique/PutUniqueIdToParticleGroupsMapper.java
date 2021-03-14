@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.unique;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 
 import java.util.Collections;

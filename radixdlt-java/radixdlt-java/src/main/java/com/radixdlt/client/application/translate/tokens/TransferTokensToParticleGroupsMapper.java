@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
@@ -40,11 +39,10 @@ import java.util.stream.Collectors;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.stream.Stream;
-import org.bouncycastle.util.encoders.Base64;
 import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 
 /**
@@ -115,17 +113,8 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			);
 		}
 
-		if (transfer.getAttachment() == null) {
-			return Collections.singletonList(
-				ParticleGroup.of(transferParticles)
-			);
-		} else {
-			final ImmutableMap<String, String> metaData = ImmutableMap.of(
-				"attachment", Base64.toBase64String(transfer.getAttachment())
-			);
-			return Collections.singletonList(
-				ParticleGroup.of(transferParticles, metaData)
-			);
-		}
+		return Collections.singletonList(
+			ParticleGroup.of(transferParticles)
+		);
 	}
 }

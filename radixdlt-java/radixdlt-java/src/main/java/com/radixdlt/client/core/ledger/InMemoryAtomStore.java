@@ -24,7 +24,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Particles;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
@@ -103,7 +103,7 @@ public class InMemoryAtomStore implements AtomStore {
 			}
 			stagedAtoms.put(uuid, stagedAtom);
 
-			for (SpunParticle sp : particleGroup.getSpunParticles()) {
+			for (SpunParticle sp : particleGroup.getParticles()) {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
 				index.put(sp.getParticle(), sp.getSpin());
 				stagedParticleIndex.put(uuid, index);

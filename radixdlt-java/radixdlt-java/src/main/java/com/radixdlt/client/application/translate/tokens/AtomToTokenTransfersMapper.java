@@ -103,13 +103,12 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 							}
 						}
 
-						String attachment = pg.getMetaData().get("attachment");
 						return new TokenTransfer(
 							from,
 							to,
 							e.getKey(),
 							summary.get(0).getValue().abs(),
-							attachment == null ? null : Bytes.fromBase64String(attachment)
+							null
 						);
 					});
 			})

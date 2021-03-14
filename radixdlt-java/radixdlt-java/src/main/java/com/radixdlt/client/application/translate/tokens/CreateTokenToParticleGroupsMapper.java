@@ -33,8 +33,8 @@ import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.atom.SpunParticle;
 
 import java.math.BigDecimal;

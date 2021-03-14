@@ -26,7 +26,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -487,10 +487,6 @@ public class TokenFees {
 	}
 
 	private boolean isFeeGroup(ParticleGroup pg) {
-		// No free storage in metadata
-		if (!pg.getMetaData().isEmpty()) {
-			return false;
-		}
 		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.spunParticles()
 			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = grouping.remove(TransferrableTokensParticle.class);

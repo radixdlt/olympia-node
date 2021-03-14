@@ -88,7 +88,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -1363,7 +1363,7 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				for (SpunParticle sp : pg.getSpunParticles()) {
+				for (SpunParticle sp : pg.getParticles()) {
 					for (RadixAddress address : Particles.getShardables(sp.getParticle())) {
 						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
@@ -1381,7 +1381,7 @@ public class RadixApplicationAPI {
 		 * @param particleGroup Particle group to add to staging area.
 		 */
 		public void stage(ParticleGroup particleGroup) {
-			for (SpunParticle sp : particleGroup.getSpunParticles()) {
+			for (SpunParticle sp : particleGroup.getParticles()) {
 				for (RadixAddress address : Particles.getShardables(sp.getParticle())) {
 					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
