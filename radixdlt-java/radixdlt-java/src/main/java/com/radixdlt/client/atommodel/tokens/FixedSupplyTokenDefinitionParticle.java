@@ -24,8 +24,6 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
@@ -40,7 +38,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 @SerializerId2("radix.particles.fixed_supply_token_definition")
-public final class FixedSupplyTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
+public final class FixedSupplyTokenDefinitionParticle extends Particle {
 
 	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
@@ -111,12 +109,10 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
-	@Override
 	public RRI getRRI() {
 		return this.rri;
 	}
 
-	@Override
 	public RadixAddress getAddress() {
 		return this.rri.getAddress();
 	}

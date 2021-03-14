@@ -37,13 +37,11 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 
 @SerializerId2("radix.particles.mutable_supply_token_definition")
-public class MutableSupplyTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
+public class MutableSupplyTokenDefinitionParticle extends Particle {
 	public enum TokenTransition {
 		MINT,
 		BURN
@@ -115,7 +113,6 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
-	@Override
 	public RRI getRRI() {
 		return this.rri;
 	}
@@ -124,7 +121,6 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		return tokenPermissions;
 	}
 
-	@Override
 	public RadixAddress getAddress() {
 		return this.rri.getAddress();
 	}

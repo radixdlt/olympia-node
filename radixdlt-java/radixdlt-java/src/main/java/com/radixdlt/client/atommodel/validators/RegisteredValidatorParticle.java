@@ -24,8 +24,6 @@ package com.radixdlt.client.atommodel.validators;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
@@ -36,7 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.registered_validator")
-public final class RegisteredValidatorParticle extends Particle implements Accountable, Ownable {
+public final class RegisteredValidatorParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RadixAddress address;
@@ -94,7 +92,6 @@ public final class RegisteredValidatorParticle extends Particle implements Accou
 		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
 	}
 
-	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}
@@ -116,7 +113,6 @@ public final class RegisteredValidatorParticle extends Particle implements Accou
 		return String.format("%s[%s %s %s]", getClass().getSimpleName(), this.address, this.url, this.allowedDelegators);
 	}
 
-	@Override
 	public Set<RadixAddress> getAddresses() {
 		return ImmutableSet.of(address);
 	}

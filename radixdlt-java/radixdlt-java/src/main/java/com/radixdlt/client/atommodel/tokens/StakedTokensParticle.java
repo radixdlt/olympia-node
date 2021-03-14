@@ -25,8 +25,6 @@ package com.radixdlt.client.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
@@ -47,7 +45,7 @@ import java.util.stream.Collectors;
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
 @SerializerId2("radix.particles.staked_tokens")
-public final class StakedTokensParticle extends Particle implements Accountable, Ownable {
+public final class StakedTokensParticle extends Particle {
 	@JsonProperty("delegateAddress")
 	@DsonOutput(Output.ALL)
 	private RadixAddress delegateAddress;
@@ -131,12 +129,10 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		}
 	}
 
-	@Override
 	public Set<RadixAddress> getAddresses() {
 		return ImmutableSet.of(this.address, this.delegateAddress);
 	}
 
-	@Override
 	public RadixAddress getAddress() {
 		return this.address;
 	}

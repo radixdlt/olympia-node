@@ -27,7 +27,6 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
@@ -36,7 +35,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.unique")
-public final class UniqueParticle extends Particle implements Identifiable {
+public final class UniqueParticle extends Particle {
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String name;
@@ -71,7 +70,6 @@ public final class UniqueParticle extends Particle implements Identifiable {
 		return name;
 	}
 
-	@Override
 	public RRI getRRI() {
 		return RRI.of(address, name);
 	}

@@ -24,7 +24,6 @@ package com.radixdlt.client.atommodel.rri;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
@@ -36,7 +35,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.rri")
-public final class RRIParticle extends Particle implements Accountable {
+public final class RRIParticle extends Particle {
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RRI rri;
@@ -65,7 +64,6 @@ public final class RRIParticle extends Particle implements Accountable {
 		return rri;
 	}
 
-	@Override
 	public Set<RadixAddress> getAddresses() {
 		return Collections.singleton(rri.getAddress());
 	}

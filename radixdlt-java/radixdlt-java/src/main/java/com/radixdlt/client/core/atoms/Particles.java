@@ -18,8 +18,15 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -34,13 +41,32 @@ public final class Particles {
 	public static Set<RadixAddress> getShardables(Particle p) {
 		Set<RadixAddress> addresses = new HashSet<>();
 
-		if (p instanceof Accountable) {
-			Accountable a = (Accountable) p;
+		if (p instanceof RRIParticle) {
+			var a = (RRIParticle) p;
 			addresses.addAll(a.getAddresses());
-		}
-
-		if (p instanceof Identifiable) {
-			Identifiable i = (Identifiable) p;
+		} else if (p instanceof StakedTokensParticle) {
+			var a = (StakedTokensParticle) p;
+			addresses.addAll(a.getAddresses());
+		} else if (p instanceof TransferrableTokensParticle) {
+			var a = (TransferrableTokensParticle) p;
+			addresses.addAll(a.getAddresses());
+		} else if (p instanceof UnallocatedTokensParticle) {
+			var a = (UnallocatedTokensParticle) p;
+			addresses.addAll(a.getAddresses());
+		} else if (p instanceof RegisteredValidatorParticle) {
+			var a = (RegisteredValidatorParticle) p;
+			addresses.addAll(a.getAddresses());
+		} else if (p instanceof UnregisteredValidatorParticle) {
+			var a = (UnregisteredValidatorParticle) p;
+			addresses.addAll(a.getAddresses());
+		} else if (p instanceof FixedSupplyTokenDefinitionParticle) {
+			var i = (FixedSupplyTokenDefinitionParticle) p;
+			addresses.add(i.getRRI().getAddress());
+		} else if (p instanceof MutableSupplyTokenDefinitionParticle) {
+			var i = (MutableSupplyTokenDefinitionParticle) p;
+			addresses.add(i.getRRI().getAddress());
+		} else if (p instanceof UniqueParticle) {
+			var i = (UniqueParticle) p;
 			addresses.add(i.getRRI().getAddress());
 		}
 
