@@ -20,6 +20,8 @@ package com.radixdlt.test.chaos;
 import com.google.common.base.Joiner;
 import com.radixdlt.test.Cluster;
 import com.radixdlt.test.Conditions;
+import com.radixdlt.test.LivenessCheck;
+import com.radixdlt.test.RemoteBFTNetworkBridge;
 import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
@@ -30,10 +32,13 @@ import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Category(Cluster.class)
 public class ChaosExperiments {
@@ -44,9 +49,7 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        System.out.println(Joiner.on("\n").join(ansible.getNodeAddressList()));
-
-        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
+        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
                 new NetworkAction(ansible, 0.4),
@@ -59,7 +62,7 @@ public class ChaosExperiments {
         actions.forEach(Action::teardown);
         actions.forEach(Action::setup);
 
-        Conditions.waitUntilNetworkHasLiveness(ansible.toNetwork());
+        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
     }
 
 }
