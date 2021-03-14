@@ -18,21 +18,21 @@
 package com.radixdlt.atommodel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.SerializeWithHid;
+import com.radixdlt.store.SpinStateMachine;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,42 +44,20 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-@SerializerId2("radix.atom")
-@SerializeWithHid
-public final class Atom {
-
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	/**
-	 * The particle groups and their spin
-	 */
-	@JsonProperty("particleGroups")
-	@DsonOutput(DsonOutput.Output.ALL)
+public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
-
-	/**
-	 * The particle groups and their spin
-	 */
-	@JsonProperty("message")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final String message;
-
-	/**
-	 * Contains signers and corresponding signatures of this Atom.
-	 */
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
-	public Atom() {
+	public AtomBuilder() {
 		this(null);
 	}
 
-	public Atom(@Nullable String message) {
+	public AtomBuilder(@Nullable String message) {
 		this.message = message;
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
+	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
@@ -88,17 +66,17 @@ public final class Atom {
 		this.message = message;
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
+	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
 		this(particleGroups, signatures, null);
 	}
 
 	// Primarily used for excluding fee groups in fee calculations
-	public Atom copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
+	public AtomBuilder copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
 		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
 			.filter(pg -> !exclusions.test(pg))
 			.collect(Collectors.toList());
 
-		return new Atom(newParticleGroups, this.signatures, this.message);
+		return new AtomBuilder(newParticleGroups, this.signatures, this.message);
 	}
 
 	/**
@@ -186,6 +164,57 @@ public final class Atom {
 		this.signatures.put(id, signature);
 	}
 
+
+	static List<ParticleGroup> toParticleGroups(
+		ImmutableList<CMMicroInstruction> instructions
+	) {
+		List<ParticleGroup> pgs = new ArrayList<>();
+		ParticleGroup.ParticleGroupBuilder curPg = ParticleGroup.builder();
+		for (CMMicroInstruction instruction : instructions) {
+			if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.PARTICLE_GROUP) {
+				ParticleGroup pg = curPg.build();
+				pgs.add(pg);
+				curPg = ParticleGroup.builder();
+			} else {
+				curPg.addParticle(instruction.getParticle(), instruction.getNextSpin());
+			}
+		}
+		return pgs;
+	}
+
+	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
+		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new ImmutableList.Builder<>();
+		for (int i = 0; i < particleGroups.size(); i++) {
+			ParticleGroup pg = particleGroups.get(i);
+			for (int j = 0; j < pg.getParticleCount(); j++) {
+				SpunParticle sp = pg.getSpunParticle(j);
+				Particle particle = sp.getParticle();
+				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
+				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+			}
+			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
+		}
+
+		return microInstructionsBuilder.build();
+	}
+
+	public HashCode computeHashToSign() {
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
+		var outputStream = new ByteArrayOutputStream();
+		ClientAtom.serializedInstructions(instructions).forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		return HashUtils.sha256(firstHash.asBytes());
+	}
+
+	public ClientAtom buildAtom() {
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
+		return new ClientAtom(
+			instructions,
+			ImmutableMap.copyOf(this.getSignatures()),
+			this.getMessage()
+		);
+	}
+
 	// Property Signatures: 1 getter, 1 setter
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
@@ -202,11 +231,6 @@ public final class Atom {
 		}
 	}
 
-	public static AID aidOf(Atom atom, Hasher hasher) {
-		HashCode hash = hasher.hash(atom);
-		return AID.from(hash.asBytes());
-	}
-
 	@Override
 	public String toString() {
 		String particleGroupsStr = this.particleGroups.stream().map(ParticleGroup::toString).collect(Collectors.joining(","));
@@ -218,10 +242,10 @@ public final class Atom {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Atom)) {
+		if (!(o instanceof AtomBuilder)) {
 			return false;
 		}
-		Atom atom = (Atom) o;
+		AtomBuilder atom = (AtomBuilder) o;
 		return Objects.equals(particleGroups, atom.particleGroups)
 				&& Objects.equals(signatures, atom.signatures)
 				&& Objects.equals(message, atom.message);

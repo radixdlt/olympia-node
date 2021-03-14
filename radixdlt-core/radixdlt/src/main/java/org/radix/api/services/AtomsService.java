@@ -30,21 +30,20 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.List;
@@ -134,8 +133,7 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
-		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
-		final var atom = ClientAtom.convertFromApiAtom(rawAtom);
+		final var atom = this.serialization.fromJsonObject(jsonAtom, ClientAtom.class);
 
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
@@ -167,7 +165,6 @@ public class AtomsService {
 
 	public Optional<JSONObject> getAtomByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
-			.map(ClientAtom::convertToApiAtom)
 			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
 	}
 

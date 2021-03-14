@@ -27,7 +27,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -108,7 +108,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private AtomBuilder genesisAtom;
 
 	private int lastNodeToCommit;
 
@@ -193,7 +193,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(AtomBuilder.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);

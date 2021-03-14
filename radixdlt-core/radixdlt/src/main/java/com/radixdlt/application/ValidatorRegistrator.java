@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
@@ -38,8 +38,8 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.LogManager;
@@ -93,7 +93,7 @@ public final class ValidatorRegistrator {
 			return;
 		}
 
-		Atom atom = new Atom();
+		AtomBuilder builder = new AtomBuilder();
 		ParticleGroup validatorUpdate = validatorState.map(
 			nonce -> ParticleGroup.of(
 				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),
@@ -104,7 +104,7 @@ public final class ValidatorRegistrator {
 				SpunParticle.up(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
 			)
 		);
-		atom.addParticleGroup(validatorUpdate);
+		builder.addParticleGroup(validatorUpdate);
 
 		if (feeTable != null) {
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class, "self");
@@ -117,13 +117,13 @@ public final class ValidatorRegistrator {
 				);
 				return;
 			}
-			atom.addParticleGroup(feeGroup.get());
+			builder.addParticleGroup(feeGroup.get());
 		}
 
-		HashCode hashedAtom = this.hasher.hash(atom);
-		atom.setSignature(self.euid(), hashSigner.sign(hashedAtom));
+		HashCode hashedAtom = this.hasher.hash(builder);
+		builder.setSignature(self.euid(), hashSigner.sign(hashedAtom));
 
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom clientAtom = builder.buildAtom();
 		byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

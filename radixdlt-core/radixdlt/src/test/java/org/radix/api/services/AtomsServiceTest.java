@@ -20,7 +20,7 @@ import com.radixdlt.identifiers.AID;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -30,7 +30,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -75,7 +75,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = new Atom("Simple test message");
+		var atom = new AtomBuilder("Simple test message").buildAtom();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -87,8 +87,8 @@ public class AtomsServiceTest {
 	@Test
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
-		var aid = AID.from(ClientAtom.computeHashToSign(atom).asBytes());
-		var optionalClientAtom = Optional.of(ClientAtom.convertFromApiAtom(atom));
+		var aid = atom.getAID();
+		var optionalClientAtom = Optional.of(atom);
 
 		when(store.get(aid)).thenReturn(optionalClientAtom);
 
@@ -105,11 +105,11 @@ public class AtomsServiceTest {
 		);
 	}
 
-	private Atom createAtom() {
+	private ClientAtom createAtom() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));
 
-		return new Atom(List.of(group1), Map.of(), "Test message");
+		return new AtomBuilder(List.of(group1), Map.of(), "Test message").buildAtom();
 	}
 }

@@ -31,7 +31,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
@@ -69,8 +69,8 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -105,7 +105,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private Atom atom;
+	private ClientAtom genesis;
 
 	@Inject
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -163,16 +163,15 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
-		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
+		branch.checkAndStore(genesis, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
 		);
 		radixEngine.deleteBranches();
 
-		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		byte[] payload = serialization.toDson(genesis, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
 			hasher.hash(command),
@@ -182,7 +181,7 @@ public class RadixEngineStateComputerTest {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
 		CommittedAtom committedAtom = CommittedAtom.create(
-			genesisAtom,
+			genesis,
 			genesisLedgerHeader
 		);
 		radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
@@ -229,11 +228,11 @@ public class RadixEngineStateComputerTest {
 			.addParticle(unregisteredValidatorParticle, Spin.DOWN)
 			.addParticle(registeredValidatorParticle, Spin.UP)
 			.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		AtomBuilder builder = new AtomBuilder();
+		builder.addParticleGroup(particleGroup);
+		HashCode hashToSign = builder.computeHashToSign();
+		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		var clientAtom = builder.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);

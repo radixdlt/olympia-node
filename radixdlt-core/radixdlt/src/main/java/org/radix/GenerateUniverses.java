@@ -25,7 +25,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -77,11 +78,9 @@ import org.radix.universe.output.AWSSecretManager;
 import org.radix.universe.output.AWSSecretsUniverseOutput;
 import org.radix.universe.output.HelmUniverseOutput;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.time.Instant;
 
@@ -90,7 +89,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.zip.GZIPOutputStream;
 
 public final class GenerateUniverses {
 	private GenerateUniverses() { }
@@ -219,7 +217,7 @@ public final class GenerateUniverses {
 
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+					bind(ClientAtom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
 					var selfIssuance = TokenIssuance.of(
 						universeKey.getPublicKey(), UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)

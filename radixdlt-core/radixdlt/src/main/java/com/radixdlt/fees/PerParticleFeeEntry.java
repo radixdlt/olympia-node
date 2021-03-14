@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 

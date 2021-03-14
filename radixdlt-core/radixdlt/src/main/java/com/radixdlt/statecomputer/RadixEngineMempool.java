@@ -32,8 +32,8 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;

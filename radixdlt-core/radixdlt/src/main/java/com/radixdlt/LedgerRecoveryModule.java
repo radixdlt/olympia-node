@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -35,8 +34,8 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -98,12 +97,11 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	VerifiedLedgerHeaderAndProof lastStoredProof(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore store,
-		@Genesis Atom atom,
+		@Genesis ClientAtom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
 		if (!store.containsAID(genesisAtom.getAID())) {
 			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}

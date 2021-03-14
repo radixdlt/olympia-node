@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -46,7 +46,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -110,11 +110,11 @@ public class MempoolTest {
 				.addParticle(uniqueParticle, Spin.UP);
 		}
 		ParticleGroup particleGroup = builder.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return ClientAtom.convertFromApiAtom(atom);
+		AtomBuilder atomBuilder = new AtomBuilder();
+		atomBuilder.addParticleGroup(particleGroup);
+		HashCode hashToSign = atomBuilder.computeHashToSign();
+		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return atomBuilder.buildAtom();
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {

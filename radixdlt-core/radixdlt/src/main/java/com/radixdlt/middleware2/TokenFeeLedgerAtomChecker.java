@@ -17,6 +17,8 @@
 
 package com.radixdlt.middleware2;
 
+import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -24,7 +26,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.engine.AtomChecker;
@@ -96,13 +98,10 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 
 		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
 		final ClientAtom clientAtom;
-		final Atom completeAtom;
 		if (atom instanceof ClientAtom) {
 			clientAtom = (ClientAtom) atom;
-			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
 		} else if (atom instanceof CommittedAtom) {
 			clientAtom = ((CommittedAtom) atom).getClientAtom();
-			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
 		} else {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
 		}
@@ -112,12 +111,12 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom too big: " + totalSize);
 		}
 
-		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
+		AtomBuilder atomWithoutFeeGroup = clientAtom.toBuilder().copyExcludingGroups(this::isFeeGroup);
 		Set<Particle> outputParticles = atomWithoutFeeGroup.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
 		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
-		UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
+		UInt256 feePaid = computeFeePaid(clientAtom.toBuilder().particleGroups().filter(this::isFeeGroup));
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
 			return Result.error(message);

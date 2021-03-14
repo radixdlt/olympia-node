@@ -17,14 +17,14 @@
 
 package org.radix.atoms;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
 
 public class AtomTest {
 	@Test
 	public void testNullParticles() {
-		Atom atom = new Atom();
+		AtomBuilder atom = new AtomBuilder();
 		atom.spunParticles();
 		atom.getParticleGroupCount();
 		atom.particles(Spin.UP);

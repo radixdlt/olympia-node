@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.atommodel;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
@@ -36,17 +35,13 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.ParticleGroup.ParticleGroupBuilder;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.store.SpinStateMachine;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -59,7 +54,7 @@ import javax.annotation.concurrent.Immutable;
  * An atom from a client which can be processed by the Radix Engine.
  */
 @Immutable
-@SerializerId2("consensus.client_atom")
+@SerializerId2("radix.atom")
 public final class ClientAtom implements LedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
@@ -82,10 +77,13 @@ public final class ClientAtom implements LedgerAtom {
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
 	) {
-		this(toInstructions(byteInstructions), signatures == null ? ImmutableMap.of() : signatures, message);
+		this(
+			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
+			signatures == null ? ImmutableMap.of() : signatures, message
+		);
 	}
 
-	private ClientAtom(
+	public ClientAtom(
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		String message
@@ -119,7 +117,7 @@ public final class ClientAtom implements LedgerAtom {
 		return Optional.ofNullable(this.signatures.get(euid));
 	}
 
-	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
+	public static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
 		final byte[] particleGroupByteCode = new byte[] {0};
 		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
 		final byte[] checkUpThenDownByteCode = new byte[] {2};
@@ -176,17 +174,14 @@ public final class ClientAtom implements LedgerAtom {
 		return instructionsBuilder.build();
 	}
 
+	public AtomBuilder toBuilder() {
+		List<ParticleGroup> pgs = AtomBuilder.toParticleGroups(this.instructions);
+		return new AtomBuilder(pgs, this.signatures, this.message);
+	}
+
 	@Override
 	public CMInstruction getCMInstruction() {
 		return new CMInstruction(instructions, signatures);
-	}
-
-	public static HashCode computeHashToSign(Atom atom) {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
-		var outputStream = new ByteArrayOutputStream();
-		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
 	}
 
 	@Override
@@ -194,12 +189,10 @@ public final class ClientAtom implements LedgerAtom {
 		return witness;
 	}
 
-	@Override
 	public AID getAID() {
 		return AID.from(getWitness().asBytes());
 	}
 
-	@Override
 	public String getMessage() {
 		return this.message;
 	}
@@ -217,64 +210,6 @@ public final class ClientAtom implements LedgerAtom {
 
 		ClientAtom other = (ClientAtom) o;
 		return Objects.equals(this.witness, other.witness);
-	}
-
-	static List<ParticleGroup> toParticleGroups(
-		ImmutableList<CMMicroInstruction> instructions
-	) {
-		List<ParticleGroup> pgs = new ArrayList<>();
-		ParticleGroupBuilder curPg = ParticleGroup.builder();
-		for (CMMicroInstruction instruction : instructions) {
-			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				ParticleGroup pg = curPg.build();
-				pgs.add(pg);
-				curPg = ParticleGroup.builder();
-			} else {
-				curPg.addParticle(instruction.getParticle(), instruction.getNextSpin());
-			}
-		}
-		return pgs;
-	}
-
-	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
-		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
-		for (int i = 0; i < particleGroups.size(); i++) {
-			ParticleGroup pg = particleGroups.get(i);
-			for (int j = 0; j < pg.getParticleCount(); j++) {
-				SpunParticle sp = pg.getSpunParticle(j);
-				Particle particle = sp.getParticle();
-				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
-				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
-			}
-			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
-		}
-
-		return microInstructionsBuilder.build();
-	}
-
-	/**
-	 * Converts a ledger atom back to an api atom (to be deprecated)
-	 * @param atom the ledger atom to convert
-	 * @return an api atom
-	 */
-	public static Atom convertToApiAtom(ClientAtom atom) {
-		List<ParticleGroup> pgs = toParticleGroups(atom.instructions);
-		return new Atom(pgs, atom.signatures, atom.message);
-	}
-
-	/**
-	 * Convert an api atom (to be deprecated) into a ledger atom.
-	 *
-	 * @param atom the atom to convert
-	 * @return an atom to be stored on ledger
-	 */
-	public static ClientAtom convertFromApiAtom(Atom atom) {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
-		return new ClientAtom(
-			instructions,
-			ImmutableMap.copyOf(atom.getSignatures()),
-			atom.getMessage()
-		);
 	}
 
 	@Override

@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -131,8 +131,8 @@ public final class InMemoryWallet {
 		});
 	}
 
-	private Optional<Atom> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
-		Atom atom = new Atom();
+	private Optional<AtomBuilder> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
+		AtomBuilder atom = new AtomBuilder();
 		Optional<ParticleGroup> feeGroup = createFeeGroup(mutableList);
 		if (feeGroup.isEmpty()) {
 			return Optional.empty();
@@ -154,10 +154,10 @@ public final class InMemoryWallet {
 		return Optional.of(atom);
 	}
 
-	public List<Atom> createParallelTransactions(RadixAddress to, int max) {
+	public List<AtomBuilder> createParallelTransactions(RadixAddress to, int max) {
 		List<TransferrableTokensParticle> shuffledParticles = new ArrayList<>(particles);
 		Collections.shuffle(shuffledParticles);
-		Stream<Optional<Atom>> atoms = shuffledParticles.stream()
+		Stream<Optional<AtomBuilder>> atoms = shuffledParticles.stream()
 			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0)
 			.map(t -> {
 				var mutableList = new LinkedList<TransferrableTokensParticle>();
@@ -170,7 +170,7 @@ public final class InMemoryWallet {
 			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
 			.collect(Collectors.toList());
 
-		Stream<Optional<Atom>> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
+		Stream<Optional<AtomBuilder>> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
 			.map(LinkedList::new)
 			.map(mutableList -> {
 				UInt256 dustAmount = mutableList.stream()

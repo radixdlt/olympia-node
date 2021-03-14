@@ -20,7 +20,8 @@ package org.radix;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.crypto.Hasher;
 
 import com.radixdlt.crypto.ECKeyPair;
@@ -35,7 +36,7 @@ public final class RadixUniverseBuilder {
 	private final Hasher hasher;
 	private final long universeTimestamp;
 	private final ECKeyPair universeKey;
-	private final Provider<Atom> genesisAtomProvider;
+	private final Provider<ClientAtom> genesisAtomProvider;
 	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
@@ -43,7 +44,7 @@ public final class RadixUniverseBuilder {
 		@Named("universeKey") ECKeyPair universeKey,
 		@UniverseConfig long universeTimestamp,
 		UniverseConfiguration universeConfiguration,
-		Provider<Atom> genesisAtomProvider,
+		Provider<ClientAtom> genesisAtomProvider,
 		Hasher hasher
 	) {
 		this.universeKey = Objects.requireNonNull(universeKey);

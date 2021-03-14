@@ -17,19 +17,19 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import java.util.Objects;
 
 public final class DeserializationFailure {
-	private final Atom atom;
+	private final AtomBuilder atom;
 	private final Exception exception;
 
-	public DeserializationFailure(Atom atom, Exception exception) {
+	public DeserializationFailure(AtomBuilder atom, Exception exception) {
 		this.atom = Objects.requireNonNull(atom);
 		this.exception = Objects.requireNonNull(exception);
 	}
 
-	public Atom getAtom() {
+	public AtomBuilder getAtom() {
 		return atom;
 	}
 

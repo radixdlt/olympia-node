@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -29,7 +29,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 
 /**
@@ -51,11 +50,11 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 				.addParticle(rriParticle, Spin.DOWN)
 				.addParticle(uniqueParticle, Spin.UP)
 				.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		var hashToSign = ClientAtom.computeHashToSign(atom);
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var clientAtom = ClientAtom.convertFromApiAtom(atom);
+		AtomBuilder builder = new AtomBuilder();
+		builder.addParticleGroup(particleGroup);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		var clientAtom = builder.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}

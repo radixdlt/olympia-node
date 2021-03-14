@@ -21,7 +21,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -30,7 +30,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atommodel.ClientAtom;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -44,7 +44,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atommodel.LedgerAtom;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.Random;
@@ -85,11 +85,11 @@ public final class RadixEngineTest {
 			.addParticle(rriParticle, Spin.DOWN)
 			.addParticle(uniqueParticle, Spin.UP)
 			.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return ClientAtom.convertFromApiAtom(atom);
+		AtomBuilder builder = new AtomBuilder();
+		builder.addParticleGroup(particleGroup);
+		HashCode hashToSign = builder.computeHashToSign();
+		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return builder.buildAtom();
 	}
 
 	@Test
