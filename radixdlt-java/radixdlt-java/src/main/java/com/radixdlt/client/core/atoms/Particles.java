@@ -19,7 +19,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;

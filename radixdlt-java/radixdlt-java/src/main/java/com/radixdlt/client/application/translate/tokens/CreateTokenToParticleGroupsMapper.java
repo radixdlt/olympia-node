@@ -29,7 +29,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -133,9 +133,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		UInt256 amount = TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply());
 		UInt256 granularity = TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity());
 		FixedSupplyTokenDefinitionParticle token = new FixedSupplyTokenDefinitionParticle(
-			tokenCreation.getRRI().getAddress(),
+			tokenCreation.getRRI(),
 			tokenCreation.getName(),
-			tokenCreation.getRRI().getName(),
 			tokenCreation.getDescription(),
 			amount,
 			granularity,

@@ -34,7 +34,7 @@ import org.junit.Test;
 import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,9 +70,9 @@ public class TokenDefinitionsReducerTest {
 	public void testFixedTokenWithNoMint() {
 		FixedSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(FixedSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getSupply()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);

@@ -31,7 +31,7 @@ import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;

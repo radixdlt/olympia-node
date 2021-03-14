@@ -30,7 +30,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.constraintmachine.Particle;
 
@@ -92,7 +92,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 		return state.mergeTokenClass(
 			tokenDefinitionParticle.getRRI(),
 			tokenDefinitionParticle.getName(),
-			tokenDefinitionParticle.getSymbol(),
+			tokenDefinitionParticle.getRRI().getName(),
 			tokenDefinitionParticle.getDescription(),
 			tokenDefinitionParticle.getIconUrl(),
 			TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getSupply()),
