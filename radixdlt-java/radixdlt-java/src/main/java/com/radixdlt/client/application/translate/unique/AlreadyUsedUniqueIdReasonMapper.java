@@ -30,8 +30,8 @@ import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.Pair;
 
 import java.util.Optional;

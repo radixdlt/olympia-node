@@ -23,6 +23,7 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
@@ -32,7 +33,6 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;

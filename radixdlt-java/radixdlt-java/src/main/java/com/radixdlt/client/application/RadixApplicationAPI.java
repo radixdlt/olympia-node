@@ -78,10 +78,10 @@ import com.radixdlt.client.application.translate.validators.UnregisterValidatorA
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
