@@ -23,8 +23,8 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
@@ -46,9 +46,9 @@ public class TokenDefinitionsReducerTest {
 	public void testTokenWithNoMint() {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getIconUrl()).thenReturn("http://foo");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
@@ -93,9 +93,9 @@ public class TokenDefinitionsReducerTest {
 		final UInt256 hundred = UInt256.TEN.pow(2);
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(TokenTransition.MINT,

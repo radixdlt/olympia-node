@@ -29,7 +29,7 @@ import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;

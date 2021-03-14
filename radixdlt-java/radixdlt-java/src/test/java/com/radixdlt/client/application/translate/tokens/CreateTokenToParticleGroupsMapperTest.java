@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atom.ParticleGroup;
 import org.junit.Test;
 

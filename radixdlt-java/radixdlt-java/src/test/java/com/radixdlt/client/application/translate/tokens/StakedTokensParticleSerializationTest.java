@@ -18,7 +18,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.util.SerializeObjectEngine;

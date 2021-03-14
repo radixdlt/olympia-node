@@ -27,8 +27,8 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
@@ -62,17 +62,16 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 
 	public List<ParticleGroup> createVariableSupplyToken(CreateTokenAction tokenCreation) {
 		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			tokenCreation.getRRI().getAddress(),
+			tokenCreation.getRRI(),
 			tokenCreation.getName(),
-			tokenCreation.getRRI().getName(),
 			tokenCreation.getDescription(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			tokenCreation.getIconUrl(),
+			tokenCreation.getUrl(),
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-			),
-			tokenCreation.getIconUrl(),
-			tokenCreation.getUrl()
+			)
 		);
 
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(

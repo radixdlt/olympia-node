@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
