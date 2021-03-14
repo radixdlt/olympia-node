@@ -23,6 +23,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.Map;

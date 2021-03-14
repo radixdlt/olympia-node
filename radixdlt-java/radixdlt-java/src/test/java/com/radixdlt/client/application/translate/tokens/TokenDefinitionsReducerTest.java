@@ -31,12 +31,11 @@ import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 
 import org.junit.Test;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

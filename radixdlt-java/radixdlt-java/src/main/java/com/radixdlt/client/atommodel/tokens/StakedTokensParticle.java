@@ -25,6 +25,7 @@ package com.radixdlt.client.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
