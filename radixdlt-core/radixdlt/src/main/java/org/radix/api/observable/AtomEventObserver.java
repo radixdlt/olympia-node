@@ -20,11 +20,10 @@ package org.radix.api.observable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
@@ -141,11 +140,11 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<ClientAtom> atoms = new ArrayList<>();
+				List<Atom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<ClientAtom> ledgerEntry = store.get(aid);
+					Optional<Atom> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(atoms::add);
 					cursor = cursor.next();
 				}

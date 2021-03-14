@@ -32,7 +32,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.utils.Pair;
 
@@ -49,8 +49,8 @@ import java.util.Set;
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
-public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
-	private final HashMap<AID, ClientAtom> data = new HashMap<>();
+public final class RadixEngineMempool implements Mempool<Atom, AID> {
+	private final HashMap<AID, Atom> data = new HashMap<>();
 	private final Map<Particle, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
@@ -74,7 +74,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 	}
 
 	@Override
-	public void add(ClientAtom atom) throws MempoolRejectedException {
+	public void add(Atom atom) throws MempoolRejectedException {
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
@@ -108,7 +108,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 		updateCounts();
 	}
 
-	private void removeAtom(ClientAtom atom) {
+	private void removeAtom(Atom atom) {
 		atom.getCMInstruction().getMicroInstructions().stream()
 			.filter(CMMicroInstruction::isPush)
 			.map(CMMicroInstruction::getParticle)
@@ -121,11 +121,11 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 	}
 
 	@Override
-	public List<Pair<ClientAtom, Exception>> committed(List<ClientAtom> commands) {
+	public List<Pair<Atom, Exception>> committed(List<Atom> commands) {
 		commands.forEach(this::removeAtom);
-		final List<Pair<ClientAtom, Exception>> removed = new ArrayList<>();
+		final List<Pair<Atom, Exception>> removed = new ArrayList<>();
 		commands.stream()
-			.map(ClientAtom::getCMInstruction)
+			.map(Atom::getCMInstruction)
 			.flatMap(i -> i.getMicroInstructions().stream())
 			.filter(CMMicroInstruction::isPush)
 			.map(CMMicroInstruction::getParticle)
@@ -153,16 +153,16 @@ public final class RadixEngineMempool implements Mempool<ClientAtom, AID> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<ClientAtom> getCommands(int count, Set<AID> seen) {
+	public List<Atom> getCommands(int count, Set<AID> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
-			List<ClientAtom> commands = Lists.newArrayList();
+			List<Atom> commands = Lists.newArrayList();
 			var values = new ArrayList<>(this.data.values());
 			Collections.shuffle(values, random);
 
-			Iterator<ClientAtom> i = values.iterator();
+			Iterator<Atom> i = values.iterator();
 			while (commands.size() < size && i.hasNext()) {
-				ClientAtom a = i.next();
+				Atom a = i.next();
 				if (!seen.contains(a.getAID())) {
 					commands.add(a);
 				}

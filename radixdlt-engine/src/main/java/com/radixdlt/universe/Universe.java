@@ -18,7 +18,7 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -48,7 +48,7 @@ public class Universe {
 		private UniverseType type;
 		private Long timestamp;
 		private ECPublicKey creator;
-		private ClientAtom atom;
+		private Atom atom;
 
 		private Builder() {
 			// Nothing to do here
@@ -134,7 +134,7 @@ public class Universe {
 		 * @param genesisAtom The atom to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder setAtom(ClientAtom genesisAtom) {
+		public Builder setAtom(Atom genesisAtom) {
 			Objects.requireNonNull(genesisAtom);
 			this.atom = genesisAtom;
 			return this;
@@ -215,7 +215,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private ClientAtom genesis;
+	private Atom genesis;
 
 	private ECPublicKey creator;
 
@@ -318,7 +318,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public ClientAtom getGenesis() {
+	public Atom getGenesis() {
 		return genesis;
 	}
 

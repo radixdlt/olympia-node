@@ -31,7 +31,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomProvider implements Provider<ClientAtom> {
+public final class GenesisAtomProvider implements Provider<Atom> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
@@ -68,7 +68,7 @@ public final class GenesisAtomProvider implements Provider<ClientAtom> {
 	}
 
 	@Override
-	public ClientAtom get() {
+	public Atom get() {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
@@ -136,7 +136,7 @@ public final class GenesisAtomProvider implements Provider<ClientAtom> {
 		return "Radix... just imagine!";
 	}
 
-	private void verifySignature(ECKeyPair key, ClientAtom genesisAtom) {
+	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
 		ECDSASignature signature = genesisAtom.getSignature(key.euid()).orElseThrow();
 		key.getPublicKey().verify(genesisAtom.getWitness(), signature);
 	}

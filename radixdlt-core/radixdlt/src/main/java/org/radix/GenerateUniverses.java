@@ -25,8 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atommodel.AtomBuilder;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -217,7 +216,7 @@ public final class GenerateUniverses {
 
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(ClientAtom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
 					var selfIssuance = TokenIssuance.of(
 						universeKey.getPublicKey(), UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)

@@ -38,7 +38,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -123,8 +123,8 @@ public final class ValidatorRegistrator {
 		HashCode hashedAtom = this.hasher.hash(builder);
 		builder.setSignature(self.euid(), hashSigner.sign(hashedAtom));
 
-		ClientAtom clientAtom = builder.buildAtom();
-		byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+		Atom atom = builder.buildAtom();
+		byte[] payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 	}

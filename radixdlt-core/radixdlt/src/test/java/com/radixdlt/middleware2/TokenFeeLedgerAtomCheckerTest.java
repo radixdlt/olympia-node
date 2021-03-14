@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.AtomBuilder;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -88,13 +88,13 @@ public class TokenFeeLedgerAtomCheckerTest {
 			)
 		);
 		AtomBuilder builder = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = builder.buildAtom();
+		Atom ledgerAtom = builder.buildAtom();
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		ClientAtom ledgerAtom = mock(ClientAtom.class);
+		Atom ledgerAtom = mock(Atom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(), ImmutableMap.of()
 		);

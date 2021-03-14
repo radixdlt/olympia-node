@@ -30,7 +30,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
@@ -48,7 +48,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(
-		@Genesis ClientAtom genesisAtom,
+		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys

@@ -19,7 +19,7 @@ package com.radixdlt.middleware2;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.AtomBuilder;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Spin;
@@ -30,14 +30,14 @@ import com.radixdlt.identifiers.RadixAddress;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class ClientAtomTest {
+public class AtomTest {
 
 	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	@Test
 	public void equalsContract() {
 		EqualsVerifier
-			.forClass(ClientAtom.class)
+			.forClass(Atom.class)
 			// Only AID is compared.
 			.withIgnoredFields("message", "instructions", "signatures")
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())

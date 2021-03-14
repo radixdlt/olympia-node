@@ -30,14 +30,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -133,7 +132,7 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
-		final var atom = this.serialization.fromJsonObject(jsonAtom, ClientAtom.class);
+		final var atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
@@ -184,7 +183,7 @@ public class AtomsService {
 	private void processSubmissionFailure(MempoolAddFailure failure) {
 		failure.getCommand()
 			.map(this::toClientAtom)
-			.map(ClientAtom::getAID)
+			.map(Atom::getAID)
 			.map(this::getAtomStatusListeners)
 			.ifPresent(list -> list.forEach(listener -> listener.onError(failure.getException())));
 	}
@@ -196,9 +195,9 @@ public class AtomsService {
 		});
 	}
 
-	private Optional<ClientAtom> toClientAtom(final byte[] payload) {
+	private Optional<Atom> toClientAtom(final byte[] payload) {
 		try {
-			return of(serialization.fromDson(payload, ClientAtom.class));
+			return of(serialization.fromDson(payload, Atom.class));
 		} catch (DeserializeException e) {
 			return empty();
 		}

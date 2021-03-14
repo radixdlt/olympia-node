@@ -33,7 +33,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.LedgerAtom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
@@ -131,8 +131,8 @@ public final class MempoolFiller {
 			builders.forEach(builder -> {
 				HashCode hashToSign = builder.computeHashToSign();
 				builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-				ClientAtom clientAtom = builder.buildAtom();
-				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+				Atom atom = builder.buildAtom();
+				byte[] payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());

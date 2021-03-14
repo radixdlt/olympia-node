@@ -19,20 +19,18 @@ package org.radix.serialization;
 
 import com.radixdlt.atommodel.AtomBuilder;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 
-public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
+public class AtomSerializeTest extends SerializeObject<Atom> {
 
-	public ClientAtomSerializeTest() {
-		super(ClientAtom.class, ClientAtomSerializeTest::get);
+	public AtomSerializeTest() {
+		super(Atom.class, AtomSerializeTest::get);
 	}
 
-	private static ClientAtom createAtom() {
+	private static Atom createAtom() {
 		final var address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		final var rri = RRI.of(address, "test");
 
@@ -42,7 +40,7 @@ public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
 		return atom.buildAtom();
 	}
 
-	private static ClientAtom get() {
+	private static Atom get() {
 		return createAtom();
 	}
 

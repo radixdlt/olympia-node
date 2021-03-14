@@ -201,14 +201,14 @@ public final class AtomBuilder {
 	public HashCode computeHashToSign() {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
 		var outputStream = new ByteArrayOutputStream();
-		ClientAtom.serializedInstructions(instructions).forEach(outputStream::writeBytes);
+		Atom.serializedInstructions(instructions).forEach(outputStream::writeBytes);
 		var firstHash = HashUtils.sha256(outputStream.toByteArray());
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public ClientAtom buildAtom() {
+	public Atom buildAtom() {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
-		return new ClientAtom(
+		return new Atom(
 			instructions,
 			ImmutableMap.copyOf(this.getSignatures()),
 			this.getMessage()

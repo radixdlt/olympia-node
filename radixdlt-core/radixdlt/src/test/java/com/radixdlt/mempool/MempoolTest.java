@@ -46,7 +46,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.atommodel.ClientAtom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -97,7 +97,7 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
+	private static Atom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
@@ -118,19 +118,19 @@ public class MempoolTest {
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
-		ClientAtom atom = createAtom(keyPair, hasher, nonce, numParticles);
+		Atom atom = createAtom(keyPair, hasher, nonce, numParticles);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
-		ClientAtom atom = createAtom(keyPair, hasher, 0, 1);
+		Atom atom = createAtom(keyPair, hasher, 0, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce) {
-		ClientAtom atom = createAtom(keyPair, hasher, nonce, 1);
+		Atom atom = createAtom(keyPair, hasher, nonce, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}

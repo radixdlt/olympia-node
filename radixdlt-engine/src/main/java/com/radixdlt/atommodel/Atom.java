@@ -55,7 +55,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("radix.atom")
-public final class ClientAtom implements LedgerAtom {
+public final class Atom implements LedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -72,7 +72,7 @@ public final class ClientAtom implements LedgerAtom {
 	private final HashCode witness;
 
 	@JsonCreator
-	private ClientAtom(
+	private Atom(
 		@JsonProperty("message") String message,
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
@@ -83,7 +83,7 @@ public final class ClientAtom implements LedgerAtom {
 		);
 	}
 
-	public ClientAtom(
+	public Atom(
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		String message
@@ -99,8 +99,8 @@ public final class ClientAtom implements LedgerAtom {
 		this.witness = HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static ClientAtom create(ImmutableList<CMMicroInstruction> instructions) {
-		return new ClientAtom(
+	public static Atom create(ImmutableList<CMMicroInstruction> instructions) {
+		return new Atom(
 			instructions,
 			ImmutableMap.of(),
 			null
@@ -204,11 +204,11 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ClientAtom)) {
+		if (!(o instanceof Atom)) {
 			return false;
 		}
 
-		ClientAtom other = (ClientAtom) o;
+		Atom other = (Atom) o;
 		return Objects.equals(this.witness, other.witness);
 	}
 
