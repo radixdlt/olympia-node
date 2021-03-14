@@ -65,6 +65,19 @@ public final class RegisteredValidatorParticle extends Particle {
 		this.nonce = nonce;
 	}
 
+	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
+		this(address, ImmutableSet.of(), null, nonce);
+	}
+
+	public RegisteredValidatorParticle copyWithNonce(long nonce) {
+		return new RegisteredValidatorParticle(
+			this.address,
+			this.allowedDelegators,
+			this.url,
+			nonce
+		);
+	}
+
 	@Override
 	public Set<EUID> getDestinations() {
 		return ImmutableSet.of(this.address.euid());

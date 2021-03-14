@@ -23,7 +23,7 @@
 package com.radixdlt.cli;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.identifiers.RadixAddress;
 import picocli.CommandLine;
 

@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
@@ -55,7 +55,8 @@ public final class Particles {
 			addresses.add(a.getAddress());
 		} else if (p instanceof RegisteredValidatorParticle) {
 			var a = (RegisteredValidatorParticle) p;
-			addresses.addAll(a.getAddresses());
+			addresses.add(a.getAddress());
+			addresses.addAll(a.getAllowedDelegators());
 		} else if (p instanceof UnregisteredValidatorParticle) {
 			var a = (UnregisteredValidatorParticle) p;
 			addresses.addAll(a.getAddresses());
