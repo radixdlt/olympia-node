@@ -25,6 +25,7 @@ package com.radixdlt.client.core.ledger;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.Particles;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
@@ -259,7 +260,7 @@ public class InMemoryAtomStore implements AtomStore {
 	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
 			List<Particle> upParticles = particleIndex.entrySet().stream()
-				.filter(e -> e.getKey().getShardables().contains(address))
+				.filter(e -> Particles.getShardables(e.getKey()).contains(address))
 				.filter(e -> {
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Set.of())
@@ -283,7 +284,7 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedParticleIndex.getOrDefault(stagedUuid, Map.of()).entrySet().stream()
 					.filter(e -> e.getValue() == Spin.UP)
 					.map(Entry::getKey)
-					.filter(p -> p.getShardables().contains(address))
+					.filter(p -> Particles.getShardables(p).contains(address))
 					.forEach(upParticles::add);
 			}
 

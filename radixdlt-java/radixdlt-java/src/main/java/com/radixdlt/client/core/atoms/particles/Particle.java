@@ -23,17 +23,13 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -53,22 +49,6 @@ public abstract class Particle {
 
 	public Particle() {
 		// Nothing for now
-	}
-
-	public final Set<RadixAddress> getShardables() {
-		Set<RadixAddress> addresses = new HashSet<>();
-
-		if (this instanceof Accountable) {
-			Accountable a = (Accountable) this;
-			addresses.addAll(a.getAddresses());
-		}
-
-		if (this instanceof Identifiable) {
-			Identifiable i = (Identifiable) this;
-			addresses.add(i.getRRI().getAddress());
-		}
-
-		return new HashSet<>(addresses);
 	}
 
 	public final byte[] toDson() {

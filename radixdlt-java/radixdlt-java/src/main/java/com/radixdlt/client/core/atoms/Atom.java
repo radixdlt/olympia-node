@@ -149,7 +149,7 @@ public final class Atom {
 	public Stream<RadixAddress> addresses() {
 		return this.spunParticles()
 			.map(SpunParticle::getParticle)
-			.map(Particle::getShardables)
+			.map(Particles::getShardables)
 			.flatMap(Set::stream)
 			.distinct();
 	}
