@@ -31,7 +31,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
@@ -97,12 +97,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		TransferrableTokensParticle minted = new TransferrableTokensParticle(
+			tokenCreation.getRRI().getAddress(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			tokenCreation.getRRI().getAddress(),
-			System.nanoTime(),
 			token.getRRI(),
-			token.getTokenPermissions()
+			token.getTokenPermissions(),
+			System.nanoTime()
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
@@ -143,12 +143,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		TransferrableTokensParticle tokens = new TransferrableTokensParticle(
+			token.getRRI().getAddress(),
 			amount,
 			granularity,
-			token.getRRI().getAddress(),
-			System.currentTimeMillis(),
 			token.getRRI(),
-			ImmutableMap.of()
+			ImmutableMap.of(),
+			System.currentTimeMillis()
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());

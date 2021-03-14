@@ -29,7 +29,7 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
@@ -79,12 +79,12 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					unstake.getFrom(),
 					amt,
 					granularity,
-					unstake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 

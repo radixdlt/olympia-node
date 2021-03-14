@@ -27,7 +27,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
@@ -193,12 +193,12 @@ public class MultipleTransitionsInSameGroupTest {
 		UInt256 amount
 	) {
 		return new TransferrableTokensParticle(
+			myAddress,
 			amount,
 			UInt256.ONE,
-			myAddress,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 

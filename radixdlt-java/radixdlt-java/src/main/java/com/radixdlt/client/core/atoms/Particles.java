@@ -22,7 +22,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
@@ -49,7 +49,7 @@ public final class Particles {
 			addresses.addAll(a.getAddresses());
 		} else if (p instanceof TransferrableTokensParticle) {
 			var a = (TransferrableTokensParticle) p;
-			addresses.addAll(a.getAddresses());
+			addresses.add(a.getAddress());
 		} else if (p instanceof UnallocatedTokensParticle) {
 			var a = (UnallocatedTokensParticle) p;
 			addresses.add(a.getAddress());

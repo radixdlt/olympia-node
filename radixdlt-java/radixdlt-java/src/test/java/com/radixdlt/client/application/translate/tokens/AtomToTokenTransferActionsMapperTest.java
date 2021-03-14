@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.SpunParticle;
@@ -52,7 +52,12 @@ public class AtomToTokenTransferActionsMapperTest {
 		when(tokenDefinitionReference.getAddress()).thenReturn(RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"));
 
 		TransferrableTokensParticle ttp = new TransferrableTokensParticle(
-			UInt256.ONE, UInt256.ONE, myAddress, 0, tokenDefinitionReference, TypedMocks.rmock(Map.class)
+			myAddress,
+			UInt256.ONE,
+			UInt256.ONE,
+			tokenDefinitionReference,
+			TypedMocks.rmock(Map.class),
+			0L
 		);
 
 		ParticleGroup pg = ParticleGroup.of(SpunParticle.down(ttp), SpunParticle.up(ttp));

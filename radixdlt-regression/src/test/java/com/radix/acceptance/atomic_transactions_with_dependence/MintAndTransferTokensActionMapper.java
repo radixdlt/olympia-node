@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
@@ -122,12 +122,12 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		MintAndTransferTokensAction action
 	) {
 		return new TransferrableTokensParticle(
+			action.getTo(),
 			TokenUnitConversions.unitsToSubunits(action.getAmount()),
 			granularity,
-			action.getTo(),
-			System.nanoTime(),
 			action.getTokenDefinitionReference(),
-			permissions
+			permissions,
+			System.nanoTime()
 		);
 	}
 
@@ -139,12 +139,12 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new TransferrableTokensParticle(
+					tokenDefRef.getAddress(),
 					amt,
 					consumable.getGranularity(),
-					tokenDefRef.getAddress(),
-					System.nanoTime(),
 					tokenDefRef,
-					consumable.getTokenPermissions()
+					consumable.getTokenPermissions(),
+					System.nanoTime()
 				),
 				mintedTokens -> mintedTokens,
 				(amt, consumable) -> new UnallocatedTokensParticle(

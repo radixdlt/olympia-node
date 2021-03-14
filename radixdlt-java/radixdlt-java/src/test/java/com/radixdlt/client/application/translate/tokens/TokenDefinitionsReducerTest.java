@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
@@ -103,7 +103,7 @@ public class TokenDefinitionsReducerTest {
 
 		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getTokenDefinitionReference()).thenReturn(tokenRef);
+		when(minted.getTokDefRef()).thenReturn(tokenRef);
 
 		UnallocatedTokensParticle unallocatedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(unallocatedTokensParticle.getAmount()).thenReturn(UInt256.MAX_VALUE.subtract(hundred));

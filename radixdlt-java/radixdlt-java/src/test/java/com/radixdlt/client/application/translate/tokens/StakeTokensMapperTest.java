@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
@@ -87,12 +87,12 @@ public class StakeTokensMapperTest {
 
 		Stream<Particle> particles = Stream.of(
 			new TransferrableTokensParticle(
+				address1,
 				UInt256.MAX_VALUE,
 				UInt256.ONE,
-				address1,
-				0,
 				token,
-				ImmutableMap.of()
+				ImmutableMap.of(),
+				0L
 			)
 		);
 		assertThatThrownBy(() -> mapper.mapToParticleGroups(action, particles))
@@ -120,12 +120,12 @@ public class StakeTokensMapperTest {
 				0
 			),
 			new TransferrableTokensParticle(
+				address1,
 				UInt256.MAX_VALUE,
 				UInt256.ONE,
-				address1,
-				0,
 				token,
-				ImmutableMap.of()
+				ImmutableMap.of(),
+				0L
 			)
 		);
 		mapper.mapToParticleGroups(action, particles);

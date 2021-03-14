@@ -31,7 +31,7 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
@@ -66,7 +66,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			throw new NotEnoughFungiblesException(totalAmountToRedelegate, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -74,12 +74,12 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					stake.getFrom(),
 					amt,
 					granularity,
-					stake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new StakedTokensParticle(
@@ -129,7 +129,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			.getOrDefault(TransferrableTokensParticle.class, ImmutableList.of())
 			.stream()
 			.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		try {

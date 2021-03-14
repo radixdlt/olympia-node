@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;

@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
 
@@ -62,7 +62,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new NotEnoughFungiblesException(totalAmountToBurn, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -70,12 +70,12 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					burn.getAddress(),
 					amt,
 					granularity,
-					burn.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new UnallocatedTokensParticle(
@@ -107,7 +107,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
 		final List<TransferrableTokensParticle> currentParticles = store.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		final List<SpunParticle> burnParticles;

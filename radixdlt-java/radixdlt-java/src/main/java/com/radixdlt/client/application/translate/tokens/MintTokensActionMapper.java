@@ -29,7 +29,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
@@ -79,12 +79,12 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					mint.getAddress(),
 					amt,
 					granularity,
-					mint.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 

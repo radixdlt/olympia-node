@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.stream.Stream;
 import com.radixdlt.utils.UInt256;
@@ -61,7 +61,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			throw new NotEnoughFungiblesException(totalAmountToTransfer, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -69,21 +69,21 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					transfer.getFrom(),
 					amt,
 					granularity,
-					transfer.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					transfer.getTo(),
 					totalAmountToTransfer,
 					granularity,
-					transfer.getTo(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
@@ -101,7 +101,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 		List<TransferrableTokensParticle> tokenConsumables = store
 			.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		final List<SpunParticle> transferParticles;

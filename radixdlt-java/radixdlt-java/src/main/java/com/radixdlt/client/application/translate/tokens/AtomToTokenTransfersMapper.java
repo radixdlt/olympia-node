@@ -27,11 +27,10 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.utils.Bytes;
 import io.reactivex.Observable;
 
 
@@ -70,7 +69,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					.filter(sp -> sp.getParticle() instanceof TransferrableTokensParticle)
 					.collect(
 						Collectors.groupingBy(
-							sp -> sp.getParticle(TransferrableTokensParticle.class).getTokenDefinitionReference(),
+							sp -> sp.getParticle(TransferrableTokensParticle.class).getTokDefRef(),
 							Collectors.groupingBy(
 								sp -> sp.getParticle(TransferrableTokensParticle.class).getAddress(),
 								Collectors.reducing(BigDecimal.ZERO, this::consumableToAmount, BigDecimal::add)
