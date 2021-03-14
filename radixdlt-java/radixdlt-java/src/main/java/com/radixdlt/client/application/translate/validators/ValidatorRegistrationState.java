@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 

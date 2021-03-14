@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
