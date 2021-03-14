@@ -25,7 +25,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -51,17 +51,16 @@ public class UnallocatedTokensParticleTest {
 		List<ParticleGroup> groups = new ArrayList<>();
 
 		MutableSupplyTokenDefinitionParticle particle = new MutableSupplyTokenDefinitionParticle(
-			api.getAddress(),
+			RRI.of(api.getAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"Best Token",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
-			),
-			null,
-			null
+			)
 		);
 
 		groups.add(ParticleGroup.of(SpunParticle.up(particle)));
@@ -101,9 +100,9 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.currentTimeMillis(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.currentTimeMillis()
 		);
 
 		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
@@ -134,31 +133,30 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle0 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.nanoTime()
 		);
 
 		UnallocatedTokensParticle unallocatedParticle1 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.nanoTime()
 		);
 
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = new MutableSupplyTokenDefinitionParticle(
-			api.getAddress(),
+			RRI.of(api.getAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"Coolest token",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
-			),
-			null,
-			null
+			)
 		);
 
 		groups.add(ParticleGroup.of(

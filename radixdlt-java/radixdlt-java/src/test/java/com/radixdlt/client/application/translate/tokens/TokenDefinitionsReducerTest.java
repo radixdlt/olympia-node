@@ -26,7 +26,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 

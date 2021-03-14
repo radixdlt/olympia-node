@@ -25,7 +25,7 @@ package com.radixdlt.client.serialization;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.SystemParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import java.util.Arrays;

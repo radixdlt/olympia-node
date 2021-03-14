@@ -27,7 +27,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.constraintmachine.Particle;
@@ -150,9 +150,9 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 				(amt, consumable) -> new UnallocatedTokensParticle(
 					amt,
 					consumable.getGranularity(),
-					System.nanoTime(),
 					tokenDefRef,
-					consumable.getTokenPermissions()
+					consumable.getTokenPermissions(),
+					System.nanoTime()
 				),
 				unallocated -> unallocated,
 				UnallocatedTokensParticle::getAmount

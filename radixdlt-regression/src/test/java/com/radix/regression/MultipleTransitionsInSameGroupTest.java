@@ -21,13 +21,14 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
@@ -241,25 +242,24 @@ public class MultipleTransitionsInSameGroupTest {
 		return new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 
 	private MutableSupplyTokenDefinitionParticle createTokenDefinition(RadixAddress myAddress) {
 		return new MutableSupplyTokenDefinitionParticle(
-			myAddress,
+			RRI.of(myAddress, "FLO"),
 			"Cookie Token",
-			"FLO",
 			"Cookies!",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-			),
-			null,
-			null
+			)
 		);
 	}
 

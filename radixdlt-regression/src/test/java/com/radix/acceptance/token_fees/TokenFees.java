@@ -51,7 +51,7 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 
 import static com.radixdlt.application.TokenUnitConversions.unitsToSubunits;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -213,10 +213,10 @@ public class TokenFees {
 		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
 		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
 				SpunParticle.down(inParticle),
 				SpunParticle.up(new UnallocatedTokensParticle(
-						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
 				SpunParticle.up(new TransferrableTokensParticle(
 						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));
@@ -247,10 +247,10 @@ public class TokenFees {
 		final UInt256 changeAmountFirstParticle = UInt256.ONE;
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
 			SpunParticle.down(inParticle),
 			SpunParticle.up(new UnallocatedTokensParticle(
-				feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
 			SpunParticle.up(new TransferrableTokensParticle(
 				changeAmountFirstParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
 			SpunParticle.up(new TransferrableTokensParticle(
@@ -292,7 +292,7 @@ public class TokenFees {
 				inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE, address,
 				System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
 
-		final ParticleGroup exchangeParticleGroup = new ParticleGroup(List.of(
+		final ParticleGroup exchangeParticleGroup = ParticleGroup.of(List.of(
 				SpunParticle.down(inParticle),
 				SpunParticle.up(exchangedParticle1),
 				SpunParticle.up(exchangedParticle2)
@@ -309,11 +309,11 @@ public class TokenFees {
 		assertTrue(changeAmount.compareTo(exchangedParticle1.getAmount()) >= 0);
 
 		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
 				SpunParticle.down(exchangedParticle1),
 				SpunParticle.down(exchangedParticle2),
 				SpunParticle.up(new UnallocatedTokensParticle(
-						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
 				SpunParticle.up(new TransferrableTokensParticle(
 						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));

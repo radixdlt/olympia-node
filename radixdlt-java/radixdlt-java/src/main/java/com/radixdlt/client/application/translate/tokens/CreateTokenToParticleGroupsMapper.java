@@ -32,7 +32,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.atom.SpunParticle;
@@ -77,9 +77,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			System.currentTimeMillis(),
 			token.getRRI(),
-			token.getTokenPermissions()
+			token.getTokenPermissions(),
+			System.currentTimeMillis()
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());
@@ -115,9 +115,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
 				leftOver,
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-				System.currentTimeMillis(),
 				token.getRRI(),
-				token.getTokenPermissions()
+				token.getTokenPermissions(),
+				System.currentTimeMillis()
 			);
 
 			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);
