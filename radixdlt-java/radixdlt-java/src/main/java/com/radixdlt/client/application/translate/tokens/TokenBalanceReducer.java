@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 
 /**
  * Reduces particles at an address to it's token balances

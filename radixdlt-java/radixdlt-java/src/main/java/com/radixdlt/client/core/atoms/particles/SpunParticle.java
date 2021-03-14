@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.core.atoms.particles;
 
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;

@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.fungible;
 
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;

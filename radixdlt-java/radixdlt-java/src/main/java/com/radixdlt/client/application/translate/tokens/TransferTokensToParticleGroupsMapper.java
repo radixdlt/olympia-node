@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Base64;
 import com.radixdlt.utils.UInt256;

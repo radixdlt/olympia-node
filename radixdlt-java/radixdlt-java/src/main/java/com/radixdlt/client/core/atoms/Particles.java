@@ -20,7 +20,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.HashSet;

@@ -26,7 +26,7 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import io.reactivex.Observable;
 import java.util.List;
 import java.util.stream.Stream;

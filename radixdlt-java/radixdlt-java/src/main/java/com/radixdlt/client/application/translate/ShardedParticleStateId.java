@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import java.util.Objects;
 
 /**
