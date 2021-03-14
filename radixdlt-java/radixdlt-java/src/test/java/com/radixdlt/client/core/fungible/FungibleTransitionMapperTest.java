@@ -7,7 +7,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.List;

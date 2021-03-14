@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 
 import java.util.Map;
 import org.junit.Test;

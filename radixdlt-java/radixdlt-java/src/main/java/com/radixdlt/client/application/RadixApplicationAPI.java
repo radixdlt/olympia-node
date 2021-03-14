@@ -79,7 +79,7 @@ import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Particles;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.constraintmachine.Spin;

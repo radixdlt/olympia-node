@@ -30,7 +30,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.utils.Bytes;
 import io.reactivex.Observable;
 

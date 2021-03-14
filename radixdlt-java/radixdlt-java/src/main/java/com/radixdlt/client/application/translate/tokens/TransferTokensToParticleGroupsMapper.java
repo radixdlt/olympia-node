@@ -45,7 +45,7 @@ import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.

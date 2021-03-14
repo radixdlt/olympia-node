@@ -76,6 +76,10 @@ public final class SpunParticle {
 		return particle;
 	}
 
+	public <T extends Particle> T getParticle(Class<T> cls) {
+		return cls.cast(this.particle);
+	}
+
 	public Spin getSpin() {
 		return spin;
 	}
