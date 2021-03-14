@@ -17,7 +17,7 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import java.util.Objects;
 
 public final class DeserializationFailure {

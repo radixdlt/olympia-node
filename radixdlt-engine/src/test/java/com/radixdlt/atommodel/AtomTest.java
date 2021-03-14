@@ -18,6 +18,8 @@
 package com.radixdlt.atommodel;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomAlreadySignedException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -28,8 +30,8 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

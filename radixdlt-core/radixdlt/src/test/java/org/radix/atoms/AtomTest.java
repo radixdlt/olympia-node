@@ -17,7 +17,7 @@
 
 package org.radix.atoms;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
 

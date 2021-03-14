@@ -18,7 +18,7 @@
 package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import org.junit.BeforeClass;
 import org.junit.Test;

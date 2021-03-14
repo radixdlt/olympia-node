@@ -18,7 +18,7 @@
 package org.radix.api.observable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
