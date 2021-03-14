@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;

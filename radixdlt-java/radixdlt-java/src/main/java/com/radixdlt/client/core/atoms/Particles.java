@@ -18,7 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
@@ -43,7 +43,7 @@ public final class Particles {
 
 		if (p instanceof RRIParticle) {
 			var a = (RRIParticle) p;
-			addresses.addAll(a.getAddresses());
+			addresses.add(a.getRri().getAddress());
 		} else if (p instanceof StakedTokensParticle) {
 			var a = (StakedTokensParticle) p;
 			addresses.addAll(a.getAddresses());

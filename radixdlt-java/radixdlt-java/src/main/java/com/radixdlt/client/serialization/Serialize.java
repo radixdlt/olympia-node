@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.serialization;
 
-import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.SystemParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
