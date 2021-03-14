@@ -75,7 +75,7 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Particles;
 import com.radixdlt.constraintmachine.Particle;
@@ -546,7 +546,7 @@ public class RadixApplicationAPI {
 			if (validator.equals(stp.getDelegateAddress())) {
 				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
 				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
-				return DelegatedTokenBalanceState.merge(previous, stp.getTokenDefinitionReference(), amount);
+				return DelegatedTokenBalanceState.merge(previous, stp.getTokDefRef(), amount);
 			}
 		}
 		return previous;

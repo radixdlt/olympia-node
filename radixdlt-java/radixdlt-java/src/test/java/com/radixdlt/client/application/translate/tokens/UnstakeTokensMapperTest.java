@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -87,12 +87,12 @@ public class UnstakeTokensMapperTest {
 		transferTranslator.mapToParticleGroups(action, Stream.of(
 			new StakedTokensParticle(
 				address2,
+				address1,
 				UInt256.MAX_VALUE,
 				UInt256.ONE,
-				address1,
-				0,
 				token,
-				ImmutableMap.of()
+				ImmutableMap.of(),
+				0L
 			)
 		));
 	}
@@ -113,12 +113,12 @@ public class UnstakeTokensMapperTest {
 		final var result = transferTranslator.mapToParticleGroups(action, Stream.of(
 			new StakedTokensParticle(
 				address2,
+				address1,
 				UInt256.TEN,
 				UInt256.ONE,
-				address1,
-				0,
 				token,
-				ImmutableMap.of()
+				ImmutableMap.of(),
+				0L
 			)
 		));
 

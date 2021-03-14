@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
@@ -68,7 +68,7 @@ public class StakedTokenBalanceState implements ApplicationState {
 
 	public static StakedTokenBalanceState merge(StakedTokenBalanceState state, StakedTokensParticle particle) {
 		final var balance = new HashMap<>(state.balance);
-		final var key = Pair.of(particle.getDelegateAddress(), particle.getTokenDefinitionReference());
+		final var key = Pair.of(particle.getDelegateAddress(), particle.getTokDefRef());
 		final var amount = TokenUnitConversions.subunitsToUnits(particle.getAmount());
 		balance.merge(key, amount, BigDecimal::add);
 		return new StakedTokenBalanceState(balance);

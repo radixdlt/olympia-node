@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 
 /**

@@ -29,7 +29,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
@@ -84,12 +84,12 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			amt ->
 				new StakedTokensParticle(
 					stake.getDelegate(),
+					stake.getFrom(),
 					amt,
 					granularity,
-					stake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 

@@ -23,7 +23,7 @@
 package com.radixdlt.client.serialization;
 
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.SystemParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;

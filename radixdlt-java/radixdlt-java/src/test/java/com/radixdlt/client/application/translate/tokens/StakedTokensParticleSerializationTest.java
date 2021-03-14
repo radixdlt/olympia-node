@@ -19,7 +19,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.util.SerializeObjectEngine;
 import com.radixdlt.identifiers.RRI;
@@ -50,19 +50,19 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(GRANULARITY, p.getGranularity());
 		assertEquals(ADDRESS, p.getAddress());
 		assertEquals(NONCE, p.getNonce());
-		assertEquals(TOKEN, p.getTokenDefinitionReference());
+		assertEquals(TOKEN, p.getTokDefRef());
 		assertEquals(TOKEN_PERMISSIONS, p.getTokenPermissions());
 	}
 
 	private static StakedTokensParticle get() {
 		return new StakedTokensParticle(
 			DELEGATE_ADDRESS,
+			ADDRESS,
 			AMOUNT,
 			GRANULARITY,
-			ADDRESS,
-			NONCE,
 			TOKEN,
-			TOKEN_PERMISSIONS
+			TOKEN_PERMISSIONS,
+			NONCE
 		);
 	}
 }
