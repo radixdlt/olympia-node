@@ -86,7 +86,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
@@ -1401,14 +1401,14 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.message);
+			Atom feelessAtom = new Atom(universe.getAtomStore().getStaged(this.uuid), this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
 			String messageCopy = this.message;
 			this.message = null;
 
-			return Atom.create(particleGroups, messageCopy);
+			return new Atom(particleGroups, messageCopy);
 		}
 
 		/**

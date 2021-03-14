@@ -23,7 +23,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.identifiers.RRI;

@@ -33,7 +33,7 @@ import org.junit.Test;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.test.util.TypedMocks;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,7 +61,7 @@ public class AtomToTokenTransferActionsMapperTest {
 		);
 
 		ParticleGroup pg = ParticleGroup.of(SpunParticle.down(ttp), SpunParticle.up(ttp));
-		Atom atom = Atom.create(pg);
+		Atom atom = new Atom(pg);
 
 		AtomToTokenTransfersMapper tokenTransferTranslator = new AtomToTokenTransfersMapper();
 		TestObserver<TokenTransfer> testObserver = TestObserver.create();

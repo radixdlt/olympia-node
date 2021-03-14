@@ -52,7 +52,7 @@ import com.radixdlt.serialization.JsonJavaType;
 import com.radixdlt.serialization.Serialization;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 
 import io.reactivex.Completable;

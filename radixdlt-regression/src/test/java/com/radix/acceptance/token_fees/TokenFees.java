@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;

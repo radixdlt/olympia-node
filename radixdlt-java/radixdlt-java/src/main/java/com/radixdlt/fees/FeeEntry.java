@@ -19,7 +19,7 @@ package com.radixdlt.fees;
 
 import java.util.Set;
 
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 

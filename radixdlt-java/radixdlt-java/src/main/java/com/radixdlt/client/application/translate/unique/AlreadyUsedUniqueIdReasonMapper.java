@@ -28,7 +28,7 @@ import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;

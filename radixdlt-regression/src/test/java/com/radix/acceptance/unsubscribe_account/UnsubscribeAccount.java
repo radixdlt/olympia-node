@@ -43,7 +43,7 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;

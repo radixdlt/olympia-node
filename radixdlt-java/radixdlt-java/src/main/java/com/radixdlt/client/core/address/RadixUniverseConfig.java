@@ -25,7 +25,7 @@ package com.radixdlt.client.core.address;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;

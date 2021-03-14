@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.identifiers.RadixAddress;
 
 /**

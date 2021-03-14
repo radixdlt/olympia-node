@@ -23,7 +23,7 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;

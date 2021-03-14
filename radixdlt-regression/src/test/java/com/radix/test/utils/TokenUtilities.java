@@ -36,7 +36,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;

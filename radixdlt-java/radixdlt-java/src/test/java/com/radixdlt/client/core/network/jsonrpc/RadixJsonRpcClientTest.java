@@ -36,7 +36,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -119,7 +119,7 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = Atom.create(Collections.emptyList());
+			Atom atom = new Atom(Collections.emptyList());
 			String atomJson = Serialize.getInstance().toJson(atom, Output.API);
 			atoms.add(parser.parse(atomJson));
 

@@ -22,7 +22,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.serialization.Serialize;

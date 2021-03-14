@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;

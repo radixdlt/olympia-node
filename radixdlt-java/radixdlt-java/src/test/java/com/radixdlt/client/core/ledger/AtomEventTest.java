@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.util.SerializeObjectEngine;
 
 public class AtomEventTest extends SerializeObjectEngine<AtomEvent> {
@@ -33,7 +33,7 @@ public class AtomEventTest extends SerializeObjectEngine<AtomEvent> {
 	}
 
 	private static AtomEvent get() {
-		Atom atom = Atom.create(ImmutableList.of());
+		Atom atom = new Atom(ImmutableList.of());
 		return new AtomEvent(atom, 123456L, "store");
 	}
 }

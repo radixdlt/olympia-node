@@ -26,7 +26,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;

@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import org.junit.Test;
 
 import com.radixdlt.identifiers.AID;

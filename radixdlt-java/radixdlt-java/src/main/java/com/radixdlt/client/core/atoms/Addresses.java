@@ -18,6 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;

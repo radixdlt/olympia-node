@@ -66,7 +66,7 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.test.util.TypedMocks;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
@@ -285,7 +285,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.euid()).thenReturn(EUID.ONE);
 		when(particle.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-		Atom atom = Atom.create(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
+		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 		RadixUniverse universe = mock(RadixUniverse.class);

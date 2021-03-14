@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
@@ -96,10 +96,10 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			Atom stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = Atom.create(particleGroup);
+				stagedAtom = new Atom(particleGroup);
 			} else {
 				var groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
-				stagedAtom = Atom.create(groups);
+				stagedAtom = new Atom(groups);
 			}
 			stagedAtoms.put(uuid, stagedAtom);
 
