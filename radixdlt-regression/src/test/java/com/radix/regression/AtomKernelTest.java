@@ -23,7 +23,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -92,7 +92,7 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			SpunParticle.down(new RRIParticle(rri)),
-			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+			SpunParticle.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 		);
 
 		observer.awaitTerminalEvent();
@@ -107,7 +107,7 @@ public class AtomKernelTest {
 			10,
 			false,
 			SpunParticle.down(new RRIParticle(rri)),
-			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+			SpunParticle.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 		);
 		observer.awaitCount(1);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
