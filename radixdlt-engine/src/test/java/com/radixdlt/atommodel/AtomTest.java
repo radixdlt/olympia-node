@@ -18,10 +18,7 @@
 package com.radixdlt.atommodel;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -32,9 +29,7 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class AtomTest {
 
@@ -59,18 +54,5 @@ public class AtomTest {
 		EqualsVerifier.forClass(Atom.class)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
-	}
-
-	@Test
-	public void testAtomSignAndVerify() throws AtomAlreadySignedException, PublicKeyException {
-		final Atom atom = new Atom();
-
-		final Hasher hasher = mock(Hasher.class);
-		when(hasher.hash(atom)).thenReturn(HashCode.fromLong(1234));
-
-		final ECKeyPair key = ECKeyPair.generateNew();
-
-		atom.sign(key, hasher);
-		assertTrue(atom.verify(key.getPublicKey(), hasher));
 	}
 }

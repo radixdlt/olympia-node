@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.concurrent.Immutable;
@@ -129,6 +130,10 @@ public final class ClientAtom implements LedgerAtom {
 	@DsonOutput(Output.ALL)
 	private ImmutableList<byte[]> getSerializerInstructions() {
 		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
+	}
+
+	public Optional<ECDSASignature> getSignature(EUID euid) {
+		return Optional.ofNullable(this.signatures.get(euid));
 	}
 
 	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
