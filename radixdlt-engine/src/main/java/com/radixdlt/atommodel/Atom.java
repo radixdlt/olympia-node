@@ -20,7 +20,6 @@ package com.radixdlt.atommodel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
@@ -35,8 +34,6 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.SerializeWithHid;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,75 +122,8 @@ public final class Atom {
 		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
 	}
 
-
-	/**
-	 * Add two particle groups to this atom
-	 *
-	 * @param particle0 The first particle
-	 * @param spin0     The spin of first particle
-	 * @param particle1 The second particle
-	 * @param spin1     The spin of second particle
-	 */
-	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1) {
-		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle0, spin0), SpunParticle.of(particle1, spin1)));
-	}
-
-
-	/**
-	 * Add three particle groups to this atom
-	 *
-	 * @param particle0 The first particle
-	 * @param spin0     The spin of first particle
-	 * @param particle1 The second particle
-	 * @param spin1     The spin of second particle
-	 * @param particle2 The third particle
-	 * @param spin2     The spin of third particle
-	 */
-	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1, Particle particle2, Spin spin2) {
-		this.addParticleGroup(
-			ParticleGroup.of(
-				SpunParticle.of(particle0, spin0),
-				SpunParticle.of(particle1, spin1),
-				SpunParticle.of(particle2, spin2)
-			)
-		);
-	}
-
 	public String getMessage() {
 		return this.message;
-	}
-
-	public Map<EUID, ECDSASignature> getSignatures() {
-		return Collections.unmodifiableMap(this.signatures);
-	}
-
-	public ECDSASignature getSignature(EUID id) {
-		return this.signatures.get(id);
-	}
-
-	public void setSignature(EUID id, ECDSASignature signature) {
-		this.signatures.put(id, signature);
-	}
-
-	public void sign(ECKeyPair key, Hasher hasher) throws AtomAlreadySignedException {
-		if (!getSignatures().isEmpty()) {
-			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
-		}
-
-		HashCode hash = hasher.hash(this);
-		setSignature(key.euid(), key.sign(hash.asBytes()));
-	}
-
-	public void sign(Collection<ECKeyPair> keys, Hasher hasher) throws AtomAlreadySignedException {
-		if (!getSignatures().isEmpty()) {
-			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
-		}
-
-		HashCode hash = hasher.hash(this);
-
-		for (ECKeyPair key : keys) {
-			setSignature(key.euid(), key.sign(hash.asBytes()));
-		}
 	}
 
 	public int getParticleGroupCount() {
@@ -206,10 +136,6 @@ public final class Atom {
 
 	public List<ParticleGroup> getParticleGroups() {
 		return this.particleGroups;
-	}
-
-	public ParticleGroup getParticleGroup(int particleGroupIndex) {
-		return this.particleGroups.get(particleGroupIndex);
 	}
 
 	public Stream<SpunParticle> spunParticles() {
@@ -250,6 +176,14 @@ public final class Atom {
 			.filter(p -> type.isAssignableFrom(p.getClass()))
 			.map(type::cast)
 			.findFirst().orElse(null);
+	}
+
+	public Map<EUID, ECDSASignature> getSignatures() {
+		return signatures;
+	}
+
+	public void setSignature(EUID id, ECDSASignature signature) {
+		this.signatures.put(id, signature);
 	}
 
 	// Property Signatures: 1 getter, 1 setter

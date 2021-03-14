@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,6 +13,7 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
 package com.radixdlt.middleware2;
@@ -30,8 +31,8 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware.ParticleGroup;
@@ -73,53 +74,35 @@ public final class ClientAtom implements LedgerAtom {
 	private final ImmutableMap<EUID, ECDSASignature> signatures;
 
 	private final ImmutableList<CMMicroInstruction> instructions;
-
-	@JsonProperty("witness")
-	@DsonOutput({Output.ALL})
 	private final HashCode witness;
 
 	@JsonCreator
 	private ClientAtom(
+		@JsonProperty("message") String message,
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
-		@JsonProperty("witness") HashCode witness,
-		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures,
-		@JsonProperty("message") String message
+		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
 	) {
-		this.witness = witness;
-		this.instructions = toInstructions(byteInstructions);
-		this.signatures = signatures == null ? ImmutableMap.of() : signatures;
-		this.message = message;
-	}
-
-	private ClientAtom() {
-		// Serializer only
-		this.message = null;
-		this.signatures = null;
-		this.instructions = null;
-		this.witness = null;
+		this(toInstructions(byteInstructions), signatures == null ? ImmutableMap.of() : signatures, message);
 	}
 
 	private ClientAtom(
-		HashCode witness,
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		String message
 	) {
-		this.witness = Objects.requireNonNull(witness);
 		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
 		this.signatures = Objects.requireNonNull(signatures);
+
+		// FIXME: need to include message
+		var outputStream = new ByteArrayOutputStream();
+		serializedInstructions(instructions).forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		this.witness = HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static ClientAtom create(
-		ImmutableList<CMMicroInstruction> instructions,
-		Hasher hasher
-	) {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		HashCode witness = hasher.hashBytes(outputStream.toByteArray());
+	public static ClientAtom create(ImmutableList<CMMicroInstruction> instructions) {
 		return new ClientAtom(
-			witness,
 			instructions,
 			ImmutableMap.of(),
 			null
@@ -198,6 +181,14 @@ public final class ClientAtom implements LedgerAtom {
 		return new CMInstruction(instructions, signatures);
 	}
 
+	public static HashCode computeHashToSign(Atom atom) {
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
+		var outputStream = new ByteArrayOutputStream();
+		serializedInstructions(instructions).forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		return HashUtils.sha256(firstHash.asBytes());
+	}
+
 	@Override
 	public HashCode getWitness() {
 		return witness;
@@ -205,7 +196,7 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public AID getAID() {
-		return AID.from(witness.asBytes());
+		return AID.from(getWitness().asBytes());
 	}
 
 	@Override
@@ -277,10 +268,9 @@ public final class ClientAtom implements LedgerAtom {
 	 * @param atom the atom to convert
 	 * @return an atom to be stored on ledger
 	 */
-	public static ClientAtom convertFromApiAtom(Atom atom, Hasher hasher) {
+	public static ClientAtom convertFromApiAtom(Atom atom) {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
 		return new ClientAtom(
-			hasher.hash(atom),
 			instructions,
 			ImmutableMap.copyOf(atom.getSignatures()),
 			atom.getMessage()

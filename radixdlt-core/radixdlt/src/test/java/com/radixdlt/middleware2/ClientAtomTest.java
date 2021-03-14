@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
@@ -60,7 +61,7 @@ public class ClientAtomTest {
 	@Test
 	public void testConvertToApiAtom() throws Exception {
 		Atom atom = createApiAtom();
-		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 		Atom fromLedgerAtom = ClientAtom.convertToApiAtom(clientAtom);
 		assertThat(atom).isEqualTo(fromLedgerAtom);
 	}
@@ -68,8 +69,9 @@ public class ClientAtomTest {
 	@Test
 	public void testGetters() throws Exception {
 		Atom atom = createApiAtom();
-		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-		assertThat(Atom.aidOf(atom, hasher)).isEqualTo(clientAtom.getAID());
+		var hash = ClientAtom.computeHashToSign(atom);
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		assertThat(AID.from(hash.asBytes())).isEqualTo(clientAtom.getAID());
 		assertThat(atom.getMessage()).isEqualTo(clientAtom.getMessage());
 		assertThat(clientAtom.getCMInstruction()).isNotNull();
 	}

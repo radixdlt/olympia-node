@@ -45,7 +45,7 @@ public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
 	}
 
 	private static ClientAtom get(Atom atom) {
-		return ClientAtom.convertFromApiAtom(atom, hasher);
+		return ClientAtom.convertFromApiAtom(atom);
 	}
 
 	private static ClientAtom get() {

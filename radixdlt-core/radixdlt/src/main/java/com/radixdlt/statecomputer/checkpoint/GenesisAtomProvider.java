@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.checkpoint;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
@@ -122,7 +123,10 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			stakeDelegations.stream().map(StakeDelegation::staker)
 		).collect(ImmutableList.toImmutableList());
 
-		genesisAtom.sign(signingKeys, this.hasher);
+		signingKeys.forEach(keyPair -> {
+			HashCode hashToSign = ClientAtom.computeHashToSign(genesisAtom);
+			genesisAtom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		});
 		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
 
 		return genesisAtom;
@@ -136,7 +140,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	}
 
 	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
-		ClientAtom atom = ClientAtom.convertFromApiAtom(genesisAtom, this.hasher);
+		ClientAtom atom = ClientAtom.convertFromApiAtom(genesisAtom);
 		ECDSASignature signature = atom.getSignature(key.euid()).orElseThrow();
 		key.getPublicKey().verify(atom.getWitness(), signature);
 	}

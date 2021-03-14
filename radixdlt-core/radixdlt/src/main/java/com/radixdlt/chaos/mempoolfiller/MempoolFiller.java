@@ -17,6 +17,7 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
@@ -128,8 +129,9 @@ public final class MempoolFiller {
 
 			List<BFTNode> peers = peersView.peers();
 			atoms.forEach(atom -> {
-				atom.sign(keyPair, hasher);
-				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+				HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+				atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
