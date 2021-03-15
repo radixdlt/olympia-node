@@ -384,14 +384,9 @@ public final class LocalSyncService {
 			.map(hasher::hash)
 			.collect(ImmutableList.toImmutableList());
 
-		final var validatorSetValid = this.validatorSetVerifier.verifyValidatorSet(syncResponse);
-		final var signaturesValid = this.signaturesVerifier.verifyResponseSignatures(syncResponse);
-		final var accumulatorValid = this.accumulatorVerifier.verify(start, hashes, end);
-
-		log.trace("Verifying sync response: validatorSetValid ?= {}, signaturesValid ?= {}, accumulatorValid ?= {}",
-			validatorSetValid, signaturesValid, accumulatorValid);
-
-		return validatorSetValid && signaturesValid && accumulatorValid;
+		return this.validatorSetVerifier.verifyValidatorSet(syncResponse)
+			&& this.signaturesVerifier.verifyResponseSignatures(syncResponse)
+			&& this.accumulatorVerifier.verify(start, hashes, end);
 	}
 
 	private SyncState processSyncRequestTimeout(SyncingState currentState, SyncRequestTimeout syncRequestTimeout) {
