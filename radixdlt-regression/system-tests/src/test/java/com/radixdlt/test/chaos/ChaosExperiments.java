@@ -17,11 +17,7 @@
 
 package com.radixdlt.test.chaos;
 
-import com.google.common.base.Joiner;
 import com.radixdlt.test.Cluster;
-import com.radixdlt.test.Conditions;
-import com.radixdlt.test.LivenessCheck;
-import com.radixdlt.test.RemoteBFTNetworkBridge;
 import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
@@ -32,13 +28,10 @@ import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Category(Cluster.class)
 public class ChaosExperiments {
@@ -56,7 +49,7 @@ public class ChaosExperiments {
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
                 new MempoolFillAction(ansible, 0.8, 300),
-                new ValidatorRegistrationAction(ansible, 0.2)
+                new ValidatorRegistrationAction(ansible, 0.3)
         );
 
         actions.forEach(Action::teardown);

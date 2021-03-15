@@ -37,6 +37,7 @@ import java.util.Optional;
 public class HttpClient {
 
     private static final String MEMPOOL_FILLER_PATH = "/api/chaos/mempool-filler";
+    private static final String NODE_INFO_PATH = "/node";
     private static final String VALIDATOR_REGISTRATION_PATH = "/node/validator";
 
     private final OkHttpClient okHttpClient;
@@ -84,6 +85,10 @@ public class HttpClient {
         return makeRequest(host, MEMPOOL_FILLER_PATH, "GET").getString("address");
     }
 
+    public String getNodeAddress(String host) {
+        return makeRequest(host, NODE_INFO_PATH, "GET").getString("address");
+    }
+
     public void startMempoolFiller(String host) {
         makeRequest(host, MEMPOOL_FILLER_PATH, "PUT", "{\"enabled\":true}");
     }
@@ -107,7 +112,7 @@ public class HttpClient {
                 .addHeader("Authorization", "Basic " + encodedBasicAuthCredentials)
                 .build();
 
-        try(Response response = okHttpClient.newCall(request).execute()) {
+        try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 throw new RuntimeException(String.format("%s %s%s%s - %d %s",
                         method, protocol, host, path, response.code(), response.message()));

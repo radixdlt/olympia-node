@@ -21,8 +21,8 @@ public class ValidatorRegistrationAction extends ActionWithLikelihood {
     public void setupImplementation() {
         String host = getAnsible().getRandomNodeHost();
 
-        String addressOfFiller = httpClient.getMempoolFillerAddress(host);
-        httpClient.callFaucetForAddress(addressOfFiller);
+        String address = httpClient.getNodeAddress(host);
+        httpClient.callFaucetForAddress(address);
         logger.info("Got tokens");
         ChaosExperimentUtils.waitSeconds(5);
 
@@ -34,7 +34,12 @@ public class ValidatorRegistrationAction extends ActionWithLikelihood {
     @Override
     public void teardown() {
         logger.info("Registering all nodes as validators");
-        getAnsible().getNodeAddressList().forEach(httpClient::registerValidator);
+        try {
+            getAnsible().getNodeAddressList().forEach(httpClient::registerValidator);
+        } catch (Exception e) {
+            // TODO ignore failures here too
+            e.printStackTrace();
+        }
     }
 
 }

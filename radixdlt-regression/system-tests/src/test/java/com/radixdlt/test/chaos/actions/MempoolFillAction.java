@@ -41,7 +41,12 @@ public class MempoolFillAction extends ActionWithLikelihood {
 
     @Override
     public void teardown() {
-        getAnsible().getNodeAddressList().forEach(httpClient::stopMempoolFiller);
+        try {
+            getAnsible().getNodeAddressList().forEach(httpClient::stopMempoolFiller);
+        } catch (Exception e) {
+            //TODO ignore failures when tearing down
+            e.printStackTrace();
+        }
     }
 
 }
