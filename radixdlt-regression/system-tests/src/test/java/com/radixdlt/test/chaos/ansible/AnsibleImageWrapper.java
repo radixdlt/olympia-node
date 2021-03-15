@@ -86,7 +86,7 @@ public class AnsibleImageWrapper {
                 + image + " "
                 + playbook + " "
                 + optionsAsEnvProperty
-                + "--limit " + clusterName + " -t " + tag;
+                + "--limit " + clusterName + " -vv -t " + tag;
         logger.info("Running docker command: {}", command);
         return CmdHelper.runCommand(command.split("\\s"), null, true).toString();
     }
