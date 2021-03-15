@@ -237,21 +237,10 @@ public final class ClientAtom implements LedgerAtom {
 		return pgs;
 	}
 
-	/**
-	 * Converts a ledger atom back to an api atom (to be deprecated)
-	 * @param atom the ledger atom to convert
-	 * @return an api atom
-	 */
-	public static Atom convertToApiAtom(ClientAtom atom) {
-		List<ParticleGroup> pgs = toParticleGroups(atom.instructions);
-		return new Atom(pgs, atom.signatures, atom.message);
-	}
-
-	public Atom toBuilder() {
+	public AtomBuilder toBuilder() {
 		List<ParticleGroup> pgs = toParticleGroups(this.instructions);
-		return new Atom(pgs, this.signatures, this.message);
+		return new AtomBuilder(pgs, this.signatures, this.message);
 	}
-
 
 	@Override
 	public String toString() {

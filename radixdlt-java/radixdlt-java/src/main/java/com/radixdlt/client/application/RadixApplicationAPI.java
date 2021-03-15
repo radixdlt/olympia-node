@@ -87,7 +87,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
@@ -998,7 +998,7 @@ public class RadixApplicationAPI {
 	 * @param particleGroups particle groups to include in atom
 	 * @return unsigned atom with appropriate fees
 	 */
-	public Atom buildAtomWithFee(List<ParticleGroup> particleGroups) {
+	public AtomBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
 		Transaction t = createTransaction();
 		particleGroups.forEach(t::stage);
 		return t.buildAtom();
@@ -1110,7 +1110,7 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getActions();
 	}
 
-	public BigDecimal getMinimumRequiredFee(Atom atomWithoutFees) {
+	public BigDecimal getMinimumRequiredFee(AtomBuilder atomWithoutFees) {
 		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
 	}
 
@@ -1402,15 +1402,15 @@ public class RadixApplicationAPI {
 		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
 		 * @return an unsigned atom
 		 */
-		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = new Atom(universe.getAtomStore().getStaged(this.uuid), this.message);
+		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
+			AtomBuilder feelessAtom = new AtomBuilder(universe.getAtomStore().getStaged(this.uuid), this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
 			String messageCopy = this.message;
 			this.message = null;
 
-			return new Atom(particleGroups, messageCopy);
+			return new AtomBuilder(particleGroups, messageCopy);
 		}
 
 		/**
@@ -1418,7 +1418,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @return an unsigned atom
 		 */
-		public Atom buildAtom() {
+		public AtomBuilder buildAtom() {
 			return buildAtomWithFee(null);
 		}
 
@@ -1431,8 +1431,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
-			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(Atom::buildAtom);
+			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1464,8 +1464,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
-			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(Atom::buildAtom);
+			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 

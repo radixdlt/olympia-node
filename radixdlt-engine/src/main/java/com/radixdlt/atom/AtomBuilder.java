@@ -46,28 +46,28 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-public final class Atom {
+public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
 	private final String message;
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
-	public Atom() {
+	public AtomBuilder() {
 		this(ImmutableList.of(), Map.of(), null);
 	}
 
-	public Atom(@Nullable String message) {
+	public AtomBuilder(@Nullable String message) {
 		this.message = message;
 	}
 
-	public Atom(ParticleGroup pg) {
+	public AtomBuilder(ParticleGroup pg) {
 		this(List.of(pg), Map.of(), null);
 	}
 
-	public Atom(List<ParticleGroup> pgs) {
+	public AtomBuilder(List<ParticleGroup> pgs) {
 		this(pgs, Map.of(), null);
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
+	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
@@ -76,21 +76,21 @@ public final class Atom {
 		this.message = message;
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, String message) {
+	public AtomBuilder(List<ParticleGroup> particleGroups, String message) {
 		this(particleGroups, Map.of(), message);
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
+	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
 		this(particleGroups, signatures, null);
 	}
 
 	// Primarily used for excluding fee groups in fee calculations
-	public Atom copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
+	public AtomBuilder copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
 		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
 			.filter(pg -> !exclusions.test(pg))
 			.collect(Collectors.toList());
 
-		return new Atom(newParticleGroups, this.signatures, this.message);
+		return new AtomBuilder(newParticleGroups, this.signatures, this.message);
 	}
 
 	/**
@@ -252,7 +252,7 @@ public final class Atom {
 		}
 	}
 
-	public static AID aidOf(Atom atom, Hasher hasher) {
+	public static AID aidOf(AtomBuilder atom, Hasher hasher) {
 		HashCode hash = hasher.hash(atom);
 		return AID.from(hash.asBytes());
 	}
@@ -268,10 +268,10 @@ public final class Atom {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Atom)) {
+		if (!(o instanceof AtomBuilder)) {
 			return false;
 		}
-		Atom atom = (Atom) o;
+		AtomBuilder atom = (AtomBuilder) o;
 		return Objects.equals(particleGroups, atom.particleGroups)
 				&& Objects.equals(signatures, atom.signatures)
 				&& Objects.equals(message, atom.message);

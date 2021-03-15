@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.engine.AtomChecker;
@@ -98,13 +98,13 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 
 		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
 		final ClientAtom clientAtom;
-		final Atom completeAtom;
+		final AtomBuilder completeAtom;
 		if (atom instanceof ClientAtom) {
 			clientAtom = (ClientAtom) atom;
-			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
+			completeAtom = clientAtom.toBuilder();
 		} else if (atom instanceof CommittedAtom) {
 			clientAtom = ((CommittedAtom) atom).getClientAtom();
-			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
+			completeAtom = clientAtom.toBuilder();
 		} else {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
 		}
@@ -114,7 +114,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom too big: " + totalSize);
 		}
 
-		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
+		AtomBuilder atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
 		Set<Particle> outputParticles = atomWithoutFeeGroup.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
 		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 

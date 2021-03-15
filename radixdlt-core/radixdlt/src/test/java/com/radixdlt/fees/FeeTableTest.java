@@ -24,7 +24,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -70,7 +70,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 1"))),
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 2")))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of());
+    	AtomBuilder a = new AtomBuilder(particleGroups, ImmutableMap.of());
     	ClientAtom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
@@ -79,7 +79,7 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
-    	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of());
+    	AtomBuilder a = new AtomBuilder(ImmutableList.of(), ImmutableMap.of());
     	ClientAtom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
@@ -95,7 +95,7 @@ public class FeeTableTest {
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 3")))
     	);
-    	Atom a = new Atom(particleGroups, ImmutableMap.of());
+    	AtomBuilder a = new AtomBuilder(particleGroups, ImmutableMap.of());
     	ClientAtom ca = a.buildAtom();
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))

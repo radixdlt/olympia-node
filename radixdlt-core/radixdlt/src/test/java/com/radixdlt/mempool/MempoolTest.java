@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -110,7 +110,7 @@ public class MempoolTest {
 				.addParticle(uniqueParticle, Spin.UP);
 		}
 		ParticleGroup particleGroup = builder.build();
-		Atom atom = new Atom();
+		AtomBuilder atom = new AtomBuilder();
 		atom.addParticleGroup(particleGroup);
 		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));

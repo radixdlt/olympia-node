@@ -20,7 +20,7 @@ package com.radixdlt.middleware2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -87,7 +87,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 				)
 			)
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -110,7 +110,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
@@ -134,7 +134,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle),
 					SpunParticle.up(tokenOutputParticle)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
@@ -155,7 +155,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle)
 			))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
@@ -177,7 +177,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.down(tokenInputParticle),
 					SpunParticle.up(extraFeeGroupParticle)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
@@ -198,7 +198,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
 		ClientAtom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();

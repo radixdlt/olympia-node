@@ -44,7 +44,7 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -186,7 +186,7 @@ public class UnsubscribeAccount {
 	public void the_client_sends_a_message_to_himself() {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test1")));
-		Atom unsignedAtom = transaction.buildAtom();
+		AtomBuilder unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
@@ -212,7 +212,7 @@ public class UnsubscribeAccount {
 		Thread.sleep(2000); // Might be a slight delay between websocket and API, so let API catch up so fees don't fail
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test2")));
-		Atom unsignedAtom = transaction.buildAtom();
+		AtomBuilder unsignedAtom = transaction.buildAtom();
 		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
@@ -242,7 +242,7 @@ public class UnsubscribeAccount {
 				this.api.getNativeTokenRef(), this.api.getAddress(), this.otherAccount, BigDecimal.valueOf(1)
 			)
 		);
-		Atom unsignedAtom = transaction.buildAtom();
+		AtomBuilder unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));

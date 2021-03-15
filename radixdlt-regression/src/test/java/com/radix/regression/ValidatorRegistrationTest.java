@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
@@ -176,7 +176,7 @@ public class ValidatorRegistrationTest {
 			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = new Atom(particleGroups, message);
+		AtomBuilder unsignedAtom = new AtomBuilder(particleGroups, message);
 		// Sign and submit
 		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 

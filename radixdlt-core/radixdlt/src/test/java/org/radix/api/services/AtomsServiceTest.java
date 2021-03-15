@@ -16,11 +16,10 @@
  */
 package org.radix.api.services;
 
-import com.radixdlt.identifiers.AID;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -75,7 +74,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = new Atom("Simple test message").buildAtom();
+		var atom = new AtomBuilder("Simple test message").buildAtom();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -110,6 +109,6 @@ public class AtomsServiceTest {
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));
 
-		return new Atom(List.of(group1), Map.of(), "Test message").buildAtom();
+		return new AtomBuilder(List.of(group1), Map.of(), "Test message").buildAtom();
 	}
 }

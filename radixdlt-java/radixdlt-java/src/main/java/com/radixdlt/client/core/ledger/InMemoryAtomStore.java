@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
@@ -65,7 +65,7 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Object lock = new Object();
 	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
 
-	private final Map<String, Atom> stagedAtoms = new ConcurrentHashMap<>();
+	private final Map<String, AtomBuilder> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	private void softDeleteDependentsOf(ClientAtom atom) {
@@ -97,10 +97,10 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = new Atom(particleGroup);
+				stagedAtom = new AtomBuilder(particleGroup);
 			} else {
 				var groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
-				stagedAtom = new Atom(groups);
+				stagedAtom = new AtomBuilder(groups);
 			}
 			stagedAtoms.put(uuid, stagedAtom);
 
@@ -117,7 +117,7 @@ public class InMemoryAtomStore implements AtomStore {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final Atom atom = stagedAtoms.get(uuid);
+			final AtomBuilder atom = stagedAtoms.get(uuid);
 			return atom.particleGroups().collect(Collectors.toList());
 		}
 	}
@@ -127,7 +127,7 @@ public class InMemoryAtomStore implements AtomStore {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final Atom atom = stagedAtoms.remove(uuid);
+			final AtomBuilder atom = stagedAtoms.remove(uuid);
 			stagedParticleIndex.get(uuid).clear();
 			return atom.particleGroups().collect(Collectors.toList());
 		}

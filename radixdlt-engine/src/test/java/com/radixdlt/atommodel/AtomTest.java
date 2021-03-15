@@ -18,7 +18,7 @@
 package com.radixdlt.atommodel;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -39,11 +39,11 @@ public class AtomTest {
 		Particle p = mock(Particle.class);
 		ParticleGroup group1 = ParticleGroup.of(SpunParticle.up(p));
 		ParticleGroup group2 = ParticleGroup.of(ImmutableList.of());
-		Atom atom = new Atom(ImmutableList.of(group1, group2), ImmutableMap.of());
+		AtomBuilder atom = new AtomBuilder(ImmutableList.of(group1, group2), ImmutableMap.of());
 
 		assertEquals(2L, atom.particleGroups().count());
 
-		Atom filteredAtom = atom.copyExcludingGroups(ParticleGroup::isEmpty);
+		AtomBuilder filteredAtom = atom.copyExcludingGroups(ParticleGroup::isEmpty);
 		assertEquals(1L, filteredAtom.particleGroups().count());
 		ParticleGroup testGroup = filteredAtom.particleGroups().findFirst().get();
 		assertEquals(1, testGroup.getParticles().size());
@@ -52,7 +52,7 @@ public class AtomTest {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(Atom.class)
+		EqualsVerifier.forClass(AtomBuilder.class)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}

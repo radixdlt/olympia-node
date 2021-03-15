@@ -37,7 +37,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -85,7 +85,7 @@ public final class TokenUtilities {
 
 		// Keep updating balances
 		Disposable d = api.pull();
-		var dummyAtom = new Atom(ImmutableList.of()).buildAtom();
+		var dummyAtom = new AtomBuilder(ImmutableList.of()).buildAtom();
 		try {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);

@@ -49,7 +49,7 @@ import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -75,7 +75,7 @@ public class RadixApplicationAPITest {
 		when(universe.getNetworkController()).thenReturn(controller);
 		RadixIdentity identity = mock(RadixIdentity.class);
 
-		Atom atom = mock(Atom.class);
+		AtomBuilder atom = mock(AtomBuilder.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 
 		FeeProcessor feeMapper = (actionProcessor, address, feeAtom, fee) -> Pair.of(ImmutableMap.of(), ImmutableList.of());

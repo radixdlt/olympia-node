@@ -20,7 +20,7 @@ package com.radixdlt.middleware2;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -43,24 +43,16 @@ public class ClientAtomTest {
 			.verify();
 	}
 
-	private static Atom createApiAtom() {
-		Atom atom = new Atom();
+	private static AtomBuilder createApiAtom() {
+		AtomBuilder atom = new AtomBuilder();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(makeParticle("Hello"), Spin.UP);
 		return atom;
 	}
 
 	@Test
-	public void testConvertToApiAtom() throws Exception {
-		Atom atom = createApiAtom();
-		final ClientAtom clientAtom = atom.buildAtom();
-		Atom fromLedgerAtom = ClientAtom.convertToApiAtom(clientAtom);
-		assertThat(atom).isEqualTo(fromLedgerAtom);
-	}
-
-	@Test
 	public void testGetters() throws Exception {
-		Atom atom = createApiAtom();
+		AtomBuilder atom = createApiAtom();
 		var hash = atom.computeHashToSign();
 		final ClientAtom clientAtom = atom.buildAtom();
 		assertThat(AID.from(hash.asBytes())).isEqualTo(clientAtom.getAID());

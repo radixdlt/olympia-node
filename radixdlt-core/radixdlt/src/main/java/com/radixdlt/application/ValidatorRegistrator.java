@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
@@ -93,7 +93,7 @@ public final class ValidatorRegistrator {
 			return;
 		}
 
-		Atom atom = new Atom();
+		AtomBuilder atom = new AtomBuilder();
 		ParticleGroup validatorUpdate = validatorState.map(
 			nonce -> ParticleGroup.of(
 				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),

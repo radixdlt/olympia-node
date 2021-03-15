@@ -22,7 +22,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.serialization.Serialize;
@@ -55,7 +55,7 @@ public final class FeeTable {
 		return this.feeEntries;
 	}
 
-	public UInt256 feeFor(Atom atomWithoutFees) {
+	public UInt256 feeFor(AtomBuilder atomWithoutFees) {
 		final int atomSize = Serialize.getInstance().toDson(atomWithoutFees, DsonOutput.Output.HASH).length;
 		final ImmutableSet<Particle> outputs = atomWithoutFees.spunParticles()
 				.filter(sp -> Spin.UP.equals(sp.getSpin()))
@@ -64,7 +64,7 @@ public final class FeeTable {
 		return feeFor(atomWithoutFees, outputs, atomSize);
 	}
 
-	public UInt256 feeFor(Atom atomWithoutFees, Set<Particle> outputs, int atomSize) {
+	public UInt256 feeFor(AtomBuilder atomWithoutFees, Set<Particle> outputs, int atomSize) {
 		UInt384 incrementalFees = UInt384.ZERO;
 		for (FeeEntry entry : this.feeEntries) {
 			incrementalFees = incrementalFees.add(entry.feeFor(atomWithoutFees, atomSize, outputs));

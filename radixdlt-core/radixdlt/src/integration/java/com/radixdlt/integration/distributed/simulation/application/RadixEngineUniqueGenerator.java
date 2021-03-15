@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -46,7 +46,7 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 				.addParticle(rriParticle, Spin.DOWN)
 				.addParticle(uniqueParticle, Spin.UP)
 				.build();
-		Atom atom = new Atom();
+		AtomBuilder atom = new AtomBuilder();
 		atom.addParticleGroup(particleGroup);
 		var hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));

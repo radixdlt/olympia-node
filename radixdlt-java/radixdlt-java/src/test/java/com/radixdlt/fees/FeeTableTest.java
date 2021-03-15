@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
@@ -65,7 +65,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(p1)),
     		ParticleGroup.of(SpunParticle.up(p2))
     	);
-    	Atom a = new Atom(particleGroups);
+    	AtomBuilder a = new AtomBuilder(particleGroups);
     	UInt256 fee = ft.feeFor(a, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
@@ -73,7 +73,7 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
-    	Atom a = new Atom(ImmutableList.of());
+    	AtomBuilder a = new AtomBuilder(ImmutableList.of());
     	UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
@@ -86,7 +86,7 @@ public class FeeTableTest {
 		);
     	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
     	final var p3 = makeParticle("test message 3");
-    	Atom a = new Atom(ParticleGroup.of(SpunParticle.up(p3)));
+    	AtomBuilder a = new AtomBuilder(ParticleGroup.of(SpunParticle.up(p3)));
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(a, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)

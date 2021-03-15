@@ -27,7 +27,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
@@ -191,7 +191,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		// Warning: fake fee, plus counter to make AID different
 		String message = "magic:0xdeadbeef:" + counter;
 
-		Atom unsignedAtom = new Atom(particleGroups, message);
+		AtomBuilder unsignedAtom = new AtomBuilder(particleGroups, message);
 		// Sign and submit
 		return this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 	}

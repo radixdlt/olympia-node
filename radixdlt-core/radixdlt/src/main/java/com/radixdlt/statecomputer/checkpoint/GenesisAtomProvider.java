@@ -25,7 +25,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
@@ -103,7 +103,7 @@ public final class GenesisAtomProvider implements Provider<ClientAtom> {
 			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
 		);
 
-		final var genesisAtom = new Atom(helloMessage());
+		final var genesisAtom = new AtomBuilder(helloMessage());
 		xrdParticleGroups.forEach(genesisAtom::addParticleGroup);
 		if (!validatorParticles.isEmpty()) {
 			genesisAtom.addParticleGroup(ParticleGroup.of(validatorParticles));
@@ -135,7 +135,7 @@ public final class GenesisAtomProvider implements Provider<ClientAtom> {
 		return "Radix... just imagine!";
 	}
 
-	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
+	private void verifySignature(ECKeyPair key, AtomBuilder genesisAtom) {
 		ClientAtom atom = genesisAtom.buildAtom();
 		ECDSASignature signature = atom.getSignature(key.euid()).orElseThrow();
 		key.getPublicKey().verify(atom.getWitness(), signature);
