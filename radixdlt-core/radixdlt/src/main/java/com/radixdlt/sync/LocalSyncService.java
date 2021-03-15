@@ -388,8 +388,8 @@ public final class LocalSyncService {
 		final var signaturesValid = this.signaturesVerifier.verifyResponseSignatures(syncResponse);
 		final var accumulatorValid = this.accumulatorVerifier.verify(start, hashes, end);
 
-		log.info("Verifying sync response: validatorSetValid ?= {}, signaturesValid ?= {}, accumulatorValid ?= {}",
-				validatorSetValid, signaturesValid, accumulatorValid);
+		log.trace("Verifying sync response: validatorSetValid ?= {}, signaturesValid ?= {}, accumulatorValid ?= {}",
+			validatorSetValid, signaturesValid, accumulatorValid);
 
 		return validatorSetValid && signaturesValid && accumulatorValid;
 	}
