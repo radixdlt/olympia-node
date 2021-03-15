@@ -22,7 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;

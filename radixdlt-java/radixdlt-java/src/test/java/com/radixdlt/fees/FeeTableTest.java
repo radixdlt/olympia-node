@@ -17,16 +17,16 @@
 
 package com.radixdlt.fees;
 
+import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -65,7 +65,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(p1)),
     		ParticleGroup.of(SpunParticle.up(p2))
     	);
-    	Atom a = Atom.create(particleGroups);
+    	Atom a = new Atom(particleGroups);
     	UInt256 fee = ft.feeFor(a, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
@@ -73,7 +73,7 @@ public class FeeTableTest {
     @Test
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
-    	Atom a = Atom.create(ImmutableList.of());
+    	Atom a = new Atom(ImmutableList.of());
     	UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
@@ -86,7 +86,7 @@ public class FeeTableTest {
 		);
     	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
     	final var p3 = makeParticle("test message 3");
-    	Atom a = Atom.create(ParticleGroup.of(SpunParticle.up(p3)));
+    	Atom a = new Atom(ParticleGroup.of(SpunParticle.up(p3)));
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(a, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)
@@ -107,6 +107,6 @@ public class FeeTableTest {
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
     	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-    	return new UniqueParticle(address, message);
+    	return new UniqueParticle(message, address, 0L);
     }
 }

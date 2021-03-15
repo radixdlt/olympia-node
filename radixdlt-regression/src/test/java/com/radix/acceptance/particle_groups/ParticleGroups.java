@@ -39,8 +39,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -101,7 +101,7 @@ public class ParticleGroups {
 
 		@Override
 		public List<ParticleGroup> mapToParticleGroups(CreateEmptyGroupAction action) {
-			return Collections.singletonList(new ParticleGroup(Collections.emptyList()));
+			return Collections.singletonList(ParticleGroup.of(Collections.emptyList()));
 		}
 	}
 

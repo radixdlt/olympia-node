@@ -25,10 +25,10 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
@@ -39,9 +39,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.identifiers.RadixAddress;
@@ -62,7 +62,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new NotEnoughFungiblesException(totalAmountToBurn, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -70,20 +70,20 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					burn.getAddress(),
 					amt,
 					granularity,
-					burn.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new UnallocatedTokensParticle(
 					totalAmountToBurn,
 					granularity,
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
@@ -107,7 +107,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
 		final List<TransferrableTokensParticle> currentParticles = store.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		final List<SpunParticle> burnParticles;

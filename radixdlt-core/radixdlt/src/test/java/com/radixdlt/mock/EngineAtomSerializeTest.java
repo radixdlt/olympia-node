@@ -17,7 +17,7 @@
 
 package com.radixdlt.mock;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import org.radix.serialization.SerializeMessageObject;
 
 public class EngineAtomSerializeTest extends SerializeMessageObject<Atom> {

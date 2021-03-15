@@ -1,7 +1,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;

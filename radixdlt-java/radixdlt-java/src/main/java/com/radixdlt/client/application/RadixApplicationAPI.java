@@ -75,19 +75,20 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -545,7 +546,7 @@ public class RadixApplicationAPI {
 			if (validator.equals(stp.getDelegateAddress())) {
 				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
 				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
-				return DelegatedTokenBalanceState.merge(previous, stp.getTokenDefinitionReference(), amount);
+				return DelegatedTokenBalanceState.merge(previous, stp.getTokDefRef(), amount);
 			}
 		}
 		return previous;
@@ -1362,8 +1363,8 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				for (SpunParticle sp : pg.getSpunParticles()) {
-					for (RadixAddress address : sp.getParticle().getShardables()) {
+				for (SpunParticle sp : pg.getParticles()) {
+					for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 						}
@@ -1380,8 +1381,8 @@ public class RadixApplicationAPI {
 		 * @param particleGroup Particle group to add to staging area.
 		 */
 		public void stage(ParticleGroup particleGroup) {
-			for (SpunParticle sp : particleGroup.getSpunParticles()) {
-				for (RadixAddress address : sp.getParticle().getShardables()) {
+			for (SpunParticle sp : particleGroup.getParticles()) {
+				for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 					}
@@ -1400,14 +1401,14 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.message);
+			Atom feelessAtom = new Atom(universe.getAtomStore().getStaged(this.uuid), this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
 			String messageCopy = this.message;
 			this.message = null;
 
-			return Atom.create(particleGroups, messageCopy);
+			return new Atom(particleGroups, messageCopy);
 		}
 
 		/**

@@ -24,14 +24,14 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.UInt256;
 

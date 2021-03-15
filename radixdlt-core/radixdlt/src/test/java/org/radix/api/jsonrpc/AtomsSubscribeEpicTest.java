@@ -26,7 +26,7 @@ import org.radix.api.observable.Observable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 
 import java.util.function.Consumer;

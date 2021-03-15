@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Spin;

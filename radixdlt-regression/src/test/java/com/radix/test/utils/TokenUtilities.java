@@ -26,16 +26,17 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.radixdlt.constraintmachine.Spin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -60,9 +61,9 @@ public final class TokenUtilities {
 		return atomObs.hasAtom() && atomObs.getAtom().particles(Spin.UP)
 			.filter(UniqueParticle.class::isInstance)
 			.map(UniqueParticle.class::cast)
-			.map(UniqueParticle::getName)
+			.map(UniqueParticle::getRRI)
 			.findAny()
-			.map(name -> name.startsWith(FAUCET_UNIQUE_SEND_TOKENS_PREFIX))
+			.map(rri -> rri.getName().startsWith(FAUCET_UNIQUE_SEND_TOKENS_PREFIX))
 			.orElse(false);
 	}
 
@@ -83,7 +84,7 @@ public final class TokenUtilities {
 
 		// Keep updating balances
 		Disposable d = api.pull();
-		Atom dummyAtom = Atom.create(ImmutableList.of());
+		Atom dummyAtom = new Atom(ImmutableList.of());
 		try {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);
@@ -129,7 +130,7 @@ public final class TokenUtilities {
     	return atom.particles(Spin.UP)
 	    	.filter(UniqueParticle.class::isInstance)
 	    	.map(UniqueParticle.class::cast)
-	    	.anyMatch(up -> up.getName().equals(txId));
+	    	.anyMatch(up -> up.getRRI().getName().equals(txId));
 	}
 
 	private static void delayForMs(long waitDelayMs) {

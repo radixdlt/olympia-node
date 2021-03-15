@@ -26,7 +26,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -154,7 +154,7 @@ public class MultipleTransactions {
 	private SubmitAtomStatusAction createValidationError() {
 		return SubmitAtomStatusAction.fromStatusNotification(
 			UUID.randomUUID().toString(),
-			Atom.create(List.of()),
+			new Atom(List.of()),
 			nodeConnection,
 			new AtomStatusEvent(EVICTED_FAILED_CM_VERIFICATION)
 		);

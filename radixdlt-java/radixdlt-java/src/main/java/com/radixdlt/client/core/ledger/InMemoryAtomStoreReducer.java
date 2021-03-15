@@ -24,7 +24,8 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -54,7 +55,7 @@ public final class InMemoryAtomStoreReducer {
 
 			if (submitAtomStatusAction.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 				final long timestamp = retrieveTimestamp(submitAtomStatusAction.getStatusNotification().getData());
-				atom.addresses().forEach(address -> {
+				Addresses.ofAtom(atom).forEach(address -> {
 					this.atomStore.store(address, AtomObservation.softStored(atom, timestamp));
 					this.atomStore.store(address, AtomObservation.head());
 				});

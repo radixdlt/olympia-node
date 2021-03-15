@@ -21,20 +21,21 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -192,12 +193,12 @@ public class MultipleTransitionsInSameGroupTest {
 		UInt256 amount
 	) {
 		return new TransferrableTokensParticle(
+			myAddress,
 			amount,
 			UInt256.ONE,
-			myAddress,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 
@@ -241,31 +242,30 @@ public class MultipleTransitionsInSameGroupTest {
 		return new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 
 	private MutableSupplyTokenDefinitionParticle createTokenDefinition(RadixAddress myAddress) {
 		return new MutableSupplyTokenDefinitionParticle(
-			myAddress,
+			RRI.of(myAddress, "FLO"),
 			"Cookie Token",
-			"FLO",
 			"Cookies!",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-			),
-			null,
-			null
+			)
 		);
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
-		Atom unsignedAtom = Atom.create(particleGroups, "magic:0xdeadbeef");
+		Atom unsignedAtom = new Atom(particleGroups, "magic:0xdeadbeef");
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 

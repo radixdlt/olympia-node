@@ -24,16 +24,10 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
-import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -44,8 +38,6 @@ import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -66,11 +58,11 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.test.util.TypedMocks;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -285,8 +277,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.euid()).thenReturn(EUID.ONE);
 		when(particle.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-		when(particle.euid()).thenReturn(EUID.ONE);
-		Atom atom = Atom.create(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
+		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 		RadixUniverse universe = mock(RadixUniverse.class);
@@ -333,35 +324,5 @@ public class RadixApplicationAPITest {
 		api.execute(action).toCompletable().subscribe(testObserver);
 		testObserver.assertError(ActionExecutionException.class);
 		testObserver.assertError(e -> ((ActionExecutionException) e).getReasons().contains(reason));
-	}
-
-	@Test
-	public void when_an_api_is_created_with_set_nodes_and_get_network_state_is_called__the_nodes_should_be_returned() {
-		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixUniverseConfig universeConfig = RadixUniverseConfigs.getLocalnet();
-		BootstrapConfig config = new BootstrapConfig() {
-			@Override
-			public RadixUniverseConfig getConfig() {
-				return universeConfig;
-			}
-
-			@Override
-			public List<RadixNetworkEpic> getDiscoveryEpics() {
-				return Collections.emptyList();
-			}
-
-			@Override
-			public Set<RadixNode> getInitialNetwork() {
-				return Sets.newHashSet(
-					mock(RadixNode.class),
-					mock(RadixNode.class)
-				);
-			}
-		};
-
-		TestObserver<RadixNetworkState> testObserver = TestObserver.create();
-		RadixApplicationAPI api = RadixApplicationAPI.create(config, identity);
-		api.getNetworkState().subscribe(testObserver);
-		testObserver.assertValue(state -> state.getNodeStates().size() == 2);
 	}
 }

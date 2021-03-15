@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import java.util.List;
 
 /**

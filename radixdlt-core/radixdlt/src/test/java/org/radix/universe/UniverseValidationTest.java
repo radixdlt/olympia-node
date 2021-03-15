@@ -18,7 +18,6 @@
 package org.radix.universe;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Sha256Hasher;
 import java.io.IOException;
 import java.util.Properties;

@@ -22,10 +22,10 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 
 import java.util.Map;
 import org.junit.Test;
@@ -33,7 +33,7 @@ import org.junit.Test;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.test.util.TypedMocks;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,11 +52,16 @@ public class AtomToTokenTransferActionsMapperTest {
 		when(tokenDefinitionReference.getAddress()).thenReturn(RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"));
 
 		TransferrableTokensParticle ttp = new TransferrableTokensParticle(
-			UInt256.ONE, UInt256.ONE, myAddress, 0, tokenDefinitionReference, TypedMocks.rmock(Map.class)
+			myAddress,
+			UInt256.ONE,
+			UInt256.ONE,
+			tokenDefinitionReference,
+			TypedMocks.rmock(Map.class),
+			0L
 		);
 
 		ParticleGroup pg = ParticleGroup.of(SpunParticle.down(ttp), SpunParticle.up(ttp));
-		Atom atom = Atom.create(pg);
+		Atom atom = new Atom(pg);
 
 		AtomToTokenTransfersMapper tokenTransferTranslator = new AtomToTokenTransfersMapper();
 		TestObserver<TokenTransfer> testObserver = TestObserver.create();

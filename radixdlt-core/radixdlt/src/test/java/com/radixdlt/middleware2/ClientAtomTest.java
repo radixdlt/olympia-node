@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Particle;
@@ -31,8 +31,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

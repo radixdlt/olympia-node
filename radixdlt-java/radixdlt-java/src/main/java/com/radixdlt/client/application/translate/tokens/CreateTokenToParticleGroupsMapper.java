@@ -26,22 +26,23 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.atom.SpunParticle;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -61,25 +62,24 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 
 	public List<ParticleGroup> createVariableSupplyToken(CreateTokenAction tokenCreation) {
 		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			tokenCreation.getRRI().getAddress(),
+			tokenCreation.getRRI(),
 			tokenCreation.getName(),
-			tokenCreation.getRRI().getName(),
 			tokenCreation.getDescription(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			tokenCreation.getIconUrl(),
+			tokenCreation.getUrl(),
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-			),
-			tokenCreation.getIconUrl(),
-			tokenCreation.getUrl()
+			)
 		);
 
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			System.currentTimeMillis(),
 			token.getRRI(),
-			token.getTokenPermissions()
+			token.getTokenPermissions(),
+			System.currentTimeMillis()
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());
@@ -97,12 +97,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		TransferrableTokensParticle minted = new TransferrableTokensParticle(
+			tokenCreation.getRRI().getAddress(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			tokenCreation.getRRI().getAddress(),
-			System.nanoTime(),
 			token.getRRI(),
-			token.getTokenPermissions()
+			token.getTokenPermissions(),
+			System.nanoTime()
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
@@ -115,9 +115,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
 				leftOver,
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-				System.currentTimeMillis(),
 				token.getRRI(),
-				token.getTokenPermissions()
+				token.getTokenPermissions(),
+				System.currentTimeMillis()
 			);
 
 			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);
@@ -133,9 +133,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		UInt256 amount = TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply());
 		UInt256 granularity = TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity());
 		FixedSupplyTokenDefinitionParticle token = new FixedSupplyTokenDefinitionParticle(
-			tokenCreation.getRRI().getAddress(),
+			tokenCreation.getRRI(),
 			tokenCreation.getName(),
-			tokenCreation.getRRI().getName(),
 			tokenCreation.getDescription(),
 			amount,
 			granularity,
@@ -144,12 +143,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		TransferrableTokensParticle tokens = new TransferrableTokensParticle(
+			token.getRRI().getAddress(),
 			amount,
 			granularity,
-			token.getRRI().getAddress(),
-			System.currentTimeMillis(),
 			token.getRRI(),
-			ImmutableMap.of()
+			ImmutableMap.of(),
+			System.currentTimeMillis()
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());

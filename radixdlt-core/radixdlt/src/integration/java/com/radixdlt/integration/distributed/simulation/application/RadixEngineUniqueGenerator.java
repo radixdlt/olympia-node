@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -28,7 +28,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 

@@ -18,7 +18,7 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECKeyPair;

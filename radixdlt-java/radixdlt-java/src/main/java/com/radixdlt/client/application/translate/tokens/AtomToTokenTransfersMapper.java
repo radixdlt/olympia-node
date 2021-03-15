@@ -25,13 +25,12 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.atom.SpunParticle;
 import io.reactivex.Observable;
 
 
@@ -70,7 +69,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					.filter(sp -> sp.getParticle() instanceof TransferrableTokensParticle)
 					.collect(
 						Collectors.groupingBy(
-							sp -> sp.getParticle(TransferrableTokensParticle.class).getTokenDefinitionReference(),
+							sp -> sp.getParticle(TransferrableTokensParticle.class).getTokDefRef(),
 							Collectors.groupingBy(
 								sp -> sp.getParticle(TransferrableTokensParticle.class).getAddress(),
 								Collectors.reducing(BigDecimal.ZERO, this::consumableToAmount, BigDecimal::add)
@@ -103,13 +102,12 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 							}
 						}
 
-						String attachment = pg.getMetaData().get("attachment");
 						return new TokenTransfer(
 							from,
 							to,
 							e.getKey(),
 							summary.get(0).getValue().abs(),
-							attachment == null ? null : Bytes.fromBase64String(attachment)
+							null
 						);
 					});
 			})

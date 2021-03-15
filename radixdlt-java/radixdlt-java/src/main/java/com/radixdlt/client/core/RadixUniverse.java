@@ -22,17 +22,18 @@
 
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
@@ -122,7 +123,7 @@ public final class RadixUniverse {
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		Atom atom = config.getGenesis();
-		atom.addresses()
+		Addresses.ofAtom(atom)
 			.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())));
 
 		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);

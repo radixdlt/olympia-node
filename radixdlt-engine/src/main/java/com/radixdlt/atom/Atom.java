@@ -1,35 +1,37 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.atommodel;
+package com.radixdlt.atom;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -77,11 +79,19 @@ public final class Atom {
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
 	public Atom() {
-		this(null);
+		this(ImmutableList.of(), Map.of(), null);
 	}
 
 	public Atom(@Nullable String message) {
 		this.message = message;
+	}
+
+	public Atom(ParticleGroup pg) {
+		this(List.of(pg), Map.of(), null);
+	}
+
+	public Atom(List<ParticleGroup> pgs) {
+		this(pgs, Map.of(), null);
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
@@ -91,6 +101,10 @@ public final class Atom {
 		this.particleGroups.addAll(particleGroups);
 		this.signatures.putAll(signatures);
 		this.message = message;
+	}
+
+	public Atom(List<ParticleGroup> particleGroups, String message) {
+		this(particleGroups, Map.of(), message);
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
@@ -205,6 +219,18 @@ public final class Atom {
 		}
 
 		return key.verify(hash, signature);
+	}
+
+	public byte[] toDson() {
+		return DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH);
+	}
+
+	public HashCode getHash() {
+		return HashUtils.sha256(toDson());
+	}
+
+	public AID getAid() {
+		return AID.from(getHash().asBytes());
 	}
 
 	public String getMessage() {

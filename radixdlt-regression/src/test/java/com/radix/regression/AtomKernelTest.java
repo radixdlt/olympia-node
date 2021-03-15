@@ -22,14 +22,14 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -92,7 +92,7 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			SpunParticle.down(new RRIParticle(rri)),
-			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+			SpunParticle.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 		);
 
 		observer.awaitTerminalEvent();
@@ -107,7 +107,7 @@ public class AtomKernelTest {
 			10,
 			false,
 			SpunParticle.down(new RRIParticle(rri)),
-			SpunParticle.up(new UniqueParticle(rri.getAddress(), rri.getName()))
+			SpunParticle.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 		);
 		observer.awaitCount(1);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
@@ -136,7 +136,7 @@ public class AtomKernelTest {
 			message = "magic:0xdeadbeef" + message;
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
@@ -172,7 +172,7 @@ public class AtomKernelTest {
 			message = "magic:0xdeadbeef" + message;
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 

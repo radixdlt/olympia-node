@@ -47,7 +47,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;

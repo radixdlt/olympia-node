@@ -22,15 +22,15 @@ import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -93,7 +93,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	private void submitSameAtomXTimesSequentially(int times) {
 		final var rri = RRI.of(this.universe.getAddressFrom(this.identity.getPublicKey()), "notunique");
 		final var rriParticle = new RRIParticle(rri);
-		final var uniqueParticle = new UniqueParticle(rri.getAddress(), rri.getName());
+		final var uniqueParticle = new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime());
 
 		for (int i = 0; i < times; ++i) {
 			Atom atom = buildAtom(0, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
@@ -130,7 +130,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 
 		final var rri = RRI.of(this.universe.getAddressFrom(this.identity.getPublicKey()), "notunique");
 		final var rriParticle = new RRIParticle(rri);
-		final var uniqueParticle = new UniqueParticle(rri.getAddress(), rri.getName());
+		final var uniqueParticle = new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime());
 
 		for (int i = 0; i < times; ++i) {
 			Atom atom = buildAtom(counter++, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
@@ -190,7 +190,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		// Warning: fake fee, plus counter to make AID different
 		String message = "magic:0xdeadbeef:" + counter;
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
 		return this.identity.addSignature(unsignedAtom).blockingGet();
 	}
