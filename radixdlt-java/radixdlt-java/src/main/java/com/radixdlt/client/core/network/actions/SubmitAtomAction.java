@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.network.RadixNodeAction;
 
 /**
@@ -42,5 +42,5 @@ public interface SubmitAtomAction extends RadixNodeAction {
 	 *
 	 * @return the atom to submit
 	 */
-	ClientAtom getAtom();
+	Atom getAtom();
 }

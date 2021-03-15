@@ -24,7 +24,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
@@ -56,8 +56,8 @@ import com.radixdlt.identifiers.RadixAddress;
  * TODO @Performance: revisit the use of ordered, deterministic data structures (e.g. synchronized linked maps)
  */
 public class InMemoryAtomStore implements AtomStore {
-	private final Map<ClientAtom, AtomObservation> atoms = new ConcurrentHashMap<>();
-	private final Map<Particle, Map<Spin, Set<ClientAtom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
+	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
 
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
@@ -68,10 +68,10 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Map<String, AtomBuilder> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
-	private void softDeleteDependentsOf(ClientAtom atom) {
+	private void softDeleteDependentsOf(Atom atom) {
 		atom.upParticles()
 			.forEach(p -> {
-				Map<Spin, Set<ClientAtom>> particleSpinIndex = particleIndex.get(p);
+				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
 				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
 					.forEach(a -> {
 						AtomObservation observation = atoms.get(a);
@@ -174,7 +174,7 @@ public class InMemoryAtomStore implements AtomStore {
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
 					atom.uniqueInstructions().forEach(i -> {
-						Map<Spin, Set<ClientAtom>> spinParticleIndex = particleIndex.get(i.getParticle());
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(i.getParticle());
 						if (spinParticleIndex == null) {
 							spinParticleIndex = new EnumMap<>(Spin.class);
 							particleIndex.put(i.getParticle(), spinParticleIndex);
@@ -182,7 +182,7 @@ public class InMemoryAtomStore implements AtomStore {
 						spinParticleIndex.merge(
 							i.getNextSpin(),
 							Collections.singleton(atom),
-							(a, b) -> new ImmutableSet.Builder<ClientAtom>().addAll(a).addAll(b).build()
+							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
 						);
 					});
 				} else {
@@ -247,7 +247,7 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
-	public Stream<ClientAtom> getStoredAtoms(RadixAddress address) {
+	public Stream<Atom> getStoredAtoms(RadixAddress address) {
 		synchronized (lock) {
 			return atoms.entrySet().stream()
 				.filter(e -> e.getValue().isStore() && Addresses.ofAtom(e.getKey()).anyMatch(address::equals))
@@ -263,7 +263,7 @@ public class InMemoryAtomStore implements AtomStore {
 			List<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> Addresses.getShardables(e.getKey()).contains(address))
 				.filter(e -> {
-					final Map<Spin, Set<ClientAtom>> spinParticleIndex = e.getValue();
+					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Set.of())
 						.stream().anyMatch(a -> atoms.get(a).isStore());
 					if (hasDown) {
@@ -275,7 +275,7 @@ public class InMemoryAtomStore implements AtomStore {
 						return false;
 					}
 
-					Set<ClientAtom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Set.of());
+					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Set.of());
 					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
 				.map(Map.Entry::getKey)

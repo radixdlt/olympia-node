@@ -22,15 +22,15 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 
-public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
+public class AtomSerializeTest extends SerializeObject<Atom> {
 
-	public ClientAtomSerializeTest() {
-		super(ClientAtom.class, ClientAtomSerializeTest::get);
+	public AtomSerializeTest() {
+		super(Atom.class, AtomSerializeTest::get);
 	}
 
-	private static ClientAtom get() {
+	private static Atom get() {
 		final var address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		final var rri = RRI.of(address, "test");
 

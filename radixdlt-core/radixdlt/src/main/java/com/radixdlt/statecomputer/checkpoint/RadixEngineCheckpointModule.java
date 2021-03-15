@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -41,7 +41,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Provides
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
-	private RRI nativeToken(@Genesis ClientAtom atom) {
+	private RRI nativeToken(@Genesis Atom atom) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
 		ImmutableList<RRI> rris = atom.uniqueInstructions()
 			.map(CMMicroInstruction::getParticle)

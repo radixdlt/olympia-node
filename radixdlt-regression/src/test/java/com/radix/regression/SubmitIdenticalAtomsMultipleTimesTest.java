@@ -19,7 +19,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -176,7 +176,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		}
 	}
 
-	private TestObserver<AtomStatusEvent> submitAtom(ClientAtom atom) {
+	private TestObserver<AtomStatusEvent> submitAtom(Atom atom) {
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
 		this.jsonRpcClient.pushAtom(atom).subscribe(observer);
@@ -184,7 +184,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		return observer;
 	}
 
-	private ClientAtom buildAtom(long counter, SpunParticle... spunParticles) {
+	private Atom buildAtom(long counter, SpunParticle... spunParticles) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 

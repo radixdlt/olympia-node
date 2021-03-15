@@ -24,7 +24,7 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.identifiers.RRI;
@@ -152,7 +152,7 @@ public class RadixApplicationAPITest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
-		var atom = mock(ClientAtom.class);
+		var atom = mock(Atom.class);
 		AtomObservation atomObservation = AtomObservation.stored(atom, 0L);
 
 		AtomStore atomStore = mock(AtomStore.class);

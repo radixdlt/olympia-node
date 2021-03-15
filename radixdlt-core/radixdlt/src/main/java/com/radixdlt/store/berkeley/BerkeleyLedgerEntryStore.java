@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.CommittedAtom;
@@ -160,7 +160,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<ClientAtom> get(AID aid) {
+	public Optional<Atom> get(AID aid) {
 		return withTime(() -> {
 			try {
 				var key = entry(aid.getBytes());
@@ -170,7 +170,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					value.setData(atomLog.read(fromByteArray(value.getData())));
 
 					addBytesRead(value, key);
-					return Optional.of(deserializeOrElseFail(value.getData(), ClientAtom.class));
+					return Optional.of(deserializeOrElseFail(value.getData(), Atom.class));
 				}
 			} catch (Exception e) {
 				fail("Get of atom '" + aid + "' failed", e);
@@ -547,7 +547,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return entry(serialization.toDson(instance, Output.ALL));
 	}
 
-	private Pair<List<ClientAtom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {
+	private Pair<List<Atom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {
 		final var start = System.nanoTime();
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
@@ -564,7 +564,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			txn.commit();
 		}
 
-		final var atoms = ImmutableList.<ClientAtom>builder();
+		final var atoms = ImmutableList.<Atom>builder();
 		final var atomSearchKey = toPKey(stateVersion + 1);
 		final var atomPosData = entry();
 
@@ -577,7 +577,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					throw new BerkeleyStoreException("Atom database search failure");
 				}
 				var offset = fromByteArray(atomPosData.getData());
-				var atom = deserializeOrElseFail(atomLog.read(offset), ClientAtom.class);
+				var atom = deserializeOrElseFail(atomLog.read(offset), Atom.class);
 				atoms.add(atom);
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 				count++;

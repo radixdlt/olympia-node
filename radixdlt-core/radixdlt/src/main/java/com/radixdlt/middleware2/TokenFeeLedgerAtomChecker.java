@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
@@ -97,10 +97,10 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 
 		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
-		final ClientAtom clientAtom;
+		final Atom clientAtom;
 		final AtomBuilder completeAtom;
-		if (atom instanceof ClientAtom) {
-			clientAtom = (ClientAtom) atom;
+		if (atom instanceof Atom) {
+			clientAtom = (Atom) atom;
 			completeAtom = clientAtom.toBuilder();
 		} else if (atom instanceof CommittedAtom) {
 			clientAtom = ((CommittedAtom) atom).getClientAtom();

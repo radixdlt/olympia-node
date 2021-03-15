@@ -25,7 +25,7 @@ package com.radixdlt.client.core.address;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -79,7 +79,7 @@ public class RadixUniverseConfig {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private ClientAtom genesis;
+	private Atom genesis;
 
 	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
 		byte[] bytes = Base64.decode(dsonBase64);
@@ -107,7 +107,7 @@ public class RadixUniverseConfig {
 	}
 
 	RadixUniverseConfig(
-		ClientAtom genesis,
+		Atom genesis,
 		long port,
 		String name,
 		String description,
@@ -147,7 +147,7 @@ public class RadixUniverseConfig {
 		return this.timestamp;
 	}
 
-	public ClientAtom getGenesis() {
+	public Atom getGenesis() {
 		return genesis;
 	}
 

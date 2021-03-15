@@ -30,7 +30,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -76,7 +76,7 @@ public final class RadixEngineTest {
 		);
 	}
 
-	private ClientAtom uniqueAtom(ECKeyPair keyPair) {
+	private Atom uniqueAtom(ECKeyPair keyPair) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "test");
 		RRIParticle rriParticle = new RRIParticle(rri, 0);

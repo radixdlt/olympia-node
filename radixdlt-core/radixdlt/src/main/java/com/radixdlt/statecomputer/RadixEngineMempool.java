@@ -31,7 +31,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.utils.Pair;
 
@@ -50,8 +50,8 @@ import java.util.stream.Stream;
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
-public final class RadixEngineMempool implements Mempool<ClientAtom> {
-	private final ConcurrentHashMap<AID, ClientAtom> data = new ConcurrentHashMap<>();
+public final class RadixEngineMempool implements Mempool<Atom> {
+	private final ConcurrentHashMap<AID, Atom> data = new ConcurrentHashMap<>();
 	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
@@ -75,7 +75,7 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 	}
 
 	@Override
-	public void add(ClientAtom atom) throws MempoolRejectedException {
+	public void add(Atom atom) throws MempoolRejectedException {
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
@@ -105,11 +105,11 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 	}
 
 	@Override
-	public List<Pair<ClientAtom, Exception>> committed(List<ClientAtom> commands) {
+	public List<Pair<Atom, Exception>> committed(List<Atom> commands) {
 		commands.forEach(a -> data.remove(a.getAID()));
-		final List<Pair<ClientAtom, Exception>> removed = new ArrayList<>();
+		final List<Pair<Atom, Exception>> removed = new ArrayList<>();
 		commands.stream()
-			.flatMap(ClientAtom::uniqueInstructions)
+			.flatMap(Atom::uniqueInstructions)
 			.flatMap(p -> {
 				Set<AID> aids = particleIndex.remove(p);
 				return aids != null ? aids.stream() : Stream.empty();
@@ -135,10 +135,10 @@ public final class RadixEngineMempool implements Mempool<ClientAtom> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<ClientAtom> getCommands(int count, Set<ClientAtom> prepared) {
+	public List<Atom> getCommands(int count, Set<Atom> prepared) {
 		var copy = new HashSet<>(data.keySet());
 		prepared.stream()
-			.flatMap(ClientAtom::uniqueInstructions)
+			.flatMap(Atom::uniqueInstructions)
 			.distinct()
 			.flatMap(i -> particleIndex.getOrDefault(i, Set.of()).stream())
 			.distinct()

@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Spin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -122,11 +122,11 @@ public final class TokenUtilities {
 		}
 	}
 
-	private static String getMessageFrom(ClientAtom txAtom) {
+	private static String getMessageFrom(Atom txAtom) {
 		return txAtom.getMessage();
 	}
 
-	private static boolean hasTxId(ClientAtom atom, EUID requestId) {
+	private static boolean hasTxId(Atom atom, EUID requestId) {
 		String txId = FAUCET_UNIQUE_SEND_TOKENS_PREFIX + requestId;
     	return atom.upParticles()
 	    	.filter(UniqueParticle.class::isInstance)

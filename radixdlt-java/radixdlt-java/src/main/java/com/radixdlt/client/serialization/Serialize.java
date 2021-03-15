@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.serialization;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -65,7 +65,7 @@ public final class Serialize {
 
 		private static Collection<Class<?>> getClasses() {
 			return Arrays.asList(
-				ClientAtom.class,
+				Atom.class,
 				AtomEvent.class,
 				ParticleGroup.class,
 				Particle.class,

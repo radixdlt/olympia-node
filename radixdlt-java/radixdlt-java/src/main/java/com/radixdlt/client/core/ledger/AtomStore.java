@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.atom.ParticleGroup;
@@ -57,7 +57,7 @@ public interface AtomStore {
 	 * @param address the address to get the atoms under
 	 * @return a stream of all stored atoms of the current local view
 	 */
-	Stream<ClientAtom> getStoredAtoms(RadixAddress address);
+	Stream<Atom> getStoredAtoms(RadixAddress address);
 
 	/**
 	 * Retrieve a never ending observable of atom observations (STORED and DELETED)

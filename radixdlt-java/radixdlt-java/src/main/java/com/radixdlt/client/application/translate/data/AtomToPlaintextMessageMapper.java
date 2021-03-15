@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate.data;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 
@@ -38,7 +38,7 @@ public class AtomToPlaintextMessageMapper implements AtomToExecutedActionsMapper
 	}
 
 	@Override
-	public Observable<PlaintextMessage> map(ClientAtom atom, RadixIdentity identity) {
+	public Observable<PlaintextMessage> map(Atom atom, RadixIdentity identity) {
 		final var message = atom.getMessage();
 		if (message == null) {
 			return Observable.empty();

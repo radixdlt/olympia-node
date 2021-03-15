@@ -219,9 +219,9 @@ public final class AtomBuilder {
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public ClientAtom buildAtom() {
+	public Atom buildAtom() {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
-		return new ClientAtom(
+		return new Atom(
 			instructions,
 			ImmutableMap.copyOf(this.getSignatures()),
 			this.getMessage()

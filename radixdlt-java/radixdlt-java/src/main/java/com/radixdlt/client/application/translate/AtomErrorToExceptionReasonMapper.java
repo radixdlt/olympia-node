@@ -23,10 +23,10 @@
 package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 
 import java.util.stream.Stream;
 
 public interface AtomErrorToExceptionReasonMapper {
-	Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(ClientAtom atom, JsonObject errorData);
+	Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(Atom atom, JsonObject errorData);
 }

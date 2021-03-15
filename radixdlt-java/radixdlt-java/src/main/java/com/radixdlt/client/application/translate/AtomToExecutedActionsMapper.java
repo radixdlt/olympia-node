@@ -22,11 +22,11 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Observable;
 
 public interface AtomToExecutedActionsMapper<T> {
 	Class<T> actionClass();
-	Observable<T> map(ClientAtom a, RadixIdentity identity);
+	Observable<T> map(Atom a, RadixIdentity identity);
 }

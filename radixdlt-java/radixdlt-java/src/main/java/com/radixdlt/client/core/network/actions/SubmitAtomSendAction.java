@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
@@ -32,11 +32,11 @@ import java.util.Objects;
  */
 public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
 	private final String uuid;
-	private final ClientAtom atom;
+	private final Atom atom;
 	private final RadixNode node;
 	private final boolean completeOnStoreOnly;
 
-	private SubmitAtomSendAction(String uuid, ClientAtom atom, RadixNode node, boolean completeOnStoreOnly) {
+	private SubmitAtomSendAction(String uuid, Atom atom, RadixNode node, boolean completeOnStoreOnly) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(node);
@@ -47,7 +47,7 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 		this.completeOnStoreOnly = completeOnStoreOnly;
 	}
 
-	public static SubmitAtomSendAction of(String uuid, ClientAtom atom, RadixNode node, boolean completeOnStoreOnly) {
+	public static SubmitAtomSendAction of(String uuid, Atom atom, RadixNode node, boolean completeOnStoreOnly) {
 		return new SubmitAtomSendAction(uuid, atom, node, completeOnStoreOnly);
 	}
 
@@ -61,7 +61,7 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 	}
 
 	@Override
-	public ClientAtom getAtom() {
+	public Atom getAtom() {
 		return atom;
 	}
 

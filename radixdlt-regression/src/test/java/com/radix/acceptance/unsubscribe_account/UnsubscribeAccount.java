@@ -19,7 +19,7 @@ package com.radix.acceptance.unsubscribe_account;
 
 import com.radix.regression.Util;
 import com.radix.test.utils.TokenUtilities;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -65,8 +65,8 @@ public class UnsubscribeAccount {
 
 	private RadixApplicationAPI api;
 
-	private ClientAtom atom;
-	private ClientAtom otherAtom;
+	private Atom atom;
+	private Atom otherAtom;
 
 	private RadixIdentity identity;
 	private String uuid;
@@ -282,7 +282,7 @@ public class UnsubscribeAccount {
 	@Then("the client should receive both atom messages in the other subscription$")
 	public void the_client_should_receive_both_atom_messages_in_the_other_subscription() {
 		// Some special magic here, as the atoms are not necessarily sent in the same order
-		List<ClientAtom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
+		List<Atom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
 		otherObserver.awaitCount(3);
 		otherObserver.assertValueAt(0, AtomObservation::isStore);
 		otherObserver.assertValueAt(0, o -> atoms.remove(o.getAtom()));

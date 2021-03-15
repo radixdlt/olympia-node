@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
 import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radix.test.utils.TokenUtilities;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -337,7 +337,7 @@ public final class DoubleSpendTestRunner {
 									e.getKey()
 									+ ": "
 									+ e.getValue().stream()
-										.map(ClientAtom::getAID)
+										.map(Atom::getAID)
 										.map(Object::toString)
 										.collect(Collectors.toSet())
 								);

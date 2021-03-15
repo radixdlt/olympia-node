@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -88,13 +88,13 @@ public class TokenFeeLedgerAtomCheckerTest {
 			)
 		);
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		ClientAtom ledgerAtom = mock(ClientAtom.class);
+		Atom ledgerAtom = mock(Atom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(), ImmutableMap.of()
 		);
@@ -111,7 +111,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
@@ -135,7 +135,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.up(tokenOutputParticle)))
 		);
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -156,7 +156,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			))
 		);
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -178,7 +178,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.up(extraFeeGroupParticle)))
 		);
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
@@ -199,7 +199,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
 		);
 		AtomBuilder atom = new AtomBuilder(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = atom.buildAtom();
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}

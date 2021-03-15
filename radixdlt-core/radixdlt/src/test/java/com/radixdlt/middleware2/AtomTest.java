@@ -21,7 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -31,12 +31,12 @@ import com.radixdlt.identifiers.RadixAddress;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class ClientAtomTest {
+public class AtomTest {
 
 	@Test
 	public void equalsContract() {
 		EqualsVerifier
-			.forClass(ClientAtom.class)
+			.forClass(Atom.class)
 			// Only AID is compared.
 			.withIgnoredFields("message", "instructions", "signatures")
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
@@ -54,7 +54,7 @@ public class ClientAtomTest {
 	public void testGetters() throws Exception {
 		AtomBuilder atom = createApiAtom();
 		var hash = atom.computeHashToSign();
-		final ClientAtom clientAtom = atom.buildAtom();
+		final Atom clientAtom = atom.buildAtom();
 		assertThat(AID.from(hash.asBytes())).isEqualTo(clientAtom.getAID());
 		assertThat(atom.getMessage()).isEqualTo(clientAtom.getMessage());
 		assertThat(clientAtom.getCMInstruction()).isNotNull();

@@ -34,7 +34,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
@@ -60,7 +60,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	private static void storeGenesis(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore store,
-		ClientAtom genesisAtom,
+		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
 		Serialization serialization,
 		Hasher hasher
@@ -97,7 +97,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	VerifiedLedgerHeaderAndProof lastStoredProof(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore store,
-		@Genesis ClientAtom genesisAtom,
+		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder

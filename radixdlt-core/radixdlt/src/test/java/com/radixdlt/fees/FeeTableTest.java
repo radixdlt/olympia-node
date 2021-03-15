@@ -32,7 +32,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +71,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 2")))
     	);
     	AtomBuilder a = new AtomBuilder(particleGroups, ImmutableMap.of());
-    	ClientAtom ca = a.buildAtom();
+    	Atom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
@@ -80,7 +80,7 @@ public class FeeTableTest {
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
     	AtomBuilder a = new AtomBuilder(ImmutableList.of(), ImmutableMap.of());
-    	ClientAtom ca = a.buildAtom();
+    	Atom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
@@ -96,7 +96,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 3")))
     	);
     	AtomBuilder a = new AtomBuilder(particleGroups, ImmutableMap.of());
-    	ClientAtom ca = a.buildAtom();
+    	Atom ca = a.buildAtom();
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)

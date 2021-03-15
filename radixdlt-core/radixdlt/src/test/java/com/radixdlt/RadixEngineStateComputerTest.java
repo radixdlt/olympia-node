@@ -69,7 +69,7 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
@@ -105,7 +105,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private ClientAtom genesisAtom;
+	private Atom genesisAtom;
 
 	@Inject
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -204,16 +204,16 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		ClientAtom clientAtom = ClientAtom.create(
+		Atom atom = Atom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
 			)
 		);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
+		return new RadixEngineCommand(cmd, hasher.hash(cmd), atom, PermissionLevel.USER);
 	}
 
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
@@ -232,7 +232,7 @@ public class RadixEngineStateComputerTest {
 		atom.addParticleGroup(particleGroup);
 		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		ClientAtom clientAtom = atom.buildAtom();
+		Atom clientAtom = atom.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);

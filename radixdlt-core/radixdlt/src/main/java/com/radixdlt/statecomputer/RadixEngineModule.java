@@ -37,7 +37,7 @@ import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -54,7 +54,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<Mempool<ClientAtom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 	}

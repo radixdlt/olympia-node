@@ -27,7 +27,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.ledger.AtomEvent;
@@ -260,7 +260,7 @@ public class RadixJsonRpcClient {
 	 * @param atom the atom to submit
 	 * @return a completable which completes when the atom is queued
 	 */
-	public Completable pushAtom(ClientAtom atom) {
+	public Completable pushAtom(Atom atom) {
 		JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
 		JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
 

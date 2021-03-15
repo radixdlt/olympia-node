@@ -24,7 +24,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
@@ -140,11 +140,11 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<ClientAtom> atoms = new ArrayList<>();
+				List<Atom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					ClientAtom ledgerEntry = store.get(aid).orElseThrow();
+					Atom ledgerEntry = store.get(aid).orElseThrow();
 					if (ledgerEntry
 							.uniqueInstructions()
 							.map(CMMicroInstruction::getParticle)

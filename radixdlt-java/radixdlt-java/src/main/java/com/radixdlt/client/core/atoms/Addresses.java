@@ -18,7 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -45,7 +45,7 @@ public final class Addresses {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static Stream<RadixAddress> ofAtom(ClientAtom atom) {
+	public static Stream<RadixAddress> ofAtom(Atom atom) {
 		return atom.uniqueInstructions()
 			.map(CMMicroInstruction::getParticle)
 			.map(Addresses::getShardables)

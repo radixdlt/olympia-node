@@ -29,7 +29,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -104,7 +104,7 @@ public class AtomsServiceTest {
 		);
 	}
 
-	private ClientAtom createAtom() {
+	private Atom createAtom() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));

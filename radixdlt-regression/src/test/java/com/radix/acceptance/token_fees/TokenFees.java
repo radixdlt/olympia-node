@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
@@ -475,7 +475,7 @@ public class TokenFees {
 	}
 
 	// Fee computation
-	private BigDecimal feeFrom(ClientAtom atom) {
+	private BigDecimal feeFrom(Atom atom) {
 		UInt256 totalFee = atom.toBuilder().particleGroups()
 			.filter(this::isFeeGroup)
 			.flatMap(pg -> pg.particles(Spin.UP))

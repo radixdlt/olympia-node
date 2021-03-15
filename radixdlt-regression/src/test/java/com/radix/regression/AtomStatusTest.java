@@ -18,7 +18,7 @@
 package com.radix.regression;
 
 import com.radix.test.utils.TokenUtilities;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -72,7 +72,7 @@ public class AtomStatusTest {
 
 	@Test
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
-		ClientAtom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
+		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
 		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
 		this.rpcClient.getAtomStatus(atom.getAID()).subscribe(atomStatusTestObserver);
 		atomStatusTestObserver.awaitTerminalEvent();

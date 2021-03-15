@@ -18,20 +18,20 @@
 package com.radixdlt.api;
 
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.atom.ClientAtom;
+import com.radixdlt.atom.Atom;
 import java.util.Objects;
 
 public final class SubmissionFailure {
-	private final ClientAtom clientAtom;
+	private final Atom atom;
 	private final RadixEngineException exception;
 
-	public SubmissionFailure(ClientAtom clientAtom, RadixEngineException exception) {
-		this.clientAtom = Objects.requireNonNull(clientAtom);
+	public SubmissionFailure(Atom atom, RadixEngineException exception) {
+		this.atom = Objects.requireNonNull(atom);
 		this.exception = exception;
 	}
 
-	public ClientAtom getClientAtom() {
-		return clientAtom;
+	public Atom getClientAtom() {
+		return atom;
 	}
 
 	public RadixEngineException getException() {
