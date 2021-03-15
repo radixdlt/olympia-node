@@ -30,6 +30,6 @@ public final class Atoms {
 	}
 
 	public static AID getAid(Atom atom) {
-		return AID.from(Atom.computeHashToSign(atom).asBytes());
+		return AID.from(atom.computeHashToSign().asBytes());
 	}
 }

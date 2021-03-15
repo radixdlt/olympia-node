@@ -87,9 +87,9 @@ public final class RadixEngineTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return ClientAtom.convertFromApiAtom(atom);
+		return atom.buildAtom();
 	}
 
 	@Test

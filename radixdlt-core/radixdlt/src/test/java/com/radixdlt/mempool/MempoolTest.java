@@ -112,9 +112,9 @@ public class MempoolTest {
 		ParticleGroup particleGroup = builder.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return ClientAtom.convertFromApiAtom(atom);
+		return atom.buildAtom();
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {

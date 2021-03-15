@@ -129,9 +129,9 @@ public final class MempoolFiller {
 
 			List<BFTNode> peers = peersView.peers();
 			atoms.forEach(atom -> {
-				HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+				HashCode hashToSign = atom.computeHashToSign();
 				atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-				ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+				ClientAtom clientAtom = atom.buildAtom();
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 

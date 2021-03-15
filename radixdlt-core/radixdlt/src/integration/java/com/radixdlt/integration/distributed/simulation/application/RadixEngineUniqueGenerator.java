@@ -22,14 +22,11 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 
 /**
@@ -37,8 +34,6 @@ import com.radixdlt.serialization.DsonOutput;
  * on every call, the command should never fail when executed on a radix engine.
  */
 public class RadixEngineUniqueGenerator implements CommandGenerator {
-	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
-
 	@Override
 	public Command nextCommand() {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -53,9 +48,9 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 				.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		var hashToSign = ClientAtom.computeHashToSign(atom);
+		var hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var clientAtom = ClientAtom.convertFromApiAtom(atom);
+		var clientAtom = atom.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}

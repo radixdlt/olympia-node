@@ -41,7 +41,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.store.SpinStateMachine;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -82,7 +81,7 @@ public final class ClientAtom implements LedgerAtom {
 		this(toInstructions(byteInstructions), signatures == null ? ImmutableMap.of() : signatures, message);
 	}
 
-	private ClientAtom(
+	public ClientAtom(
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		String message
@@ -182,14 +181,6 @@ public final class ClientAtom implements LedgerAtom {
 		return instructions.stream().filter(CMMicroInstruction::isPush);
 	}
 
-	public static HashCode computeHashToSign(Atom atom) {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
-		var outputStream = new ByteArrayOutputStream();
-		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
-	}
-
 	@Override
 	public HashCode getWitness() {
 		return witness;
@@ -237,22 +228,6 @@ public final class ClientAtom implements LedgerAtom {
 		return pgs;
 	}
 
-	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
-		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
-		for (int i = 0; i < particleGroups.size(); i++) {
-			ParticleGroup pg = particleGroups.get(i);
-			for (int j = 0; j < pg.getParticleCount(); j++) {
-				SpunParticle sp = pg.getSpunParticle(j);
-				Particle particle = sp.getParticle();
-				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
-				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
-			}
-			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
-		}
-
-		return microInstructionsBuilder.build();
-	}
-
 	/**
 	 * Converts a ledger atom back to an api atom (to be deprecated)
 	 * @param atom the ledger atom to convert
@@ -263,20 +238,6 @@ public final class ClientAtom implements LedgerAtom {
 		return new Atom(pgs, atom.signatures, atom.message);
 	}
 
-	/**
-	 * Convert an api atom (to be deprecated) into a ledger atom.
-	 *
-	 * @param atom the atom to convert
-	 * @return an atom to be stored on ledger
-	 */
-	public static ClientAtom convertFromApiAtom(Atom atom) {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
-		return new ClientAtom(
-			instructions,
-			ImmutableMap.copyOf(atom.getSignatures()),
-			atom.getMessage()
-		);
-	}
 
 	@Override
 	public String toString() {

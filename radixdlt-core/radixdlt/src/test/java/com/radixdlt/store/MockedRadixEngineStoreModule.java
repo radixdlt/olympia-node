@@ -55,7 +55,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
 		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
+		final ClientAtom genesisAtom = atom.buildAtom();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()

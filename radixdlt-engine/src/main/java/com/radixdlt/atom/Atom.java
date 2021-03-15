@@ -20,6 +20,7 @@ package com.radixdlt.atom;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -236,12 +237,21 @@ public final class Atom {
 		return microInstructionsBuilder.build();
 	}
 
-	public static HashCode computeHashToSign(Atom atom) {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
+	public HashCode computeHashToSign() {
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
 		var outputStream = new ByteArrayOutputStream();
 		serializedInstructions(instructions).forEach(outputStream::writeBytes);
 		var firstHash = HashUtils.sha256(outputStream.toByteArray());
 		return HashUtils.sha256(firstHash.asBytes());
+	}
+
+	public ClientAtom buildAtom() {
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
+		return new ClientAtom(
+			instructions,
+			ImmutableMap.copyOf(this.getSignatures()),
+			this.getMessage()
+		);
 	}
 
 	public Map<EUID, ECDSASignature> getSignatures() {

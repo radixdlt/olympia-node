@@ -163,7 +163,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
+		final ClientAtom genesisAtom = atom.buildAtom();
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
 		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
@@ -231,9 +231,9 @@ public class RadixEngineStateComputerTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom clientAtom = atom.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);

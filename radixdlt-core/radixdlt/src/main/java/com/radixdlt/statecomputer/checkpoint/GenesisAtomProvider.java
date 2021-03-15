@@ -124,7 +124,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		).collect(ImmutableList.toImmutableList());
 
 		signingKeys.forEach(keyPair -> {
-			HashCode hashToSign = ClientAtom.computeHashToSign(genesisAtom);
+			HashCode hashToSign = genesisAtom.computeHashToSign();
 			genesisAtom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		});
 		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
@@ -140,7 +140,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	}
 
 	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
-		ClientAtom atom = ClientAtom.convertFromApiAtom(genesisAtom);
+		ClientAtom atom = genesisAtom.buildAtom();
 		ECDSASignature signature = atom.getSignature(key.euid()).orElseThrow();
 		key.getPublicKey().verify(atom.getWitness(), signature);
 	}

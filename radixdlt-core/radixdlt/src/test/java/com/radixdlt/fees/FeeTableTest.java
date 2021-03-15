@@ -71,7 +71,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 2")))
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
@@ -80,7 +80,7 @@ public class FeeTableTest {
     public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
     	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = a.buildAtom();
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
@@ -96,7 +96,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(makeParticle("test message 3")))
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = a.buildAtom();
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)

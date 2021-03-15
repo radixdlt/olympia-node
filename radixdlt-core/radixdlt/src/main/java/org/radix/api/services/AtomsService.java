@@ -134,7 +134,7 @@ public class AtomsService {
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
 		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
-		final var atom = ClientAtom.convertFromApiAtom(rawAtom);
+		final var atom = rawAtom.buildAtom();
 
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

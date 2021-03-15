@@ -87,8 +87,8 @@ public class AtomsServiceTest {
 	@Test
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
-		var aid = AID.from(ClientAtom.computeHashToSign(atom).asBytes());
-		var optionalClientAtom = Optional.of(ClientAtom.convertFromApiAtom(atom));
+		var aid = AID.from(atom.computeHashToSign().asBytes());
+		var optionalClientAtom = Optional.of(atom.buildAtom());
 
 		when(store.get(aid)).thenReturn(optionalClientAtom);
 
