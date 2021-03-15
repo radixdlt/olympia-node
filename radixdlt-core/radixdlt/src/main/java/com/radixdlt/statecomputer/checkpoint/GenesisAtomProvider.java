@@ -28,7 +28,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
@@ -43,13 +42,12 @@ import java.util.stream.Stream;
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomProvider implements Provider<Atom> {
+public final class GenesisAtomProvider implements Provider<ClientAtom> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
-	private final Hasher hasher;
 	private final TokenDefinition tokenDefinition;
 
 	@Inject
@@ -59,8 +57,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		@NativeToken TokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
-		Hasher hasher
+		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
 	) {
 		this.magic = (byte) magic;
 		this.universeKey = universeKey;
@@ -68,11 +65,10 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
 		this.stakeDelegations = stakeDelegations;
-		this.hasher = hasher;
 	}
 
 	@Override
-	public Atom get() {
+	public ClientAtom get() {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
@@ -129,7 +125,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		});
 		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
 
-		return genesisAtom;
+		return genesisAtom.buildAtom();
 	}
 
 	/*

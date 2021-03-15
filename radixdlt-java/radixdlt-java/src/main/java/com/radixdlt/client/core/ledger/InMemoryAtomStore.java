@@ -24,6 +24,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
@@ -55,8 +56,8 @@ import com.radixdlt.identifiers.RadixAddress;
  * TODO @Performance: revisit the use of ordered, deterministic data structures (e.g. synchronized linked maps)
  */
 public class InMemoryAtomStore implements AtomStore {
-	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
-	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Map<ClientAtom, AtomObservation> atoms = new ConcurrentHashMap<>();
+	private final Map<Particle, Map<Spin, Set<ClientAtom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
 
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
@@ -67,10 +68,10 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Map<String, Atom> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
-	private void softDeleteDependentsOf(Atom atom) {
-		atom.particles(Spin.UP)
+	private void softDeleteDependentsOf(ClientAtom atom) {
+		atom.upParticles()
 			.forEach(p -> {
-				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
+				Map<Spin, Set<ClientAtom>> particleSpinIndex = particleIndex.get(p);
 				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
 					.forEach(a -> {
 						AtomObservation observation = atoms.get(a);
@@ -94,7 +95,7 @@ public class InMemoryAtomStore implements AtomStore {
 		Objects.requireNonNull(particleGroup);
 
 		synchronized (lock) {
-			Atom stagedAtom = stagedAtoms.get(uuid);
+			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
 				stagedAtom = new Atom(particleGroup);
 			} else {
@@ -143,7 +144,7 @@ public class InMemoryAtomStore implements AtomStore {
 			final boolean synced = atomObservation.isHead();
 			syncedMap.put(address, synced);
 
-			final Atom atom = atomObservation.getAtom();
+			final var atom = atomObservation.getAtom();
 			if (atom != null) {
 
 				final AtomObservation curObservation = atoms.get(atom);
@@ -153,9 +154,9 @@ public class InMemoryAtomStore implements AtomStore {
 				// If a new hard observed atoms conflicts with a previously stored atom,
 				// stored atom must be deleted
 				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
-					atom.spunParticles().forEach(s -> {
-						var spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Map.of());
-						spinParticleIndex.getOrDefault(s.getSpin(), Set.of())
+					atom.uniqueInstructions().forEach(i -> {
+						var spinParticleIndex = particleIndex.getOrDefault(i.getParticle(), Map.of());
+						spinParticleIndex.getOrDefault(i.getNextSpin(), Set.of())
 							.forEach(a -> {
 								if (a.equals(atom)) {
 									return;
@@ -172,16 +173,16 @@ public class InMemoryAtomStore implements AtomStore {
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
-					atom.spunParticles().forEach(s -> {
-						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(s.getParticle());
+					atom.uniqueInstructions().forEach(i -> {
+						Map<Spin, Set<ClientAtom>> spinParticleIndex = particleIndex.get(i.getParticle());
 						if (spinParticleIndex == null) {
 							spinParticleIndex = new EnumMap<>(Spin.class);
-							particleIndex.put(s.getParticle(), spinParticleIndex);
+							particleIndex.put(i.getParticle(), spinParticleIndex);
 						}
 						spinParticleIndex.merge(
-							s.getSpin(),
+							i.getNextSpin(),
 							Collections.singleton(atom),
-							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
+							(a, b) -> new ImmutableSet.Builder<ClientAtom>().addAll(a).addAll(b).build()
 						);
 					});
 				} else {
@@ -246,7 +247,7 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
-	public Stream<Atom> getStoredAtoms(RadixAddress address) {
+	public Stream<ClientAtom> getStoredAtoms(RadixAddress address) {
 		synchronized (lock) {
 			return atoms.entrySet().stream()
 				.filter(e -> e.getValue().isStore() && Addresses.ofAtom(e.getKey()).anyMatch(address::equals))
@@ -262,7 +263,7 @@ public class InMemoryAtomStore implements AtomStore {
 			List<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> Addresses.getShardables(e.getKey()).contains(address))
 				.filter(e -> {
-					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
+					final Map<Spin, Set<ClientAtom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Set.of())
 						.stream().anyMatch(a -> atoms.get(a).isStore());
 					if (hasDown) {
@@ -274,7 +275,7 @@ public class InMemoryAtomStore implements AtomStore {
 						return false;
 					}
 
-					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Set.of());
+					Set<ClientAtom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Set.of());
 					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
 				.map(Map.Entry::getKey)

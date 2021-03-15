@@ -25,12 +25,13 @@ package com.radixdlt.client.core.ledger;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+
 @SerializerId2("api.atom_event")
 public final class AtomEvent {
 
@@ -45,7 +46,7 @@ public final class AtomEvent {
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private final Atom atom;
+	private final ClientAtom atom;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -56,20 +57,20 @@ public final class AtomEvent {
 	@JsonCreator
 	@VisibleForTesting
 	AtomEvent(
-		@JsonProperty("atom") Atom atom,
+		@JsonProperty("atom") ClientAtom atom,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("type") String type
 	) {
 		this(atom, timestamp, AtomEventType.valueOf(type.toUpperCase()));
 	}
 
-	public AtomEvent(Atom atom, long timestamp, AtomEventType type) {
+	public AtomEvent(ClientAtom atom, long timestamp, AtomEventType type) {
 		this.atom = atom;
 		this.timestamp = timestamp;
 		this.type = type;
 	}
 
-	public Atom getAtom() {
+	public ClientAtom getAtom() {
 		return atom;
 	}
 

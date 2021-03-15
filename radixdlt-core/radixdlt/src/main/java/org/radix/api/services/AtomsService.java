@@ -30,7 +30,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -133,12 +132,9 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
-		final var rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
-		final var atom = rawAtom.buildAtom();
-
+		final var atom = this.serialization.fromJsonObject(jsonAtom, ClientAtom.class);
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-
 		return atom.getAID();
 	}
 
@@ -166,8 +162,7 @@ public class AtomsService {
 
 	public Optional<JSONObject> getAtomByAtomId(AID atomId) throws JSONException {
 		return store.get(atomId)
-			.map(ClientAtom::convertToApiAtom)
-			.map(apiAtom -> serialization.toJsonObject(apiAtom, DsonOutput.Output.API));
+			.map(atom -> serialization.toJsonObject(atom, DsonOutput.Output.API));
 	}
 
 	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {

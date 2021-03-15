@@ -55,7 +55,7 @@ import javax.annotation.concurrent.Immutable;
  * An atom from a client which can be processed by the Radix Engine.
  */
 @Immutable
-@SerializerId2("consensus.client_atom")
+@SerializerId2("radix.atom")
 public final class ClientAtom implements LedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
@@ -78,7 +78,10 @@ public final class ClientAtom implements LedgerAtom {
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
 	) {
-		this(toInstructions(byteInstructions), signatures == null ? ImmutableMap.of() : signatures, message);
+		this(
+			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
+			signatures == null ? ImmutableMap.of() : signatures, message
+		);
 	}
 
 	public ClientAtom(
@@ -181,6 +184,12 @@ public final class ClientAtom implements LedgerAtom {
 		return instructions.stream().filter(CMMicroInstruction::isPush);
 	}
 
+	public Stream<Particle> upParticles() {
+		return uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(CMMicroInstruction::getParticle);
+	}
+
 	@Override
 	public HashCode getWitness() {
 		return witness;
@@ -236,6 +245,11 @@ public final class ClientAtom implements LedgerAtom {
 	public static Atom convertToApiAtom(ClientAtom atom) {
 		List<ParticleGroup> pgs = toParticleGroups(atom.instructions);
 		return new Atom(pgs, atom.signatures, atom.message);
+	}
+
+	public Atom toBuilder() {
+		List<ParticleGroup> pgs = toParticleGroups(this.instructions);
+		return new Atom(pgs, this.signatures, this.message);
 	}
 
 

@@ -30,7 +30,6 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -139,7 +138,7 @@ public class AtomKernelTest {
 
 		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
-		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 
@@ -147,7 +146,7 @@ public class AtomKernelTest {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(signedAtom)).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 				}
 			})
@@ -175,7 +174,7 @@ public class AtomKernelTest {
 
 		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
-		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 		this.jsonRpcClient.pushAtom(signedAtom).subscribe(observer);

@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
@@ -529,6 +530,7 @@ public class RadixApplicationAPI {
 		return this.universe.getAtomStore().getAtomObservations(validator)
 			.filter(AtomObservation::hasAtom)
 			.map(AtomObservation::getAtom)
+			.map(ClientAtom::toBuilder)
 			.flatMap(atom -> Observable.fromIterable(atom.spunParticles().collect(ImmutableList.toImmutableList())))
 			.filter(sp -> sp.getParticle() instanceof StakedTokensParticle)
 			.scan(DelegatedTokenBalanceState.empty(), (stp, spunParticle) -> accumulateTokens(stp, validator, spunParticle))
@@ -1020,7 +1022,7 @@ public class RadixApplicationAPI {
 	 * @param originNode          the origin node
 	 * @return the result of the submission
 	 */
-	public Result submitAtom(Atom atom, boolean completeOnStoreOnly, RadixNode originNode) {
+	public Result submitAtom(ClientAtom atom, boolean completeOnStoreOnly, RadixNode originNode) {
 		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, originNode).connect();
 	}
 
@@ -1031,7 +1033,7 @@ public class RadixApplicationAPI {
 	 * @param completeOnStoreOnly if true, result will only complete on a store event
 	 * @return the result of the submission
 	 */
-	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
+	public Result submitAtom(ClientAtom atom, boolean completeOnStoreOnly) {
 		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, null).connect();
 	}
 
@@ -1042,12 +1044,12 @@ public class RadixApplicationAPI {
 	 * @param atom atom to submit
 	 * @return the result of the submission
 	 */
-	public Result submitAtom(Atom atom) {
+	public Result submitAtom(ClientAtom atom) {
 		return createAtomSubmission(Single.just(atom), false, null).connect();
 	}
 
-	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly, RadixNode originNode) {
-		Single<Atom> cachedAtom = atom.cache();
+	private Result createAtomSubmission(Single<ClientAtom> atom, boolean completeOnStoreOnly, RadixNode originNode) {
+		Single<ClientAtom> cachedAtom = atom.cache();
 		final ConnectableObservable<SubmitAtomAction> updates = cachedAtom
 			.flatMapObservable(a -> {
 				final SubmitAtomAction initialAction;
@@ -1115,11 +1117,11 @@ public class RadixApplicationAPI {
 	public static class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
-		private final Single<Atom> cachedAtom;
+		private final Single<ClientAtom> cachedAtom;
 
 		private Result(
 			ConnectableObservable<SubmitAtomAction> updates,
-			Single<Atom> cachedAtom,
+			Single<ClientAtom> cachedAtom,
 			List<AtomErrorToExceptionReasonMapper> atomErrorMappers
 		) {
 			this.updates = updates;
@@ -1157,7 +1159,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @return the atom which was sent
 		 */
-		public Atom getAtom() {
+		public ClientAtom getAtom() {
 			return cachedAtom.blockingGet();
 		}
 
@@ -1430,7 +1432,7 @@ public class RadixApplicationAPI {
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
 			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(Atom::buildAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1463,7 +1465,7 @@ public class RadixApplicationAPI {
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
 			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			final Single<ClientAtom> atom = identity.addSignature(unsignedAtom).map(Atom::buildAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 

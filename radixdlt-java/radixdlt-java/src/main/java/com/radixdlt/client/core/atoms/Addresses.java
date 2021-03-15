@@ -18,8 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -29,6 +28,7 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -45,9 +45,9 @@ public final class Addresses {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static Stream<RadixAddress> ofAtom(Atom atom) {
-		return atom.spunParticles()
-			.map(SpunParticle::getParticle)
+	public static Stream<RadixAddress> ofAtom(ClientAtom atom) {
+		return atom.uniqueInstructions()
+			.map(CMMicroInstruction::getParticle)
 			.map(Addresses::getShardables)
 			.flatMap(Set::stream)
 			.distinct();

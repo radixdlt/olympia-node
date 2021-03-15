@@ -105,7 +105,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private Atom atom;
+	private ClientAtom genesisAtom;
 
 	@Inject
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -163,7 +163,6 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		final ClientAtom genesisAtom = atom.buildAtom();
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
 		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(

@@ -24,8 +24,8 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -51,7 +51,7 @@ public final class InMemoryAtomStoreReducer {
 			// Soft storage of atoms so that atoms which are submitted and stored can
 			// be immediately used instead of having to wait for fetch atom events.
 			final SubmitAtomStatusAction submitAtomStatusAction = (SubmitAtomStatusAction) action;
-			final Atom atom = submitAtomStatusAction.getAtom();
+			final ClientAtom atom = submitAtomStatusAction.getAtom();
 
 			if (submitAtomStatusAction.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 				final long timestamp = retrieveTimestamp(submitAtomStatusAction.getStatusNotification().getData());

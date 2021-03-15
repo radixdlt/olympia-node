@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.core.ledger.AtomEvent.AtomEventType;
 
 public final class AtomObservation {
@@ -68,19 +68,19 @@ public final class AtomObservation {
 		}
 	}
 
-	private final Atom atom;
+	private final ClientAtom atom;
 	private final long atomTimestamp;
 	private final long receivedTimestamp;
 	private final AtomObservationUpdateType updateType;
 
-	private AtomObservation(Atom atom, long atomTimestamp, Type type, long receivedTimestamp, boolean soft) {
+	private AtomObservation(ClientAtom atom, long atomTimestamp, Type type, long receivedTimestamp, boolean soft) {
 		this.atom = atom;
 		this.atomTimestamp = atomTimestamp;
 		this.receivedTimestamp = receivedTimestamp;
 		this.updateType = AtomObservationUpdateType.of(type, soft);
 	}
 
-	public Atom getAtom() {
+	public ClientAtom getAtom() {
 		return atom;
 	}
 
@@ -123,16 +123,16 @@ public final class AtomObservation {
 	 * @param timestamp the atom timestamp supplied by the node
 	 * @return the atom stored observation
 	 */
-	public static AtomObservation softStored(Atom atom, long timestamp) {
+	public static AtomObservation softStored(ClientAtom atom, long timestamp) {
 		return new AtomObservation(atom, timestamp, Type.STORE, System.currentTimeMillis(), true);
 	}
 
-	public static AtomObservation softDeleted(Atom atom) {
+	public static AtomObservation softDeleted(ClientAtom atom) {
 		long now = System.currentTimeMillis();
 		return new AtomObservation(atom, now, Type.DELETE, now, true);
 	}
 
-	public static AtomObservation stored(Atom atom, long atomTimestamp) {
+	public static AtomObservation stored(ClientAtom atom, long atomTimestamp) {
 		return new AtomObservation(atom, atomTimestamp, Type.STORE, System.currentTimeMillis(), false);
 	}
 
@@ -140,7 +140,7 @@ public final class AtomObservation {
 		return updateType;
 	}
 
-	public static AtomObservation deleted(Atom atom) {
+	public static AtomObservation deleted(ClientAtom atom) {
 		long now = System.currentTimeMillis();
 		return new AtomObservation(atom, now, Type.DELETE, now, false);
 	}

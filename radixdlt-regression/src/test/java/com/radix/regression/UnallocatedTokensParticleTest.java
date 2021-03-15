@@ -69,6 +69,7 @@ public class UnallocatedTokensParticleTest {
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(Atom::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -111,6 +112,7 @@ public class UnallocatedTokensParticleTest {
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(Atom::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -169,6 +171,7 @@ public class UnallocatedTokensParticleTest {
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(Atom::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();

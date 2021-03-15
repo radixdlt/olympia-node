@@ -116,8 +116,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getClientAtom());
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -159,7 +158,6 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(ClientAtom::convertToApiAtom)
 						.map(a -> new AtomEventDto(AtomEventType.STORE, a));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
@@ -173,8 +171,8 @@ public class AtomEventObserver {
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
 					.filter(aed -> {
-							var hash = aed.getAtom().computeHashToSign();
-							return !processedAtomIds.contains(AID.from(hash.asBytes()))
+							var aid = aed.getAtom().getAID();
+							return !processedAtomIds.contains(aid)
 								|| aed.getType() == AtomEventType.DELETE;
 						}
 					)

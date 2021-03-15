@@ -75,7 +75,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = new Atom("Simple test message");
+		var atom = new Atom("Simple test message").buildAtom();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -87,8 +87,8 @@ public class AtomsServiceTest {
 	@Test
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
-		var aid = AID.from(atom.computeHashToSign().asBytes());
-		var optionalClientAtom = Optional.of(atom.buildAtom());
+		var optionalClientAtom = Optional.of(atom);
+		var aid = atom.getAID();
 
 		when(store.get(aid)).thenReturn(optionalClientAtom);
 
@@ -105,11 +105,11 @@ public class AtomsServiceTest {
 		);
 	}
 
-	private Atom createAtom() {
+	private ClientAtom createAtom() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));
 
-		return new Atom(List.of(group1), Map.of(), "Test message");
+		return new Atom(List.of(group1), Map.of(), "Test message").buildAtom();
 	}
 }

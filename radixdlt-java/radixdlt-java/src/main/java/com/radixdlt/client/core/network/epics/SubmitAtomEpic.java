@@ -24,7 +24,6 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -81,7 +80,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 		return jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.flatMap(notification -> {
 				if (notification.getType().equals(NotificationType.START)) {
-					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(request.getAtom()))
+					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAID())
 						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
 						.andThen(Observable.<RadixNodeAction>just(
 							SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)

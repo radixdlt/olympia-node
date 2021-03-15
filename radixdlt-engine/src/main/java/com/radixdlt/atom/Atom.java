@@ -32,10 +32,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.store.SpinStateMachine;
 
 import java.io.ByteArrayOutputStream;
@@ -50,31 +46,9 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-@SerializerId2("radix.atom")
-@SerializeWithHid
 public final class Atom {
-
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	/**
-	 * The particle groups and their spin
-	 */
-	@JsonProperty("particleGroups")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
-
-	/**
-	 * The particle groups and their spin
-	 */
-	@JsonProperty("message")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final String message;
-
-	/**
-	 * Contains signers and corresponding signatures of this Atom.
-	 */
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
 	public Atom() {

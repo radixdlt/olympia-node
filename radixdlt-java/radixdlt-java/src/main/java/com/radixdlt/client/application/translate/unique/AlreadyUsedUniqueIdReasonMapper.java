@@ -24,11 +24,11 @@ package com.radixdlt.client.application.translate.unique;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -46,7 +46,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	public static final Logger LOGGER = LogManager.getLogger(AlreadyUsedUniqueIdReasonMapper.class);
 
 	@Override
-	public Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(Atom atom, JsonObject errorData) {
+	public Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(ClientAtom atom, JsonObject errorData) {
 		if (errorData.has("pointerToIssue")) {
 			JsonElement pointerToIssueJson = errorData.get("pointerToIssue");
 			Optional<Pair<ParticleGroup, SpunParticle>> particleIssue = this.extractParticleFromPointerToIssue(atom, pointerToIssueJson);
@@ -73,7 +73,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	 * @param pointerToIssueJson The pointer to issue in Json form returned by the node
 	 * @return The SpunParticle if it could be extracted
 	 */
-	private Optional<Pair<ParticleGroup, SpunParticle>> extractParticleFromPointerToIssue(Atom atom, JsonElement pointerToIssueJson) {
+	private Optional<Pair<ParticleGroup, SpunParticle>> extractParticleFromPointerToIssue(ClientAtom atom, JsonElement pointerToIssueJson) {
 		try {
 			String pointerToIssue = pointerToIssueJson.getAsString();
 			String groupIndexStr = pointerToIssue.split("/")[2];
@@ -82,7 +82,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 			int groupIndex = Integer.parseInt(groupIndexStr);
 			int particleIndex = Integer.parseInt(particleIndexStr);
 
-			ParticleGroup particleGroup = atom.particleGroups().collect(Collectors.toList()).get(groupIndex);
+			ParticleGroup particleGroup = atom.toBuilder().particleGroups().collect(Collectors.toList()).get(groupIndex);
 
 			return Optional.of(Pair.of(particleGroup,
 				particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex)));

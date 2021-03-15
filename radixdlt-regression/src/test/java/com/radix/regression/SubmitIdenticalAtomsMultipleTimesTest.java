@@ -19,6 +19,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -31,7 +32,6 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -97,14 +97,14 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		final var uniqueParticle = new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime());
 
 		for (int i = 0; i < times; ++i) {
-			Atom atom = buildAtom(0, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
+			var atom = buildAtom(0, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
 
 			TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status " + i));
 			final String subscriberId = UUID.randomUUID().toString();
 			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 				.doOnNext(n -> {
 					if (n.getType() == NotificationType.START) {
-						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(atom)).blockingAwait();
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAID()).blockingAwait();
 					}
 				})
 				.filter(n -> n.getType().equals(NotificationType.EVENT))
@@ -134,14 +134,14 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		final var uniqueParticle = new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime());
 
 		for (int i = 0; i < times; ++i) {
-			Atom atom = buildAtom(counter++, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
+			var atom = buildAtom(counter++, SpunParticle.down(rriParticle), SpunParticle.up(uniqueParticle));
 
 			TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status " + i));
 			final String subscriberId = UUID.randomUUID().toString();
 			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 				.doOnNext(n -> {
 					if (n.getType() == NotificationType.START) {
-						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(atom)).blockingAwait();
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAID()).blockingAwait();
 					}
 				})
 				.filter(n -> n.getType().equals(NotificationType.EVENT))
@@ -176,7 +176,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		}
 	}
 
-	private TestObserver<AtomStatusEvent> submitAtom(Atom atom) {
+	private TestObserver<AtomStatusEvent> submitAtom(ClientAtom atom) {
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
 		this.jsonRpcClient.pushAtom(atom).subscribe(observer);
@@ -184,7 +184,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		return observer;
 	}
 
-	private Atom buildAtom(long counter, SpunParticle... spunParticles) {
+	private ClientAtom buildAtom(long counter, SpunParticle... spunParticles) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
@@ -193,6 +193,6 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 
 		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
-		return this.identity.addSignature(unsignedAtom).blockingGet();
+		return this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 	}
 }

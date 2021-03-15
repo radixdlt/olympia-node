@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.atom.Atoms;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
@@ -268,7 +267,7 @@ public class MultipleTransitionsInSameGroupTest {
 		// Warning: fake fee using magic
 		Atom unsignedAtom = new Atom(particleGroups, "magic:0xdeadbeef");
 		// Sign and submit
-		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
@@ -276,7 +275,7 @@ public class MultipleTransitionsInSameGroupTest {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(signedAtom)).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 				}
 			})

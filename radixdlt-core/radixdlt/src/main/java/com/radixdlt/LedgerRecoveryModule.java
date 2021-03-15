@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -98,12 +97,11 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	VerifiedLedgerHeaderAndProof lastStoredProof(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore store,
-		@Genesis Atom atom,
+		@Genesis ClientAtom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		final ClientAtom genesisAtom = atom.buildAtom();
 		if (!store.containsAID(genesisAtom.getAID())) {
 			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}

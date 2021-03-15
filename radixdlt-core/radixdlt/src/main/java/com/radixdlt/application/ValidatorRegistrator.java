@@ -120,7 +120,8 @@ public final class ValidatorRegistrator {
 			atom.addParticleGroup(feeGroup.get());
 		}
 
-		HashCode hashedAtom = this.hasher.hash(atom);
+
+		HashCode hashedAtom = atom.computeHashToSign();
 		atom.setSignature(self.euid(), hashSigner.sign(hashedAtom));
 
 		ClientAtom clientAtom = atom.buildAtom();

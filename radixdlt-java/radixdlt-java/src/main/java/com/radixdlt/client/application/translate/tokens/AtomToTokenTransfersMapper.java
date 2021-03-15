@@ -23,12 +23,12 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.SpunParticle;
 import io.reactivex.Observable;
@@ -62,8 +62,8 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 	}
 
 	@Override
-	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
-		List<TokenTransfer> tokenTransfers = atom.particleGroups()
+	public Observable<TokenTransfer> map(ClientAtom atom, RadixIdentity identity) {
+		List<TokenTransfer> tokenTransfers = atom.toBuilder().particleGroups()
 			.flatMap(pg -> {
 				Map<RRI, Map<RadixAddress, BigDecimal>> tokenSummary = pg.spunParticles()
 					.filter(sp -> sp.getParticle() instanceof TransferrableTokensParticle)

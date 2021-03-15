@@ -19,6 +19,7 @@ package org.radix.api.observable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ClientAtom;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -43,16 +44,16 @@ public final class AtomEventDto extends BasicContainer {
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private final Atom atom;
+	private final ClientAtom atom;
 
 	private AtomEventType type;
 
-	public AtomEventDto(AtomEventType type, Atom atom) {
+	public AtomEventDto(AtomEventType type, ClientAtom atom) {
 		this.type = type;
 		this.atom = atom;
 	}
 
-	public Atom getAtom() {
+	public ClientAtom getAtom() {
 		return atom;
 	}
 

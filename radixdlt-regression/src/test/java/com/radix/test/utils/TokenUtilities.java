@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.constraintmachine.Spin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +59,7 @@ public final class TokenUtilities {
 
 	public static boolean isFaucetAtomObservation(AtomObservation atomObs) {
 		// Atom must have a UniqueParticle, and the name must start with one of the faucet prefixes
-		return atomObs.hasAtom() && atomObs.getAtom().particles(Spin.UP)
+		return atomObs.hasAtom() && atomObs.getAtom().toBuilder().particles(Spin.UP)
 			.filter(UniqueParticle.class::isInstance)
 			.map(UniqueParticle.class::cast)
 			.map(UniqueParticle::getRRI)
@@ -84,7 +85,7 @@ public final class TokenUtilities {
 
 		// Keep updating balances
 		Disposable d = api.pull();
-		Atom dummyAtom = new Atom(ImmutableList.of());
+		var dummyAtom = new Atom(ImmutableList.of()).buildAtom();
 		try {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);
@@ -92,7 +93,7 @@ public final class TokenUtilities {
 				EUID requestId = requestTokens(api.getAddress());
 
 				// Wait until we see the TX from the ledger
-				Atom txAtom = api.getAtomStore().getAtomObservations(api.getAddress())
+				var txAtom = api.getAtomStore().getAtomObservations(api.getAddress())
 					.filter(AtomObservation::hasAtom)
 					.map(AtomObservation::getAtom)
 					.filter(atom -> hasTxId(atom, requestId))
@@ -121,13 +122,13 @@ public final class TokenUtilities {
 		}
 	}
 
-	private static String getMessageFrom(Atom txAtom) {
+	private static String getMessageFrom(ClientAtom txAtom) {
 		return txAtom.getMessage();
 	}
 
-	private static boolean hasTxId(Atom atom, EUID requestId) {
+	private static boolean hasTxId(ClientAtom atom, EUID requestId) {
 		String txId = FAUCET_UNIQUE_SEND_TOKENS_PREFIX + requestId;
-    	return atom.particles(Spin.UP)
+    	return atom.upParticles()
 	    	.filter(UniqueParticle.class::isInstance)
 	    	.map(UniqueParticle.class::cast)
 	    	.anyMatch(up -> up.getRRI().getName().equals(txId));

@@ -19,11 +19,11 @@ package com.radix.acceptance.unsubscribe_account;
 
 import com.radix.regression.Util;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
@@ -65,8 +65,8 @@ public class UnsubscribeAccount {
 
 	private RadixApplicationAPI api;
 
-	private Atom atom;
-	private Atom otherAtom;
+	private ClientAtom atom;
+	private ClientAtom otherAtom;
 
 	private RadixIdentity identity;
 	private String uuid;
@@ -187,14 +187,14 @@ public class UnsubscribeAccount {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test1")));
 		Atom unsignedAtom = transaction.buildAtom();
-		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
+		this.atom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.atom)).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 				}
 			})
@@ -213,14 +213,14 @@ public class UnsubscribeAccount {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(PutUniqueIdAction.create(RRI.of(this.api.getAddress(), "Test2")));
 		Atom unsignedAtom = transaction.buildAtom();
-		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.otherAtom)).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.otherAtom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.otherAtom).blockingAwait();
 				}
 			})
@@ -243,14 +243,14 @@ public class UnsubscribeAccount {
 			)
 		);
 		Atom unsignedAtom = transaction.buildAtom();
-		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
+		this.atom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.atom)).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 				}
 			})
@@ -282,7 +282,7 @@ public class UnsubscribeAccount {
 	@Then("the client should receive both atom messages in the other subscription$")
 	public void the_client_should_receive_both_atom_messages_in_the_other_subscription() {
 		// Some special magic here, as the atoms are not necessarily sent in the same order
-		List<Atom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
+		List<ClientAtom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
 		otherObserver.awaitCount(3);
 		otherObserver.assertValueAt(0, AtomObservation::isStore);
 		otherObserver.assertValueAt(0, o -> atoms.remove(o.getAtom()));

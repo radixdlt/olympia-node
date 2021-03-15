@@ -23,8 +23,6 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
@@ -122,7 +120,7 @@ public final class RadixUniverse {
 		WebSockets webSockets
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		Atom atom = config.getGenesis();
+		var atom = config.getGenesis();
 		Addresses.ofAtom(atom)
 			.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())));
 
@@ -172,7 +170,7 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().particles(Spin.UP)
+		this.nativeToken = config.getGenesis().upParticles()
 			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
 			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()

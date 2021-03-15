@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.serialization;
 
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -37,7 +38,6 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import com.radixdlt.constraintmachine.Particle;
@@ -65,7 +65,7 @@ public final class Serialize {
 
 		private static Collection<Class<?>> getClasses() {
 			return Arrays.asList(
-				Atom.class,
+				ClientAtom.class,
 				AtomEvent.class,
 				ParticleGroup.class,
 				Particle.class,

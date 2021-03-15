@@ -154,7 +154,7 @@ public class MultipleTransactions {
 	private SubmitAtomStatusAction createValidationError() {
 		return SubmitAtomStatusAction.fromStatusNotification(
 			UUID.randomUUID().toString(),
-			new Atom(List.of()),
+			new Atom(List.of()).buildAtom(),
 			nodeConnection,
 			new AtomStatusEvent(EVICTED_FAILED_CM_VERIFICATION)
 		);
@@ -179,7 +179,7 @@ public class MultipleTransactions {
 
 		System.out.println("Atom: " + atom);
 
-		api.submitAtom(atom, false, nodeConnection)
+		api.submitAtom(atom.buildAtom(), false, nodeConnection)
 				.toObservable()
 				.subscribe(observer);
 		observers.add(observer);
@@ -245,7 +245,7 @@ public class MultipleTransactions {
 
 		System.out.println("Atom: " + atom);
 
-		api.submitAtom(atom, false, nodeConnection)
+		api.submitAtom(atom.buildAtom(), false, nodeConnection)
 				.toObservable()
 				.subscribe(observer);
 		observers.add(observer);
