@@ -190,7 +190,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		// Warning: fake fee, plus counter to make AID different
 		String message = "magic:0xdeadbeef:" + counter;
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
 		return this.identity.addSignature(unsignedAtom).blockingGet();
 	}

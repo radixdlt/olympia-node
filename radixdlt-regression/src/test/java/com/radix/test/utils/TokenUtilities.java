@@ -84,7 +84,7 @@ public final class TokenUtilities {
 
 		// Keep updating balances
 		Disposable d = api.pull();
-		Atom dummyAtom = Atom.create(ImmutableList.of());
+		Atom dummyAtom = new Atom(ImmutableList.of());
 		try {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);

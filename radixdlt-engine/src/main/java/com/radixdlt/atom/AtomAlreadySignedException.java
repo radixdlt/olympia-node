@@ -18,8 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.atom.Atom;
-
 /**
  * Exception when an already signed {@link Atom} is signed again
  */

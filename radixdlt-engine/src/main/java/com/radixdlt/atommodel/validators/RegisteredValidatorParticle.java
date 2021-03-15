@@ -98,7 +98,7 @@ public final class RegisteredValidatorParticle extends Particle {
 	}
 
 	public Set<RadixAddress> getAllowedDelegators() {
-		return allowedDelegators;
+		return allowedDelegators == null ? Set.of() : allowedDelegators;
 	}
 
 	public String getUrl() {

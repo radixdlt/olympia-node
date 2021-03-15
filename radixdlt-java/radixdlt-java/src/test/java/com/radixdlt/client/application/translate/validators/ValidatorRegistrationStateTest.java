@@ -46,9 +46,6 @@ public class ValidatorRegistrationStateTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ValidatorRegistrationState.class)
-			// Prefab instances of abstract class "Particle" all serialize to the same empty
-			// data, and therefore are always equals(...) and have the same hashCode().
-			.withIgnoredFields("particle")
 			.verify();
 	}
 

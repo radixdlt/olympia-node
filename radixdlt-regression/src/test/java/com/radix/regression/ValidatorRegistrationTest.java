@@ -176,7 +176,7 @@ public class ValidatorRegistrationTest {
 			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		Atom unsignedAtom = new Atom(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 

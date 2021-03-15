@@ -36,6 +36,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Temporary class to support some old interfaces
+ * TODO: remove
+ */
 public final class Addresses {
 	private Addresses() {
 		throw new IllegalStateException("Cannot instantiate.");
