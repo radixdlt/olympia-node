@@ -68,26 +68,4 @@ public class LedgerServiceTest {
 
 		assertEquals("DOES_NOT_EXIST", result.getJSONObject("result").getString("status"));
 	}
-
-	@Test
-	public void returnsAllAtomsFoundInLedger() {
-		var ledger = mock(LedgerEntryStore.class);
-		var serialization = DefaultSerialization.getInstance();
-		var ledgerService = new LedgerService(ledger, serialization);
-
-		var request = mock(JSONObject.class);
-		when(request.getString("id")).thenReturn("requestId");
-
-		var aid0 = AID.from(HashUtils.random256().asBytes());
-		var aid1 = AID.from(HashUtils.random256().asBytes());
-		var aid2 = AID.from(HashUtils.random256().asBytes());
-		var cursor = mock(SearchCursor.class);
-		when(ledger.search(any())).thenReturn(cursor);
-		when(cursor.get()).thenReturn(aid0, aid1, aid2);
-		when(cursor.next()).thenReturn(cursor, cursor, null);
-
-		var result = ledgerService.getAtoms(request, ADDRESS_STRING);
-
-		assertEquals(3, result.getJSONArray("result").length());
-	}
 }

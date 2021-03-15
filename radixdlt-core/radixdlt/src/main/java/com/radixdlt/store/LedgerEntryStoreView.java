@@ -54,7 +54,8 @@ public interface LedgerEntryStoreView {
 
 	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
-	SearchCursor search(byte[] destination);
+	// TODO: remove once we clean up API to not require searching
+	SearchCursor search();
 
 	<U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,

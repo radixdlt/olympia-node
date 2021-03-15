@@ -17,22 +17,18 @@
 
 package com.radixdlt.middleware2.store;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -42,7 +38,6 @@ import com.radixdlt.store.Transaction;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
@@ -85,17 +80,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		final ImmutableSet<EUID> destinations = committedAtom.getCMInstruction().getMicroInstructions().stream()
-			.filter(CMMicroInstruction::isCheckSpin)
-			.map(CMMicroInstruction::getParticle)
-			.flatMap(p -> p.getDestinations().stream())
-			.collect(ImmutableSet.toImmutableSet());
-
-		LedgerEntryStoreResult result = store.store(
-			this.transaction,
-			committedAtom,
-			destinations.stream().map(EUID::toByteArray).collect(Collectors.toSet())
-		);
+		var result = store.store(this.transaction, committedAtom);
 		if (!result.isSuccess()) {
 			throw new IllegalStateException("Unable to store atom");
 		}
@@ -103,7 +88,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (committedAtom.getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom, destinations));
+			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom));
 		}
 	}
 
