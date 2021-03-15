@@ -212,7 +212,7 @@ public class GetNextCommittedCommandsTest {
 		final var atom = new Atom("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
 		atom.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
-		final var clientAtom = ClientAtom.convertFromApiAtom(atom, this.hasher);
+		final var clientAtom = ClientAtom.convertFromApiAtom(atom);
 
 		final var proposedVertexId = HashUtils.random256();
 		final var proposedView = view.next().next();

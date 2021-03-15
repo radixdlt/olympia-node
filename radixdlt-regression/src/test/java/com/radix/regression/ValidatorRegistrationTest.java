@@ -34,6 +34,7 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -186,7 +187,7 @@ public class ValidatorRegistrationTest {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == RadixJsonRpcClient.NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(signedAtom)).blockingAwait();
 					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 				}
 			})

@@ -18,12 +18,18 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.identifiers.AID;
+
 /**
- * Exception when an already signed {@link Atom} is signed again
+ * Temporary class for the library.
+ * TODO: Remove
  */
-@SuppressWarnings("serial")
-public class AtomAlreadySignedException extends RuntimeException {
-	public AtomAlreadySignedException(String message) {
-		super(message);
+public final class Atoms {
+	private Atoms() {
+		throw new IllegalStateException("Cannot instantiate.");
+	}
+
+	public static AID getAid(Atom atom) {
+		return AID.from(Atom.computeHashToSign(atom).asBytes());
 	}
 }

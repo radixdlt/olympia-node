@@ -22,6 +22,7 @@
 package com.radixdlt.cli;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.atom.Atoms;
 import picocli.CommandLine;
 
 import static com.radixdlt.cli.Utils.printfln;
@@ -49,7 +50,7 @@ public class GetStoredAtoms implements Runnable {
 		api.pullOnce(api.getAddress()).blockingAwait();
 
 		println("Atom ID's:");
-		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAid()));
+		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", Atoms.getAid(it)));
 		println("Done");
 	}
 }

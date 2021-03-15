@@ -41,7 +41,7 @@ public class LocalRadixIdentity implements RadixIdentity {
 	}
 
 	public Atom syncAddSignature(Atom atom) {
-		ECDSASignature signature = myKey.sign(atom.getHash().asBytes());
+		ECDSASignature signature = myKey.sign(Atom.computeHashToSign(atom).asBytes());
 		EUID signatureId = myKey.euid();
 		atom.setSignature(signatureId, signature);
 		return atom;

@@ -87,7 +87,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			)
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
@@ -110,7 +110,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
@@ -134,7 +134,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.up(tokenOutputParticle)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -155,7 +155,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -177,7 +177,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 					SpunParticle.up(extraFeeGroupParticle)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
@@ -198,7 +198,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}

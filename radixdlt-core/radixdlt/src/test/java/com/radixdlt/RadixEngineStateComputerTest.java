@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -162,7 +163,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
 		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
@@ -209,8 +210,7 @@ public class RadixEngineStateComputerTest {
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
-			),
-			hasher
+			)
 		);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
@@ -231,8 +231,9 @@ public class RadixEngineStateComputerTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		atom.sign(keyPair, hasher);
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);

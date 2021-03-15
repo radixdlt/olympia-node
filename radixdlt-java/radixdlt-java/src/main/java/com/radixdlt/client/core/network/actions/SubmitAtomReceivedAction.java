@@ -65,6 +65,6 @@ public class SubmitAtomReceivedAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_RECEIVED " + uuid + " " + atom.getAid() + " " + node;
+		return "SUBMIT_ATOM_RECEIVED " + uuid + " " + atom + " " + node;
 	}
 }

@@ -174,7 +174,8 @@ public class AtomEventObserver {
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
 					.filter(aed -> {
-							return !processedAtomIds.contains(Atom.aidOf(aed.getAtom(), hasher))
+							var hash = ClientAtom.computeHashToSign(aed.getAtom());
+							return !processedAtomIds.contains(AID.from(hash.asBytes()))
 								|| aed.getType() == AtomEventType.DELETE;
 						}
 					)

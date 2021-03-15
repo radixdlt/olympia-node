@@ -123,7 +123,7 @@ public final class ValidatorRegistrator {
 		HashCode hashedAtom = this.hasher.hash(atom);
 		atom.setSignature(self.euid(), hashSigner.sign(hashedAtom));
 
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 		byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

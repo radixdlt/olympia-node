@@ -58,6 +58,6 @@ public final class SubmitAtomCompleteAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_COMPLETE " + this.uuid + " " + this.atom.getAid() + " " + this.node;
+		return "SUBMIT_ATOM_COMPLETE " + this.uuid + " " + this.atom + " " + this.node;
 	}
 }

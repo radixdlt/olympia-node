@@ -231,8 +231,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
-			),
-			hasher
+			)
 		);
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);

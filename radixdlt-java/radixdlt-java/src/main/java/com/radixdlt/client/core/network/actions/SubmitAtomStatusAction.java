@@ -73,6 +73,6 @@ public final class SubmitAtomStatusAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_STATUS " + this.uuid + " " + this.atom.getAid() + " " + this.node + " " + this.statusNotification;
+		return "SUBMIT_ATOM_STATUS " + this.uuid + " " + this.atom + " " + this.node + " " + this.statusNotification;
 	}
 }

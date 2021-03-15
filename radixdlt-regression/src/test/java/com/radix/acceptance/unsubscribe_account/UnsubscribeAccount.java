@@ -23,6 +23,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
+import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
@@ -193,7 +194,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.atom)).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 				}
 			})
@@ -219,7 +220,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.otherAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.otherAtom)).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.otherAtom).blockingAwait();
 				}
 			})
@@ -249,7 +250,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(this.atom)).blockingAwait();
 					this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 				}
 			})

@@ -72,6 +72,6 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_SEND " + uuid + " " + atom.getAid() + " " + node;
+		return "SUBMIT_ATOM_SEND " + uuid + " " + atom + " " + node;
 	}
 }

@@ -26,6 +26,7 @@ import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
+import com.radixdlt.atom.Atoms;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -74,7 +75,7 @@ public class AtomStatusTest {
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
 		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
 		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
-		this.rpcClient.getAtomStatus(atom.getAid()).subscribe(atomStatusTestObserver);
+		this.rpcClient.getAtomStatus(Atoms.getAid(atom)).subscribe(atomStatusTestObserver);
 		atomStatusTestObserver.awaitTerminalEvent();
 		atomStatusTestObserver.assertValue(AtomStatus.STORED);
 	}
@@ -96,7 +97,7 @@ public class AtomStatusTest {
 		transaction.stage(PutUniqueIdAction.create(unique));
 		Atom atom = api.getIdentity().addSignature(transaction.buildAtom())
 			.blockingGet();
-		AID aid = atom.getAid();
+		AID aid = Atoms.getAid(atom);
 
 		String subscriberId = UUID.randomUUID().toString();
 

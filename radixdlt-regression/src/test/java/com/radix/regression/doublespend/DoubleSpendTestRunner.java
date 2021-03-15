@@ -38,6 +38,7 @@ import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -249,7 +250,7 @@ public final class DoubleSpendTestRunner {
 							+ " "
 							+ f.getObservation().getType()
 							+ ": "
-							+ f.getObservation().getAtom().getAid()
+							+ Atoms.getAid(f.getObservation().getAtom())
 						);
 					}
 				} else if (a instanceof SubmitAtomStatusAction) {
@@ -260,7 +261,7 @@ public final class DoubleSpendTestRunner {
 							+ " "
 							+ singleNodeApi
 							+ " VALIDATION_ERROR: "
-							+ r.getAtom().getAid()
+							+ Atoms.getAid(r.getAtom())
 						);
 					}
 				}
@@ -338,7 +339,7 @@ public final class DoubleSpendTestRunner {
 									e.getKey()
 									+ ": "
 									+ e.getValue().stream()
-										.map(Atom::getAid)
+										.map(Atoms::getAid)
 										.map(Object::toString)
 										.collect(Collectors.toSet())
 								);

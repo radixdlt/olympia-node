@@ -31,6 +31,7 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -103,7 +104,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 				.doOnNext(n -> {
 					if (n.getType() == NotificationType.START) {
-						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(atom)).blockingAwait();
 					}
 				})
 				.filter(n -> n.getType().equals(NotificationType.EVENT))
@@ -140,7 +141,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 				.doOnNext(n -> {
 					if (n.getType() == NotificationType.START) {
-						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.getAid(atom)).blockingAwait();
 					}
 				})
 				.filter(n -> n.getType().equals(NotificationType.EVENT))

@@ -16,6 +16,7 @@
  */
 package org.radix.api.services;
 
+import com.radixdlt.identifiers.AID;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
@@ -86,8 +87,8 @@ public class AtomsServiceTest {
 	@Test
 	public void atomCanBeRetrieved() {
 		var atom = createAtom();
-		var aid = Atom.aidOf(atom, hasher);
-		var optionalClientAtom = Optional.of(ClientAtom.convertFromApiAtom(atom, hasher));
+		var aid = AID.from(ClientAtom.computeHashToSign(atom).asBytes());
+		var optionalClientAtom = Optional.of(ClientAtom.convertFromApiAtom(atom));
 
 		when(store.get(aid)).thenReturn(optionalClientAtom);
 

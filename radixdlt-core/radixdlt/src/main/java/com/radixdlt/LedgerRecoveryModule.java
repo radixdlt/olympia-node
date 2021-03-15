@@ -103,7 +103,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom);
 		if (!store.containsAID(genesisAtom.getAID())) {
 			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}

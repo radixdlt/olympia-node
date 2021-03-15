@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
@@ -86,8 +87,9 @@ public final class RadixEngineTest {
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
-		atom.sign(keyPair, hasher);
-		return ClientAtom.convertFromApiAtom(atom, hasher);
+		HashCode hashToSign = ClientAtom.computeHashToSign(atom);
+		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return ClientAtom.convertFromApiAtom(atom);
 	}
 
 	@Test
