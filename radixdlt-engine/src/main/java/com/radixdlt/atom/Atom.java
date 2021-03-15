@@ -24,10 +24,8 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
@@ -175,52 +173,6 @@ public final class Atom {
 		);
 	}
 
-	// SIGNATURES //
-	public boolean verify(Collection<ECPublicKey> keys, Hasher hasher) throws PublicKeyException {
-		return verify(keys, keys.size(), hasher);
-	}
-
-	public boolean verify(Collection<ECPublicKey> keys, int requirement, Hasher hasher) throws PublicKeyException {
-		if (getSignatures().isEmpty()) {
-			throw new PublicKeyException("No signatures set, can not verify");
-		}
-
-		int verified = 0;
-		HashCode hash = hasher.hash(this);
-		byte[] hashBytes = hash.asBytes();
-		ECDSASignature signature = null;
-
-		for (ECPublicKey key : keys) {
-			signature = getSignatures().get(key.euid());
-
-			if (signature == null) {
-				continue;
-			}
-
-			if (key.verify(hashBytes, signature)) {
-				verified++;
-			}
-		}
-
-		return verified >= requirement;
-	}
-
-	public boolean verify(ECPublicKey key, Hasher hasher) throws PublicKeyException {
-		if (getSignatures().isEmpty()) {
-			throw new PublicKeyException("No signatures set, can not verify");
-		}
-
-		HashCode hash = hasher.hash(this);
-
-		ECDSASignature signature = getSignatures().get(key.euid());
-
-		if (signature == null) {
-			return false;
-		}
-
-		return key.verify(hash, signature);
-	}
-
 	public byte[] toDson() {
 		return DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
@@ -270,17 +222,6 @@ public final class Atom {
 		}
 	}
 
-	/**
-	 * Returns the index of a given ParticleGroup
-	 * Returns -1 if not found
-	 *
-	 * @param particleGroup the particle group to look for
-	 * @return index of the particle group
-	 */
-	public int indexOfParticleGroup(ParticleGroup particleGroup) {
-		return this.particleGroups.indexOf(particleGroup);
-	}
-
 	public int getParticleGroupCount() {
 		return this.particleGroups.size();
 	}
@@ -291,10 +232,6 @@ public final class Atom {
 
 	public List<ParticleGroup> getParticleGroups() {
 		return this.particleGroups;
-	}
-
-	public ParticleGroup getParticleGroup(int particleGroupIndex) {
-		return this.particleGroups.get(particleGroupIndex);
 	}
 
 	public Stream<SpunParticle> spunParticles() {

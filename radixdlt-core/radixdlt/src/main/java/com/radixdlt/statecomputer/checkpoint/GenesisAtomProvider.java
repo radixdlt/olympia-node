@@ -25,12 +25,13 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -135,18 +136,8 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	}
 
 	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
-		try {
-			if (!genesisAtom.verify(key.getPublicKey(), this.hasher)) {
-				// A bug somewhere that needs fixing
-				throw new IllegalStateException(
-					String.format(
-						"Signature verification failed - GENESIS TRANSACTION HASH: %s",
-						this.hasher.hash(genesisAtom)
-					)
-				);
-			}
-		} catch (PublicKeyException ex) {
-			throw new IllegalStateException("Error while verifying universe", ex);
-		}
+		ClientAtom atom = ClientAtom.convertFromApiAtom(genesisAtom, this.hasher);
+		ECDSASignature signature = atom.getSignature(key.euid()).orElseThrow();
+		key.getPublicKey().verify(atom.getWitness(), signature);
 	}
 }
