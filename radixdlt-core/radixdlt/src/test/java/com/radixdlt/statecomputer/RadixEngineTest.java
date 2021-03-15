@@ -30,7 +30,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -44,7 +44,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.Random;

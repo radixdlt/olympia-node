@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Particle;

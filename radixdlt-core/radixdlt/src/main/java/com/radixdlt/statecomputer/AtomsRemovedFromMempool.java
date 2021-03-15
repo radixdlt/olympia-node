@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.ClientAtom;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;

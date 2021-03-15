@@ -20,7 +20,7 @@ package com.radixdlt.fees;
 import java.util.Set;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.utils.UInt256;
 
 /**

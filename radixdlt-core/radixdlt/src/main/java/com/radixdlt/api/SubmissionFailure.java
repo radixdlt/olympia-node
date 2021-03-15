@@ -18,7 +18,7 @@
 package com.radixdlt.api;
 
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.ClientAtom;
 import java.util.Objects;
 
 public final class SubmissionFailure {

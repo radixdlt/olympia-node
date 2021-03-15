@@ -28,10 +28,9 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;

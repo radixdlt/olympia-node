@@ -22,7 +22,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.ClientAtom;
 
 import java.util.Optional;
 import java.util.function.BiFunction;

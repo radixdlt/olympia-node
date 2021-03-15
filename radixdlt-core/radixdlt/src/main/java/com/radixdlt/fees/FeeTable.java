@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 
 /**
  * Schedule of fees.
