@@ -15,32 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.consensus;
+package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.integration.invariants.SafetyChecker;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Checks that the network never commits a new vertex
+ * Checks that validator nodes do not commit on conflicting vertices
  */
-public class NoneCommittedInvariant implements TestInvariant {
-	private final NodeEvents commits;
+public class SafetyInvariant implements TestInvariant {
+	private final NodeEvents nodeEvents;
 
-	public NoneCommittedInvariant(NodeEvents commits) {
-		this.commits = commits;
+	public SafetyInvariant(NodeEvents nodeEvents) {
+		this.nodeEvents = nodeEvents;
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.<TestInvariantError>create(
-			emitter ->
-				this.commits.addListener((node, event) ->
-					emitter.onNext(
-						new TestInvariantError("Commit at node " + node + " " + event)
-					), BFTCommittedUpdate.class
-				)
-		).serialize();
+		final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
+		return Observable.<Pair<BFTNode, BFTCommittedUpdate>>create(emitter ->
+			nodeEvents.addListener((node, update) -> emitter.onNext(Pair.of(node, update)), BFTCommittedUpdate.class)
+		).serialize()
+			.flatMap(e -> safetyChecker.process(e.getFirst(), e.getSecond()).map(Observable::just).orElse(Observable.empty()));
 	}
 }

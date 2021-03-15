@@ -34,7 +34,7 @@ import java.util.function.Function;
 /**
  * Simple mempool which performs no validation and removes on commit.
  */
-public final class SimpleMempool<T, U> implements Mempool<T, U> {
+public final class SimpleMempool<T, U> implements Mempool<T> {
 	private final LinkedHashMap<U, T> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
@@ -82,7 +82,7 @@ public final class SimpleMempool<T, U> implements Mempool<T, U> {
 	}
 
 	@Override
-	public List<T> getCommands(int count, Set<U> seen) {
+	public List<T> getCommands(int count, Set<T> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
 			List<T> commands = Lists.newArrayList();
@@ -92,7 +92,7 @@ public final class SimpleMempool<T, U> implements Mempool<T, U> {
 			Iterator<T> i = values.iterator();
 			while (commands.size() < size && i.hasNext()) {
 				T a = i.next();
-				if (!seen.contains(functionToKey.apply(a))) {
+				if (!seen.contains(a)) {
 					commands.add(a);
 				}
 			}

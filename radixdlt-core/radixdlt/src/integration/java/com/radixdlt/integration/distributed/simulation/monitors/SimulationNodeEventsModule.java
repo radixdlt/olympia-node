@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed.simulation.monitors;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -27,8 +28,9 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
 
 /**
  * Module which manages node testing events for simulation
@@ -78,5 +80,13 @@ public final class SimulationNodeEventsModule extends AbstractModule {
 		NodeEvents nodeEvents
 	) {
 		return nodeEvents.processor(node, BFTHighQCUpdate.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnDispatch<?> invalidCommandsProcessor(
+		@Self BFTNode node,
+		NodeEvents nodeEvents
+	) {
+		return nodeEvents.processorOnDispatch(node, InvalidProposedCommand.class);
 	}
 }

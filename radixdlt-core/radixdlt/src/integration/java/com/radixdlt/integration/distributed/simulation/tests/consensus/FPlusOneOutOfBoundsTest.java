@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -77,7 +77,7 @@ public class FPlusOneOutOfBoundsTest {
 		final var checkResults = runningTest.awaitCompletion();
 
 		assertThat(checkResults)
-			.hasEntrySatisfying(Monitor.LIVENESS, error -> assertThat(error).isPresent())
-			.hasEntrySatisfying(Monitor.SAFETY, error -> assertThat(error).isNotPresent());
+			.hasEntrySatisfying(Monitor.CONSENSUS_LIVENESS, error -> assertThat(error).isPresent())
+			.hasEntrySatisfying(Monitor.CONSENSUS_SAFETY, error -> assertThat(error).isNotPresent());
 	}
 }

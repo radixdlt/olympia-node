@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.ledger;
+package com.radixdlt.integration.distributed.simulation.monitors.ledger;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;

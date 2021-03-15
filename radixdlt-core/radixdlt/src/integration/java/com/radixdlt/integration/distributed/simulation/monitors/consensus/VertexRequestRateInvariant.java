@@ -15,11 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.consensus;
+package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;

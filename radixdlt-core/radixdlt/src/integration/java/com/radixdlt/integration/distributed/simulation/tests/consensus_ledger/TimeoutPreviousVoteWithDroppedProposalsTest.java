@@ -19,8 +19,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;

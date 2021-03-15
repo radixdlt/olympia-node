@@ -16,16 +16,17 @@
  *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed.simulation.monitors.application;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
+import com.radixdlt.integration.distributed.simulation.Monitor;
+import com.radixdlt.integration.distributed.simulation.MonitorKey;
+import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
-import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.utils.Pair;
 
 /**

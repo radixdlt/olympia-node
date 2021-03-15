@@ -186,13 +186,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), atom.getWitness(), permissionLevel);
 		if (error.isPresent()) {
 			CMError e = error.get();
-			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
+			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
 		if (checker != null) {
 			Result hookResult = checker.check(atom, permissionLevel);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
+					atom,
 					RadixEngineErrorCode.HOOK_ERROR,
 					"Checker failed: " + hookResult.getErrorMessage(),
 					DataPointer.ofAtom()
@@ -342,7 +343,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
 			// TODO: Move virtual state checks into static check
 			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				throw new RadixEngineException(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, "Virtual state conflict", dp);
+				throw new RadixEngineException(atom, RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, "Virtual state conflict", dp);
 			}
 
 			final Spin nextSpin = SpinStateMachine.next(checkSpin);
@@ -350,9 +351,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
+					throw new RadixEngineException(atom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
 				} else {
-					throw new RadixEngineException(RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
+					throw new RadixEngineException(atom, RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
 				}
 			}
 		}
