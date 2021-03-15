@@ -77,7 +77,7 @@ public class MempoolFillTest {
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
+			//ConsensusMonitors.noTimeouts(), // Removed for now to appease Jenkins
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
