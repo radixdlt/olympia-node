@@ -27,7 +27,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Helper class to set up environment with dispatched events
@@ -45,6 +47,9 @@ public final class Dispatchers {
 
 		@Inject
 		private SystemCounters systemCounters;
+
+		@Inject
+		private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
 		private final Class<T> c;
 		private final Function<T, SystemCounters.CounterType> counterTypeMapper;
@@ -64,8 +69,12 @@ public final class Dispatchers {
 		public EventDispatcher<T> get() {
 			final EventDispatcher<T> dispatcher = environmentProvider.get().getDispatcher(c);
 			final RateLimiter logLimiter = RateLimiter.create(1.0);
+			final Set<EventProcessor<T>> processors = onDispatchProcessors.stream()
+				.flatMap(p -> p.getProcessor(c).stream())
+				.collect(Collectors.toSet());
 			return e -> {
 				dispatcher.dispatch(e);
+				processors.forEach(p -> p.process(e));
 				if (counterTypeMapper != null) {
 					systemCounters.increment(counterTypeMapper.apply(e));
 				}

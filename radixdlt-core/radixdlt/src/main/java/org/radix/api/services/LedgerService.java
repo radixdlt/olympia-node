@@ -48,19 +48,4 @@ public class LedgerService {
 
 		return response(request, jsonObject().put("status", atomStatus.toString()));
 	}
-
-	public JSONObject getAtoms(final JSONObject request, final String addressString) {
-		var address = RadixAddress.from(addressString);
-		var cursor = ledger.search(address.euid().toByteArray());
-		var result = jsonArray();
-
-		while (cursor != null) {
-			//TODO: check what is returned from serialization
-			var jsonObject = serialization.toJsonObject(cursor.get(), API);
-			result.put(jsonObject);
-			cursor = cursor.next();
-		}
-
-		return response(request, result);
-	}
 }

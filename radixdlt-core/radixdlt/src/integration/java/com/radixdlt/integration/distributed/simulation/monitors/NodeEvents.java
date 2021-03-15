@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,14 +13,16 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.consensus;
+package com.radixdlt.integration.distributed.simulation.monitors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -40,5 +42,9 @@ public final class NodeEvents {
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
 		return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
+	}
+
+	public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+		return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
 	}
 }

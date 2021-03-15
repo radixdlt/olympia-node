@@ -24,14 +24,16 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.sync.SyncConfig;
@@ -78,7 +80,8 @@ public class MempoolFillTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands()
 		)
 		.addActor(MempoolFillerStarter.class);
 
@@ -87,8 +90,16 @@ public class MempoolFillTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 
-		final var results = simulationTest.run().awaitCompletion();
+		final var runningTest = simulationTest.run();
+		final var results = runningTest.awaitCompletion();
+
+		// Post conditions
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		long invalidCommandsCount = runningTest.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+			.mapToLong(l -> l)
+			.sum();
+		assertThat(invalidCommandsCount).isZero();
 	}
 
 	@Test

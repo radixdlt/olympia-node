@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.consensus;
+package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.Proposal;

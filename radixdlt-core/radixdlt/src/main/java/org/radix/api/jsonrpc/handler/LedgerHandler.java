@@ -35,8 +35,4 @@ public class LedgerHandler {
 	public JSONObject handleGetAtomStatus(JSONObject request) {
 		return withRequiredParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
 	}
-
-	public JSONObject handleGetAtoms(JSONObject request) {
-		return withRequiredParameter(request, "address", (params, address) -> ledgerService.getAtoms(request, address));
-	}
 }

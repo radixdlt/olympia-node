@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.recovery.MockedRecoveryModule;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -63,7 +63,7 @@ public class OneByzantineGenesisTest {
 			.build();
 
 		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).hasEntrySatisfying(Monitor.NONE_COMMITTED, error -> assertThat(error).isPresent());
+		assertThat(checkResults).hasEntrySatisfying(Monitor.CONSENSUS_NONE_COMMITTED, error -> assertThat(error).isPresent());
 	}
 
 	@Test

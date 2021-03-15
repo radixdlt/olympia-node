@@ -13,26 +13,18 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.constraintmachine;
 
-/**
- * Keys for different monitor checks
- */
-public enum Monitor {
-    CONSENSUS_SAFETY,
-    CONSENSUS_LIVENESS,
-    CONSENSUS_NO_TIMEOUTS,
-    CONSENSUS_NO_EPOCH_TIMEOUTS,
-    CONSENSUS_DIRECT_PARENTS,
-    CONSENSUS_NONE_COMMITTED,
-    CONSENSUS_TO_LEDGER_PROCESSED,
-    CONSENSUS_TIMESTAMP_CHECK,
-    CONSENSUS_VERTEX_REQUEST_RATE,
-    EPOCH_CEILING_VIEW,
-    LEDGER_IN_ORDER,
-    MEMPOOL_COMMITTED,
-    VALIDATOR_REGISTERED,
-    RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
+public class CMMicroInstructionTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(CMMicroInstruction.class)
+			.verify();
+	}
 }

@@ -58,31 +58,24 @@ import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
 import static com.radixdlt.store.LedgerEntryStoreResult.success;
-import static com.radixdlt.store.berkeley.AtomSecondaryCreator.creator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -93,10 +86,9 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
-	private static final String PENDING_DB_NAME = "tempo2.pending";
-	private static final String ATOMS_DB_NAME = "radx.atom_db";
+	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
+	private static final String ATOMS_DB_NAME = "radix.atom_db";
 	private static final String PARTICLE_DB_NAME = "radix.particle_db";
 	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
@@ -109,10 +101,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private final Map<Long, Set<byte[]>> currentIndices = new ConcurrentHashMap<>();
-
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
-	private SecondaryDatabase duplicatedIndicesDatabase; // Atoms by secondary duplicate indices (with prefixes)
 
 	private Database atomIdDatabase; // Atoms by AID; Append-only
 
@@ -144,41 +133,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public void reset() {
-		dbEnv.withLock(() -> {
-			com.sleepycat.je.Transaction transaction = null;
-			try {
-				// This SuppressWarnings here is valid, as ownership of the underlying
-				// resource is not changed here, the resource is just accessed.
-				@SuppressWarnings("resource")
-				var env = dbEnv.getEnvironment();
-				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
-				env.truncateDatabase(transaction, ATOM_ID_DB_NAME, false);
-				env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
-				env.truncateDatabase(transaction, PROOF_DB_NAME, false);
-				env.truncateDatabase(transaction, EPOCH_PROOF_DB_NAME, false);
-				env.truncateDatabase(transaction, PENDING_DB_NAME, false);
-				transaction.commit();
-			} catch (DatabaseNotFoundException e) {
-				if (transaction != null) {
-					transaction.abort();
-				}
-
-				log.warn("Error while resetting database, database not found", e);
-			} catch (Exception e) {
-				if (transaction != null) {
-					transaction.abort();
-				}
-
-				throw new BerkeleyStoreException("Error while resetting databases", e);
-			}
-		});
-	}
-
-	@Override
 	public void close() {
-		safeClose(duplicatedIndicesDatabase);
 		safeClose(atomDatabase);
 
 		safeClose(atomIdDatabase);
@@ -237,12 +192,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public LedgerEntryStoreResult store(
 		Transaction tx,
-		CommittedAtom atom,
-		Set<byte[]> duplicateIndices
+		CommittedAtom atom
 	) {
 		return withTime(() -> {
 			try {
-				return doStore(atom, duplicateIndices, unwrap(tx));
+				return doStore(atom, unwrap(tx));
 			} catch (Exception e) {
 				throw new BerkeleyStoreException("Commit of atom failed", e);
 			}
@@ -291,7 +245,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private void open() {
 		var primaryConfig = buildPrimaryConfig();
-		var duplicateIndicesConfig = buildDuplicatesConfig();
 		var pendingConfig = buildPendingConfig();
 		var upParticleConfig = buildUpParticleConfig();
 
@@ -301,16 +254,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			duplicatedIndicesDatabase = env.openSecondaryDatabase(
-				null, DUPLICATE_INDICES_DB_NAME, atomDatabase, duplicateIndicesConfig
-			);
 
 			particleDatabase = env.openDatabase(null, PARTICLE_DB_NAME, primaryConfig);
 			upParticleDatabase = env.openSecondaryDatabase(null, UP_PARTICLE_DB_NAME, particleDatabase, upParticleConfig);
 
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
 			atomIdDatabase = env.openDatabase(null, ATOM_ID_DB_NAME, primaryConfig);
-			vertexStoreDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
 			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
@@ -359,14 +309,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			.setBtreeComparator(lexicographicalComparator())
 			.setAllowCreate(true)
 			.setTransactional(true);
-	}
-
-	private SecondaryConfig buildDuplicatesConfig() {
-		return (SecondaryConfig) new SecondaryConfig()
-			.setMultiKeyCreator(creator(currentIndices))
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setSortedDuplicates(true);
 	}
 
 	private DatabaseConfig buildPrimaryConfig() {
@@ -555,7 +497,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 	private LedgerEntryStoreResult doStore(
 		CommittedAtom atom,
-		Set<byte[]> indices,
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
@@ -564,9 +505,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		try {
 			//Write atom data as soon as possible
 			var offset = atomLog.write(atomData);
-
-			// put indices in temporary map for key creator to pick up
-			currentIndices.put(atom.getStateVersion(), indices);
 
 			// Store atom indices
 			var pKey = toPKey(atom.getStateVersion());
@@ -593,8 +531,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				transaction.abort();
 			}
 			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
-		} finally {
-			currentIndices.remove(atom.getStateVersion());
 		}
 		return success();
 	}
@@ -667,25 +603,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public SearchCursor search(byte[] index) {
-		Objects.requireNonNull(index, "index is required");
-
-		return withTime(() -> {
-			try (var databaseCursor = toSecondaryCursor(null)) {
-				var pKey = entry();
-				var key = entry(index);
-				var data = entry();
-
-				if (databaseCursor.getSearchKey(key, pKey, data, DEFAULT) == SUCCESS) {
-					return new BerkeleySearchCursor(this, pKey.getData(), key.getData(), data.getData());
-				}
-
-				return null;
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
-	}
-
-	@Override
 	public Spin getSpin(Transaction tx, Particle particle) {
 		var particleId = hasher.hash(particle);
 		var key = entry(particleId.asBytes());
@@ -726,28 +643,41 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
 	}
 
-	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
+
+	@Override
+	public SearchCursor search() {
 		return withTime(() -> {
-			try (var databaseCursor = toSecondaryCursor(null)) {
-				var pKey = entry(cursor.getPrimary());
-				var key = entry(cursor.getIndex());
+			try (var databaseCursor = atomDatabase.openCursor(null, null)) {
+				var pKey = entry();
 				var data = entry();
 
-				return Optional.of(databaseCursor.getSearchBothRange(key, pKey, data, DEFAULT))
+				if (databaseCursor.getNext(pKey, data, DEFAULT) == SUCCESS) {
+					return new BerkeleySearchCursor(this, pKey.getData(), data.getData());
+				}
+
+				return null;
+			}
+		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
+	}
+
+
+	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
+		return withTime(() -> {
+			try (var databaseCursor = atomDatabase.openCursor(null, null)) {
+				var pKey = entry(cursor.getPrimary());
+				var data = entry();
+
+				return Optional.of(databaseCursor.getSearchKeyRange(pKey, data, DEFAULT))
 					.filter(status -> status == SUCCESS)
-					.map(status -> databaseCursor.getNextDup(key, pKey, data, LockMode.DEFAULT))
+					.map(status -> databaseCursor.getNext(pKey, data, LockMode.DEFAULT))
 					.filter(status -> status == SUCCESS)
-					.map(status -> new BerkeleySearchCursor(this, pKey.getData(), key.getData(), data.getData()))
+					.map(status -> new BerkeleySearchCursor(this, pKey.getData(), data.getData()))
 					.orElse(null);
 
 			} catch (Exception ex) {
 				throw new BerkeleyStoreException("Error while advancing cursor", ex);
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_GET_NEXT, CounterType.COUNT_BDB_LEDGER_GET_NEXT);
-	}
-
-	private SecondaryCursor toSecondaryCursor(com.sleepycat.je.Transaction tx) {
-		return duplicatedIndicesDatabase.openCursor(tx, null);
 	}
 
 	private <T> T deserializeOrElseFail(byte[] data, Class<T> c) {

@@ -21,7 +21,6 @@ import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * A read/write instance of a ledger store containing ledger entries.
@@ -29,13 +28,7 @@ import java.util.Set;
 public interface LedgerEntryStore extends LedgerEntryStoreView {
 	Transaction createTransaction();
 
-	LedgerEntryStoreResult store(
-		Transaction tx,
-		CommittedAtom atom,
-		Set<byte[]> duplicateIndices
-	);
-
-	void reset();
+	LedgerEntryStoreResult store(Transaction tx, CommittedAtom atom);
 
 	void close();
 

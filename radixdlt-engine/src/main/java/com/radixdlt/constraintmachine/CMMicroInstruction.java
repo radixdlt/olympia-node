@@ -17,6 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import java.util.Objects;
+
 public final class CMMicroInstruction {
 	public enum CMMicroOp {
 		CHECK_NEUTRAL_THEN_UP,
@@ -81,5 +83,21 @@ public final class CMMicroInstruction {
 
 	public static CMMicroInstruction particleGroup() {
 		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(operation, particle);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof CMMicroInstruction)) {
+			return false;
+		}
+
+		var other = (CMMicroInstruction) o;
+		return Objects.equals(this.operation, other.operation)
+			&& Objects.equals(this.particle, other.particle);
 	}
 }
