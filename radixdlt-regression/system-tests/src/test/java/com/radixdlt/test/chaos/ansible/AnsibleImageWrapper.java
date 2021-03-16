@@ -81,7 +81,7 @@ public class AnsibleImageWrapper {
     }
 
     public String runPlaybook(String playbook, String options, String tag) {
-        String optionsAsEnvProperty = StringUtils.isBlank(options) ? "" : "-e \\\"optionsArgs='" + options + "'\\\" ";
+        String optionsAsEnvProperty = StringUtils.isBlank(options) ? "" : "-e \"optionsArgs=\\'" + options + "\\'\" ";
         String command = "docker run --rm -v key-volume:/ansible/ssh --name node-ansible "
                 + image + " "
                 + playbook + " "
