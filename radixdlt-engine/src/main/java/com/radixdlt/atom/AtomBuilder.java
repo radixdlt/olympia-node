@@ -22,10 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
@@ -34,7 +32,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.SpinStateMachine;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -170,31 +167,6 @@ public final class AtomBuilder {
 			.findFirst().orElse(null);
 	}
 
-
-	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
-		final byte[] particleGroupByteCode = new byte[] {0};
-		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
-		final byte[] checkUpThenDownByteCode = new byte[] {2};
-
-		return instructions.stream().flatMap(i -> {
-			if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.PARTICLE_GROUP) {
-				return Stream.of(particleGroupByteCode);
-			} else {
-				final byte[] instByte;
-				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-					instByte = checkNeutralThenUpByteCode;
-				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-					instByte = checkUpThenDownByteCode;
-				} else {
-					throw new IllegalStateException();
-				}
-
-				byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), DsonOutput.Output.ALL);
-				return Stream.of(instByte, particleDson);
-			}
-		});
-	}
-
 	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new ImmutableList.Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
@@ -212,16 +184,12 @@ public final class AtomBuilder {
 	}
 
 	public HashCode computeHashToSign() {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
-		var outputStream = new ByteArrayOutputStream();
-		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
+		return Atom.computeHashToSign(toCMMicroInstructions(this.getParticleGroups()));
 	}
 
 	public Atom buildAtom() {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
-		return new Atom(
+		return Atom.create(
 			instructions,
 			ImmutableMap.copyOf(this.getSignatures()),
 			this.getMessage()

@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * An atom from a client which can be processed by the Radix Engine.
+ * An atom to be processed by radix engine
  */
 @Immutable
 @SerializerId2("radix.atom")
@@ -80,32 +80,51 @@ public final class Atom implements LedgerAtom {
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signatures == null ? ImmutableMap.of() : signatures, message
+			signatures == null ? ImmutableMap.of() : signatures,
+			message,
+			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
 		);
 	}
 
-	public Atom(
+	private Atom(
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
-		String message
+		String message,
+		HashCode witness
 	) {
 		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
 		this.signatures = Objects.requireNonNull(signatures);
+		this.witness = witness;
+	}
 
-		// FIXME: need to include message
-		var outputStream = new ByteArrayOutputStream();
-		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		this.witness = HashUtils.sha256(firstHash.asBytes());
+	static Atom create(
+		ImmutableList<CMMicroInstruction> instructions,
+		ImmutableMap<EUID, ECDSASignature> signatures,
+		String message
+	) {
+		return new Atom(instructions, signatures, message, computeHashToSign(instructions));
 	}
 
 	public static Atom create(ImmutableList<CMMicroInstruction> instructions) {
 		return new Atom(
 			instructions,
 			ImmutableMap.of(),
-			null
+			null,
+			computeHashToSign(instructions)
 		);
+	}
+
+	// FIXME: need to include message
+	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
+		var outputStream = new ByteArrayOutputStream();
+		instructions.forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		return HashUtils.sha256(firstHash.asBytes());
+	}
+
+	public static HashCode computeHashToSign(List<CMMicroInstruction> instructions) {
+		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
 	@JsonProperty("instructions")
@@ -118,7 +137,7 @@ public final class Atom implements LedgerAtom {
 		return Optional.ofNullable(this.signatures.get(euid));
 	}
 
-	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
+	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {
 		final byte[] particleGroupByteCode = new byte[] {0};
 		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
 		final byte[] checkUpThenDownByteCode = new byte[] {2};
@@ -195,9 +214,10 @@ public final class Atom implements LedgerAtom {
 		return witness;
 	}
 
+	// FIXME: this should be more than just witness
 	@Override
 	public AID getAID() {
-		return AID.from(getWitness().asBytes());
+		return AID.from(witness.asBytes());
 	}
 
 	@Override
