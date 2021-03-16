@@ -81,11 +81,14 @@ public class AnsibleImageWrapper {
     }
 
     public String runPlaybook(String playbook, String options, String tag) {
-        String optionsAsEnvProperty = StringUtils.isBlank(options) ? "" : "-e \"optionsArgs='" + options + "'\" ";
         List<String> commandParts = Lists.newArrayList(
                 "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
-                image, playbook, optionsAsEnvProperty, "--limit", clusterName, "-t", tag
+                image, playbook, "--limit", clusterName, "-t", tag
         );
+        if (StringUtils.isNotBlank(options)) {
+            commandParts.add("-e");
+            commandParts.add("\"optionsArgs='" + options + "'\"");
+        }
         String[] commandArrayWithoutEmptyStrings =
                 commandParts.stream().filter(StringUtils::isNotBlank).toArray(String[]::new);
         logger.info("Running docker command: {}", commandParts);
