@@ -130,7 +130,7 @@ public class RadixEngineTest {
 	@Test
 	public void when_add_state_computer__then_store_is_accessed_for_initial_computation() {
 		Object state = mock(Object.class);
-		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
+		when(engineStore.compute(any(), any(), any())).thenReturn(state);
 		radixEngine.addStateReducer(
 			new StateReducer<>() {
 				public Class<Object> stateClass() {
@@ -156,7 +156,8 @@ public class RadixEngineTest {
 				public BiFunction<Object, Particle, Object> inputReducer() {
 					return (o, p) -> o;
 				}
-			}
+			},
+			true
 		);
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state);
 	}
@@ -173,7 +174,7 @@ public class RadixEngineTest {
 
 		Object state1 = mock(Object.class);
 		Object state2 = mock(Object.class);
-		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
+		when(engineStore.compute(any(), any(), any())).thenReturn(initialState);
 		radixEngine.addStateReducer(
 			new StateReducer<>() {
 				@Override
@@ -200,7 +201,8 @@ public class RadixEngineTest {
 				public BiFunction<Object, Particle, Object> inputReducer() {
 					return (o, p) -> state2;
 				}
-			}
+			},
+			true
 		);
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(initialState);
 		RadixEngineAtom radixEngineAtom = mock(RadixEngineAtom.class);
@@ -231,7 +233,7 @@ public class RadixEngineTest {
 		when(this.constraintMachine.validate(any(), any(), any())).thenReturn(Optional.empty());
 		AtomChecker<RadixEngineAtom> atomChecker = TypedMocks.rmock(AtomChecker.class);
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
-		when(atomChecker.check(atom)).thenReturn(Result.error("error"));
+		when(atomChecker.check(eq(atom), any())).thenReturn(Result.error("error"));
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStore,

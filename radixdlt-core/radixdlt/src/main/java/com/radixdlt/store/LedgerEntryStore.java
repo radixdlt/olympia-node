@@ -17,6 +17,7 @@
 
 package com.radixdlt.store;
 
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
 import java.util.Optional;
@@ -30,9 +31,8 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 
 	LedgerEntryStoreResult store(
 		Transaction tx,
-		LedgerEntry atom,
-		Set<StoreIndex> uniqueIndices,
-		Set<StoreIndex> duplicateIndices
+		CommittedAtom atom,
+		Set<byte[]> duplicateIndices
 	);
 
 	void reset();

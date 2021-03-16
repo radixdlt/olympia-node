@@ -18,13 +18,19 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import org.radix.api.http.RadixHttpServer;
+import org.radix.api.services.AtomsService;
 
 /**
  * Configures the api including http server setup
@@ -33,9 +39,14 @@ public final class ApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
+		bind(AtomsService.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
 		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
+		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
+
+		// Set empty optional as default
+		OptionalBinder.newOptionalBinder(binder(), Key.get(RadixAddress.class, MempoolFillerKey.class));
 	}
 }

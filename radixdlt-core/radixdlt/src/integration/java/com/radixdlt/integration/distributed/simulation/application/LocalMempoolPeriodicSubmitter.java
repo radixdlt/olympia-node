@@ -47,7 +47,7 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 	}
 
 	private void act(RunningNetwork network, Command command, BFTNode node) {
-		network.getDispatcher(node).dispatch(MempoolAdd.create(command));
+		network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(command));
 	}
 
 	public Observable<Pair<Command, BFTNode>> issuedCommands() {

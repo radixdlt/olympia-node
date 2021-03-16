@@ -28,11 +28,12 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.time.Duration;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+
+import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -41,6 +42,9 @@ import org.junit.Test;
  * BFT but is slowed down by Ledger sync.
  */
 public class OneNodeFallingBehindTest {
+
+	private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
+
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(10)
 		.networkModules(
@@ -49,11 +53,11 @@ public class OneNodeFallingBehindTest {
 			NetworkDroppers.dropAllMessagesForOneNode(10000, 10000)
 		)
 		.pacemakerTimeout(1000)
-		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
+		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), syncConfig)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(30, TimeUnit.SECONDS),
-			ConsensusMonitors.vertexRequestRate(50), // Conservative check
+			ConsensusMonitors.vertexRequestRate(100), // Conservative check, TODO: too conservative
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered()
 		);
@@ -61,16 +65,17 @@ public class OneNodeFallingBehindTest {
 	@Test
 	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run(Duration.ofSeconds(60));
+		final var runningTest = test.run(Duration.ofSeconds(60));
+		final var checkResults = runningTest.awaitCompletion();
 
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
 		System.out.println(statistics);
 
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 
 }

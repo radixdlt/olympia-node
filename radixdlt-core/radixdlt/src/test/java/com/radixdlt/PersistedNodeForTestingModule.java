@@ -29,30 +29,21 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.checkpoint.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.sync.SyncPatienceMillis;
-
-import java.util.Objects;
+import com.radixdlt.store.PersistenceModule;
+import com.radixdlt.sync.SyncConfig;
 
 /**
  * Helper class for modules to be used for recovery tests.
  */
 public final class PersistedNodeForTestingModule extends AbstractModule {
-	private final ECKeyPair ecKeyPair;
-
-	public PersistedNodeForTestingModule(ECKeyPair ecKeyPair) {
-		this.ecKeyPair = Objects.requireNonNull(ecKeyPair);
-	}
-
 	@Override
 	public void configure() {
-		bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(200, 10, 3000));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 		bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 		bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
@@ -68,8 +59,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
-		install(new InMemoryBFTKeyModule(ecKeyPair));
-		install(new MockedCheckpointModule());
+		install(new InMemoryBFTKeyModule());
 		install(new CryptoModule());
 		install(new DeterministicEnvironmentModule());
 		install(new FunctionalNodeModule());

@@ -73,6 +73,7 @@ public final class Pacemaker {
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
 	private final TimeSupplier timeSupplier;
+	private final SystemCounters systemCounters;
 
 	private ViewUpdate latestViewUpdate;
 	private boolean isViewTimedOut = false;
@@ -92,7 +93,8 @@ public final class Pacemaker {
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier,
-		ViewUpdate initialViewUpdate
+		ViewUpdate initialViewUpdate,
+		SystemCounters systemCounters
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.counters = Objects.requireNonNull(counters);
@@ -108,6 +110,7 @@ public final class Pacemaker {
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	public void start() {
@@ -124,6 +127,7 @@ public final class Pacemaker {
 			return;
 		}
 		this.latestViewUpdate = viewUpdate;
+		this.systemCounters.set(CounterType.PACEMAKER_VIEW, viewUpdate.getCurrentView().number());
 
 		this.startView();
 	}
@@ -275,7 +279,11 @@ public final class Pacemaker {
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
 
 		final Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms", scheduledTimeout, timeout);
+		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms CurrentState: {}",
+			scheduledTimeout,
+			timeout,
+			this.latestViewUpdate
+		);
 
 		final ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);

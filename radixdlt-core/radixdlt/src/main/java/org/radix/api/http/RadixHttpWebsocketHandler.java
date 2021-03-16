@@ -23,6 +23,7 @@ import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 
+import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
 import java.io.IOException;
@@ -41,22 +42,14 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 /*package*/ final class RadixHttpWebsocketHandler implements WebSocketConnectionCallback {
 	private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
+	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers = new ConcurrentHashMap<>();
 	private final RadixJsonRpcServer jsonRpcServer;
-	private final RadixHttpServer radixHttpServer;
 	private final AtomsService atomsService;
 	private final Serialization serialization;
 
-	RadixHttpWebsocketHandler(
-		RadixHttpServer radixHttpServer,
-		RadixJsonRpcServer jsonRpcServer,
-		ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers,
-		AtomsService atomsService,
-		Serialization serialization
-	) {
-		this.radixHttpServer = radixHttpServer;
+	@Inject
+	public RadixHttpWebsocketHandler(RadixJsonRpcServer jsonRpcServer, AtomsService atomsService, Serialization serialization) {
 		this.jsonRpcServer = jsonRpcServer;
-		this.peers = peers;
 		this.atomsService = atomsService;
 		this.serialization = serialization;
 	}
@@ -66,15 +59,13 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 		final var peer = createPeer(channel);
 		peers.put(peer, channel);
 
-		channel.addCloseTask(webSocketChannel -> radixHttpServer.closeAndRemovePeer(peer));
+		channel.addCloseTask(webSocketChannel -> closeAndRemovePeer(peer));
 		channel.getReceiveSetter().set(createListener(peer));
 		channel.resumeReceives();
 	}
 
 	private RadixJsonRpcPeer createPeer(final WebSocketChannel channel) {
-		return new RadixJsonRpcPeer(
-			jsonRpcServer, atomsService, this.serialization, (p, msg) -> peerCallback(channel, p, msg)
-		);
+		return new RadixJsonRpcPeer(jsonRpcServer, atomsService, serialization, (p, msg) -> peerCallback(channel, p, msg));
 	}
 
 	private AbstractReceiveListener createListener(final RadixJsonRpcPeer peer) {
@@ -92,11 +83,16 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 				WebSockets.sendText(msg, channel, null);
 			} catch (Exception e) {
 				logger.error("Websocket connection send error: " + e, e);
-				radixHttpServer.closeAndRemovePeer(p);
+				closeAndRemovePeer(p);
 			}
 		} else {
 			logger.error("Websocket connection no longer open.");
-			radixHttpServer.closeAndRemovePeer(p);
+			closeAndRemovePeer(p);
 		}
+	}
+
+	private void closeAndRemovePeer(RadixJsonRpcPeer peer) {
+		peers.remove(peer);
+		peer.close();
 	}
 }

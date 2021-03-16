@@ -20,9 +20,14 @@ public class TransientEngineStore<T extends RadixEngineAtom> implements EngineSt
 	}
 
 	@Override
-	public <U extends Particle, V> V compute(Class<U> aClass, V v, BiFunction<V, U, V> biFunction, BiFunction<V, U, V> biFunction1) {
-		V baseResult = base.compute(aClass, v, biFunction, biFunction1);
-		return transientStore.compute(aClass, baseResult, biFunction, biFunction1);
+	public boolean containsAtom(T atom) {
+		return transientStore.containsAtom(atom) || base.containsAtom(atom);
+	}
+
+	@Override
+	public <U extends Particle, V> V compute(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
+		V baseResult = base.compute(aClass, v, biFunction);
+		return transientStore.compute(aClass, baseResult, biFunction);
 	}
 
 	@Override

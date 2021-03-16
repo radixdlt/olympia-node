@@ -18,28 +18,47 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * An update event to the mempool filler
  */
 public final class MempoolFillerUpdate {
-    private final boolean enabled;
+    private final int parallelTransactions;
+    private final boolean sendToSelf;
 
-    private MempoolFillerUpdate(boolean enabled) {
-        this.enabled = enabled;
+    private MempoolFillerUpdate(int parallelTransactions, boolean sendToSelf) {
+        this.parallelTransactions = parallelTransactions;
+        this.sendToSelf = sendToSelf;
     }
 
-    public static MempoolFillerUpdate create(boolean enabled) {
-        return new MempoolFillerUpdate(enabled);
+    public static MempoolFillerUpdate enable(int parallelTransactions, boolean sendToSelf) {
+    	if (parallelTransactions < 0) {
+    	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
+        }
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf);
+    }
+
+    public static MempoolFillerUpdate disable() {
+        return new MempoolFillerUpdate(-1, false);
     }
 
     public boolean enabled() {
-        return enabled;
+        return parallelTransactions > 0;
+    }
+
+    public OptionalInt numTransactions() {
+        return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
+    }
+
+    public Optional<Boolean> sendToSelf() {
+        return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled);
+        return Objects.hash(parallelTransactions, sendToSelf);
     }
 
     @Override
@@ -49,6 +68,7 @@ public final class MempoolFillerUpdate {
         }
 
         MempoolFillerUpdate other = (MempoolFillerUpdate) o;
-        return this.enabled == other.enabled;
+        return this.parallelTransactions == other.parallelTransactions
+            && this.sendToSelf == other.sendToSelf;
     }
 }

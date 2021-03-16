@@ -22,10 +22,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.radix.universe.output.AWSSecretsUniverseOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -160,30 +165,9 @@ public class GenerateUniversesTest {
 			);
 	}
 
-	@Test
-	public void testJson() throws IOException {
-		final String out;
-		final String err;
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-c", "-t", "test", "-v", "1"));
-			out = stdOut.toString();
-			err = stdErr.toString();
-		}
-		assertThat(err).isEmpty();
-		assertThat(out)
-			.hasLineCount(215)
-			.containsSubsequence(
-				":rri:/", "/XRD",
-				"radix.particles.mutable_supply_token_definition",
-				"radix.particles.registered_validator",
-				"radix.particles.staked_tokens"
-			);
-	}
-
 	// Largely to combat checkstyle whining about "whitespace after {"
 	// when using 'new String[] { "foo", "bar" }'.
-	private static String[] strings(String...strings) {
+	private static String[] strings(String... strings) {
 		return strings;
 	}
 

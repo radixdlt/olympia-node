@@ -29,7 +29,7 @@ import java.util.Objects;
 /**
  * Message to request for sync atoms
  */
-@SerializerId2("message.sync.request")
+@SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
 
 	@JsonProperty("currentHeader")
@@ -66,8 +66,8 @@ public final class SyncRequestMessage extends Message {
 		}
 		SyncRequestMessage that = (SyncRequestMessage) o;
 		return Objects.equals(currentHeader, that.currentHeader)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp())
+			&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override

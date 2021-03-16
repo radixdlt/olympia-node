@@ -35,11 +35,15 @@ import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.Pair;
 
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -51,7 +55,9 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<ClientAtom, AID>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 	}
 
 	@Provides
@@ -102,9 +108,8 @@ public class RadixEngineModule extends AbstractModule {
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		RegisteredValidators initialRegisteredValidators,
-		Stakes initialStakes,
 		Set<StateReducer<?, ?>> stateReducers,
+		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
@@ -121,13 +126,16 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators));
-		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes));
+		radixEngine.addStateReducer(new ValidatorsReducer(), true);
+		radixEngine.addStateReducer(new StakesReducer(stakeToken), true);
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(new LastSystemParticleReducer());
+		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
 
-		stateReducers.forEach(radixEngine::addStateReducer);
+		// Additional state reducers are not required for consensus so don't need to include their
+		// state in transient branches;
+		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
+		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
 
 		return radixEngine;
 	}

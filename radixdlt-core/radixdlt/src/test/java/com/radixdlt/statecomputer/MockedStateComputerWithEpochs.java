@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -52,7 +53,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Command command) {
+	public void addToMempool(Command command, BFTNode origin) {
 		// No-op
 	}
 

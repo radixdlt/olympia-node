@@ -20,22 +20,36 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Configures the key to be used for signing things as a BFT validator.
  */
 public final class PersistedBFTKeyModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(HashSigner.class).annotatedWith(Names.named("RadixEngine")).to(HashSigner.class);
+	}
+
 	@Provides
 	@Singleton
 	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		return new PersistedBFTKeyManager(nodeKeyPath);
+	}
+
+	@Provides
+	@Self
+	RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode bftNode) {
+		return new RadixAddress((byte) magic, bftNode.getKey());
 	}
 
 	@Provides

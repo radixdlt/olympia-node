@@ -33,6 +33,8 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
 import com.radixdlt.store.TransientEngineStore;
+import com.radixdlt.utils.Pair;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,18 +54,21 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		private final Class<V> particleClass;
 		private final BiFunction<U, V, U> outputReducer;
 		private final BiFunction<U, V, U> inputReducer;
+		private final boolean includeInBranches;
 		private U curValue;
 
 		ApplicationStateComputer(
 			Class<V> particleClass,
 			U initialValue,
 			BiFunction<U, V, U> outputReducer,
-			BiFunction<U, V, U> inputReducer
+			BiFunction<U, V, U> inputReducer,
+			boolean includeInBranches
 		) {
 			this.particleClass = particleClass;
 			this.curValue = initialValue;
 			this.outputReducer = outputReducer;
 			this.inputReducer = inputReducer;
+			this.includeInBranches = includeInBranches;
 		}
 
 		ApplicationStateComputer<U, V, T> copy() {
@@ -71,12 +76,13 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				particleClass,
 				curValue,
 				outputReducer,
-				inputReducer
+				inputReducer,
+				includeInBranches
 			);
 		}
 
 		void initialize(EngineStore<T> engineStore) {
-			curValue = engineStore.compute(particleClass, curValue, outputReducer, inputReducer);
+			curValue = engineStore.compute(particleClass, curValue, outputReducer);
 		}
 
 		void processCheckSpin(CMMicroInstruction cmMicroInstruction) {
@@ -97,7 +103,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
-	private final Map<Class<?>, ApplicationStateComputer<?, ?, T>> stateComputers = new HashMap<>();
+	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T>> stateComputers = new HashMap<>();
 	private final List<RadixEngineBranch<T>> branches = new ArrayList<>();
 
 	public RadixEngine(
@@ -131,18 +137,23 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param <U> the class of the state
 	 * @param <V> the class of the particles to map
 	 */
-	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer) {
+	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, String name, boolean includeInBranches) {
 		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
 			stateReducer.particleClass(),
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
-			stateReducer.inputReducer()
+			stateReducer.inputReducer(),
+			includeInBranches
 		);
 
 		synchronized (stateUpdateEngineLock) {
 			applicationStateComputer.initialize(this.engineStore);
-			stateComputers.put(stateReducer.stateClass(), applicationStateComputer);
+			stateComputers.put(Pair.of(stateReducer.stateClass(), name), applicationStateComputer);
 		}
+	}
+
+	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, boolean includeInBranches) {
+		addStateReducer(stateReducer, null, includeInBranches);
 	}
 
 	/**
@@ -152,8 +163,18 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @return the current state
 	 */
 	public <U> U getComputedState(Class<U> applicationStateClass) {
+		return getComputedState(applicationStateClass, null);
+	}
+
+	/**
+	 * Retrieves the latest state
+	 * @param applicationStateClass the class of the state to retrieve
+	 * @param <U> the class of the state to retrieve
+	 * @return the current state
+	 */
+	public <U> U getComputedState(Class<U> applicationStateClass, String name) {
 		synchronized (stateUpdateEngineLock) {
-			return applicationStateClass.cast(stateComputers.get(applicationStateClass).curValue);
+			return applicationStateClass.cast(stateComputers.get(Pair.of(applicationStateClass, name)).curValue);
 		}
 	}
 
@@ -169,7 +190,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom);
+			Result hookResult = checker.check(atom, permissionLevel);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					RadixEngineErrorCode.HOOK_ERROR,
@@ -192,7 +213,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			UnaryOperator<CMStore> virtualStoreLayer,
 			EngineStore<T> parentStore,
 			AtomChecker<T> checker,
-			Map<Class<?>, ApplicationStateComputer<?, ?, T>> stateComputers
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T>> stateComputers
 		) {
 			TransientEngineStore<T> transientEngineStore = new TransientEngineStore<>(
 				parentStore
@@ -229,8 +250,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngineBranch<T> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
-			Map<Class<?>, ApplicationStateComputer<?, ?, T>> branchedStateComputers = new HashMap<>();
-			this.stateComputers.forEach((c, computer) -> branchedStateComputers.put(c, computer.copy()));
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T>> branchedStateComputers = new HashMap<>();
+			this.stateComputers.forEach((c, computer) -> {
+				if (computer.includeInBranches) {
+					branchedStateComputers.put(c, computer.copy());
+				}
+			});
 			RadixEngineBranch<T> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
@@ -282,6 +307,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
+	public boolean contains(T atom) {
+		return engineStore.containsAtom(atom);
+	}
+
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
 
@@ -289,14 +318,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		long particleIndex = 0;
 		long particleGroupIndex = 0;
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			// Treat check spin as the first push for now
 			if (!microInstruction.isCheckSpin()) {
 				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
 					particleGroupIndex++;
 					particleIndex = 0;
-				} else {
-					particleIndex++;
 				}
+
 				continue;
 			}
 
@@ -309,6 +336,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			checkedParticles.add(particle);
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			particleIndex++;
 
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);

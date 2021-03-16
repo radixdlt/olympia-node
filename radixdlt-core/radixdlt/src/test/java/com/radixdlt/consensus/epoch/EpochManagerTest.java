@@ -97,7 +97,7 @@ import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -125,7 +125,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public void addToMempool(Command command) {
+		public void addToMempool(Command command, BFTNode origin) {
 			// No-op
 		}
 
@@ -297,6 +297,7 @@ public class EpochManagerTest {
 		// Arrange
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(1L);
+		when(proof.getSignersWithout(any())).thenReturn(ImmutableList.of());
 		GetEpochResponse response = new GetEpochResponse(BFTNode.random(), proof);
 
 		// Act

@@ -45,7 +45,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -387,7 +387,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
-			ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
+			ImmutableList<BFTNode> signers = syncState.committedProof.getSignersWithout(self);
 			syncState.setSyncStage(SyncStage.LEDGER_SYNC);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {

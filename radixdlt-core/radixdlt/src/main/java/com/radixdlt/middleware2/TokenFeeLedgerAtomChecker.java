@@ -21,6 +21,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
@@ -70,7 +71,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom) {
+	public Result check(LedgerAtom atom, PermissionLevel permissionLevel) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
@@ -83,23 +84,30 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		// no need for fees if a system update
 		// TODO: update should also have no message
 		if (atom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isCheckSpin)
-				.allMatch(i -> i.getParticle() instanceof SystemParticle)
+			.filter(CMMicroInstruction::isCheckSpin)
+			.allMatch(i -> i.getParticle() instanceof SystemParticle)
 		) {
 			return Result.success();
 		}
 
+		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
+			return Result.success();
+		}
+
 		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
+		final ClientAtom clientAtom;
 		final Atom completeAtom;
 		if (atom instanceof ClientAtom) {
+			clientAtom = (ClientAtom) atom;
 			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
 		} else if (atom instanceof CommittedAtom) {
+			clientAtom = ((CommittedAtom) atom).getClientAtom();
 			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
 		} else {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
 		}
 
-		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
+		final int totalSize = this.serialization.toDson(clientAtom, Output.PERSIST).length;
 		if (totalSize > MAX_ATOM_SIZE) {
 			return Result.error("atom too big: " + totalSize);
 		}

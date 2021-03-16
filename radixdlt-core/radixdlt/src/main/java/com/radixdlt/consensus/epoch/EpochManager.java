@@ -63,7 +63,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -380,7 +380,8 @@ public final class EpochManager {
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
+			ImmutableList<BFTNode> signers = ImmutableList.of(response.getAuthor());
+			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ancestor, signers));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
 				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);
@@ -440,6 +441,7 @@ public final class EpochManager {
 				return;
 			}
 
+			log.trace("Processing ViewUpdate: {}", epochViewUpdate);
 			bftEventProcessor.processViewUpdate(epochViewUpdate.getViewUpdate());
 		};
 	}

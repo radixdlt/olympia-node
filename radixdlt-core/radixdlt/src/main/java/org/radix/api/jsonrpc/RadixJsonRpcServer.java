@@ -18,48 +18,37 @@
 package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
+import org.radix.api.jsonrpc.handler.AtomHandler;
+import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
+import org.radix.api.jsonrpc.handler.LedgerHandler;
+import org.radix.api.jsonrpc.handler.NetworkHandler;
+import org.radix.api.jsonrpc.handler.SystemHandler;
 import org.radix.api.services.AtomsService;
-import org.radix.universe.system.LocalSystem;
+import org.radix.api.services.HighLevelApiService;
+import org.radix.api.services.LedgerService;
+import org.radix.api.services.NetworkService;
+import org.radix.api.services.SystemService;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.universe.Universe;
+import com.google.inject.Inject;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.undertow.server.HttpServerExchange;
 
+import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
 import static org.radix.api.jsonrpc.JsonRpcUtil.PARSE_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.REQUEST_TOO_LONG;
 import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
-import static org.radix.api.jsonrpc.JsonRpcUtil.commonFields;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.jsonrpc.JsonRpcUtil.listToArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.methodNotFoundResponse;
-
-import static com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -73,72 +62,74 @@ public final class RadixJsonRpcServer {
 	private final long maxRequestSizeBytes;
 
 	/**
-	 * Service to submit atoms through
-	 */
-	private final AtomsService atomsService;
-
-	/**
 	 * Store to query atoms from
 	 */
-	private final LedgerEntryStore ledger;
-
-	private final Serialization serialization;
-	private final LocalSystem localSystem;
-	private final AddressBook addressBook;
-	private final Universe universe;
-
-	private final ModuleRunner consensusRunner;
-	private final PeerWithSystem localPeer;
-
 	private final Map<String, Function<JSONObject, JSONObject>> handlers = new HashMap<>();
+	private final SystemHandler systemHandler;
+	private final NetworkHandler networkHandler;
+	private final AtomHandler atomHandler;
+	private final LedgerHandler ledgerHandler;
+	private final HighLevelApiHandler highLevelApiHandler;
 
+	@Inject
 	public RadixJsonRpcServer(
-		ModuleRunner consensusRunner,
-		Serialization serialization,
-		LedgerEntryStore ledger,
-		AtomsService atomsService,
-		LocalSystem localSystem,
-		AddressBook addressBook,
-		Universe universe
+		SystemHandler systemHandler,
+		NetworkHandler networkHandler,
+		AtomHandler atomHandler,
+		LedgerHandler ledgerHandler,
+		HighLevelApiHandler highLevelApiHandler
 	) {
-		this(consensusRunner, serialization, ledger, atomsService, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
+		this(systemHandler, networkHandler, atomHandler, ledgerHandler, highLevelApiHandler, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		ModuleRunner consensusRunner,
-		Serialization serialization,
-		LedgerEntryStore ledger,
-		AtomsService atomsService,
-		LocalSystem localSystem,
-		AddressBook addressBook,
-		Universe universe,
+		SystemHandler systemHandler,
+		NetworkHandler networkHandler,
+		AtomHandler atomHandler,
+		LedgerHandler ledgerHandler,
+		HighLevelApiHandler highLevelApiHandler,
 		long maxRequestSizeBytes
 	) {
-		this.consensusRunner = Objects.requireNonNull(consensusRunner);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.ledger = Objects.requireNonNull(ledger);
-		this.atomsService = Objects.requireNonNull(atomsService);
-		this.localSystem = Objects.requireNonNull(localSystem);
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.universe = Objects.requireNonNull(universe);
+		this.systemHandler = systemHandler;
+		this.networkHandler = networkHandler;
+		this.atomHandler = atomHandler;
+		this.ledgerHandler = ledgerHandler;
+		this.highLevelApiHandler = highLevelApiHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
-		this.localPeer = new PeerWithSystem(this.localSystem);
 
 		fillHandlers();
 	}
 
 	private void fillHandlers() {
-		handlers.put("BFT.start", this::handleBftStart);
-		handlers.put("BFT.stop", this::handleBftStop);
-		handlers.put("Universe.getUniverse", this::handleGetUniverse);
-		handlers.put("Network.getLivePeers", this::handleGetLivePeers);
-		handlers.put("Network.getPeers", this::handleGetPeers);
-		handlers.put("Network.getInfo", this::handleGetInfo);
-		handlers.put("Ping", this::handlePing);
-		handlers.put("Atoms.submitAtom", this::handleSubmitAtom);
-		handlers.put("Atoms.getAtomStatus", this::handleGetAtomStatus);
-		handlers.put("Ledger.getAtom", this::handleGetAtom);
-		handlers.put("Ledger.getAtoms", this::handleGetAtoms);
+		//BFT
+		handlers.put("BFT.start", systemHandler::handleBftStart);
+		handlers.put("BFT.stop", systemHandler::handleBftStop);
+
+		//General info
+		handlers.put("Universe.getUniverse", systemHandler::handleGetUniverse);
+		handlers.put("Network.getInfo", systemHandler::handleGetLocalSystem);
+		handlers.put("Ping", systemHandler::handlePing);
+
+		//Network info
+		handlers.put("Network.getLivePeers", networkHandler::handleGetLivePeers);
+		handlers.put("Network.getPeers", networkHandler::handleGetPeers);
+
+		//Atom submission/retrieval
+		//TODO: check and fix method naming?
+		handlers.put("Atoms.submitAtom", atomHandler::handleSubmitAtom);
+		handlers.put("Ledger.getAtom", atomHandler::handleGetAtom);
+
+		//Ledger
+		//TODO: check and fix method naming?
+		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
+		handlers.put("Ledger.getAtoms", ledgerHandler::handleGetAtoms);
+
+		//High level API's
+		handlers.put("radix.universeMagic", highLevelApiHandler::handleUniverseMagic);
+		handlers.put("radix.nativeToken", highLevelApiHandler::handleNativeToken);
+		handlers.put("radix.tokenBalances", highLevelApiHandler::handleTokenBalances);
+		handlers.put("radix.executedTransactions", highLevelApiHandler::handleExecutedTransactions);
+		handlers.put("radix.transactionStatus", highLevelApiHandler::handleTransactionStatus);
 	}
 
 	/**
@@ -151,18 +142,18 @@ public final class RadixJsonRpcServer {
 	public String handleJsonRpc(HttpServerExchange exchange) {
 		try {
 			// Switch to blocking since we need to retrieve whole request body
-			exchange.setMaxEntitySize(maxRequestSizeBytes).startBlocking();
+			exchange.setMaxEntitySize(maxRequestSizeBytes);
+			exchange.startBlocking();
 
 			var requestBody = CharStreams.toString(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8));
-
 			return handleRpc(requestBody);
 		} catch (IOException e) {
-			throw  new IllegalStateException("RPC failed", e);
+			throw new IllegalStateException("RPC failed", e);
 		}
 	}
 
 	/**
-	 * Handle the string JSON-RPC request with size checks, return appropriate error if oversized
+	 * Handle the string JSON-RPC request with size checks, return appropriate error if size exceeds the limit.
 	 *
 	 * @param requestString The string JSON-RPC request
 	 *
@@ -171,12 +162,14 @@ public final class RadixJsonRpcServer {
 	String handleRpc(String requestString) {
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
-		return length > maxRequestSizeBytes
-			   ? errorResponse(REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString()
-			   : jsonObject(requestString)
-				   .map(this::handle)
-				   .map(Object::toString)
-				   .orElseGet(() -> errorResponse(PARSE_ERROR, "unable to parse input").toString());
+		if (length > maxRequestSizeBytes) {
+			return errorResponse(REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
+		}
+
+		return jsonObject(requestString)
+			.map(this::handle)
+			.map(Object::toString)
+			.orElseGet(() -> errorResponse(PARSE_ERROR, "unable to parse input").toString());
 	}
 
 	private JSONObject handle(JSONObject request) {
@@ -201,131 +194,5 @@ public final class RadixJsonRpcServer {
 				return errorResponse(id, SERVER_ERROR, e.getMessage());
 			}
 		}
-	}
-
-	private JSONObject ifParameterPresent(
-		final JSONObject request,
-		final JSONObject params,
-		final String name,
-		final Function<JSONObject, JSONObject> fn
-	) {
-		if (!params.has(name)) {
-			return errorResponse(request.get("id"), SERVER_ERROR, "Field '" + name + "' not present in params");
-		} else {
-			return fn.apply(params);
-		}
-	}
-
-	private JSONObject ifParametersPresent(final JSONObject request, final Function<JSONObject, JSONObject> fn) {
-		if (!request.has("params")) {
-			return errorResponse(request.get("id"), SERVER_ERROR, "params field is required");
-		}
-
-		final Object paramsObject = request.get("params");
-
-		if (!(paramsObject instanceof JSONObject)) {
-			return errorResponse(request.get("id"), SERVER_ERROR, "params field must be a JSON object");
-		}
-
-		return fn.apply((JSONObject) paramsObject);
-	}
-
-	private JSONObject fillListResponse(final JSONObject request, final List<?> result) {
-		return commonFields(request.get("id")).put("result", listToArray(serialization, result));
-	}
-
-	private JSONObject fillPlainResponse(final JSONObject request, final JSONObject result) {
-		return commonFields(request.get("id")).put("result", result);
-	}
-
-	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
-		return Stream.concat(Stream.of(localPeer), others).distinct();
-	}
-
-	//------------------------------------------------------------------------------------------
-	// Handlers
-	//------------------------------------------------------------------------------------------
-	private JSONObject handleBftStart(JSONObject request) {
-		consensusRunner.start();
-		return fillPlainResponse(request, jsonObject().put("response", "success"));
-	}
-
-	private JSONObject handleBftStop(JSONObject request) {
-		consensusRunner.stop();
-		return fillPlainResponse(request, jsonObject().put("response", "success"));
-	}
-
-	private JSONObject handleGetUniverse(JSONObject request) {
-		return fillPlainResponse(request, serialization.toJsonObject(universe, Output.API));
-	}
-
-	private JSONObject handleGetLivePeers(JSONObject request) {
-		return fillListResponse(request, selfAndOthers(addressBook.recentPeers()).collect(Collectors.toList()));
-	}
-
-	private JSONObject handleGetPeers(JSONObject request) {
-		return fillListResponse(request, selfAndOthers(addressBook.peers()).collect(Collectors.toList()));
-	}
-
-	private JSONObject handleGetInfo(JSONObject request) {
-		return fillPlainResponse(request, serialization.toJsonObject(localSystem, Output.API));
-	}
-
-	private JSONObject handlePing(JSONObject request) {
-		return fillPlainResponse(request, jsonObject()
-			.put("response", "pong")
-			.put("timestamp", System.currentTimeMillis()));
-	}
-
-	//TODO: potentially blocking
-	private JSONObject handleSubmitAtom(JSONObject request) {
-		return ifParametersPresent(request, jsonAtom ->
-			fillPlainResponse(request, jsonObject()
-				.put("status", AtomStatus.PENDING_CM_VERIFICATION)
-				.put("aid", atomsService.submitAtom(jsonAtom))
-				.put("timestamp", System.currentTimeMillis())));
-	}
-
-	//TODO: potentially blocking
-	private JSONObject handleGetAtomStatus(JSONObject request) {
-		return ifParametersPresent(request, paramsObject ->
-			ifParameterPresent(request, paramsObject, "aid", params -> {
-				var aid = AID.from(params.getString("aid"));
-				var atomStatus = ledger.contains(aid) ? AtomStatus.STORED : AtomStatus.DOES_NOT_EXIST;
-
-				return fillPlainResponse(request, jsonObject().put("status", atomStatus.toString()));
-			}));
-	}
-
-	//TODO: potentially blocking
-	private JSONObject handleGetAtom(JSONObject request) {
-		return ifParametersPresent(request, paramsObject ->
-			ifParameterPresent(request, paramsObject, "aid", params ->
-				AID.fromString(params.getString("aid"))
-					.flatMap(atomsService::getAtomsByAtomId)
-					.orElseGet(() -> errorResponse(
-						request.get("id"),
-						INVALID_PARAMS,
-						"Atom with AID '" + params.getString("aid") + "' not found"
-					))));
-	}
-
-	//TODO: potentially blocking
-	private JSONObject handleGetAtoms(JSONObject request) {
-		return ifParametersPresent(request, paramsObject ->
-			ifParameterPresent(request, paramsObject, "address", params -> {
-				final var addressString = params.getString("address");
-				final var address = RadixAddress.from(addressString);
-
-				var index = new StoreIndex(IndexType.DESTINATION.getValue(), address.euid().toByteArray());
-				var collectedAids = new ArrayList<>();
-				var cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
-
-				while (cursor != null) {
-					collectedAids.add(cursor.get());
-					cursor = cursor.next();
-				}
-				return fillListResponse(request, collectedAids);
-			}));
 	}
 }

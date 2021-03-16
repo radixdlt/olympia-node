@@ -61,7 +61,7 @@ public abstract class RadixTest {
 
 		ecKeyPair = ECKeyPair.generateNew();
 
-		localSystem = LocalSystem.create(BFTNode.create(ecKeyPair.getPublicKey()), ImmutableMap::of, universe, "127.0.0.1");
+		localSystem = LocalSystem.create(BFTNode.create(ecKeyPair.getPublicKey()), ImmutableMap::of, "127.0.0.1", 30000);
 	}
 
 	public static Serialization getSerialization() {

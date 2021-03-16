@@ -25,16 +25,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -64,8 +58,7 @@ public class AtomEventObserver {
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
 	private final LedgerEntryStore store;
-	private final CommandToBinaryConverter commandToBinaryConverter;
-	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private final Serialization serialization;
 	private final Hasher hasher;
 
 	private final Object syncLock = new Object();
@@ -77,16 +70,14 @@ public class AtomEventObserver {
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
 		LedgerEntryStore store,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
+		Serialization serialization,
 		Hasher hasher
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.executorService = executorService;
 		this.store = store;
-		this.commandToBinaryConverter = commandToBinaryConverter;
-		this.clientAtomToBinaryConverter = clientAtomToBinaryConverter;
+		this.serialization = serialization;
 		this.hasher = hasher;
 	}
 
@@ -125,24 +116,15 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final long timestamp = committedAtom.getStateAndProof().timestamp();
 		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom, timestamp);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
 	}
 
 	private void sync() {
-		StoreIndex destinationIndex =
-			new StoreIndex(
-				EngineAtomIndices.IndexType.DESTINATION.getValue(),
-				atomQuery.getDestination().toByteArray()
-			);
-
-		SearchCursor cursor =
-			store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
-
+		SearchCursor cursor = store.search(atomQuery.getDestination().toByteArray());
 		Set<AID> processedAtomIds = Sets.newHashSet();
 		partialSync(cursor, processedAtomIds);
 	}
@@ -160,26 +142,18 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<Pair<ClientAtom, Long>> atoms = new ArrayList<>();
+				List<ClientAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Optional<LedgerEntry> ledgerEntry = store.get(aid);
-					ledgerEntry.ifPresent(
-						entry -> {
-							var committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
-							long timestamp = committedCommand.getProof().timestamp();
-							var clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-							atoms.add(Pair.of(clientAtom, timestamp));
-						}
-					);
+					Optional<ClientAtom> ledgerEntry = store.get(aid);
+					ledgerEntry.ifPresent(atoms::add);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(p -> p.mapFirst(ClientAtom::convertToApiAtom))
-						.filter(Pair::firstNonNull)
-						.map(p -> new AtomEventDto(AtomEventType.STORE, p.getFirst(), p.getSecond()));
+						.map(ClientAtom::convertToApiAtom)
+						.map(a -> new AtomEventDto(AtomEventType.STORE, a));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}

@@ -17,19 +17,14 @@
 
 package com.radixdlt.statecomputer;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -38,36 +33,23 @@ import javax.annotation.concurrent.Immutable;
  * TODO: add commit signature proof
  */
 @Immutable
-@SerializerId2("consensus.committed_atom")
 public final class CommittedAtom implements LedgerAtom {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("state_version")
-	@DsonOutput(Output.ALL)
-	private final long stateVersion;
-
-	@JsonProperty("atom")
-	@DsonOutput(Output.ALL)
 	private final ClientAtom clientAtom;
-
-	// TODO: include commit signature proof
-	@JsonProperty("proof")
-	@DsonOutput(Output.ALL)
+	private final long stateVersion;
 	private final VerifiedLedgerHeaderAndProof proof;
 
-	CommittedAtom() {
-		// Serializer only
-		this.clientAtom = null;
-		this.proof = null;
-		this.stateVersion = 0L;
-	}
-
-	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
+	private CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
 		this.clientAtom = clientAtom;
 		this.stateVersion = stateVersion;
-		this.proof = Objects.requireNonNull(proof);
+		this.proof = proof;
+	}
+
+	public static CommittedAtom create(ClientAtom clientAtom, VerifiedLedgerHeaderAndProof proof) {
+		return new CommittedAtom(clientAtom, proof.getStateVersion(), proof);
+	}
+
+	public static CommittedAtom create(ClientAtom clientAtom, long stateVersion) {
+		return new CommittedAtom(clientAtom, stateVersion, null);
 	}
 
 	public long getStateVersion() {
@@ -78,8 +60,8 @@ public final class CommittedAtom implements LedgerAtom {
 		return clientAtom;
 	}
 
-	public VerifiedLedgerHeaderAndProof getStateAndProof() {
-		return proof;
+	public Optional<VerifiedLedgerHeaderAndProof> getHeaderAndProof() {
+		return Optional.ofNullable(proof);
 	}
 
 	@Override
@@ -121,8 +103,8 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s, stateVersion=%s proof=%s}",
-			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null, this.proof);
+		return String.format("%s{atom=%s, stateVersion=%s}",
+			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null);
 	}
 }
 
