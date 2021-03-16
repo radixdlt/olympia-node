@@ -42,20 +42,20 @@ public class ChaosExperiments {
 
     @Test
     public void pre_release_experiment() {
-        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
+        //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
-                new NetworkAction(ansible, 0.4),
-                new RestartAction(ansible, 0.7),
-                new ShutdownAction(ansible, 0.1),
-                new MempoolFillAction(ansible, 0.8, 300),
-                new ValidatorRegistrationAction(ansible, 0.3)
+                new NetworkAction(ansible, 1.4)
+                //new RestartAction(ansible, 0.7),
+                //new ShutdownAction(ansible, 0.1),
+                //new MempoolFillAction(ansible, 0.8, 300),
+                //new ValidatorRegistrationAction(ansible, 0.3)
         );
 
         actions.forEach(Action::teardown);
         actions.forEach(Action::setup);
 
-        ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
+        //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
     }
 
 }
