@@ -17,7 +17,6 @@
 
 package com.radixdlt.test.chaos.ansible;
 
-import com.google.common.base.Joiner;
 import com.radixdlt.test.RemoteBFTNetwork;
 import com.radixdlt.test.StaticClusterNetwork;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
