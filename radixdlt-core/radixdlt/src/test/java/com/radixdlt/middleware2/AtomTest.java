@@ -44,7 +44,7 @@ public class AtomTest {
 	}
 
 	private static AtomBuilder createApiAtom() {
-		AtomBuilder atom = new AtomBuilder();
+		AtomBuilder atom = Atom.newBuilder();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(makeParticle("Hello"), Spin.UP);
 		return atom;

@@ -228,7 +228,7 @@ public class RadixEngineStateComputerTest {
 			.addParticle(unregisteredValidatorParticle, Spin.DOWN)
 			.addParticle(registeredValidatorParticle, Spin.UP)
 			.build();
-		AtomBuilder atom = new AtomBuilder();
+		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);
 		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));

@@ -18,6 +18,7 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -265,7 +266,9 @@ public class MultipleTransitionsInSameGroupTest {
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
-		AtomBuilder unsignedAtom = new AtomBuilder(particleGroups, "magic:0xdeadbeef");
+		AtomBuilder unsignedAtom = Atom.newBuilder();
+		particleGroups.forEach(unsignedAtom::addParticleGroup);
+		unsignedAtom.message("magic:0xdeadbeef");
 		// Sign and submit
 		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 

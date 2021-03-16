@@ -74,7 +74,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = new AtomBuilder("Simple test message").buildAtom();
+		var atom = Atom.newBuilder().message("Simple test message").buildAtom();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -109,6 +109,9 @@ public class AtomsServiceTest {
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.of(SpunParticle.up(particle));
 
-		return new AtomBuilder(List.of(group1), Map.of(), "Test message").buildAtom();
+		return Atom.newBuilder()
+			.addParticleGroup(group1)
+			.message("Test message")
+			.buildAtom();
 	}
 }

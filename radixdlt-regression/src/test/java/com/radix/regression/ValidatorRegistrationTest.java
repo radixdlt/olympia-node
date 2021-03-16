@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -176,7 +177,9 @@ public class ValidatorRegistrationTest {
 			message = "magic:0xdeadbeef";
 		}
 
-		AtomBuilder unsignedAtom = new AtomBuilder(particleGroups, message);
+		AtomBuilder unsignedAtom = Atom.newBuilder();
+		particleGroups.forEach(unsignedAtom::addParticleGroup);
+		unsignedAtom.message(message);
 		// Sign and submit
 		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 

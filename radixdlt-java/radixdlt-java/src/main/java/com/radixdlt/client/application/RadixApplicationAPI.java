@@ -1403,14 +1403,18 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
-			AtomBuilder feelessAtom = new AtomBuilder(universe.getAtomStore().getStaged(this.uuid), this.message);
-			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
+			var feelessBuilder = Atom.newBuilder();
+			universe.getAtomStore().getStaged(this.uuid).forEach(feelessBuilder::addParticleGroup);
+			feelessBuilder.message(this.message);
+			feeProcessor.process(this::actionProcessor, getAddress(), feelessBuilder, Optional.ofNullable(fee));
 
+			var builder = Atom.newBuilder();
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			String messageCopy = this.message;
+			particleGroups.forEach(builder::addParticleGroup);
+			builder.message(this.message);
 			this.message = null;
 
-			return new AtomBuilder(particleGroups, messageCopy);
+			return builder;
 		}
 
 		/**

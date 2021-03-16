@@ -72,6 +72,10 @@ public final class Atom implements LedgerAtom {
 	private final ImmutableList<CMMicroInstruction> instructions;
 	private final HashCode witness;
 
+	public static AtomBuilder newBuilder() {
+		return new AtomBuilder();
+	}
+
 	@JsonCreator
 	private Atom(
 		@JsonProperty("message") String message,
@@ -259,7 +263,11 @@ public final class Atom implements LedgerAtom {
 
 	public AtomBuilder toBuilder() {
 		List<ParticleGroup> pgs = toParticleGroups(this.instructions);
-		return new AtomBuilder(pgs, this.signatures, this.message);
+		var builder = new AtomBuilder();
+		pgs.forEach(builder::addParticleGroup);
+		this.signatures.forEach(builder::setSignature);
+		builder.message(this.message);
+		return builder;
 	}
 
 	@Override

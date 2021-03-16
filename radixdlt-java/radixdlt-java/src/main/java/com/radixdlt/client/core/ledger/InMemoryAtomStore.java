@@ -97,12 +97,11 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = new AtomBuilder(particleGroup);
+				stagedAtom = Atom.newBuilder().addParticleGroup(particleGroup);
+				stagedAtoms.put(uuid, stagedAtom);
 			} else {
-				var groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
-				stagedAtom = new AtomBuilder(groups);
+				stagedAtom.addParticleGroup(particleGroup);
 			}
-			stagedAtoms.put(uuid, stagedAtom);
 
 			for (SpunParticle sp : particleGroup.getParticles()) {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());

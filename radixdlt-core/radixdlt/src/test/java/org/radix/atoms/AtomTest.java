@@ -17,6 +17,7 @@
 
 package org.radix.atoms;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
@@ -24,7 +25,7 @@ import org.junit.Test;
 public class AtomTest {
 	@Test
 	public void testNullParticles() {
-		AtomBuilder atom = new AtomBuilder();
+		AtomBuilder atom = Atom.newBuilder();
 		atom.spunParticles();
 		atom.getParticleGroupCount();
 		atom.particles(Spin.UP);

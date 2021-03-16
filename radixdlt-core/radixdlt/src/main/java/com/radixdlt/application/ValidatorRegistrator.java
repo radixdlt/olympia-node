@@ -93,7 +93,7 @@ public final class ValidatorRegistrator {
 			return;
 		}
 
-		AtomBuilder atom = new AtomBuilder();
+		AtomBuilder atom = Atom.newBuilder();
 		ParticleGroup validatorUpdate = validatorState.map(
 			nonce -> ParticleGroup.of(
 				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),

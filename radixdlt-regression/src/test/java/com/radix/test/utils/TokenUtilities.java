@@ -32,12 +32,10 @@ import com.radixdlt.constraintmachine.Spin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -85,7 +83,7 @@ public final class TokenUtilities {
 
 		// Keep updating balances
 		Disposable d = api.pull();
-		var dummyAtom = new AtomBuilder(ImmutableList.of()).buildAtom();
+		var dummyAtom = Atom.newBuilder().buildAtom();
 		try {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);

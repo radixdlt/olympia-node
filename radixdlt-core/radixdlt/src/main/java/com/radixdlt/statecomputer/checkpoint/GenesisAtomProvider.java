@@ -25,8 +25,6 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
@@ -103,15 +101,15 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
 		);
 
-		final var genesisAtom = new AtomBuilder(helloMessage());
-		xrdParticleGroups.forEach(genesisAtom::addParticleGroup);
+		final var builder = Atom.newBuilder().message(helloMessage());
+		xrdParticleGroups.forEach(builder::addParticleGroup);
 		if (!validatorParticles.isEmpty()) {
-			genesisAtom.addParticleGroup(ParticleGroup.of(validatorParticles));
+			builder.addParticleGroup(ParticleGroup.of(validatorParticles));
 		}
 		if (!stakingParticleGroups.isEmpty()) {
-			stakingParticleGroups.forEach(genesisAtom::addParticleGroup);
+			stakingParticleGroups.forEach(builder::addParticleGroup);
 		}
-		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
+		builder.addParticleGroup(ParticleGroup.of(epochParticles));
 
 		final var signingKeys = Streams.concat(
 			Stream.of(this.universeKey),
@@ -119,13 +117,12 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			stakeDelegations.stream().map(StakeDelegation::staker)
 		).collect(ImmutableList.toImmutableList());
 
+		HashCode hashToSign = builder.computeHashToSign();
 		signingKeys.forEach(keyPair -> {
-			HashCode hashToSign = genesisAtom.computeHashToSign();
-			genesisAtom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+			builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		});
-		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
 
-		return genesisAtom.buildAtom();
+		return builder.buildAtom();
 	}
 
 	/*
@@ -133,11 +130,5 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	 */
 	private static String helloMessage() {
 		return "Radix... just imagine!";
-	}
-
-	private void verifySignature(ECKeyPair key, AtomBuilder genesisAtom) {
-		Atom atom = genesisAtom.buildAtom();
-		ECDSASignature signature = atom.getSignature(key.euid()).orElseThrow();
-		key.getPublicKey().verify(atom.getWitness(), signature);
 	}
 }

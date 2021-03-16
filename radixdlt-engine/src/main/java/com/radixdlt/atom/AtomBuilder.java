@@ -41,44 +41,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
-
 public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
-	private final String message;
+	private String message;
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
-	public AtomBuilder() {
-		this(ImmutableList.of(), Map.of(), null);
+	AtomBuilder() {
 	}
 
-	public AtomBuilder(@Nullable String message) {
+	public AtomBuilder message(String message) {
 		this.message = message;
-	}
-
-	public AtomBuilder(ParticleGroup pg) {
-		this(List.of(pg), Map.of(), null);
-	}
-
-	public AtomBuilder(List<ParticleGroup> pgs) {
-		this(pgs, Map.of(), null);
-	}
-
-	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
-		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(signatures, "signatures is required");
-
-		this.particleGroups.addAll(particleGroups);
-		this.signatures.putAll(signatures);
-		this.message = message;
-	}
-
-	public AtomBuilder(List<ParticleGroup> particleGroups, String message) {
-		this(particleGroups, Map.of(), message);
-	}
-
-	public AtomBuilder(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
-		this(particleGroups, signatures, null);
+		return this;
 	}
 
 	// Primarily used for excluding fee groups in fee calculations
@@ -87,7 +60,12 @@ public final class AtomBuilder {
 			.filter(pg -> !exclusions.test(pg))
 			.collect(Collectors.toList());
 
-		return new AtomBuilder(newParticleGroups, this.signatures, this.message);
+		var builder = new AtomBuilder();
+		newParticleGroups.forEach(builder::addParticleGroup);
+		this.signatures.forEach(builder::setSignature);
+		builder.message(this.message);
+
+		return builder;
 	}
 
 	/**
@@ -95,10 +73,10 @@ public final class AtomBuilder {
 	 *
 	 * @param particleGroup The particle group
 	 */
-	public void addParticleGroup(ParticleGroup particleGroup) {
+	public AtomBuilder addParticleGroup(ParticleGroup particleGroup) {
 		Objects.requireNonNull(particleGroup, "particleGroup is required");
-
 		this.particleGroups.add(particleGroup);
+		return this;
 	}
 
 	/**
@@ -184,15 +162,15 @@ public final class AtomBuilder {
 	}
 
 	public HashCode computeHashToSign() {
-		return Atom.computeHashToSign(toCMMicroInstructions(this.getParticleGroups()));
+		return Atom.computeHashToSign(toCMMicroInstructions(this.particleGroups));
 	}
 
 	public Atom buildAtom() {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.getParticleGroups());
+		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.particleGroups);
 		return Atom.create(
 			instructions,
-			ImmutableMap.copyOf(this.getSignatures()),
-			this.getMessage()
+			ImmutableMap.copyOf(this.signatures),
+			this.message
 		);
 	}
 

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
@@ -134,7 +135,7 @@ public final class InMemoryWallet {
 	}
 
 	private Optional<AtomBuilder> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
-		AtomBuilder atom = new AtomBuilder();
+		AtomBuilder atom = Atom.newBuilder();
 		Optional<ParticleGroup> feeGroup = createFeeGroup(mutableList);
 		if (feeGroup.isEmpty()) {
 			return Optional.empty();
