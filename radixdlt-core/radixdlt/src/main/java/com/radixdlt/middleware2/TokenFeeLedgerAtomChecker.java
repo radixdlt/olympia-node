@@ -25,8 +25,6 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.engine.AtomChecker;
@@ -98,13 +96,10 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 
 		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
 		final Atom clientAtom;
-		final AtomBuilder completeAtom;
 		if (atom instanceof Atom) {
 			clientAtom = (Atom) atom;
-			completeAtom = clientAtom.toBuilder();
 		} else if (atom instanceof CommittedAtom) {
 			clientAtom = ((CommittedAtom) atom).getClientAtom();
-			completeAtom = clientAtom.toBuilder();
 		} else {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
 		}
@@ -114,12 +109,12 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom too big: " + totalSize);
 		}
 
-		AtomBuilder atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
-		Set<Particle> outputParticles = atomWithoutFeeGroup.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
+		Atom atomWithoutFeeGroup = clientAtom.toBuilder().copyExcludingGroups(this::isFeeGroup).buildAtom();
+		Set<Particle> outputParticles = atomWithoutFeeGroup.upParticles().collect(Collectors.toSet());
 		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
-		UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
+		UInt256 feePaid = computeFeePaid(clientAtom.toBuilder().particleGroups().filter(this::isFeeGroup));
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
 			return Result.error(message);
