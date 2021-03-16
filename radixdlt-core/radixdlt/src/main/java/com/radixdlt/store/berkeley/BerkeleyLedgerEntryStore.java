@@ -462,6 +462,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		final byte[] indexableBytes = numericClassId.toByteArray();
 
 		byte[] serializedParticle = serialize(particle);
+
+		// Store class + particle
 		var value = new byte[EUID.BYTES + serializedParticle.length];
 		System.arraycopy(indexableBytes, 0, value, 0, EUID.BYTES);
 		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);

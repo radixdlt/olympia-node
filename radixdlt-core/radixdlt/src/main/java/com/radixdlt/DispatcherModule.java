@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;

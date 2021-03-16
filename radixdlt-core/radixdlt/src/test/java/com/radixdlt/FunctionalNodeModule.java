@@ -19,7 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.application.ValidatorRegistratorModule;
+import com.radixdlt.application.validator.ValidatorRegistratorModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
