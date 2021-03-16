@@ -82,13 +82,12 @@ public class AnsibleImageWrapper {
 
     public String runPlaybook(String playbook, String options, String tag) {
         String optionsAsEnvProperty = StringUtils.isBlank(options) ? "" : "-e \"optionsArgs='" + options + "'\" ";
-        String command = "docker run --rm -v key-volume:/ansible/ssh --name node-ansible "
-                + image + " "
-                + playbook + " "
-                + optionsAsEnvProperty
-                + "--limit " + clusterName + " -t " + tag;
-        logger.info("Running docker command: {}", command);
-        return CmdHelper.runCommand(command, null, true).toString();
+        List<String> commandParts = Lists.newArrayList(
+                "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
+                image, playbook, optionsAsEnvProperty, "--limit", clusterName, "-t", tag
+        );
+        logger.info("Running docker command: {}", commandParts);
+        return CmdHelper.runCommand(commandParts.toArray(String[]::new), null, true).toString();
     }
 
     public String runPlaybook(String playbook, String tag) {
