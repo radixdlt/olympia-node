@@ -6,13 +6,13 @@ import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidatorRegistrationAction extends ActionWithLikelihood {
+public class ValidatorUnregistrationAction extends ActionWithLikelihood {
 
     private static final Logger logger = LogManager.getLogger();
 
     private final HttpClient httpClient;
 
-    public ValidatorRegistrationAction(AnsibleImageWrapper ansible, double likelihood) {
+    public ValidatorUnregistrationAction(AnsibleImageWrapper ansible, double likelihood) {
         super(ansible, likelihood);
         httpClient = new HttpClient();
     }

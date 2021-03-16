@@ -21,7 +21,7 @@ import com.radixdlt.test.Cluster;
 import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
-import com.radixdlt.test.chaos.actions.ValidatorRegistrationAction;
+import com.radixdlt.test.chaos.actions.ValidatorUnregistrationAction;
 import com.radixdlt.test.chaos.actions.ShutdownAction;
 import com.radixdlt.test.chaos.actions.MempoolFillAction;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
@@ -49,7 +49,7 @@ public class ChaosExperiments {
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
                 new MempoolFillAction(ansible, 0.7, 300),
-                new ValidatorRegistrationAction(ansible, 1.0)
+                new ValidatorUnregistrationAction(ansible, 1.0)
         );
 
         actions.forEach(Action::teardown);
