@@ -17,6 +17,7 @@
 
 package com.radixdlt.test.chaos.ansible;
 
+import com.google.common.base.Joiner;
 import com.radixdlt.test.RemoteBFTNetwork;
 import com.radixdlt.test.StaticClusterNetwork;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
@@ -86,6 +87,7 @@ public class AnsibleImageWrapper {
                 "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
                 image, playbook, optionsAsEnvProperty, "--limit", clusterName, "-t", tag
         );
+        System.out.println(Joiner.on("\n").join(commandParts));
         logger.info("Running docker command: {}", commandParts);
         return CmdHelper.runCommand(commandParts.toArray(String[]::new), null, true).toString();
     }
