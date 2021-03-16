@@ -122,5 +122,7 @@ public final class MempoolFillAndEmptyTest {
         for (int i = 0; i < 10; i++) {
             fillAndEmptyMempool();
         }
+
+        assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
     }
 }

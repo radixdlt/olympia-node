@@ -28,7 +28,6 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
@@ -122,7 +121,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
+		this.virtualizedCMStore = virtualStoreLayer.apply(engineStore);
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 	}
@@ -340,15 +339,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			particleIndex++;
 
 			final Spin checkSpin = microInstruction.getCheckSpin();
-			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
-			// TODO: Move virtual state checks into static check
-			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				throw new RadixEngineException(atom, RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, "Virtual state conflict", dp);
-			}
-
 			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Spin physicalSpin = engineStore.getSpin(particle);
-			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
+			final Spin currentSpin = virtualizedCMStore.getSpin(particle);
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
 					throw new RadixEngineException(atom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
