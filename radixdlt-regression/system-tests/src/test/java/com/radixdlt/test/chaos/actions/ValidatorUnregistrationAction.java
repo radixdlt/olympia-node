@@ -26,9 +26,15 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
         logger.info("Got tokens");
         ChaosExperimentUtils.waitSeconds(5);
 
-        httpClient.unregisterValidator(host);
-        logger.info("Unregistered node {} as a validator", host);
-        ChaosExperimentUtils.annotateGrafana("Unregistered " + host);
+        try {
+            httpClient.unregisterValidator(host);
+            logger.info("Unregistered node {} as a validator", host);
+            ChaosExperimentUtils.annotateGrafana("Unregistered " + host);
+        } catch (Exception e) {
+            // TODO Sometimes the experiment will try to unregisted a stopped/downed node, which will return a 502
+            // this is a hacky way to ignore such error
+            e.printStackTrace();
+        }
     }
 
     @Override
