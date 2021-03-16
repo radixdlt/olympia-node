@@ -88,7 +88,7 @@ public class AnsibleImageWrapper {
         );
         String[] commandArrayWithoutEmptyStrings =
                 commandParts.stream().filter(StringUtils::isNotBlank).toArray(String[]::new);
-        logger.info("Running docker command: {}", commandArrayWithoutEmptyStrings);
+        logger.info("Running docker command: {}", commandParts);
         return CmdHelper.runCommand(commandArrayWithoutEmptyStrings, null, true).toString();
     }
 
