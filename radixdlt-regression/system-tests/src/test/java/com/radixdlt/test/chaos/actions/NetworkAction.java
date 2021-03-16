@@ -49,9 +49,9 @@ public class NetworkAction extends ActionWithLikelihood {
     private String getRandomLatencyOrLoss() {
         Random random = new Random();
         if (random.nextBoolean()) { // loss
-            return "loss " + (random.nextInt(10) + 1) + "%";
+            return "loss_" + (random.nextInt(10) + 1) + "%";
         } else { // delay
-            return "delay " + (random.nextInt(25) + 1) + "ms";
+            return "delay_" + (random.nextInt(25) + 1) + "ms";
         }
     }
 
