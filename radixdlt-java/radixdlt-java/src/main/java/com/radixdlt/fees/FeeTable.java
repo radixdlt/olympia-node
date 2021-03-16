@@ -19,14 +19,13 @@ package com.radixdlt.fees;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.serialization.Serialize;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -56,11 +55,9 @@ public final class FeeTable {
 	}
 
 	public UInt256 feeFor(AtomBuilder atomWithoutFees) {
-		final int atomSize = Serialize.getInstance().toDson(atomWithoutFees, DsonOutput.Output.HASH).length;
-		final ImmutableSet<Particle> outputs = atomWithoutFees.spunParticles()
-				.filter(sp -> Spin.UP.equals(sp.getSpin()))
-				.map(SpunParticle::getParticle)
-				.collect(ImmutableSet.toImmutableSet());
+		Atom atom = atomWithoutFees.buildAtom();
+		final int atomSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length;
+		final Set<Particle> outputs = atom.upParticles().collect(Collectors.toSet());
 		return feeFor(atomWithoutFees, outputs, atomSize);
 	}
 
