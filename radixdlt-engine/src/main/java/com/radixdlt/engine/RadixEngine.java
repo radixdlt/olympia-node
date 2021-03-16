@@ -177,12 +177,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	public void staticCheck(T atom) throws RadixEngineException {
-		staticCheck(atom, PermissionLevel.USER);
-	}
+	private void staticCheck(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		final Optional<CMError> error = constraintMachine.validate(
+			virtualizedCMStore,
+			atom.getCMInstruction(),
+			atom.getWitness(),
+			permissionLevel
+		);
 
-	public void staticCheck(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), atom.getWitness(), permissionLevel);
 		if (error.isPresent()) {
 			CMError e = error.get();
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
@@ -290,9 +292,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
 	public void checkAndStore(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		this.staticCheck(atom, permissionLevel);
-
 		synchronized (stateUpdateEngineLock) {
+			this.staticCheck(atom, permissionLevel);
+
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
 					String.format(
@@ -313,42 +315,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
-
-		final Set<Particle> checkedParticles = new HashSet<>();
-		long particleIndex = 0;
-		long particleGroupIndex = 0;
-		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			if (!microInstruction.isCheckSpin()) {
-				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-					particleGroupIndex++;
-					particleIndex = 0;
-				}
-
-				continue;
-			}
-
-			final Particle particle = microInstruction.getParticle();
-			// First spin is the only one we need to check
-			// TODO: Implement less memory intensive mechanism for this check
-			if (checkedParticles.contains(particle)) {
-				continue;
-			}
-			checkedParticles.add(particle);
-
-			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			particleIndex++;
-
-			final Spin checkSpin = microInstruction.getCheckSpin();
-			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Spin currentSpin = virtualizedCMStore.getSpin(particle);
-			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
-				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					throw new RadixEngineException(atom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
-				} else {
-					throw new RadixEngineException(atom, RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
-				}
-			}
-		}
 
 		// Persist
 		engineStore.storeAtom(atom);

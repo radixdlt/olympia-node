@@ -24,6 +24,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.List;
@@ -86,8 +87,15 @@ public final class ConstraintMachine {
 		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
+		private final CMStore store;
 
-		CMValidationState(PermissionLevel permissionLevel, HashCode witness, Map<EUID, ECDSASignature> signatures) {
+		CMValidationState(
+			CMStore store,
+			PermissionLevel permissionLevel,
+			HashCode witness,
+			Map<EUID, ECDSASignature> signatures
+		) {
+			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
@@ -99,12 +107,15 @@ public final class ConstraintMachine {
 		}
 
 		public boolean checkSpin(Particle particle, Spin spin) {
+			final Spin currentSpin;
 			if (currentSpins.containsKey(particle)) {
-				return currentSpins.get(particle).equals(spin);
+				currentSpin = currentSpins.get(particle);
+			} else {
+				currentSpin = store.getSpin(particle);
+				currentSpins.put(particle, currentSpin);
 			}
 
-			this.currentSpins.put(particle, spin);
-			return true;
+			return currentSpin.equals(spin);
 		}
 
 		@Override
@@ -119,10 +130,6 @@ public final class ConstraintMachine {
 
 			final ECDSASignature signature = signatures.get(publicKey.euid());
 			return publicKey.verify(witness, signature);
-		}
-
-		boolean has(Particle p) {
-			return currentSpins.containsKey(p);
 		}
 
 		boolean push(Particle p) {
@@ -367,7 +374,7 @@ public final class ConstraintMachine {
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
 					boolean noConflict = validationState.checkSpin(nextParticle, checkSpin);
 					if (!noConflict) {
-						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT, validationState));
+						return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 					}
 
 					final boolean isInput = validationState.push(nextParticle);
@@ -424,8 +431,9 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMInstruction cmInstruction, HashCode witness, PermissionLevel permissionLevel) {
+	public Optional<CMError> validate(CMStore cmStore, CMInstruction cmInstruction, HashCode witness, PermissionLevel permissionLevel) {
 		final CMValidationState validationState = new CMValidationState(
+			cmStore,
 			permissionLevel,
 			witness,
 			cmInstruction.getSignatures()
