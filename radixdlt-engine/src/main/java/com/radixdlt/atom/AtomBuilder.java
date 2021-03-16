@@ -18,18 +18,14 @@
 
 package com.radixdlt.atom;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.SpinStateMachine;
 
 import java.util.ArrayList;
@@ -41,6 +37,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Builder class for atom creation
+ */
 public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
 	private String message;
@@ -89,14 +88,6 @@ public final class AtomBuilder {
 		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
 	}
 
-	public String getMessage() {
-		return this.message;
-	}
-
-	public int getParticleGroupCount() {
-		return this.particleGroups.size();
-	}
-
 	public Stream<ParticleGroup> particleGroups() {
 		return this.particleGroups.stream();
 	}
@@ -125,26 +116,6 @@ public final class AtomBuilder {
 			.filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()));
 	}
 
-	/**
-	 * Returns the first particle found which is assign compatible to the class specified by the type argument.
-	 * Returns null if not found
-	 *
-	 * @param type class of particle to get
-	 * @param spin the spin of the particle to get
-	 * @return the particle with given type and spin
-	 */
-	public <T extends Particle> T getParticle(Class<T> type, Spin spin) {
-		Objects.requireNonNull(type);
-		Objects.requireNonNull(spin);
-
-		return this.spunParticles()
-			.filter(s -> s.getSpin().equals(spin))
-			.map(SpunParticle::getParticle)
-			.filter(p -> type.isAssignableFrom(p.getClass()))
-			.map(type::cast)
-			.findFirst().orElse(null);
-	}
-
 	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new ImmutableList.Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
@@ -166,7 +137,7 @@ public final class AtomBuilder {
 	}
 
 	public Atom buildAtom() {
-		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(this.particleGroups);
+		final var instructions = toCMMicroInstructions(this.particleGroups);
 		return Atom.create(
 			instructions,
 			ImmutableMap.copyOf(this.signatures),
@@ -174,33 +145,8 @@ public final class AtomBuilder {
 		);
 	}
 
-	public Map<EUID, ECDSASignature> getSignatures() {
-		return signatures;
-	}
-
 	public void setSignature(EUID id, ECDSASignature signature) {
 		this.signatures.put(id, signature);
-	}
-
-	// Property Signatures: 1 getter, 1 setter
-	@JsonProperty("signatures")
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private Map<String, ECDSASignature> getJsonSignatures() {
-		return this.signatures.entrySet().stream()
-			.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
-	}
-
-	@JsonProperty("signatures")
-	private void setJsonSignatures(Map<String, ECDSASignature> sigs) {
-		if (sigs != null && !sigs.isEmpty()) {
-			this.signatures.putAll((sigs.entrySet().stream()
-				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
-		}
-	}
-
-	public static AID aidOf(AtomBuilder atom, Hasher hasher) {
-		HashCode hash = hasher.hash(atom);
-		return AID.from(hash.asBytes());
 	}
 
 	@Override
