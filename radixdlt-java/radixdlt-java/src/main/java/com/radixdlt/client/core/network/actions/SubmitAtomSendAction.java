@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
@@ -72,6 +72,6 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_SEND " + uuid + " " + atom.getAid() + " " + node;
+		return "SUBMIT_ATOM_SEND " + uuid + " " + atom + " " + node;
 	}
 }

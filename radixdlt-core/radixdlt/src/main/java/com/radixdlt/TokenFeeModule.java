@@ -31,7 +31,7 @@ import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerBytesFeeEntry;
 import com.radixdlt.fees.PerParticleFeeEntry;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
 import com.radixdlt.utils.UInt256;
 

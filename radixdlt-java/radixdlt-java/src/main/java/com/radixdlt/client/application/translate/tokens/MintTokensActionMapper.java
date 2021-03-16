@@ -26,12 +26,12 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,7 +48,7 @@ import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintTokensAction> {
 	public MintTokensActionMapper() {
@@ -73,18 +73,18 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				new UnallocatedTokensParticle(
 					amt,
 					granularity,
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					mint.getAddress(),
 					amt,
 					granularity,
-					mint.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 

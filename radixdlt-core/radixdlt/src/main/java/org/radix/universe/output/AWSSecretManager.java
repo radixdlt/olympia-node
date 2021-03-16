@@ -32,10 +32,12 @@ public class AWSSecretManager {
         secretsClient.close();
 
     }
+
     public static void createSecret(String secretName, String secretValue, String network) {
         boolean binarySecret = false;
         createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
     }
+
     public static void createBinarySecret(String secretName, SdkBytes secretValue, String network) {
         boolean binarySecret = true;
         createSecret(secretName, secretValue, network, defaultRegion, binarySecret);
@@ -51,6 +53,7 @@ public class AWSSecretManager {
         secretsClient.close();
         return secret;
     }
+
     public static String getSecret(String secretName) {
         return getSecret(secretName, defaultRegion);
     }
@@ -87,56 +90,64 @@ public class AWSSecretManager {
         updateMySecret(secretsClient, secretName, secretValue);
         secretsClient.close();
     }
+
     public static void updateBinarySecret(String secretName, SdkBytes secretValue) {
         updateBinarySecret(secretName, secretValue, defaultRegion);
     }
+
     public static void updateSecret(String secretName, String secretValue) {
         updateSecret(secretName, secretValue, defaultRegion);
     }
 
     private static void updateMySecret(SecretsManagerClient secretsClient, String secretName, String secretValue) {
         UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
-                .secretId(secretName)
-                .secretString(secretValue)
-                .build();
+            .secretId(secretName)
+            .secretString(secretValue)
+            .build();
 
         secretsClient.updateSecret(secretRequest);
     }
 
     private static void updateMyBinarySecret(SecretsManagerClient secretsClient, String secretName, SdkBytes secretValue) {
         UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
-                .secretId(secretName)
-                .secretBinary(secretValue)
-                .build();
+            .secretId(secretName)
+            .secretBinary(secretValue)
+            .build();
 
         secretsClient.updateSecret(secretRequest);
     }
 
     private static String getValue(SecretsManagerClient secretsClient, String secretName) {
         GetSecretValueRequest valueRequest = GetSecretValueRequest.builder()
-                .secretId(secretName)
-                .build();
+            .secretId(secretName)
+            .build();
 
         GetSecretValueResponse valueResponse = secretsClient.getSecretValue(valueRequest);
         return valueResponse.secretString();
 
     }
 
-    private static String createNewSecret(SecretsManagerClient secretsClient, String secretName, Object secretValue, String network, boolean binarySecret) {
+    private static String createNewSecret(
+        SecretsManagerClient secretsClient,
+        String secretName,
+        Object secretValue,
+        String network,
+        boolean binarySecret
+    ) {
         List<Tag> tagList = buildTags(network, secretName);
-		CreateSecretRequest secretRequest;
-        if (binarySecret){
-        secretRequest = CreateSecretRequest.builder()
+        CreateSecretRequest secretRequest;
+        if (binarySecret) {
+            secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
                 .secretBinary((SdkBytes) secretValue)
                 .tags(tagList)
                 .build();
-        }else{
+        } else {
             secretRequest = CreateSecretRequest.builder()
                 .name(secretName)
                 .description("Validator keys")
-                .secretString((String)secretValue)
+                .secretString((String) secretValue)
                 .tags(tagList)
                 .build();
         }
@@ -150,16 +161,26 @@ public class AWSSecretManager {
         final Map<String, Object> awsSecret,
         final String secretName,
         final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
-        boolean compress
+        boolean compress,
+        boolean binarySecret
     ) {
         ObjectMapper objectMapper = new ObjectMapper();
+
         try {
             String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-            if (compress){
+            if (compress) {
                 byte[] compressedBytes = compressData(jsonSecret);
-                AWSSecretManager.createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
+                createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
             } else {
-                AWSSecretManager.createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+                if (binarySecret) {
+                    createBinarySecret(
+                        secretName,
+                        SdkBytes.fromByteArray((byte[]) awsSecret.get("key")),
+                        awsSecretsUniverseOutput.getNetworkName()
+                    );
+                } else {
+                    createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+                }
             }
         } catch (JsonProcessingException e) {
             System.out.println(e);
@@ -182,17 +203,28 @@ public class AWSSecretManager {
         return compressed;
     }
 
-    public static void updateAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
+    public static void updateAWSSecret(
+        Map<String, Object> awsSecret,
+        String secretName,
+        AWSSecretsUniverseOutput awsSecretsUniverseOutput,
+        boolean compress,
+        boolean binarySecret
+    ) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (canBeUpdated(awsSecretsUniverseOutput)) {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
-                if (compress){
+                if (compress) {
                     byte[] compressedBytes = compressData(jsonSecret);
                     updateBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes));
-                } else{
-                    updateSecret(secretName, jsonSecret);
+                } else {
+                    if (binarySecret) {
+                        updateBinarySecret(secretName, SdkBytes.fromByteArray((byte[]) awsSecret.get("key")));
+                    } else {
+                        updateSecret(secretName, jsonSecret);
+                    }
+
                 }
             } catch (JsonProcessingException e) {
                 System.out.println(e);
@@ -227,25 +259,25 @@ public class AWSSecretManager {
         List<Tag> tagList = new ArrayList<>();
 
         Tag envTypeTag = Tag.builder()
-                .key("radixdlt:environment-type")
-                .value("development")
-                .build();
+            .key("radixdlt:environment-type")
+            .value("development")
+            .build();
         Tag teamTag = Tag.builder()
-                .key("radixdlt:teamn")
-                .value("devops")
-                .build();
+            .key("radixdlt:teamn")
+            .value("devops")
+            .build();
         Tag appTag = Tag.builder()
-                .key("radixdlt:application")
-                .value("validator")
-                .build();
+            .key("radixdlt:application")
+            .value("validator")
+            .build();
         Tag nameTag = Tag.builder()
-                .key("radixdlt:name")
-                .value(name)
-                .build();
+            .key("radixdlt:name")
+            .value(name)
+            .build();
         Tag networkTag = Tag.builder()
-                .key("radixdlt:network")
-                .value(network)
-                .build();
+            .key("radixdlt:network")
+            .value(network)
+            .build();
 
         tagList.add(envTypeTag);
         tagList.add(appTag);

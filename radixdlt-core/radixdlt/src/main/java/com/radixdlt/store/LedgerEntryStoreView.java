@@ -22,7 +22,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.Atom;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -43,7 +43,7 @@ public interface LedgerEntryStoreView {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<ClientAtom> get(AID aid);
+	Optional<Atom> get(AID aid);
 
 	/**
 	 * Gets the last committed atom aid
@@ -54,7 +54,8 @@ public interface LedgerEntryStoreView {
 
 	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
 
-	SearchCursor search(byte[] destination);
+	// TODO: remove once we clean up API to not require searching
+	SearchCursor search();
 
 	<U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,
@@ -65,7 +66,7 @@ public interface LedgerEntryStoreView {
 	Spin getSpin(Transaction tx, Particle particle);
 
 	/**
-	 * Retrieve a chunk of {@link ClientAtom} with state version greater than the given one
+	 * Retrieve a chunk of {@link Atom} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter
 	 * @return ledger entries satisfying the constraints

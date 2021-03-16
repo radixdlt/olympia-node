@@ -17,10 +17,11 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -28,8 +29,8 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -43,7 +44,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.Random;
@@ -75,7 +76,7 @@ public final class RadixEngineTest {
 		);
 	}
 
-	private ClientAtom uniqueAtom(ECKeyPair keyPair) {
+	private Atom uniqueAtom(ECKeyPair keyPair) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "test");
 		RRIParticle rriParticle = new RRIParticle(rri, 0);
@@ -84,10 +85,11 @@ public final class RadixEngineTest {
 			.addParticle(rriParticle, Spin.DOWN)
 			.addParticle(uniqueParticle, Spin.UP)
 			.build();
-		Atom atom = new Atom();
+		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);
-		atom.sign(keyPair, hasher);
-		return ClientAtom.convertFromApiAtom(atom, hasher);
+		HashCode hashToSign = atom.computeHashToSign();
+		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return atom.buildAtom();
 	}
 
 	@Test

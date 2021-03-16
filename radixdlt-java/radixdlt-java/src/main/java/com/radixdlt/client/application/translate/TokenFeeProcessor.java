@@ -28,7 +28,7 @@ import java.util.Optional;
 
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -54,7 +54,7 @@ public final class TokenFeeProcessor implements FeeProcessor {
 	}
 
 	@Override
-	public void process(ActionProcessor actionProcessor, RadixAddress address, Atom atom, Optional<BigDecimal> optionalFee) {
+	public void process(ActionProcessor actionProcessor, RadixAddress address, AtomBuilder atom, Optional<BigDecimal> optionalFee) {
 		BigDecimal feeToPay = optionalFee.orElseGet(() -> TokenUnitConversions.subunitsToUnits(this.feeTable.feeFor(atom)));
 		int signum = feeToPay.signum();
 		if (signum < 0) {

@@ -25,6 +25,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.application.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -58,7 +59,6 @@ import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
-import com.radixdlt.universe.Universe;
 
 import com.radixdlt.universe.UniverseModule;
 import org.radix.universe.system.LocalSystem;
@@ -77,9 +77,9 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 
-		bindConstant().annotatedWith(MempoolThrottleMs.class).to(50L);
+		bindConstant().annotatedWith(MempoolThrottleMs.class).to(20L);
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
-		final long syncPatience = properties.get("sync.patience", 200);
+		final long syncPatience = properties.get("sync.patience", 2000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
@@ -170,10 +170,10 @@ public final class RadixNodeModule extends AbstractModule {
 	LocalSystem localSystem(
 		@Self BFTNode self,
 		InfoSupplier infoSupplier,
-		Universe universe,
-		HostIp hostIp
+		HostIp hostIp,
+		TCPConfiguration tcpConfiguration
 	) {
 		String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		return LocalSystem.create(self, infoSupplier, universe, host);
+		return LocalSystem.create(self, infoSupplier, host, tcpConfiguration.networkPort(30000));
 	}
 }

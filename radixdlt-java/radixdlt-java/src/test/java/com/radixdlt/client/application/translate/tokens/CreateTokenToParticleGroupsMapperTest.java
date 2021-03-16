@@ -23,19 +23,19 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.SpunParticle;
 
 import java.util.List;
 import java.util.function.Predicate;
 
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atom.ParticleGroup;
 import org.junit.Test;
 
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;

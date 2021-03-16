@@ -49,7 +49,7 @@ public class GetStoredAtoms implements Runnable {
 		api.pullOnce(api.getAddress()).blockingAwait();
 
 		println("Atom ID's:");
-		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAid()));
+		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAID()));
 		println("Done");
 	}
 }

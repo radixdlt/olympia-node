@@ -23,9 +23,9 @@
 package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.Assertions;
@@ -46,9 +46,6 @@ public class ValidatorRegistrationStateTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ValidatorRegistrationState.class)
-			// Prefab instances of abstract class "Particle" all serialize to the same empty
-			// data, and therefore are always equals(...) and have the same hashCode().
-			.withIgnoredFields("particle")
 			.verify();
 	}
 

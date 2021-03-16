@@ -17,16 +17,17 @@
 
 package com.radixdlt.fees;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class FeeTableTest {
-    private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
+	private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
 	private static final ImmutableList<FeeEntry> FEE_ENTRIES = ImmutableList.of(
 		PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.THREE)
 	);
@@ -49,64 +50,62 @@ public class FeeTableTest {
 			.verify();
 	}
 
-    @Test
-    public void testGetters() {
-    	FeeTable ft = get();
-    	assertEquals(MINIMUM_FEE, ft.minimumFee());
-    	assertEquals(FEE_ENTRIES, ft.feeEntries());
-    }
+	@Test
+	public void testGetters() {
+		FeeTable ft = get();
+		assertEquals(MINIMUM_FEE, ft.minimumFee());
+		assertEquals(FEE_ENTRIES, ft.feeEntries());
+	}
 
-    @Test
-    public void testFeeForAtomNotMinimum() {
-    	FeeTable ft = get();
-    	final var p1 = makeParticle("test message 1");
-    	final var p2 = makeParticle("test message 2");
-    	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
-    		ParticleGroup.of(SpunParticle.up(p1)),
-    		ParticleGroup.of(SpunParticle.up(p2))
-    	);
-    	Atom a = Atom.create(particleGroups);
-    	UInt256 fee = ft.feeFor(a, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
-    	assertEquals(UInt256.SIX, fee);
-    }
+	@Test
+	public void testFeeForAtomNotMinimum() {
+		FeeTable ft = get();
+		final var p1 = makeParticle("test message 1");
+		final var p2 = makeParticle("test message 2");
+		AtomBuilder a = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.of(SpunParticle.up(p1)))
+			.addParticleGroup(ParticleGroup.of(SpunParticle.up(p2)));
+		UInt256 fee = ft.feeFor(a, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
+		assertEquals(UInt256.SIX, fee);
+	}
 
-    @Test
-    public void testFeeForAtomMinimum() {
-    	FeeTable ft = get();
-    	Atom a = Atom.create(ImmutableList.of());
-    	UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
-    	assertEquals(UInt256.FIVE, fee);
-    }
+	@Test
+	public void testFeeForAtomMinimum() {
+		FeeTable ft = get();
+		AtomBuilder a = Atom.newBuilder();
+		UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
+		assertEquals(UInt256.FIVE, fee);
+	}
 
-    @Test
-    public void testFeeOverflow() {
-    	ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
+	@Test
+	public void testFeeOverflow() {
+		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
 			PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.MAX_VALUE),
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
-    	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-    	final var p3 = makeParticle("test message 3");
-    	Atom a = Atom.create(ParticleGroup.of(SpunParticle.up(p3)));
-    	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
-    	assertThatThrownBy(() -> ft.feeFor(a, outputs, 1))
-    		.isInstanceOf(ArithmeticException.class)
-    		.hasMessageStartingWith("Fee overflow");
-    }
+		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
+		final var p3 = makeParticle("test message 3");
+		AtomBuilder a = Atom.newBuilder().addParticleGroup(ParticleGroup.of(SpunParticle.up(p3)));
+		ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
+		assertThatThrownBy(() -> ft.feeFor(a, outputs, 1))
+			.isInstanceOf(ArithmeticException.class)
+			.hasMessageStartingWith("Fee overflow");
+	}
 
 
-    @Test
-    public void testToString() {
-    	String s = get().toString();
-    	assertThat(s).contains(FeeTable.class.getSimpleName());
-    }
+	@Test
+	public void testToString() {
+		String s = get().toString();
+		assertThat(s).contains(FeeTable.class.getSimpleName());
+	}
 
-    private static FeeTable get() {
-    	return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
-    }
+	private static FeeTable get() {
+		return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
+	}
 
-    private static UniqueParticle makeParticle(String message) {
-    	final var kp = ECKeyPair.generateNew();
-    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-    	return new UniqueParticle(address, message);
-    }
+	private static UniqueParticle makeParticle(String message) {
+		final var kp = ECKeyPair.generateNew();
+		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
+		return new UniqueParticle(message, address, 0L);
+	}
 }

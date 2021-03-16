@@ -22,18 +22,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -176,9 +177,11 @@ public class ValidatorRegistrationTest {
 			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, message);
+		AtomBuilder unsignedAtom = Atom.newBuilder();
+		particleGroups.forEach(unsignedAtom::addParticleGroup);
+		unsignedAtom.message(message);
 		// Sign and submit
-		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 
@@ -186,7 +189,7 @@ public class ValidatorRegistrationTest {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == RadixJsonRpcClient.NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAID()).blockingAwait();
 					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 				}
 			})

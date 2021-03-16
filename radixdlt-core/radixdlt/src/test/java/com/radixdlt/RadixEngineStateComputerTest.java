@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -30,7 +31,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
@@ -67,9 +68,9 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -104,7 +105,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private Atom atom;
+	private Atom genesisAtom;
 
 	@Inject
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -162,7 +163,6 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
 		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
@@ -204,17 +204,16 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		ClientAtom clientAtom = ClientAtom.create(
+		Atom atom = Atom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
-			),
-			hasher
+			)
 		);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
+		return new RadixEngineCommand(cmd, hasher.hash(cmd), atom, PermissionLevel.USER);
 	}
 
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
@@ -229,10 +228,11 @@ public class RadixEngineStateComputerTest {
 			.addParticle(unregisteredValidatorParticle, Spin.DOWN)
 			.addParticle(registeredValidatorParticle, Spin.UP)
 			.build();
-		Atom atom = new Atom();
+		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);
-		atom.sign(keyPair, hasher);
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		HashCode hashToSign = atom.computeHashToSign();
+		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		Atom clientAtom = atom.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);

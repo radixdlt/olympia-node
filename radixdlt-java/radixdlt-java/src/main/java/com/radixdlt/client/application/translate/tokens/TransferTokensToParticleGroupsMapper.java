@@ -22,12 +22,11 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
@@ -37,15 +36,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.constraintmachine.Particle;
 import java.util.stream.Stream;
-import org.bouncycastle.util.encoders.Base64;
 import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
@@ -63,7 +61,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			throw new NotEnoughFungiblesException(totalAmountToTransfer, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -71,21 +69,21 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					transfer.getFrom(),
 					amt,
 					granularity,
-					transfer.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					transfer.getTo(),
 					totalAmountToTransfer,
 					granularity,
-					transfer.getTo(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
@@ -103,7 +101,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 		List<TransferrableTokensParticle> tokenConsumables = store
 			.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		final List<SpunParticle> transferParticles;
@@ -115,17 +113,8 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			);
 		}
 
-		if (transfer.getAttachment() == null) {
-			return Collections.singletonList(
-				ParticleGroup.of(transferParticles)
-			);
-		} else {
-			final ImmutableMap<String, String> metaData = ImmutableMap.of(
-				"attachment", Base64.toBase64String(transfer.getAttachment())
-			);
-			return Collections.singletonList(
-				ParticleGroup.of(transferParticles, metaData)
-			);
-		}
+		return Collections.singletonList(
+			ParticleGroup.of(transferParticles)
+		);
 	}
 }

@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -100,6 +100,6 @@ public class PerParticleFeeEntryTest {
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
     	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-    	return new UniqueParticle(address, message);
+    	return new UniqueParticle(message, address, 0L);
     }
 }

@@ -29,23 +29,17 @@ import java.util.Objects;
  */
 public class BerkeleySearchCursor implements SearchCursor {
 	private final byte[] primary;
-	private final byte[] index;
 	private final byte[] data;
 	private final BerkeleyLedgerEntryStore store;
 
-	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, byte[] primary, byte[] index, byte[] data) {
+	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, byte[] primary, byte[] data) {
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
-		this.index = Arrays.clone(Objects.requireNonNull(index));
 		this.store = store;
 		this.data = data;
 	}
 
 	public byte[] getPrimary() {
 		return this.primary;
-	}
-
-	public byte[] getIndex() {
-		return this.index;
 	}
 
 	@Override

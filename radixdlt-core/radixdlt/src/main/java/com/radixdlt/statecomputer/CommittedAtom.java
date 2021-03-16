@@ -21,8 +21,8 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.LedgerAtom;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
@@ -34,30 +34,30 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class CommittedAtom implements LedgerAtom {
-	private final ClientAtom clientAtom;
+	private final Atom atom;
 	private final long stateVersion;
 	private final VerifiedLedgerHeaderAndProof proof;
 
-	private CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
-		this.clientAtom = clientAtom;
+	private CommittedAtom(Atom atom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
+		this.atom = atom;
 		this.stateVersion = stateVersion;
 		this.proof = proof;
 	}
 
-	public static CommittedAtom create(ClientAtom clientAtom, VerifiedLedgerHeaderAndProof proof) {
-		return new CommittedAtom(clientAtom, proof.getStateVersion(), proof);
+	public static CommittedAtom create(Atom atom, VerifiedLedgerHeaderAndProof proof) {
+		return new CommittedAtom(atom, proof.getStateVersion(), proof);
 	}
 
-	public static CommittedAtom create(ClientAtom clientAtom, long stateVersion) {
-		return new CommittedAtom(clientAtom, stateVersion, null);
+	public static CommittedAtom create(Atom atom, long stateVersion) {
+		return new CommittedAtom(atom, stateVersion, null);
 	}
 
 	public long getStateVersion() {
 		return stateVersion;
 	}
 
-	public ClientAtom getClientAtom() {
-		return clientAtom;
+	public Atom getClientAtom() {
+		return atom;
 	}
 
 	public Optional<VerifiedLedgerHeaderAndProof> getHeaderAndProof() {
@@ -66,27 +66,27 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public CMInstruction getCMInstruction() {
-		return clientAtom.getCMInstruction();
+		return atom.getCMInstruction();
 	}
 
 	@Override
 	public HashCode getWitness() {
-		return clientAtom.getWitness();
+		return atom.getWitness();
 	}
 
 	@Override
 	public String getMessage() {
-		return clientAtom.getMessage();
+		return atom.getMessage();
 	}
 
 	@Override
 	public AID getAID() {
-		return clientAtom.getAID();
+		return atom.getAID();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.clientAtom, this.stateVersion, this.proof);
+		return Objects.hash(this.atom, this.stateVersion, this.proof);
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public final class CommittedAtom implements LedgerAtom {
 		}
 
 		CommittedAtom other = (CommittedAtom) o;
-		return Objects.equals(other.clientAtom, this.clientAtom)
+		return Objects.equals(other.atom, this.atom)
 			&& other.stateVersion == this.stateVersion
 			&& Objects.equals(other.proof, this.proof);
 	}
@@ -104,7 +104,7 @@ public final class CommittedAtom implements LedgerAtom {
 	@Override
 	public String toString() {
 		return String.format("%s{atom=%s, stateVersion=%s}",
-			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null);
+			getClass().getSimpleName(), atom != null ? atom.getAID() : null, stateVersion);
 	}
 }
 

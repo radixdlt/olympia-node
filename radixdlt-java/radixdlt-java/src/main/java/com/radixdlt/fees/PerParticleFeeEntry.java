@@ -20,8 +20,8 @@ package com.radixdlt.fees;
 import java.util.Objects;
 import java.util.Set;
 
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -59,7 +59,7 @@ public final class PerParticleFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(Atom a, int feeSize, Set<Particle> outputs) {
+	public UInt256 feeFor(AtomBuilder a, int feeSize, Set<Particle> outputs) {
 		long particleCount = outputs.stream()
 			.filter(this.particleType::isInstance)
 			.count();

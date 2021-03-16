@@ -20,13 +20,13 @@ package com.radix.acceptance.multiple_transactions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -154,7 +154,7 @@ public class MultipleTransactions {
 	private SubmitAtomStatusAction createValidationError() {
 		return SubmitAtomStatusAction.fromStatusNotification(
 			UUID.randomUUID().toString(),
-			Atom.create(List.of()),
+			Atom.newBuilder().buildAtom(),
 			nodeConnection,
 			new AtomStatusEvent(EVICTED_FAILED_CM_VERIFICATION)
 		);
@@ -179,7 +179,7 @@ public class MultipleTransactions {
 
 		System.out.println("Atom: " + atom);
 
-		api.submitAtom(atom, false, nodeConnection)
+		api.submitAtom(atom.buildAtom(), false, nodeConnection)
 				.toObservable()
 				.subscribe(observer);
 		observers.add(observer);
@@ -245,7 +245,7 @@ public class MultipleTransactions {
 
 		System.out.println("Atom: " + atom);
 
-		api.submitAtom(atom, false, nodeConnection)
+		api.submitAtom(atom.buildAtom(), false, nodeConnection)
 				.toObservable()
 				.subscribe(observer);
 		observers.add(observer);

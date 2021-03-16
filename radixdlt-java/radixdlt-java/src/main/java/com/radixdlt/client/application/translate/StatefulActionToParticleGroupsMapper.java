@@ -22,8 +22,9 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;

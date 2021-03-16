@@ -22,9 +22,9 @@
 
 package com.radixdlt.client.application.translate.data;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
-import com.radixdlt.client.core.atoms.Atom;
 
 import io.reactivex.Observable;
 
@@ -43,6 +43,6 @@ public class AtomToPlaintextMessageMapper implements AtomToExecutedActionsMapper
 		if (message == null) {
 			return Observable.empty();
 		}
-		return Observable.just(new PlaintextMessage(atom.getAid(), message));
+		return Observable.just(new PlaintextMessage(atom.getAID(), message));
 	}
 }

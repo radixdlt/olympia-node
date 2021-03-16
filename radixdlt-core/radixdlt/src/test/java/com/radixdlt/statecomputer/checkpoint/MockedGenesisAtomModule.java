@@ -23,7 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;

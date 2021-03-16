@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.stream.Stream;

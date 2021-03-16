@@ -22,6 +22,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.inject.name.Names;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -47,7 +48,6 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -64,7 +64,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
@@ -209,10 +208,10 @@ public class GetNextCommittedCommandsTest {
 	}
 
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
-		final var atom = new Atom("Atom for " + stateVersion); // Make hash different
+		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
-		atom.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
-		final var clientAtom = ClientAtom.convertFromApiAtom(atom, this.hasher);
+		builder.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
+		final var clientAtom = builder.buildAtom();
 
 		final var proposedVertexId = HashUtils.random256();
 		final var proposedView = view.next().next();

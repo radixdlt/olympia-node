@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
@@ -36,10 +36,10 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.LogManager;
@@ -93,7 +93,7 @@ public final class ValidatorRegistrator {
 			return;
 		}
 
-		Atom atom = new Atom();
+		AtomBuilder atom = Atom.newBuilder();
 		ParticleGroup validatorUpdate = validatorState.map(
 			nonce -> ParticleGroup.of(
 				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),
@@ -120,10 +120,11 @@ public final class ValidatorRegistrator {
 			atom.addParticleGroup(feeGroup.get());
 		}
 
-		HashCode hashedAtom = this.hasher.hash(atom);
+
+		HashCode hashedAtom = atom.computeHashToSign();
 		atom.setSignature(self.euid(), hashSigner.sign(hashedAtom));
 
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		Atom clientAtom = atom.buildAtom();
 		byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

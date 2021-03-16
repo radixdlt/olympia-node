@@ -37,7 +37,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
@@ -46,12 +45,12 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -71,7 +70,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<ClientAtom, AID> mempool;
+	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochCeilingView;
@@ -89,7 +88,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Mempool<ClientAtom, AID> mempool,
+		Mempool<Atom> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -121,18 +120,18 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
 		private final HashCode hash;
-		private final ClientAtom clientAtom;
+		private final Atom atom;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineCommand(
 			Command command,
 			HashCode hash,
-			ClientAtom clientAtom,
+			Atom atom,
 			PermissionLevel permissionLevel
 		) {
 			this.command = command;
 			this.hash = hash;
-			this.clientAtom = clientAtom;
+			this.atom = atom;
 			this.permissionLevel = permissionLevel;
 		}
 
@@ -149,14 +148,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public void addToMempool(Command command, @Nullable BFTNode origin) {
-		ClientAtom clientAtom = command.map(payload -> {
+		Atom atom = command.map(payload -> {
 			try {
-				return serialization.fromDson(payload, ClientAtom.class);
+				return serialization.fromDson(payload, Atom.class);
 			} catch (DeserializeException e) {
 				return null;
 			}
 		});
-		if (clientAtom == null) {
+		if (atom == null) {
 			mempoolAddFailureEventDispatcher.dispatch(
 				MempoolAddFailure.create(command, new MempoolRejectedException("Bad atom"))
 			);
@@ -164,10 +163,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		try {
-			mempool.add(clientAtom);
+			mempool.add(atom);
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
-			log.warn("Mempool duplicate command: {} origin: {}", command, origin);
+			log.trace("Mempool duplicate command: {} origin: {}", command, origin);
 			return;
 		} catch (MempoolRejectedException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
@@ -179,13 +178,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
-		Set<AID> exclude = prepared.stream()
+		Set<Atom> preparedAtoms = prepared.stream()
 			.map(p -> (RadixEngineCommand) p)
-			.map(c -> c.clientAtom.getAID())
+			.map(c -> c.atom)
 			.collect(Collectors.toSet());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<ClientAtom> commands = mempool.getCommands(1, exclude);
+		final List<Atom> commands = mempool.getCommands(1, preparedAtoms);
 		if (commands.isEmpty()) {
 			return null;
 		} else {
@@ -227,13 +226,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			? new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp)
 			: new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
 
-		final ClientAtom systemUpdate = ClientAtom.create(
+		final Atom systemUpdate = Atom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
-			),
-			hasher
+			)
 		);
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
@@ -263,10 +261,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (next != null) {
 			final RadixEngineCommand radixEngineCommand;
 			try {
-				ClientAtom clientAtom = mapCommand(next);
+				Atom atom = mapCommand(next);
 				HashCode hash = hasher.hash(next);
-				radixEngineCommand = new RadixEngineCommand(next, hash, clientAtom, PermissionLevel.USER);
-				branch.checkAndStore(clientAtom);
+				radixEngineCommand = new RadixEngineCommand(next, hash, atom, PermissionLevel.USER);
+				branch.checkAndStore(atom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
@@ -286,11 +284,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			try {
 				transientBranch.checkAndStore(
-					radixEngineCommand.clientAtom,
+					radixEngineCommand.atom,
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
-				throw new IllegalStateException("Re-execution of already prepared atom failed: " + radixEngineCommand.clientAtom, e);
+				throw new IllegalStateException("Re-execution of already prepared atom failed: " + radixEngineCommand.atom, e);
 			}
 		}
 
@@ -306,33 +304,26 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private ClientAtom mapCommand(Command command) throws DeserializeException {
-		return serialization.fromDson(command.getPayload(), ClientAtom.class);
+	private Atom mapCommand(Command command) throws DeserializeException {
+		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private ClientAtom commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
-		final ClientAtom clientAtom;
-		try {
-			clientAtom = this.mapCommand(command);
-		} catch (DeserializeException e) {
-			throw new ByzantineQuorumException("Trying to commit bad atom", e);
-		}
-
+	private void commitCommand(long version, Atom atom, VerifiedLedgerHeaderAndProof proof) {
 		try {
 			final CommittedAtom committedAtom;
 			if (proof.getStateVersion() == version) {
-				committedAtom = CommittedAtom.create(clientAtom, proof);
+				committedAtom = CommittedAtom.create(atom, proof);
 			} else {
-				committedAtom = CommittedAtom.create(clientAtom, version);
+				committedAtom = CommittedAtom.create(atom, version);
 			}
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
-			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", clientAtom.toInstructionsString()), e);
+			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
 		}
 
-		final boolean isUserCommand = clientAtom.getCMInstruction().getMicroInstructions().stream()
+		final boolean isUserCommand = atom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isCheckSpin)
 				.map(CMMicroInstruction::getParticle)
 				.noneMatch(p -> p instanceof SystemParticle);
@@ -341,11 +332,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
 		}
-
-		return clientAtom;
 	}
 
-	private List<ClientAtom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	private List<Atom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final SystemParticle lastSystemParticle = radixEngine.getComputedState(SystemParticle.class);
 		final long currentEpoch = lastSystemParticle.getEpoch();
 		boolean epochChange = false;
@@ -354,13 +343,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 
-		List<ClientAtom> atomsCommitted = new ArrayList<>();
+		final var atomsToCommit = new ArrayList<Atom>();
+		try {
+			for (var cmd : verifiedCommandsAndProof.getCommands()) {
+				atomsToCommit.add(this.mapCommand(cmd));
+			}
+		} catch (DeserializeException e) {
+			throw new ByzantineQuorumException("Trying to commit bad atom", e);
+		}
 
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
-			ClientAtom clientAtom = this.commitCommand(
-				firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof
-			);
-			atomsCommitted.add(clientAtom);
+			this.commitCommand(firstVersion + i, atomsToCommit.get(i), headerAndProof);
 
 			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
 			final boolean isLastCommand = i == verifiedCommandsAndProof.getCommands().size() - 1;
@@ -391,12 +384,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		}
 
-		return atomsCommitted;
+		return atomsToCommit;
 	}
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-	    List<ClientAtom> atomsCommitted;
+	    List<Atom> atomsCommitted;
 		atomicCommitManager.startTransaction();
 		try {
 			atomsCommitted = commitInternal(verifiedCommandsAndProof);
@@ -412,7 +405,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		atomicCommitManager.commitTransaction();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		List<Pair<ClientAtom, Exception>> removed = this.mempool.committed(atomsCommitted);
+		List<Pair<Atom, Exception>> removed = this.mempool.committed(atomsCommitted);
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);

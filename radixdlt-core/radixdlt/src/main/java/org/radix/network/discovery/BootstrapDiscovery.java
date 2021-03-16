@@ -25,18 +25,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
 import com.google.inject.Inject;
-
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -54,7 +55,8 @@ public class BootstrapDiscovery {
 	private static final Logger log = LogManager.getLogger();
 	private final int defaultPort;
 
-	private final ImmutableSet<TransportInfo> hosts;
+	private Set<String> unresolvedHostNames = new HashSet<>();
+	private Set<TransportInfo> hosts = new HashSet<>();
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -123,14 +125,14 @@ public class BootstrapDiscovery {
 
 		Whitelist whitelist = Whitelist.from(properties);
 
-		this.hosts = hostNames.stream()
-			.map(String::trim)
-			.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
-			.distinct()
-			.map(this::toDefaultTransportInfo)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.collect(ImmutableSet.toImmutableSet());
+		this.unresolvedHostNames.addAll(
+			hostNames.stream()
+				.map(String::trim)
+				.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
+				.collect(Collectors.toSet())
+		);
+
+		this.resolveHostNames();
 	}
 
 	/**
@@ -206,11 +208,32 @@ public class BootstrapDiscovery {
 	 * @return A collection of transports for discovery hosts
 	 */
 	public Collection<TransportInfo> discoveryHosts() {
-		List<TransportInfo> results = this.hosts.stream()
-			.collect(Collectors.toList());
-
+		this.resolveHostNames();
+		final var results = new ArrayList<>(this.hosts);
 		Collections.shuffle(results);
 		return results;
+	}
+
+	private void resolveHostNames() {
+		if (this.unresolvedHostNames.isEmpty()) {
+			return;
+		}
+
+		final var newlyResolvedHosts = this.unresolvedHostNames.stream()
+			.map(host -> Pair.of(host, this.toDefaultTransportInfo(host)))
+			.filter(p -> p.getSecond().isPresent())
+			.collect(ImmutableSet.toImmutableSet());
+
+		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
+			.collect(ImmutableSet.toImmutableSet());
+
+		this.unresolvedHostNames.removeAll(newlyResolvedHostsNames);
+
+		this.hosts.addAll(
+			newlyResolvedHosts.stream()
+				.map(p -> p.getSecond().get())
+				.collect(Collectors.toSet())
+		);
 	}
 
 	@VisibleForTesting

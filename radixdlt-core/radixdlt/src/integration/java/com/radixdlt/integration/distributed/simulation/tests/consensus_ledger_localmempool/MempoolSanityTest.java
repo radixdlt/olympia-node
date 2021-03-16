@@ -19,13 +19,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -69,7 +68,7 @@ public class MempoolSanityTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<Mempool<Command, HashCode>>() { }).toInstance(Mempools.empty());
+					bind(new TypeLiteral<Mempool<Command>>() { }).toInstance(Mempools.empty());
 				}
 			})
 			.build();

@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
@@ -75,19 +76,20 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -528,6 +530,7 @@ public class RadixApplicationAPI {
 		return this.universe.getAtomStore().getAtomObservations(validator)
 			.filter(AtomObservation::hasAtom)
 			.map(AtomObservation::getAtom)
+			.map(Atom::toBuilder)
 			.flatMap(atom -> Observable.fromIterable(atom.spunParticles().collect(ImmutableList.toImmutableList())))
 			.filter(sp -> sp.getParticle() instanceof StakedTokensParticle)
 			.scan(DelegatedTokenBalanceState.empty(), (stp, spunParticle) -> accumulateTokens(stp, validator, spunParticle))
@@ -545,7 +548,7 @@ public class RadixApplicationAPI {
 			if (validator.equals(stp.getDelegateAddress())) {
 				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
 				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
-				return DelegatedTokenBalanceState.merge(previous, stp.getTokenDefinitionReference(), amount);
+				return DelegatedTokenBalanceState.merge(previous, stp.getTokDefRef(), amount);
 			}
 		}
 		return previous;
@@ -995,7 +998,7 @@ public class RadixApplicationAPI {
 	 * @param particleGroups particle groups to include in atom
 	 * @return unsigned atom with appropriate fees
 	 */
-	public Atom buildAtomWithFee(List<ParticleGroup> particleGroups) {
+	public AtomBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
 		Transaction t = createTransaction();
 		particleGroups.forEach(t::stage);
 		return t.buildAtom();
@@ -1107,7 +1110,7 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getActions();
 	}
 
-	public BigDecimal getMinimumRequiredFee(Atom atomWithoutFees) {
+	public BigDecimal getMinimumRequiredFee(AtomBuilder atomWithoutFees) {
 		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
 	}
 
@@ -1362,8 +1365,8 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				for (SpunParticle sp : pg.getSpunParticles()) {
-					for (RadixAddress address : sp.getParticle().getShardables()) {
+				for (SpunParticle sp : pg.getParticles()) {
+					for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 						}
@@ -1380,8 +1383,8 @@ public class RadixApplicationAPI {
 		 * @param particleGroup Particle group to add to staging area.
 		 */
 		public void stage(ParticleGroup particleGroup) {
-			for (SpunParticle sp : particleGroup.getSpunParticles()) {
-				for (RadixAddress address : sp.getParticle().getShardables()) {
+			for (SpunParticle sp : particleGroup.getParticles()) {
+				for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
 					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
 						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
 					}
@@ -1399,15 +1402,19 @@ public class RadixApplicationAPI {
 		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
 		 * @return an unsigned atom
 		 */
-		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
-			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.message);
-			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
+		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
+			var feelessBuilder = Atom.newBuilder();
+			universe.getAtomStore().getStaged(this.uuid).forEach(feelessBuilder::addParticleGroup);
+			feelessBuilder.message(this.message);
+			feeProcessor.process(this::actionProcessor, getAddress(), feelessBuilder, Optional.ofNullable(fee));
 
+			var builder = Atom.newBuilder();
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			String messageCopy = this.message;
+			particleGroups.forEach(builder::addParticleGroup);
+			builder.message(this.message);
 			this.message = null;
 
-			return Atom.create(particleGroups, messageCopy);
+			return builder;
 		}
 
 		/**
@@ -1415,7 +1422,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @return an unsigned atom
 		 */
-		public Atom buildAtom() {
+		public AtomBuilder buildAtom() {
 			return buildAtomWithFee(null);
 		}
 
@@ -1428,8 +1435,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
-			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1461,8 +1468,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
-			final Atom unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 

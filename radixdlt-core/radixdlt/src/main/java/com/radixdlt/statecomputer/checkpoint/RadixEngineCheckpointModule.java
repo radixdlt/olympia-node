@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 
@@ -43,7 +43,8 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@NativeToken
 	private RRI nativeToken(@Genesis Atom atom) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = atom.particles(Spin.UP)
+		ImmutableList<RRI> rris = atom.uniqueInstructions()
+			.map(CMMicroInstruction::getParticle)
 			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
 			.map(p -> (MutableSupplyTokenDefinitionParticle) p)
 			.map(MutableSupplyTokenDefinitionParticle::getRRI)

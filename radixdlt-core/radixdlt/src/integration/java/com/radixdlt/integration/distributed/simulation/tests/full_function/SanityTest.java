@@ -19,14 +19,15 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.ApplicationMonitors;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.sync.SyncConfig;
@@ -59,6 +60,7 @@ public class SanityTest {
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands(),
 			ApplicationMonitors.mempoolCommitted()
 		)
 		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());

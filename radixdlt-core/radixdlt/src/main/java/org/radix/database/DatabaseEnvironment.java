@@ -28,7 +28,6 @@ import com.sleepycat.je.EnvironmentConfig;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static com.sleepycat.je.Durability.COMMIT_NO_SYNC;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
@@ -40,7 +39,6 @@ import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_MAX;
 import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
 public final class DatabaseEnvironment {
-	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
 	private Environment environment;
 
@@ -86,15 +84,6 @@ public final class DatabaseEnvironment {
 
 		this.environment.close();
 		this.environment = null;
-	}
-
-	public void withLock(Runnable runnable) {
-		this.lock.lock();
-		try {
-			runnable.run();
-		} finally {
-			this.lock.unlock();
-		}
 	}
 
 	public Environment getEnvironment() {

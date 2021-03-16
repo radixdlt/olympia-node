@@ -28,7 +28,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;

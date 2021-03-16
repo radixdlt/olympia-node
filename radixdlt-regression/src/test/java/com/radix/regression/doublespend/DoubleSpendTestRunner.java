@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
 import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -36,7 +37,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -150,9 +151,10 @@ public final class DoubleSpendTestRunner {
 						.map(api::pullOnce)
 						.forEach(Completable::blockingAwait);
 					transaction.stageWorkingArea();
-					Atom unsignedAtom = transaction.buildAtom();
+					AtomBuilder unsignedAtom = transaction.buildAtom();
 
 					return api.getIdentity().addSignature(unsignedAtom)
+						.map(AtomBuilder::buildAtom)
 						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
 				});
 		}
@@ -249,7 +251,7 @@ public final class DoubleSpendTestRunner {
 							+ " "
 							+ f.getObservation().getType()
 							+ ": "
-							+ f.getObservation().getAtom().getAid()
+							+ f.getObservation().getAtom().getAID()
 						);
 					}
 				} else if (a instanceof SubmitAtomStatusAction) {
@@ -260,7 +262,7 @@ public final class DoubleSpendTestRunner {
 							+ " "
 							+ singleNodeApi
 							+ " VALIDATION_ERROR: "
-							+ r.getAtom().getAid()
+							+ r.getAtom().getAID()
 						);
 					}
 				}
@@ -276,13 +278,13 @@ public final class DoubleSpendTestRunner {
 
 		try {
 			while (true) {
-				Map<String, Set<Atom>> lastAtomState = singleNodeApis.map(
+				var lastAtomState = singleNodeApis.map(
 					singleNodeAPI -> {
-						Set<Atom> particles = doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+						var atoms = doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
 							.flatMap(p -> singleNodeAPI.api.getAtomStore().getStoredAtoms(p.getSecond().address()))
 							.collect(Collectors.toSet());
 
-						return Pair.of("Client " + singleNodeAPI.clientId, particles);
+						return Pair.of("Client " + singleNodeAPI.clientId, atoms);
 					}).toMap(Pair::getFirst, Pair::getSecond).blockingGet();
 
 				List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
@@ -306,17 +308,14 @@ public final class DoubleSpendTestRunner {
 					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition()
 						.getCondition().matches(s))
 						&& states.stream().allMatch(s0 -> states.stream().allMatch(s1 -> s1.equals(s0)))
-						&& lastAtomState.entrySet().stream().map(Entry::getValue)
-							.allMatch(s0 -> lastAtomState.entrySet().stream()
-								.map(Entry::getValue)
-								.allMatch(s1 -> s1.equals(s0))
+						&& lastAtomState.values().stream()
+							.allMatch(s0 -> lastAtomState.values().stream().allMatch(s1 -> s1.equals(s0))
 					)) {
 						return states.iterator().next();
 					} else {
 						try {
-							if (lastAtomState.entrySet().stream().map(Entry::getValue)
-								.allMatch(s0 -> lastAtomState.entrySet().stream()
-									.map(Entry::getValue).allMatch(s1 -> s1.equals(s0)))) {
+							if (lastAtomState.values().stream()
+								.allMatch(s0 -> lastAtomState.values().stream().allMatch(s1 -> s1.equals(s0)))) {
 								System.out.println(
 									cur
 									+ " States match but not expected retrying 5 seconds...Time until resolved: "
@@ -333,12 +332,12 @@ public final class DoubleSpendTestRunner {
 								);
 							}
 
-							for (Entry<String, Set<Atom>> e : lastAtomState.entrySet()) {
+							for (var e : lastAtomState.entrySet()) {
 								System.out.println(
 									e.getKey()
 									+ ": "
 									+ e.getValue().stream()
-										.map(Atom::getAid)
+										.map(Atom::getAID)
 										.map(Object::toString)
 										.collect(Collectors.toSet())
 								);
@@ -363,8 +362,8 @@ public final class DoubleSpendTestRunner {
 					}
 
 					// All clients should see the same atom state
-					for (Entry<String, Set<Atom>> state0 : lastAtomState.entrySet()) {
-						for (Entry<String, Set<Atom>> state1 : lastAtomState.entrySet()) {
+					for (var state0 : lastAtomState.entrySet()) {
+						for (var state1 : lastAtomState.entrySet()) {
 							assertThat(state0.getValue()).isEqualTo(state1.getValue());
 						}
 					}

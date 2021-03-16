@@ -54,6 +54,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -139,6 +140,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				InvalidProposedCommand.class,
+				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
 				true
 			)).in(Scopes.SINGLETON);
 
@@ -225,6 +227,8 @@ public class DispatcherModule extends AbstractModule {
 
 		final var epochsLedgerUpdateKey = new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { };
 		Multibinder.newSetBinder(binder(), epochsLedgerUpdateKey, ProcessOnDispatch.class);
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { });
 	}
 
 	@Provides
