@@ -21,16 +21,15 @@ package com.radixdlt.statecomputer.checkpoint;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -47,7 +46,6 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
-	private final Hasher hasher;
 	private final TokenDefinition tokenDefinition;
 
 	@Inject
@@ -57,8 +55,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		@NativeToken TokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
-		Hasher hasher
+		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
 	) {
 		this.magic = (byte) magic;
 		this.universeKey = universeKey;
@@ -66,7 +63,6 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
 		this.stakeDelegations = stakeDelegations;
-		this.hasher = hasher;
 	}
 
 	@Override
@@ -105,15 +101,15 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
 		);
 
-		final var genesisAtom = new Atom(helloMessage());
-		xrdParticleGroups.forEach(genesisAtom::addParticleGroup);
+		final var builder = Atom.newBuilder().message(helloMessage());
+		xrdParticleGroups.forEach(builder::addParticleGroup);
 		if (!validatorParticles.isEmpty()) {
-			genesisAtom.addParticleGroup(ParticleGroup.of(validatorParticles));
+			builder.addParticleGroup(ParticleGroup.of(validatorParticles));
 		}
 		if (!stakingParticleGroups.isEmpty()) {
-			stakingParticleGroups.forEach(genesisAtom::addParticleGroup);
+			stakingParticleGroups.forEach(builder::addParticleGroup);
 		}
-		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
+		builder.addParticleGroup(ParticleGroup.of(epochParticles));
 
 		final var signingKeys = Streams.concat(
 			Stream.of(this.universeKey),
@@ -121,10 +117,12 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			stakeDelegations.stream().map(StakeDelegation::staker)
 		).collect(ImmutableList.toImmutableList());
 
-		genesisAtom.sign(signingKeys, this.hasher);
-		signingKeys.forEach(key -> verifySignature(key, genesisAtom));
+		HashCode hashToSign = builder.computeHashToSign();
+		signingKeys.forEach(keyPair -> {
+			builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		});
 
-		return genesisAtom;
+		return builder.buildAtom();
 	}
 
 	/*
@@ -132,21 +130,5 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	 */
 	private static String helloMessage() {
 		return "Radix... just imagine!";
-	}
-
-	private void verifySignature(ECKeyPair key, Atom genesisAtom) {
-		try {
-			if (!genesisAtom.verify(key.getPublicKey(), this.hasher)) {
-				// A bug somewhere that needs fixing
-				throw new IllegalStateException(
-					String.format(
-						"Signature verification failed - GENESIS TRANSACTION HASH: %s",
-						this.hasher.hash(genesisAtom)
-					)
-				);
-			}
-		} catch (PublicKeyException ex) {
-			throw new IllegalStateException("Error while verifying universe", ex);
-		}
 	}
 }

@@ -26,7 +26,7 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.identifiers.RRI;
@@ -75,12 +75,12 @@ public class DeterministicMappingTest {
 		RadixAddress address1 = api.getAddress();
 		RadixAddress address2 = api.getAddress(identity2.getPublicKey());
 		RRI token = RRI.of(address1, "TestToken");
-		Supplier<Atom> atomGenerator = () -> buildTransaction(api, address1, address2, token).buildAtom();
+		Supplier<AtomBuilder> atomGenerator = () -> buildTransaction(api, address1, address2, token).buildAtom();
 
-		Atom goldenAtom = atomGenerator.get();
+		AtomBuilder goldenAtom = atomGenerator.get();
 		List<SpunParticle> goldenParticles = goldenAtom.spunParticles().collect(Collectors.toList());
 		for (int i = 0; i < numIterations; i++) {
-			Atom sampleAtom = atomGenerator.get();
+			AtomBuilder sampleAtom = atomGenerator.get();
 			List<SpunParticle> sampleParticles = sampleAtom.spunParticles().collect(Collectors.toList());
 
 			SoftAssertions.assertSoftly(softly -> softly.assertThat(sampleParticles.size()).isEqualTo(goldenParticles.size()));

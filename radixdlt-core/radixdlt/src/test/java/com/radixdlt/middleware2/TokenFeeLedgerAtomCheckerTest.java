@@ -20,6 +20,7 @@ package com.radixdlt.middleware2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -27,11 +28,9 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.AID;
@@ -41,8 +40,6 @@ import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
-
-import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -57,8 +54,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ImmutableMap.of(
 					TokenTransition.BURN, TokenPermission.ALL,
 					TokenTransition.MINT, TokenPermission.ALL);
-
-	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private TokenFeeLedgerAtomChecker checker;
 	private RRI rri;
@@ -79,21 +74,20 @@ public class TokenFeeLedgerAtomCheckerTest {
 		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
 		final var rri = RRI.of(address, "test");
 		final var rriParticle = new RRIParticle(rri);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
+		AtomBuilder atom = Atom.newBuilder().addParticleGroup(
 			ParticleGroup.of(
 				ImmutableList.of(
 					SpunParticle.down(rriParticle)
 				)
 			)
 		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		Atom ledgerAtom = atom.buildAtom();
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		ClientAtom ledgerAtom = mock(ClientAtom.class);
+		Atom ledgerAtom = mock(Atom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(), ImmutableMap.of()
 		);
@@ -108,9 +102,10 @@ public class TokenFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_fee__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
-		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		var atom = Atom.newBuilder().addParticleGroup(
+			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle)))
+		);
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
@@ -126,15 +121,13 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(
-					SpunParticle.up(unallocatedParticle),
-					SpunParticle.down(tokenInputParticle),
-					SpunParticle.up(tokenOutputParticle)))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		var atom = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))))
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(
+				SpunParticle.up(unallocatedParticle),
+				SpunParticle.down(tokenInputParticle),
+				SpunParticle.up(tokenOutputParticle))));
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -147,15 +140,13 @@ public class TokenFeeLedgerAtomCheckerTest {
 				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(
-					SpunParticle.up(unallocatedParticle),
-					SpunParticle.down(tokenInputParticle)
-			))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		var atom = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))))
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(
+				SpunParticle.up(unallocatedParticle),
+				SpunParticle.down(tokenInputParticle)
+			)));
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -169,15 +160,14 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		UniqueParticle extraFeeGroupParticle = new UniqueParticle("BAR", address, 0L);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(
+		var atom = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))))
+			.addParticleGroup(
+				ParticleGroup.of(ImmutableList.of(
 					SpunParticle.up(unallocatedParticle),
 					SpunParticle.down(tokenInputParticle),
-					SpunParticle.up(extraFeeGroupParticle)))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+					SpunParticle.up(extraFeeGroupParticle))));
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
@@ -193,12 +183,12 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle particle4 = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		List<ParticleGroup> particleGroups = ImmutableList.of(
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
-		);
-		Atom atom = new Atom(particleGroups, ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		var atom = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))))
+			.addParticleGroup(ParticleGroup.of(
+				ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
+			);
+		Atom ledgerAtom = atom.buildAtom();
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}

@@ -24,6 +24,7 @@ package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.atom.Atom;
+
 import java.util.stream.Stream;
 
 public interface AtomErrorToExceptionReasonMapper {

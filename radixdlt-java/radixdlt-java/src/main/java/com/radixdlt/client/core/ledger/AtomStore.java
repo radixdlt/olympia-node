@@ -22,9 +22,9 @@
 
 package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.identifiers.RadixAddress;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
 import io.reactivex.Observable;

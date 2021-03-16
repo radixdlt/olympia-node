@@ -21,10 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
@@ -425,7 +426,7 @@ public class TokenFees {
 		for (Action action: actions) {
 			t.stage(action);
 		}
-		final Atom feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
+		final AtomBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
 		return this.api.getMinimumRequiredFee(feelessAtom);
 	}
 
@@ -475,7 +476,7 @@ public class TokenFees {
 
 	// Fee computation
 	private BigDecimal feeFrom(Atom atom) {
-		UInt256 totalFee = atom.particleGroups()
+		UInt256 totalFee = atom.toBuilder().particleGroups()
 			.filter(this::isFeeGroup)
 			.flatMap(pg -> pg.particles(Spin.UP))
 			.filter(UnallocatedTokensParticle.class::isInstance)

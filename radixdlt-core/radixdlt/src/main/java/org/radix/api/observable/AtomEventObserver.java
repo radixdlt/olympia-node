@@ -20,12 +20,11 @@ package org.radix.api.observable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.LedgerEntryStore;
@@ -37,7 +36,6 @@ import org.radix.api.observable.AtomEventDto.AtomEventType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -117,8 +115,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getClientAtom());
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -143,11 +140,11 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<ClientAtom> atoms = new ArrayList<>();
+				List<Atom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					ClientAtom ledgerEntry = store.get(aid).orElseThrow();
+					Atom ledgerEntry = store.get(aid).orElseThrow();
 					if (ledgerEntry
 							.uniqueInstructions()
 							.map(CMMicroInstruction::getParticle)
@@ -160,7 +157,6 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(ClientAtom::convertToApiAtom)
 						.map(a -> new AtomEventDto(AtomEventType.STORE, a));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
@@ -174,7 +170,8 @@ public class AtomEventObserver {
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
 					.filter(aed -> {
-							return !processedAtomIds.contains(Atom.aidOf(aed.getAtom(), hasher))
+							var aid = aed.getAtom().getAID();
+							return !processedAtomIds.contains(aid)
 								|| aed.getType() == AtomEventType.DELETE;
 						}
 					)

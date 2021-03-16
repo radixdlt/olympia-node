@@ -18,368 +18,264 @@
 
 package com.radixdlt.atom;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.SerializeWithHid;
-
+import com.radixdlt.serialization.DeserializeException;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.concurrent.Immutable;
 
-import javax.annotation.Nullable;
-
+/**
+ * An atom to be processed by radix engine
+ */
+@Immutable
 @SerializerId2("radix.atom")
-@SerializeWithHid
-public final class Atom {
-
+public final class Atom implements LedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
+	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	/**
-	 * The particle groups and their spin
-	 */
-	@JsonProperty("particleGroups")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final List<ParticleGroup> particleGroups = new ArrayList<>();
-
-	/**
-	 * The particle groups and their spin
-	 */
 	@JsonProperty("message")
-	@DsonOutput(DsonOutput.Output.ALL)
+	@DsonOutput({Output.ALL})
 	private final String message;
 
-	/**
-	 * Contains signers and corresponding signatures of this Atom.
-	 */
-	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
+	@JsonProperty("signatures")
+	@DsonOutput({Output.ALL})
+	private final ImmutableMap<EUID, ECDSASignature> signatures;
 
-	public Atom() {
-		this(ImmutableList.of(), Map.of(), null);
+	private final ImmutableList<CMMicroInstruction> instructions;
+	private final HashCode witness;
+
+	public static AtomBuilder newBuilder() {
+		return new AtomBuilder();
 	}
 
-	public Atom(@Nullable String message) {
-		this.message = message;
-	}
-
-	public Atom(ParticleGroup pg) {
-		this(List.of(pg), Map.of(), null);
-	}
-
-	public Atom(List<ParticleGroup> pgs) {
-		this(pgs, Map.of(), null);
-	}
-
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, @Nullable String message) {
-		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(signatures, "signatures is required");
-
-		this.particleGroups.addAll(particleGroups);
-		this.signatures.putAll(signatures);
-		this.message = message;
-	}
-
-	public Atom(List<ParticleGroup> particleGroups, String message) {
-		this(particleGroups, Map.of(), message);
-	}
-
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
-		this(particleGroups, signatures, null);
-	}
-
-	// Primarily used for excluding fee groups in fee calculations
-	public Atom copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
-		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
-			.filter(pg -> !exclusions.test(pg))
-			.collect(Collectors.toList());
-
-		return new Atom(newParticleGroups, this.signatures, this.message);
-	}
-
-	/**
-	 * Add a particle group to this atom
-	 *
-	 * @param particleGroup The particle group
-	 */
-	public void addParticleGroup(ParticleGroup particleGroup) {
-		Objects.requireNonNull(particleGroup, "particleGroup is required");
-
-		this.particleGroups.add(particleGroup);
-	}
-
-	/**
-	 * Add a singleton particle group to this atom containing the given particle and spin as a SpunParticle
-	 *
-	 * @param particle The particle
-	 * @param spin     The spin
-	 */
-	public void addParticleGroupWith(Particle particle, Spin spin) {
-		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
-	}
-
-
-	/**
-	 * Add two particle groups to this atom
-	 *
-	 * @param particle0 The first particle
-	 * @param spin0     The spin of first particle
-	 * @param particle1 The second particle
-	 * @param spin1     The spin of second particle
-	 */
-	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1) {
-		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle0, spin0), SpunParticle.of(particle1, spin1)));
-	}
-
-
-	/**
-	 * Add three particle groups to this atom
-	 *
-	 * @param particle0 The first particle
-	 * @param spin0     The spin of first particle
-	 * @param particle1 The second particle
-	 * @param spin1     The spin of second particle
-	 * @param particle2 The third particle
-	 * @param spin2     The spin of third particle
-	 */
-	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1, Particle particle2, Spin spin2) {
-		this.addParticleGroup(
-			ParticleGroup.of(
-				SpunParticle.of(particle0, spin0),
-				SpunParticle.of(particle1, spin1),
-				SpunParticle.of(particle2, spin2)
-			)
+	@JsonCreator
+	private Atom(
+		@JsonProperty("message") String message,
+		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
+		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
+	) {
+		this(
+			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
+			signatures == null ? ImmutableMap.of() : signatures,
+			message,
+			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
 		);
 	}
 
-	// SIGNATURES //
-	public boolean verify(Collection<ECPublicKey> keys, Hasher hasher) throws PublicKeyException {
-		return verify(keys, keys.size(), hasher);
+	private Atom(
+		ImmutableList<CMMicroInstruction> instructions,
+		ImmutableMap<EUID, ECDSASignature> signatures,
+		String message,
+		HashCode witness
+	) {
+		this.message = message;
+		this.instructions = Objects.requireNonNull(instructions);
+		this.signatures = Objects.requireNonNull(signatures);
+		this.witness = witness;
 	}
 
-	public boolean verify(Collection<ECPublicKey> keys, int requirement, Hasher hasher) throws PublicKeyException {
-		if (getSignatures().isEmpty()) {
-			throw new PublicKeyException("No signatures set, can not verify");
-		}
+	static Atom create(
+		ImmutableList<CMMicroInstruction> instructions,
+		ImmutableMap<EUID, ECDSASignature> signatures,
+		String message
+	) {
+		return new Atom(instructions, signatures, message, computeHashToSign(instructions));
+	}
 
-		int verified = 0;
-		HashCode hash = hasher.hash(this);
-		byte[] hashBytes = hash.asBytes();
-		ECDSASignature signature = null;
+	public static Atom create(ImmutableList<CMMicroInstruction> instructions) {
+		return new Atom(
+			instructions,
+			ImmutableMap.of(),
+			null,
+			computeHashToSign(instructions)
+		);
+	}
 
-		for (ECPublicKey key : keys) {
-			signature = getSignatures().get(key.euid());
+	// FIXME: need to include message
+	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
+		var outputStream = new ByteArrayOutputStream();
+		instructions.forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		return HashUtils.sha256(firstHash.asBytes());
+	}
 
-			if (signature == null) {
-				continue;
+	public static HashCode computeHashToSign(List<CMMicroInstruction> instructions) {
+		return computeHashToSignFromBytes(serializedInstructions(instructions));
+	}
+
+	@JsonProperty("instructions")
+	@DsonOutput(Output.ALL)
+	private ImmutableList<byte[]> getSerializerInstructions() {
+		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
+	}
+
+	public Optional<ECDSASignature> getSignature(EUID euid) {
+		return Optional.ofNullable(this.signatures.get(euid));
+	}
+
+	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {
+		final byte[] particleGroupByteCode = new byte[] {0};
+		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
+		final byte[] checkUpThenDownByteCode = new byte[] {2};
+
+		return instructions.stream().flatMap(i -> {
+			if (i.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+				return Stream.of(particleGroupByteCode);
+			} else {
+				final byte[] instByte;
+				if (i.getMicroOp() == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+					instByte = checkNeutralThenUpByteCode;
+				} else if (i.getMicroOp() == CMMicroOp.CHECK_UP_THEN_DOWN) {
+					instByte = checkUpThenDownByteCode;
+				} else {
+					throw new IllegalStateException();
+				}
+
+				byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
+				return Stream.of(instByte, particleDson);
 			}
+		});
+	}
 
-			if (key.verify(hashBytes, signature)) {
-				verified++;
+	private static ImmutableList<CMMicroInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
+		Objects.requireNonNull(bytesList);
+		Builder<CMMicroInstruction> instructionsBuilder = ImmutableList.builder();
+
+		Iterator<byte[]> bytesIterator = bytesList.iterator();
+		while (bytesIterator.hasNext()) {
+			byte[] bytes = bytesIterator.next();
+			if (bytes[0] == 0) {
+				instructionsBuilder.add(CMMicroInstruction.particleGroup());
+			} else {
+				final Spin checkSpin;
+				if (bytes[0] == 1) {
+					checkSpin = Spin.NEUTRAL;
+				} else if (bytes[0] == 2) {
+					checkSpin = Spin.UP;
+				} else {
+					throw new IllegalStateException();
+				}
+
+				byte[] particleBytes = bytesIterator.next();
+				final Particle particle;
+				try {
+					particle = DefaultSerialization.getInstance().fromDson(particleBytes, Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException("Could not deserialize particle: " + e);
+				}
+				instructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
 			}
 		}
 
-		return verified >= requirement;
+		return instructionsBuilder.build();
 	}
 
-	public boolean verify(ECPublicKey key, Hasher hasher) throws PublicKeyException {
-		if (getSignatures().isEmpty()) {
-			throw new PublicKeyException("No signatures set, can not verify");
-		}
-
-		HashCode hash = hasher.hash(this);
-
-		ECDSASignature signature = getSignatures().get(key.euid());
-
-		if (signature == null) {
-			return false;
-		}
-
-		return key.verify(hash, signature);
+	@Override
+	public CMInstruction getCMInstruction() {
+		return new CMInstruction(instructions, signatures);
 	}
 
-	public byte[] toDson() {
-		return DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH);
+	public Stream<CMMicroInstruction> uniqueInstructions() {
+		return instructions.stream().filter(CMMicroInstruction::isPush);
 	}
 
-	public HashCode getHash() {
-		return HashUtils.sha256(toDson());
+	public Stream<Particle> upParticles() {
+		return uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(CMMicroInstruction::getParticle);
 	}
 
-	public AID getAid() {
-		return AID.from(getHash().asBytes());
+	@Override
+	public HashCode getWitness() {
+		return witness;
 	}
 
+	// FIXME: this should be more than just witness
+	@Override
+	public AID getAID() {
+		return AID.from(witness.asBytes());
+	}
+
+	@Override
 	public String getMessage() {
 		return this.message;
 	}
 
-	public Map<EUID, ECDSASignature> getSignatures() {
-		return Collections.unmodifiableMap(this.signatures);
-	}
-
-	public ECDSASignature getSignature(EUID id) {
-		return this.signatures.get(id);
-	}
-
-	public void setSignature(EUID id, ECDSASignature signature) {
-		this.signatures.put(id, signature);
-	}
-
-	public void sign(ECKeyPair key, Hasher hasher) throws AtomAlreadySignedException {
-		if (!getSignatures().isEmpty()) {
-			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
-		}
-
-		HashCode hash = hasher.hash(this);
-		setSignature(key.euid(), key.sign(hash.asBytes()));
-	}
-
-	public void sign(Collection<ECKeyPair> keys, Hasher hasher) throws AtomAlreadySignedException {
-		if (!getSignatures().isEmpty()) {
-			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
-		}
-
-		HashCode hash = hasher.hash(this);
-
-		for (ECKeyPair key : keys) {
-			setSignature(key.euid(), key.sign(hash.asBytes()));
-		}
-	}
-
-	/**
-	 * Returns the index of a given ParticleGroup
-	 * Returns -1 if not found
-	 *
-	 * @param particleGroup the particle group to look for
-	 * @return index of the particle group
-	 */
-	public int indexOfParticleGroup(ParticleGroup particleGroup) {
-		return this.particleGroups.indexOf(particleGroup);
-	}
-
-	public int getParticleGroupCount() {
-		return this.particleGroups.size();
-	}
-
-	public Stream<ParticleGroup> particleGroups() {
-		return this.particleGroups.stream();
-	}
-
-	public List<ParticleGroup> getParticleGroups() {
-		return this.particleGroups;
-	}
-
-	public ParticleGroup getParticleGroup(int particleGroupIndex) {
-		return this.particleGroups.get(particleGroupIndex);
-	}
-
-	public Stream<SpunParticle> spunParticles() {
-		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
-	}
-
-	public Stream<Particle> particles(Spin spin) {
-		return this.spunParticles().filter(p -> p.getSpin() == spin).map(SpunParticle::getParticle);
-	}
-
-	public <T extends Particle> Stream<T> particles(Class<T> type, Spin spin) {
-		return this.particles(type)
-			.filter(s -> s.getSpin() == spin)
-			.map(SpunParticle::getParticle)
-			.map(type::cast);
-	}
-
-	public <T extends Particle> Stream<SpunParticle> particles(Class<T> type) {
-		return this.spunParticles()
-			.filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()));
-	}
-
-	/**
-	 * Returns the first particle found which is assign compatible to the class specified by the type argument.
-	 * Returns null if not found
-	 *
-	 * @param type class of particle to get
-	 * @param spin the spin of the particle to get
-	 * @return the particle with given type and spin
-	 */
-	public <T extends Particle> T getParticle(Class<T> type, Spin spin) {
-		Objects.requireNonNull(type);
-		Objects.requireNonNull(spin);
-
-		return this.spunParticles()
-			.filter(s -> s.getSpin().equals(spin))
-			.map(SpunParticle::getParticle)
-			.filter(p -> type.isAssignableFrom(p.getClass()))
-			.map(type::cast)
-			.findFirst().orElse(null);
-	}
-
-	// Property Signatures: 1 getter, 1 setter
-	@JsonProperty("signatures")
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private Map<String, ECDSASignature> getJsonSignatures() {
-		return this.signatures.entrySet().stream()
-			.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
-	}
-
-	@JsonProperty("signatures")
-	private void setJsonSignatures(Map<String, ECDSASignature> sigs) {
-		if (sigs != null && !sigs.isEmpty()) {
-			this.signatures.putAll((sigs.entrySet().stream()
-				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
-		}
-	}
-
-	public static AID aidOf(Atom atom, Hasher hasher) {
-		HashCode hash = hasher.hash(atom);
-		return AID.from(hash.asBytes());
-	}
-
 	@Override
-	public String toString() {
-		String particleGroupsStr = this.particleGroups.stream().map(ParticleGroup::toString).collect(Collectors.joining(","));
-		return String.format("%s[%s]", getClass().getSimpleName(), particleGroupsStr);
+	public int hashCode() {
+		return Objects.hash(witness);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
 		if (!(o instanceof Atom)) {
 			return false;
 		}
-		Atom atom = (Atom) o;
-		return Objects.equals(particleGroups, atom.particleGroups)
-				&& Objects.equals(signatures, atom.signatures)
-				&& Objects.equals(message, atom.message);
+
+		Atom other = (Atom) o;
+		return Objects.equals(this.witness, other.witness);
+	}
+
+	static List<ParticleGroup> toParticleGroups(
+		ImmutableList<CMMicroInstruction> instructions
+	) {
+		List<ParticleGroup> pgs = new ArrayList<>();
+		ParticleGroupBuilder curPg = ParticleGroup.builder();
+		for (CMMicroInstruction instruction : instructions) {
+			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+				ParticleGroup pg = curPg.build();
+				pgs.add(pg);
+				curPg = ParticleGroup.builder();
+			} else {
+				curPg.addParticle(instruction.getParticle(), instruction.getNextSpin());
+			}
+		}
+		return pgs;
+	}
+
+	public AtomBuilder toBuilder() {
+		List<ParticleGroup> pgs = toParticleGroups(this.instructions);
+		var builder = new AtomBuilder();
+		pgs.forEach(builder::addParticleGroup);
+		this.signatures.forEach(builder::setSignature);
+		builder.message(this.message);
+		return builder;
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(particleGroups, signatures, message);
+	public String toString() {
+		return String.format("%s {witness=%s}", this.getClass().getSimpleName(), this.witness);
+	}
+
+	public String toInstructionsString() {
+		return this.instructions.stream().map(i -> i.getMicroOp() + " " + i.getParticle() + "\n").collect(Collectors.joining());
 	}
 }

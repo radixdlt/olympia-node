@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
@@ -65,10 +65,11 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.of(SpunParticle.up(particle)));
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -107,10 +108,11 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -165,10 +167,11 @@ public class UnallocatedTokensParticleTest {
 			SpunParticle.up(tokenDefinitionParticle)
 		));
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();

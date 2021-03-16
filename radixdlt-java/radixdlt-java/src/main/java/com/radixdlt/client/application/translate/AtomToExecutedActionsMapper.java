@@ -22,8 +22,8 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Observable;
 
 public interface AtomToExecutedActionsMapper<T> {

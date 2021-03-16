@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.engine.AtomChecker;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.atom.LedgerAtom;
 
 /**
  * Module which provides an atom checker that does not require fees.

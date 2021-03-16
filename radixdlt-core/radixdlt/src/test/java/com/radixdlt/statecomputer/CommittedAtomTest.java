@@ -26,7 +26,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.Atom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -34,25 +34,25 @@ import org.junit.Test;
 
 public class CommittedAtomTest {
 	private CommittedAtom committedAtom;
-	private ClientAtom clientAtom;
+	private Atom atom;
 	private VerifiedLedgerHeaderAndProof proof;
 
 	@Before
 	public void setUp() {
-		this.clientAtom = mock(ClientAtom.class);
-		when(clientAtom.getAID()).thenReturn(mock(AID.class));
-		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
-		when(clientAtom.getMessage()).thenReturn("test message");
+		this.atom = mock(Atom.class);
+		when(atom.getAID()).thenReturn(mock(AID.class));
+		when(atom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
+		when(atom.getMessage()).thenReturn("test message");
 		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
-		this.committedAtom = CommittedAtom.create(clientAtom, proof);
+		this.committedAtom = CommittedAtom.create(atom, proof);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
-		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
-		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());
-		assertThat(committedAtom.getMessage()).isEqualTo(clientAtom.getMessage());
+		assertThat(committedAtom.getClientAtom()).isEqualTo(atom);
+		assertThat(committedAtom.getAID()).isEqualTo(atom.getAID());
+		assertThat(committedAtom.getCMInstruction()).isEqualTo(atom.getCMInstruction());
+		assertThat(committedAtom.getMessage()).isEqualTo(atom.getMessage());
 	}
 
 	@Test

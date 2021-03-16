@@ -24,11 +24,11 @@ package com.radixdlt.client.application.translate.unique;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
@@ -82,7 +82,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 			int groupIndex = Integer.parseInt(groupIndexStr);
 			int particleIndex = Integer.parseInt(particleIndexStr);
 
-			ParticleGroup particleGroup = atom.particleGroups().collect(Collectors.toList()).get(groupIndex);
+			ParticleGroup particleGroup = atom.toBuilder().particleGroups().collect(Collectors.toList()).get(groupIndex);
 
 			return Optional.of(Pair.of(particleGroup,
 				particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex)));

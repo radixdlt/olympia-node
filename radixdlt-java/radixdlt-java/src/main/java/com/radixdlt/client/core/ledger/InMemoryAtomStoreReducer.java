@@ -24,8 +24,8 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;

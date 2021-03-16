@@ -43,7 +43,9 @@ public final class SubmitAtomStatusAction implements SubmitAtomAction {
 		this.statusNotification = Objects.requireNonNull(statusNotification);
 	}
 
-	public static SubmitAtomStatusAction fromStatusNotification(String uuid, Atom atom, RadixNode node, AtomStatusEvent statusNotification) {
+	public static SubmitAtomStatusAction fromStatusNotification(
+		String uuid, Atom atom, RadixNode node, AtomStatusEvent statusNotification
+	) {
 		return new SubmitAtomStatusAction(uuid, atom, node, statusNotification);
 	}
 
@@ -73,6 +75,6 @@ public final class SubmitAtomStatusAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_STATUS " + this.uuid + " " + this.atom.getAid() + " " + this.node + " " + this.statusNotification;
+		return "SUBMIT_ATOM_STATUS " + this.uuid + " " + this.atom + " " + this.node + " " + this.statusNotification;
 	}
 }

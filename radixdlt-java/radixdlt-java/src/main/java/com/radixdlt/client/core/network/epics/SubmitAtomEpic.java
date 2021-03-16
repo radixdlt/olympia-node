@@ -80,7 +80,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 		return jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.flatMap(notification -> {
 				if (notification.getType().equals(NotificationType.START)) {
-					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
+					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAID())
 						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
 						.andThen(Observable.<RadixNodeAction>just(
 							SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)

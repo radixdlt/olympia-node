@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -25,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -45,7 +46,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -96,7 +97,7 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static ClientAtom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
+	private static Atom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
@@ -109,26 +110,27 @@ public class MempoolTest {
 				.addParticle(uniqueParticle, Spin.UP);
 		}
 		ParticleGroup particleGroup = builder.build();
-		Atom atom = new Atom();
+		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);
-		atom.sign(keyPair, hasher);
-		return ClientAtom.convertFromApiAtom(atom, hasher);
+		HashCode hashToSign = atom.computeHashToSign();
+		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return atom.buildAtom();
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
-		ClientAtom atom = createAtom(keyPair, hasher, nonce, numParticles);
+		Atom atom = createAtom(keyPair, hasher, nonce, numParticles);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
-		ClientAtom atom = createAtom(keyPair, hasher, 0, 1);
+		Atom atom = createAtom(keyPair, hasher, 0, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce) {
-		ClientAtom atom = createAtom(keyPair, hasher, nonce, 1);
+		Atom atom = createAtom(keyPair, hasher, nonce, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}

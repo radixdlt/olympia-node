@@ -31,6 +31,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+
 @SerializerId2("api.atom_event")
 public final class AtomEvent {
 

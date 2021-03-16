@@ -22,8 +22,8 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.network.RadixNodeAction;
 
 /**
  * A dispatchable fetch atoms action which represents an atom observed from a specific node for an atom fetch flow.
