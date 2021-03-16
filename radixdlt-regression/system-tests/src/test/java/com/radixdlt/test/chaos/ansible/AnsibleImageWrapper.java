@@ -87,9 +87,10 @@ public class AnsibleImageWrapper {
                 "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
                 image, playbook, optionsAsEnvProperty, "--limit", clusterName, "-t", tag
         );
-        System.out.println(Joiner.on("\n").join(commandParts));
-        logger.info("Running docker command: {}", commandParts);
-        return CmdHelper.runCommand(commandParts.toArray(String[]::new), null, true).toString();
+        String[] commandArrayWithoutEmptyStrings =
+                commandParts.stream().filter(StringUtils::isNotBlank).toArray(String[]::new);
+        logger.info("Running docker command: {}", commandArrayWithoutEmptyStrings);
+        return CmdHelper.runCommand(commandArrayWithoutEmptyStrings, null, true).toString();
     }
 
     public String runPlaybook(String playbook, String tag) {
