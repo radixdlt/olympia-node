@@ -351,9 +351,9 @@ public final class GenerateUniverses {
 			String nodeName = String.format("node%s", n);
 			validator.put("node", n);
 			String keyname = String.format(template, n++);
-			if (!helmUniverseOutput.getOutputHelmValues() && !awsSecretsOutputOptions.getEnableAwsSecrets()) {
+			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
-			} else if (helmUniverseOutput.getOutputHelmValues() || awsSecretsOutputOptions.getEnableAwsSecrets()) {
+			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				nodeNames.add(nodeName);
 				validator.put("host", nodeName);
 				if (template.startsWith(VALIDATOR_PREFIX)) {
@@ -374,6 +374,10 @@ public final class GenerateUniverses {
 		}
 	}
 
+	private static boolean isStdOutput(HelmUniverseOutput helmUniverseOutput, AWSSecretsOutputOptions awsSecretsOutputOptions) {
+		return !helmUniverseOutput.getOutputHelmValues() && !awsSecretsOutputOptions.getEnableAwsSecrets();
+	}
+
 
 	private static void outputUniverse(
 		boolean suppressDson,
@@ -390,13 +394,13 @@ public final class GenerateUniverses {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
 			RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
 			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
-			if (!helmUniverseOutput.getOutputHelmValues() && !awsSecretsOutputOptions.getEnableAwsSecrets()) {
+			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 				System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
 				System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
 				System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
-			} else if (helmUniverseOutput.getOutputHelmValues() || awsSecretsOutputOptions.getEnableAwsSecrets()) {
+			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
 				universe.put("type", type);
@@ -424,6 +428,10 @@ public final class GenerateUniverses {
 			JSONObject json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
 			System.out.println(json.toString(4));
 		}
+	}
+
+	private static boolean isHelmOrAwsOutuput(HelmUniverseOutput helmUniverseOutput, AWSSecretsOutputOptions awsSecretsOutputOptions) {
+		return helmUniverseOutput.getOutputHelmValues() || awsSecretsOutputOptions.getEnableAwsSecrets();
 	}
 
 	private static void usage(Options options) {

@@ -67,9 +67,9 @@ public class AWSSecrets {
 			IntStream.range(0, fullNodeCount).forEach(i -> {
 				final String nodeName = String.format("fullnode%s", i);
 				final String keyStoreName = String.format("%s.ks", nodeName);
-				final String passwordName = String.format("%s-password", nodeName);
-				final String keyFileSecretName = String.format("%s/%s/%s", networkName,nodeName, keyStoreName);
-				final String passwordSecretName = String.format("%s/%s/%s", networkName,nodeName, passwordName);
+				final String passwordName = String.format("password", nodeName);
+				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
+				final String passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 				final String password = passwordName;
 				try (OutputCapture capture = OutputCapture.startStdout()) {
 					RadixCLI.execute(new String[]{

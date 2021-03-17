@@ -8,7 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.secretsmanager.model.*;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretResponse;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
+import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
+import software.amazon.awssdk.services.secretsmanager.model.Tag;
+import software.amazon.awssdk.services.secretsmanager.model.UpdateSecretRequest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,7 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
+
 public class AWSSecretManager {
+    private AWSSecretManager() {
+
+    }
     private static Region defaultRegion = Region.EU_WEST_2;
 
     public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
