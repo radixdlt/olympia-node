@@ -81,7 +81,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
  * and clients should make an effort to specify passwords in a secure way.
  */
 @SecurityCritical(SecurityKind.KEY_STORE)
-public final class RadixKeyStore implements Closeable {
+public final class  RadixKeyStore implements Closeable {
 	// ASN.1 Object Identifiers for various things we use
 	private static final ASN1ObjectIdentifier OID_EC_ENCRYPTION     = new ASN1ObjectIdentifier("1.2.840.10045.2.1");
 	private static final ASN1ObjectIdentifier OID_SECP256K1_CURVE   = new ASN1ObjectIdentifier("1.3.132.0.10");
