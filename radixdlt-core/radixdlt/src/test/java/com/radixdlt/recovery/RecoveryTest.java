@@ -17,7 +17,15 @@
 
 package com.radixdlt.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Condition;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -32,6 +40,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -51,39 +60,32 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LedgerEntryStore;
-import io.reactivex.rxjava3.schedulers.Timed;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+import io.reactivex.rxjava3.schedulers.Timed;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies that on restarts (simulated via creation of new injectors) that the application
@@ -94,7 +96,7 @@ public class RecoveryTest {
 
 	@Parameters
 	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{10L}, {1000000L}
 		});
 	}
@@ -131,7 +133,7 @@ public class RecoveryTest {
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of(ecKeyPair));
 				}
 			}
@@ -165,16 +167,16 @@ public class RecoveryTest {
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
+					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
-						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
-					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() {}, ProcessOnDispatch.class)
+						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {});
+					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {}).in(Scopes.SINGLETON);
 				}
 			},
 			new PersistedNodeForTestingModule()
@@ -182,7 +184,7 @@ public class RecoveryTest {
 	}
 
 	private RadixEngine<LedgerAtom> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() {}));
 	}
 
 	private CommittedAtomsStore getAtomStore() {
@@ -190,12 +192,12 @@ public class RecoveryTest {
 	}
 
 	private EpochView getLastEpochView() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() {}))
 			.getLastEvent().getEpochView();
 	}
 
 	private Vote getLastVote() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })).getLastEvent();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {})).getLastEvent();
 	}
 
 	private void restartNode() {
@@ -289,14 +291,26 @@ public class RecoveryTest {
 		// Assert
 		assertThat(network.allMessages())
 			.hasSize(3)
-			.haveExactly(1,
-				new Condition<>(msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
-					"A single epoched scheduled timeout has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof ScheduledLocalTimeout,
-					"A single scheduled timeout update has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof Proposal,
-					"A proposal has been emitted"));
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
+					"A single epoched scheduled timeout has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof ScheduledLocalTimeout,
+					"A single scheduled timeout update has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof Proposal,
+					"A proposal has been emitted"
+				)
+			);
 	}
 }

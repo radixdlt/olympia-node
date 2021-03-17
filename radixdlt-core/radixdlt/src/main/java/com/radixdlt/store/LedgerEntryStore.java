@@ -17,10 +17,12 @@
 
 package com.radixdlt.store;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * A read/write instance of a ledger store containing ledger entries.
@@ -33,4 +35,8 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	void close();
 
 	Optional<SerializedVertexStoreState> loadLastVertexStoreState();
+
+	void forEach(BiConsumer<Atom, Long> clientAtomConsumer);
+
+	void onAtomCommit(BiConsumer<Atom, Long> atomConsumer);
 }

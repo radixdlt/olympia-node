@@ -17,57 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
-import com.radixdlt.CryptoModule;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageQueue;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.statecomputer.EpochCeilingView;
-
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.utils.Base58;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -79,7 +28,60 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageQueue;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.utils.Base58;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.reactivex.rxjava3.schedulers.Timed;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Various liveness+recovery tests
@@ -351,7 +353,7 @@ public class RecoveryLivenessTest {
 	 */
 	@Test
 	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
-		int f = (nodes.size()  - 1) / 3;
+		int f = (nodes.size() - 1) / 3;
 		if (f <= 0) {
 			// if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
 			return;

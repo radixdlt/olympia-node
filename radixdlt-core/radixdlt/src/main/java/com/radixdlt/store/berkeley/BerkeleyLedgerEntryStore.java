@@ -17,44 +17,43 @@
 
 package com.radixdlt.store.berkeley;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.StoreConfig;
-import com.radixdlt.utils.Pair;
-import com.sleepycat.je.Cursor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.database.DatabaseEnvironment;
-
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
-import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Pair;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -70,6 +69,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -100,6 +100,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
+
+	private BiConsumer<Atom, Long> committedAtomConsumer = BerkeleyLedgerEntryStore::defaultCommittedAtomConsumer;
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 
@@ -181,6 +183,20 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
+	public Optional<Atom> get(long offset) {
+		return withTime(() -> {
+			try {
+				var data = atomLog.read(offset);
+				return Optional.of(deserializeOrElseFail(data, Atom.class));
+			} catch (Exception e) {
+				fail("Get of atom at offset '" + offset + "' failed", e);
+			}
+
+			return Optional.empty();
+		}, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
+	}
+
+	@Override
 	public Transaction createTransaction() {
 		return withTime(
 			() -> wrap(beginTransaction()),
@@ -226,6 +242,23 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
+	public void forEach(BiConsumer<Atom, Long> clientAtomConsumer) {
+		atomLog.forEach((bytes, offset) -> {
+			if (offset >= 0) {
+				clientAtomConsumer.accept(deserializeOrElseFail(bytes, Atom.class), offset);
+			} else {
+				clientAtomConsumer.accept(null, -1L);
+			}
+		});
+	}
+
+	@Override
+	public void onAtomCommit(BiConsumer<Atom, Long> atomConsumer) {
+		committedAtomConsumer = Optional.ofNullable(atomConsumer)
+			.orElse(BerkeleyLedgerEntryStore::defaultCommittedAtomConsumer);
+	}
+
+	@Override
 	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
 		withTime(
 			() -> doSave(transaction.unwrap(), vertexStoreState),
@@ -241,6 +274,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
 		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
+	}
+
+	private static void defaultCommittedAtomConsumer(Atom atom, Long offset) {
+		//Intentionally left blank
 	}
 
 	private void open() {
@@ -263,7 +300,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
-			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
+			atomLog = AppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
@@ -525,6 +562,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			// Store header/proof
 			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
 
+			committedAtomConsumer.accept(atom.getClientAtom(), offset);
 		} catch (IOException e) {
 			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
