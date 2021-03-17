@@ -121,7 +121,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 					removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(
 						new RadixEngineException(
 							clientAtom,
-							RadixEngineErrorCode.STATE_CONFLICT,
+							RadixEngineErrorCode.CM_ERROR,
 							"State conflict",
 							DataPointer.ofAtom()
 						)

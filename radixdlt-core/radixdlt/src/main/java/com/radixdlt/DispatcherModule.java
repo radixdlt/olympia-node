@@ -47,6 +47,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -106,8 +107,11 @@ public class DispatcherModule extends AbstractModule {
 						RadixEngineMempoolException e = (RadixEngineMempoolException) m.getException();
 						if (e.getException().getErrorCode().equals(RadixEngineErrorCode.HOOK_ERROR)) {
 							return CounterType.MEMPOOL_ERRORS_HOOK;
-						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.STATE_CONFLICT)) {
-							return CounterType.MEMPOOL_ERRORS_CONFLICT;
+						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.CM_ERROR)) {
+							var errorCode = e.getException().getCmError().getErrorCode();
+							if (errorCode == CMErrorCode.SPIN_CONFLICT) {
+								return CounterType.MEMPOOL_ERRORS_CONFLICT;
+							}
 						}
 					}
 					return CounterType.MEMPOOL_ERRORS_OTHER;

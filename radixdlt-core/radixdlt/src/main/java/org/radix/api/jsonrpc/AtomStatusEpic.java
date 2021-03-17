@@ -17,6 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.constraintmachine.CMErrorCode;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
@@ -151,22 +152,15 @@ public class AtomStatusEpic {
 
 		private AtomStatus extractAtomStatus(final RadixEngineException exception, final JSONObject data) {
 			switch (exception.getErrorCode()) {
-				case CONVERSION_ERROR:    // Fall through
 				case CM_ERROR:            // Fall through
 				case HOOK_ERROR:
 					if (exception.getCmError() != null) {
 						data.put("cmError", exception.getCmError().getErrMsg());
+						if (exception.getCmError().getErrorCode() == CMErrorCode.SPIN_CONFLICT) {
+							return CONFLICT_LOSER;
+						}
 					}
 					return EVICTED_FAILED_CM_VERIFICATION;
-
-				case VIRTUAL_STATE_CONFLICT:
-					return EVICTED_FAILED_CM_VERIFICATION;
-
-				case MISSING_DEPENDENCY:
-					return MISSING_DEPENDENCY;
-
-				case STATE_CONFLICT:
-					return CONFLICT_LOSER;
 
 				default: // Don't send back unhandled exception
 					return null;
