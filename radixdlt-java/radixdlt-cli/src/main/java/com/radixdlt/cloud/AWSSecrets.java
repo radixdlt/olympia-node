@@ -4,7 +4,6 @@ import com.radixdlt.cli.OutputCapture;
 import com.radixdlt.cli.RadixCLI;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,11 +59,14 @@ public class AWSSecrets {
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
-			final String keyStoreName = String.format("%s-%s.ks", networkName, nodeName);
-			final String keyFileSecretName = String.format("%s/%s.ks", networkName, keyStoreName);
-			try (OutputCapture capture = OutputCapture.startStderr()) {
-				RadixCLI.main(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
+			final String keyStoreName = String.format("%s/%s.ks", networkName, nodeName);
+			final String keyFileSecretName = String.format("%s/%s", networkName, keyStoreName);
+			try (OutputCapture capture = OutputCapture.startStdout()) {
+				RadixCLI.execute(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
 				final String output = capture.stop();
+				if(output.contains("Unable to generate keypair")){
+					throw new Exception("Unable to generate keypair");
+				}
 				Path keyFilePath = Paths.get(keyStoreName);
 				Map<String, Object> keyFileAwsSecret = new HashMap<>();
 				try {
@@ -74,8 +76,9 @@ public class AWSSecrets {
 					throw new IllegalStateException("While reading validator keys", e);
 				}
 				writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true,true);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
 
 		} catch (ParseException e) {
 			e.printStackTrace();
