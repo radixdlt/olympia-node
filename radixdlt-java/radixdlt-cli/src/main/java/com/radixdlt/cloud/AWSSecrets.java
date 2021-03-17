@@ -62,15 +62,21 @@ public class AWSSecrets {
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
-			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
+			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
+				enableAwsSecrets, recreateAwsSecrets, networkName);
 			IntStream.range(0, fullNodeCount).forEach(i -> {
-				final String keyStoreName = String.format("fullnode%s.ks", i);
-				final String passwordName = String.format("fullnode%s-password", i);
-				final String keyFileSecretName = String.format("%s/%s", networkName, keyStoreName);
-				final String passwordSecretName = String.format("%s/%s", networkName, passwordName);
+				final String nodeName = String.format("fullnode%s", i);
+				final String keyStoreName = String.format("%s.ks", nodeName);
+				final String passwordName = String.format("%s-password", nodeName);
+				final String keyFileSecretName = String.format("%s/%s/%s", networkName,nodeName, keyStoreName);
+				final String passwordSecretName = String.format("%s/%s/%s", networkName,nodeName, passwordName);
 				final String password = passwordName;
 				try (OutputCapture capture = OutputCapture.startStdout()) {
-					RadixCLI.execute(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=" + password});
+					RadixCLI.execute(new String[]{
+						"generate-validator-key",
+						"-k=" + keyStoreName,
+						"-n=" + keyStoreName,
+						"-p=" + password});
 					final String output = capture.stop();
 					System.out.println(output.toString());
 					if (output.contains("Unable to generate keypair")) {
