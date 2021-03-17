@@ -1,8 +1,5 @@
 package com.radixdlt.utils;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,8 +29,6 @@ public class AWSSecretManager {
     private AWSSecretManager() {
 
     }
-    private static final Logger logger = LogManager.getLogger();
-
     private static Region defaultRegion = Region.EU_WEST_2;
 
     public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
@@ -43,7 +38,7 @@ public class AWSSecretManager {
             .build();
 
         String secretARN = createNewSecret(secretsClient, secretName, secretValue, network, binarySecret);
-        logger.info("Secret created with ARN " + secretARN);
+        System.out.println("Secret created with ARN " + secretARN);
         secretsClient.close();
 
     }
@@ -198,12 +193,12 @@ public class AWSSecretManager {
                 }
             }
         } catch (JsonProcessingException e) {
-            logger.log(Level.ERROR, "Exception occurred", e);
+            System.out.println(e);
         } catch (SecretsManagerException e) {
-            logger.log(Level.ERROR, e.awsErrorDetails().errorMessage(), e);
+            System.err.println(e.awsErrorDetails().errorMessage());
             System.exit(1);
         } catch (IOException e) {
-            logger.log(Level.ERROR, "Exception occurred", e);
+            System.out.println(e);
             System.exit(1);
         }
     }
@@ -227,7 +222,7 @@ public class AWSSecretManager {
     ) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (canBeUpdated(awsSecretsOutputOptions)) {
-            logger.info(String.format("Secret %s exists. And it's going to be replaced %n", secretName));
+            System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
                 if (compress) {
@@ -242,16 +237,16 @@ public class AWSSecretManager {
 
                 }
             } catch (JsonProcessingException e) {
-                logger.log(Level.ERROR, "Exception occurred", e);
+                System.out.println(e);
             } catch (SecretsManagerException e) {
                 System.err.println(e.awsErrorDetails().errorMessage());
                 System.exit(1);
             } catch (IOException e) {
-                logger.log(Level.ERROR, "Exception occurred", e);
+                System.out.println(e);
                 System.exit(1);
             }
         } else {
-            logger.info(String.format("Secret %s exists. It will not be created again %n", secretName));
+            System.out.format("Secret %s exists. It will not be created again %n", secretName);
         }
     }
 
