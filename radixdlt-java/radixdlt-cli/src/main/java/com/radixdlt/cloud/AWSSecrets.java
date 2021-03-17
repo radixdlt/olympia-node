@@ -25,7 +25,7 @@ public class AWSSecrets {
 		options.addOption("p", "password", true, "Password for the keystore");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
-		options.addOption("n", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
+		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
 
 		CommandLineParser parser = new DefaultParser();
 		try {
@@ -47,7 +47,7 @@ public class AWSSecrets {
 				.orElseThrow(() -> new IllegalArgumentException("Must specify password for the store"));
 
 			final String networkName = getOption(cmd, 'n').orElse(DEFAULT_NETWORK_NAME);
-			final String keyStoreName = String.format("%1/%2", networkName, nodeName);
+			final String keyStoreName = String.format("%s-%s.ks", networkName, nodeName);
 			RadixCLI.main(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
 
 		} catch (ParseException e) {
