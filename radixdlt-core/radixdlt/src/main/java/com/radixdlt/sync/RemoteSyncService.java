@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -31,13 +32,16 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
-
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,28 +52,42 @@ import org.apache.logging.log4j.Logger;
 public final class RemoteSyncService {
 	private static final Logger log = LogManager.getLogger();
 
+	private final PeersView peersView;
+	private final LocalSyncService localSyncService; // TODO: consider removing this dependency
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
 	private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
+	private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
+	private final SyncConfig syncConfig;
 	private final SystemCounters systemCounters;
 	private final Comparator<AccumulatorState> accComparator;
+	private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	@Inject
 	public RemoteSyncService(
+		PeersView peersView,
+		LocalSyncService localSyncService,
 		CommittedReader committedReader,
 		RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
 		RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
+		RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
+		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
 		@LastProof VerifiedLedgerHeaderAndProof initialHeader
 	) {
+		this.peersView = Objects.requireNonNull(peersView);
+		this.localSyncService = Objects.requireNonNull(localSyncService);
 		this.committedReader = Objects.requireNonNull(committedReader);
+		this.syncConfig = Objects.requireNonNull(syncConfig);
 		this.statusResponseDispatcher = Objects.requireNonNull(statusResponseDispatcher);
 		this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
+		this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
 		this.systemCounters = systemCounters;
 		this.accComparator = Objects.requireNonNull(accComparator);
+		this.ledgerStatusUpdateSendRateLimiter = RateLimiter.create(syncConfig.maxLedgerUpdatesRate());
 
 		this.currentHeader = initialHeader;
 	}
@@ -93,7 +111,7 @@ public final class RemoteSyncService {
 			committedCommands.getHeader().toDto()
 		);
 
-		log.info("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
+		log.trace("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
 
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}
@@ -122,6 +140,26 @@ public final class RemoteSyncService {
 		final VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
+			this.sendStatusUpdateToSomePeers(updatedHeader);
 		}
+	}
+
+	private void sendStatusUpdateToSomePeers(VerifiedLedgerHeaderAndProof header) {
+		if (!(this.localSyncService.getSyncState() instanceof SyncState.IdleState)) {
+			return; // not sending any updates if the node is syncing itself
+		}
+
+		final var statusUpdate = LedgerStatusUpdate.create(header);
+
+		final var currentPeers = new ArrayList<>(this.peersView.peers());
+		Collections.shuffle(currentPeers);
+
+		currentPeers.stream()
+			.limit(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+			.forEach(peer -> {
+				if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {
+					statusUpdateDispatcher.dispatch(peer, statusUpdate);
+				}
+			});
 	}
 }

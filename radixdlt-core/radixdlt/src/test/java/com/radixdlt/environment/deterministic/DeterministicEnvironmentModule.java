@@ -28,21 +28,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -53,7 +47,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	protected void configure() {
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
-		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		bind(DeterministicSender.class).to(ControlledSender.class);
 
@@ -69,26 +62,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
-	}
-
-	@Provides
-	RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(SyncRequest.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(SyncResponse.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(StatusRequest.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(StatusResponse.class);
 	}
 
 	@Provides

@@ -27,13 +27,16 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncService;
 
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,14 +50,17 @@ public class EpochsLocalSyncServiceTest {
 
 	private EventProcessor<LocalSyncRequest> localSyncEventProcessor;
 	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor;
+	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor;
 
 	@Before
 	public void setup() {
 		this.initialProcessor = mock(LocalSyncService.class);
 		this.localSyncEventProcessor = rmock(EventProcessor.class);
 		this.ledgerUpdateEventProcessor = rmock(EventProcessor.class);
+		this.ledgerStatusUpdateEventProcessor = rmock(RemoteEventProcessor.class);
 		when(initialProcessor.localSyncRequestEventProcessor()).thenReturn(localSyncEventProcessor);
 		when(initialProcessor.ledgerUpdateEventProcessor()).thenReturn(ledgerUpdateEventProcessor);
+		when(initialProcessor.ledgerStatusUpdateEventProcessor()).thenReturn(ledgerStatusUpdateEventProcessor);
 		this.initialEpoch = mock(EpochChange.class);
 		this.localSyncFactory = mock(LocalSyncServiceFactory.class);
 		this.processor = new EpochsLocalSyncService(
@@ -124,5 +130,15 @@ public class EpochsLocalSyncServiceTest {
 
 		verify(ledgerUpdateEventProcessor, times(0)).process(ledgerUpdate.getBase());
 		verify(newLedgerUpdateProcessor, times(1)).process(ledgerUpdate.getBase());
+	}
+
+	@Test
+	public void when_remote_status_update__then_should_forward() {
+		final var ledgerStatusUpdate = mock(LedgerStatusUpdate.class);
+		final var sender = mock(BFTNode.class);
+
+		processor.ledgerStatusUpdateEventProcessor().process(sender, ledgerStatusUpdate);
+
+		verify(ledgerStatusUpdateEventProcessor, times(1)).process(sender, ledgerStatusUpdate);
 	}
 }

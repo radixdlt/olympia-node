@@ -75,6 +75,11 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -162,6 +167,18 @@ public class DispatcherModule extends AbstractModule {
 				MempoolAdd.class,
 				CounterType.MEMPOOL_RELAYER_SENT_COUNT
 			)).in(Scopes.SINGLETON);
+
+		// Sync
+		bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<StatusResponse>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<SyncRequest>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<SyncResponse>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class)).in(Scopes.SINGLETON);
 
 		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
 		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);

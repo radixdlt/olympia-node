@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,24 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.HashUtils;
+import org.radix.serialization.SerializeMessageObject;
 
-/**
- * A mocked sync epochs rpc sender
- */
-public enum EmptySyncEpochsRPCSender implements EpochManager.SyncEpochsRPCSender {
-	INSTANCE;
-
-	@Override
-	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		// No-op
+public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObject<LedgerStatusUpdateMessage> {
+	public LedgerStatusUpdateMessageSerializeTest() {
+		super(LedgerStatusUpdateMessage.class, LedgerStatusUpdateMessageSerializeTest::get);
 	}
 
-	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		// No-op
+	private static LedgerStatusUpdateMessage get() {
+		return new LedgerStatusUpdateMessage(1234, VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), null));
 	}
+
 }

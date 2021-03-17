@@ -50,6 +50,7 @@ import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
 import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -577,6 +578,8 @@ public class SimulationTest {
 				} else {
 					modules.add(new SyncRunnerModule());
 				}
+			} else if (ledgerType.hasEpochs && !ledgerType.hasSync) {
+				modules.add(new MockedLedgerStatusUpdatesRunnerModule());
 			}
 
 			return new SimulationTest(

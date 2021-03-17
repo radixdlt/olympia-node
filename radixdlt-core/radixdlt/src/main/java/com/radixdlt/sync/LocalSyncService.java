@@ -53,10 +53,11 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.utils.Pair;
@@ -184,7 +185,16 @@ public final class LocalSyncService {
 			))
 			.put(handler(
 				SyncingState.class, LocalSyncRequest.class,
-				state -> request -> this.updateSyncingTarget(state, request)
+				state -> request -> this.updateTargetIfNeeded(state, request.getTargetNodes(), request.getTarget())
+			))
+			.put(remoteHandler(
+				IdleState.class, LedgerStatusUpdate.class,
+				state -> peer -> request -> this.startSync(state, ImmutableList.of(peer), request.getHeader())
+			))
+			.put(remoteHandler(
+			 	SyncingState.class, LedgerStatusUpdate.class,
+				state -> peer -> ledgerStatusUpdate ->
+					this.updateTargetIfNeeded(state, ImmutableList.of(peer), ledgerStatusUpdate.getHeader())
 			))
 			.put(handler(
 				SyncingState.class, SyncLedgerUpdateTimeout.class,
@@ -418,18 +428,21 @@ public final class LocalSyncService {
 		}
 	}
 
-	private SyncingState updateSyncingTarget(SyncingState currentState, LocalSyncRequest request) {
-		// we're already syncing, update the target if needed and add candidate peers
+	private SyncingState updateTargetIfNeeded(
+		SyncingState currentState,
+		ImmutableList<BFTNode> peers,
+		VerifiedLedgerHeaderAndProof header
+	) {
 		final var isNewerState =
 			accComparator.compare(
-					request.getTarget().getAccumulatorState(),
-					currentState.getTargetHeader().getAccumulatorState()
+				header.getAccumulatorState(),
+				currentState.getTargetHeader().getAccumulatorState()
 			) > 0;
 
 		if (isNewerState) {
 			return currentState
-				.withTargetHeader(request.getTarget())
-				.withCandidatePeers(request.getTargetNodes());
+				.withTargetHeader(header)
+				.withCandidatePeers(peers);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
 			return currentState;
@@ -464,6 +477,10 @@ public final class LocalSyncService {
 
 	public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
 		return (peer, event) -> this.processRemoteEvent(SyncResponse.class, peer, event);
+	}
+
+	public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+		return (peer, event) -> this.processRemoteEvent(LedgerStatusUpdate.class, peer, event);
 	}
 
 	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {

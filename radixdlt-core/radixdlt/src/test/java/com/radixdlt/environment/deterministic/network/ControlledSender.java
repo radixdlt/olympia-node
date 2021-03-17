@@ -19,8 +19,6 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -34,7 +32,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -75,20 +72,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
 			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
 		}
-	}
-
-	@Override
-	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		GetEpochRequest getEpochRequest = new GetEpochRequest(self, epoch);
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(self, channelId, getEpochRequest, arrivalTime(channelId)));
-	}
-
-	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		GetEpochResponse getEpochResponse = new GetEpochResponse(self, ancestor);
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(self, channelId, getEpochResponse, arrivalTime(channelId)));
 	}
 
 	@Override
