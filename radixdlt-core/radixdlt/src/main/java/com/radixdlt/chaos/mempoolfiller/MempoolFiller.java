@@ -22,10 +22,10 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -51,26 +51,25 @@ public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
-	private final Hasher hasher;
-	private final int magic;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
-	private final ECKeyPair keyPair;
 	private final SystemCounters systemCounters;
 	private final PeersView peersView;
 	private final Random random;
-	private RadixAddress to = null;
+	private final HashSigner hashSigner;
+	private final RadixAddress selfAddress;
+
+	private boolean enabled = false;
 	private int numTransactions;
 	private boolean sendToSelf = false;
 
 	@Inject
 	public MempoolFiller(
-		@MempoolFillerKey ECKeyPair keyPair,
+		@Self RadixAddress selfAddress,
+		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		Hasher hasher,
-		@Named("magic") int magic,
 		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
@@ -79,10 +78,9 @@ public final class MempoolFiller {
 		Random random,
 		SystemCounters systemCounters
 	) {
-		this.keyPair = keyPair;
+		this.selfAddress = selfAddress;
+		this.hashSigner = hashSigner;
 		this.serialization = serialization;
-		this.hasher = hasher;
-		this.magic = magic;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;
@@ -97,29 +95,29 @@ public final class MempoolFiller {
 			u.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
 			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
-			if (u.enabled() == (to != null)) {
+			if (u.enabled() == enabled) {
 				return;
 			}
 
 			logger.info("Mempool Filler: Updating " + u.enabled());
 
 			if (u.enabled()) {
-				to = new RadixAddress((byte) magic, keyPair.getPublicKey());
+				enabled = true;
 				mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
 			} else {
-				to = null;
+				enabled = false;
 			}
 		};
 	}
 
 	public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
 		return p -> {
-			if (to == null) {
+			if (!enabled) {
 				return;
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			List<AtomBuilder> atoms = wallet.createParallelTransactions(to, numTransactions);
+			List<AtomBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
@@ -130,7 +128,7 @@ public final class MempoolFiller {
 			List<BFTNode> peers = peersView.peers();
 			atoms.forEach(atom -> {
 				HashCode hashToSign = atom.computeHashToSign();
-				atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+				atom.setSignature(selfAddress.euid(), hashSigner.sign(hashToSign));
 				Atom clientAtom = atom.buildAtom();
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);

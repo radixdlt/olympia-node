@@ -19,12 +19,13 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.application.validator.ValidatorRegistration;
+import com.radixdlt.atom.LedgerAtom;
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
-
-import java.io.IOException;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -35,14 +36,17 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController {
 	private final RadixAddress selfAddress;
+	private final RadixEngine<LedgerAtom> radixEngine;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	@Inject
 	public NodeController(
 		@Self RadixAddress selfAddress,
+		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
 	) {
 		this.selfAddress = selfAddress;
+		this.radixEngine = radixEngine;
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 	}
 
@@ -53,7 +57,11 @@ public final class NodeController {
 
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
-		respond(exchange, jsonObject().put("address", selfAddress));
+		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+		respond(exchange, jsonObject()
+			.put("address", selfAddress)
+			.put("balance", wallet.getBalance())
+			.put("numParticles", wallet.getNumParticles()));
 	}
 
 	@VisibleForTesting

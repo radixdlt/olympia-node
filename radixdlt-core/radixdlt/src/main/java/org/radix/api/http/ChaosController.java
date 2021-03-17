@@ -44,20 +44,14 @@ import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
 public final class ChaosController {
-	private final RadixEngine<LedgerAtom> radixEngine;
-	private final Optional<RadixAddress> mempoolFillerAddress;
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
 	@Inject
 	public ChaosController(
-		@MempoolFillerKey final Optional<RadixAddress> mempoolFillerAddress,
-		final RadixEngine<LedgerAtom> radixEngine,
 		final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		final EventDispatcher<MessageFlooderUpdate> messageDispatcher
 	) {
-		this.mempoolFillerAddress = mempoolFillerAddress;
-		this.radixEngine = radixEngine;
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;
 	}
@@ -65,7 +59,6 @@ public final class ChaosController {
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/api/chaos/message-flooder", this::handleMessageFlood);
 		handler.put("/api/chaos/mempool-filler", this::handleMempoolFill);
-		handler.get("/api/chaos/mempool-filler", this::respondWithMempoolFill);
 	}
 
 	@VisibleForTesting
@@ -100,21 +93,6 @@ public final class ChaosController {
 							   ? MempoolFillerUpdate.enable(100, true)
 							   : MempoolFillerUpdate.disable();
 			mempoolDispatcher.dispatch(fillerUpdate);
-		});
-	}
-
-	@VisibleForTesting
-	void respondWithMempoolFill(HttpServerExchange exchange) {
-		mempoolFillerAddress.ifPresentOrElse(addr -> {
-			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			respond(exchange, jsonObject()
-				.put("address", addr)
-				.put("balance", wallet.getBalance())
-				.put("numParticles", wallet.getNumParticles()));
-		},
-		() -> {
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("Mempool filler address is not configured");
 		});
 	}
 
