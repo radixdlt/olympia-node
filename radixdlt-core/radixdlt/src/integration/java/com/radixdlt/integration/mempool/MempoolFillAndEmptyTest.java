@@ -24,7 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.ApplicationModule;
+import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
@@ -72,7 +72,7 @@ public final class MempoolFillAndEmptyTest {
             new SingleNodeAndPeersDeterministicNetworkModule(),
             new MockedGenesisAtomModule(),
             new MempoolFillerModule(),
-            new ApplicationModule(),
+            new NodeWalletModule(),
             new AbstractModule() {
                 @Override
                 protected void configure() {

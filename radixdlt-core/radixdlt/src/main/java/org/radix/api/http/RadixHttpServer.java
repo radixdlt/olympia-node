@@ -24,6 +24,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
+import java.util.Set;
 import java.util.logging.Level;
 
 import io.undertow.Handlers;
@@ -42,33 +43,21 @@ import static java.util.logging.Logger.getLogger;
 public final class RadixHttpServer {
 	public static final int DEFAULT_PORT = 8080;
 
-	private final SystemController systemController;
-	private final NetworkController networkController;
-	private final ChaosController chaosController;
-	private final RpcController rpcController;
-	private final NodeController nodeController;
 	private final AtomsService atomsService;
 	private final int port;
 
 	private Undertow server;
 
+	private Set<Controller> controllers;
+
 	@Inject
 	public RadixHttpServer(
-		NodeController nodeController,
-		ChaosController chaosController,
+		Set<Controller> controllers,
 		RuntimeProperties properties,
-		RpcController rpcController,
-		NetworkController networkController,
-		SystemController systemController,
 		AtomsService atomsService
 	) {
 		this.port = properties.get("cp.port", DEFAULT_PORT);
-
-		this.nodeController = nodeController;
-		this.chaosController = chaosController;
-		this.systemController = systemController;
-		this.rpcController = rpcController;
-		this.networkController = networkController;
+		this.controllers = controllers;
 		this.atomsService = atomsService;
 	}
 
@@ -100,12 +89,7 @@ public final class RadixHttpServer {
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		systemController.configureRoutes(handler);
-		networkController.configureRoutes(handler);
-		chaosController.configureRoutes(handler);
-		rpcController.configureRoutes(handler);
-		nodeController.configureRoutes(handler);
-
+		controllers.forEach(c -> c.configureRoutes(handler));
 		handler.setFallbackHandler(RadixHttpServer::fallbackHandler);
 		handler.setInvalidMethodHandler(RadixHttpServer::invalidMethodHandler);
 

@@ -38,7 +38,7 @@ import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public final class SystemController {
+public final class SystemController implements Controller {
 	private final AtomsService atomsService;
 	private final SystemService systemService;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -57,6 +57,7 @@ public final class SystemController {
 		this.enableTestRoutes = universe.isDevelopment() || universe.isTest();
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
 		handler.get("/api/system", this::respondWithLocalSystem);

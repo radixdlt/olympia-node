@@ -21,7 +21,7 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.ApplicationModule;
+import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.consensus.bft.View;
@@ -66,7 +66,7 @@ public class MempoolFillTest {
 				bindConstant().annotatedWith(MempoolThrottleMs.class).to(200L);
 				bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
 				install(new MempoolFillerModule());
-				install(new ApplicationModule());
+				install(new NodeWalletModule());
 			}
 
 			@ProvidesIntoSet

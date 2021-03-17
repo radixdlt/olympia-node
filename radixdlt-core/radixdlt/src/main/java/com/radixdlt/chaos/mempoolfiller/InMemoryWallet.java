@@ -157,6 +157,12 @@ public final class InMemoryWallet {
 		return Optional.of(atom);
 	}
 
+	public Optional<AtomBuilder> createTransaction(RadixAddress to, UInt256 amount) {
+		LinkedList<TransferrableTokensParticle> shuffledParticles = new LinkedList<>(particles);
+		Collections.shuffle(shuffledParticles);
+		return createTransaction(shuffledParticles, to, amount);
+	}
+
 	public List<AtomBuilder> createParallelTransactions(RadixAddress to, int max) {
 		List<TransferrableTokensParticle> shuffledParticles = new ArrayList<>(particles);
 		Collections.shuffle(shuffledParticles);

@@ -34,7 +34,7 @@ import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public final class NodeController {
+public final class NodeController implements Controller {
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
@@ -50,6 +50,7 @@ public final class NodeController {
 		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/node/validator", this::handleValidatorRegistration);
 		handler.get("/node", this::respondWithNode);

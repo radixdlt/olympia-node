@@ -43,7 +43,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
-public final class ChaosController {
+public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
@@ -56,6 +56,7 @@ public final class ChaosController {
 		this.messageDispatcher = messageDispatcher;
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/api/chaos/message-flooder", this::handleMessageFlood);
 		handler.put("/api/chaos/mempool-filler", this::handleMempoolFill);

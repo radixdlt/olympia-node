@@ -20,7 +20,6 @@ package com.radixdlt.application;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.validator.ValidatorRegistratorModule;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWalletReducer;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
@@ -34,12 +33,7 @@ import java.util.Random;
  * Module which manages different applications a node can run with
  * it's node key.
  */
-public final class ApplicationModule extends AbstractModule {
-	@Override
-	public void configure() {
-		install(new ValidatorRegistratorModule());
-	}
-
+public final class NodeWalletModule extends AbstractModule {
 	@ProvidesIntoSet
 	private StateReducer<?, ?> nodeWallet(
 		@NativeToken RRI tokenRRI,

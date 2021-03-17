@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.ApplicationModule;
+import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -73,7 +73,7 @@ public class MempoolFillerTest {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
-				    install(new ApplicationModule());
+				    install(new NodeWalletModule());
 
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);

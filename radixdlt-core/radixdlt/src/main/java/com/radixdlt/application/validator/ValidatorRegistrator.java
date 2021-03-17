@@ -101,7 +101,7 @@ public final class ValidatorRegistrator {
 		builder.addParticleGroup(validatorUpdate);
 
 		if (feeTable != null) {
-			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class, "self");
+			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			Optional<ParticleGroup> feeGroup = wallet.createFeeGroup();
 			if (feeGroup.isEmpty()) {
 				BigDecimal balance = wallet.getBalance();
@@ -114,11 +114,12 @@ public final class ValidatorRegistrator {
 			builder.addParticleGroup(feeGroup.get());
 		}
 
+		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
 
-		var hashedAtom = builder.computeHashToSign();
-		builder.setSignature(self.euid(), hashSigner.sign(hashedAtom));
-		var clientAtom = builder.buildAtom();
-		var payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(self.euid(), hashSigner.sign(hashToSign));
+		var atom = builder.buildAtom();
+		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 	}

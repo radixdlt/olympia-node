@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.application.faucet.FaucetRequest;
 import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
@@ -88,6 +89,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(new TypeLiteral<EventDispatcher<FaucetRequest>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(FaucetRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<ValidatorRegistration>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(ValidatorRegistration.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
