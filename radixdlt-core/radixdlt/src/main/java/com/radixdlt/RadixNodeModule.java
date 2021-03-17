@@ -158,9 +158,7 @@ public final class RadixNodeModule extends AbstractModule {
 		// Application
 		install(new NodeWalletModule());
 		install(new ValidatorRegistratorModule());
-		if (properties.get("faucet", false)) {
-			install(new FaucetModule());
-		}
+		install(new FaucetModule());
 
 		if (properties.get("chaos.enable", false)) {
 			install(new ChaosModule());

@@ -26,9 +26,8 @@ import com.radixdlt.identifiers.RadixAddress;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
+import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
 
 public final class FaucetController implements Controller {
 	private final EventDispatcher<FaucetRequest> faucetRequestDispatcher;
@@ -45,16 +44,25 @@ public final class FaucetController implements Controller {
 
 	@VisibleForTesting
 	void handleFaucetRequest(HttpServerExchange exchange) {
-		// TODO: implement JSON-RPC 2.0
+		// TODO: implement JSON-RPC 2.0 specification
 		withBodyAsync(exchange, values -> {
 			var params = values.getJSONObject("params");
 			var addressString = params.getString("address");
+			final RadixAddress address;
 			try {
-				var address = RadixAddress.from(addressString);
-				faucetRequestDispatcher.dispatch(FaucetRequest.create(address));
+				address = RadixAddress.from(addressString);
 			} catch (IllegalArgumentException e) {
 				respond(exchange, jsonObject().put("error", jsonObject().put("message", "Bad address.")));
+				return;
 			}
+
+			var request = FaucetRequest.create(
+				address,
+				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
+				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
+			);
+
+			faucetRequestDispatcher.dispatch(request);
 		});
 	}
 }

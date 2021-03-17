@@ -34,7 +34,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
@@ -92,7 +92,7 @@ public final class SystemController implements Controller {
 
 	@VisibleForTesting
 	void handleBftState(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			if (values.getBoolean("state")) {
 				respond(exchange, systemService.bftStart());
 			} else {

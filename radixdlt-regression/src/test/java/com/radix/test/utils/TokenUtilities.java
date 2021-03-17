@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.AID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +43,8 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
+import org.json.JSONObject;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class TokenUtilities {
@@ -88,13 +91,13 @@ public final class TokenUtilities {
 			long waitDelayMs = 1000L;
 			delayForMs(waitDelayMs);
 			for (int i = 0; i < MAX_RETRY_COUNT; ++i) {
-				EUID requestId = requestTokens(api.getAddress());
+				AID requestId = requestTokens(api.getAddress());
 
 				// Wait until we see the TX from the ledger
 				var txAtom = api.getAtomStore().getAtomObservations(api.getAddress())
 					.filter(AtomObservation::hasAtom)
 					.map(AtomObservation::getAtom)
-					.filter(atom -> hasTxId(atom, requestId))
+					.filter(atom -> requestId.equals(atom.getAID()))
 					.timeout(waitDelayMs, TimeUnit.MILLISECONDS, Observable.just(dummyAtom))
 					.blockingFirst();
 
@@ -124,14 +127,6 @@ public final class TokenUtilities {
 		return txAtom.getMessage();
 	}
 
-	private static boolean hasTxId(Atom atom, EUID requestId) {
-		String txId = FAUCET_UNIQUE_SEND_TOKENS_PREFIX + requestId;
-    	return atom.upParticles()
-	    	.filter(UniqueParticle.class::isInstance)
-	    	.map(UniqueParticle.class::cast)
-	    	.anyMatch(up -> up.getRRI().getName().equals(txId));
-	}
-
 	private static void delayForMs(long waitDelayMs) {
 		try {
 			TimeUnit.MILLISECONDS.sleep(waitDelayMs);
@@ -141,27 +136,42 @@ public final class TokenUtilities {
 		}
 	}
 
-	private static EUID requestTokens(RadixAddress address) {
+	private static AID requestTokens(RadixAddress address) {
 		try {
-			String faucetHost = Optional.ofNullable(System.getenv("FAUCET_HOST")).orElse("http://localhost:8079");
-			URL url = new URL(faucetHost + "/api/v1/getTokens/" + address);
+			String faucetHost = Optional.ofNullable(System.getenv("FAUCET_HOST")).orElse("http://localhost:8080");
+			URL url = new URL(faucetHost + "/faucet/request");
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setRequestMethod("GET");
+			con.setRequestMethod("POST");
 			con.setConnectTimeout(5000);
 			con.setReadTimeout(5000);
+			con.setDoOutput(true);
+			var jsonRequest = new JSONObject().put("params", new JSONObject().put("address", address));
+			try(var os = con.getOutputStream()) {
+				byte[] input = jsonRequest.toString().getBytes("utf-8");
+				os.write(input, 0, input.length);
+			}
+
 			int status = con.getResponseCode();
 			final String result;
 			try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
-				result = in.lines().collect(Collectors.joining("\n"));
+				StringBuilder response = new StringBuilder();
+				String responseLine;
+				while ((responseLine = in.readLine()) != null) {
+					response.append(responseLine.trim());
+				}
+				result = response.toString();
 			}
+
+			var res = new JSONObject(result);
+
 			if (status == 200) {
-				return EUID.valueOf(result);
+				return AID.from(res.getString("result"));
 			}
 			throw new IllegalStateException(String.format("Could not request tokens (%s): %s", status, result));
 		} catch (IOException e) {
 			// Just going to ignore these and timeout
 			log.info("Ignoring IOException while requesting tokens: {}", e.getMessage());
+			throw new RuntimeException(e);
 		}
-		return EUID.ZERO;
 	}
 }

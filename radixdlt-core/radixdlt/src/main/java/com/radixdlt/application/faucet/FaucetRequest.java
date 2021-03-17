@@ -18,27 +18,51 @@
 
 package com.radixdlt.application.faucet;
 
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Faucet request object
  */
 public final class FaucetRequest {
 	private final RadixAddress address;
+	private final Consumer<AID> onSuccess;
+	private final Consumer<String> onError;
 
-	private FaucetRequest(RadixAddress address) {
+	private FaucetRequest(
+		RadixAddress address,
+		Consumer<AID> onSuccess,
+		Consumer<String> onError
+	) {
 		this.address = address;
+		this.onSuccess = onSuccess;
+		this.onError = onError;
 	}
 
-	public static FaucetRequest create(RadixAddress address) {
+	public static FaucetRequest create(
+		RadixAddress address,
+		Consumer<AID> onSuccess,
+		Consumer<String> onFailure
+	) {
 		Objects.requireNonNull(address);
-		return new FaucetRequest(address);
+		Objects.requireNonNull(onSuccess);
+		Objects.requireNonNull(onFailure);
+		return new FaucetRequest(address, onSuccess, onFailure);
 	}
 
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public void onSuccess(AID aid) {
+		onSuccess.accept(aid);
+	}
+
+	public void onFailure(String errorMessage) {
+		onError.accept(errorMessage);
 	}
 
 	@Override

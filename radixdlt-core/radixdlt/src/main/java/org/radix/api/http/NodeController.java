@@ -31,7 +31,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
@@ -67,7 +67,7 @@ public final class NodeController implements Controller {
 
 	@VisibleForTesting
 	void handleValidatorRegistration(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
 			validatorRegistrationEventDispatcher.dispatch(
 				enabled ? ValidatorRegistration.register() : ValidatorRegistration.unregister()
