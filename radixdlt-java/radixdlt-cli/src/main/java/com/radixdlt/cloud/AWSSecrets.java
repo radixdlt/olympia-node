@@ -19,12 +19,16 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AWSSecrets {
 
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
+	private static final Logger logger = LogManager.getLogger();
 
 	private AWSSecrets() {
 	}
@@ -67,7 +71,7 @@ public class AWSSecrets {
 			IntStream.range(0, fullNodeCount).forEach(i -> {
 				final String nodeName = String.format("fullnode%s", i);
 				final String keyStoreName = String.format("%s.ks", nodeName);
-				final String passwordName = String.format("password", nodeName);
+				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
 				final String passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 				final String password = passwordName;
@@ -78,7 +82,7 @@ public class AWSSecrets {
 						"-n=" + keyStoreName,
 						"-p=" + password});
 					final String output = capture.stop();
-					System.out.println(output.toString());
+					logger.info(output.toString());
 					if (output.contains("Unable to generate keypair")) {
 						throw new Exception("Unable to generate keypair");
 					}
@@ -96,11 +100,11 @@ public class AWSSecrets {
 					writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true, true);
 					writeBinaryAWSSecret(keyPasswordAwsSecret, passwordSecretName, awsSecretsOutputOptions, false, false);
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.log(Level.ERROR, "Exception occurred", e);
 				}
 			});
 		} catch (ParseException e) {
-			e.printStackTrace();
+			logger.log(Level.ERROR, "Exception occurred", e);
 		}
 	}
 
@@ -117,7 +121,7 @@ public class AWSSecrets {
 	private static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions,
 		boolean compress, boolean binarySecret) {
 		if (!awsSecretsOutputOptions.getEnableAwsSecrets()) {
-			System.out.println("Secret " + secretName + " not stored in AWS");
+			logger.info("Secret " + secretName + " not stored in AWS");
 			return;
 		}
 		if (AWSSecretManager.awsSecretExists(secretName)) {
