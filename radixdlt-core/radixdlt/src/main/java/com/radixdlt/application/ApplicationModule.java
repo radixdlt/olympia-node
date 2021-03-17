@@ -30,7 +30,11 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Random;
 
-public class ApplicationModule extends AbstractModule {
+/**
+ * Module which manages different applications a node can run with
+ * it's node key.
+ */
+public final class ApplicationModule extends AbstractModule {
 	@Override
 	public void configure() {
 		install(new ValidatorRegistratorModule());
