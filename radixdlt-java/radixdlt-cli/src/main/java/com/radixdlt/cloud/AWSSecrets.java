@@ -2,6 +2,15 @@ package com.radixdlt.cloud;
 
 import com.radixdlt.cli.OutputCapture;
 import com.radixdlt.cli.RadixCLI;
+import com.radixdlt.utils.AWSSecretManager;
+import com.radixdlt.utils.AWSSecretsOutputOptions;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
@@ -47,8 +56,26 @@ public class AWSSecrets {
 				.orElseThrow(() -> new IllegalArgumentException("Must specify password for the store"));
 
 			final String networkName = getOption(cmd, 'n').orElse(DEFAULT_NETWORK_NAME);
+			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
+			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
+
+			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
 			final String keyStoreName = String.format("%s-%s.ks", networkName, nodeName);
-			RadixCLI.main(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
+			final String keyFileSecretName = String.format("%s/%s.ks", networkName, keyStoreName);
+			try (OutputCapture capture = OutputCapture.startStderr()) {
+				RadixCLI.main(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
+				final String output = capture.stop();
+				Path keyFilePath = Paths.get(keyStoreName);
+				Map<String, Object> keyFileAwsSecret = new HashMap<>();
+				try {
+					byte[] data = Files.readAllBytes(keyFilePath);
+					keyFileAwsSecret.put("key", data);
+				} catch (IOException e) {
+					throw new IllegalStateException("While reading validator keys", e);
+				}
+				writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true,true);
+			}
+
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -63,6 +90,14 @@ public class AWSSecrets {
 	private static Optional<String> getOption(CommandLine cmd, char opt) {
 		String value = cmd.getOptionValue(opt);
 		return Optional.ofNullable(value);
+	}
+
+	private static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress, boolean binarySecret){
+		if (AWSSecretManager.awsSecretExists(secretName)) {
+			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
+		} else {
+			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
+		}
 	}
 
 }
