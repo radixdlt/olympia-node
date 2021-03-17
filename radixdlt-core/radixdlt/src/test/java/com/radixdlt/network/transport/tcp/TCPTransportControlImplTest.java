@@ -24,7 +24,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
-import com.radixdlt.network.transport.tcp.TCPTransportControlImpl.TCPConnectionHandlerChannelInbound;
+import com.radixdlt.network.transport.tcp.TCPTransportControlImpl.OutTCPConnectionHandlerChannelInbound;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -64,7 +64,12 @@ public class TCPTransportControlImplTest {
 			}
 
 			@Override
-			public int maxChannelCount(int defaultValue) {
+			public int maxOutChannelCount(int defaultValue) {
+				return 1;
+			}
+
+			@Override
+			public int maxInChannelCount(int defaultValue) {
 				return 1;
 			}
 
@@ -120,18 +125,18 @@ public class TCPTransportControlImplTest {
 	public void channelActive() throws Exception {
 		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
-			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			OutTCPConnectionHandlerChannelInbound handler = (OutTCPConnectionHandlerChannelInbound) tcpTransportControl.outHandler();
 			handler.channelActive(ctx);
 			assertEquals(1, handler.channelMapSize());
 		}
 	}
 
 	@Test
-	public void tooManyChannels() throws Exception {
+	public void tooManyOutChannels() throws Exception {
 		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
 			ChannelHandlerContext ctx2 = createContext("127.0.0.2", 4321);
-			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			OutTCPConnectionHandlerChannelInbound handler = (OutTCPConnectionHandlerChannelInbound) tcpTransportControl.outHandler();
 			handler.channelActive(ctx1);
 			handler.channelActive(ctx2);
 			assertEquals(1, handler.channelMapSize());
@@ -140,10 +145,23 @@ public class TCPTransportControlImplTest {
 	}
 
 	@Test
+	public void tooManyInChannels() throws Exception {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
+			final var ctx1 = createContext("127.0.0.1", 1234);
+			final var ctx2 = createContext("127.0.0.2", 4321);
+			final var handler =
+				(TCPTransportControlImpl.InTCPConnectionHandlerChannelInbound) tcpTransportControl.inHandler();
+			handler.channelActive(ctx1);
+			handler.channelActive(ctx2);
+			verify(ctx2, times(1)).close();
+		}
+	}
+
+	@Test
 	public void channelInactive() throws Exception {
 		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
-			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			OutTCPConnectionHandlerChannelInbound handler = (OutTCPConnectionHandlerChannelInbound) tcpTransportControl.outHandler();
 			handler.channelActive(ctx1);
 			assertEquals(1, handler.channelMapSize());
 			handler.channelInactive(ctx1);
@@ -158,7 +176,7 @@ public class TCPTransportControlImplTest {
 				TCPConstants.METADATA_HOST, "127.0.0.1",
 				TCPConstants.METADATA_PORT, "1234"
 			);
-			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			OutTCPConnectionHandlerChannelInbound handler = (OutTCPConnectionHandlerChannelInbound) tcpTransportControl.outHandler();
 
 			CompletableFuture<TransportOutboundConnection> cf = handler.findOrCreateActiveChannel(metadata, transport, outboundFactory);
 			assertTrue(cf.isDone());

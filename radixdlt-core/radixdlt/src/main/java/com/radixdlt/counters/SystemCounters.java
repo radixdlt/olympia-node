@@ -153,7 +153,8 @@ public interface SystemCounters {
 
 		NETWORKING_UDP_DROPPED_MESSAGES("networking.udp.dropped_messages"),
 		NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
-		NETWORKING_TCP_OPENED("networking.tcp.opened"),
+		NETWORKING_TCP_IN_OPENED("networking.tcp.in_opened"),
+		NETWORKING_TCP_OUT_OPENED("networking.tcp.out_opened"),
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),

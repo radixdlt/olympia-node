@@ -41,15 +41,23 @@ public interface TCPConfiguration {
 	int networkPort(int defaultValue);
 
 	/**
-	 * Get the maximum number of open channels allowed, both inbound and
-	 * outbound.  Note that each channel consumes some resources on the host
+	 * Get the maximum number of inbound open channels allowed.
+	 * Note that each channel consumes some resources on the host
 	 * machine, and there may be other global operating-system defined limits
 	 * that come into play.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
-	 * @return the maximum number of open TCP channels at any one time
+	 * @return the maximum number of open inbound TCP channels at any one time
 	 */
-	int maxChannelCount(int defaultValue);
+	int maxInChannelCount(int defaultValue);
+
+	/**
+	 * Get the maximum number of outbound open channels allowed.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return the maximum number of open outbound TCP channels at any one time
+	 */
+	int maxOutChannelCount(int defaultValue);
 
 	/**
 	 * Get the priority of this transport.
@@ -96,8 +104,13 @@ public interface TCPConfiguration {
 			}
 
 			@Override
-			public int maxChannelCount(int defaultValue) {
-				return properties.get("network.tcp.maxchannels", defaultValue);
+			public int maxInChannelCount(int defaultValue) {
+				return properties.get("network.tcp.max_in_channels", defaultValue);
+			}
+
+			@Override
+			public int maxOutChannelCount(int defaultValue) {
+				return properties.get("network.tcp.max_out_channels", defaultValue);
 			}
 
 			@Override
