@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -25,12 +26,14 @@ public class AWSSecrets {
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
 
+	private AWSSecrets() {
+	}
+
 	public static void main(String[] args) {
 
 		Options options = new Options();
 		options.addOption("h", "help", false, "Show usage information (this message)");
-		options.addOption("n", "node-name", true, "Name of the node");
-		options.addOption("p", "password", true, "Password for the keystore");
+		options.addOption("n", "full-node-number", true, "Number of full nodes");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
@@ -49,37 +52,47 @@ public class AWSSecrets {
 				return;
 			}
 
-			final String nodeName = Optional.ofNullable(cmd.getOptionValue("n"))
-				.orElseThrow(() -> new IllegalArgumentException("Must specify node name"));
-			final String password = Optional.ofNullable(cmd.getOptionValue("p"))
-				.orElseThrow(() -> new IllegalArgumentException("Must specify password for the store"));
+			final int fullNodeCount = Integer
+				.parseInt(getOption(cmd, 'n').orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes")));
+			if (fullNodeCount <= 0) {
+				throw new IllegalArgumentException("There must be at least one full node");
+			}
 
-			final String networkName = getOption(cmd, 'n').orElse(DEFAULT_NETWORK_NAME);
+			final String networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(enableAwsSecrets, recreateAwsSecrets, networkName);
-			final String keyStoreName = String.format("%s/%s.ks", networkName, nodeName);
-			final String keyFileSecretName = String.format("%s/%s", networkName, keyStoreName);
-			try (OutputCapture capture = OutputCapture.startStdout()) {
-				RadixCLI.execute(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=nopass"});
-				final String output = capture.stop();
-				if(output.contains("Unable to generate keypair")){
-					throw new Exception("Unable to generate keypair");
-				}
-				Path keyFilePath = Paths.get(keyStoreName);
-				Map<String, Object> keyFileAwsSecret = new HashMap<>();
-				try {
-					byte[] data = Files.readAllBytes(keyFilePath);
-					keyFileAwsSecret.put("key", data);
-				} catch (IOException e) {
-					throw new IllegalStateException("While reading validator keys", e);
-				}
-				writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true,true);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			IntStream.range(0, fullNodeCount).forEach(i -> {
+				final String keyStoreName = String.format("fullnode%s.ks", i);
+				final String passwordName = String.format("fullnode%s-password", i);
+				final String keyFileSecretName = String.format("%s/%s", networkName, keyStoreName);
+				final String passwordSecretName = String.format("%s/%s", networkName, passwordName);
+				final String password = passwordName;
+				try (OutputCapture capture = OutputCapture.startStdout()) {
+					RadixCLI.execute(new String[]{"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=" + password});
+					final String output = capture.stop();
+					System.out.println(output.toString());
+					if (output.contains("Unable to generate keypair")) {
+						throw new Exception("Unable to generate keypair");
+					}
+					Path keyFilePath = Paths.get(keyStoreName);
+					Map<String, Object> keyFileAwsSecret = new HashMap<>();
+					try {
+						byte[] data = Files.readAllBytes(keyFilePath);
+						keyFileAwsSecret.put("key", data);
+					} catch (IOException e) {
+						throw new IllegalStateException("While reading validator keys", e);
+					}
+					Map<String, Object> keyPasswordAwsSecret = new HashMap<>();
+					keyPasswordAwsSecret.put("key", password);
 
+					writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true, true);
+					writeBinaryAWSSecret(keyPasswordAwsSecret, passwordSecretName, awsSecretsOutputOptions, false, false);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -95,12 +108,16 @@ public class AWSSecrets {
 		return Optional.ofNullable(value);
 	}
 
-	private static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions, boolean compress, boolean binarySecret){
+	private static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsOutputOptions awsSecretsOutputOptions,
+		boolean compress, boolean binarySecret) {
+		if (!awsSecretsOutputOptions.getEnableAwsSecrets()) {
+			System.out.println("Secret " + secretName + " not stored in AWS");
+			return;
+		}
 		if (AWSSecretManager.awsSecretExists(secretName)) {
 			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
 		} else {
 			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
 		}
 	}
-
 }
