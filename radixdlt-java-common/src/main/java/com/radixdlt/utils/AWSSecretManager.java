@@ -200,7 +200,7 @@ public class AWSSecretManager {
         } catch (JsonProcessingException e) {
             logger.log(Level.ERROR, "Exception occurred", e);
         } catch (SecretsManagerException e) {
-            logger.log(Level.ERROR, e.awsErrorDetails().errorMessage(),e) ;
+            logger.log(Level.ERROR, e.awsErrorDetails().errorMessage(), e);
             System.exit(1);
         } catch (IOException e) {
             logger.log(Level.ERROR, "Exception occurred", e);
