@@ -17,8 +17,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_PACEMAKER_TIMEOUT_MILLIS=1000 \
     RADIXDLT_CONSENSUS_START_ON_BOOT=true \
     RADIXDLT_CHAOS_ENABLE=true \
-    RADIXDLT_DB_LOCATION=./RADIXDB
-    RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/universe.json
+    RADIXDLT_DB_LOCATION=./RADIXDB \
+    RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks
 
 # install the radixdlt package
 COPY *.deb /tmp/
