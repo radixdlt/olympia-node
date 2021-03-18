@@ -17,6 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.hash.HashCode;
+
 import java.util.Objects;
 
 public final class CMMicroInstruction {
@@ -28,10 +30,12 @@ public final class CMMicroInstruction {
 
 	private final CMMicroOp operation;
 	private final Particle particle;
+	private final HashCode particleHash;
 
-	private CMMicroInstruction(CMMicroOp operation, Particle particle) {
+	private CMMicroInstruction(CMMicroOp operation, Particle particle, HashCode particleHash) {
 		this.operation = operation;
 		this.particle = particle;
+		this.particleHash = particleHash;
 	}
 
 	public CMMicroOp getMicroOp() {
@@ -40,6 +44,10 @@ public final class CMMicroInstruction {
 
 	public Particle getParticle() {
 		return particle;
+	}
+
+	public HashCode getParticleHash() {
+		return particleHash;
 	}
 
 	public boolean isPush() {
@@ -70,24 +78,28 @@ public final class CMMicroInstruction {
 		}
 	}
 
+	public static CMMicroInstruction nonVirtualCheckUpThenDown(HashCode particleHash) {
+		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, null, particleHash);
+
+	}
 
 	public static CMMicroInstruction checkSpinAndPush(Particle particle, Spin spin) {
 		if (spin == Spin.NEUTRAL) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle);
+			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle, null);
 		} else if (spin == Spin.UP) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle);
+			return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle, null);
 		} else {
 			throw new IllegalStateException("Invalid check spin: " + spin);
 		}
 	}
 
 	public static CMMicroInstruction particleGroup() {
-		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null);
+		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null, null);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, particle);
+		return Objects.hash(operation, particle, particleHash);
 	}
 
 	@Override
@@ -98,6 +110,7 @@ public final class CMMicroInstruction {
 
 		var other = (CMMicroInstruction) o;
 		return Objects.equals(this.operation, other.operation)
-			&& Objects.equals(this.particle, other.particle);
+			&& Objects.equals(this.particle, other.particle)
+			&& Objects.equals(this.particleHash, other.particleHash);
 	}
 }

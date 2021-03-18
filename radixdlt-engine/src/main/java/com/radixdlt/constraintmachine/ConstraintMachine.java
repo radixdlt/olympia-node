@@ -360,7 +360,22 @@ public final class ConstraintMachine {
 			switch (cmMicroInstruction.getMicroOp()) {
 				case CHECK_NEUTRAL_THEN_UP:
 				case CHECK_UP_THEN_DOWN:
-					final Particle nextParticle = cmMicroInstruction.getParticle();
+					final Particle nextParticle;
+					if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+						nextParticle = cmMicroInstruction.getParticle();
+					} else {
+						if (cmMicroInstruction.getParticle() != null) {
+							// Virtual UP particle
+							nextParticle = cmMicroInstruction.getParticle();
+						} else {
+							var particleHash = cmMicroInstruction.getParticleHash();
+							var maybeParticle = validationState.store.loadUpParticle(particleHash);
+							if (maybeParticle.isEmpty()) {
+								return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
+							}
+							nextParticle = maybeParticle.get();
+						}
+					}
 					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 					if (staticCheckResult.isError()) {
 						return Optional.of(new CMError(

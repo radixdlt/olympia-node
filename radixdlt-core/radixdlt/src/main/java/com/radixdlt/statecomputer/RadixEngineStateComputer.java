@@ -323,10 +323,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
 		}
 
-		final boolean isUserCommand = atom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isCheckSpin)
-				.map(CMMicroInstruction::getParticle)
-				.noneMatch(p -> p instanceof SystemParticle);
+		final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
 		if (isUserCommand) {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 		} else {

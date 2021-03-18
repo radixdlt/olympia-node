@@ -471,9 +471,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
 	}
 
-
-	private void downParticle(com.sleepycat.je.Transaction txn, Particle particle) {
-		HashCode particleId = hasher.hash(particle);
+	private void downParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
 		particleDatabase.put(txn, entry(particleKey), downEntry());
@@ -487,11 +485,27 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return e.getData().length == 0 ? Spin.DOWN : Spin.UP;
 	}
 
+	private Optional<Particle> entryToUpParticle(DatabaseEntry e) {
+		if (entryToSpin(e) == Spin.DOWN) {
+			return Optional.empty();
+		}
+
+		var serializedParticle = new byte[e.getData().length - EUID.BYTES];
+		System.arraycopy(e.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+
+		try {
+			return Optional.of(serialization.fromDson(serializedParticle, Particle.class));
+		} catch (DeserializeException ex) {
+			throw new IllegalStateException("Unable to deserialize particle");
+		}
+	}
+
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
 			upParticle(txn, instruction.getParticle());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			downParticle(txn, instruction.getParticle());
+			var particleId = hasher.hash(instruction.getParticle());
+			downParticle(txn, particleId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
@@ -502,7 +516,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
-		var atomData = serialize(atom.getClientAtom());
+		var atomData = serialize(atom.getAtom());
 
 		try {
 			//Write atom data as soon as possible
@@ -615,6 +629,18 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		} else {
 			return Spin.NEUTRAL;
 		}
+	}
+
+	@Override
+	public Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash) {
+		var key = entry(particleHash.asBytes());
+		var value = entry();
+		var status = particleDatabase.get(unwrap(tx), key, entry(), READ_COMMITTED);
+		if (status != SUCCESS) {
+			return Optional.empty();
+		}
+
+		return entryToUpParticle(value);
 	}
 
 	@Override

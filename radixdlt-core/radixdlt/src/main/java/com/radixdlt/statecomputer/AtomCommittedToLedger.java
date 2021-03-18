@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.identifiers.EUID;
 
 import java.util.Objects;
@@ -45,9 +44,8 @@ public final class AtomCommittedToLedger {
 
     public static AtomCommittedToLedger create(CommittedAtom committedAtom) {
         Objects.requireNonNull(committedAtom);
-        final ImmutableSet<EUID> destinations = committedAtom.getClientAtom()
-            .uniqueInstructions()
-            .map(CMMicroInstruction::getParticle)
+        final ImmutableSet<EUID> destinations = committedAtom.getAtom()
+            .upParticles()
             .flatMap(p -> p.getDestinations().stream())
             .collect(ImmutableSet.toImmutableSet());
         return new AtomCommittedToLedger(committedAtom, destinations);

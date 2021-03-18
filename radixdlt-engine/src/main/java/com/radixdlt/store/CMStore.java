@@ -17,8 +17,11 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+
+import java.util.Optional;
 
 /**
  * Read only store interface for Constraint Machine validation
@@ -32,4 +35,6 @@ public interface CMStore {
 	 * @return the current spin of a particle
 	 */
 	Spin getSpin(Particle particle);
+
+	Optional<Particle> loadUpParticle(HashCode particleHash);
 }

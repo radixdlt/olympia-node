@@ -21,7 +21,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
@@ -81,14 +80,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.success();
 		}
 
-		// no need for fees if a system update
-		// TODO: update should also have no message
-		if (atom.getCMInstruction().getMicroInstructions().stream()
-			.filter(CMMicroInstruction::isCheckSpin)
-			.allMatch(i -> i.getParticle() instanceof SystemParticle)
-		) {
-			return Result.success();
-		}
 
 		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
 			return Result.success();
@@ -99,9 +90,15 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		if (atom instanceof Atom) {
 			clientAtom = (Atom) atom;
 		} else if (atom instanceof CommittedAtom) {
-			clientAtom = ((CommittedAtom) atom).getClientAtom();
+			clientAtom = ((CommittedAtom) atom).getAtom();
 		} else {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
+		}
+
+		// no need for fees if a system update
+		// TODO: update should also have no message
+		if (clientAtom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
+			return Result.success();
 		}
 
 		final int totalSize = this.serialization.toDson(clientAtom, Output.PERSIST).length;

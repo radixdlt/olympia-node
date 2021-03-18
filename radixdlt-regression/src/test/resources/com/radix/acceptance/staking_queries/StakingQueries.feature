@@ -18,13 +18,13 @@ Feature: Staking Queries
     When I request validator stake balance
     Then I can observe that validator has amount of tokens staked equal to amount staked by delegator
 
-  Scenario: 3: Full unstaking by delegator
-    Given I have access to a suitable Radix network
-    And I have registered validator with allowed delegator1
-    And I stake some tokens by delegator1
-    And I unstake full amount by delegator1
-    When I request validator stake balance
-    Then I can observe that validator has amount of tokens staked equal to zero
+  #Scenario: 3: Full unstaking by delegator
+    #Given I have access to a suitable Radix network
+    #And I have registered validator with allowed delegator1
+    #And I stake some tokens by delegator1
+    #And I unstake full amount by delegator1
+    #When I request validator stake balance
+    #Then I can observe that validator has amount of tokens staked equal to zero
 
   Scenario: 4: Partial unstaking by delegator
     Given I have access to a suitable Radix network

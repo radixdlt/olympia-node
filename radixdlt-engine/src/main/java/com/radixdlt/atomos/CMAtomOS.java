@@ -18,6 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidParticle;
@@ -26,6 +27,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.CMStore;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -124,18 +126,27 @@ public final class CMAtomOS {
 		Map<? extends Class<? extends Particle>, Function<Particle, Spin>> virtualizedParticles = particleDefinitions.entrySet().stream()
 			.filter(def -> def.getValue().getVirtualizeSpin() != null)
 			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
-		return base -> particle -> {
-			Spin curSpin = base.getSpin(particle);
 
-			Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
-			if (virtualizer != null) {
-				Spin virtualizedSpin = virtualizer.apply(particle);
-				if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
-					return virtualizedSpin;
+		return base -> new CMStore() {
+			@Override
+			public Spin getSpin(Particle particle) {
+				Spin curSpin = base.getSpin(particle);
+
+				Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
+				if (virtualizer != null) {
+					Spin virtualizedSpin = virtualizer.apply(particle);
+					if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
+						return virtualizedSpin;
+					}
 				}
+
+				return curSpin;
 			}
 
-			return curSpin;
+			@Override
+			public Optional<Particle> loadUpParticle(HashCode particleHash) {
+				return base.loadUpParticle(particleHash);
+			}
 		};
 	}
 }

@@ -56,7 +56,7 @@ public final class CommittedAtom implements LedgerAtom {
 		return stateVersion;
 	}
 
-	public Atom getClientAtom() {
+	public Atom getAtom() {
 		return atom;
 	}
 

@@ -17,9 +17,11 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import java.util.function.Predicate;
+
+import java.util.Optional;
 
 /**
  * Utility methods for managing and virtualizing state stores
@@ -29,7 +31,17 @@ public final class CMStores {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	private static final CMStore EMPTY_STATE_STORE = particle -> Spin.NEUTRAL;
+	private static final CMStore EMPTY_STATE_STORE = new CMStore() {
+		@Override
+		public Spin getSpin(Particle particle) {
+			return Spin.NEUTRAL;
+		}
+
+		@Override
+		public Optional<Particle> loadUpParticle(HashCode particleHash) {
+			return Optional.empty();
+		}
+	};
 
 	/**
 	 * An empty state store which returns neutral spin for every particle
@@ -37,28 +49,5 @@ public final class CMStores {
 	 */
 	public static CMStore empty() {
 		return EMPTY_STATE_STORE;
-	}
-
-	/**
-	 * Virtualizes the default spin for a given particle predicate. That is,
-	 * the given spin is the default spin for particles when the given predicate
-	 * passes.
-	 *
-	 * @param base the base state store
-	 * @param particleCheck the particle predicate
-	 * @param spin the default spin to virtualize with
-	 * @return the virtualized state store
-	 */
-	public static CMStore virtualizeDefault(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return particle -> {
-			Spin curSpin = base.getSpin(particle);
-
-			if (particleCheck.test(particle) && SpinStateMachine.isAfter(spin, curSpin)
-			) {
-				return spin;
-			}
-
-			return curSpin;
-		};
 	}
 }

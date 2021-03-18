@@ -49,7 +49,7 @@ public class CommittedAtomTest {
 
 	@Test
 	public void testGetters() {
-		assertThat(committedAtom.getClientAtom()).isEqualTo(atom);
+		assertThat(committedAtom.getAtom()).isEqualTo(atom);
 		assertThat(committedAtom.getAID()).isEqualTo(atom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(atom.getCMInstruction());
 		assertThat(committedAtom.getMessage()).isEqualTo(atom.getMessage());

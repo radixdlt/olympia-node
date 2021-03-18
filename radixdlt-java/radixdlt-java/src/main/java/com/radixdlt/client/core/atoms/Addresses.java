@@ -46,8 +46,7 @@ public final class Addresses {
 	}
 
 	public static Stream<RadixAddress> ofAtom(Atom atom) {
-		return atom.uniqueInstructions()
-			.map(CMMicroInstruction::getParticle)
+		return atom.upParticles()
 			.map(Addresses::getShardables)
 			.flatMap(Set::stream)
 			.distinct();
