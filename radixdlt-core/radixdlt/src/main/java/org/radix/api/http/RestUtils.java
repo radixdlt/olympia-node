@@ -43,6 +43,10 @@ public final class RestUtils {
 	}
 
 	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		exchange.dispatch(() -> handleBody(exchange, bodyHandler));
+	}
+
+	public static void withBodyAsyncAndDefaultResponse(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {
 			exchange.dispatch(() -> handleAsync(exchange, bodyHandler));
 		} else {
@@ -107,20 +111,18 @@ public final class RestUtils {
 	}
 
 	public static <T> void respondAsync(HttpServerExchange exchange, Supplier<T> objectSupplier) {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(() -> {
-				CompletableFuture
-					.supplyAsync(objectSupplier)
-					.whenComplete((response, exception) -> {
-						if (exception == null) {
-							respond(exchange, response);
-						} else {
-							exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-							exchange.getResponseSender().send("Unable to handle request: " + exception.getMessage());
-						}
-					});
-			});
-		}
+		exchange.dispatch(() -> {
+			CompletableFuture
+				.supplyAsync(objectSupplier)
+				.whenComplete((response, exception) -> {
+					if (exception == null) {
+						respond(exchange, response);
+					} else {
+						exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+						exchange.getResponseSender().send("Unable to handle request: " + exception.getMessage());
+					}
+				});
+		});
 	}
 
 	public static Optional<String> getParameter(HttpServerExchange exchange, String name) {

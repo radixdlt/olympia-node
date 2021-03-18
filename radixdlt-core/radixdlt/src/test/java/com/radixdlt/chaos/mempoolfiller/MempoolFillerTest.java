@@ -25,16 +25,16 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
@@ -73,8 +73,8 @@ public class MempoolFillerTest {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
+				    install(new NodeWalletModule());
 
-					bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toInstance(ECKeyPair.generateNew());
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
@@ -84,8 +84,8 @@ public class MempoolFillerTest {
 				}
 
 				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@MempoolFillerKey ECPublicKey mempoolFillerKey) {
-					return TokenIssuance.of(mempoolFillerKey, TokenUnitConversions.unitsToSubunits(10000000000L));
+				private TokenIssuance mempoolFillerIssuance(@Self RadixAddress self) {
+					return TokenIssuance.of(self.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
 				}
 			}
 

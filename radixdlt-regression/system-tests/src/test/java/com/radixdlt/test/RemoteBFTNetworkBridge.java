@@ -64,7 +64,7 @@ public final class RemoteBFTNetworkBridge {
 	private Single<String> makeRequest(Request request) {
 		final var newRequestId = requestId.incrementAndGet();
 		final var newRequestTime = System.currentTimeMillis();
-		log.info("Request {}: {}", newRequestId, request);
+		log.debug("Request {}: {}", newRequestId, request);
 		return Single.create(emitter -> {
 			Call call = this.client.newCall(request);
 			call.enqueue(new Callback() {
@@ -104,7 +104,7 @@ public final class RemoteBFTNetworkBridge {
 
 	private void logRequestSuccessful(int requestId, long requestTime, String body) {
 		final var requestDuration = System.currentTimeMillis() - requestTime;
-		log.info("Request {} ({}ms): successful {}", requestId, requestDuration, body);
+		log.debug("Request {} ({}ms): successful {}", requestId, requestDuration, body);
 	}
 
 	private void logRequestFailed(int requestId, long requestTime, int code, String body) {

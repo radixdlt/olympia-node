@@ -19,58 +19,43 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.LedgerAtom;
-
-import java.util.Optional;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import io.undertow.util.StatusCodes;
 
-import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
-public final class ChaosController {
-	private final RadixEngine<LedgerAtom> radixEngine;
-	private final Optional<RadixAddress> mempoolFillerAddress;
+public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
 	@Inject
 	public ChaosController(
-		@MempoolFillerKey final Optional<RadixAddress> mempoolFillerAddress,
-		final RadixEngine<LedgerAtom> radixEngine,
 		final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		final EventDispatcher<MessageFlooderUpdate> messageDispatcher
 	) {
-		this.mempoolFillerAddress = mempoolFillerAddress;
-		this.radixEngine = radixEngine;
 		this.mempoolDispatcher = mempoolDispatcher;
 		this.messageDispatcher = messageDispatcher;
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/api/chaos/message-flooder", this::handleMessageFlood);
 		handler.put("/api/chaos/mempool-filler", this::handleMempoolFill);
-		handler.get("/api/chaos/mempool-filler", this::respondWithMempoolFill);
 	}
 
 	@VisibleForTesting
 	void handleMessageFlood(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
 			if (values.getBoolean("enabled")) {
@@ -95,26 +80,11 @@ public final class ChaosController {
 
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			var fillerUpdate = values.getBoolean("enabled")
 							   ? MempoolFillerUpdate.enable(100, true)
 							   : MempoolFillerUpdate.disable();
 			mempoolDispatcher.dispatch(fillerUpdate);
-		});
-	}
-
-	@VisibleForTesting
-	void respondWithMempoolFill(HttpServerExchange exchange) {
-		mempoolFillerAddress.ifPresentOrElse(addr -> {
-			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			respond(exchange, jsonObject()
-				.put("address", addr)
-				.put("balance", wallet.getBalance())
-				.put("numParticles", wallet.getNumParticles()));
-		},
-		() -> {
-			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("Mempool filler address is not configured");
 		});
 	}
 

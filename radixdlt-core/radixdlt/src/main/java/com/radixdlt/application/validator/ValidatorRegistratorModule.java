@@ -13,38 +13,45 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.chaos.mempoolfiller;
+package com.radixdlt.application.validator;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.identifiers.RadixAddress;
 
 /**
- * Module responsible for the mempool filler chaos attack
+ * Manages node validator registration.
  */
-public final class MempoolFillerModule extends AbstractModule {
+public final class ValidatorRegistratorModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(MempoolFiller.class).in(Scopes.SINGLETON);
+		bind(ValidatorRegistrator.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
-		eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
-		eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
+		eventBinder.addBinding().toInstance(ValidatorRegistration.class);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>("chaos", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
+	private StateReducer<?, ?> validatorState(@Self RadixAddress self) {
+		return new ValidatorStateReducer(self);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>("chaos", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
+	public EventProcessorOnRunner<?> validatorRegistrator(ValidatorRegistrator validatorRegistrator) {
+		return new EventProcessorOnRunner<>(
+			"application",
+			ValidatorRegistration.class,
+			validatorRegistrator.validatorRegistrationEventProcessor()
+		);
 	}
 }

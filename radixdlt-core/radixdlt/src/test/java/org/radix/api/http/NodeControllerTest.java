@@ -15,10 +15,13 @@ package org.radix.api.http;/*
  * language governing permissions and limitations under the License.
  */
 
+import com.radixdlt.atom.LedgerAtom;
+import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
+import com.radixdlt.engine.RadixEngine;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
@@ -26,6 +29,7 @@ import com.radixdlt.utils.Base58;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,9 +49,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class NodeControllerTest {
+	private final RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
 	private RadixAddress radixAddress = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	private EventDispatcher<ValidatorRegistration> dispatcher = mock(EventDispatcher.class);
-	private NodeController nodeController = new NodeController(radixAddress, dispatcher);
+	private NodeController nodeController = new NodeController(radixAddress, radixEngine, dispatcher);
 
 	@Test
 	public void routesAreConfigured() {
@@ -73,10 +78,19 @@ public class NodeControllerTest {
 			}
 		);
 
+
+		var wallet = mock(InMemoryWallet.class);
+		when(radixEngine.getComputedState(InMemoryWallet.class)).thenReturn(wallet);
+		when(wallet.getBalance()).thenReturn(BigDecimal.ONE);
+		when(wallet.getNumParticles()).thenReturn(7);
+
 		nodeController.respondWithNode(exchange);
 
 		latch.await();
-		assertEquals("{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\"}", arg.get());
+		assertEquals(
+			"{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\"balance\":1,\"numParticles\":7}",
+			arg.get()
+		);
 	}
 
 	@Test

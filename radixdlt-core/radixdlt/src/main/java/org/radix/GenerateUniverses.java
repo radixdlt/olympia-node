@@ -80,6 +80,9 @@ import org.radix.universe.output.HelmUniverseOutput;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
 
@@ -183,6 +186,15 @@ public final class GenerateUniverses {
 					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
 				);
 			}
+
+			if (universeType == UniverseType.DEVELOPMENT) {
+				// Issue tokens to initial validators for now to support application services
+				// FIXME: Remove this
+				validatorKeys.stream()
+					.map(kp -> TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE)))
+					.forEach(tokenIssuancesBuilder::add);
+			}
+
 			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
 				.addAll(getTokenIssuances(stakeDelegations))
 				.build();
@@ -345,6 +357,7 @@ public final class GenerateUniverses {
 		for (ECKeyPair k : keys) {
 			Map<String, Object> validator = new HashMap<>();
 			String nodeName = String.format("node%s", n);
+			validator.put("node", n);
 			String keyname = String.format(template, n++);
 			if (!helmUniverseOutput.getOutputHelmValues() && !awsSecretsUniverseOutput.getEnableAwsSecrets()) {
 				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
@@ -362,7 +375,7 @@ public final class GenerateUniverses {
 		}
 
 		if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
-			generateAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsUniverseOutput, compress);
+			generateValidatorsAWSSecrets(validators, VALIDATOR_PREFIX, template, awsSecretsUniverseOutput, compress);
 		}
 		if (helmUniverseOutput.getOutputHelmValues()) {
 			generateHelmFiles(validators, VALIDATOR_PREFIX, template, nodeNames, helmUniverseOutput);
@@ -411,7 +424,7 @@ public final class GenerateUniverses {
 				} else if (awsSecretsUniverseOutput.getEnableAwsSecrets()) {
 					boolean compress = true;
 					String secretName = String.format("%s/universe", awsSecretsUniverseOutput.getNetworkName());
-					writeAWSSecret(universe, secretName, awsSecretsUniverseOutput, compress);
+					writeTextAWSSecret(universe, secretName, awsSecretsUniverseOutput, compress);
 				}
 			}
 		}
@@ -455,11 +468,19 @@ public final class GenerateUniverses {
 		}
 	}
 
-	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
+	public static void writeBinaryAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
+		writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress, true);
+	}
+
+	public static void writeTextAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress) {
+		writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress, false);
+	}
+
+	public static void writeAWSSecret(Map<String, Object> awsSecret, String secretName, AWSSecretsUniverseOutput awsSecretsUniverseOutput, boolean compress, boolean binarySecret) {
 		if (AWSSecretManager.awsSecretExists(secretName)) {
-			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
+			AWSSecretManager.updateAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress, binarySecret);
 		} else {
-			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
+			AWSSecretManager.createAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress, binarySecret);
 		}
 	}
 
@@ -491,26 +512,52 @@ public final class GenerateUniverses {
 	}
 
 
-	private static void generateAWSSecrets(
+	private static void generateValidatorsAWSSecrets(
 		final List<Map<String, Object>> validators,
 		final String validatorPrefix,
 		final String template,
 		final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
 		boolean compress
-	) {
+	)  {
 		for (Map<String, Object> validator : validators) {
-			Map<String, Object> awsSecret = new HashMap<>();
+			Map<String, Object> validatorAwsSecret = new HashMap<>();
+			Map<String, Object> keyFileAwsSecret = new HashMap<>();
 			String name = (String) validator.get("host");
+			int nodeId = (int)validator.get("node");
 			if (template.startsWith(validatorPrefix)) {
-				awsSecret.put("key", validator.get("privateKey"));
+				validatorAwsSecret.put("key", validator.get("privateKey"));
+				String validatorkeyFile = String.format("validator%s.ks", nodeId);
+				Path validatorPath = Paths.get(validatorkeyFile);
+				try {
+					byte[] data = Files.readAllBytes(validatorPath);
+					keyFileAwsSecret.put("key", data);
+				} catch (IOException e) {
+					throw new IllegalStateException("While reading validator keys", e);
+				}
+
+
 			} else if (template.startsWith("STAKER")) {
-				awsSecret.put("key", validator.get("stakingKey"));
+				validatorAwsSecret.put("key", validator.get("stakingKey"));
+				String stakerKeyFile = String.format("staker%s.ks", nodeId);
+				Path stakerFilePath = Paths.get(stakerKeyFile);
+				try {
+					byte[] data = Files.readAllBytes(stakerFilePath);
+					keyFileAwsSecret.put("key", data);
+				} catch (IOException e) {
+					throw new IllegalStateException("While reading staker keys", e);
+				}
 			}
 			String secretName = String.format("%s/%s/staker", awsSecretsUniverseOutput.getNetworkName(), name);
+			String keyFileSecretName = String.format("%s/%s/staker_key", awsSecretsUniverseOutput.getNetworkName(), name);
 			if (template.startsWith(validatorPrefix)) {
 				secretName = String.format("%s/%s/validator", awsSecretsUniverseOutput.getNetworkName(), name);
+				keyFileSecretName = String.format("%s/%s/validator_key", awsSecretsUniverseOutput.getNetworkName(), name);
 			}
-			writeAWSSecret(awsSecret, secretName, awsSecretsUniverseOutput, compress);
+
+
+			writeTextAWSSecret(validatorAwsSecret, secretName, awsSecretsUniverseOutput, compress);
+			writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsUniverseOutput, compress);
+
 			System.out.format(
 				"AWS secrets created for network %s %s%n",
 				awsSecretsUniverseOutput.getEnableAwsSecrets(),

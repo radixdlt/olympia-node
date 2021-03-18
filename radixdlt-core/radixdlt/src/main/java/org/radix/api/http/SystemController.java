@@ -34,11 +34,11 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public final class SystemController {
+public final class SystemController implements Controller {
 	private final AtomsService atomsService;
 	private final SystemService systemService;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -57,6 +57,7 @@ public final class SystemController {
 		this.enableTestRoutes = universe.isDevelopment() || universe.isTest();
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
 		handler.get("/api/system", this::respondWithLocalSystem);
@@ -91,7 +92,7 @@ public final class SystemController {
 
 	@VisibleForTesting
 	void handleBftState(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			if (values.getBoolean("state")) {
 				respond(exchange, systemService.bftStart());
 			} else {

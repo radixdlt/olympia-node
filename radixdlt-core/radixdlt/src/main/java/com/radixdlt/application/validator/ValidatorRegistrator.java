@@ -16,20 +16,17 @@
  *
  */
 
-package com.radixdlt.application;
+package com.radixdlt.application.validator;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -56,7 +53,6 @@ public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final RadixAddress self;
-	private final Hasher hasher;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -68,14 +64,12 @@ public final class ValidatorRegistrator {
 	@Inject
 	public ValidatorRegistrator(
 		@Self RadixAddress self,
-		Hasher hasher,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
-		this.hasher = hasher;
 		this.hashSigner = hashSigner;
 		this.serialization = serialization;
 		this.radixEngine = radixEngine;
@@ -87,14 +81,14 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		ValidatorState validatorState = radixEngine.getComputedState(ValidatorState.class);
+		var validatorState = radixEngine.getComputedState(ValidatorState.class);
 		if (registration.isRegister() == validatorState.isRegistered()) {
 			logger.warn("Node is already {}", registration.isRegister() ? "registered." : "unregistered.");
 			return;
 		}
 
-		AtomBuilder atom = Atom.newBuilder();
-		ParticleGroup validatorUpdate = validatorState.map(
+		var builder = Atom.newBuilder();
+		var validatorUpdate = validatorState.map(
 			nonce -> ParticleGroup.of(
 				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),
 				SpunParticle.up(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1))
@@ -104,10 +98,10 @@ public final class ValidatorRegistrator {
 				SpunParticle.up(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
 			)
 		);
-		atom.addParticleGroup(validatorUpdate);
+		builder.addParticleGroup(validatorUpdate);
 
 		if (feeTable != null) {
-			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class, "self");
+			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			Optional<ParticleGroup> feeGroup = wallet.createFeeGroup();
 			if (feeGroup.isEmpty()) {
 				BigDecimal balance = wallet.getBalance();
@@ -117,16 +111,16 @@ public final class ValidatorRegistrator {
 				);
 				return;
 			}
-			atom.addParticleGroup(feeGroup.get());
+			builder.addParticleGroup(feeGroup.get());
 		}
 
+		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
 
-		HashCode hashedAtom = atom.computeHashToSign();
-		atom.setSignature(self.euid(), hashSigner.sign(hashedAtom));
-
-		Atom clientAtom = atom.buildAtom();
-		byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
-		Command command = new Command(payload);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(self.euid(), hashSigner.sign(hashToSign));
+		var atom = builder.buildAtom();
+		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+		var command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 	}
 }

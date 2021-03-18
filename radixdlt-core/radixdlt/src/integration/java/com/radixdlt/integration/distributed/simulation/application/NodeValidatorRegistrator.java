@@ -18,7 +18,7 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.application.ValidatorRegistration;
+import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;

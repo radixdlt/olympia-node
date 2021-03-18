@@ -15,15 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radix.acceptance.unsubscribe_account;
+package com.radixdlt.test.chaos.actions;
 
-import io.cucumber.junit.CucumberOptions;
-import io.cucumber.junit.CucumberOptions.SnippetType;
-import io.cucumber.junit.Cucumber;
-import org.junit.runner.RunWith;
+/**
+ * Something which affects a testnet
+ */
+public interface Action {
 
-@RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunUnsubscribeAccount {
-	// Stub for running cucumber tests
+    void setup();
+
+    void teardown();
+
 }
