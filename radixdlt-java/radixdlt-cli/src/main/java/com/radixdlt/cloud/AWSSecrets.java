@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 
 public class AWSSecrets {
@@ -76,6 +78,7 @@ public class AWSSecrets {
 
 					String[] cmdArgs = {"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=" + password};
 					System.out.println(java.util.Arrays.toString(cmdArgs));
+					Security.insertProviderAt(new BouncyCastleProvider(), 1);
 					RadixCLI.execute(cmdArgs);
 					final String output = capture.stop();
 					System.out.println(output.toString());

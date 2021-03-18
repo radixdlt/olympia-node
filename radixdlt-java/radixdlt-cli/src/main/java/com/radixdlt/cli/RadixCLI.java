@@ -59,7 +59,6 @@ public class RadixCLI implements Runnable {
 	}
 
 	public static void execute(String[] args) {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		CommandLine cmd = new CommandLine(new RadixCLI());
 		cmd.execute(args);
 
