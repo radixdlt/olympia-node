@@ -48,12 +48,22 @@ public final class RestUtils {
 
 	public static void withBodyAsyncAndDefaultResponse(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
 		if (exchange.isInIoThread()) {
-			exchange.dispatch(() -> handleBody(exchange, bodyHandler));
+			exchange.dispatch(() -> handleAsync(exchange, bodyHandler));
 		} else {
-			if (handleBody(exchange, bodyHandler)) {
-				sendStatusResponse(exchange, null);
+			try {
+				handleBody(exchange, bodyHandler);
+			} catch (Exception e) {
+				sendStatusResponse(exchange, e);
+				return;
 			}
+			sendStatusResponse(exchange, null);
 		}
+	}
+
+	private static void handleAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		CompletableFuture
+			.runAsync(() -> handleBody(exchange, bodyHandler))
+			.whenComplete((__, err) -> sendStatusResponse(exchange, err));
 	}
 
 	private static void sendStatusResponse(final HttpServerExchange exchange, final Throwable err) {
@@ -85,17 +95,14 @@ public final class RestUtils {
 		}
 	}
 
-	private static boolean handleBody(final HttpServerExchange exchange, final ThrowingConsumer<JSONObject> bodyHandler) {
+	private static void handleBody(final HttpServerExchange exchange, final ThrowingConsumer<JSONObject> bodyHandler) {
 		exchange.startBlocking();
 
 		try (var httpStreamReader = new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8)) {
 			bodyHandler.accept(new JSONObject(CharStreams.toString(httpStreamReader)));
 		} catch (Exception t) {
-			sendStatusResponse(exchange, t);
-			return false;
+			throw new RuntimeException(t);
 		}
-
-		return true;
 	}
 
 	public static void respond(HttpServerExchange exchange, Object object) {
