@@ -76,7 +76,7 @@ public class AWSSecrets {
 				final String password = passwordName;
 				try (OutputCapture capture = OutputCapture.startStdout()) {
 
-					String[] cmdArgs = {"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=" + password};
+					String[] cmdArgs = {"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
 					System.out.println(java.util.Arrays.toString(cmdArgs));
 					Security.insertProviderAt(new BouncyCastleProvider(), 1);
 					RadixCLI.execute(cmdArgs);
