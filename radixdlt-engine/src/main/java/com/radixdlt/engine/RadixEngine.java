@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /**
@@ -94,7 +95,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
-	private final UnaryOperator<CMStore> virtualStoreLayer;
+	private final Predicate<Particle> virtualStoreLayer;
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -103,7 +104,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
+		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
 		this(constraintMachine, virtualStoreLayer, engineStore, null);
@@ -111,16 +112,36 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
+		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T> engineStore,
 		AtomChecker<T> checker
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = virtualStoreLayer.apply(engineStore);
+		this.virtualizedCMStore = new CMStore() {
+			@Override
+			public Spin getSpin(Particle particle) {
+				var curSpin = engineStore.getSpin(particle);
+				if (curSpin == Spin.DOWN) {
+					return curSpin;
+				}
+
+				if (virtualStoreLayer.test(particle)) {
+					return Spin.UP;
+				}
+
+				return curSpin;
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(HashCode particleHash) {
+				return engineStore.loadUpParticle(particleHash);
+			}
+		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 	}
+
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -183,7 +204,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		private RadixEngineBranch(
 			ConstraintMachine constraintMachine,
-			UnaryOperator<CMStore> virtualStoreLayer,
+			Predicate<Particle> virtualStoreLayer,
 			EngineStore<T> parentStore,
 			AtomChecker<T> checker,
 			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T>> stateComputers
@@ -330,6 +351,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
 			}
 		}
+	}
+
+	// TODO: Temporary method
+	public Predicate<Particle> getVirtualStoreLayer() {
+		return virtualStoreLayer;
 	}
 
 	public boolean contains(T atom) {
