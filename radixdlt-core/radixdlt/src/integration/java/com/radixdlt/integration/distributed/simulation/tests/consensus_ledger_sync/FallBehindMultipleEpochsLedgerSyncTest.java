@@ -67,7 +67,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 				}
 			})
 			.pacemakerTimeout(1000)
-			.ledgerAndEpochsAndSync(View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(50L, 10, 50L))
+			.ledgerAndEpochsAndSync(View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(200L, 10, 2000L))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
