@@ -17,10 +17,15 @@
 
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,9 +37,10 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<T extends RadixEngineAtom> implements EngineStore<T> {
 	private final Object lock = new Object();
-	private final Map<Particle, Pair<Spin, T>> storedParticles = new HashMap<>();
+	private final Map<HashCode, Pair<Spin, T>> storedParticles = new HashMap<>();
 	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
 	private final Set<T> atoms = new HashSet<>();
+	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	@Override
 	public void storeAtom(T atom) {
@@ -42,8 +48,9 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 			for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
+					var particleHash = HashUtils.sha256(serialization.toDson(microInstruction.getParticle(), DsonOutput.Output.ALL));
 					storedParticles.put(
-						microInstruction.getParticle(),
+						particleHash,
 						Pair.of(nextSpin, atom)
 					);
 					inOrderParticles.add(Pair.of(microInstruction.getParticle(), nextSpin));
@@ -82,7 +89,8 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 	@Override
 	public Spin getSpin(Particle particle) {
 		synchronized (lock) {
-			Pair<Spin, T> stored = storedParticles.get(particle);
+			var particleHash = HashUtils.sha256(serialization.toDson(particle, DsonOutput.Output.ALL));
+			Pair<Spin, T> stored = storedParticles.get(particleHash);
 			return stored == null ? Spin.NEUTRAL : stored.getFirst();
 		}
 	}
