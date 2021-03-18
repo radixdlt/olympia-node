@@ -262,7 +262,8 @@ public class AWSSecretManager {
         software.amazon.awssdk.core.exception.SdkClientException: Unable to execute HTTP request: No X509TrustManager implementation available
      */
     private static void removeBouncyCastleSecurityProvider() {
-        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+//        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+        return;
     }
 
     private static List<Tag> buildTags(String network, String name) {
