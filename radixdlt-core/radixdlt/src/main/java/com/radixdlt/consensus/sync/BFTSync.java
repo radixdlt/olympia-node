@@ -435,7 +435,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		if (syncRequestState != null) {
 			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
-				// error response indicates that the node has moved on from last sync so try and sync to a new sync
+				// error response indicates that the node has moved on from last sync so try and sync to a new qc
 				syncToQC(response.highQC(), response.getSender());
 			}
 		}

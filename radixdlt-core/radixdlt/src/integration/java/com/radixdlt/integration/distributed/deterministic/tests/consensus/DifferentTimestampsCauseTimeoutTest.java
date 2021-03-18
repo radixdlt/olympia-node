@@ -55,7 +55,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 		DeterministicManualExecutor executor = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.messageMutator(mutateProposalsBy(0))
-			.build()
+			.buildWithMockedLedger()
 			.createExecutor();
 
 		executor.start();
@@ -91,7 +91,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 			})
 			.numNodes(numNodes)
 			.messageMutator(mutateProposalsBy(1))
-			.build()
+			.buildWithMockedLedger()
 			.createExecutor();
 
 		executor.start();

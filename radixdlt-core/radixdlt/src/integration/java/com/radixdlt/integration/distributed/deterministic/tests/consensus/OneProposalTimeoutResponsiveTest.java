@@ -39,7 +39,7 @@ public class OneProposalTimeoutResponsiveTest {
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(dropSomeProposals(dropPeriod))
-			.build()
+			.buildWithMockedLedger()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
 		long requiredIndirectParents =

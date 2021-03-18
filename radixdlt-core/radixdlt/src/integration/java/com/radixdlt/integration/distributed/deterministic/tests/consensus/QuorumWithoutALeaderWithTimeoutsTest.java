@@ -45,7 +45,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(dropAllNonTimeoutVotes())
-			.build()
+			.buildWithMockedLedger()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
