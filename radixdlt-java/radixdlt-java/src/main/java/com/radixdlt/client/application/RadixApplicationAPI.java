@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.application;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
@@ -512,25 +511,6 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		return observeState(StakedTokenBalanceState.class, address)
 			.map(StakedTokenBalanceState::getBalance);
-	}
-
-	/**
-	 * Returns a stream of the latest delegated stake balance for the validator at the specified address.
-	 * pull() must have previously been called to ensure balances are retrieved and updated.
-	 *
-	 * @param validator the address of the validator to observe stake balance of
-	 * @return a cold observable of the latest stake balances of the validator by token RRI
-	 */
-	public Observable<Map<RRI, BigDecimal>> observeValidatorStake(RadixAddress validator) {
-		Objects.requireNonNull(validator);
-		return this.universe.getAtomStore().getAtomObservations(validator)
-			.filter(AtomObservation::hasAtom)
-			.map(AtomObservation::getAtom)
-			.map(Atom::toBuilder)
-			.flatMap(atom -> Observable.fromIterable(atom.spunParticles().collect(ImmutableList.toImmutableList())))
-			.filter(sp -> sp.getParticle() instanceof StakedTokensParticle)
-			.scan(DelegatedTokenBalanceState.empty(), (stp, spunParticle) -> accumulateTokens(stp, validator, spunParticle))
-			.map(DelegatedTokenBalanceState::getBalance);
 	}
 
 	private DelegatedTokenBalanceState accumulateTokens(

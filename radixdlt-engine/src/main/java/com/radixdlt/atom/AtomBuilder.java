@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,20 +50,6 @@ public final class AtomBuilder {
 	public AtomBuilder message(String message) {
 		this.message = message;
 		return this;
-	}
-
-	// Primarily used for excluding fee groups in fee calculations
-	public AtomBuilder copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
-		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
-			.filter(pg -> !exclusions.test(pg))
-			.collect(Collectors.toList());
-
-		var builder = new AtomBuilder();
-		newParticleGroups.forEach(builder::addParticleGroup);
-		this.signatures.forEach(builder::setSignature);
-		builder.message(this.message);
-
-		return builder;
 	}
 
 	/**

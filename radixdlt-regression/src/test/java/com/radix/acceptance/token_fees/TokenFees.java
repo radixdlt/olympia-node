@@ -476,11 +476,10 @@ public class TokenFees {
 
 	// Fee computation
 	private BigDecimal feeFrom(Atom atom) {
-		UInt256 totalFee = atom.toBuilder().particleGroups()
-			.filter(this::isFeeGroup)
-			.flatMap(pg -> pg.particles(Spin.UP))
+		UInt256 totalFee = atom.upParticles()
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
+			.filter(u -> u.getTokDefRef().equals(this.api.getNativeTokenRef()))
 			.map(UnallocatedTokensParticle::getAmount)
 			.reduce(UInt256.ZERO, UInt256::add);
 

@@ -34,7 +34,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -42,7 +41,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DeserializeException;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -251,32 +249,6 @@ public final class Atom implements LedgerAtom {
 
 		Atom other = (Atom) o;
 		return Objects.equals(this.witness, other.witness);
-	}
-
-	static List<ParticleGroup> toParticleGroups(
-		ImmutableList<CMMicroInstruction> instructions
-	) {
-		List<ParticleGroup> pgs = new ArrayList<>();
-		ParticleGroupBuilder curPg = ParticleGroup.builder();
-		for (CMMicroInstruction instruction : instructions) {
-			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				ParticleGroup pg = curPg.build();
-				pgs.add(pg);
-				curPg = ParticleGroup.builder();
-			} else {
-				curPg.addParticle(instruction.getParticle(), instruction.getNextSpin());
-			}
-		}
-		return pgs;
-	}
-
-	public AtomBuilder toBuilder() {
-		List<ParticleGroup> pgs = toParticleGroups(this.instructions);
-		var builder = new AtomBuilder();
-		pgs.forEach(builder::addParticleGroup);
-		this.signatures.forEach(builder::setSignature);
-		builder.message(this.message);
-		return builder;
 	}
 
 	@Override
