@@ -351,7 +351,11 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateMicroInstructions(CMValidationState validationState, List<CMMicroInstruction> microInstructions) {
+	Optional<CMError> validateMicroInstructions(
+		CMValidationState validationState,
+		List<CMMicroInstruction> microInstructions,
+		Map<HashCode, Particle> downedParticles
+	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 
@@ -374,6 +378,7 @@ public final class ConstraintMachine {
 								return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 							}
 							nextParticle = maybeParticle.get();
+							downedParticles.put(particleHash, nextParticle);
 						}
 					}
 					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
@@ -446,7 +451,13 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMStore cmStore, CMInstruction cmInstruction, HashCode witness, PermissionLevel permissionLevel) {
+	public Optional<CMError> validate(
+		CMStore cmStore,
+		CMInstruction cmInstruction,
+		HashCode witness,
+		PermissionLevel permissionLevel,
+		Map<HashCode, Particle> downedParticles
+	) {
 		final CMValidationState validationState = new CMValidationState(
 			cmStore,
 			permissionLevel,
@@ -454,6 +465,6 @@ public final class ConstraintMachine {
 			cmInstruction.getSignatures()
 		);
 
-		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
+		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions(), downedParticles);
 	}
 }

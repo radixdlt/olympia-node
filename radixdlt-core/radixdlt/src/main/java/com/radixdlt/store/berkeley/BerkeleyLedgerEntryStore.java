@@ -23,6 +23,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -454,8 +455,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {
-		HashCode particleId = hasher.hash(particle);
-		var particleKey = particleId.asBytes();
+		byte[] dson = serialization.toDson(particle, Output.ALL);
+		var particleKey = HashUtils.sha256(dson).asBytes();
 
 		final String idForClass = serialization.getIdForClass(particle.getClass());
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
@@ -504,7 +505,13 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
 			upParticle(txn, instruction.getParticle());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			var particleId = hasher.hash(instruction.getParticle());
+			final HashCode particleId;
+			if (instruction.getParticle() == null) {
+				particleId = instruction.getParticleHash();
+			} else {
+				byte[] dson = serialization.toDson(instruction.getParticle(), Output.ALL);
+				particleId = HashUtils.sha256(dson);
+			}
 			downParticle(txn, particleId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
@@ -635,7 +642,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash) {
 		var key = entry(particleHash.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, entry(), READ_COMMITTED);
+		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}

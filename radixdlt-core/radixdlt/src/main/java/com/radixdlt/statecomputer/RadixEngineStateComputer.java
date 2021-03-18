@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
@@ -228,8 +227,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final Atom systemUpdate = Atom.create(
 			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+				CMMicroInstruction.nonVirtualCheckUpThenDown(lastSystemParticle),
+				CMMicroInstruction.spinUp(nextSystemParticle),
 				CMMicroInstruction.particleGroup()
 			)
 		);
@@ -237,7 +236,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			branch.execute(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()),	e
+				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
 			);
 		}
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));

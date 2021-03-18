@@ -18,6 +18,9 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.Objects;
 
@@ -80,7 +83,15 @@ public final class CMMicroInstruction {
 
 	public static CMMicroInstruction nonVirtualCheckUpThenDown(HashCode particleHash) {
 		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, null, particleHash);
+	}
 
+	public static CMMicroInstruction nonVirtualCheckUpThenDown(Particle particle) {
+		var particleHash = HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL));
+		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, null, particleHash);
+	}
+
+	public static CMMicroInstruction spinUp(Particle particle) {
+		return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle, null);
 	}
 
 	public static CMMicroInstruction checkSpinAndPush(Particle particle, Spin spin) {
@@ -95,6 +106,11 @@ public final class CMMicroInstruction {
 
 	public static CMMicroInstruction particleGroup() {
 		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null, null);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s %s", operation, particle != null ? particle : particleHash);
 	}
 
 	@Override

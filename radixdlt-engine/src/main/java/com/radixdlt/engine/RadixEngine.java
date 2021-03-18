@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -79,10 +80,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			curValue = engineStore.compute(particleClass, curValue, outputReducer);
 		}
 
-		void processCheckSpin(CMMicroInstruction cmMicroInstruction) {
-			if (particleClass.isInstance(cmMicroInstruction.getParticle())) {
-				V particle = particleClass.cast(cmMicroInstruction.getParticle());
-				if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
+		void processCheckSpin(Particle p, Spin checkSpin) {
+			if (particleClass.isInstance(p)) {
+				V particle = particleClass.cast(p);
+				if (checkSpin == Spin.NEUTRAL) {
 					curValue = outputReducer.apply(curValue, particle);
 				} else {
 					curValue = inputReducer.apply(curValue, particle);
@@ -242,12 +243,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	private void verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+	private HashMap<HashCode, Particle> verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		var downedParticles = new HashMap<HashCode, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
 			virtualizedCMStore,
 			atom.getCMInstruction(),
 			atom.getWitness(),
-			permissionLevel
+			permissionLevel,
+			downedParticles
 		);
 
 		if (error.isPresent()) {
@@ -266,6 +269,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				);
 			}
 		}
+
+		return downedParticles;
 	}
 
 	/**
@@ -299,7 +304,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 
 			// TODO: combine verification and storage
-			this.verify(atom, permissionLevel);
+			var downedParticles = this.verify(atom, permissionLevel);
 			this.engineStore.storeAtom(atom);
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
@@ -311,7 +316,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 					continue;
 				}
 
-				stateComputers.forEach((a, computer) -> computer.processCheckSpin(microInstruction));
+				final Particle particle;
+				if (microInstruction.getParticle() == null) {
+					particle = downedParticles.get(microInstruction.getParticleHash());
+					if (particle == null) {
+						throw new IllegalStateException();
+					}
+				} else {
+					particle = microInstruction.getParticle();
+				}
+
+				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
 			}
 		}
 	}

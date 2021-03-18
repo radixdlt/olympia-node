@@ -50,7 +50,12 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
 					var particle = microInstruction.getParticle();
-					var particleHash = HashUtils.sha256(serialization.toDson(particle, DsonOutput.Output.ALL));
+					final HashCode particleHash;
+					if (particle != null) {
+						particleHash = HashUtils.sha256(serialization.toDson(particle, DsonOutput.Output.ALL));
+					} else {
+						particleHash = microInstruction.getParticleHash();
+					}
 					storedParticles.put(
 						particleHash,
 						Pair.of(microInstruction, atom)
