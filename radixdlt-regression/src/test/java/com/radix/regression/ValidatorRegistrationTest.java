@@ -132,9 +132,7 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer
-			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
-			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
+		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		observer.dispose();
 	}
 
@@ -146,18 +144,8 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer
-			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
-			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
+		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		observer.dispose();
-	}
-
-	private boolean checkStatus(JsonObject data, String errorCode, String message) {
-		assertTrue(data.has("errorCode"));
-		assertEquals(errorCode, data.get("errorCode").getAsString());
-		assertTrue(data.has("message"));
-		assertTrue(data.get("message").getAsString().startsWith(message));
-		return true;
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle... spunParticles) {
