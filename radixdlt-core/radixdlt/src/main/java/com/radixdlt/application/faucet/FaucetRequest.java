@@ -69,18 +69,4 @@ public final class FaucetRequest {
 	public String toString() {
 		return String.format("%s{address=%s}", this.getClass().getSimpleName(), address);
 	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(address);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof FaucetRequest)) {
-			return false;
-		}
-		var other = (FaucetRequest) o;
-		return Objects.equals(this.address, other.address);
-	}
 }
