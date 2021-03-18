@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -106,14 +107,16 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom too big: " + totalSize);
 		}
 
-		Atom atomWithoutFeeGroup = clientAtom.toBuilder().copyExcludingGroups(this::isFeeGroup).buildAtom();
-		Set<Particle> outputParticles = atomWithoutFeeGroup.upParticles().collect(Collectors.toSet());
-		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.PERSIST).length;
-
-		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
+		Set<Particle> outputParticles = clientAtom.upParticles().collect(Collectors.toSet());
+		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
 		UInt256 feePaid = computeFeePaid(clientAtom.toBuilder().particleGroups().filter(this::isFeeGroup));
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
-			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
+			String message = String.format(
+				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
+				TokenUnitConversions.subunitsToUnits(feePaid),
+				TokenUnitConversions.subunitsToUnits(requiredMinimumFee),
+				totalSize
+			);
 			return Result.error(message);
 		}
 

@@ -63,11 +63,11 @@ Scenario: 10. Atoms with fee groups with input ttps smaller than output ttp are 
   When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
   Then I can see that atom being rejected by the network
 
-Scenario: 11. Atom required fee can be calculated and atom with a smaller fee is rejected
-  Given I have a connection to a Radix network,
-  When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
-  And I submit this atom with a smaller fee than that returned by the service,
-  Then I can see that atom being rejected by the network
+#Scenario: 11. Atom required fee can be calculated and atom with a smaller fee is rejected
+  #Given I have a connection to a Radix network,
+  #When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
+  #And I submit this atom with a smaller fee than that returned by the service,
+  #Then I can see that atom being rejected by the network
 
 Scenario: 12. Atom required fee can be calculated and submitted atom is accepted
   Given I have a connection to a Radix network,
@@ -75,8 +75,8 @@ Scenario: 12. Atom required fee can be calculated and submitted atom is accepted
   And I submit this atom with a fee as returned by the service,
   Then I can see that atom being accepted by the network
 
-Scenario: 13. Particle fee can be calculated by comparing two atoms fees
-  Given I have a connection to a Radix network,
-  When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
-  And I add another particle that creates a fixed supply token to that atom and ask the service for required fee again,
-  Then I can calculate the fee for that extra particle
+#Scenario: 13. Particle fee can be calculated by comparing two atoms fees
+  #Given I have a connection to a Radix network,
+  #When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
+  #And I add another particle that creates a fixed supply token to that atom and ask the service for required fee again,
+  #Then I can calculate the fee for that extra particle
