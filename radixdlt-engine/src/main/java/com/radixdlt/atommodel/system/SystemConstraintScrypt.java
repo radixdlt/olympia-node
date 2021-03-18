@@ -24,7 +24,6 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
@@ -68,7 +67,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.addressMapper(p -> ImmutableSet.of())
 			.staticValidation(this::staticCheck)
-			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 ? Spin.UP : null)
+			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
 			.build()
 		);
 

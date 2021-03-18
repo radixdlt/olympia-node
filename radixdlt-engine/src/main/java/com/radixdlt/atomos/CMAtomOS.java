@@ -30,11 +30,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.store.SpinStateMachine;
 import java.util.stream.Collectors;
 
 /**
@@ -57,7 +57,7 @@ public final class CMAtomOS {
 		.singleAddressMapper(rri -> rri.getRri().getAddress())
 		.staticValidation(rri -> Result.success())
 		.rriMapper(RRIParticle::getRri)
-		.virtualizeSpin(v -> v.getNonce() == 0 ? Spin.UP : null)
+		.virtualizeUp(v -> v.getNonce() == 0)
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 
@@ -122,22 +122,32 @@ public final class CMAtomOS {
 		};
 	}
 
-	public UnaryOperator<CMStore> buildVirtualLayer() {
-		Map<? extends Class<? extends Particle>, Function<Particle, Spin>> virtualizedParticles = particleDefinitions.entrySet().stream()
+	public Predicate<Particle> virtualizedUpParticles() {
+		Map<? extends Class<? extends Particle>, Predicate<Particle>> virtualizedParticles = particleDefinitions.entrySet().stream()
 			.filter(def -> def.getValue().getVirtualizeSpin() != null)
 			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
+
+		return p -> {
+			var virtualizer = virtualizedParticles.get(p.getClass());
+			return virtualizer != null && virtualizer.test(p);
+
+		};
+	}
+
+	public UnaryOperator<CMStore> buildVirtualLayer() {
+		var virtualizedUpParticles = virtualizedUpParticles();
 
 		return base -> new CMStore() {
 			@Override
 			public Spin getSpin(Particle particle) {
 				Spin curSpin = base.getSpin(particle);
 
-				Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
-				if (virtualizer != null) {
-					Spin virtualizedSpin = virtualizer.apply(particle);
-					if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
-						return virtualizedSpin;
-					}
+				if (curSpin == Spin.DOWN) {
+					return curSpin;
+				}
+
+				if (virtualizedUpParticles.test(particle)) {
+					return Spin.UP;
 				}
 
 				return curSpin;
