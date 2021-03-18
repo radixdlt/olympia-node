@@ -255,6 +255,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		if (error.isPresent()) {
 			CMError e = error.get();
+			System.out.println(atom.getCMInstruction());
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 

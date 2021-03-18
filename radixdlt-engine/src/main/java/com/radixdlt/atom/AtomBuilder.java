@@ -21,6 +21,9 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.EUID;
@@ -99,7 +102,29 @@ public final class AtomBuilder {
 				SpunParticle sp = pg.getSpunParticle(j);
 				Particle particle = sp.getParticle();
 				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
-				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+				if (checkSpin == Spin.NEUTRAL) {
+					microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+				} else {
+					if (particle instanceof RRIParticle) {
+						microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+					} else if (particle instanceof SystemParticle) {
+						var sysParticle = (SystemParticle) particle;
+						if (sysParticle.getEpoch() == 0 && sysParticle.getTimestamp() == 0 && sysParticle.getView() == 0) {
+							microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+						} else {
+							microInstructionsBuilder.add(CMMicroInstruction.nonVirtualCheckUpThenDown(particle));
+						}
+					} else if (particle instanceof UnregisteredValidatorParticle) {
+						var unregisteredValidatorParticle = (UnregisteredValidatorParticle) particle;
+						if (unregisteredValidatorParticle.getNonce() == 0) {
+							microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+						} else {
+							microInstructionsBuilder.add(CMMicroInstruction.nonVirtualCheckUpThenDown(particle));
+						}
+					} else {
+						microInstructionsBuilder.add(CMMicroInstruction.nonVirtualCheckUpThenDown(particle));
+					}
+				}
 			}
 			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
 		}

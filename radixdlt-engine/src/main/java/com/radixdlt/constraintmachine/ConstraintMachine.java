@@ -19,11 +19,15 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.DefaultSerialization;
+
 import com.radixdlt.atomos.Result;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -84,6 +88,7 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
+		private final Map<HashCode, Particle> upParticles = new HashMap<>();
 		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
@@ -100,6 +105,13 @@ public final class ConstraintMachine {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
+		}
+
+		public Optional<Particle> loadUpParticle(HashCode particleHash) {
+			if (upParticles.containsKey(particleHash)) {
+				return Optional.of(upParticles.get(particleHash));
+			}
+			return store.loadUpParticle(particleHash);
 		}
 
 		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
@@ -136,6 +148,15 @@ public final class ConstraintMachine {
 			final Spin curSpin = currentSpins.get(p);
 			final Spin nextSpin = SpinStateMachine.next(curSpin);
 			currentSpins.put(p, nextSpin);
+
+			var dson = DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
+			var particleHash = HashUtils.sha256(dson);
+			if (nextSpin == Spin.UP) {
+				upParticles.put(particleHash, p);
+			} else {
+				upParticles.remove(particleHash);
+			}
+
 			return nextSpin == Spin.DOWN;
 		}
 
@@ -373,7 +394,7 @@ public final class ConstraintMachine {
 							nextParticle = cmMicroInstruction.getParticle();
 						} else {
 							var particleHash = cmMicroInstruction.getParticleHash();
-							var maybeParticle = validationState.store.loadUpParticle(particleHash);
+							var maybeParticle = validationState.loadUpParticle(particleHash);
 							if (maybeParticle.isEmpty()) {
 								return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 							}
