@@ -263,7 +263,7 @@ public class AWSSecretManager {
             .value("development")
             .build();
         Tag teamTag = Tag.builder()
-            .key("radixdlt:teamn")
+            .key("radixdlt:team")
             .value("devops")
             .build();
         Tag appTag = Tag.builder()
