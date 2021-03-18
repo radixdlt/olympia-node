@@ -82,7 +82,7 @@ public final class TokenUtilities {
 				.put("method", "Ledger.getAtom")
 				.put("params", new JSONObject().put("aid", aid))
 				.put("id", 0);
-			try(var os = con.getOutputStream()) {
+			try (var os = con.getOutputStream()) {
 				byte[] input = jsonRequest.toString().getBytes("utf-8");
 				os.write(input, 0, input.length);
 			}
@@ -124,7 +124,7 @@ public final class TokenUtilities {
 			con.setReadTimeout(5000);
 			con.setDoOutput(true);
 			var jsonRequest = new JSONObject().put("params", new JSONObject().put("address", address));
-			try(var os = con.getOutputStream()) {
+			try (var os = con.getOutputStream()) {
 				byte[] input = jsonRequest.toString().getBytes("utf-8");
 				os.write(input, 0, input.length);
 			}
