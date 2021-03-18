@@ -45,7 +45,6 @@ import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.TokenFeeProcessor;
-import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
@@ -69,7 +68,6 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensMapper;
-import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
@@ -167,9 +165,7 @@ public class RadixApplicationAPI {
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToPlaintextMessageMapper())
-			.addAtomMapper(new AtomToTokenTransfersMapper())
-			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
+			.addAtomMapper(new AtomToPlaintextMessageMapper());
 	}
 
 	private final RadixIdentity identity;
