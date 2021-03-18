@@ -164,7 +164,7 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
-		branch.checkAndStore(genesisAtom, PermissionLevel.SYSTEM);
+		branch.execute(genesisAtom, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -184,7 +184,7 @@ public class RadixEngineStateComputerTest {
 			genesisAtom,
 			genesisLedgerHeader
 		);
-		radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
+		radixEngine.execute(committedAtom, PermissionLevel.SYSTEM);
 	}
 
 	@Before
@@ -202,8 +202,8 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
-		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
+		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 1);
+		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 1);
 		Atom atom = Atom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
@@ -305,7 +305,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() {
 		// Arrange
-		RadixEngineCommand cmd = systemUpdateCommand(0, 1, 1);
+		RadixEngineCommand cmd = systemUpdateCommand(1, 2, 1);
 
 		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(1), 1);

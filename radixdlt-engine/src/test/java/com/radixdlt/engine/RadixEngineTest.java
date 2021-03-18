@@ -22,13 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.SerializerId2;
@@ -38,7 +35,6 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -49,7 +45,6 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -120,7 +115,7 @@ public class RadixEngineTest {
 			ImmutableList.of(CMMicroInstruction.particleGroup()),
 			ImmutableMap.of()
 		);
-		assertThatThrownBy(() -> engine.checkAndStore(new BaseAtom(cmInstruction, HashUtils.zero256())))
+		assertThatThrownBy(() -> engine.execute(new BaseAtom(cmInstruction, HashUtils.zero256())))
 			.isInstanceOf(RadixEngineException.class);
 	}
 

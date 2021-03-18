@@ -20,7 +20,6 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonObject;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -41,9 +40,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.identifiers.RadixAddress;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;

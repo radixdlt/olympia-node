@@ -88,7 +88,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAtom> checker = radixEngine.transientBranch();
-			checker.checkAndStore(atom);
+			checker.execute(atom);
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);
