@@ -21,33 +21,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
@@ -55,31 +46,32 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 public class ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String DESTINATION_DB_NAME = "radix.destination_db";
+	private static final String EXECUTED_TRANSACTIONS_DATABASE = "radix.executed_transactions_db";
 	private static final String BALANCE_DB_NAME = "radix.balance_db";
 
 	private final DatabaseEnvironment dbEnv;
 	private final LedgerEntryStore store;
-	private final StackingCollector<Pair<Atom, Long>> atomCollector = StackingCollector.create();
+	private final Serialization serialization;
+	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
 	private final ExecutorService executorService = newSingleThreadExecutor(daemonThreads("ClientApiStore"));
 
-	private Database destinationDatabase;
+	private Database executedTransactionsDatabase;
 	private Database balanceDatabase;
 
 	@Inject
-	public ClientApiStore(DatabaseEnvironment dbEnv, LedgerEntryStore store) {
+	public ClientApiStore(DatabaseEnvironment dbEnv, LedgerEntryStore store, Serialization serialization) {
 		this.dbEnv = dbEnv;
 		this.store = store;
-		store.onAtomCommit(this::newAtom);
+		this.serialization = serialization;
 
 		open();
 	}
 
 	public void close() {
-		store.onAtomCommit(null); //Stop watching for new atoms
-		storeAtoms();
+		store.onParticleCommit(null); //Stop watching for new atoms
+		storeParticles();
 
-		safeClose(this.destinationDatabase);
+		safeClose(executedTransactionsDatabase);
 		safeClose(balanceDatabase);
 	}
 
@@ -94,7 +86,6 @@ public class ClientApiStore {
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
-			.setSortedDuplicates(true)
 			.setBtreeComparator(lexicographicalComparator());
 
 		try {
@@ -102,95 +93,96 @@ public class ClientApiStore {
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
-			destinationDatabase = env.openDatabase(null, DESTINATION_DB_NAME, config);
 			balanceDatabase = env.openDatabase(null, BALANCE_DB_NAME, config);
+			executedTransactionsDatabase = env.openDatabase(null, EXECUTED_TRANSACTIONS_DATABASE, config);
 
 			if (System.getProperty("db.check_integrity", "1").equals("1")) {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
 			}
 
-			if (destinationDatabase.count() == 0) {
+			if (executedTransactionsDatabase.count() == 0) {
 				//Fresh DB, rebuild from log
 				rebuildDatabase();
 			}
+
+			store.onParticleCommit(this::newParticle);
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
 	}
 
-	private void storeAtoms() {
-		atomCollector.consumeCollected(this::storeSingleAtom);
+	private void storeParticles() {
+		particleCollector.consumeCollected(this::storeSingleParticle);
 	}
 
-	private void newAtom(Atom clientAtom, Long offset) {
-		atomCollector.push(Pair.of(clientAtom, offset));
-		executorService.submit(this::storeAtoms);
+	private void newParticle(SpunParticle particle) {
+		particleCollector.push(particle);
+		executorService.submit(this::storeParticles);
 	}
 
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-		dbEnv.getEnvironment().truncateDatabase(null, DESTINATION_DB_NAME, false);
+		dbEnv.getEnvironment().truncateDatabase(null, EXECUTED_TRANSACTIONS_DATABASE, false);
 
-		var finished = new AtomicBoolean(false);
-
-		store.forEach((atom, offset) -> {
-			if (offset >= 0) {
-				storeSingleAtom(Pair.of(atom, offset));
-			} else {
-				finished.set(true);
-			}
-		});
-
-		if (!finished.get()) {
-			log.info("Database rebuilding is failed. Not all atoms were received from atom store.");
-			throw new IllegalStateException("Unable to rebuild indices, not all atoms are received");
-		}
+		store.forEach(this::storeSingleParticle);
 
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	private void storeSingleAtom(Pair<Atom, Long> clientAtom) {
-		//extract destinations
-		var addresses = clientAtom.getFirst().uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(CMMicroInstruction::getParticle)
-			.map(this::toAddresses)
-			.flatMap(Set::stream).collect(Collectors.toSet());
+	private void storeSingleParticle(SpunParticle spunParticle) {
+		if (spunParticle.getSpin() == Spin.DOWN) {
+			//TODO: current implementation does not cover unstaking during DB rebuild
+			// because ledger DB does not store DOWN particles
+			storeSingleDownParticle(spunParticle.getParticle());
+		} else {
+			storeSingleUpParticle(spunParticle.getParticle());
+		}
 	}
 
-	private Set<RadixAddress> toAddresses(Particle p) {
-		Set<RadixAddress> addresses = new HashSet<>();
+	private void storeSingleUpParticle(Particle particle) {
+		toBalanceEntry(particle).ifPresent(entry -> {
+			var particleBytes = serialization.toDson(entry, Output.PERSIST);
+			var keyBytes = entry.accountName().getBytes(RadixConstants.STANDARD_CHARSET);
+			balanceDatabase.put(null, entry(keyBytes), entry(particleBytes));
+		});
+	}
 
-		if (p instanceof RRIParticle) {
-			var a = (RRIParticle) p;
-			addresses.add(a.getRri().getAddress());
-		} else if (p instanceof StakedTokensParticle) {
+	private void storeSingleDownParticle(Particle particle) {
+		toBalanceEntry(particle).ifPresent(entry -> {
+			var keyBytes = entry.accountName().getBytes(RadixConstants.STANDARD_CHARSET);
+			balanceDatabase.delete(null, entry(keyBytes));
+		});
+	}
+
+	private Optional<BalanceEntry> toBalanceEntry(Particle p) {
+		if (p instanceof StakedTokensParticle) {
 			var a = (StakedTokensParticle) p;
-			addresses.addAll(a.getAddresses());
+			return Optional.of(BalanceEntry.create(
+				a.getAddress(),
+				a.getDelegateAddress(),
+				a.getTokDefRef(),
+				a.getGranularity(),
+				a.getAmount()
+			));
 		} else if (p instanceof TransferrableTokensParticle) {
 			var a = (TransferrableTokensParticle) p;
-			addresses.add(a.getAddress());
-		} else if (p instanceof UnallocatedTokensParticle) {
-			var a = (UnallocatedTokensParticle) p;
-			addresses.add(a.getAddress());
-		} else if (p instanceof RegisteredValidatorParticle) {
-			var a = (RegisteredValidatorParticle) p;
-			addresses.add(a.getAddress());
-			addresses.addAll(a.getAllowedDelegators());
-		} else if (p instanceof UnregisteredValidatorParticle) {
-			var a = (UnregisteredValidatorParticle) p;
-			addresses.add(a.getAddress());
-		} else if (p instanceof FixedSupplyTokenDefinitionParticle) {
-			var i = (FixedSupplyTokenDefinitionParticle) p;
-			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof MutableSupplyTokenDefinitionParticle) {
-			var i = (MutableSupplyTokenDefinitionParticle) p;
-			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof UniqueParticle) {
-			var i = (UniqueParticle) p;
-			addresses.add(i.getRRI().getAddress());
+			return Optional.of(BalanceEntry.create(
+				a.getAddress(),
+				null,
+				a.getTokDefRef(),
+				a.getGranularity(),
+				a.getAmount()
+			));
 		}
 
-		return addresses;
+		return Optional.empty();
+	}
+
+	static DatabaseEntry entry(byte[] data) {
+		return new DatabaseEntry(data);
+	}
+
+	private static DatabaseEntry entry() {
+		return new DatabaseEntry();
 	}
 }

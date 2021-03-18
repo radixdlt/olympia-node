@@ -25,6 +25,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -65,12 +66,14 @@ import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.function.BiConsumer;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -94,6 +97,12 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String ATOM_LOG = "radix.ledger";
+	private static final Particle VOID_PARTICLE = new Particle() {
+		@Override
+		public Set<EUID> getDestinations() {
+			return Set.of();
+		}
+	};
 
 	private final Serialization serialization;
 	private final Hasher hasher;
@@ -101,7 +110,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private BiConsumer<Atom, Long> committedAtomConsumer = BerkeleyLedgerEntryStore::defaultCommittedAtomConsumer;
+	private Consumer<SpunParticle> particleConsumer = BerkeleyLedgerEntryStore::defaultParticleConsumer;
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 
@@ -242,20 +251,31 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public void forEach(BiConsumer<Atom, Long> clientAtomConsumer) {
-		atomLog.forEach((bytes, offset) -> {
-			if (offset >= 0) {
-				clientAtomConsumer.accept(deserializeOrElseFail(bytes, Atom.class), offset);
-			} else {
-				clientAtomConsumer.accept(null, -1L);
+	public void forEach(Consumer<SpunParticle> particleConsumer) {
+		try (var cursor = particleDatabase.openCursor(null, null)) {
+			var key = entry();
+			var value = entry();
+			var status = cursor.getFirst(key, value, DEFAULT);
+
+			while (status == SUCCESS) {
+				if (value.getData().length > 0) {
+					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
+					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					particleConsumer.accept(SpunParticle.up(particle));
+				} else {
+					//TODO: eventually we may want to store down particles as well
+					particleConsumer.accept(SpunParticle.down(VOID_PARTICLE));
+				}
+
+				status = cursor.getNext(key, value, READ_COMMITTED);
 			}
-		});
+		}
 	}
 
 	@Override
-	public void onAtomCommit(BiConsumer<Atom, Long> atomConsumer) {
-		committedAtomConsumer = Optional.ofNullable(atomConsumer)
-			.orElse(BerkeleyLedgerEntryStore::defaultCommittedAtomConsumer);
+	public void onParticleCommit(Consumer<SpunParticle> particleConsumer) {
+		this.particleConsumer = Optional.ofNullable(particleConsumer)
+			.orElse(BerkeleyLedgerEntryStore::defaultParticleConsumer);
 	}
 
 	@Override
@@ -276,7 +296,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
 	}
 
-	private static void defaultCommittedAtomConsumer(Atom atom, Long offset) {
+	private static void defaultParticleConsumer(SpunParticle particle) {
 		//Intentionally left blank
 	}
 
@@ -308,6 +328,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
 			// TODO implement integrity check
 			// TODO perhaps we should implement recovery instead?
+			// TODO recovering should be integrated with recovering of ClientApiStore
 		}
 	}
 
@@ -506,6 +527,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
+		particleConsumer.accept(SpunParticle.up(particle));
 	}
 
 
@@ -514,6 +536,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
 		particleDatabase.put(txn, entry(particleKey), downEntry());
+		particleConsumer.accept(SpunParticle.down(particle));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -561,8 +584,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 
 			// Store header/proof
 			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
-
-			committedAtomConsumer.accept(atom.getClientAtom(), offset);
 		} catch (IOException e) {
 			return ioFailure(e);
 		} catch (UniqueConstraintException e) {
