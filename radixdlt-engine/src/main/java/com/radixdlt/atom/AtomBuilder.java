@@ -78,16 +78,6 @@ public final class AtomBuilder {
 		return this;
 	}
 
-	/**
-	 * Add a singleton particle group to this atom containing the given particle and spin as a SpunParticle
-	 *
-	 * @param particle The particle
-	 * @param spin     The spin
-	 */
-	public void addParticleGroupWith(Particle particle, Spin spin) {
-		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
-	}
-
 	public Stream<ParticleGroup> particleGroups() {
 		return this.particleGroups.stream();
 	}
