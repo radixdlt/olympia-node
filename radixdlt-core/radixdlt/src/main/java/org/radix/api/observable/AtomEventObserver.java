@@ -135,7 +135,7 @@ public class AtomEventObserver {
 					return;
 				}
 
-				if (count >= 200) {
+				if (count >= 10000) {
 					delaySync(destination, cursor, processedAtomIds);
 					return;
 				}
@@ -193,7 +193,7 @@ public class AtomEventObserver {
 				// Hack to throttle back high amounts of atom reads
 				// Will fix this once an async library is used
 				try {
-					TimeUnit.SECONDS.sleep(1);
+					TimeUnit.MILLISECONDS.sleep(50);
 				} catch (InterruptedException e) {
 					// Re-interrupt and continue
 					Thread.currentThread().interrupt();

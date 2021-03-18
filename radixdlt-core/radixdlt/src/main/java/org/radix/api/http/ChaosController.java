@@ -19,31 +19,22 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
-import com.radixdlt.chaos.mempoolfiller.MempoolFillerKey;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.LedgerAtom;
-
-import java.util.Optional;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import io.undertow.util.StatusCodes;
 
-import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
 
-public final class ChaosController {
+public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
 	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
 
@@ -56,6 +47,7 @@ public final class ChaosController {
 		this.messageDispatcher = messageDispatcher;
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/api/chaos/message-flooder", this::handleMessageFlood);
 		handler.put("/api/chaos/mempool-filler", this::handleMempoolFill);
@@ -63,7 +55,7 @@ public final class ChaosController {
 
 	@VisibleForTesting
 	void handleMessageFlood(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			var update = MessageFlooderUpdate.create();
 
 			if (values.getBoolean("enabled")) {
@@ -88,7 +80,7 @@ public final class ChaosController {
 
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBodyAsyncAndDefaultResponse(exchange, values -> {
 			var fillerUpdate = values.getBoolean("enabled")
 							   ? MempoolFillerUpdate.enable(100, true)
 							   : MempoolFillerUpdate.disable();

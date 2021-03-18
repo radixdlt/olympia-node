@@ -28,7 +28,7 @@ import io.undertow.server.RoutingHandler;
 import static org.radix.api.http.RestUtils.getParameter;
 import static org.radix.api.http.RestUtils.respond;
 
-public final class NetworkController {
+public final class NetworkController implements Controller {
 	private final NetworkService networkService;
 
 	@Inject
@@ -36,6 +36,7 @@ public final class NetworkController {
 		this.networkService = networkService;
 	}
 
+	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.get("/api/network", this::respondWithNetwork);
 		handler.get("/api/network/peers/live", this::respondWithLivePeers);

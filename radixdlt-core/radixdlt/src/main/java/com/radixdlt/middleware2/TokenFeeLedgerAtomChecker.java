@@ -111,7 +111,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 
 		Atom atomWithoutFeeGroup = clientAtom.toBuilder().copyExcludingGroups(this::isFeeGroup).buildAtom();
 		Set<Particle> outputParticles = atomWithoutFeeGroup.upParticles().collect(Collectors.toSet());
-		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
+		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.PERSIST).length;
 
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
 		UInt256 feePaid = computeFeePaid(clientAtom.toBuilder().particleGroups().filter(this::isFeeGroup));

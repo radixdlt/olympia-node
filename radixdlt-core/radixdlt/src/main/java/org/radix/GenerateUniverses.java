@@ -186,6 +186,15 @@ public final class GenerateUniverses {
 					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
 				);
 			}
+
+			if (universeType == UniverseType.DEVELOPMENT) {
+				// Issue tokens to initial validators for now to support application services
+				// FIXME: Remove this
+				validatorKeys.stream()
+					.map(kp -> TokenIssuance.of(kp.getPublicKey(), unitsToSubunits(DEFAULT_ISSUANCE)))
+					.forEach(tokenIssuancesBuilder::add);
+			}
+
 			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
 				.addAll(getTokenIssuances(stakeDelegations))
 				.build();

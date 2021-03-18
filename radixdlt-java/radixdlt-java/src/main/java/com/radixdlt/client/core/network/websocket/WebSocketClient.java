@@ -60,7 +60,7 @@ public class WebSocketClient implements PersistentChannel {
 		// FIXME: This disposable is never disposed of. Need to clean this up.
 		this.state
 			.filter(state -> state.equals(WebSocketStatus.FAILED))
-			.debounce(1, TimeUnit.MINUTES)
+			.debounce(5, TimeUnit.SECONDS)
 			.subscribe(i -> {
 				synchronized (lock) {
 					if (this.state.getValue().equals(WebSocketStatus.FAILED)) {
