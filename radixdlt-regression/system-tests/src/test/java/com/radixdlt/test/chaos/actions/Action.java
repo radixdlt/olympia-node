@@ -1,12 +1,12 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,24 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
-
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
+package com.radixdlt.test.chaos.actions;
 
 /**
- * A mocked sync epochs rpc sender
+ * Something which affects a testnet
  */
-public enum EmptySyncEpochsRPCSender implements EpochManager.SyncEpochsRPCSender {
-	INSTANCE;
+public interface Action {
 
-	@Override
-	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		// No-op
-	}
+    void setup();
 
-	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		// No-op
-	}
+    void teardown();
+
 }

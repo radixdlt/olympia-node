@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.application;
+package com.radixdlt.application.validator;
 
 import java.util.Objects;
 

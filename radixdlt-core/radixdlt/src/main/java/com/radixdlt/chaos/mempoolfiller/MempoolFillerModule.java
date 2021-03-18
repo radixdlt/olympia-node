@@ -18,23 +18,12 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoOptional;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
-
-import java.util.Random;
 
 /**
  * Module responsible for the mempool filler chaos attack
@@ -48,28 +37,6 @@ public final class MempoolFillerModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
 		eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
 	}
-
-	@ProvidesIntoSet
-	private StateReducer<?, ?> mempoolFillerWallet(
-		@NativeToken RRI tokenRRI,
-		@MempoolFillerKey RadixAddress mempoolFillerAddress,
-		Random random
-	) {
-		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress, random);
-	}
-
-	@ProvidesIntoOptional(ProvidesIntoOptional.Type.ACTUAL)
-	@MempoolFillerKey
-	private RadixAddress mempoolFillerAddress(@MempoolFillerKey ECPublicKey pubKey, @Named("magic") int magic) {
-		return new RadixAddress((byte) magic, pubKey);
-	}
-
-	@Provides
-	@MempoolFillerKey
-	private ECPublicKey mempoolFillerKey(@MempoolFillerKey ECKeyPair keyPair) {
-		return keyPair.getPublicKey();
-	}
-
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {

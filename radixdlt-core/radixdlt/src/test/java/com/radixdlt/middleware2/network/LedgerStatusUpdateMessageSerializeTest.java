@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -18,18 +18,16 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
-public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject<GetEpochResponseMessage> {
-	public GetEpochResponseMessageSerializeTest() {
-		super(GetEpochResponseMessage.class, GetEpochResponseMessageSerializeTest::get);
+public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObject<LedgerStatusUpdateMessage> {
+	public LedgerStatusUpdateMessageSerializeTest() {
+		super(LedgerStatusUpdateMessage.class, LedgerStatusUpdateMessageSerializeTest::get);
 	}
 
-	private static GetEpochResponseMessage get() {
-		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), null));
+	private static LedgerStatusUpdateMessage get() {
+		return new LedgerStatusUpdateMessage(1234, VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), null));
 	}
+
 }

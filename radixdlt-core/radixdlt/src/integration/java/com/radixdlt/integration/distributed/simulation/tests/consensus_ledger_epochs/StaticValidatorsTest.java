@@ -27,7 +27,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.Test;

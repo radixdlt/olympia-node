@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,24 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
-import io.reactivex.rxjava3.core.Flowable;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public interface SyncEpochsRPCRx {
-
-	/**
-	 * Retrieve a never-ending stream of requests
-	 * @return a never-ending stream of requests
-	 */
-	Flowable<GetEpochRequest> epochRequests();
-
-	/**
-	 * Retrieve a never-ending stream of responses
-	 * @return a never-ending stream of responses
-	 */
-	Flowable<GetEpochResponse> epochResponses();
-
+public class LedgerStatusUpdateTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LedgerStatusUpdate.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

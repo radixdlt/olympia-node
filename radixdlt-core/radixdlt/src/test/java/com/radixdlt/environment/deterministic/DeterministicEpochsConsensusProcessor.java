@@ -30,8 +30,6 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
@@ -49,6 +47,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -91,6 +90,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
 		RemoteEventProcessor<SyncRequest> syncRequestProcessor,
 		RemoteEventProcessor<SyncResponse> syncResponseProcessor,
+		RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor,
 		Set<EventProcessorOnRunner<?>> processorOnRunners
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
@@ -140,6 +140,10 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			SyncResponse.class,
 			(node, event) -> syncResponseProcessor.process(node, (SyncResponse) event)
 		);
+		remoteProcessorsBuilder.put(
+			LedgerStatusUpdate.class,
+			(node, event) -> ledgerStatusUpdateProcessor.process(node, (LedgerStatusUpdate) event)
+		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
 
@@ -180,10 +184,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
-		} else if (message instanceof GetEpochRequest) {
-			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
-		} else if (message instanceof GetEpochResponse) {
-			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
 		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
 		} else if (message instanceof AtomCommittedToLedger) {

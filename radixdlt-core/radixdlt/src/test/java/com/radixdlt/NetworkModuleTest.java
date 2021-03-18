@@ -28,13 +28,11 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -75,8 +73,6 @@ public class NetworkModuleTest {
 		);
 
 		List<Class<?>> classesToCheckFor = Arrays.asList(
-			SyncEpochsRPCSender.class,
-			SyncEpochsRPCRx.class,
 			SyncVerticesRPCRx.class,
 			ProposalBroadcaster.class,
 			BFTEventsRx.class

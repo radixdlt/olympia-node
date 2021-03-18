@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
+import io.netty.channel.ChannelInboundHandler;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.apache.logging.log4j.LogManager;
@@ -170,7 +171,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) {
-					setupChannel(ch, true, CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
+					setupChannel(ch, control.outHandler(), CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
 				}
 			});
 
@@ -184,7 +185,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 				@Override
 				public void initChannel(SocketChannel ch) {
 					log.info("Connection from {}:{}", ch.remoteAddress().getHostString(), ch.remoteAddress().getPort());
-					setupChannel(ch, false, SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
+					setupChannel(ch, control.inHandler(), SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
 				}
 			});
 		if (log.isDebugEnabled() || log.isTraceEnabled()) {
@@ -205,7 +206,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		return Observable.merge(channels);
 	}
 
-	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
+	private void setupChannel(SocketChannel ch, ChannelInboundHandler handler, int rcvBufSize, int sndBufSize) {
 		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
 		final int headerLength = TCPConstants.LENGTH_HEADER;
 		ch.config()
@@ -216,10 +217,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		if (log.isDebugEnabled()) {
 			ch.pipeline().addLast(new LoggingHandler(LogSink.using(log), debugData));
 		}
-		if (isOutbound) {
-			ch.pipeline()
-				.addLast("connections", control.handler());
-		}
+
+		ch.pipeline().addLast("connections", handler);
 
 		final var messageHandler = new TCPNettyMessageHandler(this.counters, this.messageBufferSize);
 		channels.onNext(messageHandler.inboundMessageRx().toObservable());

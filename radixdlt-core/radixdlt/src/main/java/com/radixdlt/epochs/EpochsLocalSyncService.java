@@ -24,6 +24,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -147,5 +148,13 @@ public class EpochsLocalSyncService {
 
 	private void processSyncResponse(BFTNode sender, SyncResponse syncResponse) {
 		this.localSyncService.syncResponseEventProcessor().process(sender, syncResponse);
+	}
+
+	public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+		return this::processLedgerStatusUpdate;
+	}
+
+	private void processLedgerStatusUpdate(BFTNode sender, LedgerStatusUpdate ledgerStatusUpdate) {
+		this.localSyncService.ledgerStatusUpdateEventProcessor().process(sender, ledgerStatusUpdate);
 	}
 }

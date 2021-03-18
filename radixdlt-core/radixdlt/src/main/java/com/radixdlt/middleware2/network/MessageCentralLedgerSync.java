@@ -23,6 +23,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -94,6 +95,17 @@ public final class MessageCentralLedgerSync {
 			});
 	}
 
+	public Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates() {
+		return this.messageCentral.messagesOf(LedgerStatusUpdateMessage.class)
+			.toFlowable(BackpressureStrategy.BUFFER)
+			.filter(m -> m.getPeer().hasSystem())
+			.map(m -> {
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				final var header = m.getMessage().getHeader();
+				return RemoteEvent.create(node, LedgerStatusUpdate.create(header), LedgerStatusUpdate.class);
+			});
+	}
+
 	public RemoteEventDispatcher<SyncRequest> syncRequestDispatcher() {
 		return this::sendSyncRequest;
 	}
@@ -141,6 +153,19 @@ public final class MessageCentralLedgerSync {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final var msg = new StatusResponseMessage(this.magic, statusResponse.getHeader());
+				this.messageCentral.send(peer, msg);
+			}
+		});
+	}
+
+	public RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
+		return this::sendLedgerStatusUpdate;
+	}
+
+	private void sendLedgerStatusUpdate(BFTNode node, LedgerStatusUpdate ledgerStatusUpdate) {
+		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
+			if (peer.hasSystem()) {
+				final var msg = new LedgerStatusUpdateMessage(this.magic, ledgerStatusUpdate.getHeader());
 				this.messageCentral.send(peer, msg);
 			}
 		});
