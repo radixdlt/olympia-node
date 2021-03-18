@@ -19,5 +19,5 @@ package org.radix.api.http;
 
 @FunctionalInterface
 interface ThrowingConsumer<A> {
-	void accept(final A arg1) throws Exception;
+	void accept(A arg1) throws Exception;
 }

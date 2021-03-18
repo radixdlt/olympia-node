@@ -133,7 +133,7 @@ public class RecoveryTest {
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of(ecKeyPair));
 				}
 			}
@@ -167,16 +167,16 @@ public class RecoveryTest {
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(ImmutableList.of(self));
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() {}, ProcessOnDispatch.class)
-						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {});
-					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {}).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
+						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
+					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
 			new PersistedNodeForTestingModule()
@@ -184,7 +184,7 @@ public class RecoveryTest {
 	}
 
 	private RadixEngine<LedgerAtom> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() {}));
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
 	}
 
 	private CommittedAtomsStore getAtomStore() {
@@ -192,12 +192,12 @@ public class RecoveryTest {
 	}
 
 	private EpochView getLastEpochView() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() {}))
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
 			.getLastEvent().getEpochView();
 	}
 
 	private Vote getLastVote() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() {})).getLastEvent();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })).getLastEvent();
 	}
 
 	private void restartNode() {

@@ -102,9 +102,9 @@ public class GetNextCommittedCommandsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() {}).toInstance(e -> { });
-					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of());
 				}
 			}

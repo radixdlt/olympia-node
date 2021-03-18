@@ -141,7 +141,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.copyOf(nodeKeys));
 				}
 			},
@@ -200,7 +200,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));

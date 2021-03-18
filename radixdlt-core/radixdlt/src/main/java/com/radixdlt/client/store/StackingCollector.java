@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 public final class StackingCollector<T> {
 	private final AtomicReference<Node<T>> head = new AtomicReference<>();
 
-	private StackingCollector() {}
+	private StackingCollector() { }
 
 	public static <T> StackingCollector<T> create() {
 		return new StackingCollector<>();
@@ -72,12 +72,15 @@ public final class StackingCollector<T> {
 		}
 	}
 
+	// CHECKSTYLE:OFF
+	// For performance reasons this class is not private and its fields are public.
 	static final class Node<T> {
 		public T element;
 		public Node<T> nextNode;
 
-		public Node(final T element) {
+		Node(final T element) {
 			this.element = element;
 		}
 	}
+	// CHECKSTYLE:ON
 }

@@ -37,7 +37,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -49,7 +48,6 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
-import static org.radix.api.jsonrpc.JsonRpcUtil.safeAid;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
@@ -87,7 +85,6 @@ public class HighLevelApiHandler {
 		return withRequiredParameters(request, Set.of("address", "size"), params -> {
 			var address = RadixAddress.fromString(params.getString("address"));
 			var size = safeInteger(params, "size").filter(value -> value > 0);
-			var cursor= safeAid(params, "cursor");
 
 			if (address.isEmpty() || size.isEmpty()) {
 				return errorResponse(request, INVALID_PARAMS,
@@ -193,7 +190,7 @@ public class HighLevelApiHandler {
 
 		public static SingleTransaction generate() {
 			var atomId = AID.from(HashUtils.random(AID.BYTES).asBytes());
-			var sentAt = Instant.now().minus(random.nextInt(60*24) + 1L, ChronoUnit.MINUTES);
+			var sentAt = Instant.now().minus(random.nextInt(60 * 24) + 1L, ChronoUnit.MINUTES);
 			var fee = UInt256.from(random.nextInt(1000));
 			var actions = IntStream.range(0, random.nextInt(5) + 1)
 				.mapToObj(n -> randomAction()).collect(Collectors.toList());

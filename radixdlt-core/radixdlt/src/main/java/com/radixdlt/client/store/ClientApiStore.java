@@ -20,6 +20,7 @@ package com.radixdlt.client.store;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.inject.Inject;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -34,8 +35,6 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Pair;
@@ -46,7 +45,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -60,18 +58,16 @@ public class ClientApiStore {
 	private static final String DESTINATION_DB_NAME = "radix.destination_db";
 	private static final String BALANCE_DB_NAME = "radix.balance_db";
 
-	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final LedgerEntryStore store;
 	private final StackingCollector<Pair<Atom, Long>> atomCollector = StackingCollector.create();
 	private final ExecutorService executorService = newSingleThreadExecutor(daemonThreads("ClientApiStore"));
-	private final AtomicInteger counter = new AtomicInteger(0);
 
 	private Database destinationDatabase;
 	private Database balanceDatabase;
 
-	public ClientApiStore(Serialization serialization, DatabaseEnvironment dbEnv, LedgerEntryStore store) {
-		this.serialization = serialization;
+	@Inject
+	public ClientApiStore(DatabaseEnvironment dbEnv, LedgerEntryStore store) {
 		this.dbEnv = dbEnv;
 		this.store = store;
 		store.onAtomCommit(this::newAtom);
@@ -132,6 +128,7 @@ public class ClientApiStore {
 	}
 
 	private void rebuildDatabase() {
+		log.info("Database rebuilding is started");
 		dbEnv.getEnvironment().truncateDatabase(null, DESTINATION_DB_NAME, false);
 
 		var finished = new AtomicBoolean(false);
@@ -145,8 +142,11 @@ public class ClientApiStore {
 		});
 
 		if (!finished.get()) {
+			log.info("Database rebuilding is failed. Not all atoms were received from atom store.");
 			throw new IllegalStateException("Unable to rebuild indices, not all atoms are received");
 		}
+
+		log.info("Database rebuilding is finished successfully");
 	}
 
 	private void storeSingleAtom(Pair<Atom, Long> clientAtom) {
@@ -158,7 +158,7 @@ public class ClientApiStore {
 			.flatMap(Set::stream).collect(Collectors.toSet());
 	}
 
-	private Set<RadixAddress> toAddresses(Particle p){
+	private Set<RadixAddress> toAddresses(Particle p) {
 		Set<RadixAddress> addresses = new HashSet<>();
 
 		if (p instanceof RRIParticle) {
