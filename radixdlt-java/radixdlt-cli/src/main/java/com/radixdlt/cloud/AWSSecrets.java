@@ -73,11 +73,10 @@ public class AWSSecrets {
 				final String passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 				final String password = passwordName;
 				try (OutputCapture capture = OutputCapture.startStdout()) {
-					RadixCLI.execute(new String[]{
-						"generate-validator-key",
-						"-k=" + keyStoreName,
-						"-n=" + keyStoreName,
-						"-p=" + password});
+
+					String[] cmdArgs = {"generate-validator-key", "-k=" + keyStoreName, "-n=" + keyStoreName, "-p=" + password};
+					System.out.println(java.util.Arrays.toString(cmdArgs));
+					RadixCLI.execute(cmdArgs);
 					final String output = capture.stop();
 					System.out.println(output.toString());
 					if (output.contains("Unable to generate keypair")) {
@@ -86,6 +85,7 @@ public class AWSSecrets {
 					Path keyFilePath = Paths.get(keyStoreName);
 					Map<String, Object> keyFileAwsSecret = new HashMap<>();
 					try {
+
 						byte[] data = Files.readAllBytes(keyFilePath);
 						keyFileAwsSecret.put("key", data);
 					} catch (IOException e) {
@@ -94,7 +94,7 @@ public class AWSSecrets {
 					Map<String, Object> keyPasswordAwsSecret = new HashMap<>();
 					keyPasswordAwsSecret.put("key", password);
 
-					writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, true, true);
+					writeBinaryAWSSecret(keyFileAwsSecret, keyFileSecretName, awsSecretsOutputOptions, false, true);
 					writeBinaryAWSSecret(keyPasswordAwsSecret, passwordSecretName, awsSecretsOutputOptions, false, false);
 				} catch (Exception e) {
 					System.out.println(e);
