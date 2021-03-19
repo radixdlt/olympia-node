@@ -80,14 +80,15 @@ public class CompressedAppendLog implements AppendLog {
 	public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
 		var offset = 0L;
 		synchronized (delegate) {
-			while (true) {
+			var end = false;
+			while (!end) {
 				try {
 					var chunk = readChunk(offset);
 					chunkConsumer.accept(chunk.getFirst(), offset);
 					offset += chunk.getSecond() + Integer.BYTES;
 				} catch (IOException exception) {
 					chunkConsumer.accept(new byte[0], -1L);
-					return;
+					end = true;
 				}
 			}
 		}

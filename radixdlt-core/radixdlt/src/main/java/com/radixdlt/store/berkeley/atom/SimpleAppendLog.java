@@ -120,14 +120,15 @@ public class SimpleAppendLog implements AppendLog {
 		var offset = 0L;
 
 		synchronized (channel) {
-			while (true) {
+			var end = false;
+			while (!end) {
 				try {
 					var chunk = readChunk(offset);
 					chunkConsumer.accept(chunk.getFirst(), offset);
 					offset += chunk.getSecond() + Integer.BYTES;
 				} catch (IOException exception) {
 					chunkConsumer.accept(new byte[0], -1L);
-					break;
+					end = true;
 				}
 			}
 		}
