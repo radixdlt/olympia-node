@@ -18,22 +18,17 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.store.CMStore;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
 import java.util.stream.Collectors;
 
@@ -131,32 +126,6 @@ public final class CMAtomOS {
 			var virtualizer = virtualizedParticles.get(p.getClass());
 			return virtualizer != null && virtualizer.test(p);
 
-		};
-	}
-
-	public UnaryOperator<CMStore> buildVirtualLayer() {
-		var virtualizedUpParticles = virtualizedUpParticles();
-
-		return base -> new CMStore() {
-			@Override
-			public Spin getSpin(Particle particle) {
-				Spin curSpin = base.getSpin(particle);
-
-				if (curSpin == Spin.DOWN) {
-					return curSpin;
-				}
-
-				if (virtualizedUpParticles.test(particle)) {
-					return Spin.UP;
-				}
-
-				return curSpin;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(HashCode particleHash) {
-				return base.loadUpParticle(particleHash);
-			}
 		};
 	}
 }

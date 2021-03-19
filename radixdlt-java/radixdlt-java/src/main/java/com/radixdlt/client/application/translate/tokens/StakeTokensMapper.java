@@ -38,6 +38,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.utils.UInt256;
@@ -140,12 +141,16 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			);
 		}
 
-		// TODO @Incomplete: remove debug statements
-		System.out.println(stake);
-		particles.forEach(sp -> System.out.println(sp.getSpin() + " " + sp.getParticle()));
+		var builder = ParticleGroup.builder();
+		particles
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
 
-		return Collections.singletonList(
-			ParticleGroup.of(particles)
-		);
+		return Collections.singletonList(builder.build());
 	}
 }

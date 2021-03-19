@@ -37,6 +37,7 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -128,7 +129,15 @@ public class AtomKernelTest {
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
+		var builder = ParticleGroup.builder();
+		ImmutableList.copyOf(spunParticles).forEach(sp -> {
+			if (sp.getSpin() == Spin.DOWN) {
+				builder.spinDown(sp.getParticle());
+			} else {
+				builder.spinUp(sp.getParticle());
+			}
+		});
+		particleGroups.add(builder.build());
 
 		String message = Strings.repeat("X", messageSize);
 		if (addFee) {
@@ -165,7 +174,15 @@ public class AtomKernelTest {
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
+		var builder = ParticleGroup.builder();
+		ImmutableList.copyOf(spunParticles).forEach(sp -> {
+			if (sp.getSpin() == Spin.DOWN) {
+				builder.spinDown(sp.getParticle());
+			} else {
+				builder.spinUp(sp.getParticle());
+			}
+		});
+		particleGroups.add(builder.build());
 
 		String message = Strings.repeat("X", messageSize);
 		System.err.println(message.length());

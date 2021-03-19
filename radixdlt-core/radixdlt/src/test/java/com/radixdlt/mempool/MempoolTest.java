@@ -34,7 +34,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -106,8 +105,8 @@ public class MempoolTest {
 			RRIParticle rriParticle = new RRIParticle(rri, nonce);
 			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
 			builder
-				.addParticle(rriParticle, Spin.DOWN)
-				.addParticle(uniqueParticle, Spin.UP);
+				.virtualSpinDown(rriParticle)
+				.spinUp(uniqueParticle);
 		}
 		ParticleGroup particleGroup = builder.build();
 		AtomBuilder atom = Atom.newBuilder();

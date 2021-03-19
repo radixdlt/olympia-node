@@ -225,8 +225,8 @@ public class RadixEngineStateComputerTest {
 			address, 0
 		);
 		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(unregisteredValidatorParticle, Spin.DOWN)
-			.addParticle(registeredValidatorParticle, Spin.UP)
+			.spinDown(unregisteredValidatorParticle)
+			.spinUp(registeredValidatorParticle)
 			.build();
 		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);

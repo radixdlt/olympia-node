@@ -36,7 +36,7 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 
 		final var atom = Atom.newBuilder();
 		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroup(ParticleGroup.of(SpunParticle.down(new RRIParticle(rri))));
+		atom.addParticleGroup(ParticleGroup.builder().spinDown(new RRIParticle(rri)).build());
 		return atom.buildAtom();
 	}
 }

@@ -214,13 +214,13 @@ public class TokenFees {
 		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
 		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
-		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
-			SpunParticle.down(inParticle),
-			SpunParticle.up(new UnallocatedTokensParticle(
-				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
-			SpunParticle.up(new TransferrableTokensParticle(
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
 				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-		));
+			.build();
 
 		t.stage(feeParticleGroup);
 
@@ -248,15 +248,15 @@ public class TokenFees {
 		final UInt256 changeAmountFirstParticle = UInt256.ONE;
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
-		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
-			SpunParticle.down(inParticle),
-			SpunParticle.up(new UnallocatedTokensParticle(
-				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
-			SpunParticle.up(new TransferrableTokensParticle(
-				address, changeAmountFirstParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
-			SpunParticle.up(new TransferrableTokensParticle(
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmountFirstParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
 				address, changeAmountSecondParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-		));
+			.build();
 
 		t.stage(feeParticleGroup);
 
@@ -293,11 +293,11 @@ public class TokenFees {
 				address, inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE,
 				feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime());
 
-		final ParticleGroup exchangeParticleGroup = ParticleGroup.of(List.of(
-				SpunParticle.down(inParticle),
-				SpunParticle.up(exchangedParticle1),
-				SpunParticle.up(exchangedParticle2)
-		));
+		final ParticleGroup exchangeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(exchangedParticle1)
+			.spinUp(exchangedParticle2)
+			.build();
 		t.stage(exchangeParticleGroup);
 
 		// fee amount is 80 millirads
@@ -310,14 +310,14 @@ public class TokenFees {
 		assertTrue(changeAmount.compareTo(exchangedParticle1.getAmount()) >= 0);
 
 		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
-		final ParticleGroup feeParticleGroup = ParticleGroup.of(List.of(
-			SpunParticle.down(exchangedParticle1),
-			SpunParticle.down(exchangedParticle2),
-			SpunParticle.up(new UnallocatedTokensParticle(
-				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())),
-			SpunParticle.up(new TransferrableTokensParticle(
-				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-		));
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(exchangedParticle1)
+			.spinDown(exchangedParticle2)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())
+			).build();
 
 		t.stage(feeParticleGroup);
 

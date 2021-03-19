@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -276,7 +275,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		if (error.isPresent()) {
 			CMError e = error.get();
-			System.out.println(atom.getCMInstruction());
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 

@@ -194,7 +194,7 @@ public class TicTacToeRunner {
 		EngineStore<TicTacToeAtom> engineStore = new InMemoryEngineStore<>();
 		RadixEngine<TicTacToeAtom> engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			engineStore
 		);
 

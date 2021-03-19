@@ -35,14 +35,12 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
-import com.radixdlt.atom.SpunParticle;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -83,11 +81,11 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());
-		ParticleGroup tokenCreationGroup = ParticleGroup.of(
-			SpunParticle.down(rriParticle),
-			SpunParticle.up(token),
-			SpunParticle.up(unallocated)
-		);
+		ParticleGroup tokenCreationGroup = ParticleGroup.builder()
+			.virtualSpinDown(rriParticle)
+			.spinUp(token)
+			.spinUp(unallocated)
+			.build();
 
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
@@ -106,8 +104,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
-			.addParticle(unallocated, Spin.DOWN)
-			.addParticle(minted, Spin.UP);
+			.spinDown(unallocated)
+			.spinUp(minted);
 
 		final UInt256 leftOver = UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()));
 
@@ -120,7 +118,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				System.currentTimeMillis()
 			);
 
-			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);
+			mintGroupBuilder.spinUp(unallocatedLeftOver);
 		}
 
 		return Arrays.asList(
@@ -152,14 +150,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		RRIParticle rriParticle = new RRIParticle(token.getRRI());
-		ParticleGroup tokenCreationGroup = ParticleGroup.of(
-			SpunParticle.down(rriParticle),
-			SpunParticle.up(token),
-			SpunParticle.up(tokens)
-		);
+		ParticleGroup tokenCreationGroup = ParticleGroup.builder()
+			.virtualSpinDown(rriParticle)
+			.spinUp(token)
+			.spinUp(tokens)
+			.build();
 
-		return Arrays.asList(
-			tokenCreationGroup
-		);
+		return Collections.singletonList(tokenCreationGroup);
 	}
 }

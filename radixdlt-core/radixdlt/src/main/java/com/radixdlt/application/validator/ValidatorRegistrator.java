@@ -34,7 +34,6 @@ import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
@@ -89,14 +88,20 @@ public final class ValidatorRegistrator {
 
 		var builder = Atom.newBuilder();
 		var validatorUpdate = validatorState.map(
-			nonce -> ParticleGroup.of(
-				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),
-				SpunParticle.up(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1))
-			),
-			r -> ParticleGroup.of(
-				SpunParticle.down(r),
-				SpunParticle.up(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
-			)
+			nonce -> {
+				var pgBuilder = ParticleGroup.builder();
+				var unregisterParticle = new UnregisteredValidatorParticle(self, nonce);
+				if (nonce == 0) {
+					pgBuilder.virtualSpinDown(unregisterParticle);
+				} else {
+					pgBuilder.spinDown(unregisterParticle);
+				}
+				return pgBuilder.spinUp(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1)).build();
+			},
+			r -> ParticleGroup.builder()
+				.spinDown(r)
+				.spinUp(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
+				.build()
 		);
 		builder.addParticleGroup(validatorUpdate);
 

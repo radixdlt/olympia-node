@@ -39,6 +39,7 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
@@ -153,7 +154,15 @@ public class ValidatorRegistrationTest {
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
+		var builder = ParticleGroup.builder();
+		ImmutableList.copyOf(spunParticles).forEach(sp -> {
+			if (sp.getSpin() == Spin.DOWN) {
+				builder.spinDown(sp.getParticle());
+			} else {
+				builder.spinUp(sp.getParticle());
+			}
+		});
+		particleGroups.add(builder.build());
 
 		String message = null;
 		if (addFee) {

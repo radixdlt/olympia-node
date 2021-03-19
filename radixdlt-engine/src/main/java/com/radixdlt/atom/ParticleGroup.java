@@ -22,44 +22,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
-import com.google.common.collect.Streams.FunctionWithIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
  * A group of particles representing one action, e.g. a transfer.
  */
-@SerializerId2("radix.particle_group")
 public final class ParticleGroup {
 	/**
 	 * The particles and their spin contained within this {@link ParticleGroup}.
 	 */
 	private ImmutableList<SpunParticle> particles;
 	private ImmutableMap<SpunParticle, Integer> indexByParticle;
-
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	private ParticleGroup() {
-		this.particles = ImmutableList.of();
-		this.indexByParticle = ImmutableMap.of();
-	}
 
 	private ParticleGroup(Iterable<SpunParticle> particles) {
 		Objects.requireNonNull(particles, "particles is required");
@@ -115,26 +96,6 @@ public final class ParticleGroup {
 			.map(particleClass::cast);
 	}
 
-	public <U> Stream<U> spunParticlesWithIndex(FunctionWithIndex<SpunParticle, U> f) {
-		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
-			.map(p -> f.apply(p, i))
-		).flatMap(l -> l);
-	}
-
-	/**
-	 * Get a stream of particles of a certain spin in this group
-	 * @param spin The spin to filter by
-	 * @return The particles in this group with that spin
-	 */
-	public <T extends Particle, U> Stream<U> particlesWithIndex(Class<T> particleClass, Spin spin, FunctionWithIndex<T, U> f) {
-		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
-			.filter(p -> p.getSpin() == spin)
-			.filter(p -> particleClass.isInstance(p.getParticle()))
-			.map(p -> particleClass.cast(p.getParticle()))
-			.map(p -> f.apply(p, i))
-		).flatMap(l -> l);
-	}
-
 	/**
 	 * Get a stream of particles of a certain spin in this group
 	 * @param spin The spin to filter by
@@ -144,36 +105,6 @@ public final class ParticleGroup {
 		return this.spunParticles()
 				.filter(p -> p.getSpin() == spin)
 				.map(SpunParticle::getParticle);
-	}
-
-	/**
-	 * Returns the index of a given spun particle
-	 * Returns -1 if not found
-	 *
-	 * @param spunParticle the particle to look for
-	 * @return index of the particle
-	 */
-	public int indexOfSpunParticle(SpunParticle spunParticle) {
-		return this.indexByParticle.getOrDefault(spunParticle, -1);
-	}
-
-	/**
-	 * Returns all indices of a given spun particle (there may be duplicates)
-	 * Returns empty stream if not found
-	 * @param spunParticle the particle to look for
-	 * @return all indices of the particle
-	 */
-	public IntStream indicesOfSpunParticle(SpunParticle spunParticle) {
-		return IntStream.range(0, particles.size())
-			.filter(i -> this.particles.get(i).equals(spunParticle));
-	}
-
-	/**
-	 * Get a boolean if this particle group contains any particles
-	 * @return if this particle group has particles
-	 */
-	public boolean hasParticles() {
-		return !this.particles.isEmpty();
 	}
 
 	/**
@@ -202,24 +133,6 @@ public final class ParticleGroup {
 	void setJsonParticles(List<SpunParticle> particles) {
 		this.particles = ImmutableList.copyOf(particles);
 		this.indexByParticle = index(particles);
-	}
-
-	/**
-	 * Get a {@link ParticleGroup} consisting of the given particles
-	 */
-	public static ParticleGroup of(Iterable<SpunParticle> particles) {
-		return new ParticleGroup(particles);
-	}
-
-	/**
-	 * Get a {@link ParticleGroup} consisting of the given particles
-	 * @param particles
-	 * @return
-	 */
-	public static ParticleGroup of(SpunParticle... particles) {
-		Objects.requireNonNull(particles, "particles is required");
-
-		return new ParticleGroup(Arrays.asList(particles));
 	}
 
 	public static ParticleGroupBuilder builder() {
@@ -252,14 +165,28 @@ public final class ParticleGroup {
 		private ParticleGroupBuilder() {
 		}
 
-		public final ParticleGroupBuilder addParticle(SpunParticle spunParticle) {
-			Objects.requireNonNull(spunParticle, "spunParticle is required");
-
+		public final ParticleGroupBuilder spinUp(Particle particle) {
+			Objects.requireNonNull(particle, "particle is required");
+			SpunParticle spunParticle = SpunParticle.of(particle, Spin.UP);
 			this.particles.add(spunParticle);
-
 			return this;
 		}
 
+		public final ParticleGroupBuilder virtualSpinDown(Particle particle) {
+			Objects.requireNonNull(particle, "particle is required");
+			SpunParticle spunParticle = SpunParticle.of(particle, Spin.DOWN);
+			this.particles.add(spunParticle);
+			return this;
+		}
+
+		public final ParticleGroupBuilder spinDown(Particle particle) {
+			Objects.requireNonNull(particle, "particle is required");
+			SpunParticle spunParticle = SpunParticle.of(particle, Spin.DOWN);
+			this.particles.add(spunParticle);
+			return this;
+		}
+
+		/*
 		public final ParticleGroupBuilder addParticle(Particle particle, Spin spin) {
 			Objects.requireNonNull(particle, "particle is required");
 			Objects.requireNonNull(spin, "spin is required");
@@ -269,6 +196,7 @@ public final class ParticleGroup {
 
 			return this;
 		}
+		 */
 
 		public ParticleGroup build() {
 			return new ParticleGroup(ImmutableList.copyOf(this.particles));

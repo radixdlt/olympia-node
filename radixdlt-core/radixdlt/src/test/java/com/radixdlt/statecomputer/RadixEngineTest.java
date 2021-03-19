@@ -24,7 +24,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -82,8 +81,8 @@ public final class RadixEngineTest {
 		RRIParticle rriParticle = new RRIParticle(rri, 0);
 		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
 		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(rriParticle, Spin.DOWN)
-			.addParticle(uniqueParticle, Spin.UP)
+			.virtualSpinDown(rriParticle)
+			.spinUp(uniqueParticle)
 			.build();
 		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);

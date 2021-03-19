@@ -24,7 +24,6 @@ import javax.inject.Inject;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -211,7 +210,7 @@ public class GetNextCommittedCommandsTest {
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
-		builder.addParticleGroup(ParticleGroup.of(SpunParticle.up(new RRIParticle(rri))));
+		builder.addParticleGroup(ParticleGroup.builder().spinUp(new RRIParticle(rri)).build());
 		final var clientAtom = builder.buildAtom();
 
 		final var proposedVertexId = HashUtils.random256();

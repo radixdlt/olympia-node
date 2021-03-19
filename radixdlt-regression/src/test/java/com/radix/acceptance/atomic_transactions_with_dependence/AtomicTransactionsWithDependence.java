@@ -35,7 +35,6 @@ import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
@@ -159,12 +158,12 @@ public class AtomicTransactionsWithDependence {
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mintTransition, transferTransition) -> {
 
 			ParticleGroupBuilder groupBuilder = ParticleGroup.builder();
-			mintTransition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.DOWN));
-			mintTransition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
-			mintTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
-			transferTransition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.DOWN));
-			transferTransition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
-			transferTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
+			mintTransition.getRemoved().stream().map(t -> (Particle) t).forEach(groupBuilder::spinDown);
+			mintTransition.getMigrated().stream().map(t -> (Particle) t).forEach(groupBuilder::spinUp);
+			mintTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(groupBuilder::spinUp);
+			transferTransition.getRemoved().stream().map(t -> (Particle) t).forEach(groupBuilder::spinDown);
+			transferTransition.getMigrated().stream().map(t -> (Particle) t).forEach(groupBuilder::spinUp);
+			transferTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(groupBuilder::spinUp);
 
 			return Collections.singletonList(groupBuilder.build());
 		}));
@@ -174,14 +173,14 @@ public class AtomicTransactionsWithDependence {
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithAHigherIndex() {
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> {
 			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
-			mint.getRemoved().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.DOWN));
-			mint.getMigrated().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
-			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
+			mint.getRemoved().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinDown);
+			mint.getMigrated().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
+			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 
 			ParticleGroupBuilder transferParticleGroupBuilder = ParticleGroup.builder();
-			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.DOWN));
-			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
-			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
+			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinDown);
+			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
+			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 
 			return Arrays.asList(
 				transferParticleGroupBuilder.build(),
