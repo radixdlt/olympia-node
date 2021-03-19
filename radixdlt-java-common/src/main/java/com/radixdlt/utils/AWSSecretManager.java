@@ -1,4 +1,4 @@
-package org.radix.universe.output;
+package com.radixdlt.utils;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -8,7 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.secretsmanager.model.*;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretResponse;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
+import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
+import software.amazon.awssdk.services.secretsmanager.model.Tag;
+import software.amazon.awssdk.services.secretsmanager.model.UpdateSecretRequest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,7 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
+
 public class AWSSecretManager {
+    private AWSSecretManager() {
+
+    }
     private static Region defaultRegion = Region.EU_WEST_2;
 
     public static void createSecret(String secretName, Object secretValue, String network, Region region, boolean binarySecret) {
@@ -160,7 +170,7 @@ public class AWSSecretManager {
     public static void createAWSSecret(
         final Map<String, Object> awsSecret,
         final String secretName,
-        final AWSSecretsUniverseOutput awsSecretsUniverseOutput,
+        final AWSSecretsOutputOptions awsSecretsOutputOptions,
         boolean compress,
         boolean binarySecret
     ) {
@@ -170,16 +180,16 @@ public class AWSSecretManager {
             String jsonSecret = objectMapper.writeValueAsString(awsSecret);
             if (compress) {
                 byte[] compressedBytes = compressData(jsonSecret);
-                createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsUniverseOutput.getNetworkName());
+                createBinarySecret(secretName, SdkBytes.fromByteArray(compressedBytes), awsSecretsOutputOptions.getNetworkName());
             } else {
                 if (binarySecret) {
                     createBinarySecret(
                         secretName,
                         SdkBytes.fromByteArray((byte[]) awsSecret.get("key")),
-                        awsSecretsUniverseOutput.getNetworkName()
+                        awsSecretsOutputOptions.getNetworkName()
                     );
                 } else {
-                    createSecret(secretName, jsonSecret, awsSecretsUniverseOutput.getNetworkName());
+                    createSecret(secretName, jsonSecret, awsSecretsOutputOptions.getNetworkName());
                 }
             }
         } catch (JsonProcessingException e) {
@@ -206,12 +216,12 @@ public class AWSSecretManager {
     public static void updateAWSSecret(
         Map<String, Object> awsSecret,
         String secretName,
-        AWSSecretsUniverseOutput awsSecretsUniverseOutput,
+        AWSSecretsOutputOptions awsSecretsOutputOptions,
         boolean compress,
         boolean binarySecret
     ) {
         ObjectMapper objectMapper = new ObjectMapper();
-        if (canBeUpdated(awsSecretsUniverseOutput)) {
+        if (canBeUpdated(awsSecretsOutputOptions)) {
             System.out.format("Secret %s exists. And it's going to be replaced %n", secretName);
             try {
                 String jsonSecret = objectMapper.writeValueAsString(awsSecret);
@@ -240,10 +250,10 @@ public class AWSSecretManager {
         }
     }
 
-    private static boolean canBeUpdated(final AWSSecretsUniverseOutput awsSecretsUniverseOutput) {
-        return awsSecretsUniverseOutput.getRecreateAwsSecrets()
-            && (!awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("betanet")
-                    || !awsSecretsUniverseOutput.getNetworkName().equalsIgnoreCase("mainnet"));
+    private static boolean canBeUpdated(final AWSSecretsOutputOptions awsSecretsOutputOptions) {
+        return awsSecretsOutputOptions.getRecreateAwsSecrets()
+            && (!awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("betanet")
+                    || !awsSecretsOutputOptions.getNetworkName().equalsIgnoreCase("mainnet"));
     }
 
     //This is needed or the connection to AWS fails with

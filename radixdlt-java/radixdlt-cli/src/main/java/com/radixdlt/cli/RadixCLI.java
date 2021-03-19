@@ -54,6 +54,11 @@ public class RadixCLI implements Runnable {
 	}
 
 	public static void main(String[] args) {
+		execute(args);
+		System.exit(0);
+	}
+
+	public static void execute(String[] args) {
 		CommandLine cmd = new CommandLine(new RadixCLI());
 		cmd.execute(args);
 
@@ -61,6 +66,5 @@ public class RadixCLI implements Runnable {
 			cmd.printVersionHelp(System.out);
 			cmd.usage(System.out);
 		}
-		System.exit(0);
 	}
 }

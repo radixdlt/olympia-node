@@ -1,11 +1,11 @@
-package org.radix.universe.output;
+package com.radixdlt.utils;
 
-public class AWSSecretsUniverseOutput {
+public class AWSSecretsOutputOptions {
     private Boolean enableAwsSecrets;
     private Boolean recreateAwsSecrets;
     private String networkName;
 
-    public AWSSecretsUniverseOutput(Boolean enableAwsSecrets, Boolean recreateAwsSecrets, String networkName) {
+    public AWSSecretsOutputOptions(Boolean enableAwsSecrets, Boolean recreateAwsSecrets, String networkName) {
         this.enableAwsSecrets = enableAwsSecrets;
         this.recreateAwsSecrets = recreateAwsSecrets;
         this.networkName = networkName;
