@@ -324,6 +324,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
 		if (isUserCommand) {
+			System.out.println(atom.toInstructionsString());
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);

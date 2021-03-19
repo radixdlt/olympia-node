@@ -47,6 +47,7 @@ import io.reactivex.observers.TestObserver;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -89,6 +90,7 @@ public class ValidatorRegistrationTest {
 	}
 
 	@Test
+	@Ignore("Ignoring until api is fixed.")
 	public void when_registering_unregistering_and_reregistering_validator__then_validator_is_registererd() {
 		// create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();

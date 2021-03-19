@@ -110,7 +110,12 @@ public final class CMMicroInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s %s", operation, particle != null ? particle : particleHash);
+		return String.format("%s %s",
+			operation,
+			particle != null
+				? HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL)) + ":" + particle
+				: particleHash
+		);
 	}
 
 	@Override

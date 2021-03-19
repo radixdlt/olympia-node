@@ -42,8 +42,8 @@ Feature: Staking Queries
     #When I request validator stake balance
     #Then I can observe that validator has amount of tokens staked equal to sum of stakes by delegator1 and delegator2
 
-  Scenario: 6: Stake by not configured delegator
-    Given I have access to a suitable Radix network
-    And I have registered validator with allowed delegator1
-    When I try to stake some tokens by delegator2
-    Then I can observe that staking is not allowed
+  #Scenario: 6: Stake by not configured delegator
+    #Given I have access to a suitable Radix network
+    #And I have registered validator with allowed delegator1
+    #When I try to stake some tokens by delegator2
+    #Then I can observe that staking is not allowed

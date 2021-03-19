@@ -38,7 +38,6 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
@@ -67,7 +66,6 @@ public final class Serialize {
 			return Arrays.asList(
 				Atom.class,
 				AtomEvent.class,
-				ParticleGroup.class,
 				Particle.class,
 				RRIParticle.class,
 				SpunParticle.class,

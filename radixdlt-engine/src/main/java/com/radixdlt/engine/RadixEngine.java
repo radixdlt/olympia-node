@@ -351,11 +351,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	// TODO: Temporary method
-	public Predicate<Particle> getVirtualStoreLayer() {
-		return virtualStoreLayer;
-	}
-
 	public boolean contains(T atom) {
 		return engineStore.containsAtom(atom);
 	}
