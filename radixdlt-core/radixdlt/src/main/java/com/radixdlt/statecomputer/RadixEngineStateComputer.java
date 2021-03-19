@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -28,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
@@ -225,13 +225,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			? new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp)
 			: new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
 
-		final Atom systemUpdate = Atom.create(
-			ImmutableList.of(
-				CMMicroInstruction.nonVirtualCheckUpThenDown(lastSystemParticle),
-				CMMicroInstruction.spinUp(nextSystemParticle),
-				CMMicroInstruction.particleGroup()
-			)
-		);
+		final Atom systemUpdate = Atom.newBuilder().addParticleGroup(
+			ParticleGroup.builder()
+				.spinDown(lastSystemParticle)
+				.spinUp(nextSystemParticle)
+				.build()
+		).buildAtom();
 		try {
 			branch.execute(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
@@ -324,7 +323,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
 		if (isUserCommand) {
-			System.out.println(atom.toInstructionsString());
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);

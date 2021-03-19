@@ -198,7 +198,7 @@ public final class Atom implements LedgerAtom {
 				instructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
 			} else if (bytes[0] == 3) {
 				var particleHash = HashCode.fromBytes(bytesIterator.next());
-				instructionsBuilder.add(CMMicroInstruction.nonVirtualCheckUpThenDown(particleHash));
+				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));
 			}
 		}
 

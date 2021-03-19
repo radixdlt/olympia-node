@@ -225,7 +225,7 @@ public class RadixEngineStateComputerTest {
 			address, 0
 		);
 		ParticleGroup particleGroup = ParticleGroup.builder()
-			.spinDown(unregisteredValidatorParticle)
+			.virtualSpinDown(unregisteredValidatorParticle)
 			.spinUp(registeredValidatorParticle)
 			.build();
 		AtomBuilder atom = Atom.newBuilder();

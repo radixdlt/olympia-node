@@ -81,13 +81,12 @@ public final class CMMicroInstruction {
 		}
 	}
 
-	public static CMMicroInstruction nonVirtualCheckUpThenDown(HashCode particleHash) {
+	public static CMMicroInstruction spinDown(HashCode particleHash) {
 		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, null, particleHash);
 	}
 
-	public static CMMicroInstruction nonVirtualCheckUpThenDown(Particle particle) {
-		var particleHash = HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL));
-		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, null, particleHash);
+	public static CMMicroInstruction virtualSpinDown(Particle particle) {
+		return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle, null);
 	}
 
 	public static CMMicroInstruction spinUp(Particle particle) {
