@@ -75,7 +75,7 @@ public class ByzantineSyncTest {
 				}
 			})
 			.pacemakerTimeout(5000)
-			.ledgerAndSync(SyncConfig.of(50L, 10, 50L))
+			.ledgerAndSync(SyncConfig.of(200L, 10, 2000L))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
