@@ -84,7 +84,6 @@ public final class EpochManagerRunner implements ModuleRunner {
 		BFTEventsRx networkRx,
 		Observable<Epoched<ScheduledLocalTimeout>> timeouts,
 		SyncVerticesRPCRx rpcRx,
-		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
@@ -100,14 +99,13 @@ public final class EpochManagerRunner implements ModuleRunner {
 			new Subscription<>(timeouts, epochManager::processLocalTimeout, singleThreadScheduler),
 			new Subscription<>(networkRx.localBftEvents(), epochManager::processConsensusEvent, singleThreadScheduler),
 			new Subscription<>(networkRx.remoteBftEvents(), epochManager::processConsensusEvent, singleThreadScheduler),
-			new Subscription<>(verticesRequests, req ->
-				epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent()),
+			new Subscription<>(
+				verticesRequests,
+				req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent()),
 				singleThreadScheduler
 			),
 			new Subscription<>(rpcRx.responses(), epochManager::processGetVerticesResponse, singleThreadScheduler),
-			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse, singleThreadScheduler),
-			new Subscription<>(epochsRPCRx.epochRequests(), epochManager::processGetEpochRequest, singleThreadScheduler),
-			new Subscription<>(epochsRPCRx.epochResponses(), epochManager::processGetEpochResponse, singleThreadScheduler)
+			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse, singleThreadScheduler)
 		);
 	}
 

@@ -20,10 +20,8 @@ package com.radixdlt.consensus.epoch;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,7 +62,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -98,6 +95,7 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -115,7 +113,6 @@ public class EpochManagerTest {
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
@@ -175,9 +172,10 @@ public class EpochManagerTest {
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { })
 					.toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
+					.toInstance(rmock(RemoteEventDispatcher.class));
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
@@ -279,44 +277,5 @@ public class EpochManagerTest {
 		// Assert
 		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());
 		verify(voteDispatcher, never()).dispatch(any(BFTNode.class), any());
-	}
-
-	@Test
-	public void when_receive_not_current_epoch_request__then_should_return_null() {
-		// Arrange
-
-		// Act
-		epochManager.processGetEpochRequest(new GetEpochRequest(BFTNode.random(), 2));
-
-		// Assert
-		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(any(), isNull());
-	}
-
-	@Test
-	public void when_receive_epoch_response__then_should_sync_state_computer() {
-		// Arrange
-		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(proof.getEpoch()).thenReturn(1L);
-		when(proof.getSignersWithout(any())).thenReturn(ImmutableList.of());
-		GetEpochResponse response = new GetEpochResponse(BFTNode.random(), proof);
-
-		// Act
-		epochManager.processGetEpochResponse(response);
-
-		// Assert
-		verify(syncLedgerRequestSender, times(1))
-			.dispatch(argThat(req -> req.getTarget().equals(proof)));
-	}
-
-	@Test
-	public void when_receive_null_epoch_response__then_should_do_nothing() {
-		// Arrange
-		GetEpochResponse response = new GetEpochResponse(BFTNode.random(), null);
-
-		// Act
-		epochManager.processGetEpochResponse(response);
-
-		// Assert
-		verify(syncLedgerRequestSender, never()).dispatch(any());
 	}
 }

@@ -25,14 +25,11 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -44,6 +41,7 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBookPeersView;
 import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -66,8 +64,6 @@ public final class NetworkModule extends AbstractModule {
 
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
@@ -78,12 +74,12 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private RxRemoteDispatcher<?> mempoolAddedDispatcher(MessageCentralMempool messageCentralMempool) {
+	private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
 		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.commandRemoteEventDispatcher());
 	}
 
 	@ProvidesIntoSet
-	private RxRemoteDispatcher<?> syncRequestDispatcher(MessageCentralBFTNetwork bftNetwork) {
+	private RxRemoteDispatcher<?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
 		return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
 	}
 
@@ -92,24 +88,29 @@ public final class NetworkModule extends AbstractModule {
 		return RxRemoteDispatcher.create(GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
 	}
 
-	@Provides
-	private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.syncRequestDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return RxRemoteDispatcher.create(SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
 	}
 
-	@Provides
-	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.syncResponseDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> syncResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return RxRemoteDispatcher.create(SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
 	}
 
-	@Provides
-	private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.statusRequestDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> statusRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return RxRemoteDispatcher.create(StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
 	}
 
-	@Provides
-	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.statusResponseDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> statusResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return RxRemoteDispatcher.create(StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
 	}
 
 	@Provides
@@ -130,6 +131,11 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Flowable<RemoteEvent<SyncResponse>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncResponses();
+	}
+
+	@Provides
+	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.ledgerStatusUpdates();
 	}
 
 	@Provides

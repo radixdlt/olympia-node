@@ -47,6 +47,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -137,6 +138,13 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return epochsLocalSyncService.syncResponseEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor(
+		EpochsLocalSyncService epochsLocalSyncService
+	) {
+		return epochsLocalSyncService.ledgerStatusUpdateEventProcessor();
 	}
 
 	@Provides

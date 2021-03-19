@@ -61,8 +61,8 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 	private static final Logger log = LogManager.getLogger();
 
 	@Sharable
-	static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
-		private final RateLimiter droppedChannelRateLimiter = RateLimiter.create(1.0);
+	static class OutTCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
+		private final RateLimiter droppedChannelLogRateLimiter = RateLimiter.create(1.0);
 		private final AtomicLong droppedChannelCount = new AtomicLong();
 
 		private final Object lock = new Object();
@@ -72,7 +72,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		private final int maxChannelCount;
 		private final SystemCounters counters;
 
-		TCPConnectionHandlerChannelInbound(int maxChannelCount, SystemCounters counters) {
+		OutTCPConnectionHandlerChannelInbound(int maxChannelCount, SystemCounters counters) {
 			this.maxChannelCount = maxChannelCount;
 			this.counters = counters;
 		}
@@ -96,7 +96,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
-				this.counters.increment(CounterType.NETWORKING_TCP_OPENED);
+				this.counters.increment(CounterType.NETWORKING_TCP_OUT_OPENED);
 				if (this.channelCount.getAndIncrement() < this.maxChannelCount) {
 					SocketChannel sch = (SocketChannel) ch;
 					InetSocketAddress remote = sch.remoteAddress();
@@ -117,8 +117,8 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					// Too many channels, we just close and exit.
 					// Include rate limited log of total dropped channels.
 					long droppedChannels = this.droppedChannelCount.incrementAndGet();
-					if (this.droppedChannelRateLimiter.tryAcquire()) {
-						log.error("Total of {} channel{} dropped due to connection limit",
+					if (this.droppedChannelLogRateLimiter.tryAcquire()) {
+						log.error("Total of {} out channel{} dropped due to connection limit",
 							droppedChannels, 1L == droppedChannels ? "" : "s");
 					}
 					ctx.close();
@@ -261,7 +261,43 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		}
 	}
 
-	private final TCPConnectionHandlerChannelInbound handler;
+	@Sharable
+	static class InTCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
+		private final RateLimiter droppedChannelLogRateLimiter = RateLimiter.create(1.0);
+		private final AtomicInteger channelCount = new AtomicInteger();
+		private final AtomicLong droppedChannelCount = new AtomicLong();
+		private final int maxChannelCount;
+		private final SystemCounters counters;
+
+		InTCPConnectionHandlerChannelInbound(int maxChannelCount, SystemCounters counters) {
+			this.maxChannelCount = maxChannelCount;
+			this.counters = counters;
+		}
+
+		@Override
+		public void channelActive(ChannelHandlerContext ctx) throws Exception {
+			this.counters.increment(CounterType.NETWORKING_TCP_IN_OPENED);
+			if (this.channelCount.getAndIncrement() >= this.maxChannelCount) {
+				final var droppedChannels = this.droppedChannelCount.incrementAndGet();
+				if (this.droppedChannelLogRateLimiter.tryAcquire()) {
+					log.error("Total of {} in channel{} dropped due to connection limit",
+						droppedChannels, 1L == droppedChannels ? "" : "s");
+				}
+				ctx.close();
+				return;
+			}
+			super.channelActive(ctx);
+		}
+
+		@Override
+		public void channelInactive(ChannelHandlerContext ctx) {
+			this.counters.increment(CounterType.NETWORKING_TCP_CLOSED);
+			this.channelCount.decrementAndGet();
+		}
+	}
+
+	private final OutTCPConnectionHandlerChannelInbound outHandler;
+	private final InTCPConnectionHandlerChannelInbound inHandler;
 	private final TCPTransportOutboundConnectionFactory outboundFactory;
 	private final NettyTCPTransport transport;
 
@@ -273,21 +309,27 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 	) {
 		this.outboundFactory = outboundFactory;
 		this.transport = transport;
-		this.handler = new TCPConnectionHandlerChannelInbound(config.maxChannelCount(1024), counters);
+		this.outHandler = new OutTCPConnectionHandlerChannelInbound(config.maxOutChannelCount(1024), counters);
+		this.inHandler = new InTCPConnectionHandlerChannelInbound(config.maxInChannelCount(1024), counters);
 	}
 
 	@Override
 	public CompletableFuture<TransportOutboundConnection> open(TransportMetadata endpointMetadata) {
-		return this.handler.findOrCreateActiveChannel(endpointMetadata, this.transport, this.outboundFactory);
+		return this.outHandler.findOrCreateActiveChannel(endpointMetadata, this.transport, this.outboundFactory);
 	}
 
 	@Override
 	public void close() throws IOException {
-		this.handler.closeAll();
+		this.outHandler.closeAll();
 	}
 
 	@Override
-	public ChannelInboundHandler handler() {
-		return this.handler;
+	public ChannelInboundHandler outHandler() {
+		return this.outHandler;
+	}
+
+	@Override
+	public ChannelInboundHandler inHandler() {
+		return this.inHandler;
 	}
 }
