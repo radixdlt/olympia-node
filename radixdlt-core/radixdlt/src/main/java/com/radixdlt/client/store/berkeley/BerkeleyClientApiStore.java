@@ -91,7 +91,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var list = new ArrayList<TokenBalance>();
 
 			do {
-				deserializeBalanceEntry(data.getData()).map(TokenBalance::from).onSuccess(list::add);
+				var success = deserializeBalanceEntry(data.getData())
+					.map(TokenBalance::from)
+					.onSuccess(list::add)
+					.isSuccess();
+
+				if (!success) {
+					log.error("Error deserializing existing while scanning DB for address {}", address);
+				}
 			}
 			while (cursor.getNext(key, data, null) == OperationStatus.SUCCESS);
 
@@ -220,12 +227,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			serializeBalanceEntry(value, balanceEntry.negate());
 		} else if (status == OperationStatus.SUCCESS) {
 			// Merge with existing balance
-			var valid = deserializeBalanceEntry(oldValue.getData())
+			var success = deserializeBalanceEntry(oldValue.getData())
 				.map(existingBalance -> existingBalance.subtract(balanceEntry))
 				.onSuccess(entry -> serializeBalanceEntry(value, entry))
-				.fold(__ -> true, __ -> false);
+				.isSuccess();
 
-			if (!valid) {
+			if (!success) {
 				log.error("Error deserializing existing balance for {}", balanceEntry);
 			}
 		}

@@ -149,6 +149,15 @@ public interface Result<T> {
 	Result<T> onFailure(Consumer<? super Failure> consumer);
 
 	/**
+	 * Check for success.
+	 *
+	 * @return {@code true} if result is a success
+	 */
+	default boolean isSuccess() {
+		return fold(__ -> false, __ -> true);
+	}
+
+	/**
 	 * Convert instance into {@link Optional} of the same type. Successful instance
 	 * is converted into present {@link Optional} and failure - into empty {@link Optional}.
 	 * Note that during such a conversion error information may get lost.
