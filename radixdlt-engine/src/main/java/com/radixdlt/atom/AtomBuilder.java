@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Builder class for atom creation
@@ -64,34 +63,6 @@ public final class AtomBuilder {
 		Objects.requireNonNull(particleGroup, "particleGroup is required");
 		this.particleGroups.add(particleGroup);
 		return this;
-	}
-
-	public Stream<ParticleGroup> particleGroups() {
-		return this.particleGroups.stream();
-	}
-
-	public List<ParticleGroup> getParticleGroups() {
-		return this.particleGroups;
-	}
-
-	public Stream<SpunParticle> spunParticles() {
-		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
-	}
-
-	public Stream<Particle> particles(Spin spin) {
-		return this.spunParticles().filter(p -> p.getSpin() == spin).map(SpunParticle::getParticle);
-	}
-
-	public <T extends Particle> Stream<T> particles(Class<T> type, Spin spin) {
-		return this.particles(type)
-			.filter(s -> s.getSpin() == spin)
-			.map(SpunParticle::getParticle)
-			.map(type::cast);
-	}
-
-	public <T extends Particle> Stream<SpunParticle> particles(Class<T> type) {
-		return this.spunParticles()
-			.filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()));
 	}
 
 	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
