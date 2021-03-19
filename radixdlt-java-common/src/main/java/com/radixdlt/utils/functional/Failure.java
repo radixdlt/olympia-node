@@ -20,8 +20,10 @@ package com.radixdlt.utils.functional;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+/**
+ * Simplest failure descriptor.
+ */
 public final class Failure {
-
 	private final String message;
 
 	private Failure(String message) {
@@ -43,8 +45,7 @@ public final class Failure {
 			return true;
 		}
 
-		return (obj instanceof Failure)
-			&& Objects.equals(((Failure) obj).message(), message);
+		return (obj instanceof Failure) && Objects.equals(((Failure) obj).message(), message);
 	}
 
 	@Override

@@ -23,6 +23,7 @@ import org.json.JSONObject;
 
 import com.radixdlt.identifiers.AID;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -60,6 +61,12 @@ public final class JsonRpcUtil {
 
 	public static JSONArray jsonArray() {
 		return new JSONArray();
+	}
+
+	public static <T> JSONArray fromList(List<T> input, Function<T, JSONObject> mapper) {
+		var array = jsonArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
 	}
 
 	public static Optional<Integer> safeInteger(JSONObject params, String name) {

@@ -24,6 +24,7 @@ import org.radix.api.services.HighLevelApiService;
 import com.google.inject.Inject;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
@@ -44,7 +45,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
+import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
+import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
@@ -74,11 +77,12 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTokenBalances(JSONObject request) {
-		return withRequiredParameter(request, "address", (params, address) -> {
-			return RadixAddress.fromString(address)
-				.map(radixAddress -> response(request, stubTokenBalances(radixAddress)))
-				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Unable to recognize address"));
-		});
+		return withRequiredParameter(
+			request, "address",
+			(params, address) -> RadixAddress.fromString(address)
+				.map(radixAddress -> response(request, formatTokenBalances(request, radixAddress)))
+				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Unable to recognize address"))
+		);
 	}
 
 	public JSONObject handleExecutedTransactions(JSONObject request) {
@@ -88,7 +92,8 @@ public class HighLevelApiHandler {
 
 			if (address.isEmpty() || size.isEmpty()) {
 				return errorResponse(request, INVALID_PARAMS,
-									 address.isEmpty() ? "Unable to recognize address" : "Invalid size");
+									 address.isEmpty() ? "Unable to recognize address" : "Invalid size"
+				);
 			}
 
 			var transactions = jsonArray();
@@ -110,6 +115,15 @@ public class HighLevelApiHandler {
 				.map(aid -> response(request, stubTransactionStatus(aid)))
 				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Unable to recognize atom ID"));
 		});
+	}
+
+	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
+		return highLevelApiService.getTokenBalances(radixAddress).fold(
+			failure -> errorResponse(request, SERVER_ERROR, failure.message()),
+			list -> jsonObject()
+				.put("owner", radixAddress.toString())
+				.put("tokenBalances", fromList(list, TokenBalance::asJson))
+		);
 	}
 
 	//TODO: remove all code below once functionality will be implemented
@@ -138,20 +152,12 @@ public class HighLevelApiHandler {
 			.orElseThrow(() -> new IllegalStateException("Unable to parse stub response"));
 	}
 
-	private JSONObject stubTokenBalances(RadixAddress address) {
-		var tokenBalances = jsonArray();
-
-		tokenBalances.put(jsonObject().put("token", RRI.of(address, "XRD")).put("amount", "123450650980000000"));
-		tokenBalances.put(jsonObject().put("token", RRI.of(address, "ETH")).put("amount", "234536543434300"));
-
-		return jsonObject().put("owner", address.toString()).put("tokenBalances", tokenBalances);
-	}
-
 	private final ConcurrentMap<AID, AtomStatus> atomStatuses = new ConcurrentHashMap<>();
 
 	private static final SecureRandom random = new SecureRandom();
 	private static final AtomStatus[] STATUSES = AtomStatus.values();
 	private static final int LIMIT = STATUSES.length;
+
 	private JSONObject stubTransactionStatus(AID aid) {
 		var originalStatus = atomStatuses.computeIfAbsent(aid, key -> STATUSES[random.nextInt(LIMIT)]);
 		var status = fromAtomStatus(originalStatus);
@@ -199,7 +205,7 @@ public class HighLevelApiHandler {
 		}
 
 		private static Map<String, Object> randomAction() {
-			var types = new String[] {"UNKNOWN", "stake", "unstake", "tokenTransfer"};
+			var types = new String[]{"UNKNOWN", "stake", "unstake", "tokenTransfer"};
 			var type = random.nextInt(types.length);
 			var from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 			var to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
@@ -208,7 +214,7 @@ public class HighLevelApiHandler {
 			switch (type) {
 				case 0: // Unknown
 					return Map.of("type", types[type], "particleGroup", "Unable to decode");
-				case 1:	// Stake
+				case 1:    // Stake
 					return Map.of("type", types[type], "to", to, "amount", amount);
 				case 2: // Unstake
 					return Map.of("type", types[type], "from", from, "amount", amount);
@@ -225,7 +231,7 @@ public class HighLevelApiHandler {
 
 		@Override
 		public String toString() {
-				return asJsonObj().toString();
+			return asJsonObj().toString();
 		}
 
 		public JSONObject asJsonObj() {
@@ -247,4 +253,3 @@ public class HighLevelApiHandler {
 		}
 	}
 }
-

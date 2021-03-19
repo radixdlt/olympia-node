@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store;
+package com.radixdlt.client.store.berkeley;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;

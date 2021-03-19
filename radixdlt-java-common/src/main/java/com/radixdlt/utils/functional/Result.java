@@ -182,6 +182,17 @@ public interface Result<T> {
 		return new ResultFail<R>(value);
 	}
 
+	/**
+	 * Create an instance of simple failure operation result.
+	 *
+	 * @param message Error message
+	 *
+	 * @return created instance
+	 */
+	static <R> Result<R> fail(final String message) {
+		return new ResultFail<R>(Failure.failure(message));
+	}
+
 	final class ResultOk<R> implements Result<R> {
 		private final R value;
 
