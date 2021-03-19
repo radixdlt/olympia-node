@@ -103,7 +103,7 @@ public class StakedTokensTest {
 				this.validatorKeyPair.euid(), this.validatorKeyPair.sign(HashUtils.zero256())
 			)
 		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 	}
 
 	@Test
@@ -121,7 +121,7 @@ public class StakedTokensTest {
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
 
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 
 		assertThat(this.store.getSpin(this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
 		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.UP);
@@ -141,7 +141,7 @@ public class StakedTokensTest {
 			instructions,
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
 		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.UP),
@@ -153,7 +153,7 @@ public class StakedTokensTest {
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
 
-		this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction2, HashUtils.zero256()));
 
 		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
 		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
@@ -173,7 +173,7 @@ public class StakedTokensTest {
 			instructions,
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
 		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
@@ -187,7 +187,7 @@ public class StakedTokensTest {
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
 
-		this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction2, HashUtils.zero256()));
 
 		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
 		assertThat(this.store.getSpin(partialStakeParticle)).isEqualTo(Spin.UP);
@@ -208,7 +208,7 @@ public class StakedTokensTest {
 			instructions,
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
 		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.UP),
@@ -220,7 +220,7 @@ public class StakedTokensTest {
 			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
 		);
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256())))
+		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction2, HashUtils.zero256())))
 			.isInstanceOf(RadixEngineException.class)
 			.hasMessageContaining("Can't send staked tokens");
 	}

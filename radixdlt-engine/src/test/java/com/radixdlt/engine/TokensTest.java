@@ -80,7 +80,7 @@ public class TokensTest {
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
 
 		// Assert
 		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);

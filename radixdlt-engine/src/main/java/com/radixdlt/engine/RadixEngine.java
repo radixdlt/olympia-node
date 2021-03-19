@@ -22,27 +22,21 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.SpinStateMachine;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -122,7 +116,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
+		this.virtualizedCMStore = virtualStoreLayer.apply(engineStore);
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 	}
@@ -178,29 +172,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	public void staticCheck(T atom) throws RadixEngineException {
-		staticCheck(atom, PermissionLevel.USER);
-	}
-
-	public void staticCheck(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), atom.getWitness(), permissionLevel);
-		if (error.isPresent()) {
-			CMError e = error.get();
-			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
-		}
-
-		if (checker != null) {
-			Result hookResult = checker.check(atom, permissionLevel);
-			if (hookResult.isError()) {
-				throw new RadixEngineException(
-					atom,
-					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage(),
-					DataPointer.ofAtom()
-				);
-			}
-		}
-	}
 
 	/**
 	 * A cheap radix engine branch which is purely transient
@@ -230,12 +201,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public void checkAndStore(T atom) throws RadixEngineException {
-			engine.checkAndStore(atom);
+		public void execute(T atom) throws RadixEngineException {
+			engine.execute(atom);
 		}
 
-		public void checkAndStore(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-			engine.checkAndStore(atom, permissionLevel);
+		public void execute(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+			engine.execute(atom, permissionLevel);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -271,6 +242,32 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
+	private void verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		final Optional<CMError> error = constraintMachine.validate(
+			virtualizedCMStore,
+			atom.getCMInstruction(),
+			atom.getWitness(),
+			permissionLevel
+		);
+
+		if (error.isPresent()) {
+			CMError e = error.get();
+			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
+		}
+
+		if (checker != null) {
+			Result hookResult = checker.check(atom, permissionLevel);
+			if (hookResult.isError()) {
+				throw new RadixEngineException(
+					atom,
+					RadixEngineErrorCode.HOOK_ERROR,
+					"Checker failed: " + hookResult.getErrorMessage(),
+					DataPointer.ofAtom()
+				);
+			}
+		}
+	}
+
 	/**
 	 * Atomically stores the given atom into the store with default permission level USER.
 	 * If the atom has any conflicts or dependency issues the atom will not be stored.
@@ -278,8 +275,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param atom atom to store
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public void checkAndStore(T atom) throws RadixEngineException {
-		checkAndStore(atom, PermissionLevel.USER);
+	public void execute(T atom) throws RadixEngineException {
+		execute(atom, PermissionLevel.USER);
 	}
 
 	/**
@@ -290,9 +287,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public void checkAndStore(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		this.staticCheck(atom, permissionLevel);
-
+	public void execute(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -303,72 +298,25 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				);
 			}
 
+			// TODO: combine verification and storage
+			this.verify(atom, permissionLevel);
+			this.engineStore.storeAtom(atom);
+
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
-			stateCheckAndStoreInternal(atom);
+			// Non-persisted computed state
+			final var cmInstruction = atom.getCMInstruction();
+			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+				// Treat check spin as the first push for now
+				if (!microInstruction.isCheckSpin()) {
+					continue;
+				}
+
+				stateComputers.forEach((a, computer) -> computer.processCheckSpin(microInstruction));
+			}
 		}
 	}
 
 	public boolean contains(T atom) {
 		return engineStore.containsAtom(atom);
-	}
-
-	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
-		final CMInstruction cmInstruction = atom.getCMInstruction();
-
-		final Set<Particle> checkedParticles = new HashSet<>();
-		long particleIndex = 0;
-		long particleGroupIndex = 0;
-		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			if (!microInstruction.isCheckSpin()) {
-				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-					particleGroupIndex++;
-					particleIndex = 0;
-				}
-
-				continue;
-			}
-
-			final Particle particle = microInstruction.getParticle();
-			// First spin is the only one we need to check
-			// TODO: Implement less memory intensive mechanism for this check
-			if (checkedParticles.contains(particle)) {
-				continue;
-			}
-			checkedParticles.add(particle);
-
-			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			particleIndex++;
-
-			final Spin checkSpin = microInstruction.getCheckSpin();
-			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
-			// TODO: Move virtual state checks into static check
-			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				throw new RadixEngineException(atom, RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, "Virtual state conflict", dp);
-			}
-
-			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Spin physicalSpin = engineStore.getSpin(particle);
-			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
-			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
-				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					throw new RadixEngineException(atom, RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
-				} else {
-					throw new RadixEngineException(atom, RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
-				}
-			}
-		}
-
-		// Persist
-		engineStore.storeAtom(atom);
-
-		// Non-persisted computed state
-		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			// Treat check spin as the first push for now
-			if (!microInstruction.isCheckSpin()) {
-				continue;
-			}
-
-			stateComputers.forEach((a, computer) -> computer.processCheckSpin(microInstruction));
-		}
 	}
 }

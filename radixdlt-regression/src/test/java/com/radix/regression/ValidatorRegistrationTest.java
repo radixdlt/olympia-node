@@ -20,7 +20,6 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonObject;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -41,9 +40,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.identifiers.RadixAddress;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
@@ -132,9 +128,7 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer
-			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
-			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
+		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		observer.dispose();
 	}
 
@@ -146,18 +140,8 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer
-			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
-			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
+		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		observer.dispose();
-	}
-
-	private boolean checkStatus(JsonObject data, String errorCode, String message) {
-		assertTrue(data.has("errorCode"));
-		assertEquals(errorCode, data.get("errorCode").getAsString());
-		assertTrue(data.has("message"));
-		assertTrue(data.get("message").getAsString().startsWith(message));
-		return true;
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle... spunParticles) {

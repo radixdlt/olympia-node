@@ -145,7 +145,7 @@ public class MultipleTransitionsInSameGroupTest {
 		));
 
 		result.awaitCount(1);
-		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		result.dispose();
 	}
 
@@ -184,7 +184,7 @@ public class MultipleTransitionsInSameGroupTest {
 		));
 
 		result.awaitCount(1);
-		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		result.dispose();
 	}
 

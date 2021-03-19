@@ -204,7 +204,7 @@ public class AtomicTransactionsWithDependence {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		awaitAtomStatus(atomNumber, AtomStatus.CONFLICT_LOSER);
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {

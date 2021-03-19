@@ -259,7 +259,7 @@ public class TicTacToeRunner {
 		// Execute each atom on the engine and see what happens
 		for (TicTacToeAtom atom : atomsToTest) {
 			try {
-				engine.checkAndStore(atom);
+				engine.execute(atom);
 			} catch (RadixEngineException e) {
 				System.out.println(atom + "\n\t" + e.getCmError());
 			}

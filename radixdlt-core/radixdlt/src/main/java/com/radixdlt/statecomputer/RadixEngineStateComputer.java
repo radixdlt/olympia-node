@@ -234,7 +234,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			)
 		);
 		try {
-			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
+			branch.execute(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()),	e
@@ -264,7 +264,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				Atom atom = mapCommand(next);
 				HashCode hash = hasher.hash(next);
 				radixEngineCommand = new RadixEngineCommand(next, hash, atom, PermissionLevel.USER);
-				branch.checkAndStore(atom);
+				branch.execute(atom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
@@ -283,7 +283,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			try {
-				transientBranch.checkAndStore(
+				transientBranch.execute(
 					radixEngineCommand.atom,
 					radixEngineCommand.permissionLevel
 				);
@@ -318,7 +318,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
-			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
+			this.radixEngine.execute(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
 		}

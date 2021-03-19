@@ -98,10 +98,10 @@ public final class RadixEngineTest {
 		createInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		CommittedAtom committedAtom0 = CommittedAtom.create(uniqueAtom(keyPair), 0);
-		sut.checkAndStore(committedAtom0);
+		sut.execute(committedAtom0);
 
 		// Act/Assert
 		CommittedAtom committedAtom1 = CommittedAtom.create(uniqueAtom(keyPair), 1);
-		assertThatThrownBy(() -> sut.checkAndStore(committedAtom1)).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(committedAtom1)).isInstanceOf(RadixEngineException.class);
 	}
 }
