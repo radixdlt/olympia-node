@@ -97,7 +97,7 @@ public class AtomsServiceTest {
 
 		result.ifPresentOrElse(
 			jsonAtom -> {
-				assertEquals(":str:Test message", jsonAtom.getString("message"));
+				assertEquals(":str:Test message", jsonAtom.getString("m"));
 				assertEquals("radix.atom", jsonAtom.getString("serializer"));
 			},
 			() -> fail("Expecting non-empty result")

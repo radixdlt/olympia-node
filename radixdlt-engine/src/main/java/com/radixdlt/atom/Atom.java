@@ -59,11 +59,11 @@ public final class Atom implements LedgerAtom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("message")
+	@JsonProperty("m")
 	@DsonOutput({Output.ALL})
 	private final String message;
 
-	@JsonProperty("signatures")
+	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
 	private final ImmutableMap<EUID, ECDSASignature> signatures;
 
@@ -76,9 +76,9 @@ public final class Atom implements LedgerAtom {
 
 	@JsonCreator
 	private Atom(
-		@JsonProperty("message") String message,
-		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
-		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures
+		@JsonProperty("m") String message,
+		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
+		@JsonProperty("s") ImmutableMap<EUID, ECDSASignature> signatures
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
@@ -129,7 +129,7 @@ public final class Atom implements LedgerAtom {
 		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
-	@JsonProperty("instructions")
+	@JsonProperty("i")
 	@DsonOutput(Output.ALL)
 	private ImmutableList<byte[]> getSerializerInstructions() {
 		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
@@ -140,34 +140,27 @@ public final class Atom implements LedgerAtom {
 	}
 
 	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {
-		final byte[] particleGroupByteCode = new byte[] {0};
-		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
-		final byte[] virtualizedCheckUpThenDownByteCode = new byte[] {2};
-		final byte[] physicalCheckUpThenDownByteCode = new byte[] {3};
-
 		return instructions.stream().flatMap(i -> {
+
+			final Stream<byte[]> additional;
 			if (i.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				return Stream.of(particleGroupByteCode);
+				additional = Stream.empty();
 			} else {
-				final byte[] instByte;
-				if (i.getMicroOp() == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-					instByte = checkNeutralThenUpByteCode;
+				if (i.getMicroOp() == CMMicroOp.SPIN_UP) {
 					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
-					return Stream.of(instByte, particleDson);
-				} else if (i.getMicroOp() == CMMicroOp.CHECK_UP_THEN_DOWN) {
-					if (i.getParticle() != null) {
-						instByte = virtualizedCheckUpThenDownByteCode;
-						byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
-						return Stream.of(instByte, particleDson);
-					} else {
-						instByte = physicalCheckUpThenDownByteCode;
-						byte[] particleHash = i.getParticleHash().asBytes();
-						return Stream.of(instByte, particleHash);
-					}
+					additional = Stream.of(particleDson);
+				} else if (i.getMicroOp() == CMMicroOp.VIRTUAL_SPIN_DOWN) {
+					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
+					additional = Stream.of(particleDson);
+				} else if (i.getMicroOp() == CMMicroOp.SPIN_DOWN) {
+					byte[] particleHash = i.getParticleHash().asBytes();
+					additional = Stream.of(particleHash);
 				} else {
 					throw new IllegalStateException();
 				}
 			}
+
+			return Stream.concat(Stream.of(new byte[] {i.getMicroOp().opCode()}), additional);
 		});
 	}
 
@@ -178,9 +171,9 @@ public final class Atom implements LedgerAtom {
 		Iterator<byte[]> bytesIterator = bytesList.iterator();
 		while (bytesIterator.hasNext()) {
 			byte[] bytes = bytesIterator.next();
-			if (bytes[0] == 0) {
+			if (bytes[0] == CMMicroOp.PARTICLE_GROUP.opCode()) {
 				instructionsBuilder.add(CMMicroInstruction.particleGroup());
-			} else if (bytes[0] == 1 || bytes[0] == 2) {
+			} else if (bytes[0] == CMMicroOp.SPIN_UP.opCode()) {
 				byte[] particleBytes = bytesIterator.next();
 				final Particle particle;
 				try {
@@ -189,14 +182,22 @@ public final class Atom implements LedgerAtom {
 					throw new IllegalStateException("Could not deserialize particle: " + e);
 				}
 
-				if (bytes[0] == 1) {
-					instructionsBuilder.add(CMMicroInstruction.spinUp(particle));
-				} else {
-					instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
+				instructionsBuilder.add(CMMicroInstruction.spinUp(particle));
+			} else if (bytes[0] == CMMicroOp.VIRTUAL_SPIN_DOWN.opCode()) {
+				byte[] particleBytes = bytesIterator.next();
+				final Particle particle;
+				try {
+					particle = DefaultSerialization.getInstance().fromDson(particleBytes, Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException("Could not deserialize particle: " + e);
 				}
-			} else if (bytes[0] == 3) {
+
+				instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
+			} else if (bytes[0] == CMMicroOp.SPIN_DOWN.opCode()) {
 				var particleHash = HashCode.fromBytes(bytesIterator.next());
 				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));
+			} else {
+				throw new IllegalStateException();
 			}
 		}
 

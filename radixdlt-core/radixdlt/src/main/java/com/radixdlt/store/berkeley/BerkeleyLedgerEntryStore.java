@@ -502,16 +502,15 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
-		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
 			upParticle(txn, instruction.getParticle());
-		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			final HashCode particleId;
-			if (instruction.getParticle() == null) {
-				particleId = instruction.getParticleHash();
-			} else {
-				byte[] dson = serialization.toDson(instruction.getParticle(), Output.ALL);
-				particleId = HashUtils.sha256(dson);
-			}
+		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+			byte[] dson = serialization.toDson(instruction.getParticle(), Output.ALL);
+			final var particleId = HashUtils.sha256(dson);
+			downParticle(txn, particleId);
+		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+			final var particleId = instruction.getParticleHash();
+			// TODO: change this
 			downParticle(txn, particleId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
