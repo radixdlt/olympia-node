@@ -181,13 +181,6 @@ public final class Atom implements LedgerAtom {
 			if (bytes[0] == 0) {
 				instructionsBuilder.add(CMMicroInstruction.particleGroup());
 			} else if (bytes[0] == 1 || bytes[0] == 2) {
-				final Spin checkSpin;
-				if (bytes[0] == 1) {
-					checkSpin = Spin.NEUTRAL;
-				} else {
-					checkSpin = Spin.UP;
-				}
-
 				byte[] particleBytes = bytesIterator.next();
 				final Particle particle;
 				try {
@@ -195,7 +188,12 @@ public final class Atom implements LedgerAtom {
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Could not deserialize particle: " + e);
 				}
-				instructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
+
+				if (bytes[0] == 1) {
+					instructionsBuilder.add(CMMicroInstruction.spinUp(particle));
+				} else {
+					instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
+				}
 			} else if (bytes[0] == 3) {
 				var particleHash = HashCode.fromBytes(bytesIterator.next());
 				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));

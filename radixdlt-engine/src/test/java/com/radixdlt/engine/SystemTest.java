@@ -67,8 +67,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -90,8 +90,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -111,8 +111,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(-1, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -131,8 +131,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, -1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -151,8 +151,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, -1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -188,8 +188,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 10, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -209,8 +209,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(epoch, view, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(

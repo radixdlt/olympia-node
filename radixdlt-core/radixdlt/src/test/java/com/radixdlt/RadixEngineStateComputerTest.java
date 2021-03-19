@@ -47,9 +47,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -204,13 +202,11 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 1);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 1);
-		Atom atom = Atom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
-				CMMicroInstruction.particleGroup()
-			)
-		);
+		Atom atom = Atom.newBuilder().addParticleGroup(ParticleGroup.builder()
+			.spinDown(lastSystemParticle)
+			.spinUp(nextSystemParticle)
+			.build()
+		).buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, hasher.hash(cmd), atom, PermissionLevel.USER);

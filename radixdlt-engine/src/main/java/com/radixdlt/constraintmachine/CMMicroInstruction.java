@@ -93,16 +93,6 @@ public final class CMMicroInstruction {
 		return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle, null);
 	}
 
-	public static CMMicroInstruction checkSpinAndPush(Particle particle, Spin spin) {
-		if (spin == Spin.NEUTRAL) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle, null);
-		} else if (spin == Spin.UP) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle, null);
-		} else {
-			throw new IllegalStateException("Invalid check spin: " + spin);
-		}
-	}
-
 	public static CMMicroInstruction particleGroup() {
 		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null, null);
 	}
