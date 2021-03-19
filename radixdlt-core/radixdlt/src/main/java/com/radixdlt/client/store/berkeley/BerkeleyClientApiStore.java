@@ -91,9 +91,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var list = new ArrayList<TokenBalance>();
 
 			do {
-				var value = deserializeBalanceEntry(data.getData())
-					.map(TokenBalance::from)
-					.onSuccess(list::add);
+				deserializeBalanceEntry(data.getData()).map(TokenBalance::from).onSuccess(list::add);
 			}
 			while (cursor.getNext(key, data, null) == OperationStatus.SUCCESS);
 
@@ -155,8 +153,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-//		dbEnv.getEnvironment().truncateDatabase(null, EXECUTED_TRANSACTIONS_DB, false);
-//		dbEnv.getEnvironment().truncateDatabase(null, BALANCE_DB, false);
 
 		store.forEach(this::storeSingleParticle);
 
@@ -185,8 +181,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void storeSingleUpParticle(Particle particle) {
 		toBalanceEntry(particle).ifPresent(balanceEntry -> {
 			var key = asKey(balanceEntry.toKey());
-			//var value = entry(serialization.toDson(balanceEntry, Output.PERSIST));
-			var value = entry(serialization.toDson(balanceEntry, Output.ALL));
+			var value = serializeBalanceEntry(entry(), balanceEntry);
 
 			if (balanceEntry.isSupply()) {
 				mergeBalances(key, value, balanceEntry);
@@ -242,8 +237,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void serializeBalanceEntry(DatabaseEntry value, BalanceEntry entry) {
+	private DatabaseEntry serializeBalanceEntry(DatabaseEntry value, BalanceEntry entry) {
 		value.setData(serialization.toDson(entry, Output.ALL));
+		return value;
 	}
 
 	private DatabaseEntry asKey(String key) {
