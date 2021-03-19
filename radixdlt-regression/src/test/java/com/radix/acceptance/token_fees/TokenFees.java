@@ -28,7 +28,6 @@ import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
@@ -37,8 +36,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -484,24 +481,6 @@ public class TokenFees {
 			.reduce(UInt256.ZERO, UInt256::add);
 
 		return TokenUnitConversions.subunitsToUnits(totalFee);
-	}
-
-	private boolean isFeeGroup(ParticleGroup pg) {
-		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.spunParticles()
-			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
-		List<SpunParticle> spunTransferableTokens = grouping.remove(TransferrableTokensParticle.class);
-		List<SpunParticle> spunUnallocatedTokens = grouping.remove(UnallocatedTokensParticle.class);
-		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
-		if (grouping.isEmpty() && spunUnallocatedTokens != null) {
-			ImmutableList<TransferrableTokensParticle> transferableTokens = spunTransferableTokens == null
-				? ImmutableList.of()
-				: spunTransferableTokens.stream()
-					.map(SpunParticle::getParticle)
-					.map(p -> (TransferrableTokensParticle) p)
-					.collect(ImmutableList.toImmutableList());
-			return allUpForFeeToken(spunUnallocatedTokens) && allSameAddressAndForFeeToken(transferableTokens);
-		}
-		return false;
 	}
 
 	// Check that all transferable particles are in for the same address and for the fee token

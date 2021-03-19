@@ -62,8 +62,6 @@ public final class TokenUtilities {
 			}
 			Atom atom = getAtom(atomId);
 			if (atom != null) {
-				System.out.println(atom);
-				System.out.println(atom.toInstructionsString());
 				var inMemoryAtomStore = (InMemoryAtomStore) api.getAtomStore();
 				inMemoryAtomStore.store(api.getAddress(), AtomObservation.stored(atom, System.currentTimeMillis()));
 				return;

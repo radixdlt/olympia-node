@@ -28,8 +28,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -124,35 +123,33 @@ public class UnstakeTokensMapperTest {
 
 		assertThat(result).hasSize(1);
 		final var particleGroup = result.get(0);
-		final var spunParticles = particleGroup.spunParticles().collect(ImmutableList.toImmutableList());
+		final var spunParticles = particleGroup.upParticles().collect(ImmutableList.toImmutableList());
 		assertThat(spunParticles)
-			.hasSize(3)
-			.haveExactly(1, stakedTokens(Spin.DOWN, UInt256.TEN))
-			.haveExactly(1, stakedTokens(Spin.UP, UInt256.SEVEN))
-			.haveExactly(1, transferrableTokens(Spin.UP, UInt256.THREE));
+			.hasSize(2)
+			.haveExactly(1, stakedTokens(UInt256.SEVEN))
+			.haveExactly(1, transferrableTokens(UInt256.THREE));
 	}
 
-	private Condition<SpunParticle> stakedTokens(Spin spin, UInt256 amount) {
-		return givenParticle(spin, StakedTokensParticle.class, StakedTokensParticle::getAmount, amount);
+	private Condition<Particle> stakedTokens(UInt256 amount) {
+		return givenParticle(StakedTokensParticle.class, StakedTokensParticle::getAmount, amount);
 	}
 
-	private Condition<SpunParticle> transferrableTokens(Spin spin, UInt256 amount) {
-		return givenParticle(spin, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, amount);
+	private Condition<Particle> transferrableTokens(UInt256 amount) {
+		return givenParticle(TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, amount);
 	}
 
-	private <T> Condition<SpunParticle> givenParticle(Spin spin, Class<T> cls, Function<T, UInt256> getAmount, UInt256 amount) {
-		final var condition = new Condition<SpunParticle>() {
+	private <T> Condition<Particle> givenParticle(Class<T> cls, Function<T, UInt256> getAmount, UInt256 amount) {
+		final var condition = new Condition<Particle>() {
 			@Override
-			public boolean matches(SpunParticle value) {
-				final var particle = value.getParticle();
-				if (!value.getSpin().equals(spin) || !cls.isAssignableFrom(particle.getClass())) {
+			public boolean matches(Particle particle) {
+				if (!cls.isAssignableFrom(particle.getClass())) {
 					return false;
 				}
 				UInt256 particleAmount = getAmount.apply(cls.cast(particle));
 				return amount.equals(particleAmount);
 			}
 		};
-		return condition.describedAs("%s %s with amount %s", spin, cls.getSimpleName(), amount);
+		return condition.describedAs("%s with amount %s", cls.getSimpleName(), amount);
 	}
 
 

@@ -37,7 +37,6 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeProcessor;
-import com.radixdlt.client.application.translate.InvalidAddressMagicException;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
@@ -75,7 +74,6 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -1341,14 +1339,6 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				for (SpunParticle sp : pg.getParticles()) {
-					for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
-						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
-							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
-						}
-					}
-				}
-
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
 		}
@@ -1359,14 +1349,6 @@ public class RadixApplicationAPI {
 		 * @param particleGroup Particle group to add to staging area.
 		 */
 		public void stage(ParticleGroup particleGroup) {
-			for (SpunParticle sp : particleGroup.getParticles()) {
-				for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
-					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
-						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
-					}
-				}
-			}
-
 			universe.getAtomStore().stageParticleGroup(uuid, particleGroup);
 		}
 

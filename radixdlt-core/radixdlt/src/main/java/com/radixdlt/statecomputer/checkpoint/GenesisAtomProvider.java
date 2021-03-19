@@ -98,7 +98,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 		final var stakingParticleGroups = CheckpointUtils.createStakes(
 			magic,
 			stakeDelegations,
-			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
+			xrdParticleGroups.stream().flatMap(ParticleGroup::upParticles).collect(Collectors.toList())
 		);
 
 		final var builder = Atom.newBuilder().message(helloMessage());

@@ -28,7 +28,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import com.radixdlt.constraintmachine.Spin;
@@ -103,11 +102,11 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedAtom.addParticleGroup(particleGroup);
 			}
 
-			for (SpunParticle sp : particleGroup.getParticles()) {
+			particleGroup.upParticles().forEach(p -> {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
-				index.put(sp.getParticle(), sp.getSpin());
+				index.put(p, Spin.UP);
 				stagedParticleIndex.put(uuid, index);
-			}
+			});
 		}
 	}
 

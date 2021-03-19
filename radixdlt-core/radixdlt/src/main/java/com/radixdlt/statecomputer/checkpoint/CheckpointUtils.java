@@ -29,12 +29,12 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -167,11 +167,9 @@ public final class CheckpointUtils {
 	public static List<ParticleGroup> createStakes(
 		byte magic,
 		ImmutableList<StakeDelegation> delegations,
-		List<SpunParticle> xrdParticles
+		List<Particle> xrdParticles
 	) {
 		final ImmutableMap<ECPublicKey, TransferrableTokensParticle> tokensByKey = xrdParticles.stream()
-			.filter(SpunParticle::isUp)
-			.map(SpunParticle::getParticle)
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.collect(ImmutableMap.toImmutableMap(ttp -> ttp.getAddress().getPublicKey(), Function.identity()));
@@ -184,7 +182,6 @@ public final class CheckpointUtils {
 			.forEach(delegate -> delegateNonces.put(delegate, 1L));
 
 		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(xrdParticles.stream()
-			.map(SpunParticle::getParticle)
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.findAny().orElseThrow()
