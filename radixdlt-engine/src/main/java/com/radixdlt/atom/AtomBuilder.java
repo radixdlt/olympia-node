@@ -21,9 +21,13 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Builder class for atom creation
@@ -39,6 +44,7 @@ public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
 	private String message;
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
+	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
 
 	AtomBuilder() {
 	}
@@ -46,6 +52,10 @@ public final class AtomBuilder {
 	public AtomBuilder message(String message) {
 		this.message = message;
 		return this;
+	}
+
+	public Stream<Particle> localUpParticles() {
+		return localUpParticles.values().stream();
 	}
 
 	/**
@@ -56,6 +66,16 @@ public final class AtomBuilder {
 	public AtomBuilder addParticleGroup(ParticleGroup particleGroup) {
 		Objects.requireNonNull(particleGroup, "particleGroup is required");
 		this.particleGroups.add(particleGroup);
+		particleGroup.getInstructions().forEach(i -> {
+			if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+				localUpParticles.remove(i.getParticleHash());
+			} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+				var dson = DefaultSerialization.getInstance().toDson(i.getParticle(), DsonOutput.Output.ALL);
+				var particleHash = HashUtils.sha256(dson);
+				localUpParticles.put(particleHash, i.getParticle());
+			}
+		});
+
 		return this;
 	}
 
