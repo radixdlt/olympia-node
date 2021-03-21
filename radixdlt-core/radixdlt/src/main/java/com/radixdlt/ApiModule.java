@@ -23,7 +23,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import org.radix.api.http.ChaosController;
 import org.radix.api.http.Controller;
@@ -51,7 +51,7 @@ public final class ApiModule extends AbstractModule {
 		bind(AtomsService.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
-		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
+		eventBinder.addBinding().toInstance(AtomsCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 	}

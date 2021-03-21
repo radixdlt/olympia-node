@@ -81,6 +81,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
+	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
 	private final SystemCounters systemCounters;
 
 	@Inject
@@ -96,6 +97,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
+		EventDispatcher<AtomsCommittedToLedger> committedDispatcher,
 		SystemCounters systemCounters
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -113,6 +115,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
+		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
@@ -324,7 +327,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final long currentEpoch = lastSystemParticle.getEpoch();
 		boolean epochChange = false;
 
-		final LedgerProof headerAndProof = verifiedCommandsAndProof.getHeader();
+		final LedgerProof headerAndProof = verifiedCommandsAndProof.getProof();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 
@@ -358,13 +361,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 				this.radixEngine.getComputedState(RegisteredValidators.class),
 				this.radixEngine.getComputedState(Stakes.class)
 			);
-			final var signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
+			final var signedValidatorSet = verifiedCommandsAndProof.getProof().getNextValidatorSet()
 				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 			if (!signedValidatorSet.equals(reNextValidatorSet)) {
 				throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
 			}
 		} else {
-			if (verifiedCommandsAndProof.getHeader().getNextValidatorSet().isPresent()) {
+			if (verifiedCommandsAndProof.getProof().getNextValidatorSet().isPresent()) {
 				throw new ByzantineQuorumException("Trying to change epochs when RE isn't");
 			}
 		}
@@ -394,6 +397,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
+		}
+
+		// Don't send event on genesis
+		// TODO: this is a bit hacky
+		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(atomsCommitted));
 		}
 	}
 }

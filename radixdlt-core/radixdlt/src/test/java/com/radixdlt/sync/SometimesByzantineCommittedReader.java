@@ -108,22 +108,22 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 					accumulatorState = accumulator.accumulate(accumulatorState, hasher.hash(command));
 				}
 			} else {
-				accumulatorState = base.getHeader().getAccumulatorState();
+				accumulatorState = base.getProof().getAccumulatorState();
 			}
 
 			LedgerHeader ledgerHeader = LedgerHeader.create(
-				base.getHeader().getEpoch(),
-				base.getHeader().getView(),
+				base.getProof().getEpoch(),
+				base.getProof().getView(),
 				accumulatorState,
-				base.getHeader().timestamp(),
-				base.getHeader().getNextValidatorSet().orElse(null)
+				base.getProof().timestamp(),
+				base.getProof().getNextValidatorSet().orElse(null)
 			);
-			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getHeader().getSignatures();
+			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
 			LedgerProof headerAndProof = new LedgerProof(
-				base.getHeader().toDto().getOpaque0(),
-				base.getHeader().toDto().getOpaque1(),
-				base.getHeader().toDto().getOpaque2(),
-				base.getHeader().toDto().getOpaque3(),
+				base.getProof().toDto().getOpaque0(),
+				base.getProof().toDto().getOpaque1(),
+				base.getProof().toDto().getOpaque2(),
+				base.getProof().toDto().getOpaque3(),
 				ledgerHeader,
 				signatures
 			);

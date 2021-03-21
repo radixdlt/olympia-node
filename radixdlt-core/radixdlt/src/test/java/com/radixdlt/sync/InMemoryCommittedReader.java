@@ -86,10 +86,10 @@ class InMemoryCommittedReader implements CommittedReader {
 						start.getLedgerHeader().getAccumulatorState(),
 						entry.getValue().getCommands(),
 						hasher::hash,
-						entry.getValue().getHeader().getAccumulatorState()
+						entry.getValue().getProof().getAccumulatorState()
 					).orElseThrow(() -> new RuntimeException());
 
-				return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
+				return new VerifiedCommandsAndProof(cmds, entry.getValue().getProof());
 			}
 
 			return null;

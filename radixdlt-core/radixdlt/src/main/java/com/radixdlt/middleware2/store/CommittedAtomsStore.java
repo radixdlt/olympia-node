@@ -24,12 +24,10 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -44,18 +42,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Led
 	CommittedReader, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
-	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
 	private Transaction transaction;
 
 	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
-		PersistentVertexStore persistentVertexStore,
-		EventDispatcher<AtomCommittedToLedger> committedDispatcher
+		PersistentVertexStore persistentVertexStore
 	) {
 		this.store = Objects.requireNonNull(store);
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
-		this.committedDispatcher = Objects.requireNonNull(committedDispatcher);
 	}
 
 	@Override
@@ -85,12 +80,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Led
 		var result = store.store(this.transaction, committedAtom);
 		if (!result.isSuccess()) {
 			throw new IllegalStateException("Unable to store atom");
-		}
-
-		// Don't send event on genesis
-		// TODO: this is a bit hacky
-		if (committedAtom.getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom));
 		}
 	}
 

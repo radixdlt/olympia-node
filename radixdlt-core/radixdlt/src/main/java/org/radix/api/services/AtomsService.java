@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.google.common.collect.ImmutableSet;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -41,7 +42,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -83,7 +84,7 @@ public class AtomsService {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
-	private final Observable<AtomCommittedToLedger> ledgerCommitted;
+	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 
 	private final Hasher hasher;
 	private final Serialization serialization;
@@ -92,7 +93,7 @@ public class AtomsService {
 	public AtomsService(
 		Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved,
 		Observable<MempoolAddFailure> mempoolAddFailures,
-		Observable<AtomCommittedToLedger> ledgerCommitted,
+		Observable<AtomsCommittedToLedger> ledgerCommitted,
 		LedgerEntryStore store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		Hasher hasher,
@@ -171,11 +172,15 @@ public class AtomsService {
 		);
 	}
 
-	private void processExecutedCommand(AtomCommittedToLedger atomCommittedToLedger) {
-		var committedAtom = atomCommittedToLedger.getAtom();
+	private void processExecutedCommand(AtomsCommittedToLedger atomsCommittedToLedger) {
+		atomsCommittedToLedger.getAtoms().forEach(atom -> {
+			var indicies = atom.upParticles()
+				.flatMap(p -> p.getDestinations().stream())
+				.collect(ImmutableSet.toImmutableSet());
 
-		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, atomCommittedToLedger.getIndices()));
-		getAtomStatusListeners(committedAtom.getAID()).forEach(listener -> listener.onStored(committedAtom));
+			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, indicies));
+			getAtomStatusListeners(atom.getAID()).forEach(listener -> listener.onStored(atom));
+		});
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {

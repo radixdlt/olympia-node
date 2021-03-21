@@ -73,6 +73,7 @@ import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
@@ -155,6 +156,8 @@ public class RadixEngineStateComputerTest {
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(SystemCounters.class).to(SystemCountersImpl.class);
 			}

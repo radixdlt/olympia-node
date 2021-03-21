@@ -45,7 +45,7 @@ public final class VerifiedCommandsAndProof {
 		return commands.contains(command);
 	}
 
-	public LedgerProof getHeader() {
+	public LedgerProof getProof() {
 		return headerAndProof;
 	}
 

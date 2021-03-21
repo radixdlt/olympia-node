@@ -65,7 +65,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 
@@ -102,7 +102,7 @@ public class GetNextCommittedCommandsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
+					bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { }).toInstance(e -> { });
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of());

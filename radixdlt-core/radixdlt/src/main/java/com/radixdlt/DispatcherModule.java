@@ -66,7 +66,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
@@ -129,8 +129,8 @@ public class DispatcherModule extends AbstractModule {
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 				.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(AtomCommittedToLedger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(AtomsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })

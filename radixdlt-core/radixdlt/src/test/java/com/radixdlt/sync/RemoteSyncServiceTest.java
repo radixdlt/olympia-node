@@ -107,7 +107,7 @@ public class RemoteSyncServiceTest {
 		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
 		LedgerProof verifiedHeader = mock(LedgerProof.class);
 		when(verifiedHeader.toDto()).thenReturn(header);
-		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
+		when(verifiedCommandsAndProof.getProof()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(any())).thenReturn(verifiedCommandsAndProof);
 		processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
 		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());

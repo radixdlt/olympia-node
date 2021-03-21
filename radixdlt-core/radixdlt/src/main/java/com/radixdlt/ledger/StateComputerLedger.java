@@ -255,7 +255,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		synchronized (lock) {
-			final LedgerProof nextHeader = verifiedCommandsAndProof.getHeader();
+			final LedgerProof nextHeader = verifiedCommandsAndProof.getProof();
 			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
@@ -264,7 +264,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				this.currentLedgerHeader.getAccumulatorState(),
 				verifiedCommandsAndProof.getCommands(),
 				hasher::hash,
-				verifiedCommandsAndProof.getHeader().getAccumulatorState()
+				verifiedCommandsAndProof.getProof().getAccumulatorState()
 			);
 
 			if (!verifiedExtension.isPresent()) {
@@ -279,7 +279,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			}
 
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
-				commands, verifiedCommandsAndProof.getHeader()
+				commands, verifiedCommandsAndProof.getProof()
 			);
 
 			// persist

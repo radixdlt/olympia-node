@@ -108,7 +108,7 @@ public final class RemoteSyncService {
 		final var verifiable = new DtoCommandsAndProof(
 			committedCommands.getCommands(),
 			remoteCurrentHeader,
-			committedCommands.getHeader().toDto()
+			committedCommands.getProof().toDto()
 		);
 
 		log.trace("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);

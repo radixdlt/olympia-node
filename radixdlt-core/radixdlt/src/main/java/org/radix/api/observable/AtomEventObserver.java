@@ -106,8 +106,8 @@ public class AtomEventObserver {
 		}
 	}
 
-	public void tryNext(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
-		if (committedAtom.getAtom() == null) {
+	public void tryNext(Atom atom, ImmutableSet<EUID> indicies) {
+		if (atom == null) {
 			return;
 		}
 
@@ -115,7 +115,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getAtom());
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, atom);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}

@@ -36,11 +36,11 @@ public final class LedgerUpdate {
 	}
 
 	public LedgerProof getTail() {
-		return verifiedCommandsAndProof.getHeader();
+		return verifiedCommandsAndProof.getProof();
 	}
 
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return verifiedCommandsAndProof.getHeader().getNextValidatorSet();
+		return verifiedCommandsAndProof.getProof().getNextValidatorSet();
 	}
 
 	@Override
