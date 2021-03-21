@@ -38,12 +38,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+
 /**
  * Tests BFT System verification logic
  */
 public class SystemTest {
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 
 	@Before
 	public void setup() {
@@ -78,7 +80,7 @@ public class SystemTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256())))
+		assertThatThrownBy(() -> this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256()))))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
@@ -100,7 +102,7 @@ public class SystemTest {
 		);
 
 		// Act
-		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER);
+		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())), null, PermissionLevel.SUPER_USER);
 
 		// Assert
 		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);
@@ -120,7 +122,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -140,7 +144,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -160,7 +166,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -197,9 +205,11 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -218,7 +228,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.TRANSITION_PRECONDITION_FAILURE);

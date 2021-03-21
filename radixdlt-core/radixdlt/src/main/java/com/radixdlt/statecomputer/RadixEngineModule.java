@@ -30,6 +30,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
@@ -102,16 +103,16 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<LedgerAtom> getRadixEngine(
+	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<LedgerAtom> engineStore,
+		EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
+		var radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,

@@ -46,13 +46,15 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 	private RRI tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
@@ -105,7 +107,7 @@ public class StakedTokensTest {
 				this.validatorKeyPair.euid(), this.validatorKeyPair.sign(HashUtils.zero256())
 			)
 		);
-		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())));
 	}
 
 	@Test
@@ -125,7 +127,7 @@ public class StakedTokensTest {
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
 
-		this.engine.execute(builder.buildAtom());
+		this.engine.execute(List.of(builder.buildAtom()));
 
 		assertThat(this.store.getSpin(this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
 		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.UP);
@@ -146,7 +148,7 @@ public class StakedTokensTest {
 
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(builder.buildAtom());
+		this.engine.execute(List.of(builder.buildAtom()));
 
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
 		var builder2 = Atom.newBuilder()
@@ -158,7 +160,7 @@ public class StakedTokensTest {
 			);
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
-		this.engine.execute(builder2.buildAtom());
+		this.engine.execute(List.of(builder2.buildAtom()));
 
 		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
 		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
@@ -178,7 +180,7 @@ public class StakedTokensTest {
 			);
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(builder.buildAtom());
+		this.engine.execute(List.of(builder.buildAtom()));
 
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
@@ -192,7 +194,7 @@ public class StakedTokensTest {
 			);
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
-		this.engine.execute(builder2.buildAtom());
+		this.engine.execute(List.of(builder2.buildAtom()));
 
 		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
 		assertThat(this.store.getSpin(partialStakeParticle)).isEqualTo(Spin.UP);
@@ -213,7 +215,7 @@ public class StakedTokensTest {
 			);
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(builder.buildAtom());
+		this.engine.execute(List.of(builder.buildAtom()));
 
 
 		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
@@ -227,7 +229,7 @@ public class StakedTokensTest {
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 
-		assertThatThrownBy(() -> this.engine.execute(builder2.buildAtom()))
+		assertThatThrownBy(() -> this.engine.execute(List.of(builder2.buildAtom())))
 			.isInstanceOf(RadixEngineException.class)
 			.hasMessageContaining("Can't send staked tokens");
 	}

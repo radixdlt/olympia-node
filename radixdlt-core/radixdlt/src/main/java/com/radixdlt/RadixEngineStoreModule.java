@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.atom.LedgerAtom;
@@ -38,7 +39,8 @@ import java.util.function.BiFunction;
 public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<CommittedAtom, VerifiedLedgerHeaderAndProof>>() { })
+			.to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
 		bind(CommittedAtomsStore.class).in(Scopes.SINGLETON);
@@ -46,7 +48,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
+	private EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore(CommittedAtomsStore committedAtomsStore) {
 		return new EngineStore<>() {
 			@Override
 			public void storeAtom(LedgerAtom ledgerAtom) {
@@ -56,6 +58,11 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 				CommittedAtom committedAtom = (CommittedAtom) ledgerAtom;
 				committedAtomsStore.storeAtom(committedAtom);
+			}
+
+			@Override
+			public void storeMetadata(VerifiedLedgerHeaderAndProof metadata) {
+				committedAtomsStore.storeMetadata(metadata);
 			}
 
 			@Override

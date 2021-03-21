@@ -47,13 +47,13 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(
+	private EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore(
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
+		InMemoryEngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> inMemoryEngineStore = new InMemoryEngineStore<>();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()

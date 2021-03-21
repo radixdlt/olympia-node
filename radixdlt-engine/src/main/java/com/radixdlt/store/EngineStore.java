@@ -24,11 +24,13 @@ import java.util.function.BiFunction;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
+public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
 	void storeAtom(T atom);
+
+	void storeMetadata(M metadata);
 
 	boolean containsAtom(T atom);
 

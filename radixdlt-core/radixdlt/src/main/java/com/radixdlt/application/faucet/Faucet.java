@@ -25,6 +25,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
@@ -47,7 +48,7 @@ public final class Faucet {
 	private static final Logger log = LogManager.getLogger();
 
 	private final RadixAddress self;
-	private final RadixEngine<LedgerAtom> radixEngine;
+	private final RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -60,7 +61,7 @@ public final class Faucet {
 		@Named("RadixEngine") HashSigner hashSigner,
 		@NativeToken RRI nativeToken,
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;

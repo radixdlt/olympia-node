@@ -33,6 +33,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -77,9 +78,9 @@ public class RadixEngineTest {
 	}
 
 	private ConstraintMachine constraintMachine;
-	private EngineStore<RadixEngineAtom> engineStore;
+	private EngineStore<RadixEngineAtom, Void> engineStore;
 	private Predicate<Particle> virtualStore;
-	private RadixEngine<RadixEngineAtom> radixEngine;
+	private RadixEngine<RadixEngineAtom, Void> radixEngine;
 
 	@Before
 	public void setup() {
@@ -102,7 +103,7 @@ public class RadixEngineTest {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
+		RadixEngine<RadixEngineAtom, Void> engine = new RadixEngine<>(
 			cm,
 			cmAtomOS.virtualizedUpParticles(),
 			new InMemoryEngineStore<>()
@@ -114,7 +115,8 @@ public class RadixEngineTest {
 			ImmutableList.of(CMMicroInstruction.particleGroup()),
 			ImmutableMap.of()
 		);
-		assertThatThrownBy(() -> engine.execute(new BaseAtom(cmInstruction, HashUtils.zero256())))
+		var atom = new BaseAtom(cmInstruction, HashUtils.zero256());
+		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
 	}
 

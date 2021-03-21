@@ -33,6 +33,7 @@ import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -50,6 +51,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.List;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class FixedTokenTest {
@@ -57,7 +60,7 @@ public class FixedTokenTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private RadixEngine<LedgerAtom> sut;
+	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -136,7 +139,7 @@ public class FixedTokenTest {
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		var atom = CommittedAtom.create(builder.buildAtom(), 0);
-		sut.execute(atom);
+		sut.execute(List.of(atom));
 		var builder2 = Atom.newBuilder();
 		spendToken(builder2, upToken, 1);
 		var hashToSign2 = builder2.computeHashToSign();
@@ -144,7 +147,7 @@ public class FixedTokenTest {
 		var atom2 = CommittedAtom.create(builder2.buildAtom(), 1);
 
 		// Act/Assert
-		sut.execute(atom2);
+		sut.execute(List.of(atom2));
 	}
 
 	@Test
@@ -160,7 +163,7 @@ public class FixedTokenTest {
 		var atom = CommittedAtom.create(builder.buildAtom(), 0);
 
 		// Act/Assert
-		sut.execute(atom);
+		sut.execute(List.of(atom));
 	}
 
 	@Test
@@ -176,6 +179,6 @@ public class FixedTokenTest {
 		var atom = CommittedAtom.create(builder.buildAtom(), 0);
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(atom)).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 }

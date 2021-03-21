@@ -25,6 +25,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -48,6 +49,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.LedgerAtom;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,7 +59,7 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAtom> sut;
+	@Inject private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -98,10 +100,10 @@ public final class UniqueTest {
 		createInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		CommittedAtom committedAtom0 = CommittedAtom.create(uniqueAtom(keyPair), 0);
-		sut.execute(committedAtom0);
+		sut.execute(List.of(committedAtom0));
 
 		// Act/Assert
 		CommittedAtom committedAtom1 = CommittedAtom.create(uniqueAtom(keyPair), 1);
-		assertThatThrownBy(() -> sut.execute(committedAtom1)).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(committedAtom1))).isInstanceOf(RadixEngineException.class);
 	}
 }

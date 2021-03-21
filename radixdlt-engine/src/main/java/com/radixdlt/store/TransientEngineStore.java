@@ -8,17 +8,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class TransientEngineStore<T extends RadixEngineAtom> implements EngineStore<T> {
-	private final EngineStore<T> base;
-	private InMemoryEngineStore<T> transientStore = new InMemoryEngineStore<>();
+public class TransientEngineStore<T extends RadixEngineAtom, M> implements EngineStore<T, M> {
+	private final EngineStore<T, M> base;
+	private InMemoryEngineStore<T, M> transientStore = new InMemoryEngineStore<>();
 
-	public TransientEngineStore(EngineStore<T> base) {
+	public TransientEngineStore(EngineStore<T, M> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
 	@Override
 	public void storeAtom(T atom) {
 		transientStore.storeAtom(atom);
+	}
+
+	@Override
+	public void storeMetadata(M metadata) {
+		// No-op
 	}
 
 	@Override

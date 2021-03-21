@@ -94,6 +94,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -106,7 +107,7 @@ public class RadixEngineStateComputerTest {
 	private Atom genesisAtom;
 
 	@Inject
-	private RadixEngine<LedgerAtom> radixEngine;
+	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -116,7 +117,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<LedgerAtom> engineStore;
+	private EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -135,7 +136,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof>>() { }).toInstance(engineStore);
 				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
@@ -161,8 +162,8 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		RadixEngine.RadixEngineBranch<LedgerAtom> branch = radixEngine.transientBranch();
-		branch.execute(genesisAtom, PermissionLevel.SYSTEM);
+		RadixEngine.RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch = radixEngine.transientBranch();
+		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -182,7 +183,7 @@ public class RadixEngineStateComputerTest {
 			genesisAtom,
 			genesisLedgerHeader
 		);
-		radixEngine.execute(committedAtom, PermissionLevel.SYSTEM);
+		radixEngine.execute(List.of(committedAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
 	}
 
 	@Before

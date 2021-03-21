@@ -40,7 +40,8 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom, VerifiedLedgerHeaderAndProof>,
+	CommittedReader, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
 	private final EventDispatcher<AtomCommittedToLedger> committedDispatcher;
@@ -91,6 +92,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		if (committedAtom.getStateVersion() > 0) {
 			committedDispatcher.dispatch(AtomCommittedToLedger.create(committedAtom));
 		}
+	}
+
+	@Override
+	public void storeMetadata(VerifiedLedgerHeaderAndProof metadata) {
+		store.store(this.transaction, metadata);
 	}
 
 	public boolean containsAID(AID aid) {

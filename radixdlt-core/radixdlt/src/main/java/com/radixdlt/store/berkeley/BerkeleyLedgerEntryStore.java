@@ -205,6 +205,40 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
+	public void store(Transaction tx, VerifiedLedgerHeaderAndProof proof) {
+		var txn = unwrap(tx);
+		var prevHeaderKey = entry();
+		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
+			// Cannot remove end of epoch proofs
+			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
+				status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
+				if (status == SUCCESS) {
+					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
+					long versionDiff = proof.getStateVersion() - twoAwayStateVersion;
+					if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
+						executeOrElseThrow(() -> proofCursor.getNext(null, null, DEFAULT), "Missing next.");
+						executeOrElseThrow(proofCursor::delete, "Could not delete header.");
+						systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
+					}
+				}
+			}
+
+			final var headerKey = toHeaderKey(proof);
+			final var headerData = entry(serialize(proof));
+			this.putNoOverwriteOrElseThrow(
+				proofCursor,
+				headerKey,
+				headerData,
+				"Header write failed: " + proof,
+				CounterType.COUNT_BDB_HEADER_BYTES_WRITE
+			);
+
+			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
+		}
+	}
+
+	@Override
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
 		return withTime(() -> {
 			try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
@@ -395,38 +429,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
-	private void storeHeader(com.sleepycat.je.Transaction txn, VerifiedLedgerHeaderAndProof header) {
-		var prevHeaderKey = entry();
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
-			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
-			// Cannot remove end of epoch proofs
-			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
-				status = proofCursor.getPrev(prevHeaderKey, null, DEFAULT);
-				if (status == SUCCESS) {
-					long twoAwayStateVersion = Longs.fromByteArray(prevHeaderKey.getData());
-					long versionDiff = header.getStateVersion() - twoAwayStateVersion;
-					if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
-						executeOrElseThrow(() -> proofCursor.getNext(null, null, DEFAULT), "Missing next.");
-						executeOrElseThrow(proofCursor::delete, "Could not delete header.");
-						systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_REMOVED);
-					}
-				}
-			}
-
-			final var headerKey = toHeaderKey(header);
-			final var headerData = entry(serialize(header));
-			this.putNoOverwriteOrElseThrow(
-				proofCursor,
-				headerKey,
-				headerData,
-				"Header write failed: " + header,
-				CounterType.COUNT_BDB_HEADER_BYTES_WRITE
-			);
-
-			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
-		}
-	}
-
 	public <U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,
 		V initial,
@@ -542,8 +544,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 
-			// Store header/proof
-			atom.getHeaderAndProof().ifPresent(header -> storeHeader(transaction, header));
 
 		} catch (IOException e) {
 			return ioFailure(e);

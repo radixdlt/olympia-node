@@ -71,7 +71,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAtom> radixEngine;
+	private final RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
@@ -86,7 +86,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
 		Mempool<Atom> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
@@ -179,7 +179,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
-		RadixEngineBranch<LedgerAtom> branch,
+		RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch,
 		long epoch,
 		View view,
 		long timestamp,
@@ -217,7 +217,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				.build()
 		).buildAtom();
 		try {
-			branch.execute(systemUpdate, PermissionLevel.SUPER_USER);
+			branch.execute(List.of(systemUpdate), null, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
@@ -236,7 +236,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommand(
-		RadixEngineBranch<LedgerAtom> branch,
+		RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
@@ -245,7 +245,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final Atom atom;
 			try {
 				atom = mapCommand(next);
-				branch.execute(atom);
+				branch.execute(List.of(atom));
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
@@ -261,13 +261,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
-		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
+		var transientBranch = this.radixEngine.transientBranch();
 		for (PreparedCommand command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			try {
 				transientBranch.execute(
-					radixEngineCommand.atom,
+					List.of(radixEngineCommand.atom),
+					null,
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
@@ -301,7 +302,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
-			this.radixEngine.execute(committedAtom, PermissionLevel.SUPER_USER);
+			this.radixEngine.execute(
+				List.of(committedAtom),
+				proof.getStateVersion() == version ? proof : null,
+				PermissionLevel.SUPER_USER
+			);
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
 		}

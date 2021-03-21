@@ -50,6 +50,7 @@ import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -58,7 +59,7 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
 		CommittedAtomsStore store,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -66,7 +67,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		Hasher hasher
 	) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisAtom, PermissionLevel.SYSTEM);
+		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -87,7 +88,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			genesisLedgerHeader
 		);
 		store.startTransaction();
-		radixEngine.execute(committedAtom, PermissionLevel.SYSTEM);
+		radixEngine.execute(List.of(committedAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
 		store.commitTransaction();
 	}
 
@@ -95,7 +96,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastStoredProof
 	VerifiedLedgerHeaderAndProof lastStoredProof(
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
 		CommittedAtomsStore store,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,

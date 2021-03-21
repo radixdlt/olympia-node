@@ -24,9 +24,11 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 public class TokensTest {
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 
 	@Before
 	public void setup() {
@@ -80,7 +82,8 @@ public class TokensTest {
 		);
 
 		// Act
-		this.engine.execute(new BaseAtom(instruction, HashUtils.zero256()));
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+		this.engine.execute(List.of(atom));
 
 		// Assert
 		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);

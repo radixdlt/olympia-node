@@ -181,8 +181,8 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<LedgerAtom> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof>>() { }));
 	}
 
 	private CommittedAtomsStore getAtomStore() {
@@ -218,14 +218,14 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom> radixEngine = getRadixEngine();
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
 		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine();
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}

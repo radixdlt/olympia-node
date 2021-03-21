@@ -26,6 +26,7 @@ import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
@@ -50,7 +51,7 @@ import java.util.Optional;
  */
 public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
-	private final RadixEngine<LedgerAtom> radixEngine;
+	private final RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
 	private final RadixAddress self;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
@@ -65,7 +66,7 @@ public final class ValidatorRegistrator {
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
