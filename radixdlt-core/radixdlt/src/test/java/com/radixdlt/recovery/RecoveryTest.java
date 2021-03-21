@@ -34,7 +34,7 @@ import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -181,8 +181,8 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof>>() { }));
+	private RadixEngine<LedgerAtom, LedgerProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom, LedgerProof>>() { }));
 	}
 
 	private CommittedAtomsStore getAtomStore() {
@@ -218,14 +218,14 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine = getRadixEngine();
+		RadixEngine<LedgerAtom, LedgerProof> radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
 		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> restartedRadixEngine = getRadixEngine();
+		RadixEngine<LedgerAtom, LedgerProof> restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}
@@ -235,14 +235,14 @@ public class RecoveryTest {
 		// Arrange
 		processForCount(100);
 		CommittedAtomsStore atomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> proof = atomStore.getLastVerifiedHeader();
+		Optional<LedgerProof> proof = atomStore.getLastVerifiedHeader();
 
 		// Act
 		restartNode();
 
 		// Assert
 		CommittedAtomsStore restartedAtomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
+		Optional<LedgerProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
 		assertThat(restartedProof).isEqualTo(proof);
 	}
 
@@ -256,8 +256,8 @@ public class RecoveryTest {
 		restartNode();
 
 		// Assert
-		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
-			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
+		LedgerProof restartedEpochProof = currentInjector.getInstance(
+			Key.get(LedgerProof.class, LastEpochProof.class)
 		);
 
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();

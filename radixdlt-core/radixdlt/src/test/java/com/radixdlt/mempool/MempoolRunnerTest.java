@@ -27,7 +27,7 @@ import com.radixdlt.DispatcherModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
@@ -65,8 +65,8 @@ public final class MempoolRunnerTest {
 			@Override
 			public void configure() {
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
-				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class)
-					.toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				bind(LedgerProof.class).annotatedWith(LastProof.class)
+					.toInstance(mock(LedgerProof.class));
 				bind(StateComputer.class).toInstance(stateComputer);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(RxRemoteEnvironment.class).toInstance(new RxRemoteEnvironment() {
@@ -77,7 +77,7 @@ public final class MempoolRunnerTest {
 				});
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
-				bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).toInstance(mock(Comparator.class));
+				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
 				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				install(new MockedCryptoModule());

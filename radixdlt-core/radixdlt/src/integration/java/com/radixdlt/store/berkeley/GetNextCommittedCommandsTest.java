@@ -51,7 +51,7 @@ import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -236,7 +236,7 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader = LedgerHeader.create(epoch, view, committedAccumulatorState, System.currentTimeMillis());
 		}
 		final var signatures = new TimestampedECDSASignatures();
-		final var proof = new VerifiedLedgerHeaderAndProof(
+		final var proof = new LedgerProof(
 			proposed,
 			parent,
 			stateVersion,

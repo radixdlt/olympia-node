@@ -34,7 +34,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -68,9 +68,9 @@ public class StateComputerLedgerTest {
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
-	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
+	private LedgerProof currentLedgerHeader;
 	private SystemCounters counters;
-	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private Comparator<LedgerProof> headerComparator;
 	private LedgerAccumulator accumulator;
 	private LedgerAccumulatorVerifier accumulatorVerifier;
 
@@ -230,7 +230,7 @@ public class StateComputerLedgerTest {
 			accumulatorState,
 			1234
 		);
-		final VerifiedLedgerHeaderAndProof header = new VerifiedLedgerHeaderAndProof(
+		final LedgerProof header = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
 			12345,

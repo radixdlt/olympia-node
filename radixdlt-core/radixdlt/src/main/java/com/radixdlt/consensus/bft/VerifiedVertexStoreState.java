@@ -23,7 +23,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class VerifiedVertexStoreState {
 	private final VerifiedVertex root;
-	private final VerifiedLedgerHeaderAndProof rootHeader;
+	private final LedgerProof rootHeader;
 	private final HighQC highQC;
 	// TODO: collapse the following two
 	private final ImmutableList<VerifiedVertex> vertices;
@@ -46,7 +46,7 @@ public final class VerifiedVertexStoreState {
 
 	private VerifiedVertexStoreState(
 		HighQC highQC,
-		VerifiedLedgerHeaderAndProof rootHeader,
+		LedgerProof rootHeader,
 		VerifiedVertex root,
 		ImmutableMap<HashCode, VerifiedVertex> idToVertex,
 		ImmutableList<VerifiedVertex> vertices,
@@ -74,10 +74,10 @@ public final class VerifiedVertexStoreState {
 		ImmutableList<VerifiedVertex> vertices,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		final Pair<BFTHeader, VerifiedLedgerHeaderAndProof> headers = highQC.highestCommittedQC()
+		final Pair<BFTHeader, LedgerProof> headers = highQC.highestCommittedQC()
 			.getCommittedAndLedgerStateProof()
 			.orElseThrow(() -> new IllegalStateException(String.format("highQC=%s does not have commit", highQC)));
-		VerifiedLedgerHeaderAndProof rootHeader = headers.getSecond();
+		LedgerProof rootHeader = headers.getSecond();
 		BFTHeader bftHeader = headers.getFirst();
 		if (!bftHeader.getVertexId().equals(root.getId())) {
 			throw new IllegalStateException(String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
@@ -122,7 +122,7 @@ public final class VerifiedVertexStoreState {
 
 	public VerifiedVertexStoreState prune() {
 		if (highQC.highestQC().getCommittedAndLedgerStateProof().isPresent()) {
-			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof().get();
+			Pair<BFTHeader, LedgerProof> newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof().get();
 			BFTHeader header = newHeaders.getFirst();
 			if (header.getView().gt(root.getView())) {
 				VerifiedVertex newRoot = idToVertex.get(header.getVertexId());
@@ -135,7 +135,7 @@ public final class VerifiedVertexStoreState {
 					highQC.highestQC().getProposed().getVertexId(), newVertices.get(1)
 				);
 				HighQC newHighQC = HighQC.from(highQC.highestQC());
-				VerifiedLedgerHeaderAndProof proof = newHeaders.getSecond();
+				LedgerProof proof = newHeaders.getSecond();
 				return new VerifiedVertexStoreState(newHighQC, proof, newRoot, idToVertex, newVertices, highestTC);
 			}
 		}
@@ -164,7 +164,7 @@ public final class VerifiedVertexStoreState {
 		return vertices;
 	}
 
-	public VerifiedLedgerHeaderAndProof getRootHeader() {
+	public LedgerProof getRootHeader() {
 		return rootHeader;
 	}
 

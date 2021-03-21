@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 
@@ -31,7 +31,7 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 
 	LedgerEntryStoreResult store(Transaction tx, CommittedAtom atom);
 
-	void store(Transaction tx, VerifiedLedgerHeaderAndProof proof);
+	void store(Transaction tx, LedgerProof proof);
 
 	void close();
 

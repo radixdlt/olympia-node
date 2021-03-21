@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
@@ -35,7 +35,7 @@ import org.junit.Test;
 public class CommittedAtomTest {
 	private CommittedAtom committedAtom;
 	private Atom atom;
-	private VerifiedLedgerHeaderAndProof proof;
+	private LedgerProof proof;
 
 	@Before
 	public void setUp() {
@@ -43,7 +43,7 @@ public class CommittedAtomTest {
 		when(atom.getAID()).thenReturn(mock(AID.class));
 		when(atom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(atom.getMessage()).thenReturn("test message");
-		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
+		this.proof = mock(LedgerProof.class);
 		this.committedAtom = CommittedAtom.create(atom, proof);
 	}
 

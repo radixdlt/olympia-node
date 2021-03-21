@@ -23,7 +23,7 @@ import static com.radixdlt.utils.TypedMocks.rmock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -33,12 +33,12 @@ import org.junit.Test;
 public class LocalSyncRequestTest {
 	private LocalSyncRequest request;
 	private ImmutableList<BFTNode> targetNodes;
-	private VerifiedLedgerHeaderAndProof target;
+	private LedgerProof target;
 
 	@Before
 	public void setup() {
 		this.targetNodes = rmock(ImmutableList.class);
-		this.target = mock(VerifiedLedgerHeaderAndProof.class);
+		this.target = mock(LedgerProof.class);
 		request = new LocalSyncRequest(target, targetNodes);
 	}
 

@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -34,7 +34,7 @@ public final class StatusResponseMessage extends Message {
 
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerHeaderAndProof header;
+	private final LedgerProof header;
 
 	StatusResponseMessage() {
 		// Serializer only
@@ -42,12 +42,12 @@ public final class StatusResponseMessage extends Message {
 		this.header = null;
 	}
 
-	public StatusResponseMessage(int magic, VerifiedLedgerHeaderAndProof header) {
+	public StatusResponseMessage(int magic, LedgerProof header) {
 		super(magic);
 		this.header = header;
 	}
 
-	public VerifiedLedgerHeaderAndProof getHeader() {
+	public LedgerProof getHeader() {
 		return header;
 	}
 

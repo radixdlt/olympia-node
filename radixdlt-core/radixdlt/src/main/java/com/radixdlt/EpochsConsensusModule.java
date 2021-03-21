@@ -38,7 +38,7 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
@@ -123,7 +123,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private EpochChange initialEpoch(
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		@LastEpochProof LedgerProof proof,
 		BFTConfiguration initialBFTConfig
 	) {
 		return new EpochChange(proof, initialBFTConfig);

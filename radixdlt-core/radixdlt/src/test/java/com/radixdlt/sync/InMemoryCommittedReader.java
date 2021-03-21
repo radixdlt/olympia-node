@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -40,7 +40,7 @@ class InMemoryCommittedReader implements CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
-	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
+	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
 
 	@Inject
 	InMemoryCommittedReader(
@@ -97,7 +97,7 @@ class InMemoryCommittedReader implements CommittedReader {
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
 		synchronized (lock) {
 			return Optional.ofNullable(epochProofs.get(epoch));
 		}

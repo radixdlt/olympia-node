@@ -23,7 +23,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
@@ -51,7 +51,7 @@ import java.util.Random;
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
+	private final RadixEngine<LedgerAtom, LedgerProof> radixEngine;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -71,7 +71,7 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
+		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,

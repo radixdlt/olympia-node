@@ -30,7 +30,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
@@ -103,10 +103,10 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> getRadixEngine(
+	private RadixEngine<LedgerAtom, LedgerProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore,
+		EngineStore<LedgerAtom, LedgerProof> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,

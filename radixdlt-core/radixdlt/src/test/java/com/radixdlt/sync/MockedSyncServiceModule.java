@@ -25,7 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
@@ -51,7 +51,7 @@ import java.util.stream.LongStream;
 
 public class MockedSyncServiceModule extends AbstractModule {
 	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
-	private final ConcurrentMap<Long, VerifiedLedgerHeaderAndProof> sharedEpochProofs;
+	private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
 	public MockedSyncServiceModule() {
 		this.sharedCommittedCommands = new ConcurrentHashMap<>();
@@ -84,7 +84,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@ProcessOnDispatch
 	private EventProcessor<LedgerUpdate> sync() {
 		return update -> {
-			final VerifiedLedgerHeaderAndProof headerAndProof = update.getTail();
+			final LedgerProof headerAndProof = update.getTail();
 			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 			long firstVersion = stateVersion - update.getNewCommands().size() + 1;
 			for (int i = 0; i < update.getNewCommands().size(); i++) {
@@ -107,7 +107,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
-			private void syncTo(VerifiedLedgerHeaderAndProof headerAndProof) {
+			private void syncTo(LedgerProof headerAndProof) {
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, headerAndProof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());

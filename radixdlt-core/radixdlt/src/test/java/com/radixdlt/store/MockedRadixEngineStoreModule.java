@@ -23,7 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -47,18 +47,18 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore(
+	private EngineStore<LedgerAtom, LedgerProof> engineStore(
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		InMemoryEngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> inMemoryEngineStore = new InMemoryEngineStore<>();
+		InMemoryEngineStore<LedgerAtom, LedgerProof> inMemoryEngineStore = new InMemoryEngineStore<>();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
 				.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
 			hasher.hash(command),
 			validatorSet
 		);

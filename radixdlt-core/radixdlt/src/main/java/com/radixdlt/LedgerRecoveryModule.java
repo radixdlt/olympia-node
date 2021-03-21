@@ -26,7 +26,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -59,7 +59,7 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
+		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
 		CommittedAtomsStore store,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -76,7 +76,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
 		var payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
-		var genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+		var genesisLedgerHeader = LedgerProof.genesis(
 			hasher.hash(command),
 			genesisValidatorSet
 		);
@@ -95,8 +95,8 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastStoredProof
-	VerifiedLedgerHeaderAndProof lastStoredProof(
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
+	LedgerProof lastStoredProof(
+		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
 		CommittedAtomsStore store,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
@@ -113,9 +113,9 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastProof
-	VerifiedLedgerHeaderAndProof lastProof(
+	LedgerProof lastProof(
 		VerifiedVertexStoreState vertexStoreState,
-		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
+		@LastStoredProof LedgerProof lastStoredProof
 	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return vertexStoreState.getRootHeader();
@@ -127,9 +127,9 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(
+	LedgerProof lastEpochProof(
 		CommittedAtomsStore store,
-		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
+		@LastStoredProof LedgerProof lastStoredProof
 	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return lastStoredProof;
@@ -158,7 +158,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	}
 
 	private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
-		VerifiedLedgerHeaderAndProof lastEpochProof,
+		LedgerProof lastEpochProof,
 		Hasher hasher
 	) {
 		var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
@@ -176,7 +176,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VerifiedVertexStoreState vertexStoreState(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
+		@LastEpochProof LedgerProof lastEpochProof,
 		LedgerEntryStore ledgerEntryStore,
 		Hasher hasher
 	) {

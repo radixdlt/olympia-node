@@ -18,7 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atom.Atom;
@@ -36,15 +36,15 @@ import javax.annotation.concurrent.Immutable;
 public final class CommittedAtom implements LedgerAtom {
 	private final Atom atom;
 	private final long stateVersion;
-	private final VerifiedLedgerHeaderAndProof proof;
+	private final LedgerProof proof;
 
-	private CommittedAtom(Atom atom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
+	private CommittedAtom(Atom atom, long stateVersion, LedgerProof proof) {
 		this.atom = atom;
 		this.stateVersion = stateVersion;
 		this.proof = proof;
 	}
 
-	public static CommittedAtom create(Atom atom, VerifiedLedgerHeaderAndProof proof) {
+	public static CommittedAtom create(Atom atom, LedgerProof proof) {
 		return new CommittedAtom(atom, proof.getStateVersion(), proof);
 	}
 
@@ -60,7 +60,7 @@ public final class CommittedAtom implements LedgerAtom {
 		return atom;
 	}
 
-	public Optional<VerifiedLedgerHeaderAndProof> getHeaderAndProof() {
+	public Optional<LedgerProof> getHeaderAndProof() {
 		return Optional.ofNullable(proof);
 	}
 

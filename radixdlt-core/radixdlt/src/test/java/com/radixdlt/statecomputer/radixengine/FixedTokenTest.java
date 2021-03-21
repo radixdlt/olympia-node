@@ -33,7 +33,7 @@ import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -60,7 +60,7 @@ public class FixedTokenTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> sut;
+	private RadixEngine<LedgerAtom, LedgerProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(

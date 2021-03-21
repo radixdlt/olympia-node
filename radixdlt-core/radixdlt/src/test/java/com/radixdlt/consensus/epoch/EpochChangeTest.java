@@ -25,20 +25,20 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeTest {
-	private VerifiedLedgerHeaderAndProof proof;
+	private LedgerProof proof;
 	private BFTConfiguration configuration;
 	private EpochChange epochChange;
 
 	@Before
 	public void setup() {
-		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
+		this.proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(323L);
 		this.configuration = mock(BFTConfiguration.class);
 

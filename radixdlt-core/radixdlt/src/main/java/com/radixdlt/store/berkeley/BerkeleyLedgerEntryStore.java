@@ -19,7 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -205,7 +205,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public void store(Transaction tx, VerifiedLedgerHeaderAndProof proof) {
+	public void store(Transaction tx, LedgerProof proof) {
 		var txn = unwrap(tx);
 		var prevHeaderKey = entry();
 		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
@@ -413,7 +413,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private static DatabaseEntry toHeaderKey(VerifiedLedgerHeaderAndProof header) {
+	private static DatabaseEntry toHeaderKey(LedgerProof header) {
 		if (header.isEndOfEpoch()) {
 			return toPKey(header.getStateVersion(), header.getEpoch() + 1);
 		} else {
@@ -569,11 +569,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return entry(serialization.toDson(instance, Output.ALL));
 	}
 
-	private Pair<List<Atom>, VerifiedLedgerHeaderAndProof> getNextCommittedAtomsInternal(long stateVersion) {
+	private Pair<List<Atom>, LedgerProof> getNextCommittedAtomsInternal(long stateVersion) {
 		final var start = System.nanoTime();
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
-		final VerifiedLedgerHeaderAndProof nextHeader;
+		final LedgerProof nextHeader;
 		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
@@ -581,7 +581,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			if (headerCursorStatus != SUCCESS) {
 				return null;
 			}
-			nextHeader = deserializeOrElseFail(headerValue.getData(), VerifiedLedgerHeaderAndProof.class);
+			nextHeader = deserializeOrElseFail(headerValue.getData(), LedgerProof.class);
 		} finally {
 			txn.commit();
 		}
@@ -650,7 +650,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getLastHeader() {
+	public Optional<LedgerProof> getLastHeader() {
 		return withTime(() -> {
 			try (var proofCursor = proofDatabase.openCursor(null, null);) {
 				var pKey = entry();
@@ -660,21 +660,21 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					.filter(status -> status == SUCCESS)
 					.map(status -> {
 						addBytesRead(value, pKey);
-						return deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class);
+						return deserializeOrElseFail(value.getData(), LedgerProof.class);
 					});
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_COMMITTED, CounterType.COUNT_BDB_LEDGER_LAST_COMMITTED);
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch) {
+	public Optional<LedgerProof> getEpochHeader(long epoch) {
 		var value = entry();
 		var status = epochProofDatabase.get(null, toPKey(epoch), value, null);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
 
-		return Optional.of(deserializeOrElseFail(value.getData(), VerifiedLedgerHeaderAndProof.class));
+		return Optional.of(deserializeOrElseFail(value.getData(), LedgerProof.class));
 	}
 
 

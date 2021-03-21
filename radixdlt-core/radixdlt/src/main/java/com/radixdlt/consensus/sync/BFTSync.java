@@ -24,7 +24,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -91,14 +91,14 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		private final HashCode localSyncId;
 		private final HighQC highQC;
 		private final BFTHeader committedHeader;
-		private final VerifiedLedgerHeaderAndProof committedProof;
+		private final LedgerProof committedProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
 		SyncState(HighQC highQC, BFTNode author) {
 			this.localSyncId = highQC.highestQC().getProposed().getVertexId();
-			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
+			Pair<BFTHeader, LedgerProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
 			this.committedProof = pair.getSecond();
@@ -139,7 +139,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private final Random random;
 	private final int bftSyncPatienceMillis;
 	private final SystemCounters systemCounters;
-	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
+	private LedgerProof currentLedgerHeader;
 
 	// FIXME: Remove this once sync is fixed
 	private final RateLimiter syncRequestRateLimiter;
@@ -153,7 +153,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-		VerifiedLedgerHeaderAndProof currentLedgerHeader,
+		LedgerProof currentLedgerHeader,
 		Random random,
 		int bftSyncPatienceMillis,
 		SystemCounters systemCounters

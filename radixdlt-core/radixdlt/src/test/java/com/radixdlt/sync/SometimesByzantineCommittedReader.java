@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
@@ -119,7 +119,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 				base.getHeader().getNextValidatorSet().orElse(null)
 			);
 			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getHeader().getSignatures();
-			VerifiedLedgerHeaderAndProof headerAndProof = new VerifiedLedgerHeaderAndProof(
+			LedgerProof headerAndProof = new LedgerProof(
 				base.getHeader().toDto().getOpaque0(),
 				base.getHeader().toDto().getOpaque1(),
 				base.getHeader().toDto().getOpaque2(),
@@ -218,7 +218,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
 		return correctReader.getEpochVerifiedHeader(epoch);
 	}
 }

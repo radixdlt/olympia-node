@@ -39,7 +39,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -107,7 +107,7 @@ public class RadixEngineStateComputerTest {
 	private Atom genesisAtom;
 
 	@Inject
-	private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
+	private RadixEngine<LedgerAtom, LedgerProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -117,7 +117,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof> engineStore;
+	private EngineStore<LedgerAtom, LedgerProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -136,7 +136,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAtom, VerifiedLedgerHeaderAndProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAtom, LedgerProof>>() { }).toInstance(engineStore);
 				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
@@ -162,7 +162,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		RadixEngine.RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch = radixEngine.transientBranch();
+		RadixEngine.RadixEngineBranch<LedgerAtom, LedgerProof> branch = radixEngine.transientBranch();
 		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
@@ -172,7 +172,7 @@ public class RadixEngineStateComputerTest {
 
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
 			hasher.hash(command),
 			genesisValidatorSet
 		);
@@ -328,7 +328,7 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_high_views_should_fail() {
 		// Arrange
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 1);
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
 			0,
@@ -338,7 +338,7 @@ public class RadixEngineStateComputerTest {
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 			ImmutableList.of(cmd0.command()),
-			verifiedLedgerHeaderAndProof
+			ledgerProof
 		);
 
 		// Act
@@ -354,7 +354,7 @@ public class RadixEngineStateComputerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
 			0,
@@ -364,7 +364,7 @@ public class RadixEngineStateComputerTest {
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 			ImmutableList.of(cmd0.command(), cmd1.command()),
-			verifiedLedgerHeaderAndProof
+			ledgerProof
 		);
 
 		// Act
@@ -380,7 +380,7 @@ public class RadixEngineStateComputerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
 			0,
@@ -392,7 +392,7 @@ public class RadixEngineStateComputerTest {
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 			ImmutableList.of(cmd1.command(), cmd0.command()),
-			verifiedLedgerHeaderAndProof
+			ledgerProof
 		);
 
 		// Act

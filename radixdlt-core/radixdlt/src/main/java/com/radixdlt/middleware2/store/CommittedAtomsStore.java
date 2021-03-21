@@ -19,7 +19,7 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
@@ -40,7 +40,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom, VerifiedLedgerHeaderAndProof>,
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom, LedgerProof>,
 	CommittedReader, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
@@ -95,7 +95,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Ver
 	}
 
 	@Override
-	public void storeMetadata(VerifiedLedgerHeaderAndProof metadata) {
+	public void storeMetadata(LedgerProof metadata) {
 		store.store(this.transaction, metadata);
 	}
 
@@ -117,12 +117,12 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Ver
 		return store.reduceUpParticles(particleClass, initial, outputReducer);
 	}
 
-	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
+	public Optional<LedgerProof> getLastVerifiedHeader() {
 		return store.getLastHeader();
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
 		return store.getEpochHeader(epoch);
 	}
 

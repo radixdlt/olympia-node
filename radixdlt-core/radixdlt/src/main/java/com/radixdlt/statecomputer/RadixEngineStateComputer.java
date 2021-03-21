@@ -24,7 +24,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -71,7 +71,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine;
+	private final RadixEngine<LedgerAtom, LedgerProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
@@ -86,7 +86,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> radixEngine,
+		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
 		Mempool<Atom> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
@@ -179,7 +179,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
-		RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch,
+		RadixEngineBranch<LedgerAtom, LedgerProof> branch,
 		long epoch,
 		View view,
 		long timestamp,
@@ -236,7 +236,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommand(
-		RadixEngineBranch<LedgerAtom, VerifiedLedgerHeaderAndProof> branch,
+		RadixEngineBranch<LedgerAtom, LedgerProof> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
@@ -292,7 +292,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private void commitCommand(long version, Atom atom, VerifiedLedgerHeaderAndProof proof) {
+	private void commitCommand(long version, Atom atom, LedgerProof proof) {
 		try {
 			final CommittedAtom committedAtom;
 			if (proof.getStateVersion() == version) {
@@ -324,7 +324,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final long currentEpoch = lastSystemParticle.getEpoch();
 		boolean epochChange = false;
 
-		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
+		final LedgerProof headerAndProof = verifiedCommandsAndProof.getHeader();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 

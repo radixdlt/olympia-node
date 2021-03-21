@@ -23,8 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -43,7 +43,7 @@ public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Ledger.class).to(StateComputerLedger.class);
-		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Comparator<LedgerProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(StateComputerLedger.class).in(Scopes.SINGLETON);

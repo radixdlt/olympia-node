@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
@@ -28,5 +28,5 @@ import java.util.Optional;
  */
 public interface CommittedReader {
 	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start);
-	Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch);
+	Optional<LedgerProof> getEpochVerifiedHeader(long epoch);
 }

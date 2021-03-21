@@ -18,7 +18,7 @@
 package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -27,15 +27,15 @@ import java.util.Objects;
  */
 public final class LocalSyncRequest {
 
-	private final VerifiedLedgerHeaderAndProof target;
+	private final LedgerProof target;
 	private final ImmutableList<BFTNode> targetNodes;
 
-	public LocalSyncRequest(VerifiedLedgerHeaderAndProof target, ImmutableList<BFTNode> targetNodes) {
+	public LocalSyncRequest(LedgerProof target, ImmutableList<BFTNode> targetNodes) {
 		this.target = Objects.requireNonNull(target);
 		this.targetNodes = Objects.requireNonNull(targetNodes);
 	}
 
-	public VerifiedLedgerHeaderAndProof getTarget() {
+	public LedgerProof getTarget() {
 		return target;
 	}
 

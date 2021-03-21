@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -52,10 +52,10 @@ public class SyncStateTest {
         final var peer = mock(BFTNode.class);
 
         final var initialState = SyncState.IdleState.init(
-            mock(VerifiedLedgerHeaderAndProof.class)
+            mock(LedgerProof.class)
         );
 
-        final var header2 = mock(VerifiedLedgerHeaderAndProof.class);
+        final var header2 = mock(LedgerProof.class);
         final var newState = initialState.withCurrentHeader(header2);
 
         assertEquals(header2, newState.getCurrentHeader());
@@ -66,11 +66,11 @@ public class SyncStateTest {
         final var peer = mock(BFTNode.class);
 
         final var initialState = SyncState.SyncCheckState.init(
-                mock(VerifiedLedgerHeaderAndProof.class),
+                mock(LedgerProof.class),
                 ImmutableSet.of(peer)
         );
 
-        final var header2 = mock(VerifiedLedgerHeaderAndProof.class);
+        final var header2 = mock(LedgerProof.class);
         final var newState = initialState.withCurrentHeader(header2);
 
         assertEquals(header2, newState.getCurrentHeader());
@@ -81,7 +81,7 @@ public class SyncStateTest {
         final var peer = mock(BFTNode.class);
 
         final var initialState = SyncState.SyncCheckState.init(
-            mock(VerifiedLedgerHeaderAndProof.class),
+            mock(LedgerProof.class),
             ImmutableSet.of(peer)
         );
 
@@ -98,14 +98,14 @@ public class SyncStateTest {
 
     @Test
     public void syncing_state_should_update_current_header() {
-        final var targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+        final var targetHeader = mock(LedgerProof.class);
         final var initialState = SyncState.SyncingState.init(
-            mock(VerifiedLedgerHeaderAndProof.class),
+            mock(LedgerProof.class),
             ImmutableList.of(),
             targetHeader
         );
 
-        final var header2 = mock(VerifiedLedgerHeaderAndProof.class);
+        final var header2 = mock(LedgerProof.class);
         final var newState = initialState.withCurrentHeader(header2);
 
         assertEquals(header2, newState.getCurrentHeader());
@@ -113,9 +113,9 @@ public class SyncStateTest {
 
     @Test
     public void syncing_state_should_update_waiting_for_peer() {
-        final var targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+        final var targetHeader = mock(LedgerProof.class);
         final var initialState = SyncState.SyncingState.init(
-            mock(VerifiedLedgerHeaderAndProof.class),
+            mock(LedgerProof.class),
             ImmutableList.of(),
             targetHeader
         );
@@ -133,9 +133,9 @@ public class SyncStateTest {
 
     @Test
     public void syncing_state_should_update_candidate_peers() {
-        final var targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+        final var targetHeader = mock(LedgerProof.class);
         final var initialState = SyncState.SyncingState.init(
-            mock(VerifiedLedgerHeaderAndProof.class),
+            mock(LedgerProof.class),
             ImmutableList.of(),
             targetHeader
         );
@@ -157,10 +157,10 @@ public class SyncStateTest {
 
     @Test
     public void syncing_state_should_update_target_header() {
-        final var targetHeader1 = mock(VerifiedLedgerHeaderAndProof.class);
-        final var targetHeader2 = mock(VerifiedLedgerHeaderAndProof.class);
+        final var targetHeader1 = mock(LedgerProof.class);
+        final var targetHeader2 = mock(LedgerProof.class);
         final var initialState = SyncState.SyncingState.init(
-            mock(VerifiedLedgerHeaderAndProof.class),
+            mock(LedgerProof.class),
             ImmutableList.of(),
             targetHeader1
         );

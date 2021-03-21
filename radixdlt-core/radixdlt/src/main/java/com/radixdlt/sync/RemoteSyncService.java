@@ -19,7 +19,7 @@ package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -63,7 +63,7 @@ public final class RemoteSyncService {
 	private final Comparator<AccumulatorState> accComparator;
 	private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
-	private VerifiedLedgerHeaderAndProof currentHeader;
+	private LedgerProof currentHeader;
 
 	@Inject
 	public RemoteSyncService(
@@ -76,7 +76,7 @@ public final class RemoteSyncService {
 		SyncConfig syncConfig,
 		SystemCounters systemCounters,
 		Comparator<AccumulatorState> accComparator,
-		@LastProof VerifiedLedgerHeaderAndProof initialHeader
+		@LastProof LedgerProof initialHeader
 	) {
 		this.peersView = Objects.requireNonNull(peersView);
 		this.localSyncService = Objects.requireNonNull(localSyncService);
@@ -137,14 +137,14 @@ public final class RemoteSyncService {
 	}
 
 	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		final VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
+		final LedgerProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
 			this.sendStatusUpdateToSomePeers(updatedHeader);
 		}
 	}
 
-	private void sendStatusUpdateToSomePeers(VerifiedLedgerHeaderAndProof header) {
+	private void sendStatusUpdateToSomePeers(LedgerProof header) {
 		if (!(this.localSyncService.getSyncState() instanceof SyncState.IdleState)) {
 			return; // not sending any updates if the node is syncing itself
 		}

@@ -25,7 +25,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -59,7 +59,7 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAtom, VerifiedLedgerHeaderAndProof> sut;
+	@Inject private RadixEngine<LedgerAtom, LedgerProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(

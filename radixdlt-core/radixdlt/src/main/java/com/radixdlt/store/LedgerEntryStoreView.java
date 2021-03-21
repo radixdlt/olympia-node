@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
@@ -51,9 +51,9 @@ public interface LedgerEntryStoreView {
 	 * TODO: Remove optional
 	 * @return The last committed atom aid
 	 */
-	Optional<VerifiedLedgerHeaderAndProof> getLastHeader();
+	Optional<LedgerProof> getLastHeader();
 
-	Optional<VerifiedLedgerHeaderAndProof> getEpochHeader(long epoch);
+	Optional<LedgerProof> getEpochHeader(long epoch);
 
 	// TODO: remove once we clean up API to not require searching
 	SearchCursor search();
