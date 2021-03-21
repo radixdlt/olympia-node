@@ -47,6 +47,7 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
+import com.radixdlt.sync.CommittedReader;
 
 import java.util.List;
 import java.util.Optional;
@@ -91,6 +92,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@LastStoredProof
 	LedgerProof lastStoredProof(
 		RadixEngine<Atom, LedgerProof> radixEngine,
+		CommittedReader committedReader,
 		CommittedAtomsStore store,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
@@ -101,7 +103,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 
-		return store.getLastVerifiedHeader().orElseThrow();
+		return committedReader.getLastProof().orElseThrow();
 	}
 
 	@Provides
@@ -122,13 +124,13 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastEpochProof
 	LedgerProof lastEpochProof(
-		CommittedAtomsStore store,
+		CommittedReader committedReader,
 		@LastStoredProof LedgerProof lastStoredProof
 	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return lastStoredProof;
 		}
-		return store.getEpochVerifiedHeader(lastStoredProof.getEpoch()).orElseThrow();
+		return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
 	}
 
 	private static VerifiedVertexStoreState serializedToVerifiedVertexStore(

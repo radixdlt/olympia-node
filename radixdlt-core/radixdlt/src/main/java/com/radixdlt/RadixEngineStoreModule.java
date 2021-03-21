@@ -25,6 +25,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 
 public class RadixEngineStoreModule extends AbstractModule {
@@ -33,7 +34,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		bind(new TypeLiteral<EngineStore<Atom, LedgerProof>>() { })
 			.to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
-		bind(CommittedReader.class).to(CommittedAtomsStore.class);
+		bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
 		bind(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 	}
 }

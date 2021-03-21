@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -32,6 +33,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -70,6 +72,8 @@ import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests to ensure that command batches read from {@link CommittedAtomsStore}
@@ -83,6 +87,9 @@ public class GetNextCommittedCommandsTest {
 
 	@Inject
 	private CommittedAtomsStore committedAtomsStore;
+
+	@Inject
+	private CommittedReader committedReader;
 
 	@Inject
 	private Hasher hasher;
@@ -121,11 +128,20 @@ public class GetNextCommittedCommandsTest {
 		}
 	}
 
+	private static DtoLedgerHeaderAndProof mockedProof(long stateVersion) {
+		var headerAndProof = mock(DtoLedgerHeaderAndProof.class);
+		var ledgerHeader = mock(LedgerHeader.class);
+		var accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(stateVersion);
+		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
+		when(headerAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
+		return headerAndProof;
+	}
+
 	@Test
 	public void when_request_from_empty_store__null_returned() {
 		// No atoms generated
-
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands).isNull();
 	}
@@ -136,7 +152,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
@@ -148,7 +164,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(9));
 
 		assertThat(commands.getCommands())
 			.hasSize(1);
@@ -159,7 +175,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
@@ -171,7 +187,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 100);
 		generateAtoms(2, 101, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(9));
 
 		assertThat(commands.getCommands())
 			.hasSize(91);
@@ -183,7 +199,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 200);
 		generateAtoms(2, 201, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(100);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(100));
 
 		assertThat(commands.getCommands())
 			.hasSize(100);

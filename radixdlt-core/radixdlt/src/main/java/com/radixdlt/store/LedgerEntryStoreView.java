@@ -18,11 +18,9 @@
 package com.radixdlt.store;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.atom.Atom;
 
 import java.util.Optional;
@@ -46,15 +44,6 @@ public interface LedgerEntryStoreView {
 	 */
 	Optional<Atom> get(AID aid);
 
-	/**
-	 * Gets the last committed atom aid
-	 * TODO: Remove optional
-	 * @return The last committed atom aid
-	 */
-	Optional<LedgerProof> getLastHeader();
-
-	Optional<LedgerProof> getEpochHeader(long epoch);
-
 	// TODO: remove once we clean up API to not require searching
 	SearchCursor search();
 
@@ -67,12 +56,4 @@ public interface LedgerEntryStoreView {
 	Spin getSpin(Transaction tx, Particle particle);
 
 	Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash);
-
-	/**
-	 * Retrieve a chunk of {@link Atom} with state version greater than the given one
-	 * in sequential order.
-	 * @param stateVersion the state version to use as a search parameter
-	 * @return ledger entries satisfying the constraints
-	 */
-	VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion);
 }

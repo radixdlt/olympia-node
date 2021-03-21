@@ -60,7 +60,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -68,6 +67,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
@@ -184,8 +184,8 @@ public class RecoveryTest {
 		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerProof>>() { }));
 	}
 
-	private CommittedAtomsStore getAtomStore() {
-		return currentInjector.getInstance(CommittedAtomsStore.class);
+	private CommittedReader getCommittedReader() {
+		return currentInjector.getInstance(CommittedReader.class);
 	}
 
 	private EpochView getLastEpochView() {
@@ -233,15 +233,15 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_header() {
 		// Arrange
 		processForCount(100);
-		CommittedAtomsStore atomStore = getAtomStore();
-		Optional<LedgerProof> proof = atomStore.getLastVerifiedHeader();
+		var reader = getCommittedReader();
+		Optional<LedgerProof> proof = reader.getLastProof();
 
 		// Act
 		restartNode();
 
 		// Assert
-		CommittedAtomsStore restartedAtomStore = getAtomStore();
-		Optional<LedgerProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
+		var restartedReader = getCommittedReader();
+		Optional<LedgerProof> restartedProof = restartedReader.getLastProof();
 		assertThat(restartedProof).isEqualTo(proof);
 	}
 

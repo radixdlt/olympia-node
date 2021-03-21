@@ -26,20 +26,16 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.store.Transaction;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>,
-	CommittedReader, RadixEngineAtomicCommitManager {
+public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
 	private Transaction transaction;
@@ -77,10 +73,7 @@ public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>
 
 	@Override
 	public void storeAtom(Atom atom) {
-		var result = store.store(this.transaction, atom);
-		if (!result.isSuccess()) {
-			throw new IllegalStateException("Unable to store atom");
-		}
+		store.store(this.transaction, atom);
 	}
 
 	@Override
@@ -104,26 +97,6 @@ public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>
 		BiFunction<V, U, V> outputReducer
 	) {
 		return store.reduceUpParticles(particleClass, initial, outputReducer);
-	}
-
-	public Optional<LedgerProof> getLastVerifiedHeader() {
-		return store.getLastHeader();
-	}
-
-	@Override
-	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
-		return store.getEpochHeader(epoch);
-	}
-
-	public VerifiedCommandsAndProof getNextCommittedCommands(long start) {
-		return this.store.getNextCommittedAtoms(start);
-	}
-
-	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
-		// TODO: verify start
-		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		return this.getNextCommittedCommands(stateVersion);
 	}
 
 	@Override

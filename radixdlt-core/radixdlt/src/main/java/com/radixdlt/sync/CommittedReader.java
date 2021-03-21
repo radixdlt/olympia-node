@@ -28,5 +28,6 @@ import java.util.Optional;
  */
 public interface CommittedReader {
 	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start);
-	Optional<LedgerProof> getEpochVerifiedHeader(long epoch);
+	Optional<LedgerProof> getEpochProof(long epoch);
+	Optional<LedgerProof> getLastProof();
 }

@@ -29,7 +29,7 @@ import java.util.Optional;
 public interface LedgerEntryStore extends LedgerEntryStoreView {
 	Transaction createTransaction();
 
-	LedgerEntryStoreResult store(Transaction tx, Atom atom);
+	void store(Transaction tx, Atom atom);
 
 	void store(Transaction tx, LedgerProof proof);
 

@@ -42,7 +42,6 @@ public class PersistenceModule extends AbstractModule {
 	protected void configure() {
 		// TODO: should be singletons?
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
 		bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
 		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);

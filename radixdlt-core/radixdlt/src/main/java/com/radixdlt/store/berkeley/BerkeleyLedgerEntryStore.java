@@ -26,11 +26,13 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.store.StoreConfig;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +51,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
@@ -74,8 +75,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.store.LedgerEntryStoreResult.ioFailure;
-import static com.radixdlt.store.LedgerEntryStoreResult.success;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -84,7 +83,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
+public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
@@ -191,17 +190,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public LedgerEntryStoreResult store(
-		Transaction tx,
-		Atom atom
-	) {
-		return withTime(() -> {
-			try {
-				return doStore(atom, unwrap(tx));
-			} catch (Exception e) {
-				throw new BerkeleyStoreException("Commit of atom failed", e);
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public void store(Transaction tx, Atom atom) {
+		withTime(() -> doStore(atom, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -533,7 +523,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 	}
 
-	private LedgerEntryStoreResult doStore(
+	private void doStore(
 		Atom atom,
 		com.sleepycat.je.Transaction transaction
 	) {
@@ -552,7 +542,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		}
 
 		try {
-			//Write atom data as soon as possible
+			// Write atom data as soon as possible
 			var offset = atomLog.write(atomData);
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
@@ -567,18 +557,18 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 			atom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
-
-
 		} catch (IOException e) {
-			return ioFailure(e);
-		} catch (UniqueConstraintException e) {
-			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 			if (transaction != null) {
 				transaction.abort();
 			}
+			throw new BerkeleyStoreException("Unable to store atom", e);
+		} catch (UniqueConstraintException e) {
+			if (transaction != null) {
+				transaction.abort();
+			}
+			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
 		}
-		return success();
 	}
 
 	private com.sleepycat.je.Transaction beginTransaction() {
@@ -637,7 +627,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedAtoms(long stateVersion) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		var atoms = this.getNextCommittedAtomsInternal(stateVersion);
 		if (atoms == null) {
 			return null;
@@ -674,7 +666,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<LedgerProof> getLastHeader() {
+	public Optional<LedgerProof> getLastProof() {
 		return withTime(() -> {
 			try (var proofCursor = proofDatabase.openCursor(null, null);) {
 				var pKey = entry();
@@ -691,7 +683,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<LedgerProof> getEpochHeader(long epoch) {
+	public Optional<LedgerProof> getEpochProof(long epoch) {
 		var value = entry();
 		var status = epochProofDatabase.get(null, toPKey(epoch), value, null);
 		if (status != SUCCESS) {

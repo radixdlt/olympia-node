@@ -97,9 +97,14 @@ class InMemoryCommittedReader implements CommittedReader {
 	}
 
 	@Override
-	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
+	public Optional<LedgerProof> getEpochProof(long epoch) {
 		synchronized (lock) {
 			return Optional.ofNullable(epochProofs.get(epoch));
 		}
+	}
+
+	@Override
+	public Optional<LedgerProof> getLastProof() {
+		return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
 	}
 }

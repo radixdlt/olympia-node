@@ -218,7 +218,12 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	@Override
-	public Optional<LedgerProof> getEpochVerifiedHeader(long epoch) {
-		return correctReader.getEpochVerifiedHeader(epoch);
+	public Optional<LedgerProof> getEpochProof(long epoch) {
+		return correctReader.getEpochProof(epoch);
+	}
+
+	@Override
+	public Optional<LedgerProof> getLastProof() {
+		return correctReader.getLastProof();
 	}
 }
