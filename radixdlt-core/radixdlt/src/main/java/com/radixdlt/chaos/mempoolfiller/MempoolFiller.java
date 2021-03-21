@@ -35,7 +35,6 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -51,7 +50,7 @@ import java.util.Random;
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAtom, LedgerProof> radixEngine;
+	private final RadixEngine<Atom, LedgerProof> radixEngine;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -71,7 +70,7 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,

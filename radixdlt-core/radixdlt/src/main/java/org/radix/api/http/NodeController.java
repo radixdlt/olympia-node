@@ -20,7 +20,7 @@ package org.radix.api.http;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.validator.ValidatorRegistration;
-import com.radixdlt.atom.LedgerAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
@@ -37,13 +37,13 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private final RadixAddress selfAddress;
-	private final RadixEngine<LedgerAtom, LedgerProof> radixEngine;
+	private final RadixEngine<Atom, LedgerProof> radixEngine;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	@Inject
 	public NodeController(
 		@Self RadixAddress selfAddress,
-		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerProof> radixEngine,
 		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
 	) {
 		this.selfAddress = selfAddress;

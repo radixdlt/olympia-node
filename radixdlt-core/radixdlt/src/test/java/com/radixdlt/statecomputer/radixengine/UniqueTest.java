@@ -32,7 +32,6 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -46,7 +45,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.atom.LedgerAtom;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
@@ -59,7 +57,7 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAtom, LedgerProof> sut;
+	@Inject private RadixEngine<Atom, LedgerProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -98,12 +96,12 @@ public final class UniqueTest {
 	public void conflicting_atoms_should_not_be_committed() throws RadixEngineException {
 		// Arrange
 		createInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		CommittedAtom committedAtom0 = CommittedAtom.create(uniqueAtom(keyPair), 0);
+		var keyPair = ECKeyPair.generateNew();
+		var committedAtom0 = uniqueAtom(keyPair);
 		sut.execute(List.of(committedAtom0));
 
 		// Act/Assert
-		CommittedAtom committedAtom1 = CommittedAtom.create(uniqueAtom(keyPair), 1);
+		var committedAtom1 = uniqueAtom(keyPair);
 		assertThatThrownBy(() -> sut.execute(List.of(committedAtom1))).isInstanceOf(RadixEngineException.class);
 	}
 }

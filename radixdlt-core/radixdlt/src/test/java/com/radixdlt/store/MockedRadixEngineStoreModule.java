@@ -31,11 +31,9 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.UInt256;
 
@@ -47,13 +45,13 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom, LedgerProof> engineStore(
+	private EngineStore<Atom, LedgerProof> engineStore(
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		InMemoryEngineStore<LedgerAtom, LedgerProof> inMemoryEngineStore = new InMemoryEngineStore<>();
+		InMemoryEngineStore<Atom, LedgerProof> inMemoryEngineStore = new InMemoryEngineStore<>();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
@@ -62,12 +60,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			hasher.hash(command),
 			validatorSet
 		);
-		CommittedAtom committedAtom = CommittedAtom.create(
-			genesisAtom,
-			genesisLedgerHeader
-		);
-		if (!inMemoryEngineStore.containsAtom(committedAtom)) {
-			inMemoryEngineStore.storeAtom(committedAtom);
+		if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
+			inMemoryEngineStore.storeAtom(genesisAtom);
 		}
 		return inMemoryEngineStore;
 	}

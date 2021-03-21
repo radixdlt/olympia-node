@@ -29,7 +29,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
 
 import java.util.Optional;
@@ -41,7 +40,6 @@ import static org.radix.api.jsonrpc.AtomStatus.CONFLICT_LOSER;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_DUPLICATE;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_FULL;
-import static org.radix.api.jsonrpc.AtomStatus.MISSING_DEPENDENCY;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;

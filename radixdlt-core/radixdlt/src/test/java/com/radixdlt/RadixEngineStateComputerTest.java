@@ -68,13 +68,11 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.MaxValidators;
@@ -108,7 +106,7 @@ public class RadixEngineStateComputerTest {
 	private Atom genesisAtom;
 
 	@Inject
-	private RadixEngine<LedgerAtom, LedgerProof> radixEngine;
+	private RadixEngine<Atom, LedgerProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -118,7 +116,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<LedgerAtom, LedgerProof> engineStore;
+	private EngineStore<Atom, LedgerProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -137,7 +135,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAtom, LedgerProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<Atom, LedgerProof>>() { }).toInstance(engineStore);
 				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
@@ -165,7 +163,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		RadixEngine.RadixEngineBranch<LedgerAtom, LedgerProof> branch = radixEngine.transientBranch();
+		RadixEngine.RadixEngineBranch<Atom, LedgerProof> branch = radixEngine.transientBranch();
 		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
@@ -182,11 +180,7 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		CommittedAtom committedAtom = CommittedAtom.create(
-			genesisAtom,
-			genesisLedgerHeader
-		);
-		radixEngine.execute(List.of(committedAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
+		radixEngine.execute(List.of(genesisAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
 	}
 
 	@Before

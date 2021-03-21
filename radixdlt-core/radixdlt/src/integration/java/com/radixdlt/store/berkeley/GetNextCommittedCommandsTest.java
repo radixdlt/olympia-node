@@ -32,6 +32,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.utils.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,13 +201,14 @@ public class GetNextCommittedCommandsTest {
 	}
 
 	private void generateAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
-		final var atom = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
+		final var atomAndProof = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
 		this.committedAtomsStore.startTransaction();
-		this.committedAtomsStore.storeAtom(atom);
+		this.committedAtomsStore.storeAtom(atomAndProof.getFirst());
+		this.committedAtomsStore.storeMetadata(atomAndProof.getSecond());
 		this.committedAtomsStore.commitTransaction();
 	}
 
-	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
+	private Pair<Atom, LedgerProof> generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
 		builder.addParticleGroup(ParticleGroup.builder().spinUp(new RRIParticle(rri)).build());
@@ -244,6 +245,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return CommittedAtom.create(clientAtom, proof);
+		return Pair.of(clientAtom, proof);
 	}
 }

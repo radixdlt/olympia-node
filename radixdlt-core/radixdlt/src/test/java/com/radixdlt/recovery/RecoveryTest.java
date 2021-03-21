@@ -60,7 +60,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -181,8 +180,8 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<LedgerAtom, LedgerProof> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom, LedgerProof>>() { }));
+	private RadixEngine<Atom, LedgerProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerProof>>() { }));
 	}
 
 	private CommittedAtomsStore getAtomStore() {
@@ -218,14 +217,14 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom, LedgerProof> radixEngine = getRadixEngine();
+		RadixEngine<Atom, LedgerProof> radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
 		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom, LedgerProof> restartedRadixEngine = getRadixEngine();
+		RadixEngine<Atom, LedgerProof> restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}

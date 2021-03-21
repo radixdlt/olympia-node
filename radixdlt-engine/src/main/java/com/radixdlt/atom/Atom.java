@@ -32,6 +32,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
@@ -54,7 +55,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("radix.atom")
-public final class Atom implements LedgerAtom {
+public final class Atom implements RadixEngineAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -224,13 +225,10 @@ public final class Atom implements LedgerAtom {
 		return witness;
 	}
 
-	// FIXME: this should be more than just witness
-	@Override
 	public AID getAID() {
 		return AID.from(witness.asBytes());
 	}
 
-	@Override
 	public String getMessage() {
 		return this.message;
 	}

@@ -21,10 +21,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.LedgerAtom;
 
 /**
  * Schedule of fees.
@@ -50,7 +50,7 @@ public final class FeeTable {
 		return this.feeEntries;
 	}
 
-	public UInt256 feeFor(LedgerAtom atom, Set<Particle> outputs, int feeSize) {
+	public UInt256 feeFor(Atom atom, Set<Particle> outputs, int feeSize) {
 		UInt384 incrementalFees = UInt384.ZERO;
 		for (FeeEntry entry : this.feeEntries) {
 			incrementalFees = incrementalFees.add(entry.feeFor(atom, feeSize, outputs));

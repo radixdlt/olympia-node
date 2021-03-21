@@ -30,7 +30,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Cursor;
@@ -81,6 +80,7 @@ import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.LockMode.READ_COMMITTED;
+import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
@@ -193,7 +193,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	@Override
 	public LedgerEntryStoreResult store(
 		Transaction tx,
-		CommittedAtom atom
+		Atom atom
 	) {
 		return withTime(() -> {
 			try {
@@ -208,7 +208,21 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	public void store(Transaction tx, LedgerProof proof) {
 		var txn = unwrap(tx);
 		var prevHeaderKey = entry();
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+
+		// TODO: combine atom and proof store and remove these extra checks
+		try (var atomCursor = atomDatabase.openCursor(txn, null)) {
+			var key = entry();
+			var status = atomCursor.getLast(key, null, DEFAULT);
+			if (status == NOTFOUND) {
+				throw new IllegalStateException("No atom found before storing proof.");
+			}
+
+			if (Longs.fromByteArray(key.getData()) != proof.getStateVersion()) {
+				throw new IllegalStateException("Proof does not match last atom.");
+			}
+		}
+
+		try (var proofCursor = proofDatabase.openCursor(txn, null)) {
 			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
 			// Cannot remove end of epoch proofs
 			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
@@ -520,18 +534,28 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private LedgerEntryStoreResult doStore(
-		CommittedAtom atom,
+		Atom atom,
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
-		var atomData = serialize(atom.getAtom());
+		var atomData = serialize(atom);
+
+		final long stateVersion;
+		try (var cursor = atomDatabase.openCursor(transaction, null)) {
+			var key = entry();
+			var status = cursor.getLast(key, null, DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				stateVersion = 0;
+			} else {
+				stateVersion = Longs.fromByteArray(key.getData()) + 1;
+			}
+		}
 
 		try {
 			//Write atom data as soon as possible
 			var offset = atomLog.write(atomData);
-
 			// Store atom indices
-			var pKey = toPKey(atom.getStateVersion());
+			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
 			failIfNotSuccess(atomDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);

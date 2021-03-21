@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -27,7 +28,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -38,7 +38,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom, LedgerProof>,
+public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>,
 	CommittedReader, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
 	private final PersistentVertexStore persistentVertexStore;
@@ -76,8 +76,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Led
 	}
 
 	@Override
-	public void storeAtom(CommittedAtom committedAtom) {
-		var result = store.store(this.transaction, committedAtom);
+	public void storeAtom(Atom atom) {
+		var result = store.store(this.transaction, atom);
 		if (!result.isSuccess()) {
 			throw new IllegalStateException("Unable to store atom");
 		}
@@ -93,7 +93,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom, Led
 	}
 
 	@Override
-	public boolean containsAtom(CommittedAtom atom) {
+	public boolean containsAtom(Atom atom) {
 		return store.contains(atom.getAID());
 	}
 

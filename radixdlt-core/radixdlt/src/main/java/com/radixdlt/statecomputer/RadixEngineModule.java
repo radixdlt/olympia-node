@@ -40,7 +40,6 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -103,11 +102,11 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<LedgerAtom, LedgerProof> getRadixEngine(
+	private RadixEngine<Atom, LedgerProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<LedgerAtom, LedgerProof> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker,
+		EngineStore<Atom, LedgerProof> engineStore,
+		AtomChecker<Atom> ledgerAtomChecker,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking

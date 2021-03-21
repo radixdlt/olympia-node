@@ -49,7 +49,6 @@ import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -71,7 +70,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAtom, LedgerProof> radixEngine;
+	private final RadixEngine<Atom, LedgerProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
@@ -87,7 +86,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerProof> radixEngine,
 		Mempool<Atom> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
@@ -182,7 +181,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
-		RadixEngineBranch<LedgerAtom, LedgerProof> branch,
+		RadixEngineBranch<Atom, LedgerProof> branch,
 		long epoch,
 		View view,
 		long timestamp,
@@ -239,7 +238,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommand(
-		RadixEngineBranch<LedgerAtom, LedgerProof> branch,
+		RadixEngineBranch<Atom, LedgerProof> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
@@ -297,16 +296,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private void commitCommand(long version, Atom atom, LedgerProof proof) {
 		try {
-			final CommittedAtom committedAtom;
-			if (proof.getStateVersion() == version) {
-				committedAtom = CommittedAtom.create(atom, proof);
-			} else {
-				committedAtom = CommittedAtom.create(atom, version);
-			}
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.execute(
-				List.of(committedAtom),
+				List.of(atom),
 				proof.getStateVersion() == version ? proof : null,
 				PermissionLevel.SUPER_USER
 			);
