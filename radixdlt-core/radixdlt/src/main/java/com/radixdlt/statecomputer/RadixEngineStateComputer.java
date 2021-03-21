@@ -147,22 +147,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public void addToMempool(Command command, @Nullable BFTNode origin) {
-		Atom atom = command.map(payload -> {
-			try {
-				return serialization.fromDson(payload, Atom.class);
-			} catch (DeserializeException e) {
-				return null;
-			}
-		});
-		if (atom == null) {
-			mempoolAddFailureEventDispatcher.dispatch(
-				MempoolAddFailure.create(command, new MempoolRejectedException("Bad atom"))
-			);
-			return;
-		}
-
 		try {
-			mempool.add(atom);
+			mempool.add(command);
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
 			log.trace("Mempool duplicate command: {} origin: {}", command, origin);
@@ -183,13 +169,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toSet());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Atom> commands = mempool.getCommands(1, preparedAtoms);
+		final List<Command> commands = mempool.getCommands(1, preparedAtoms);
 		if (commands.isEmpty()) {
 			return null;
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION);
-			byte[] dson = serialization.toDson(commands.get(0), Output.ALL);
-			return new Command(dson);
+			return commands.get(0);
 		}
 	}
 
@@ -257,11 +242,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
 		if (next != null) {
-			final RadixEngineCommand radixEngineCommand;
+			final Atom atom;
 			try {
-				Atom atom = mapCommand(next);
-				HashCode hash = hasher.hash(next);
-				radixEngineCommand = new RadixEngineCommand(next, hash, atom, PermissionLevel.USER);
+				atom = mapCommand(next);
 				branch.execute(atom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
@@ -269,6 +252,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 				return;
 			}
 
+			var hash = hasher.hash(next);
+			var radixEngineCommand = new RadixEngineCommand(next, hash, atom, PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}

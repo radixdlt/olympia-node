@@ -56,7 +56,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 		Random random,
 		Hasher hasher
 	) {
-		return new SimpleMempool<>(maxSize, hasher::hash, systemCounters, random);
+		return new SimpleMempool(maxSize, hasher::hash, systemCounters, random);
 	}
 
 	@Provides

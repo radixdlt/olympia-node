@@ -19,6 +19,8 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.counters.SystemCounters;
@@ -33,6 +35,7 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -41,7 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -51,19 +53,17 @@ import java.util.stream.Stream;
  * A mempool which uses internal radix engine to be more efficient.
  */
 public final class RadixEngineMempool implements Mempool<Atom> {
-	private final ConcurrentHashMap<AID, Atom> data = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<AID, Command> data = new ConcurrentHashMap<>();
 	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
-	private final Random random;
 	private final RadixEngine<LedgerAtom> radixEngine;
 
 	@Inject
 	public RadixEngineMempool(
 		RadixEngine<LedgerAtom> radixEngine,
 		@MempoolMaxSize int maxSize,
-		SystemCounters counters,
-		Random random
+		SystemCounters counters
 	) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
@@ -71,11 +71,17 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 		this.radixEngine = radixEngine;
 		this.maxSize = maxSize;
 		this.counters = Objects.requireNonNull(counters);
-		this.random = Objects.requireNonNull(random);
 	}
 
 	@Override
-	public void add(Atom atom) throws MempoolRejectedException {
+	public void add(Command command) throws MempoolRejectedException {
+		Atom atom;
+		try {
+			atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
+		} catch (DeserializeException e) {
+			throw new MempoolRejectedException("Deserialize failure.");
+		}
+
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
@@ -96,7 +102,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(atom.getAID(), atom);
+		this.data.put(atom.getAID(), command);
 
 		atom.uniqueInstructions()
 			.forEach(i -> particleIndex.merge(i, Set.of(atom.getAID()), Sets::union));
@@ -115,12 +121,19 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 				return aids != null ? aids.stream() : Stream.empty();
 			})
 			.forEach(aid -> {
-				var clientAtom = data.remove(aid);
+				var command = data.remove(aid);
 				// TODO: Cleanup
-				if (clientAtom != null) {
-					removed.add(Pair.of(clientAtom, new RadixEngineMempoolException(
+				if (command != null) {
+					Atom atom;
+					try {
+						atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
+
+					removed.add(Pair.of(atom, new RadixEngineMempoolException(
 						new RadixEngineException(
-							clientAtom,
+							atom,
 							RadixEngineErrorCode.CM_ERROR,
 							"State conflict",
 							DataPointer.ofAtom()
@@ -135,7 +148,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<Atom> getCommands(int count, Set<Atom> prepared) {
+	public List<Command> getCommands(int count, Set<Atom> prepared) {
 		var copy = new HashSet<>(data.keySet());
 		prepared.stream()
 			.flatMap(Atom::uniqueInstructions)
