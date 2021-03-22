@@ -28,7 +28,6 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -41,14 +40,16 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -57,7 +58,7 @@ public class FixedTokenTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private RadixEngine<LedgerAtom> sut;
+	private RadixEngine<Atom, LedgerAndBFTProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -135,16 +136,16 @@ public class FixedTokenTest {
 		var upToken = createToken(keyPair, builder);
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = CommittedAtom.create(builder.buildAtom(), 0);
-		sut.execute(atom);
+		var atom = builder.buildAtom();
+		sut.execute(List.of(atom));
 		var builder2 = Atom.newBuilder();
 		spendToken(builder2, upToken, 1);
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(keyPair.euid(), keyPair.sign(hashToSign2));
-		var atom2 = CommittedAtom.create(builder2.buildAtom(), 1);
+		var atom2 = builder2.buildAtom();
 
 		// Act/Assert
-		sut.execute(atom2);
+		sut.execute(List.of(atom2));
 	}
 
 	@Test
@@ -157,10 +158,10 @@ public class FixedTokenTest {
 		spendToken(builder, upToken, 1);
 		HashCode hashToSign = builder.computeHashToSign();
 		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = CommittedAtom.create(builder.buildAtom(), 0);
+		var atom = builder.buildAtom();
 
 		// Act/Assert
-		sut.execute(atom);
+		sut.execute(List.of(atom));
 	}
 
 	@Test
@@ -173,9 +174,9 @@ public class FixedTokenTest {
 		spendToken(builder, upToken, 2);
 		HashCode hashToSign = builder.computeHashToSign();
 		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = CommittedAtom.create(builder.buildAtom(), 0);
+		var atom = builder.buildAtom();
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(atom)).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 }

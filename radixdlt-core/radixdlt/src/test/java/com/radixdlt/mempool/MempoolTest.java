@@ -30,7 +30,7 @@ import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -263,8 +263,9 @@ public class MempoolTest {
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair, hasher);
-		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -287,8 +288,9 @@ public class MempoolTest {
 
 		// Act
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
-		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -309,8 +311,9 @@ public class MempoolTest {
 
 		// Act
 		Command command3 = createCommand(keyPair, hasher, 0, 1);
-		var proof = mock(VerifiedLedgerHeaderAndProof.class);
+		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

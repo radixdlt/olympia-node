@@ -33,13 +33,13 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -53,6 +53,7 @@ import java.util.function.Predicate;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
@@ -102,20 +103,22 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<LedgerAtom> getRadixEngine(
+	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker,
+		EngineStore<Atom, LedgerAndBFTProof> engineStore,
+		AtomChecker<Atom> ledgerAtomChecker,
+		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
+		var radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
-			ledgerAtomChecker
+			ledgerAtomChecker,
+			batchVerifier
 		);
 
 		// TODO: Convert to something more like the following:

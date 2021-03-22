@@ -17,26 +17,29 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.identifiers.AID;
 
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
- * A read/write instance of a ledger store containing ledger entries.
+ * Index of atoms
  */
-public interface LedgerEntryStore extends LedgerEntryStoreView {
-	Transaction createTransaction();
+public interface AtomIndex {
+	/**
+	 * Checks whether the given aid is contained in this view
+	 * @param aid The aid
+	 * @return Whether the given aid is contained in this view
+	 */
+	boolean contains(AID aid);
 
-	LedgerEntryStoreResult store(Transaction tx, CommittedAtom atom);
+	/**
+	 * Gets the atom associated with a certain aid
+	 * @param aid The aid
+	 * @return The atom associated with the given aid (if any)
+	 */
+	Optional<Atom> get(AID aid);
 
-	void close();
-
-	Optional<SerializedVertexStoreState> loadLastVertexStoreState();
-
-	void forEach(Consumer<SpunParticle> particleConsumer);
-
-	void onParticleCommit(Consumer<SpunParticle> particleConsumer);
+	// TODO: remove once we clean up API to not require searching
+	SearchCursor search();
 }

@@ -27,6 +27,23 @@ import java.util.Optional;
  * Read only store interface for Constraint Machine validation
  */
 public interface CMStore {
+	/**
+	 * Hack for atomic transaction, better to implement
+	 * whole function in single interface in future.
+	 */
+	interface Transaction {
+		default void commit() {
+		}
+
+		default void abort() {
+		}
+
+		default <T> T unwrap() {
+			return null;
+		}
+	}
+
+	Transaction createTransaction();
 
 	/**
 	 * Get the current spin of a particle.
@@ -34,7 +51,7 @@ public interface CMStore {
 	 * @param particle the particle to get the spin of
 	 * @return the current spin of a particle
 	 */
-	Spin getSpin(Particle particle);
+	Spin getSpin(Transaction txn, Particle particle);
 
-	Optional<Particle> loadUpParticle(HashCode particleHash);
+	Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash);
 }

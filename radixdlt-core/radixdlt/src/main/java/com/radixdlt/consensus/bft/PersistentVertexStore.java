@@ -17,13 +17,10 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.store.Transaction;
-
 /**
  * Store which saves the Vertex Store State for recovery
  * TODO: Remove this interface, integrate with RadixEngine ((RPNV1-718)
  */
 public interface PersistentVertexStore {
 	void save(VerifiedVertexStoreState vertexStoreState);
-	void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState);
 }

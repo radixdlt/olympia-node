@@ -24,6 +24,8 @@ import javax.inject.Inject;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -32,6 +34,9 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,7 +54,7 @@ import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -62,18 +67,18 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.utils.UInt256;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * Tests to ensure that command batches read from {@link CommittedAtomsStore}
+ * Tests to ensure that command batches read from {@link CommittedReader}
  * do not cross epoch boundaries.
  */
 public class GetNextCommittedCommandsTest {
@@ -83,7 +88,10 @@ public class GetNextCommittedCommandsTest {
 	private Injector injector;
 
 	@Inject
-	private CommittedAtomsStore committedAtomsStore;
+	private EngineStore<Atom, LedgerAndBFTProof> committedAtomsStore;
+
+	@Inject
+	private CommittedReader committedReader;
 
 	@Inject
 	private Hasher hasher;
@@ -103,7 +111,7 @@ public class GetNextCommittedCommandsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(new TypeLiteral<EventDispatcher<AtomCommittedToLedger>>() { }).toInstance(e -> { });
+					bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { }).toInstance(e -> { });
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of());
@@ -122,11 +130,20 @@ public class GetNextCommittedCommandsTest {
 		}
 	}
 
+	private static DtoLedgerHeaderAndProof mockedProof(long stateVersion) {
+		var headerAndProof = mock(DtoLedgerHeaderAndProof.class);
+		var ledgerHeader = mock(LedgerHeader.class);
+		var accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(stateVersion);
+		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
+		when(headerAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
+		return headerAndProof;
+	}
+
 	@Test
 	public void when_request_from_empty_store__null_returned() {
 		// No atoms generated
-
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands).isNull();
 	}
@@ -137,7 +154,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
@@ -149,7 +166,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 10);
 		generateAtoms(2, 11, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(9));
 
 		assertThat(commands.getCommands())
 			.hasSize(1);
@@ -160,7 +177,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(0, 0, 1);
 		generateAtoms(1, 1, 10);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(0);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(0));
 
 		assertThat(commands.getCommands())
 			.hasSize(10);
@@ -172,7 +189,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 100);
 		generateAtoms(2, 101, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(9);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(9));
 
 		assertThat(commands.getCommands())
 			.hasSize(91);
@@ -184,7 +201,7 @@ public class GetNextCommittedCommandsTest {
 		generateAtoms(1, 1, 200);
 		generateAtoms(2, 201, 100);
 
-		final var commands = this.committedAtomsStore.getNextCommittedCommands(100);
+		final var commands = this.committedReader.getNextCommittedCommands(mockedProof(100));
 
 		assertThat(commands.getCommands())
 			.hasSize(100);
@@ -202,13 +219,15 @@ public class GetNextCommittedCommandsTest {
 	}
 
 	private void generateAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
-		final var atom = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
-		this.committedAtomsStore.startTransaction();
-		this.committedAtomsStore.storeAtom(atom);
-		this.committedAtomsStore.commitTransaction();
+		final var atomAndProof = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
+		var txn = this.committedAtomsStore.createTransaction();
+		this.committedAtomsStore.storeAtom(txn, atomAndProof.getFirst());
+		var meta = LedgerAndBFTProof.create(atomAndProof.getSecond());
+		this.committedAtomsStore.storeMetadata(txn, meta);
+		txn.commit();
 	}
 
-	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
+	private Pair<Atom, LedgerProof> generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
 		builder.addParticleGroup(ParticleGroup.builder().spinUp(new RRIParticle(rri)).build());
@@ -237,7 +256,7 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader = LedgerHeader.create(epoch, view, committedAccumulatorState, System.currentTimeMillis());
 		}
 		final var signatures = new TimestampedECDSASignatures();
-		final var proof = new VerifiedLedgerHeaderAndProof(
+		final var proof = new LedgerProof(
 			proposed,
 			parent,
 			stateVersion,
@@ -245,6 +264,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return CommittedAtom.create(clientAtom, proof);
+		return Pair.of(clientAtom, proof);
 	}
 }

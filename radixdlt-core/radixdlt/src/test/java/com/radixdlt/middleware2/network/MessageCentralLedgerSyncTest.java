@@ -25,7 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -146,7 +146,7 @@ public class MessageCentralLedgerSyncTest {
 		TestSubscriber<RemoteEvent<StatusResponse>> testObserver =
 			this.messageCentralLedgerSync.statusResponses().test();
 		final var peer = createPeer();
-		final var header = mock(VerifiedLedgerHeaderAndProof.class);
+		final var header = mock(LedgerProof.class);
 		StatusResponseMessage statusResponseMessage = mock(StatusResponseMessage.class);
 		when(statusResponseMessage.getHeader()).thenReturn(header);
 		messageCentral.send(peer, statusResponseMessage);

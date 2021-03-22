@@ -19,7 +19,6 @@ package com.radixdlt.middleware2;
 
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
@@ -31,7 +30,6 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
@@ -43,7 +41,7 @@ import javax.inject.Inject;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
+public class TokenFeeLedgerAtomChecker implements AtomChecker<Atom> {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -62,7 +60,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom, PermissionLevel permissionLevel) {
+	public Result check(Atom atom, PermissionLevel permissionLevel) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
@@ -76,31 +74,21 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.success();
 		}
 
-		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
-		final Atom clientAtom;
-		if (atom instanceof Atom) {
-			clientAtom = (Atom) atom;
-		} else if (atom instanceof CommittedAtom) {
-			clientAtom = ((CommittedAtom) atom).getAtom();
-		} else {
-			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
-		}
-
 		// no need for fees if a system update
 		// TODO: update should also have no message
-		if (clientAtom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
+		if (atom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
 			return Result.success();
 		}
 
-		final int totalSize = this.serialization.toDson(clientAtom, Output.PERSIST).length;
+		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
 		if (totalSize > MAX_ATOM_SIZE) {
 			return Result.error("atom too big: " + totalSize);
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
-		Set<Particle> outputParticles = clientAtom.upParticles().collect(Collectors.toSet());
+		Set<Particle> outputParticles = atom.upParticles().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
-		UInt256 feePaid = computeFeePaid(clientAtom);
+		UInt256 feePaid = computeFeePaid(atom);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format(
 				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
@@ -114,7 +102,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		return Result.success();
 	}
 
-	private boolean isMagic(LedgerAtom atom) {
+	private boolean isMagic(Atom atom) {
 		final var message = atom.getMessage();
 		return message != null && message.startsWith("magic:0xdeadbeef");
 	}

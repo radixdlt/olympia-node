@@ -20,14 +20,12 @@ package org.radix.api.observable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.SearchCursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +54,7 @@ public class AtomEventObserver {
 	private CompletableFuture<?> currentRunnable;
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
-	private final LedgerEntryStore store;
+	private final AtomIndex store;
 	private final Serialization serialization;
 	private final Hasher hasher;
 
@@ -68,7 +66,7 @@ public class AtomEventObserver {
 		AtomQuery atomQuery,
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
-		LedgerEntryStore store,
+		AtomIndex store,
 		Serialization serialization,
 		Hasher hasher
 	) {
@@ -106,8 +104,8 @@ public class AtomEventObserver {
 		}
 	}
 
-	public void tryNext(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
-		if (committedAtom.getAtom() == null) {
+	public void tryNext(Atom atom, ImmutableSet<EUID> indicies) {
+		if (atom == null) {
 			return;
 		}
 
@@ -115,7 +113,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getAtom());
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, atom);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}

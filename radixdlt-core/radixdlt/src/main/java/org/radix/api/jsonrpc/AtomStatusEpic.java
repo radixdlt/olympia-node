@@ -17,6 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
@@ -28,7 +29,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
 
 import java.util.Optional;
@@ -40,7 +40,6 @@ import static org.radix.api.jsonrpc.AtomStatus.CONFLICT_LOSER;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_DUPLICATE;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_FULL;
-import static org.radix.api.jsonrpc.AtomStatus.MISSING_DEPENDENCY;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
@@ -111,10 +110,9 @@ public class AtomStatusEpic {
 		}
 
 		@Override
-		public void onStored(CommittedAtom committedAtom) {
+		public void onStored(Atom committedAtom) {
 			sendAtomSubmissionState.accept(STORED, jsonObject()
 				.put("aid", committedAtom.getAID())
-				.put("stateVersion", committedAtom.getStateVersion())
 			);
 		}
 

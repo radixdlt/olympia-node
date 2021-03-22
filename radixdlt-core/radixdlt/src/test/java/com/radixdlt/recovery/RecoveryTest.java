@@ -40,10 +40,9 @@ import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -69,21 +68,21 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.CommittedReader;
+import io.reactivex.rxjava3.schedulers.Timed;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-
-import io.reactivex.rxjava3.schedulers.Timed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -146,11 +145,11 @@ public class RecoveryTest {
 	@After
 	public void teardown() {
 		if (this.currentInjector != null) {
-			LedgerEntryStore ledgerStore = this.currentInjector.getInstance(LedgerEntryStore.class);
+			var ledgerStore = this.currentInjector.getInstance(BerkeleyLedgerEntryStore.class);
 			ledgerStore.close();
-			PersistentSafetyStateStore safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
+			var safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
 			safetyStore.close();
-			DatabaseEnvironment dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
+			var dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
 			dbEnv.stop();
 		}
 	}
@@ -183,12 +182,12 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<LedgerAtom> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerAndBFTProof>>() { }));
 	}
 
-	private CommittedAtomsStore getAtomStore() {
-		return currentInjector.getInstance(CommittedAtomsStore.class);
+	private CommittedReader getCommittedReader() {
+		return currentInjector.getInstance(CommittedReader.class);
 	}
 
 	private EpochView getLastEpochView() {
@@ -220,14 +219,14 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom> radixEngine = getRadixEngine();
+		var radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
 		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine();
+		var restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}
@@ -236,15 +235,15 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_header() {
 		// Arrange
 		processForCount(100);
-		CommittedAtomsStore atomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> proof = atomStore.getLastVerifiedHeader();
+		var reader = getCommittedReader();
+		Optional<LedgerProof> proof = reader.getLastProof();
 
 		// Act
 		restartNode();
 
 		// Assert
-		CommittedAtomsStore restartedAtomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
+		var restartedReader = getCommittedReader();
+		Optional<LedgerProof> restartedProof = restartedReader.getLastProof();
 		assertThat(restartedProof).isEqualTo(proof);
 	}
 
@@ -258,8 +257,8 @@ public class RecoveryTest {
 		restartNode();
 
 		// Assert
-		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
-			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
+		LedgerProof restartedEpochProof = currentInjector.getInstance(
+			Key.get(LedgerProof.class, LastEpochProof.class)
 		);
 
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();

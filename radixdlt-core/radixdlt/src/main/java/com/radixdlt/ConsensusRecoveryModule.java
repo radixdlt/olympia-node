@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -64,7 +64,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
 
 	@Provides
 	private BFTValidatorSet validatorSet(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
+		@LastEpochProof LedgerProof lastEpochProof
 	) {
 		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
 	}

@@ -35,9 +35,9 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +50,7 @@ import java.util.Optional;
  */
 public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
-	private final RadixEngine<LedgerAtom> radixEngine;
+	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 	private final RadixAddress self;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
@@ -65,7 +65,7 @@ public final class ValidatorRegistrator {
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;

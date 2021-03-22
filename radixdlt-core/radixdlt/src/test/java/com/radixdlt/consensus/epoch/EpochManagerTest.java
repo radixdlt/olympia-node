@@ -50,7 +50,7 @@ import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -210,14 +210,14 @@ public class EpochManagerTest {
 
 			@Provides
 			@LastProof
-			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
-				return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+			LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
+				return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
 			}
 
 			@Provides
 			@LastEpochProof
-			VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
-				return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+			LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+				return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
 			}
 
 			@Provides
@@ -266,7 +266,7 @@ public class EpochManagerTest {
 			nextValidatorSet,
 			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty())
 		);
-		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+		LedgerProof proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(mock(LedgerUpdate.class), epochChange);

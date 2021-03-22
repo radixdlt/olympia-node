@@ -18,6 +18,8 @@ package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
@@ -34,12 +36,12 @@ import java.util.function.Function;
 /**
  * Simple mempool which performs no validation and removes on commit.
  */
-public final class SimpleMempool<T, U> implements Mempool<T> {
-	private final LinkedHashMap<U, T> data = Maps.newLinkedHashMap();
+public final class SimpleMempool implements Mempool<Command> {
+	private final LinkedHashMap<HashCode, Command> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
-	private final Function<T, U> functionToKey;
+	private final Function<Command, HashCode> functionToKey;
 
 	private final SystemCounters counters;
 
@@ -47,7 +49,7 @@ public final class SimpleMempool<T, U> implements Mempool<T> {
 
 	public SimpleMempool(
 		@MempoolMaxSize int maxSize,
-		Function<T, U> functionToKey,
+		Function<Command, HashCode> functionToKey,
 		SystemCounters counters,
 		Random random
 	) {
@@ -61,7 +63,7 @@ public final class SimpleMempool<T, U> implements Mempool<T> {
 	}
 
 	@Override
-	public void add(T command) throws MempoolFullException, MempoolDuplicateException {
+	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
@@ -75,23 +77,23 @@ public final class SimpleMempool<T, U> implements Mempool<T> {
 	}
 
 	@Override
-	public List<Pair<T, Exception>> committed(List<T> commands) {
+	public List<Pair<Command, Exception>> committed(List<Command> commands) {
 		commands.forEach(cmd -> this.data.remove(functionToKey.apply(cmd)));
 		updateCounts();
 		return List.of();
 	}
 
 	@Override
-	public List<T> getCommands(int count, Set<T> seen) {
+	public List<Command> getCommands(int count, Set<Command> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
-			List<T> commands = Lists.newArrayList();
+			List<Command> commands = Lists.newArrayList();
 			var values = new ArrayList<>(this.data.values());
 			Collections.shuffle(values, random);
 
-			Iterator<T> i = values.iterator();
+			Iterator<Command> i = values.iterator();
 			while (commands.size() < size && i.hasNext()) {
-				T a = i.next();
+				Command a = i.next();
 				if (!seen.contains(a)) {
 					commands.add(a);
 				}

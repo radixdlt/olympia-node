@@ -26,7 +26,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -35,11 +35,9 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
@@ -47,9 +45,10 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
+import com.radixdlt.sync.CommittedReader;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -58,15 +57,14 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
-		RadixEngine<LedgerAtom> radixEngine,
-		CommittedAtomsStore store,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
 		Serialization serialization,
 		Hasher hasher
 	) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisAtom, PermissionLevel.SYSTEM);
+		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -75,46 +73,40 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
 		var payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
-		var genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+		var genesisProof = LedgerProof.genesis(
 			hasher.hash(command),
 			genesisValidatorSet
 		);
-		if (!genesisLedgerHeader.isEndOfEpoch()) {
+		if (!genesisProof.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		var committedAtom = CommittedAtom.create(
-			genesisAtom,
-			genesisLedgerHeader
-		);
-		store.startTransaction();
-		radixEngine.execute(committedAtom, PermissionLevel.SYSTEM);
-		store.commitTransaction();
+		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
 	}
 
 	@Provides
 	@Singleton
 	@LastStoredProof
-	VerifiedLedgerHeaderAndProof lastStoredProof(
-		RadixEngine<LedgerAtom> radixEngine,
-		CommittedAtomsStore store,
+	LedgerProof lastStoredProof(
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		CommittedReader committedReader,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		if (!store.containsAID(genesisAtom.getAID())) {
-			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
+		if (!radixEngine.contains(genesisAtom)) {
+			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 
-		return store.getLastVerifiedHeader().orElseThrow();
+		return committedReader.getLastProof().orElseThrow();
 	}
 
 	@Provides
 	@Singleton
 	@LastProof
-	VerifiedLedgerHeaderAndProof lastProof(
+	LedgerProof lastProof(
 		VerifiedVertexStoreState vertexStoreState,
-		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
+		@LastStoredProof LedgerProof lastStoredProof
 	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return vertexStoreState.getRootHeader();
@@ -126,14 +118,14 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(
-		CommittedAtomsStore store,
-		@LastStoredProof VerifiedLedgerHeaderAndProof lastStoredProof
+	LedgerProof lastEpochProof(
+		CommittedReader committedReader,
+		@LastStoredProof LedgerProof lastStoredProof
 	) {
 		if (lastStoredProof.isEndOfEpoch()) {
 			return lastStoredProof;
 		}
-		return store.getEpochVerifiedHeader(lastStoredProof.getEpoch()).orElseThrow();
+		return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
 	}
 
 	private static VerifiedVertexStoreState serializedToVerifiedVertexStore(
@@ -157,7 +149,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	}
 
 	private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
-		VerifiedLedgerHeaderAndProof lastEpochProof,
+		LedgerProof lastEpochProof,
 		Hasher hasher
 	) {
 		var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
@@ -175,11 +167,11 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VerifiedVertexStoreState vertexStoreState(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
-		LedgerEntryStore ledgerEntryStore,
+		@LastEpochProof LedgerProof lastEpochProof,
+		Optional<SerializedVertexStoreState> serializedVertexStoreState,
 		Hasher hasher
 	) {
-		return ledgerEntryStore.loadLastVertexStoreState()
+		return serializedVertexStoreState
 			.filter(vertexStoreState -> vertexStoreState.getHighQC().highestQC().getEpoch() == lastEpochProof.getEpoch() + 1)
 			.map(state -> serializedToVerifiedVertexStore(state, hasher))
 			.orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));

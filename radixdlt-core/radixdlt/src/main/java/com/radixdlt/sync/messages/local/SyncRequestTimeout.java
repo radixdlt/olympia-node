@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync.messages.local;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.Objects;
@@ -28,13 +28,13 @@ import java.util.Objects;
 public final class SyncRequestTimeout {
 
 	private final BFTNode peer;
-	private final VerifiedLedgerHeaderAndProof currentHeader;
+	private final LedgerProof currentHeader;
 
-	public static SyncRequestTimeout create(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
+	public static SyncRequestTimeout create(BFTNode peer, LedgerProof currentHeader) {
 		return new SyncRequestTimeout(peer, currentHeader);
 	}
 
-	private SyncRequestTimeout(BFTNode peer, VerifiedLedgerHeaderAndProof currentHeader) {
+	private SyncRequestTimeout(BFTNode peer, LedgerProof currentHeader) {
 		this.peer = peer;
 		this.currentHeader = currentHeader;
 	}
@@ -43,7 +43,7 @@ public final class SyncRequestTimeout {
 		return peer;
 	}
 
-	public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+	public LedgerProof getCurrentHeader() {
 		return currentHeader;
 	}
 

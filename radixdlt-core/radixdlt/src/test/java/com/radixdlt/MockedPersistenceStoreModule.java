@@ -22,7 +22,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.Transaction;
 
 import java.util.Optional;
 
@@ -54,11 +53,6 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 	private static class MockedPersistentVertexStore implements PersistentVertexStore {
 		@Override
 		public void save(VerifiedVertexStoreState vertexStoreState) {
-			// Nothing to do here
-		}
-
-		@Override
-		public void save(Transaction tx, VerifiedVertexStoreState vertexStoreState) {
 			// Nothing to do here
 		}
 	}

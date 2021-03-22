@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +36,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 import com.sleepycat.je.Cursor;
@@ -59,7 +59,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final long DEFAULT_FLUSH_INTERVAL = 100L;
 
 	private final DatabaseEnvironment dbEnv;
-	private final LedgerEntryStore store;
+	private final BerkeleyLedgerEntryStore store;
 	private final Serialization serialization;
 	private final ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher;
 	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
@@ -70,7 +70,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		LedgerEntryStore store,
+		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
 		ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher
 	) {

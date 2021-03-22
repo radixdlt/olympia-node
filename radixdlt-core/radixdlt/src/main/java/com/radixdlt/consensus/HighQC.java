@@ -134,7 +134,7 @@ public final class HighQC {
 		return this.highestCommittedQC == null ? this.highestQC : this.highestCommittedQC;
 	}
 
-	public VerifiedLedgerHeaderAndProof proof() {
+	public LedgerProof proof() {
 		return this.highestCommittedQC().getCommittedAndLedgerStateProof().orElseThrow().getSecond();
 	}
 

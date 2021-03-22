@@ -21,7 +21,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 
@@ -43,31 +43,31 @@ public interface SyncState {
 	/**
 	 * Gets the current header.
 	 */
-	VerifiedLedgerHeaderAndProof getCurrentHeader();
+	LedgerProof getCurrentHeader();
 
 	/**
 	 * Returns a SyncState with a new current header.
 	 */
-	SyncState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader);
+	SyncState withCurrentHeader(LedgerProof newCurrentHeader);
 
 	final class IdleState implements SyncState {
-		private final VerifiedLedgerHeaderAndProof currentHeader;
+		private final LedgerProof currentHeader;
 
-		public static IdleState init(VerifiedLedgerHeaderAndProof currentHeader) {
+		public static IdleState init(LedgerProof currentHeader) {
 			return new IdleState(currentHeader);
 		}
 
-		private IdleState(VerifiedLedgerHeaderAndProof currentHeader) {
+		private IdleState(LedgerProof currentHeader) {
 			this.currentHeader = currentHeader;
 		}
 
 		@Override
-		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+		public LedgerProof getCurrentHeader() {
 			return this.currentHeader;
 		}
 
 		@Override
-		public IdleState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+		public IdleState withCurrentHeader(LedgerProof newCurrentHeader) {
 			return new IdleState(newCurrentHeader);
 		}
 
@@ -95,12 +95,12 @@ public interface SyncState {
 	}
 
 	final class SyncCheckState implements SyncState {
-		private final VerifiedLedgerHeaderAndProof currentHeader;
+		private final LedgerProof currentHeader;
 		private final ImmutableSet<BFTNode> peersAskedForStatus;
 		private final ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses;
 
 		public static SyncCheckState init(
-			VerifiedLedgerHeaderAndProof currentHeader,
+			LedgerProof currentHeader,
 			ImmutableSet<BFTNode> peersAskedForStatus
 		) {
 			return new SyncCheckState(
@@ -111,7 +111,7 @@ public interface SyncState {
 		}
 
 		private SyncCheckState(
-			VerifiedLedgerHeaderAndProof currentHeader,
+			LedgerProof currentHeader,
 			ImmutableSet<BFTNode> peersAskedForStatus,
 			ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses
 		) {
@@ -148,12 +148,12 @@ public interface SyncState {
 		}
 
 		@Override
-		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+		public LedgerProof getCurrentHeader() {
 			return this.currentHeader;
 		}
 
 		@Override
-		public SyncCheckState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+		public SyncCheckState withCurrentHeader(LedgerProof newCurrentHeader) {
 			return new SyncCheckState(newCurrentHeader, peersAskedForStatus, receivedStatusResponses);
 		}
 
@@ -188,23 +188,23 @@ public interface SyncState {
 	}
 
 	final class SyncingState implements SyncState {
-		private final VerifiedLedgerHeaderAndProof currentHeader;
+		private final LedgerProof currentHeader;
 		private final ImmutableList<BFTNode> candidatePeers;
-		private final VerifiedLedgerHeaderAndProof targetHeader;
+		private final LedgerProof targetHeader;
 		private final Optional<BFTNode> waitingForResponseFrom;
 
 		public static SyncingState init(
-			VerifiedLedgerHeaderAndProof currentHeader,
+			LedgerProof currentHeader,
 			ImmutableList<BFTNode> candidatePeers,
-			VerifiedLedgerHeaderAndProof targetHeader
+			LedgerProof targetHeader
 		) {
 			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
 		}
 
 		private SyncingState(
-			VerifiedLedgerHeaderAndProof currentHeader,
+			LedgerProof currentHeader,
 			ImmutableList<BFTNode> candidatePeers,
-			VerifiedLedgerHeaderAndProof targetHeader,
+			LedgerProof targetHeader,
 			Optional<BFTNode> waitingForResponseFrom
 		) {
 			this.currentHeader = currentHeader;
@@ -230,7 +230,7 @@ public interface SyncState {
 			);
 		}
 
-		public SyncingState withTargetHeader(VerifiedLedgerHeaderAndProof newTargetHeader) {
+		public SyncingState withTargetHeader(LedgerProof newTargetHeader) {
 			return new SyncingState(currentHeader, candidatePeers, newTargetHeader, waitingForResponseFrom);
 		}
 
@@ -258,17 +258,17 @@ public interface SyncState {
 			return this.candidatePeers;
 		}
 
-		public VerifiedLedgerHeaderAndProof getTargetHeader() {
+		public LedgerProof getTargetHeader() {
 			return this.targetHeader;
 		}
 
 		@Override
-		public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+		public LedgerProof getCurrentHeader() {
 			return this.currentHeader;
 		}
 
 		@Override
-		public SyncingState withCurrentHeader(VerifiedLedgerHeaderAndProof newCurrentHeader) {
+		public SyncingState withCurrentHeader(LedgerProof newCurrentHeader) {
 			return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, waitingForResponseFrom);
 		}
 

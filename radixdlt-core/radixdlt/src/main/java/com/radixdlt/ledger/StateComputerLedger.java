@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -98,7 +98,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
-	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private final Comparator<LedgerProof> headerComparator;
 	private final StateComputer stateComputer;
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final SystemCounters counters;
@@ -108,13 +108,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Object lock = new Object();
 	private final TimeSupplier timeSupplier;
 
-	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
+	private LedgerProof currentLedgerHeader;
 
 	@Inject
 	public StateComputerLedger(
 		TimeSupplier timeSupplier,
-		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		@LastProof LedgerProof initialLedgerState,
+		Comparator<LedgerProof> headerComparator,
 		StateComputer stateComputer,
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		LedgerAccumulator accumulator,
@@ -241,7 +241,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				.flatMap(PreparedVertex::successfulCommands)
 				.map(PreparedCommand::command)
 				.collect(ImmutableList.toImmutableList());
-			VerifiedLedgerHeaderAndProof proof = committedUpdate.getVertexStoreState().getRootHeader();
+			LedgerProof proof = committedUpdate.getVertexStoreState().getRootHeader();
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 
 			// TODO: Make these two atomic (RPNV1-827)
@@ -255,7 +255,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		synchronized (lock) {
-			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
+			final LedgerProof nextHeader = verifiedCommandsAndProof.getProof();
 			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
@@ -264,7 +264,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				this.currentLedgerHeader.getAccumulatorState(),
 				verifiedCommandsAndProof.getCommands(),
 				hasher::hash,
-				verifiedCommandsAndProof.getHeader().getAccumulatorState()
+				verifiedCommandsAndProof.getProof().getAccumulatorState()
 			);
 
 			if (!verifiedExtension.isPresent()) {
@@ -279,7 +279,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			}
 
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
-				commands, verifiedCommandsAndProof.getHeader()
+				commands, verifiedCommandsAndProof.getProof()
 			);
 
 			// persist

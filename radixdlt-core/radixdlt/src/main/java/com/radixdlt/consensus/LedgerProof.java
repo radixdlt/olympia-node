@@ -41,8 +41,8 @@ import javax.annotation.concurrent.Immutable;
  * Ledger header with proof
  */
 @Immutable
-@SerializerId2("ledger.verified_ledger_header_and_proof")
-public final class VerifiedLedgerHeaderAndProof {
+@SerializerId2("ledger.proof")
+public final class LedgerProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -77,7 +77,7 @@ public final class VerifiedLedgerHeaderAndProof {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public VerifiedLedgerHeaderAndProof(
+	public LedgerProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,
@@ -93,10 +93,10 @@ public final class VerifiedLedgerHeaderAndProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedLedgerHeaderAndProof genesis(HashCode accumulator, BFTValidatorSet nextValidators) {
+	public static LedgerProof genesis(HashCode accumulator, BFTValidatorSet nextValidators) {
 		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulator, nextValidators);
 		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
-		return new VerifiedLedgerHeaderAndProof(
+		return new LedgerProof(
 			header,
 			header,
 			0,
@@ -106,9 +106,9 @@ public final class VerifiedLedgerHeaderAndProof {
 		);
 	}
 
-	public static final class OrderByEpochAndVersionComparator implements Comparator<VerifiedLedgerHeaderAndProof> {
+	public static final class OrderByEpochAndVersionComparator implements Comparator<LedgerProof> {
 		@Override
-		public int compare(VerifiedLedgerHeaderAndProof p0, VerifiedLedgerHeaderAndProof p1) {
+		public int compare(LedgerProof p0, LedgerProof p1) {
 			if (p0.ledgerHeader.getEpoch() != p1.ledgerHeader.getEpoch()) {
 				return p0.ledgerHeader.getEpoch() > p1.ledgerHeader.getEpoch() ? 1 : -1;
 			}
@@ -185,11 +185,11 @@ public final class VerifiedLedgerHeaderAndProof {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedLedgerHeaderAndProof)) {
+		if (!(o instanceof LedgerProof)) {
 			return false;
 		}
 
-		VerifiedLedgerHeaderAndProof other = (VerifiedLedgerHeaderAndProof) o;
+		LedgerProof other = (LedgerProof) o;
 		return Objects.equals(this.opaque0, other.opaque0)
 			&& Objects.equals(this.opaque1, other.opaque1)
 			&& this.opaque2 == other.opaque2

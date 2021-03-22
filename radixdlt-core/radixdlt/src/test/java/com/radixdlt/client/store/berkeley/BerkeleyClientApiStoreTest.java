@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +33,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -55,7 +55,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final ImmutableMap<TokenTransition, TokenPermission> TOKEN_PERMISSIONS = ImmutableMap.of();
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final LedgerEntryStore ledgerStore = mock(LedgerEntryStore.class);
+	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);
 
 	private DatabaseEnvironment environment;
 

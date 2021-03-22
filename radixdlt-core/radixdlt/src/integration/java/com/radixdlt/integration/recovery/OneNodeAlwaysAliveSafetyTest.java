@@ -72,7 +72,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Base58;
 
@@ -180,7 +180,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(LedgerEntryStore.class).close();
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}

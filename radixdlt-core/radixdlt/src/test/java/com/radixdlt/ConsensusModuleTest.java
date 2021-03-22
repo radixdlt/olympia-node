@@ -65,7 +65,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -168,9 +168,9 @@ public class ConsensusModuleTest {
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
-				VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+				LedgerProof proof = mock(LedgerProof.class);
 				when(proof.getView()).thenReturn(View.genesis());
-				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(proof);
+				bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
 				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
 					.toInstance(RateLimiter.create(Double.MAX_VALUE));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
