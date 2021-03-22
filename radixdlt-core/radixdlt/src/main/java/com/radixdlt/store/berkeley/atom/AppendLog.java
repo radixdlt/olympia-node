@@ -17,9 +17,11 @@
 
 package com.radixdlt.store.berkeley.atom;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
+import java.util.function.BiConsumer;
 
 /**
  * Interface for append-only log file. The file consists of variable length chunks with following format:
@@ -29,6 +31,33 @@ import java.io.IOException;
  */
 public interface AppendLog {
 	/**
+	 * Open compressed R/W append log.
+	 *
+	 * @param path log file path
+	 * @param counters system counters to use
+	 *
+	 * @return append log
+	 *
+	 * @throws IOException
+	 */
+	static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
+		return CompressedAppendLog.open(openSimple(path), counters);
+	}
+
+	/**
+	 * Open plain R/W append log.
+	 *
+	 * @param path log file path
+	 *
+	 * @return append log
+	 *
+	 * @throws IOException
+	 */
+	static AppendLog openSimple(String path) throws IOException {
+		return SimpleAppendLog.open(path);
+	}
+
+	/**
 	 * Get position at which next chunk will be written.
 	 */
 	long position();
@@ -37,7 +66,6 @@ public interface AppendLog {
 	 * Truncate the file to specified length.
 	 *
 	 * @param position position to which file should be truncated.
-	 *
 	 */
 	void truncate(long position);
 
@@ -79,4 +107,10 @@ public interface AppendLog {
 	 * Close append log.
 	 */
 	void close();
+
+	/**
+	 * Scan log from start to end and submit every found chunk and its offset into provided consumer.
+	 * Last entry submitted to consumer will have empty array and -1L as a parameters.
+	 */
+	void forEach(BiConsumer<byte[], Long> chunkConsumer);
 }

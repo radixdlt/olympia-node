@@ -17,16 +17,16 @@
 
 package com.radixdlt;
 
-import com.google.inject.AbstractModule;
+import org.radix.universe.system.LocalSystem;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.faucet.FaucetModule;
 import com.radixdlt.application.validator.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
-import com.radixdlt.network.transport.tcp.TCPConfiguration;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.client.ClientApiModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -36,16 +36,17 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
@@ -54,13 +55,12 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
-
 import com.radixdlt.universe.UniverseModule;
-import org.radix.universe.system.LocalSystem;
 
 /**
  * Module which manages everything in a single node
@@ -159,6 +159,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new NodeWalletModule());
 		install(new ValidatorRegistratorModule());
 		install(new FaucetModule());
+		install(new ClientApiModule());
 
 		if (properties.get("chaos.enable", false)) {
 			install(new ChaosModule());

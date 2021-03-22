@@ -15,14 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.database;
+package com.radixdlt.store;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.store.DatabaseLocation;
 import com.sleepycat.je.CacheMode;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 
@@ -39,7 +39,8 @@ import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_MAX;
 import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
 public final class DatabaseEnvironment {
-	private Database metaDatabase;
+	private static final Logger log = LogManager.getLogger();
+
 	private Environment environment;
 
 	@Inject
@@ -68,21 +69,14 @@ public final class DatabaseEnvironment {
 		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
 		this.environment = new Environment(dbHome, environmentConfig);
-
-		var primaryConfig = new DatabaseConfig().setAllowCreate(true).setTransactional(true);
-
-		try {
-			this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
-		} catch (Exception ex) {
-			throw new RuntimeException("while opening database", ex);
-		}
 	}
 
 	public void stop() {
-		this.metaDatabase.close();
-		this.metaDatabase = null;
-
-		this.environment.close();
+		try {
+			this.environment.close();
+		} catch (DatabaseException e) {
+			log.error("Error while closing database. Possible DB corruption.");
+		}
 		this.environment = null;
 	}
 

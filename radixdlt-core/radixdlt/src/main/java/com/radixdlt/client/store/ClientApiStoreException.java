@@ -15,9 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.http;
+package com.radixdlt.client.store;
 
-@FunctionalInterface
-interface ThrowingConsumer<A> {
-	void accept(A arg1) throws Exception;
+/**
+ * Client API DB exception.
+ */
+public class ClientApiStoreException extends RuntimeException {
+	public ClientApiStoreException(String message, Exception exception) {
+		super(message, exception);
+	}
 }
