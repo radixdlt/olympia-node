@@ -64,6 +64,10 @@ public final class ECPublicKey {
         return fromBytes(Bytes.fromBase64String(base64));
     }
 
+    public static ECPublicKey fromBase58(String base58) throws PublicKeyException {
+        return fromBytes(Base58.fromBase58(base58));
+    }
+
     public EUID euid() {
         return this.uid.get();
     }

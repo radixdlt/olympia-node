@@ -76,7 +76,11 @@ import org.apache.commons.cli.ParseException;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 import org.radix.universe.output.HelmUniverseOutput;
+import org.radix.utils.IOUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -110,13 +114,13 @@ public final class GenerateUniverses {
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
 	private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000);
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Options options = new Options();
 		options.addOption("h", "help",                   false, "Show usage information (this message)");
 		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
-		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
+		options.addOption("i", "issuance-file",   true, "Input JSON file specifying token issuances");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
 		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
@@ -177,14 +181,24 @@ public final class GenerateUniverses {
 			);
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
-				tokenIssuancesBuilder.add(
-					TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
-					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
-				);
+			var issuanceFile = getOption(cmd, 'i');
+			if (issuanceFile.isPresent()) {
+				try (var issuanceInput = new FileInputStream(issuanceFile.get())) {
+					var issuanceString = new String(issuanceInput.readAllBytes());
+					var issuanceJson = new JSONObject(issuanceString);
+					var issuancesArray = issuanceJson.getJSONArray("issuances");
+					for (int i = 0; i < issuancesArray.length(); i++) {
+						var issuance = issuancesArray.getJSONObject(i);
+						var publicKeyString = issuance.getString("publicKey");
+						var amountIssued = issuance.getLong("amountIssued");
+						var publicKey = ECPublicKey.fromBase58(publicKeyString);
+						var amount = UInt256.from(amountIssued).multiply(TokenDefinitionUtils.SUB_UNITS);
+						var tokenIssuance = TokenIssuance.of(publicKey, amount);
+						tokenIssuancesBuilder.add(tokenIssuance);
+
+						System.out.println("Token Issuance: " + tokenIssuance);
+					}
+				}
 			}
 
 			if (universeType == UniverseType.DEVELOPMENT) {
