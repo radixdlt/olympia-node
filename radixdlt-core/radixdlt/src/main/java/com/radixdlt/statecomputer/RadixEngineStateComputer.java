@@ -44,7 +44,6 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -73,7 +72,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
-	private final RadixEngineAtomicCommitManager atomicCommitManager;
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
@@ -87,7 +85,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Serialization serialization,
 		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		Mempool<Atom> mempool,
-		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher,
@@ -107,7 +104,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochCeilingView = epochCeilingView;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
@@ -331,17 +327,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-	    List<Atom> atomsCommitted;
-		atomicCommitManager.startTransaction();
-		try {
-			atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
-		} catch (Exception e) {
-			atomicCommitManager.abortTransaction();
-			// At this point the radix engine has no mechanism to recover from byzantine quorum failure
-			// TODO: resolve issues with byzantine quorum (RPNV1-828)
-			throw e;
-		}
-		atomicCommitManager.commitTransaction();
+		var atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		List<Pair<Atom, Exception>> removed = this.mempool.committed(atomsCommitted);

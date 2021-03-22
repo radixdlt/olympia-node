@@ -22,7 +22,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -33,7 +32,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<Atom, LedgerAndBFTProof>>() { })
 			.to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
 		bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
 		bind(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 	}

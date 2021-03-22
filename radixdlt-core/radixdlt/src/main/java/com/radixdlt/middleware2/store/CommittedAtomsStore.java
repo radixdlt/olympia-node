@@ -31,24 +31,12 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<Atom, LedgerAndBFTProof>, RadixEngineAtomicCommitManager {
+public final class CommittedAtomsStore implements EngineStore<Atom, LedgerAndBFTProof> {
 	private final LedgerEntryStore store;
 
 	@Inject
 	public CommittedAtomsStore(LedgerEntryStore store) {
 		this.store = Objects.requireNonNull(store);
-	}
-
-	@Override
-	public void startTransaction() {
-	}
-
-	@Override
-	public void commitTransaction() {
-	}
-
-	@Override
-	public void abortTransaction() {
 	}
 
 	@Override

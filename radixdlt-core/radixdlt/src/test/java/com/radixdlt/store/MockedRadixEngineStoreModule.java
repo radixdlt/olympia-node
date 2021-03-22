@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -66,25 +65,5 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			txn.commit();
 		}
 		return inMemoryEngineStore;
-	}
-
-	@Provides
-	private RadixEngineAtomicCommitManager atomicCommitManager() {
-		return new RadixEngineAtomicCommitManager() {
-			@Override
-			public void startTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void commitTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void abortTransaction() {
-				// no-op
-			}
-		};
 	}
 }
