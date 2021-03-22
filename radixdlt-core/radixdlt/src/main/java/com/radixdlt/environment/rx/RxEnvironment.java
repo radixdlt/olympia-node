@@ -99,7 +99,8 @@ public final class RxEnvironment implements Environment {
 	}
 
 	public <T> Observable<T> getObservable(Class<T> eventClass) {
-		return getSubject(eventClass).orElseThrow();
+		return getSubject(eventClass)
+			.orElseThrow(() -> new IllegalStateException(eventClass + " not registered as observable."));
 	}
 
 	public <T> Observable<T> getObservable(TypeLiteral<T> t) {

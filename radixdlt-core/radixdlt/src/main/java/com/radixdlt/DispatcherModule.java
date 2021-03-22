@@ -17,6 +17,10 @@
 
 package com.radixdlt;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -30,20 +34,21 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewVotingResult;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.ViewVotingResult;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -52,8 +57,8 @@ import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngineErrorCode;
-import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.Dispatchers;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -70,8 +75,6 @@ import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
-import java.util.Set;
-
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -82,9 +85,8 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import java.util.Set;
 
 /**
  * Manages dispatching of internal events to a given environment
@@ -168,6 +170,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledParticleFlush>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledParticleFlush.class)).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(

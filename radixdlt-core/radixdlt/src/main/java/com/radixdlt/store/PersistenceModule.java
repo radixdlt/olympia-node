@@ -24,16 +24,15 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
-import org.radix.database.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 
 import java.util.Optional;
 

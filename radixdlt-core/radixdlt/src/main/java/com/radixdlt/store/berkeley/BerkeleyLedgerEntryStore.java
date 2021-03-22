@@ -39,11 +39,11 @@ import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.database.DatabaseEnvironment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
@@ -53,9 +53,9 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.berkeley.atom.AppendLog;
-import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -68,11 +68,13 @@ import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -102,6 +104,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
+
+	private Consumer<SpunParticle> particleConsumer = BerkeleyLedgerEntryStore::defaultParticleConsumer;
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 
@@ -269,6 +273,31 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 	}
 
+	// TODO: Hack for Client Api store, remove at some point
+	public void forEach(Consumer<SpunParticle> particleConsumer) {
+		try (var cursor = particleDatabase.openCursor(null, null)) {
+			var key = entry();
+			var value = entry();
+			var status = cursor.getFirst(key, value, DEFAULT);
+
+			while (status == SUCCESS) {
+				if (value.getData().length > 0) {
+					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
+					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					particleConsumer.accept(SpunParticle.up(particle));
+				}
+
+				status = cursor.getNext(key, value, DEFAULT);
+			}
+		}
+	}
+
+	// TODO: Hack for Client Api store, remove at some point
+	public void onParticleCommit(Consumer<SpunParticle> particleConsumer) {
+		this.particleConsumer = Optional.ofNullable(particleConsumer)
+			.orElse(BerkeleyLedgerEntryStore::defaultParticleConsumer);
+	}
+
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {
 		withTime(() -> {
@@ -276,6 +305,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
 		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
+	}
+
+	private static void defaultParticleConsumer(SpunParticle particle) {
+		//Intentionally left blank
 	}
 
 	private void open() {
@@ -298,7 +331,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
-			atomLog = SimpleAppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
+			atomLog = AppendLog.openCompressed(new File(env.getHome(), ATOM_LOG).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
@@ -306,6 +339,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
 			// TODO implement integrity check
 			// TODO perhaps we should implement recovery instead?
+			// TODO recovering should be integrated with recovering of ClientApiStore
 		}
 	}
 
@@ -477,12 +511,31 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
+		particleConsumer.accept(SpunParticle.up(particle));
+	}
+
+	private void downVirtualParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
+		var particleKey = particleId.asBytes();
+		// TODO: check for up Particle state
+		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
 	private void downParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
+		var downedParticle = entry();
+		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
+		if (status != SUCCESS) {
+			throw new IllegalStateException("Dowing particle does not exist " + particleId);
+		}
+		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(particleKey), downEntry());
+
+		var serializedParticle = new byte[downedParticle.getSize() - EUID.BYTES];
+		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+
+		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
+		particleConsumer.accept(SpunParticle.down(particle));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -514,10 +567,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
 			byte[] dson = serialization.toDson(instruction.getParticle(), Output.ALL);
 			final var particleId = HashUtils.sha256(dson);
-			downParticle(txn, particleId);
+			downVirtualParticle(txn, particleId);
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
 			final var particleId = instruction.getParticleHash();
-			// TODO: change this
 			downParticle(txn, particleId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
@@ -558,6 +610,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 			atom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
+
 		} catch (IOException e) {
 			if (transaction != null) {
 				transaction.abort();

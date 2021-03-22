@@ -17,7 +17,15 @@
 
 package com.radixdlt.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Condition;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -51,11 +59,11 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -65,25 +73,18 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.schedulers.Timed;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies that on restarts (simulated via creation of new injectors) that the application
@@ -94,7 +95,7 @@ public class RecoveryTest {
 
 	@Parameters
 	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{10L}, {1000000L}
 		});
 	}
@@ -289,14 +290,26 @@ public class RecoveryTest {
 		// Assert
 		assertThat(network.allMessages())
 			.hasSize(3)
-			.haveExactly(1,
-				new Condition<>(msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
-					"A single epoched scheduled timeout has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof ScheduledLocalTimeout,
-					"A single scheduled timeout update has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof Proposal,
-					"A proposal has been emitted"));
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
+					"A single epoched scheduled timeout has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof ScheduledLocalTimeout,
+					"A single scheduled timeout update has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof Proposal,
+					"A proposal has been emitted"
+				)
+			);
 	}
 }

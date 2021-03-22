@@ -42,7 +42,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.radix.database.DatabaseEnvironment;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -51,7 +50,6 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
@@ -70,7 +68,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.utils.UInt256;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -106,7 +107,7 @@ public class GetNextCommittedCommandsTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-				    bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(DatabaseCacheSize.class).to(0L);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
@@ -243,7 +244,7 @@ public class GetNextCommittedCommandsTest {
 		final var parentLedgerHeader = LedgerHeader.create(epoch, parentView, parentAccumulatorState, System.currentTimeMillis());
 		final var parent = new BFTHeader(parentView, parentVertexId, parentLedgerHeader);
 		final var committedVertexId = HashUtils.random256();
-		final var committedAccumulatorState =  new AccumulatorState(stateVersion, HashUtils.random256());
+		final var committedAccumulatorState = new AccumulatorState(stateVersion, HashUtils.random256());
 		final LedgerHeader committedLedgerHeader;
 		if (endOfEpoch) {
 			// Requires a non-empty validator set to survive serialisation

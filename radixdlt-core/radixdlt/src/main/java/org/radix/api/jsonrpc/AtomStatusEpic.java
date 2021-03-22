@@ -104,7 +104,7 @@ public class AtomStatusEpic {
 		private final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState;
 		private final AID aid;
 
-		public EpicAtomStatusListener(final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState, final AID aid) {
+		EpicAtomStatusListener(final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState, final AID aid) {
 			this.sendAtomSubmissionState = sendAtomSubmissionState;
 			this.aid = aid;
 		}

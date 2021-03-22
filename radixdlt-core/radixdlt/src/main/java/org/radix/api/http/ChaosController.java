@@ -29,7 +29,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
