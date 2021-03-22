@@ -27,6 +27,7 @@ import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
@@ -94,7 +95,7 @@ public class BerkeleyClientApiStoreTest {
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 
-		return new BerkeleyClientApiStore(environment, ledgerStore, serialization);
+		return new BerkeleyClientApiStore(environment, ledgerStore, serialization, mock(ScheduledEventDispatcher.class));
 	}
 
 	private StakedTokensParticle stake(UInt256 amount) {

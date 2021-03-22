@@ -15,32 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store;
+package com.radixdlt.client;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.environment.EventProcessorOnRunner;
 
-import java.util.List;
+public class ClientApiModule extends AbstractModule {
 
-/**
- * High level JSON RPC client API store.
- */
-public interface ClientApiStore {
-
-	/**
-	 * Retrieve list of immediately spendable token balances.
-	 *
-	 * @param address	- client address
-	 * @return list of token balances
-	 */
-	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
-
-	/**
-	 * Flush intermediate storage and save particles into persistent DB.
-	 */
-	void storeCollectedParticles();
-
-	EventProcessor<ScheduledParticleFlush> particleFlushProcessor();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>("application",
+			ScheduledParticleFlush.class,
+			clientApiStore.particleFlushProcessor()
+		);
+	}
 }

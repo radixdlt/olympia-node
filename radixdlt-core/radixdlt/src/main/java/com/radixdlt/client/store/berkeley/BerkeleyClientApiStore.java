@@ -29,6 +29,8 @@ import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -45,33 +47,37 @@ import com.sleepycat.je.OperationStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.serialization.DsonOutput.Output;
-import static com.radixdlt.utils.ThreadFactories.daemonThreads;
-
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String EXECUTED_TRANSACTIONS_DB = "radix.executed_transactions_db";
 	private static final String BALANCE_DB = "radix.balance_db";
+	private static final long DEFAULT_FLUSH_INTERVAL = 100L;
 
 	private final DatabaseEnvironment dbEnv;
 	private final LedgerEntryStore store;
 	private final Serialization serialization;
+	private final ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher;
 	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
 
 	private Database executedTransactionsDatabase;
 	private Database balanceDatabase;
 
 	@Inject
-	public BerkeleyClientApiStore(DatabaseEnvironment dbEnv, LedgerEntryStore store, Serialization serialization) {
+	public BerkeleyClientApiStore(
+		DatabaseEnvironment dbEnv,
+		LedgerEntryStore store,
+		Serialization serialization,
+		ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher
+	) {
 		this.dbEnv = dbEnv;
 		this.store = store;
 		this.serialization = serialization;
+		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 
 		open();
 	}
@@ -145,7 +151,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	@Override
 	public void storeCollectedParticles() {
-		particleCollector.consumeCollected(this::storeSingleParticle);
+		synchronized (particleCollector) {
+			// Ensure that all storing is sequential
+			particleCollector.consumeCollected(this::storeSingleParticle);
+		}
+	}
+
+	@Override
+	public EventProcessor<ScheduledParticleFlush> particleFlushProcessor() {
+		return flush -> {
+			storeCollectedParticles();
+			scheduledFlushEventDispatcher.dispatch(ScheduledParticleFlush.create(), DEFAULT_FLUSH_INTERVAL);
+		};
 	}
 
 	public void close() {
