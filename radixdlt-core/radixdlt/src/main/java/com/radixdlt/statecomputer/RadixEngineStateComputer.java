@@ -24,7 +24,6 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -70,7 +69,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
-	private final RadixEngine<Atom, LedgerProof> radixEngine;
+	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
@@ -86,7 +85,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<Atom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		Mempool<Atom> mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
@@ -181,7 +180,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
-		RadixEngineBranch<Atom, LedgerProof> branch,
+		RadixEngineBranch<Atom, LedgerAndBFTProof> branch,
 		long epoch,
 		View view,
 		long timestamp,
@@ -238,7 +237,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommand(
-		RadixEngineBranch<Atom, LedgerProof> branch,
+		RadixEngineBranch<Atom, LedgerAndBFTProof> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
@@ -293,7 +292,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private List<Atom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	private List<Atom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		final var atomsToCommit = new ArrayList<Atom>();
 		try {
 			for (var cmd : verifiedCommandsAndProof.getCommands()) {
@@ -310,12 +309,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException("Trying to commit bad atom", e);
 		}
 
+		var proofAndVertexStoreState = LedgerAndBFTProof.create(
+			verifiedCommandsAndProof.getProof(),
+			vertexStoreState
+		);
+
 		try {
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.execute(
 				atomsToCommit,
-				verifiedCommandsAndProof.getProof(),
+				proofAndVertexStoreState,
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
@@ -330,15 +334,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	    List<Atom> atomsCommitted;
 		atomicCommitManager.startTransaction();
 		try {
-			atomsCommitted = commitInternal(verifiedCommandsAndProof);
+			atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 		} catch (Exception e) {
 			atomicCommitManager.abortTransaction();
 			// At this point the radix engine has no mechanism to recover from byzantine quorum failure
 			// TODO: resolve issues with byzantine quorum (RPNV1-828)
 			throw e;
-		}
-		if (vertexStoreState != null) {
-			atomicCommitManager.save(vertexStoreState);
 		}
 		atomicCommitManager.commitTransaction();
 

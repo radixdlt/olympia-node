@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
@@ -54,7 +53,7 @@ import java.util.function.Predicate;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<BatchedChecker<LedgerProof>>() { }).to(EpochChecker.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<BatchedChecker<LedgerAndBFTProof>>() { }).to(EpochChecker.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
@@ -104,12 +103,12 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<Atom, LedgerProof> getRadixEngine(
+	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<Atom, LedgerProof> engineStore,
+		EngineStore<Atom, LedgerAndBFTProof> engineStore,
 		AtomChecker<Atom> ledgerAtomChecker,
-		BatchedChecker<LedgerProof> batchedChecker,
+		BatchedChecker<LedgerAndBFTProof> batchedChecker,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking

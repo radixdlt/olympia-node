@@ -38,6 +38,7 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
@@ -58,7 +59,7 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
-		RadixEngine<Atom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		CommittedAtomsStore store,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -75,15 +76,15 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
 		var payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
-		var genesisLedgerHeader = LedgerProof.genesis(
+		var genesisProof = LedgerProof.genesis(
 			hasher.hash(command),
 			genesisValidatorSet
 		);
-		if (!genesisLedgerHeader.isEndOfEpoch()) {
+		if (!genesisProof.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
 		store.startTransaction();
-		radixEngine.execute(List.of(genesisAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
+		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
 		store.commitTransaction();
 	}
 
@@ -91,7 +92,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastStoredProof
 	LedgerProof lastStoredProof(
-		RadixEngine<Atom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		CommittedReader committedReader,
 		CommittedAtomsStore store,
 		@Genesis Atom genesisAtom,

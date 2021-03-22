@@ -56,10 +56,5 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 		public void save(VerifiedVertexStoreState vertexStoreState) {
 			// Nothing to do here
 		}
-
-		@Override
-		public void save(Transaction tx, VerifiedVertexStoreState vertexStoreState) {
-			// Nothing to do here
-		}
 	}
 }

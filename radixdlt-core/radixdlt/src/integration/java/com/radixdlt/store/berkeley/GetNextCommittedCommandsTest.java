@@ -25,6 +25,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -220,7 +221,8 @@ public class GetNextCommittedCommandsTest {
 		final var atomAndProof = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
 		this.committedAtomsStore.startTransaction();
 		this.committedAtomsStore.storeAtom(atomAndProof.getFirst());
-		this.committedAtomsStore.storeMetadata(atomAndProof.getSecond());
+		var meta = LedgerAndBFTProof.create(atomAndProof.getSecond());
+		this.committedAtomsStore.storeMetadata(meta);
 		this.committedAtomsStore.commitTransaction();
 	}
 

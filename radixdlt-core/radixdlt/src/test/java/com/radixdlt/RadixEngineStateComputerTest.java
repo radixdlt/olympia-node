@@ -78,6 +78,7 @@ import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
@@ -106,7 +107,7 @@ public class RadixEngineStateComputerTest {
 	private Atom genesisAtom;
 
 	@Inject
-	private RadixEngine<Atom, LedgerProof> radixEngine;
+	private RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -116,7 +117,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<Atom, LedgerProof> engineStore;
+	private EngineStore<Atom, LedgerAndBFTProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -135,7 +136,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<Atom, LedgerProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<Atom, LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
@@ -163,7 +164,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private void setupGenesis() throws RadixEngineException {
-		RadixEngine.RadixEngineBranch<Atom, LedgerProof> branch = radixEngine.transientBranch();
+		var branch = radixEngine.transientBranch();
 		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
@@ -180,7 +181,7 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(List.of(genesisAtom), genesisLedgerHeader, PermissionLevel.SYSTEM);
+		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
 	}
 
 	@Before

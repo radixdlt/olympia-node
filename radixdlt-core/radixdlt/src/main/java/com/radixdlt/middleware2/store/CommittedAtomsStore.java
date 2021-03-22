@@ -20,12 +20,10 @@ package com.radixdlt.middleware2.store;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
@@ -35,18 +33,15 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>, RadixEngineAtomicCommitManager {
+public final class CommittedAtomsStore implements EngineStore<Atom, LedgerAndBFTProof>, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
-	private final PersistentVertexStore persistentVertexStore;
 	private Transaction transaction;
 
 	@Inject
 	public CommittedAtomsStore(
-		LedgerEntryStore store,
-		PersistentVertexStore persistentVertexStore
+		LedgerEntryStore store
 	) {
 		this.store = Objects.requireNonNull(store);
-		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 	}
 
 	@Override
@@ -67,17 +62,12 @@ public final class CommittedAtomsStore implements EngineStore<Atom, LedgerProof>
 	}
 
 	@Override
-	public void save(VerifiedVertexStoreState vertexStoreState) {
-		persistentVertexStore.save(this.transaction, vertexStoreState);
-	}
-
-	@Override
 	public void storeAtom(Atom atom) {
 		store.store(this.transaction, atom);
 	}
 
 	@Override
-	public void storeMetadata(LedgerProof metadata) {
+	public void storeMetadata(LedgerAndBFTProof metadata) {
 		store.store(this.transaction, metadata);
 	}
 

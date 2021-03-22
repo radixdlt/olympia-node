@@ -20,11 +20,10 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.BatchedChecker;
 import com.radixdlt.ledger.ByzantineQuorumException;
 
-public final class EpochChecker implements BatchedChecker<LedgerProof> {
+public final class EpochChecker implements BatchedChecker<LedgerAndBFTProof> {
 	private final ValidatorSetBuilder validatorSetBuilder;
 
 	@Inject
@@ -33,11 +32,11 @@ public final class EpochChecker implements BatchedChecker<LedgerProof> {
 	}
 
 	@Override
-	public PerStateChangeChecker<LedgerProof> newChecker(ComputedState computedState) {
+	public PerStateChangeChecker<LedgerAndBFTProof> newChecker(ComputedState computedState) {
 		return new PerEpochChecker(computedState);
 	}
 
-	private class PerEpochChecker implements PerStateChangeChecker<LedgerProof> {
+	private class PerEpochChecker implements PerStateChangeChecker<LedgerAndBFTProof> {
 		private long currentEpoch;
 		private boolean epochChangeFlag = false;
 
@@ -59,7 +58,7 @@ public final class EpochChecker implements BatchedChecker<LedgerProof> {
 		}
 
 		@Override
-		public void testMetadata(LedgerProof metadata, ComputedState computedState) {
+		public void testMetadata(LedgerAndBFTProof metadata, ComputedState computedState) {
 			// Verify that output of radix engine and signed output match
 			// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
 			// TODO: set as malicious (RPNV1-633)
@@ -71,14 +70,14 @@ public final class EpochChecker implements BatchedChecker<LedgerProof> {
 					computedState.get(RegisteredValidators.class),
 					computedState.get(Stakes.class)
 				);
-				final var signedValidatorSet = metadata.getNextValidatorSet()
+				final var signedValidatorSet = metadata.getProof().getNextValidatorSet()
 					.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 				if (!signedValidatorSet.equals(reNextValidatorSet)) {
 					throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
 				}
 			} else {
 				if (metadata != null) {
-					metadata.getNextValidatorSet().ifPresent(vset -> {
+					metadata.getProof().getNextValidatorSet().ifPresent(vset -> {
 						throw new IllegalStateException();
 					});
 				}

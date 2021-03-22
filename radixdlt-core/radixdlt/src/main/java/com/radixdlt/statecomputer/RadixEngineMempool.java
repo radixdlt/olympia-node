@@ -21,7 +21,6 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.counters.SystemCounters;
@@ -57,11 +56,11 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
-	private final RadixEngine<Atom, LedgerProof> radixEngine;
+	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	public RadixEngineMempool(
-		RadixEngine<Atom, LedgerProof> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		@MempoolMaxSize int maxSize,
 		SystemCounters counters
 	) {
@@ -93,7 +92,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 		}
 
 		try {
-			RadixEngine.RadixEngineBranch<Atom, LedgerProof> checker = radixEngine.transientBranch();
+			RadixEngine.RadixEngineBranch<Atom, LedgerAndBFTProof> checker = radixEngine.transientBranch();
 			checker.execute(List.of(atom));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time

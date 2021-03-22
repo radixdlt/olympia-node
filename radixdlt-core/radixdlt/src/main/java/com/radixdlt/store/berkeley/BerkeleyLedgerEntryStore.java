@@ -31,6 +31,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
@@ -195,9 +196,9 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 	}
 
 	@Override
-	public void store(Transaction tx, LedgerProof proof) {
+	public void store(Transaction tx, LedgerAndBFTProof ledgerAndBFTProof) {
 		var txn = unwrap(tx);
-		var prevHeaderKey = entry();
+		var proof = ledgerAndBFTProof.getProof();
 
 		// TODO: combine atom and proof store and remove these extra checks
 		try (var atomCursor = atomDatabase.openCursor(txn, null)) {
@@ -215,6 +216,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 		}
 
 		try (var proofCursor = proofDatabase.openCursor(txn, null)) {
+			var prevHeaderKey = entry();
 			var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
 			// Cannot remove end of epoch proofs
 			if (status == SUCCESS && headerKeyEpoch(prevHeaderKey).isEmpty()) {
@@ -242,6 +244,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
 		}
+
+		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(txn, v));
 	}
 
 	@Override
@@ -264,15 +268,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 				}
 			}
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
-	}
-
-	@Override
-	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
-		withTime(
-			() -> doSave(transaction.unwrap(), vertexStoreState),
-			CounterType.ELAPSED_BDB_LEDGER_SAVE_TX,
-			CounterType.COUNT_BDB_LEDGER_SAVE_TX
-		);
 	}
 
 	@Override

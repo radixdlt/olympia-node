@@ -27,13 +27,13 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.UInt256;
 
@@ -45,13 +45,13 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<Atom, LedgerProof> engineStore(
+	private EngineStore<Atom, LedgerAndBFTProof> engineStore(
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		InMemoryEngineStore<Atom, LedgerProof> inMemoryEngineStore = new InMemoryEngineStore<>();
+		var inMemoryEngineStore = new InMemoryEngineStore<Atom, LedgerAndBFTProof>();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
@@ -81,11 +81,6 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 			@Override
 			public void abortTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void save(VerifiedVertexStoreState vertexStoreState) {
 				// no-op
 			}
 		};
