@@ -32,6 +32,7 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
@@ -51,9 +52,8 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.CMStore.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.store.berkeley.atom.SimpleAppendLog;
 import com.radixdlt.utils.Longs;
@@ -84,7 +84,8 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, CommittedReader, PersistentVertexStore {
+public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerAndBFTProof>, AtomIndex,
+	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
@@ -191,12 +192,12 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 	}
 
 	@Override
-	public void store(Transaction tx, Atom atom) {
+	public void storeAtom(Transaction tx, Atom atom) {
 		withTime(() -> doStore(atom, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
-	public void store(Transaction tx, LedgerAndBFTProof ledgerAndBFTProof) {
+	public void storeMetadata(Transaction tx, LedgerAndBFTProof ledgerAndBFTProof) {
 		var txn = unwrap(tx);
 		var proof = ledgerAndBFTProof.getProof();
 
@@ -248,7 +249,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(txn, v));
 	}
 
-	@Override
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
 		return withTime(() -> {
 			try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
@@ -455,6 +455,11 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 		}
 
 		return v;
+	}
+
+	@Override
+	public boolean containsAtom(Atom atom) {
+		return contains(atom.getAID());
 	}
 
 	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {

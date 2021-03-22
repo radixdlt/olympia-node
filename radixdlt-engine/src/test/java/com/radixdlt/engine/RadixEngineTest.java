@@ -123,7 +123,7 @@ public class RadixEngineTest {
 	@Test
 	public void when_add_state_computer__then_store_is_accessed_for_initial_computation() {
 		Object state = mock(Object.class);
-		when(engineStore.compute(any(), any(), any())).thenReturn(state);
+		when(engineStore.reduceUpParticles(any(), any(), any())).thenReturn(state);
 		radixEngine.addStateReducer(
 			new StateReducer<>() {
 				public Class<Object> stateClass() {

@@ -25,7 +25,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.SearchCursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +54,7 @@ public class AtomEventObserver {
 	private CompletableFuture<?> currentRunnable;
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
-	private final LedgerEntryStore store;
+	private final AtomIndex store;
 	private final Serialization serialization;
 	private final Hasher hasher;
 
@@ -66,7 +66,7 @@ public class AtomEventObserver {
 		AtomQuery atomQuery,
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
-		LedgerEntryStore store,
+		AtomIndex store,
 		Serialization serialization,
 		Hasher hasher
 	) {

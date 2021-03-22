@@ -32,7 +32,10 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import org.radix.database.DatabaseEnvironment;
+
+import java.util.Optional;
 
 /**
  * Module which manages persistent storage
@@ -41,11 +44,16 @@ public class PersistenceModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO: should be singletons?
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+		bind(AtomIndex.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
 		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
 		bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	Optional<SerializedVertexStoreState> serializedVertexStoreState(BerkeleyLedgerEntryStore store) {
+		return store.loadLastVertexStoreState();
 	}
 
 	@Provides

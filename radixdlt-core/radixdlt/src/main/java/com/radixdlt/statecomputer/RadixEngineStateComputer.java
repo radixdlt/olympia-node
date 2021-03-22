@@ -305,7 +305,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException("Trying to commit bad atom", e);
 		}
 
-		var proofAndVertexStoreState = LedgerAndBFTProof.create(
+		var ledgerAndBFTProof = LedgerAndBFTProof.create(
 			verifiedCommandsAndProof.getProof(),
 			vertexStoreState
 		);
@@ -315,7 +315,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: Include permission level in committed command
 			this.radixEngine.execute(
 				atomsToCommit,
-				proofAndVertexStoreState,
+				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {

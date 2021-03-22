@@ -17,19 +17,15 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.identifiers.AID;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 /**
- * A read-only view of a specific LedgerEntryStore
+ * A read/write instance of a ledger store containing ledger entries.
  */
-public interface LedgerEntryStoreView {
+public interface AtomIndex {
 	/**
 	 * Checks whether the given aid is contained in this view
 	 * @param aid The aid
@@ -47,13 +43,5 @@ public interface LedgerEntryStoreView {
 	// TODO: remove once we clean up API to not require searching
 	SearchCursor search();
 
-	<U extends Particle, V> V reduceUpParticles(
-		Class<U> particleClass,
-		V initial,
-		BiFunction<V, U, V> outputReducer
-	);
-
-	Spin getSpin(CMStore.Transaction tx, Particle particle);
-
-	Optional<Particle> loadUpParticle(CMStore.Transaction tx, HashCode particleHash);
+	void close();
 }

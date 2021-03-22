@@ -79,7 +79,7 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements 
 	}
 
 	@Override
-	public <U extends Particle, V> V compute(
+	public <U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,
 		V initial,
 		BiFunction<V, U, V> outputReducer

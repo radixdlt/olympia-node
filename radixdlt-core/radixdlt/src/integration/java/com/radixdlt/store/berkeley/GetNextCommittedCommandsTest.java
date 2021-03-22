@@ -34,6 +34,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import org.junit.After;
@@ -68,7 +69,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.utils.UInt256;
 
@@ -77,7 +77,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests to ensure that command batches read from {@link CommittedAtomsStore}
+ * Tests to ensure that command batches read from {@link CommittedReader}
  * do not cross epoch boundaries.
  */
 public class GetNextCommittedCommandsTest {
@@ -87,7 +87,7 @@ public class GetNextCommittedCommandsTest {
 	private Injector injector;
 
 	@Inject
-	private CommittedAtomsStore committedAtomsStore;
+	private EngineStore<Atom, LedgerAndBFTProof> committedAtomsStore;
 
 	@Inject
 	private CommittedReader committedReader;

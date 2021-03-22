@@ -67,7 +67,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
@@ -144,7 +144,7 @@ public class RecoveryTest {
 	@After
 	public void teardown() {
 		if (this.currentInjector != null) {
-			LedgerEntryStore ledgerStore = this.currentInjector.getInstance(LedgerEntryStore.class);
+			AtomIndex ledgerStore = this.currentInjector.getInstance(AtomIndex.class);
 			ledgerStore.close();
 			PersistentSafetyStateStore safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
 			safetyStore.close();

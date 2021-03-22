@@ -35,7 +35,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -46,7 +45,6 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.sync.CommittedReader;
 
@@ -60,7 +58,6 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
 		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
-		CommittedAtomsStore store,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
 		Serialization serialization,
@@ -83,9 +80,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		if (!genesisProof.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		store.startTransaction();
 		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
-		store.commitTransaction();
 	}
 
 	@Provides
@@ -94,14 +89,13 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	LedgerProof lastStoredProof(
 		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		CommittedReader committedReader,
-		CommittedAtomsStore store,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		if (!store.containsAID(genesisAtom.getAID())) {
-			storeGenesis(radixEngine, store, genesisAtom, validatorSetBuilder, serialization, hasher);
+		if (!radixEngine.contains(genesisAtom)) {
+			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 
 		return committedReader.getLastProof().orElseThrow();
@@ -174,10 +168,10 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	private VerifiedVertexStoreState vertexStoreState(
 		@LastEpochProof LedgerProof lastEpochProof,
-		LedgerEntryStore ledgerEntryStore,
+		Optional<SerializedVertexStoreState> serializedVertexStoreState,
 		Hasher hasher
 	) {
-		return ledgerEntryStore.loadLastVertexStoreState()
+		return serializedVertexStoreState
 			.filter(vertexStoreState -> vertexStoreState.getHighQC().highestQC().getEpoch() == lastEpochProof.getEpoch() + 1)
 			.map(state -> serializedToVerifiedVertexStore(state, hasher))
 			.orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));

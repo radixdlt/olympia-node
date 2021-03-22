@@ -105,7 +105,7 @@ public class SystemTest {
 		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, nextSystemParticle)).isEqualTo(Spin.UP);
 	}
 
 	@Test

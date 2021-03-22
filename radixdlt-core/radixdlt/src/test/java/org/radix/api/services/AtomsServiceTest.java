@@ -31,7 +31,7 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.utils.RandomHasher;
 
 import java.util.Optional;
@@ -56,7 +56,7 @@ public class AtomsServiceTest {
 	private final Observable<MempoolAddFailure> mempoolAddFailures = mock(Observable.class);
 	private final Observable<AtomsCommittedToLedger> ledgerCommitted = mock(Observable.class);
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher = mock(EventDispatcher.class);
-	private final LedgerEntryStore store = mock(LedgerEntryStore.class);
+	private final AtomIndex store = mock(AtomIndex.class);
 
 	private final AtomsService atomsService = new AtomsService(
 		mempoolAtomsRemoved,

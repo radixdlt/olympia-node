@@ -129,8 +129,8 @@ public class StakedTokensTest {
 
 		this.engine.execute(List.of(builder.buildAtom()));
 
-		assertThat(this.store.getSpin(this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.UP);
 	}
 
 	@Test
@@ -162,8 +162,8 @@ public class StakedTokensTest {
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 		this.engine.execute(List.of(builder2.buildAtom()));
 
-		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
 	}
 
 	@Test
@@ -196,9 +196,9 @@ public class StakedTokensTest {
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 		this.engine.execute(List.of(builder2.buildAtom()));
 
-		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(partialStakeParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, partialStakeParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
 	}
 
 	@Test

@@ -77,7 +77,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 
 		void initialize(EngineStore<T, M> engineStore) {
-			curValue = engineStore.compute(particleClass, curValue, outputReducer);
+			curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer);
 		}
 
 		void processCheckSpin(Particle p, Spin checkSpin) {

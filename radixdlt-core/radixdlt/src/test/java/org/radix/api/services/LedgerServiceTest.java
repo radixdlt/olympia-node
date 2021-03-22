@@ -19,12 +19,10 @@ package org.radix.api.services;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.AtomIndex;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +35,7 @@ public class LedgerServiceTest {
 
 	@Test
 	public void atomStatusIsStoredIfPresentInLedger() {
-		var ledger = mock(LedgerEntryStore.class);
+		var ledger = mock(AtomIndex.class);
 		var serialization = mock(Serialization.class);
 		var ledgerService = new LedgerService(ledger, serialization);
 
@@ -54,7 +52,7 @@ public class LedgerServiceTest {
 
 	@Test
 	public void atomStatusIsDoesNotExistsIfMissingInLedger() {
-		var ledger = mock(LedgerEntryStore.class);
+		var ledger = mock(AtomIndex.class);
 		var serialization = mock(Serialization.class);
 		var ledgerService = new LedgerService(ledger, serialization);
 

@@ -86,8 +86,8 @@ public class TokensTest {
 		this.engine.execute(List.of(atom));
 
 		// Assert
-		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(tokenDefinitionParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(transferrableTokensParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, rriParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tokenDefinitionParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, transferrableTokensParticle)).isEqualTo(Spin.UP);
 	}
 }

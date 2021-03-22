@@ -32,9 +32,9 @@ public class TransientEngineStore<T extends RadixEngineAtom, M> implements Engin
 	}
 
 	@Override
-	public <U extends Particle, V> V compute(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
-		V baseResult = base.compute(aClass, v, biFunction);
-		return transientStore.compute(aClass, baseResult, biFunction);
+	public <U extends Particle, V> V reduceUpParticles(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
+		V baseResult = base.reduceUpParticles(aClass, v, biFunction);
+		return transientStore.reduceUpParticles(aClass, baseResult, biFunction);
 	}
 
 	@Override

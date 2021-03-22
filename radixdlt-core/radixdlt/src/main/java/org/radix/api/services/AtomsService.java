@@ -44,7 +44,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 
 import java.util.List;
 import java.util.Map;
@@ -78,7 +78,7 @@ public class AtomsService {
 	private final Object singleAtomObserversLock = new Object();
 	private final Map<AID, List<AtomStatusListener>> singleAtomObservers = Maps.newHashMap();
 
-	private final LedgerEntryStore store;
+	private final AtomIndex store;
 	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -94,7 +94,7 @@ public class AtomsService {
 		Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved,
 		Observable<MempoolAddFailure> mempoolAddFailures,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
-		LedgerEntryStore store,
+		AtomIndex store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		Hasher hasher,
 		Serialization serialization
