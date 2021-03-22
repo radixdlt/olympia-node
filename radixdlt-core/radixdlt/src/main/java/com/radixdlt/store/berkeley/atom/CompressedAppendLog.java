@@ -17,27 +17,27 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
+import java.util.function.BiConsumer;
 
 import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
 import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
 
 public class CompressedAppendLog implements AppendLog {
-	private static final Logger log = LogManager.getLogger();
-
 	private final AppendLog delegate;
 	private final SystemCounters counters;
 
-	public CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
+	private CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
 		this.delegate = delegate;
 		this.counters = counters;
+	}
+
+	static CompressedAppendLog open(AppendLog delegate, SystemCounters counters) {
+		return new CompressedAppendLog(delegate, counters);
 	}
 
 	@Override
@@ -76,4 +76,21 @@ public class CompressedAppendLog implements AppendLog {
 		delegate.close();
 	}
 
+	@Override
+	public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
+		var offset = 0L;
+		synchronized (delegate) {
+			var end = false;
+			while (!end) {
+				try {
+					var chunk = readChunk(offset);
+					chunkConsumer.accept(chunk.getFirst(), offset);
+					offset += chunk.getSecond() + Integer.BYTES;
+				} catch (IOException exception) {
+					chunkConsumer.accept(new byte[0], -1L);
+					end = true;
+				}
+			}
+		}
+	}
 }

@@ -48,7 +48,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 	private final Serialization serialization;
 
 	@Inject
-	public RadixHttpWebsocketHandler(RadixJsonRpcServer jsonRpcServer, AtomsService atomsService, Serialization serialization) {
+	RadixHttpWebsocketHandler(RadixJsonRpcServer jsonRpcServer, AtomsService atomsService, Serialization serialization) {
 		this.jsonRpcServer = jsonRpcServer;
 		this.atomsService = atomsService;
 		this.serialization = serialization;
