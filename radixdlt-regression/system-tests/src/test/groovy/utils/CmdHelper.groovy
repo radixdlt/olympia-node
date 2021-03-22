@@ -18,7 +18,6 @@
 
 package utils
 
-import com.radixdlt.test.TempUniverseCreator
 import me.alexpanov.net.FreePortFinder
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -124,23 +123,17 @@ class CmdHelper {
     }
 
     static Map getDockerOptions(int nodeCount, boolean startConsensusOnBoot) {
-        List<String> nodeNames = (1..nodeCount).collect({ return "docker_core${it-1}_1".toString() })
+        List<String> nodeNames = (1..nodeCount).collect({ return "${getContainerNamePrefix()}${it}".toString() })
         return nodeNames.withIndex().collectEntries { node, index ->
             Map options = [:]
-            options.nodeName = "docker_core" + index + "_1"
+            options.nodeName = node
             options.quorumSize = nodeCount
             options.remoteSeeds = nodeNames.findAll({ it != node })
-            //options.hostPort = FreePortFinder.findFreeLocalPort()
-            options.hostPort = 8080 + index
+            options.hostPort = FreePortFinder.findFreeLocalPort()
             options.rmiPort = FreePortFinder.findFreeLocalPort();
             options.socketAddressPort = FreePortFinder.findFreeLocalPort();
             options.startConsensusOnBoot = startConsensusOnBoot
             options.nodeIndex = index
-
-            logger.info("Node: " + node)
-            logger.info("Node name: " + options.nodeName)
-            logger.info("Port: " + options.hostPort)
-
             return [(node): options]
         }
 
@@ -195,9 +188,9 @@ class CmdHelper {
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
-                runCommand(dockerCommand.tokenize(), dockerEnv, false) :
-                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, false)
-        return !results ? results[0][0] : ""
+                runCommand(dockerCommand.tokenize(), dockerEnv, true) :
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
+        return results[0][0]
     }
 
     static String radixCliCommand(List cmdOptions) {
@@ -289,13 +282,12 @@ class CmdHelper {
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars,error
         if (isRunningOnWindows()) {
-            exportVars = TempUniverseCreator.getHardcodedUniverse(); //TODO a bit weird but this helps development on windows
-            //throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
-        } else {
-            String gradlewPath = System.getenv('CORE_DIR')
-            (exportVars, error) =  runCommand("${gradlewPath}//gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
-                    null,false, true,"${System.getenv('CORE_DIR')}//radixdlt-core/radixdlt");
+            //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
+            throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
         }
+        String gradlewPath = System.getenv('CORE_DIR')
+        (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
+                null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
         String[] envVars =  exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
