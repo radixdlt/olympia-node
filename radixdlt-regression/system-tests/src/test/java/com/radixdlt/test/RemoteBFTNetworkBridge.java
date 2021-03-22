@@ -82,7 +82,6 @@ public final class RemoteBFTNetworkBridge {
 							logRequestSuccessful(newRequestId, newRequestTime, responseString);
 							emitter.onSuccess(responseString);
 						} catch (IOException e) {
-
 							logRequestFailed(newRequestId, newRequestTime, e);
 							emitter.onError(new IllegalArgumentException(String.format(
 								"Request %s failed, cannot parse response: %s",
