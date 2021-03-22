@@ -15,9 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.http;
+package com.radixdlt.client.store.berkeley;
 
-@FunctionalInterface
-interface ThrowingConsumer<A> {
-	void accept(A arg1) throws Exception;
+public enum ScheduledParticleFlush {
+	INSTANCE;
+
+	public static ScheduledParticleFlush create() {
+		return INSTANCE;
+	}
 }

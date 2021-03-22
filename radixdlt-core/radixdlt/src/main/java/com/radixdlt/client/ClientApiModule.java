@@ -15,9 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.http;
+package com.radixdlt.client;
 
-@FunctionalInterface
-interface ThrowingConsumer<A> {
-	void accept(A arg1) throws Exception;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
+import com.radixdlt.environment.EventProcessorOnRunner;
+
+public class ClientApiModule extends AbstractModule {
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>("application",
+			ScheduledParticleFlush.class,
+			clientApiStore.particleFlushProcessor()
+		);
+	}
 }

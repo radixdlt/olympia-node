@@ -18,18 +18,25 @@
 package org.radix.api.services;
 
 import com.google.inject.Inject;
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.functional.Result;
+
+import java.util.List;
 
 public class HighLevelApiService {
 	private final Universe universe;
 	private final RadixAddress radixAddress;
+	private final ClientApiStore clientApiStore;
 
 	@Inject
-	public HighLevelApiService(Universe universe, @Self RadixAddress radixAddress) {
+	public HighLevelApiService(Universe universe, @Self RadixAddress radixAddress, ClientApiStore clientApiStore) {
 		this.universe = universe;
 		this.radixAddress = radixAddress;
+		this.clientApiStore = clientApiStore;
 	}
 
 	public int getUniverseMagic() {
@@ -38,5 +45,9 @@ public class HighLevelApiService {
 
 	public RadixAddress getAddress() {
 		return radixAddress;
+	}
+
+	public Result<List<TokenBalance>> getTokenBalances(RadixAddress radixAddress) {
+		return clientApiStore.getTokenBalances(radixAddress);
 	}
 }

@@ -51,5 +51,4 @@ public abstract class Particle {
 	public static EUID euidOf(Particle particle, Hasher hasher) {
 		return EUID.fromHash(hasher.hash(particle));
 	}
-
 }

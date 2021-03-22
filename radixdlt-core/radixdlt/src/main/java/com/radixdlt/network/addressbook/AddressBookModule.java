@@ -17,14 +17,14 @@
 
 package com.radixdlt.network.addressbook;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
-import org.radix.database.DatabaseEnvironment;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 
 /**
  * Guice configuration for {@link AddressBook}.
