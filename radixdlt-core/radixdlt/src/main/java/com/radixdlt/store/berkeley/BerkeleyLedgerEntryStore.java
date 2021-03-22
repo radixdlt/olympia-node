@@ -244,7 +244,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					particleConsumer.accept(SpunParticle.up(particle));
 				}
 
-				status = cursor.getNext(key, value, READ_COMMITTED);
+				status = cursor.getNext(key, value, DEFAULT);
 			}
 		}
 	}

@@ -23,6 +23,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
+import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
@@ -56,6 +57,7 @@ public final class ApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(AtomCommittedToLedger.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
+		eventBinder.addBinding().toInstance(ScheduledParticleFlush.class);
 
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 	}
