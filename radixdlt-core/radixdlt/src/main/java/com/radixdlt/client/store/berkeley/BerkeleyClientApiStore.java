@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.store.ClientApiStore;
@@ -64,7 +63,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final LedgerEntryStore store;
 	private final Serialization serialization;
 	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
-	private final ExecutorService executorService = newSingleThreadExecutor(daemonThreads("ClientApiStore"));
 
 	private Database executedTransactionsDatabase;
 	private Database balanceDatabase;
@@ -97,7 +95,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.isSuccess();
 
 				if (!success) {
-					log.error("Error deserializing existing while scanning DB for address {}", address);
+					log.error("Error deserializing existing balance while scanning DB for address {}", address);
 				}
 			}
 			while (cursor.getNext(key, data, null) == OperationStatus.SUCCESS);
@@ -138,15 +136,22 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				rebuildDatabase();
 			}
 
+			//TODO: switch to generalized committed atoms notifications.
 			store.onParticleCommit(this::newParticle);
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
 	}
 
+	@Override
+	public void storeCollectedParticles() {
+		particleCollector.consumeCollected(this::storeSingleParticle);
+	}
+
 	public void close() {
+		//TODO: temporary hack
 		store.onParticleCommit(null); //Stop watching for new atoms
-		storeParticles();
+		storeCollectedParticles();
 
 		safeClose(executedTransactionsDatabase);
 		safeClose(balanceDatabase);
@@ -168,17 +173,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void newParticle(SpunParticle particle) {
 		particleCollector.push(particle);
-		executorService.submit(this::storeParticles);
-	}
-
-	private void storeParticles() {
-		particleCollector.consumeCollected(this::storeSingleParticle);
 	}
 
 	private void storeSingleParticle(SpunParticle spunParticle) {
 		if (spunParticle.getSpin() == Spin.DOWN) {
-			//TODO: current implementation does not cover unstaking during DB rebuild
-			// because ledger DB does not store DOWN particles
 			storeSingleDownParticle(spunParticle.getParticle());
 		} else {
 			storeSingleUpParticle(spunParticle.getParticle());
@@ -190,15 +188,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var key = asKey(balanceEntry.toKey());
 			var value = serializeBalanceEntry(entry(), balanceEntry);
 
-			if (balanceEntry.isSupply()) {
-				mergeBalances(key, value, balanceEntry);
-			} else {
-				var status = balanceDatabase.put(null, key, value);
-
-				if (status != OperationStatus.SUCCESS) {
-					log.error("Error while storing single up particle {} ({})", particle, balanceEntry);
-				}
-			}
+			mergeBalances(key, value, balanceEntry.negate());
 		});
 	}
 
@@ -206,15 +196,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		toBalanceEntry(particle).ifPresent(balanceEntry -> {
 			var key = asKey(balanceEntry.toKey());
 
-			if (balanceEntry.isSupply()) {
-				mergeBalances(key, entry(), balanceEntry.negate());
-			} else {
-				var status = balanceDatabase.delete(null, key);
-
-				if (status != OperationStatus.SUCCESS) {
-					log.error("Error while storing single down particle {} ({})", particle, balanceEntry);
-				}
-			}
+			mergeBalances(key, entry(), balanceEntry);
 		});
 	}
 
@@ -254,16 +236,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Optional<BalanceEntry> toBalanceEntry(Particle p) {
-		if (p instanceof StakedTokensParticle) {
-			var a = (StakedTokensParticle) p;
-			return Optional.of(BalanceEntry.create(
-				a.getAddress(),
-				a.getDelegateAddress(),
-				a.getTokDefRef(),
-				a.getGranularity(),
-				a.getAmount()
-			));
-		} else if (p instanceof TransferrableTokensParticle) {
+		if (p instanceof TransferrableTokensParticle) {
 			var a = (TransferrableTokensParticle) p;
 			return Optional.of(BalanceEntry.create(
 				a.getAddress(),

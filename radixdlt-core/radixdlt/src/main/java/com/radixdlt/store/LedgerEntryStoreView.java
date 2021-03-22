@@ -46,15 +46,6 @@ public interface LedgerEntryStoreView {
 	Optional<Atom> get(AID aid);
 
 	/**
-	 * Gets the atom directly from commit log.
-	 *
-	 * @param address
-	 * 			Address to read atom from.
-	 * @return the atom stored at given address
-	 */
-	Optional<Atom> get(long address);
-
-	/**
 	 * Gets the last committed atom aid
 	 * TODO: Remove optional
 	 * @return The last committed atom aid

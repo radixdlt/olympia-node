@@ -68,22 +68,27 @@ public class BerkeleyClientApiStoreTest {
 
 	@Test
 	public void tokenBalancesAreReturned() {
-		var particles = List.of(SpunParticle.up(stake(UInt256.TWO)), SpunParticle.up(transfer(UInt256.NINE)));
+		var particles = List.of(
+			SpunParticle.up(stake(UInt256.TWO)),
+			SpunParticle.up(stake(UInt256.FIVE)),
+			SpunParticle.up(transfer(UInt256.NINE)),
+			SpunParticle.up(transfer(UInt256.ONE)),
+			SpunParticle.down(transfer(UInt256.ONE))
+		);
 		var clientApiStore = prepareApiStore(particles);
 
 		clientApiStore.getTokenBalances(OWNER)
 			.onSuccess(list -> {
-				assertEquals(2, list.size());
+				assertEquals(1, list.size());
 				assertEquals(UInt256.NINE, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
-				assertEquals(UInt256.TWO, list.get(1).getAmount());
-				assertEquals(TOKEN, list.get(1).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 	}
 
 	@SuppressWarnings("unchecked")
 	private BerkeleyClientApiStore prepareApiStore(List<SpunParticle> particles) {
+		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
 			particles.forEach(invocation.<Consumer<SpunParticle>>getArgument(0));
 			return null;

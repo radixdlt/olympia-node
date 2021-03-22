@@ -27,5 +27,16 @@ import java.util.List;
  */
 public interface ClientApiStore {
 
+	/**
+	 * Retrieve list of immediately spendable token balances.
+	 *
+	 * @param address	- client address
+	 * @return list of token balances
+	 */
 	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
+
+	/**
+	 * Flush intermediate storage and save particles into persistent DB.
+	 */
+	void storeCollectedParticles();
 }

@@ -192,20 +192,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	@Override
-	public Optional<Atom> get(long offset) {
-		return withTime(() -> {
-			try {
-				var data = atomLog.read(offset);
-				return Optional.of(deserializeOrElseFail(data, Atom.class));
-			} catch (Exception e) {
-				fail("Get of atom at offset '" + offset + "' failed", e);
-			}
-
-			return Optional.empty();
-		}, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
-	}
-
-	@Override
 	public Transaction createTransaction() {
 		return withTime(
 			() -> wrap(beginTransaction()),
