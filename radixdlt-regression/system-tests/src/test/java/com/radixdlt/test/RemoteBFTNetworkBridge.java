@@ -110,7 +110,7 @@ public final class RemoteBFTNetworkBridge {
 
 	private void logRequestSuccessful(int requestId, long requestTime, String body) {
 		final var requestDuration = System.currentTimeMillis() - requestTime;
-		log.info("Request {} ({}ms): successful {}", requestId, requestDuration, body);
+		log.debug("Request {} ({}ms): successful {}", requestId, requestDuration, body);
 	}
 
 	private void logRequestFailed(int requestId, long requestTime, int code, String body) {

@@ -67,8 +67,6 @@ public final class SystemCounters {
 				systemCounters.put(value, counterValue);
 			} catch (JSONException e) {
 				logger.warn("failed to extract value for {} at '{}': {}", value, value.jsonPath(), e);
-				logger.warn(jsonCounters.toString(5));
-				logger.warn("=".repeat(50));
 				systemCounters.put(value, 0L);
 			}
 		}

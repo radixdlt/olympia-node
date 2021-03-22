@@ -37,10 +37,7 @@ class CmdHelper {
         def serr = new StringBuffer()
         def process
         logger.debug("------Executing command ${cmd}-----")
-
-        logger.info(cmd.join(" "))
-
-        env?logger.info("------Environment variables ${env}-----"):""
+        env?logger.debug("------Environment variables ${env}-----"):""
         workdir?logger.debug("------Working dir ${workdir}-----"):""
         process = cmd.execute(
                 env ?: null,
