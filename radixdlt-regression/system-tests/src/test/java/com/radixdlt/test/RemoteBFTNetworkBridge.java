@@ -70,8 +70,6 @@ public final class RemoteBFTNetworkBridge {
 			call.enqueue(new Callback() {
 				@Override
 				public void onFailure(Call call, IOException e) {
-					log.info("ON ERROR");
-					log.info("=".repeat(50) + "\n" + call.request().url() + "\n" + call.request().body() + "\n" +  "=".repeat(50));
 					logRequestFailed(newRequestId, newRequestTime, e);
 					emitter.onError(e);
 				}
@@ -84,9 +82,6 @@ public final class RemoteBFTNetworkBridge {
 							logRequestSuccessful(newRequestId, newRequestTime, responseString);
 							emitter.onSuccess(responseString);
 						} catch (IOException e) {
-							log.info("onResponse EXCEPTION");
-							log.info("=".repeat(50) + "\n" + call.request().url() + "\n" + call.request().body() + "\n" +  "=".repeat(50));
-							log.info("=".repeat(50) + "\n" + response.body() + "\n" + "=".repeat(50));
 
 							logRequestFailed(newRequestId, newRequestTime, e);
 							emitter.onError(new IllegalArgumentException(String.format(
