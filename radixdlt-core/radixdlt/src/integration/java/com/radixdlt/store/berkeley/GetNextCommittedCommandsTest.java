@@ -219,11 +219,11 @@ public class GetNextCommittedCommandsTest {
 
 	private void generateAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var atomAndProof = generateCommittedAtom(epoch, view, stateVersion, endOfEpoch);
-		this.committedAtomsStore.startTransaction();
-		this.committedAtomsStore.storeAtom(atomAndProof.getFirst());
+		var txn = this.committedAtomsStore.createTransaction();
+		this.committedAtomsStore.storeAtom(txn, atomAndProof.getFirst());
 		var meta = LedgerAndBFTProof.create(atomAndProof.getSecond());
-		this.committedAtomsStore.storeMetadata(meta);
-		this.committedAtomsStore.commitTransaction();
+		this.committedAtomsStore.storeMetadata(txn, meta);
+		txn.commit();
 	}
 
 	private Pair<Atom, LedgerProof> generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {

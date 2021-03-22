@@ -27,48 +27,38 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.store.Transaction;
-
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
 public final class CommittedAtomsStore implements EngineStore<Atom, LedgerAndBFTProof>, RadixEngineAtomicCommitManager {
 	private final LedgerEntryStore store;
-	private Transaction transaction;
 
 	@Inject
-	public CommittedAtomsStore(
-		LedgerEntryStore store
-	) {
+	public CommittedAtomsStore(LedgerEntryStore store) {
 		this.store = Objects.requireNonNull(store);
 	}
 
 	@Override
 	public void startTransaction() {
-		this.transaction = store.createTransaction();
 	}
 
 	@Override
 	public void commitTransaction() {
-		this.transaction.commit();
-		this.transaction = null;
 	}
 
 	@Override
 	public void abortTransaction() {
-		this.transaction.abort();
-		this.transaction = null;
 	}
 
 	@Override
-	public void storeAtom(Atom atom) {
-		store.store(this.transaction, atom);
+	public void storeAtom(Transaction txn, Atom atom) {
+		store.store(txn, atom);
 	}
 
 	@Override
-	public void storeMetadata(LedgerAndBFTProof metadata) {
-		store.store(this.transaction, metadata);
+	public void storeMetadata(Transaction txn, LedgerAndBFTProof metadata) {
+		store.store(txn, metadata);
 	}
 
 	public boolean containsAID(AID aid) {
@@ -90,12 +80,17 @@ public final class CommittedAtomsStore implements EngineStore<Atom, LedgerAndBFT
 	}
 
 	@Override
-	public Spin getSpin(Particle particle) {
-		return store.getSpin(this.transaction, particle);
+	public Transaction createTransaction() {
+		return store.createTransaction();
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(HashCode particleHash) {
-		return store.loadUpParticle(this.transaction, particleHash);
+	public Spin getSpin(Transaction txn, Particle particle) {
+		return store.getSpin(txn, particle);
+	}
+
+	@Override
+	public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
+		return store.loadUpParticle(txn, particleHash);
 	}
 }

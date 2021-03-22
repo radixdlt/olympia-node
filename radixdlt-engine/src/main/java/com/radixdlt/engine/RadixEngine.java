@@ -121,8 +121,13 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
 		this.virtualizedCMStore = new CMStore() {
 			@Override
-			public Spin getSpin(Particle particle) {
-				var curSpin = engineStore.getSpin(particle);
+			public Transaction createTransaction() {
+				return engineStore.createTransaction();
+			}
+
+			@Override
+			public Spin getSpin(Transaction txn, Particle particle) {
+				var curSpin = engineStore.getSpin(txn, particle);
 				if (curSpin == Spin.DOWN) {
 					return curSpin;
 				}
@@ -135,8 +140,8 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			}
 
 			@Override
-			public Optional<Particle> loadUpParticle(HashCode particleHash) {
-				return engineStore.loadUpParticle(particleHash);
+			public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
+				return engineStore.loadUpParticle(txn, particleHash);
 			}
 		};
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -267,9 +272,10 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 	}
 
-	private HashMap<HashCode, Particle> verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+	private HashMap<HashCode, Particle> verify(CMStore.Transaction txn, T atom, PermissionLevel permissionLevel) throws RadixEngineException {
 		var downedParticles = new HashMap<HashCode, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
+			txn,
 			virtualizedCMStore,
 			atom.getCMInstruction(),
 			atom.getWitness(),
@@ -326,46 +332,56 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 					)
 				);
 			}
-
-			var checker = batchedChecker.newChecker(this::getComputedState);
-
-			for (T atom : atoms) {
-				// TODO: combine verification and storage
-				var downedParticles = this.verify(atom, permissionLevel);
-				this.engineStore.storeAtom(atom);
-
-				// TODO Feature: Return updated state for some given query (e.g. for current validator set)
-				// Non-persisted computed state
-				final var cmInstruction = atom.getCMInstruction();
-				for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-					// Treat check spin as the first push for now
-					if (!microInstruction.isCheckSpin()) {
-						continue;
-					}
-
-					final Particle particle;
-					if (microInstruction.getParticle() == null) {
-						particle = downedParticles.get(microInstruction.getParticleHash());
-						if (particle == null) {
-							throw new IllegalStateException();
-						}
-					} else {
-						particle = microInstruction.getParticle();
-					}
-
-					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
-
-					if (microInstruction.getNextSpin() == Spin.UP) {
-						checker.test(this::getComputedState);
-					}
-				}
-			}
-
-			checker.testMetadata(meta, this::getComputedState);
-			if (meta != null) {
-				this.engineStore.storeMetadata(meta);
+			var txn = engineStore.createTransaction();
+			try {
+				executeInternal(txn, atoms, meta, permissionLevel);
+				txn.commit();
+			} catch (Exception e) {
+				txn.abort();
+				throw e;
 			}
 		}
+	}
+
+	private void executeInternal(CMStore.Transaction txn, List<T> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+		var checker = batchedChecker.newChecker(this::getComputedState);
+		for (T atom : atoms) {
+			// TODO: combine verification and storage
+			var downedParticles = this.verify(txn, atom, permissionLevel);
+			this.engineStore.storeAtom(txn, atom);
+
+			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
+			// Non-persisted computed state
+			final var cmInstruction = atom.getCMInstruction();
+			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+				// Treat check spin as the first push for now
+				if (!microInstruction.isCheckSpin()) {
+					continue;
+				}
+
+				final Particle particle;
+				if (microInstruction.getParticle() == null) {
+					particle = downedParticles.get(microInstruction.getParticleHash());
+					if (particle == null) {
+						throw new IllegalStateException();
+					}
+				} else {
+					particle = microInstruction.getParticle();
+				}
+
+				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
+
+				if (microInstruction.getNextSpin() == Spin.UP) {
+					checker.test(this::getComputedState);
+				}
+			}
+		}
+
+		checker.testMetadata(meta, this::getComputedState);
+		if (meta != null) {
+			this.engineStore.storeMetadata(txn, meta);
+		}
+
 	}
 
 	public boolean contains(T atom) {

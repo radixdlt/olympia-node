@@ -93,13 +93,16 @@ public final class ConstraintMachine {
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 		private final CMStore store;
+		private final CMStore.Transaction txn;
 
 		CMValidationState(
+			CMStore.Transaction txn,
 			CMStore store,
 			PermissionLevel permissionLevel,
 			HashCode witness,
 			Map<EUID, ECDSASignature> signatures
 		) {
+			this.txn = txn;
 			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
@@ -111,7 +114,7 @@ public final class ConstraintMachine {
 			if (upParticles.containsKey(particleHash)) {
 				return Optional.of(upParticles.get(particleHash));
 			}
-			return store.loadUpParticle(particleHash);
+			return store.loadUpParticle(txn, particleHash);
 		}
 
 		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
@@ -123,7 +126,7 @@ public final class ConstraintMachine {
 			if (currentSpins.containsKey(particle)) {
 				currentSpin = currentSpins.get(particle);
 			} else {
-				currentSpin = store.getSpin(particle);
+				currentSpin = store.getSpin(txn, particle);
 			}
 
 			if (!currentSpin.equals(spin)) {
@@ -491,6 +494,7 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(
+		CMStore.Transaction txn,
 		CMStore cmStore,
 		CMInstruction cmInstruction,
 		HashCode witness,
@@ -498,6 +502,7 @@ public final class ConstraintMachine {
 		Map<HashCode, Particle> downedParticles
 	) {
 		final CMValidationState validationState = new CMValidationState(
+			txn,
 			cmStore,
 			permissionLevel,
 			witness,

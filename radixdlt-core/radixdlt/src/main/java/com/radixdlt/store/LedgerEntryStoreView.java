@@ -53,7 +53,7 @@ public interface LedgerEntryStoreView {
 		BiFunction<V, U, V> outputReducer
 	);
 
-	Spin getSpin(Transaction tx, Particle particle);
+	Spin getSpin(CMStore.Transaction tx, Particle particle);
 
-	Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash);
+	Optional<Particle> loadUpParticle(CMStore.Transaction tx, HashCode particleHash);
 }

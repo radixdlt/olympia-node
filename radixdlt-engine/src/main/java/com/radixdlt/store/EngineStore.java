@@ -28,11 +28,9 @@ public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(T atom);
+	void storeAtom(Transaction txn, T atom);
 
-	void storeMetadata(M metadata);
-
-	boolean containsAtom(T atom);
+	void storeMetadata(Transaction txn, M metadata);
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.
@@ -49,4 +47,6 @@ public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
 		V initial,
 		BiFunction<V, U, V> outputReducer
 	);
+
+	boolean containsAtom(T atom);
 }

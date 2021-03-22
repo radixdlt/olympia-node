@@ -61,7 +61,9 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			validatorSet
 		);
 		if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
-			inMemoryEngineStore.storeAtom(genesisAtom);
+			var txn = inMemoryEngineStore.createTransaction();
+			inMemoryEngineStore.storeAtom(txn, genesisAtom);
+			txn.commit();
 		}
 		return inMemoryEngineStore;
 	}

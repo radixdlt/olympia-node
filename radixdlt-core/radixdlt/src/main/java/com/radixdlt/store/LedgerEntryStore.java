@@ -27,11 +27,11 @@ import java.util.Optional;
  * A read/write instance of a ledger store containing ledger entries.
  */
 public interface LedgerEntryStore extends LedgerEntryStoreView {
-	Transaction createTransaction();
+	CMStore.Transaction createTransaction();
 
-	void store(Transaction tx, Atom atom);
+	void store(CMStore.Transaction tx, Atom atom);
 
-	void store(Transaction tx, LedgerAndBFTProof proof);
+	void store(CMStore.Transaction tx, LedgerAndBFTProof proof);
 
 	void close();
 

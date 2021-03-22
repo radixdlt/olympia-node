@@ -17,7 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.store.Transaction;
+import com.radixdlt.store.CMStore.Transaction;
 
 /**
  * Implementation of {@link Transaction} for BDB.
