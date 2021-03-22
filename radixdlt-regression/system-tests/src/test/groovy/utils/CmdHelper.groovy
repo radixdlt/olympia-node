@@ -18,6 +18,7 @@
 
 package utils
 
+import com.radixdlt.test.TempUniverseCreator
 import me.alexpanov.net.FreePortFinder
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -37,7 +38,10 @@ class CmdHelper {
         def serr = new StringBuffer()
         def process
         logger.debug("------Executing command ${cmd}-----")
-        env?logger.debug("------Environment variables ${env}-----"):""
+
+        logger.info(cmd.join(" "))
+
+        env?logger.info("------Environment variables ${env}-----"):""
         workdir?logger.debug("------Working dir ${workdir}-----"):""
         process = cmd.execute(
                 env ?: null,
@@ -188,9 +192,9 @@ class CmdHelper {
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
-                runCommand(dockerCommand.tokenize(), dockerEnv, true) :
-                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
-        return results[0][0]
+                runCommand(dockerCommand.tokenize(), dockerEnv, false) :
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, false)
+        return !results ? results[0][0] : ""
     }
 
     static String radixCliCommand(List cmdOptions) {
@@ -282,12 +286,13 @@ class CmdHelper {
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars,error
         if (isRunningOnWindows()) {
-            //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
+            //exportVars = TempUniverseCreator.getHardcodedUniverse(); //TODO a bit weird but this helps development on windows
             throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
+        } else {
+            String gradlewPath = System.getenv('CORE_DIR')
+            (exportVars, error) =  runCommand("${gradlewPath}//gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
+                    null,false, true,"${System.getenv('CORE_DIR')}//radixdlt-core/radixdlt");
         }
-        String gradlewPath = System.getenv('CORE_DIR')
-        (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} :radixdlt:clean :radixdlt:generateDevUniverse",
-                null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
         String[] envVars =  exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
