@@ -88,7 +88,6 @@ public final class SystemCounters {
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-		MESSAGES_INBOUND_PENDING("messages.inbound.pending"),
 		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
 		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
