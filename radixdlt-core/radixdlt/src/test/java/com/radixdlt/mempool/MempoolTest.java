@@ -265,6 +265,7 @@ public class MempoolTest {
 		Command command = createCommand(keyPair, hasher);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -289,6 +290,7 @@ public class MempoolTest {
 		Command command2 = createCommand(keyPair, hasher, 0, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -311,6 +313,7 @@ public class MempoolTest {
 		Command command3 = createCommand(keyPair, hasher, 0, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn(1L);
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

@@ -66,7 +66,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		Hasher hasher
 	) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
+		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)

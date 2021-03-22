@@ -219,7 +219,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				.build()
 		).buildAtom();
 		try {
-			branch.execute(List.of(systemUpdate), null, PermissionLevel.SUPER_USER);
+			branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
@@ -270,7 +270,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			try {
 				transientBranch.execute(
 					List.of(radixEngineCommand.atom),
-					null,
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
@@ -294,75 +293,33 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private void commitCommand(long version, Atom atom, LedgerProof proof) {
-		try {
-			// TODO: execute list of commands instead
-			// TODO: Include permission level in committed command
-			this.radixEngine.execute(
-				List.of(atom),
-				proof.getStateVersion() == version ? proof : null,
-				PermissionLevel.SUPER_USER
-			);
-		} catch (RadixEngineException e) {
-			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
-		}
-
-		final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
-		if (isUserCommand) {
-			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
-		} else {
-			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
-		}
-	}
-
 	private List<Atom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof) {
-		final SystemParticle lastSystemParticle = radixEngine.getComputedState(SystemParticle.class);
-		final long currentEpoch = lastSystemParticle.getEpoch();
-		boolean epochChange = false;
-
-		final LedgerProof headerAndProof = verifiedCommandsAndProof.getProof();
-		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
-		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
-
 		final var atomsToCommit = new ArrayList<Atom>();
 		try {
 			for (var cmd : verifiedCommandsAndProof.getCommands()) {
-				atomsToCommit.add(this.mapCommand(cmd));
+				var atom = this.mapCommand(cmd);
+				atomsToCommit.add(atom);
+				final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
+				if (isUserCommand) {
+					systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
+				} else {
+					systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
+				}
 			}
 		} catch (DeserializeException e) {
 			throw new ByzantineQuorumException("Trying to commit bad atom", e);
 		}
 
-		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
-			this.commitCommand(firstVersion + i, atomsToCommit.get(i), headerAndProof);
-
-			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
-			final boolean isLastCommand = i == verifiedCommandsAndProof.getCommands().size() - 1;
-			final boolean changingEpoch = nextEpoch > currentEpoch;
-			if (isLastCommand && changingEpoch) {
-				epochChange = true;
-			} else if (changingEpoch) {
-				throw new ByzantineQuorumException("change of epoch did not occur on last command");
-			}
-		}
-
-		// Verify that output of radix engine and signed output match
-		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
-		// TODO: set as malicious (RPNV1-633)
-		if (epochChange) {
-			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(
-				this.radixEngine.getComputedState(RegisteredValidators.class),
-				this.radixEngine.getComputedState(Stakes.class)
+		try {
+			// TODO: execute list of commands instead
+			// TODO: Include permission level in committed command
+			this.radixEngine.execute(
+				atomsToCommit,
+				verifiedCommandsAndProof.getProof(),
+				PermissionLevel.SUPER_USER
 			);
-			final var signedValidatorSet = verifiedCommandsAndProof.getProof().getNextValidatorSet()
-				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
-			if (!signedValidatorSet.equals(reNextValidatorSet)) {
-				throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
-			}
-		} else {
-			if (verifiedCommandsAndProof.getProof().getNextValidatorSet().isPresent()) {
-				throw new ByzantineQuorumException("Trying to change epochs when RE isn't");
-			}
+		} catch (RadixEngineException e) {
+			throw new ByzantineQuorumException(String.format("Trying to commit bad atoms:\n%s", atomsToCommit), e);
 		}
 
 		return atomsToCommit;

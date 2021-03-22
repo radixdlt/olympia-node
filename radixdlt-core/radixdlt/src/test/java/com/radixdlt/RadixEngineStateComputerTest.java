@@ -164,7 +164,7 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		RadixEngine.RadixEngineBranch<Atom, LedgerProof> branch = radixEngine.transientBranch();
-		branch.execute(List.of(genesisAtom), null, PermissionLevel.SYSTEM);
+		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)

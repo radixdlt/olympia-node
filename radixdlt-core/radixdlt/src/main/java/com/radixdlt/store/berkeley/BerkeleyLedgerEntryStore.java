@@ -207,8 +207,10 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Committ
 				throw new IllegalStateException("No atom found before storing proof.");
 			}
 
-			if (Longs.fromByteArray(key.getData()) != proof.getStateVersion()) {
-				throw new IllegalStateException("Proof does not match last atom.");
+			long lastVersion = Longs.fromByteArray(key.getData());
+			if (lastVersion != proof.getStateVersion()) {
+				throw new IllegalStateException("Proof version " + proof.getStateVersion()
+					+ " does not match last atom " + lastVersion);
 			}
 		}
 

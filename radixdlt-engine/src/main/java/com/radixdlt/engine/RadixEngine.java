@@ -100,20 +100,22 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T, M>> stateComputers = new HashMap<>();
 	private final List<RadixEngineBranch<T, M>> branches = new ArrayList<>();
+	private final BatchedChecker<M> batchedChecker;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T, M> engineStore
 	) {
-		this(constraintMachine, virtualStoreLayer, engineStore, null);
+		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchedChecker.empty());
 	}
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T, M> engineStore,
-		AtomChecker<T> checker
+		AtomChecker<T> checker,
+		BatchedChecker<M> batchedChecker
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
@@ -139,6 +141,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
+		this.batchedChecker = batchedChecker;
 	}
 
 
@@ -216,7 +219,8 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 				constraintMachine,
 				virtualStoreLayer,
 				transientEngineStore,
-				checker
+				checker,
+				BatchedChecker.empty()
 			);
 
 			engine.stateComputers.putAll(stateComputers);
@@ -226,8 +230,8 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			engine.execute(atoms);
 		}
 
-		public void execute(List<T> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
-			engine.execute(atoms, meta, permissionLevel);
+		public void execute(List<T> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
+			engine.execute(atoms, null, permissionLevel);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -323,6 +327,8 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 				);
 			}
 
+			var checker = batchedChecker.newChecker(this::getComputedState);
+
 			for (T atom : atoms) {
 				// TODO: combine verification and storage
 				var downedParticles = this.verify(atom, permissionLevel);
@@ -348,8 +354,14 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 					}
 
 					stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
+
+					if (microInstruction.getNextSpin() == Spin.UP) {
+						checker.test(this::getComputedState);
+					}
 				}
 			}
+
+			checker.testMetadata(meta, this::getComputedState);
 			if (meta != null) {
 				this.engineStore.storeMetadata(meta);
 			}
