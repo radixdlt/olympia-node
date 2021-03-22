@@ -45,7 +45,7 @@ public class RandomChannelOrderResponsiveTest {
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts())
-			.buildWithMockedLedger()
+			.buildWithoutEpochs()
 			.runUntil(DeterministicTest.hasReachedView(View.of(viewsToRun)));
 
 		List<Long> proposalsMade = IntStream.range(0, numNodes)

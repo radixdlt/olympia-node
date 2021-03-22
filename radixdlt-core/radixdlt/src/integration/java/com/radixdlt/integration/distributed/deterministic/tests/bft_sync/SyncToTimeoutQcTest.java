@@ -64,7 +64,7 @@ public class SyncToTimeoutQcTest {
 				dropProposalsToNodes(ImmutableSet.of(2, 3))
 					.andThen(dropVotesToNode(0))
 			)
-			.buildWithLedgerAndEpochs(View.of(10))
+			.buildWithEpochs(View.of(10))
 			.runUntil(DeterministicTest.viewUpdateOnNode(View.of(2), 0));
 
 		for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {

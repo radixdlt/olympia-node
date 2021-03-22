@@ -37,7 +37,7 @@ public class OneProposalDropperResponsiveTest {
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
-			.buildWithMockedLedger()
+			.buildWithoutEpochs()
 			.runForCount(30_000);
 	}
 

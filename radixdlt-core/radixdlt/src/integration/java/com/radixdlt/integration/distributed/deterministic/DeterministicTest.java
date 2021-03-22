@@ -169,15 +169,14 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public DeterministicTest buildWithLedgerAndEpochs(View epochHighView) {
+		public DeterministicTest buildWithEpochs(View epochHighView) {
 			Objects.requireNonNull(epochHighView);
 			modules.add(new FunctionalNodeModule(true, true, false, false, false, true, false));
-			addEpochHighViewModule(epochHighView);
-			addEpochLedgerModule();
+			addEpochedConsensusProcessorModule(epochHighView);
 			return build();
 		}
 
-		public DeterministicTest buildWithLedgerAndEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
+		public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
 			Objects.requireNonNull(epochHighView);
 			modules.add(new FunctionalNodeModule(true, true, false, false, false, true, true));
 			modules.add(new MockedCommittedReaderModule());
@@ -192,14 +191,13 @@ public final class DeterministicTest {
 					return syncConfig;
 				}
 			});
-			addEpochHighViewModule(epochHighView);
-			addEpochLedgerModule();
+			addEpochedConsensusProcessorModule(epochHighView);
 			return build();
 		}
 
-		public DeterministicTest buildWithMockedLedger() {
+		public DeterministicTest buildWithoutEpochs() {
 			modules.add(new FunctionalNodeModule(true, false, false, false, false, false, false));
-			addMockedLedgerModule();
+			addNonEpochedConsensusProcessorModule();
 			return build();
 		}
 
@@ -231,16 +229,7 @@ public final class DeterministicTest {
 			);
 		}
 
-		private void addEpochHighViewModule(View epochHighView) {
-			modules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-				}
-			});
-		}
-
-		private void addMockedLedgerModule() {
+		private void addNonEpochedConsensusProcessorModule() {
 			final var validatorSet = validatorSetMapping().apply(1L);
 			modules.add(new AbstractModule() {
 				@Override
@@ -261,12 +250,13 @@ public final class DeterministicTest {
 			});
 		}
 
-		private void addEpochLedgerModule() {
+		private void addEpochedConsensusProcessorModule(View epochHighView) {
 			// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 			Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping()::apply;
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
 					bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
@@ -433,7 +423,7 @@ public final class DeterministicTest {
 			}
 			final var ledgerUpdate = (LedgerUpdate) message.message();
 			return message.channelId().receiverIndex() == nodeIndex
-					&& ledgerUpdate.getTail().getStateVersion() >= stateVersion;
+				&& ledgerUpdate.getTail().getStateVersion() >= stateVersion;
 		};
 	}
 

@@ -53,7 +53,7 @@ public class MovingWindowValidatorsTest {
 			.messageMutator(mutator())
 			.messageSelector(firstSelector())
 			.epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
-			.buildWithLedgerAndEpochs(highView)
+			.buildWithEpochs(highView)
 			.runUntil(DeterministicTest.hasReachedEpochView(EpochView.of(maxEpoch, highView)));
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);

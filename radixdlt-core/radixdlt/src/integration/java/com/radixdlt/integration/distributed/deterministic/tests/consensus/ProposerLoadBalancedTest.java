@@ -46,7 +46,7 @@ public class ProposerLoadBalancedTest {
 			.messageSelector(MessageSelector.firstSelector())
 			.messageMutator(mutator())
 			.epochNodeWeightMapping(mapping)
-			.buildWithMockedLedger()
+			.buildWithoutEpochs()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
 		return IntStream.range(0, numNodes)

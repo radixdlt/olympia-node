@@ -30,7 +30,7 @@ public class FullNodeSyncTest {
 			.numNodes(numNodes)
 			.messageSelector(firstSelector())
 			.epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-			.buildWithLedgerAndEpochsAndSync(highView, syncConfig)
+			.buildWithEpochsAndSync(highView, syncConfig)
 			.runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
 
 		final var validatorsCounters = IntStream.range(0, numValidators)
