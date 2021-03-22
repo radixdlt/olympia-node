@@ -24,6 +24,9 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Proof of ledger commit
+ */
 public final class LedgerAndBFTProof {
 	private final LedgerProof ledgerProof;
 	private final VerifiedVertexStoreState vertexStoreState;
@@ -48,5 +51,21 @@ public final class LedgerAndBFTProof {
 
 	public Optional<VerifiedVertexStoreState> vertexStoreState() {
 		return Optional.ofNullable(vertexStoreState);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(ledgerProof, vertexStoreState);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof LedgerAndBFTProof)) {
+			return false;
+		}
+
+		var other = (LedgerAndBFTProof) o;
+		return Objects.equals(this.ledgerProof, other.ledgerProof)
+			&& Objects.equals(this.vertexStoreState, other.vertexStoreState);
 	}
 }

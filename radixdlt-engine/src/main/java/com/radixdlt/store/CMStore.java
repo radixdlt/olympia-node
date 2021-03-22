@@ -32,11 +32,15 @@ public interface CMStore {
 	 * whole function in single interface in future.
 	 */
 	interface Transaction {
-		void commit();
+		default void commit() {
+		}
 
-		void abort();
+		default void abort() {
+		}
 
-		<T> T unwrap();
+		default <T> T unwrap() {
+			return null;
+		}
 	}
 
 	Transaction createTransaction();

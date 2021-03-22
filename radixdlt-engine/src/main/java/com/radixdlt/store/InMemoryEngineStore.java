@@ -70,7 +70,7 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements 
 
 	@Override
 	public void storeMetadata(Transaction txn, M metadata) {
-
+		 // No-op
 	}
 
 	@Override
@@ -100,20 +100,7 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements 
 
 	@Override
 	public Transaction createTransaction() {
-		return new Transaction() {
-			@Override
-			public void commit() {
-			}
-
-			@Override
-			public void abort() {
-			}
-
-			@Override
-			public <T> T unwrap() {
-				return null;
-			}
-		};
+		return new Transaction() { };
 	}
 
 	@Override

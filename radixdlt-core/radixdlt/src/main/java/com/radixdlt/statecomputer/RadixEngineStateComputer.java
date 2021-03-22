@@ -311,8 +311,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 
 		try {
-			// TODO: execute list of commands instead
-			// TODO: Include permission level in committed command
 			this.radixEngine.execute(
 				atomsToCommit,
 				ledgerAndBFTProof,

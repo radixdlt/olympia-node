@@ -100,14 +100,14 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T, M>> stateComputers = new HashMap<>();
 	private final List<RadixEngineBranch<T, M>> branches = new ArrayList<>();
-	private final BatchedChecker<M> batchedChecker;
+	private final BatchVerifier<M> batchVerifier;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T, M> engineStore
 	) {
-		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchedChecker.empty());
+		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
@@ -115,7 +115,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T, M> engineStore,
 		AtomChecker<T> checker,
-		BatchedChecker<M> batchedChecker
+		BatchVerifier<M> batchVerifier
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
@@ -146,7 +146,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
-		this.batchedChecker = batchedChecker;
+		this.batchVerifier = batchVerifier;
 	}
 
 
@@ -225,7 +225,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 				virtualStoreLayer,
 				transientEngineStore,
 				checker,
-				BatchedChecker.empty()
+				BatchVerifier.empty()
 			);
 
 			engine.stateComputers.putAll(stateComputers);
@@ -344,7 +344,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	}
 
 	private void executeInternal(CMStore.Transaction txn, List<T> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
-		var checker = batchedChecker.newChecker(this::getComputedState);
+		var checker = batchVerifier.newVerifier(this::getComputedState);
 		for (T atom : atoms) {
 			// TODO: combine verification and storage
 			var downedParticles = this.verify(txn, atom, permissionLevel);

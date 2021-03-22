@@ -18,20 +18,26 @@
 
 package com.radixdlt.engine;
 
-public interface BatchedChecker<M> {
-	PerStateChangeChecker<M> newChecker(ComputedState computedState);
+/**
+ * Verifies that batched atoms executed on Radix Engine follow some
+ * specified rules.
+ *
+ * @param <M> class of metadata
+ */
+public interface BatchVerifier<M> {
+	PerStateChangeVerifier<M> newVerifier(ComputedState computedState);
 
 	interface ComputedState {
 		<T> T get(Class<T> stateClass);
 	}
 
-	interface PerStateChangeChecker<M> {
+	interface PerStateChangeVerifier<M> {
 		void test(ComputedState computedState);
 		void testMetadata(M metadata, ComputedState computedState);
 	}
 
-	static <M> BatchedChecker<M> empty() {
-		final var emptyPerStateChangeChecker = new PerStateChangeChecker<M>() {
+	static <M> BatchVerifier<M> empty() {
+		final var emptyPerStateChangeChecker = new PerStateChangeVerifier<M>() {
 			@Override
 			public void test(ComputedState computedState) {
 				// No-op

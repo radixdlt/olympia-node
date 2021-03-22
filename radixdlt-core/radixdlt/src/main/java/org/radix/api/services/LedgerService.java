@@ -21,7 +21,6 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.AtomIndex;
 
 import static org.radix.api.jsonrpc.AtomStatus.DOES_NOT_EXIST;
@@ -31,12 +30,10 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
 public class LedgerService {
 	private final AtomIndex ledger;
-	private final Serialization serialization;
 
 	@Inject
-	public LedgerService(final AtomIndex ledger, final Serialization serialization) {
+	public LedgerService(final AtomIndex ledger) {
 		this.ledger = ledger;
-		this.serialization = serialization;
 	}
 
 	public JSONObject getAtomStatus(final JSONObject request, final String aidStr) {

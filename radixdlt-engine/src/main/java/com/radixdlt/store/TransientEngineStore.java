@@ -33,26 +33,12 @@ public class TransientEngineStore<T extends RadixEngineAtom, M> implements Engin
 
 	@Override
 	public <U extends Particle, V> V reduceUpParticles(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
-		V baseResult = base.reduceUpParticles(aClass, v, biFunction);
-		return transientStore.reduceUpParticles(aClass, baseResult, biFunction);
+		throw new UnsupportedOperationException("Transient store should not require reduction.");
 	}
 
 	@Override
 	public Transaction createTransaction() {
-		return new Transaction() {
-			@Override
-			public void commit() {
-			}
-
-			@Override
-			public void abort() {
-			}
-
-			@Override
-			public <T> T unwrap() {
-				return null;
-			}
-		};
+		return new Transaction() { };
 	}
 
 	@Override

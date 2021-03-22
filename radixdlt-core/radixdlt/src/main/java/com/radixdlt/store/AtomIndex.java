@@ -23,7 +23,7 @@ import com.radixdlt.identifiers.AID;
 import java.util.Optional;
 
 /**
- * A read/write instance of a ledger store containing ledger entries.
+ * Index of atoms
  */
 public interface AtomIndex {
 	/**
@@ -42,6 +42,4 @@ public interface AtomIndex {
 
 	// TODO: remove once we clean up API to not require searching
 	SearchCursor search();
-
-	void close();
 }

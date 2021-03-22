@@ -134,7 +134,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		this.open();
 	}
 
-	@Override
 	public void close() {
 		safeClose(atomDatabase);
 

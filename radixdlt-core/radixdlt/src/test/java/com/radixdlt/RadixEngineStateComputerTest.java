@@ -197,8 +197,8 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
-		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 1);
-		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 1);
+		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		Atom atom = Atom.newBuilder().addParticleGroup(ParticleGroup.builder()
 			.spinDown(lastSystemParticle)
 			.spinUp(nextSystemParticle)
@@ -234,7 +234,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_non_epoch_high_view_should_return_no_validator_set() {
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(9), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(9), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -245,7 +245,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -266,7 +266,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -284,7 +284,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, 1, View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -301,7 +301,7 @@ public class RadixEngineStateComputerTest {
 		RadixEngineCommand cmd = systemUpdateCommand(1, 2, 1);
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(1), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(1), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -329,7 +329,7 @@ public class RadixEngineStateComputerTest {
 			mock(BFTHeader.class),
 			0,
 			HashUtils.zero256(),
-			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 1),
+			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
@@ -355,7 +355,7 @@ public class RadixEngineStateComputerTest {
 			mock(BFTHeader.class),
 			0,
 			HashUtils.zero256(),
-			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
@@ -381,13 +381,39 @@ public class RadixEngineStateComputerTest {
 			mock(BFTHeader.class),
 			0,
 			HashUtils.zero256(),
-			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1,
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
 				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
 			),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 			ImmutableList.of(cmd1.command(), cmd0.command()),
+			ledgerProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
+			.isInstanceOf(ByzantineQuorumException.class);
+	}
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_change_when_there_shouldnt_be_one__should_fail() {
+		// Arrange
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 1, 1);
+		LedgerProof ledgerProof = new LedgerProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			HashUtils.zero256(),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
+				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+			),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd0.command()),
 			ledgerProof
 		);
 

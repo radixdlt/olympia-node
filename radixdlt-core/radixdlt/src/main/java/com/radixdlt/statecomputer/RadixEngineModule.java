@@ -33,7 +33,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
-import com.radixdlt.engine.BatchedChecker;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
@@ -53,7 +53,7 @@ import java.util.function.Predicate;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<BatchedChecker<LedgerAndBFTProof>>() { }).to(EpochChecker.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
@@ -108,7 +108,7 @@ public class RadixEngineModule extends AbstractModule {
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<Atom, LedgerAndBFTProof> engineStore,
 		AtomChecker<Atom> ledgerAtomChecker,
-		BatchedChecker<LedgerAndBFTProof> batchedChecker,
+		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
@@ -118,7 +118,7 @@ public class RadixEngineModule extends AbstractModule {
 			virtualStoreLayer,
 			engineStore,
 			ledgerAtomChecker,
-			batchedChecker
+			batchVerifier
 		);
 
 		// TODO: Convert to something more like the following:

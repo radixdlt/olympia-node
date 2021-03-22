@@ -20,39 +20,42 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.engine.BatchedChecker;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.ledger.ByzantineQuorumException;
 
-public final class EpochChecker implements BatchedChecker<LedgerAndBFTProof> {
+/**
+ * Validates that the LedgerProof matches the computed state output
+ */
+public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof> {
 	private final ValidatorSetBuilder validatorSetBuilder;
 
 	@Inject
-	public EpochChecker(ValidatorSetBuilder validatorSetBuilder) {
+	public EpochProofVerifier(ValidatorSetBuilder validatorSetBuilder) {
 		this.validatorSetBuilder = validatorSetBuilder;
 	}
 
 	@Override
-	public PerStateChangeChecker<LedgerAndBFTProof> newChecker(ComputedState computedState) {
-		return new PerEpochChecker(computedState);
+	public PerStateChangeVerifier<LedgerAndBFTProof> newVerifier(ComputedState computedState) {
+		return new PerEpochVerifier(computedState);
 	}
 
-	private class PerEpochChecker implements PerStateChangeChecker<LedgerAndBFTProof> {
-		private long currentEpoch;
+	private final class PerEpochVerifier implements PerStateChangeVerifier<LedgerAndBFTProof> {
+		private final long epoch;
 		private boolean epochChangeFlag = false;
 
-		private PerEpochChecker(ComputedState initState) {
-			this.currentEpoch = initState.get(SystemParticle.class).getEpoch();
+		private PerEpochVerifier(ComputedState initState) {
+			this.epoch = initState.get(SystemParticle.class).getEpoch();
 		}
 
 		@Override
 		public void test(ComputedState computedState) {
 			if (epochChangeFlag) {
-				throw new IllegalStateException();
+				throw new ByzantineQuorumException("Additional commands added to end of epoch.");
 			}
 
 			var systemParticle = computedState.get(SystemParticle.class);
 			long nextEpoch = systemParticle.getEpoch();
-			if (nextEpoch > currentEpoch) {
+			if (nextEpoch > epoch) {
 				epochChangeFlag = true;
 			}
 		}
@@ -78,7 +81,7 @@ public final class EpochChecker implements BatchedChecker<LedgerAndBFTProof> {
 			} else {
 				if (metadata != null) {
 					metadata.getProof().getNextValidatorSet().ifPresent(vset -> {
-						throw new IllegalStateException();
+						throw new ByzantineQuorumException("RE validator set should not be present.");
 					});
 				}
 			}
