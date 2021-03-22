@@ -31,6 +31,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
@@ -39,13 +40,12 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.LedgerAtom;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
 
 import java.util.Set;
-import java.util.function.UnaryOperator;
+import java.util.function.Predicate;
 
 /**
  * Module which manages execution of commands
@@ -96,15 +96,15 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
-		return atomOS.buildVirtualLayer();
+	private Predicate<Particle> buildVirtualLayer(CMAtomOS atomOS) {
+		return atomOS.virtualizedUpParticles();
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
+		Predicate<Particle> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
 		Set<StateReducer<?, ?>> stateReducers,

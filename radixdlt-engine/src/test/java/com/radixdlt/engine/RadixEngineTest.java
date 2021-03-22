@@ -29,7 +29,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
@@ -37,8 +36,8 @@ import com.radixdlt.test.utils.TypedMocks;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,14 +78,14 @@ public class RadixEngineTest {
 
 	private ConstraintMachine constraintMachine;
 	private EngineStore<RadixEngineAtom> engineStore;
-	private UnaryOperator<CMStore> virtualStore;
+	private Predicate<Particle> virtualStore;
 	private RadixEngine<RadixEngineAtom> radixEngine;
 
 	@Before
 	public void setup() {
 		this.constraintMachine = mock(ConstraintMachine.class);
 		this.engineStore = TypedMocks.rmock(EngineStore.class);
-		this.virtualStore = TypedMocks.rmock(UnaryOperator.class);
+		this.virtualStore = TypedMocks.rmock(Predicate.class);
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStore,
@@ -105,7 +104,7 @@ public class RadixEngineTest {
 			.build();
 		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			new InMemoryEngineStore<>()
 		);
 

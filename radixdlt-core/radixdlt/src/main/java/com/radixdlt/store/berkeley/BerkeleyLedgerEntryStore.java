@@ -17,44 +17,45 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.StoreConfig;
+import com.radixdlt.utils.Pair;
+import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SpunParticle;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.Transaction;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.utils.Longs;
-import com.radixdlt.utils.Pair;
-import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -488,8 +489,8 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	}
 
 	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {
-		HashCode particleId = hasher.hash(particle);
-		var particleKey = particleId.asBytes();
+		byte[] dson = serialization.toDson(particle, Output.ALL);
+		var particleKey = HashUtils.sha256(dson).asBytes();
 
 		final String idForClass = serialization.getIdForClass(particle.getClass());
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
@@ -506,12 +507,27 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		particleConsumer.accept(SpunParticle.up(particle));
 	}
 
-
-	private void downParticle(com.sleepycat.je.Transaction txn, Particle particle) {
-		HashCode particleId = hasher.hash(particle);
+	private void downVirtualParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
 		particleDatabase.put(txn, entry(particleKey), downEntry());
+	}
+
+	private void downParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
+		var particleKey = particleId.asBytes();
+		// TODO: check for up Particle state
+		var downedParticle = entry();
+		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
+		if (status != SUCCESS) {
+			throw new IllegalStateException("Dowing particle does not exist " + particleId);
+		}
+		// TODO: replace this with remove
+		particleDatabase.put(txn, entry(particleKey), downEntry());
+
+		var serializedParticle = new byte[downedParticle.getSize() - EUID.BYTES];
+		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+
+		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
 		particleConsumer.accept(SpunParticle.down(particle));
 	}
 
@@ -523,11 +539,31 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		return e.getData().length == 0 ? Spin.DOWN : Spin.UP;
 	}
 
+	private Optional<Particle> entryToUpParticle(DatabaseEntry e) {
+		if (entryToSpin(e) == Spin.DOWN) {
+			return Optional.empty();
+		}
+
+		var serializedParticle = new byte[e.getData().length - EUID.BYTES];
+		System.arraycopy(e.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+
+		try {
+			return Optional.of(serialization.fromDson(serializedParticle, Particle.class));
+		} catch (DeserializeException ex) {
+			throw new IllegalStateException("Unable to deserialize particle");
+		}
+	}
+
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
-		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
 			upParticle(txn, instruction.getParticle());
-		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.CHECK_UP_THEN_DOWN) {
-			downParticle(txn, instruction.getParticle());
+		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+			byte[] dson = serialization.toDson(instruction.getParticle(), Output.ALL);
+			final var particleId = HashUtils.sha256(dson);
+			downVirtualParticle(txn, particleId);
+		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+			final var particleId = instruction.getParticleHash();
+			downParticle(txn, particleId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
@@ -538,7 +574,7 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		com.sleepycat.je.Transaction transaction
 	) {
 		var aid = atom.getAID();
-		var atomData = serialize(atom.getClientAtom());
+		var atomData = serialize(atom.getAtom());
 
 		try {
 			//Write atom data as soon as possible
@@ -650,6 +686,18 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 		} else {
 			return Spin.NEUTRAL;
 		}
+	}
+
+	@Override
+	public Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash) {
+		var key = entry(particleHash.asBytes());
+		var value = entry();
+		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		if (status != SUCCESS) {
+			return Optional.empty();
+		}
+
+		return entryToUpParticle(value);
 	}
 
 	@Override

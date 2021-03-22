@@ -97,7 +97,7 @@ public class AtomsServiceTest {
 
 		result.ifPresentOrElse(
 			jsonAtom -> {
-				assertEquals(":str:Test message", jsonAtom.getString("message"));
+				assertEquals(":str:Test message", jsonAtom.getString("m"));
 				assertEquals("radix.atom", jsonAtom.getString("serializer"));
 			},
 			() -> fail("Expecting non-empty result")
@@ -107,7 +107,7 @@ public class AtomsServiceTest {
 	private Atom createAtom() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
-		var group1 = ParticleGroup.of(SpunParticle.up(particle));
+		var group1 = ParticleGroup.builder().spinUp(particle).build();
 
 		return Atom.newBuilder()
 			.addParticleGroup(group1)

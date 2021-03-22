@@ -101,7 +101,7 @@ public class ParticleGroups {
 
 		@Override
 		public List<ParticleGroup> mapToParticleGroups(CreateEmptyGroupAction action) {
-			return Collections.singletonList(ParticleGroup.of(Collections.emptyList()));
+			return Collections.singletonList(ParticleGroup.builder().build());
 		}
 	}
 

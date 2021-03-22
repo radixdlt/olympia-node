@@ -28,7 +28,6 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -46,8 +45,7 @@ public final class Addresses {
 	}
 
 	public static Stream<RadixAddress> ofAtom(Atom atom) {
-		return atom.uniqueInstructions()
-			.map(CMMicroInstruction::getParticle)
+		return atom.upParticles()
 			.map(Addresses::getShardables)
 			.flatMap(Set::stream)
 			.distinct();

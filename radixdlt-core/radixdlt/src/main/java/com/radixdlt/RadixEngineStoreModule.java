@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -31,6 +32,7 @@ import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class RadixEngineStoreModule extends AbstractModule {
@@ -73,6 +75,11 @@ public class RadixEngineStoreModule extends AbstractModule {
 			@Override
 			public Spin getSpin(Particle particle) {
 				return committedAtomsStore.getSpin(particle);
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(HashCode particleHash) {
+				return committedAtomsStore.loadUpParticle(particleHash);
 			}
 		};
 	}

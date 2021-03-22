@@ -34,8 +34,6 @@ public class CreateTokenWithoutDescriptionTest {
 		RadixIdentity testIdentity = RadixIdentities.createNew();
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), testIdentity);
 		TokenUtilities.requestTokensFor(api);
-		RRI tokenRRI1 = RRI.of(api.getAddress(), "TESTTOKEN1");
-		api.createMultiIssuanceToken(tokenRRI1, "TESTTOKEN1").blockUntilComplete();
 		RRI tokenRRI2 = RRI.of(api.getAddress(), "TESTTOKEN2");
 		api.createMultiIssuanceToken(tokenRRI2, "TESTTOKEN2", null).blockUntilComplete();
 	}

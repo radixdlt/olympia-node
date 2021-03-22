@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -38,7 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.UnaryOperator;
+import java.util.function.Predicate;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -79,10 +80,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			curValue = engineStore.compute(particleClass, curValue, outputReducer);
 		}
 
-		void processCheckSpin(CMMicroInstruction cmMicroInstruction) {
-			if (particleClass.isInstance(cmMicroInstruction.getParticle())) {
-				V particle = particleClass.cast(cmMicroInstruction.getParticle());
-				if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
+		void processCheckSpin(Particle p, Spin checkSpin) {
+			if (particleClass.isInstance(p)) {
+				V particle = particleClass.cast(p);
+				if (checkSpin == Spin.NEUTRAL) {
 					curValue = outputReducer.apply(curValue, particle);
 				} else {
 					curValue = inputReducer.apply(curValue, particle);
@@ -93,7 +94,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
-	private final UnaryOperator<CMStore> virtualStoreLayer;
+	private final Predicate<Particle> virtualStoreLayer;
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -102,7 +103,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
+		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
 		this(constraintMachine, virtualStoreLayer, engineStore, null);
@@ -110,16 +111,36 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
+		Predicate<Particle> virtualStoreLayer,
 		EngineStore<T> engineStore,
 		AtomChecker<T> checker
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = virtualStoreLayer.apply(engineStore);
+		this.virtualizedCMStore = new CMStore() {
+			@Override
+			public Spin getSpin(Particle particle) {
+				var curSpin = engineStore.getSpin(particle);
+				if (curSpin == Spin.DOWN) {
+					return curSpin;
+				}
+
+				if (virtualStoreLayer.test(particle)) {
+					return Spin.UP;
+				}
+
+				return curSpin;
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(HashCode particleHash) {
+				return engineStore.loadUpParticle(particleHash);
+			}
+		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 	}
+
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -182,7 +203,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		private RadixEngineBranch(
 			ConstraintMachine constraintMachine,
-			UnaryOperator<CMStore> virtualStoreLayer,
+			Predicate<Particle> virtualStoreLayer,
 			EngineStore<T> parentStore,
 			AtomChecker<T> checker,
 			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T>> stateComputers
@@ -242,12 +263,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	private void verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+	private HashMap<HashCode, Particle> verify(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		var downedParticles = new HashMap<HashCode, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
 			virtualizedCMStore,
 			atom.getCMInstruction(),
 			atom.getWitness(),
-			permissionLevel
+			permissionLevel,
+			downedParticles
 		);
 
 		if (error.isPresent()) {
@@ -266,6 +289,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				);
 			}
 		}
+
+		return downedParticles;
 	}
 
 	/**
@@ -299,7 +324,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 
 			// TODO: combine verification and storage
-			this.verify(atom, permissionLevel);
+			var downedParticles = this.verify(atom, permissionLevel);
 			this.engineStore.storeAtom(atom);
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
@@ -311,7 +336,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 					continue;
 				}
 
-				stateComputers.forEach((a, computer) -> computer.processCheckSpin(microInstruction));
+				final Particle particle;
+				if (microInstruction.getParticle() == null) {
+					particle = downedParticles.get(microInstruction.getParticleHash());
+					if (particle == null) {
+						throw new IllegalStateException();
+					}
+				} else {
+					particle = microInstruction.getParticle();
+				}
+
+				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
 			}
 		}
 	}

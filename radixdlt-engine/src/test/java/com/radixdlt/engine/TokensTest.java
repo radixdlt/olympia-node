@@ -40,7 +40,7 @@ public class TokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			store
 		);
 	}
@@ -69,9 +69,9 @@ public class TokensTest {
 			ImmutableMap.of()
 		);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(rriParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(tokenDefinitionParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(transferrableTokensParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(rriParticle),
+			CMMicroInstruction.spinUp(tokenDefinitionParticle),
+			CMMicroInstruction.spinUp(transferrableTokensParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(

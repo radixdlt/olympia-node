@@ -17,6 +17,21 @@
 
 package com.radixdlt.store.berkeley;
 
+import java.util.List;
+
+import javax.inject.Inject;
+
+import com.google.inject.name.Names;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseLocation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,11 +44,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -43,31 +55,20 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.statecomputer.AtomCommittedToLedger;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.utils.UInt256;
 
-import java.util.List;
-
-import javax.inject.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -210,7 +211,7 @@ public class GetNextCommittedCommandsTest {
 	private CommittedAtom generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
-		builder.addParticleGroupWith(new RRIParticle(rri), Spin.UP);
+		builder.addParticleGroup(ParticleGroup.builder().spinUp(new RRIParticle(rri)).build());
 		final var clientAtom = builder.buildAtom();
 
 		final var proposedVertexId = HashUtils.random256();

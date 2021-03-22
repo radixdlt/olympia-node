@@ -1,21 +1,22 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.fees;
+package com.radixdlt.client.fees;
 
 import java.util.Objects;
 import java.util.Set;
@@ -56,7 +57,8 @@ public final class FeeTable {
 
 	public UInt256 feeFor(AtomBuilder atomWithoutFees) {
 		Atom atom = atomWithoutFees.buildAtom();
-		final int atomSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length;
+		// TODO: 2500 is hack to include worst case size of fee burning. Remove when possible
+		final int atomSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length + 2500;
 		final Set<Particle> outputs = atom.upParticles().collect(Collectors.toSet());
 		return feeFor(atomWithoutFees, outputs, atomSize);
 	}

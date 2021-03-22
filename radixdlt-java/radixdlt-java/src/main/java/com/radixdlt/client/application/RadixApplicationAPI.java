@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.application;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
@@ -38,14 +37,12 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeProcessor;
-import com.radixdlt.client.application.translate.InvalidAddressMagicException;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.TokenFeeProcessor;
-import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
@@ -69,7 +66,6 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensMapper;
-import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
@@ -78,7 +74,6 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -167,9 +162,7 @@ public class RadixApplicationAPI {
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToPlaintextMessageMapper())
-			.addAtomMapper(new AtomToTokenTransfersMapper())
-			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
+			.addAtomMapper(new AtomToPlaintextMessageMapper());
 	}
 
 	private final RadixIdentity identity;
@@ -516,25 +509,6 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		return observeState(StakedTokenBalanceState.class, address)
 			.map(StakedTokenBalanceState::getBalance);
-	}
-
-	/**
-	 * Returns a stream of the latest delegated stake balance for the validator at the specified address.
-	 * pull() must have previously been called to ensure balances are retrieved and updated.
-	 *
-	 * @param validator the address of the validator to observe stake balance of
-	 * @return a cold observable of the latest stake balances of the validator by token RRI
-	 */
-	public Observable<Map<RRI, BigDecimal>> observeValidatorStake(RadixAddress validator) {
-		Objects.requireNonNull(validator);
-		return this.universe.getAtomStore().getAtomObservations(validator)
-			.filter(AtomObservation::hasAtom)
-			.map(AtomObservation::getAtom)
-			.map(Atom::toBuilder)
-			.flatMap(atom -> Observable.fromIterable(atom.spunParticles().collect(ImmutableList.toImmutableList())))
-			.filter(sp -> sp.getParticle() instanceof StakedTokensParticle)
-			.scan(DelegatedTokenBalanceState.empty(), (stp, spunParticle) -> accumulateTokens(stp, validator, spunParticle))
-			.map(DelegatedTokenBalanceState::getBalance);
 	}
 
 	private DelegatedTokenBalanceState accumulateTokens(
@@ -1365,14 +1339,6 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				for (SpunParticle sp : pg.getParticles()) {
-					for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
-						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
-							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
-						}
-					}
-				}
-
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
 		}
@@ -1383,14 +1349,6 @@ public class RadixApplicationAPI {
 		 * @param particleGroup Particle group to add to staging area.
 		 */
 		public void stage(ParticleGroup particleGroup) {
-			for (SpunParticle sp : particleGroup.getParticles()) {
-				for (RadixAddress address : Addresses.getShardables(sp.getParticle())) {
-					if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
-						throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
-					}
-				}
-			}
-
 			universe.getAtomStore().stageParticleGroup(uuid, particleGroup);
 		}
 
@@ -1403,14 +1361,11 @@ public class RadixApplicationAPI {
 		 * @return an unsigned atom
 		 */
 		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
-			var feelessBuilder = Atom.newBuilder();
-			universe.getAtomStore().getStaged(this.uuid).forEach(feelessBuilder::addParticleGroup);
+			var feelessBuilder = universe.getAtomStore().getStaged(this.uuid);
 			feelessBuilder.message(this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessBuilder, Optional.ofNullable(fee));
 
-			var builder = Atom.newBuilder();
-			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			particleGroups.forEach(builder::addParticleGroup);
+			var builder = universe.getAtomStore().getStagedAndClear(this.uuid);
 			builder.message(this.message);
 			this.message = null;
 

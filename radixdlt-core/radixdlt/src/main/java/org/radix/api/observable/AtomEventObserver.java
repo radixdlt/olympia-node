@@ -107,7 +107,7 @@ public class AtomEventObserver {
 	}
 
 	public void tryNext(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
-		if (committedAtom.getClientAtom() == null) {
+		if (committedAtom.getAtom() == null) {
 			return;
 		}
 
@@ -115,7 +115,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getClientAtom());
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, committedAtom.getAtom());
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -146,10 +146,9 @@ public class AtomEventObserver {
 					processedAtomIds.add(aid);
 					Atom ledgerEntry = store.get(aid).orElseThrow();
 					if (ledgerEntry
-							.uniqueInstructions()
-							.map(CMMicroInstruction::getParticle)
-							.flatMap(p -> p.getDestinations().stream())
-							.anyMatch(destination::equals)
+						.upParticles()
+						.flatMap(p -> p.getDestinations().stream())
+						.anyMatch(destination::equals)
 					) {
 						atoms.add(ledgerEntry);
 					}

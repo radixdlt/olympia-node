@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.store;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -133,5 +134,10 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	@Override
 	public Spin getSpin(Particle particle) {
 		return store.getSpin(this.transaction, particle);
+	}
+
+	@Override
+	public Optional<Particle> loadUpParticle(HashCode particleHash) {
+		return store.loadUpParticle(this.transaction, particleHash);
 	}
 }

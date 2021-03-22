@@ -17,21 +17,43 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.DsonOutput;
+
 import java.util.Objects;
 
 public final class CMMicroInstruction {
 	public enum CMMicroOp {
-		CHECK_NEUTRAL_THEN_UP,
-		CHECK_UP_THEN_DOWN,
-		PARTICLE_GROUP
+		SPIN_UP((byte) 1, Spin.NEUTRAL, Spin.UP),
+		VIRTUAL_SPIN_DOWN((byte) 2, Spin.UP, Spin.DOWN),
+		SPIN_DOWN((byte) 3, Spin.UP, Spin.DOWN),
+		PARTICLE_GROUP((byte) 0, null, null);
+
+		private final Spin checkSpin;
+		private final Spin nextSpin;
+		private final byte opCode;
+
+		CMMicroOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+			this.opCode = opCode;
+			this.checkSpin = checkSpin;
+			this.nextSpin = nextSpin;
+		}
+
+		public byte opCode() {
+			return opCode;
+		}
 	}
 
 	private final CMMicroOp operation;
 	private final Particle particle;
+	private final HashCode particleHash;
 
-	private CMMicroInstruction(CMMicroOp operation, Particle particle) {
+	private CMMicroInstruction(CMMicroOp operation, Particle particle, HashCode particleHash) {
 		this.operation = operation;
 		this.particle = particle;
+		this.particleHash = particleHash;
 	}
 
 	public CMMicroOp getMicroOp() {
@@ -42,52 +64,63 @@ public final class CMMicroInstruction {
 		return particle;
 	}
 
+	public HashCode getParticleHash() {
+		return particleHash;
+	}
+
 	public boolean isPush() {
-		return operation == CMMicroOp.CHECK_UP_THEN_DOWN || operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP;
+		return operation.nextSpin != null;
 	}
 
 	public boolean isCheckSpin() {
-		return operation == CMMicroOp.CHECK_UP_THEN_DOWN || operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP;
+		return operation.checkSpin != null;
 	}
 
 	public Spin getCheckSpin() {
-		if (operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-			return Spin.NEUTRAL;
-		} else if (operation == CMMicroOp.CHECK_UP_THEN_DOWN) {
-			return Spin.UP;
-		} else {
-			throw new UnsupportedOperationException(operation + " is not a check spin operation.");
+		if (!isCheckSpin()) {
+			throw new IllegalStateException(operation + " is not a check spin operation.");
 		}
+
+		return operation.checkSpin;
 	}
 
 	public Spin getNextSpin() {
-		if (operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-			return Spin.UP;
-		} else if (operation == CMMicroOp.CHECK_UP_THEN_DOWN) {
-			return Spin.DOWN;
-		} else {
-			throw new UnsupportedOperationException(operation + " is not a check spin operation.");
+		if (!isPush()) {
+			throw new IllegalStateException(operation + " is not a push operation.");
 		}
+
+		return operation.nextSpin;
 	}
 
+	public static CMMicroInstruction spinDown(HashCode particleHash) {
+		return new CMMicroInstruction(CMMicroOp.SPIN_DOWN, null, particleHash);
+	}
 
-	public static CMMicroInstruction checkSpinAndPush(Particle particle, Spin spin) {
-		if (spin == Spin.NEUTRAL) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle);
-		} else if (spin == Spin.UP) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle);
-		} else {
-			throw new IllegalStateException("Invalid check spin: " + spin);
-		}
+	public static CMMicroInstruction virtualSpinDown(Particle particle) {
+		return new CMMicroInstruction(CMMicroOp.VIRTUAL_SPIN_DOWN, particle, null);
+	}
+
+	public static CMMicroInstruction spinUp(Particle particle) {
+		return new CMMicroInstruction(CMMicroOp.SPIN_UP, particle, null);
 	}
 
 	public static CMMicroInstruction particleGroup() {
-		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null);
+		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null, null);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s %s",
+			operation,
+			particle != null
+				? HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL)) + ":" + particle
+				: particleHash
+		);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, particle);
+		return Objects.hash(operation, particle, particleHash);
 	}
 
 	@Override
@@ -98,6 +131,7 @@ public final class CMMicroInstruction {
 
 		var other = (CMMicroInstruction) o;
 		return Objects.equals(this.operation, other.operation)
-			&& Objects.equals(this.particle, other.particle);
+			&& Objects.equals(this.particle, other.particle)
+			&& Objects.equals(this.particleHash, other.particleHash);
 	}
 }

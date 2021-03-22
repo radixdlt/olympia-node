@@ -21,19 +21,19 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.store.SpinStateMachine;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,6 +44,7 @@ public final class AtomBuilder {
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
 	private String message;
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
+	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
 
 	AtomBuilder() {
 	}
@@ -53,18 +54,8 @@ public final class AtomBuilder {
 		return this;
 	}
 
-	// Primarily used for excluding fee groups in fee calculations
-	public AtomBuilder copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
-		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
-			.filter(pg -> !exclusions.test(pg))
-			.collect(Collectors.toList());
-
-		var builder = new AtomBuilder();
-		newParticleGroups.forEach(builder::addParticleGroup);
-		this.signatures.forEach(builder::setSignature);
-		builder.message(this.message);
-
-		return builder;
+	public Stream<Particle> localUpParticles() {
+		return localUpParticles.values().stream();
 	}
 
 	/**
@@ -75,60 +66,26 @@ public final class AtomBuilder {
 	public AtomBuilder addParticleGroup(ParticleGroup particleGroup) {
 		Objects.requireNonNull(particleGroup, "particleGroup is required");
 		this.particleGroups.add(particleGroup);
+		particleGroup.getInstructions().forEach(i -> {
+			if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+				localUpParticles.remove(i.getParticleHash());
+			} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+				var dson = DefaultSerialization.getInstance().toDson(i.getParticle(), DsonOutput.Output.ALL);
+				var particleHash = HashUtils.sha256(dson);
+				localUpParticles.put(particleHash, i.getParticle());
+			}
+		});
+
 		return this;
-	}
-
-	/**
-	 * Add a singleton particle group to this atom containing the given particle and spin as a SpunParticle
-	 *
-	 * @param particle The particle
-	 * @param spin     The spin
-	 */
-	public void addParticleGroupWith(Particle particle, Spin spin) {
-		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
-	}
-
-	public Stream<ParticleGroup> particleGroups() {
-		return this.particleGroups.stream();
-	}
-
-	public List<ParticleGroup> getParticleGroups() {
-		return this.particleGroups;
-	}
-
-	public Stream<SpunParticle> spunParticles() {
-		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
-	}
-
-	public Stream<Particle> particles(Spin spin) {
-		return this.spunParticles().filter(p -> p.getSpin() == spin).map(SpunParticle::getParticle);
-	}
-
-	public <T extends Particle> Stream<T> particles(Class<T> type, Spin spin) {
-		return this.particles(type)
-			.filter(s -> s.getSpin() == spin)
-			.map(SpunParticle::getParticle)
-			.map(type::cast);
-	}
-
-	public <T extends Particle> Stream<SpunParticle> particles(Class<T> type) {
-		return this.spunParticles()
-			.filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()));
 	}
 
 	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new ImmutableList.Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
 			ParticleGroup pg = particleGroups.get(i);
-			for (int j = 0; j < pg.getParticleCount(); j++) {
-				SpunParticle sp = pg.getSpunParticle(j);
-				Particle particle = sp.getParticle();
-				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
-				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
-			}
+			microInstructionsBuilder.addAll(pg.getInstructions());
 			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
 		}
-
 		return microInstructionsBuilder.build();
 	}
 

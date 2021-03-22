@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.radixengine;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
@@ -24,13 +25,14 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
@@ -41,7 +43,6 @@ import com.google.inject.Guice;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atom.LedgerAtom;
@@ -51,12 +52,11 @@ import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public final class RadixEngineTest {
+public final class UniqueTest {
 	private Random random = new Random();
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private Hasher hasher;
 	@Inject private RadixEngine<LedgerAtom> sut;
 
 	private Injector createInjector() {
@@ -82,8 +82,8 @@ public final class RadixEngineTest {
 		RRIParticle rriParticle = new RRIParticle(rri, 0);
 		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
 		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(rriParticle, Spin.DOWN)
-			.addParticle(uniqueParticle, Spin.UP)
+			.virtualSpinDown(rriParticle)
+			.spinUp(uniqueParticle)
 			.build();
 		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);

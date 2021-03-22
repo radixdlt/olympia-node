@@ -31,7 +31,6 @@ import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Observable;
@@ -63,7 +62,7 @@ public class UnallocatedTokensParticleTest {
 			)
 		);
 
-		groups.add(ParticleGroup.of(SpunParticle.up(particle)));
+		groups.add(ParticleGroup.builder().spinUp(particle).build());
 
 		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
@@ -106,7 +105,7 @@ public class UnallocatedTokensParticleTest {
 			System.currentTimeMillis()
 		);
 
-		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
+		groups.add(ParticleGroup.builder().spinUp(unallocatedParticle).build());
 
 		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
@@ -161,11 +160,12 @@ public class UnallocatedTokensParticleTest {
 			)
 		);
 
-		groups.add(ParticleGroup.of(
-			SpunParticle.up(unallocatedParticle0),
-			SpunParticle.up(unallocatedParticle1),
-			SpunParticle.up(tokenDefinitionParticle)
-		));
+		groups.add(ParticleGroup.builder()
+			.spinUp(unallocatedParticle0)
+			.spinUp(unallocatedParticle1)
+			.spinUp(tokenDefinitionParticle)
+			.build()
+		);
 
 		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 

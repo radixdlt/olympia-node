@@ -28,7 +28,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import com.radixdlt.constraintmachine.Spin;
@@ -103,32 +102,31 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedAtom.addParticleGroup(particleGroup);
 			}
 
-			for (SpunParticle sp : particleGroup.getParticles()) {
+			particleGroup.upParticles().forEach(p -> {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
-				index.put(sp.getParticle(), sp.getSpin());
+				index.put(p, Spin.UP);
 				stagedParticleIndex.put(uuid, index);
-			}
+			});
 		}
 	}
 
 	@Override
-	public List<ParticleGroup> getStaged(String uuid) {
+	public AtomBuilder getStaged(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final AtomBuilder atom = stagedAtoms.get(uuid);
-			return atom.particleGroups().collect(Collectors.toList());
+			return stagedAtoms.get(uuid);
 		}
 	}
 
 	@Override
-	public List<ParticleGroup> getStagedAndClear(String uuid) {
+	public AtomBuilder getStagedAndClear(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final AtomBuilder atom = stagedAtoms.remove(uuid);
+			final AtomBuilder builder = stagedAtoms.remove(uuid);
 			stagedParticleIndex.get(uuid).clear();
-			return atom.particleGroups().collect(Collectors.toList());
+			return builder;
 		}
 	}
 

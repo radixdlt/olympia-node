@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -28,9 +29,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
@@ -226,18 +225,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 			? new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp)
 			: new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
 
-		final Atom systemUpdate = Atom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
-				CMMicroInstruction.particleGroup()
-			)
-		);
+		final Atom systemUpdate = Atom.newBuilder().addParticleGroup(
+			ParticleGroup.builder()
+				.spinDown(lastSystemParticle)
+				.spinUp(nextSystemParticle)
+				.build()
+		).buildAtom();
 		try {
 			branch.execute(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()),	e
+				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
 			);
 		}
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
@@ -323,10 +321,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", atom.toInstructionsString()), e);
 		}
 
-		final boolean isUserCommand = atom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isCheckSpin)
-				.map(CMMicroInstruction::getParticle)
-				.noneMatch(p -> p instanceof SystemParticle);
+		final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
 		if (isUserCommand) {
 			systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 		} else {

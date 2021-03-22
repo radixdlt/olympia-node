@@ -105,7 +105,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		ParticleDefinition.Builder<T> particleRedefinition = ParticleDefinition.<T>builder()
 			.addressMapper(particleDefinition.getAddressMapper())
 			.rriMapper(particleDefinition.getRriMapper())
-			.virtualizeSpin(particleDefinition.getVirtualizeSpin())
+			.virtualizeUp(particleDefinition.getVirtualizeSpin())
 			.staticValidation(p -> {
 				if (particleDefinition.getRriMapper() != null) {
 					final RRI rri = particleDefinition.getRriMapper().apply(p);

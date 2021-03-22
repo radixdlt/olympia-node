@@ -26,7 +26,6 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,10 +36,10 @@ public class PutUniqueIdToParticleGroupsMapper implements StatelessActionToParti
 		UniqueParticle uniqueParticle = new UniqueParticle(uniqueIdAction.getRRI().getName(), uniqueIdAction.getRRI().getAddress(), 0L);
 		RRIParticle rriParticle = new RRIParticle(uniqueParticle.getRRI());
 		return Collections.singletonList(
-			ParticleGroup.of(
-				SpunParticle.down(rriParticle),
-				SpunParticle.up(uniqueParticle)
-			)
+			ParticleGroup.builder()
+				.virtualSpinDown(rriParticle)
+				.spinUp(uniqueParticle)
+				.build()
 		);
 	}
 }

@@ -18,7 +18,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -47,8 +46,4 @@ public abstract class Particle {
 	}
 
 	public abstract Set<EUID> getDestinations();
-
-	public static EUID euidOf(Particle particle, Hasher hasher) {
-		return EUID.fromHash(hasher.hash(particle));
-	}
 }

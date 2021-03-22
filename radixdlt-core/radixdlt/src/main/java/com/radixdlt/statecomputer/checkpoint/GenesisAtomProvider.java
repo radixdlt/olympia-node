@@ -83,7 +83,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 				);
 			}
 		});
-		final var epochParticles = CheckpointUtils.createEpochUpdate();
+		final var epochParticleGroup = CheckpointUtils.createEpochUpdate();
 		final var xrdParticleGroups = CheckpointUtils.createTokenDefinition(
 			magic,
 			universeKey.getPublicKey(),
@@ -91,25 +91,24 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			tokenIssuances
 		);
 
-		final var validatorParticles = CheckpointUtils.createValidators(
+		final var validatorParticleGroup = CheckpointUtils.createValidators(
 			magic,
 			validatorKeys
 		);
 		final var stakingParticleGroups = CheckpointUtils.createStakes(
 			magic,
 			stakeDelegations,
-			xrdParticleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList())
+			xrdParticleGroups.stream().flatMap(ParticleGroup::upParticles).collect(Collectors.toList())
 		);
 
 		final var builder = Atom.newBuilder().message(helloMessage());
 		xrdParticleGroups.forEach(builder::addParticleGroup);
-		if (!validatorParticles.isEmpty()) {
-			builder.addParticleGroup(ParticleGroup.of(validatorParticles));
-		}
+		builder.addParticleGroup(validatorParticleGroup);
+
 		if (!stakingParticleGroups.isEmpty()) {
 			stakingParticleGroups.forEach(builder::addParticleGroup);
 		}
-		builder.addParticleGroup(ParticleGroup.of(epochParticles));
+		builder.addParticleGroup(epochParticleGroup);
 
 		final var signingKeys = Streams.concat(
 			Stream.of(this.universeKey),

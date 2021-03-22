@@ -18,208 +18,46 @@
 
 package com.radixdlt.atom;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
-import com.google.common.collect.Streams.FunctionWithIndex;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
  * A group of particles representing one action, e.g. a transfer.
  */
-@SerializerId2("radix.particle_group")
 public final class ParticleGroup {
 	/**
 	 * The particles and their spin contained within this {@link ParticleGroup}.
 	 */
-	private ImmutableList<SpunParticle> particles;
-	private ImmutableMap<SpunParticle, Integer> indexByParticle;
+	private ImmutableList<CMMicroInstruction> instructions;
 
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+	private ParticleGroup(Iterable<CMMicroInstruction> instructions) {
+		Objects.requireNonNull(instructions, "particles is required");
 
-	private ParticleGroup() {
-		this.particles = ImmutableList.of();
-		this.indexByParticle = ImmutableMap.of();
+		this.instructions = ImmutableList.copyOf(instructions);
 	}
 
-	private ParticleGroup(Iterable<SpunParticle> particles) {
-		Objects.requireNonNull(particles, "particles is required");
-
-		this.particles = ImmutableList.copyOf(particles);
-		this.indexByParticle = index(this.particles);
-	}
-
-	private ImmutableMap<SpunParticle, Integer> index(List<SpunParticle> particles) {
-		final Map<SpunParticle, Integer> indexByParticle = Maps.newHashMap();
-		for (int i = 0; i < particles.size(); i += 1) {
-			indexByParticle.putIfAbsent(particles.get(i), i);
-		}
-		return ImmutableMap.copyOf(indexByParticle);
-	}
-
-	public ImmutableList<SpunParticle> getParticles() {
-		return particles;
-	}
-
-	/**
-	 * Get a stream of the spun particles in this group
-	 */
-	public Stream<SpunParticle> spunParticles() {
-		return this.particles.stream();
-	}
-
-	/**
-	 * Get a stream of the spun particles of a certain particle type in this group
-	 */
-	public <T extends Particle> Stream<SpunParticle> spunParticles(Class<T> particleType) {
-		return this.particles.stream()
-				.filter(p -> particleType.isAssignableFrom(p.getParticle().getClass()));
-	}
-
-	public int getParticleCount() {
-		return this.particles.size();
-	}
-
-	public SpunParticle getSpunParticle(int index) {
-		return this.particles.get(index);
+	public List<CMMicroInstruction> getInstructions() {
+		return instructions;
 	}
 
 	/**
 	 * Get a stream of particles of a certain spin in this group
-	 * @param spin The spin to filter by
 	 * @return The particles in this group with that spin
 	 */
-	public <T extends Particle> Stream<T> particles(Class<T> particleClass, Spin spin) {
-		return this.spunParticles(particleClass)
-			.filter(p -> p.getSpin() == spin)
-			.map(SpunParticle::getParticle)
-			.map(particleClass::cast);
-	}
-
-	public <U> Stream<U> spunParticlesWithIndex(FunctionWithIndex<SpunParticle, U> f) {
-		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
-			.map(p -> f.apply(p, i))
-		).flatMap(l -> l);
-	}
-
-	/**
-	 * Get a stream of particles of a certain spin in this group
-	 * @param spin The spin to filter by
-	 * @return The particles in this group with that spin
-	 */
-	public <T extends Particle, U> Stream<U> particlesWithIndex(Class<T> particleClass, Spin spin, FunctionWithIndex<T, U> f) {
-		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
-			.filter(p -> p.getSpin() == spin)
-			.filter(p -> particleClass.isInstance(p.getParticle()))
-			.map(p -> particleClass.cast(p.getParticle()))
-			.map(p -> f.apply(p, i))
-		).flatMap(l -> l);
-	}
-
-	/**
-	 * Get a stream of particles of a certain spin in this group
-	 * @param spin The spin to filter by
-	 * @return The particles in this group with that spin
-	 */
-	public Stream<Particle> particles(Spin spin) {
-		return this.spunParticles()
-				.filter(p -> p.getSpin() == spin)
-				.map(SpunParticle::getParticle);
-	}
-
-	/**
-	 * Returns the index of a given spun particle
-	 * Returns -1 if not found
-	 *
-	 * @param spunParticle the particle to look for
-	 * @return index of the particle
-	 */
-	public int indexOfSpunParticle(SpunParticle spunParticle) {
-		return this.indexByParticle.getOrDefault(spunParticle, -1);
-	}
-
-	/**
-	 * Returns all indices of a given spun particle (there may be duplicates)
-	 * Returns empty stream if not found
-	 * @param spunParticle the particle to look for
-	 * @return all indices of the particle
-	 */
-	public IntStream indicesOfSpunParticle(SpunParticle spunParticle) {
-		return IntStream.range(0, particles.size())
-			.filter(i -> this.particles.get(i).equals(spunParticle));
-	}
-
-	/**
-	 * Get a boolean if this particle group contains any particles
-	 * @return if this particle group has particles
-	 */
-	public boolean hasParticles() {
-		return !this.particles.isEmpty();
-	}
-
-	/**
-	 * Get a boolean if this particle group contains no particles
-	 * @return if this particle group has no particles
-	 */
-	public boolean isEmpty() {
-		return this.particles.isEmpty();
-	}
-
-	/**
-	 * Check whether this particle group contains the given spun particle
-	 * @return if this particle group contains the given spun particle
-	 */
-	public boolean contains(SpunParticle spunParticle) {
-		return this.indexByParticle.containsKey(spunParticle);
-	}
-
-	@JsonProperty("particles")
-	@DsonOutput(DsonOutput.Output.ALL)
-	List<SpunParticle> getJsonParticles() {
-		return this.particles;
-	}
-
-	@JsonProperty("particles")
-	void setJsonParticles(List<SpunParticle> particles) {
-		this.particles = ImmutableList.copyOf(particles);
-		this.indexByParticle = index(particles);
-	}
-
-	/**
-	 * Get a {@link ParticleGroup} consisting of the given particles
-	 */
-	public static ParticleGroup of(Iterable<SpunParticle> particles) {
-		return new ParticleGroup(particles);
-	}
-
-	/**
-	 * Get a {@link ParticleGroup} consisting of the given particles
-	 * @param particles
-	 * @return
-	 */
-	public static ParticleGroup of(SpunParticle... particles) {
-		Objects.requireNonNull(particles, "particles is required");
-
-		return new ParticleGroup(Arrays.asList(particles));
+	public Stream<Particle> upParticles() {
+		return this.instructions.stream()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(CMMicroInstruction::getParticle);
 	}
 
 	public static ParticleGroupBuilder builder() {
@@ -235,52 +73,45 @@ public final class ParticleGroup {
 			return false;
 		}
 		ParticleGroup that = (ParticleGroup) o;
-		return Objects.equals(particles, that.particles);
+		return Objects.equals(instructions, that.instructions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particles);
+		return Objects.hash(instructions);
 	}
 
 	/**
 	 * A builder for immutable {@link ParticleGroup}s
 	 */
 	public static class ParticleGroupBuilder {
-		private List<SpunParticle> particles = new ArrayList<>();
+		private List<CMMicroInstruction> instructions = new ArrayList<>();
 
 		private ParticleGroupBuilder() {
 		}
 
-		public final ParticleGroupBuilder addParticle(SpunParticle spunParticle) {
-			Objects.requireNonNull(spunParticle, "spunParticle is required");
-
-			this.particles.add(spunParticle);
-
+		public final ParticleGroupBuilder spinUp(Particle particle) {
+			Objects.requireNonNull(particle, "particle is required");
+			this.instructions.add(CMMicroInstruction.spinUp(particle));
 			return this;
 		}
 
-		public final ParticleGroupBuilder addParticle(Particle particle, Spin spin) {
+		public final ParticleGroupBuilder virtualSpinDown(Particle particle) {
 			Objects.requireNonNull(particle, "particle is required");
-			Objects.requireNonNull(spin, "spin is required");
+			this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
+			return this;
+		}
 
-			SpunParticle spunParticle = SpunParticle.of(particle, spin);
-			this.particles.add(spunParticle);
-
+		public final ParticleGroupBuilder spinDown(Particle particle) {
+			Objects.requireNonNull(particle, "particle is required");
+			var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+			var particleHash = HashUtils.sha256(dson);
+			this.instructions.add(CMMicroInstruction.spinDown(particleHash));
 			return this;
 		}
 
 		public ParticleGroup build() {
-			return new ParticleGroup(ImmutableList.copyOf(this.particles));
+			return new ParticleGroup(ImmutableList.copyOf(this.instructions));
 		}
-	}
-
-	@Override
-	public String toString() {
-		var particlesStr = (this.particles == null)
-			? "null"
-		   	: particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
-
-		return String.format("%s[%s]", getClass().getSimpleName(), particlesStr);
 	}
 }

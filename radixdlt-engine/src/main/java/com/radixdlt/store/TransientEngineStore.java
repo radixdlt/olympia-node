@@ -1,9 +1,11 @@
 package com.radixdlt.store;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class TransientEngineStore<T extends RadixEngineAtom> implements EngineStore<T> {
@@ -38,5 +40,14 @@ public class TransientEngineStore<T extends RadixEngineAtom> implements EngineSt
 		}
 
 		return base.getSpin(particle);
+	}
+
+	@Override
+	public Optional<Particle> loadUpParticle(HashCode particleHash) {
+		if (transientStore.getSpin(particleHash) == Spin.NEUTRAL) {
+			return base.loadUpParticle(particleHash);
+		}
+
+		return transientStore.loadUpParticle(particleHash);
 	}
 }

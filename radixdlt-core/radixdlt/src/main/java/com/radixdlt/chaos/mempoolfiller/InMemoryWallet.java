@@ -28,7 +28,6 @@ import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
@@ -121,13 +120,13 @@ public final class InMemoryWallet {
 
 	private Optional<ParticleGroup> createFeeGroup(LinkedList<TransferrableTokensParticle> mutableList) {
 		ParticleGroup.ParticleGroupBuilder feeBuilder = ParticleGroup.builder();
-		feeBuilder.addParticle(factory.createUnallocated(fee), Spin.UP);
-		Optional<UInt256> remainder = downParticles(fee, mutableList, p -> feeBuilder.addParticle(p, Spin.DOWN));
+		feeBuilder.spinUp(factory.createUnallocated(fee));
+		Optional<UInt256> remainder = downParticles(fee, mutableList, feeBuilder::spinDown);
 		return remainder.map(r -> {
 		    if (!r.isZero()) {
 				TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 				mutableList.add(particle);
-				feeBuilder.addParticle(particle, Spin.UP);
+				feeBuilder.spinUp(particle);
 		    }
 
 		    return feeBuilder.build();
@@ -143,15 +142,15 @@ public final class InMemoryWallet {
 		atom.addParticleGroup(feeGroup.get());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
-		builder.addParticle(factory.createTransferrable(to, amount, random.nextLong()), Spin.UP);
-		Optional<UInt256> remainder2 = downParticles(amount, mutableList, p -> builder.addParticle(p, Spin.DOWN));
+		builder.spinUp(factory.createTransferrable(to, amount, random.nextLong()));
+		Optional<UInt256> remainder2 = downParticles(amount, mutableList, builder::spinDown);
 		if (remainder2.isEmpty()) {
 			return Optional.empty();
 		}
 		remainder2.filter(r -> !r.isZero()).ifPresent(r -> {
 			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 			mutableList.add(particle);
-			builder.addParticle(particle, Spin.UP);
+			builder.spinUp(particle);
 		});
 		atom.addParticleGroup(builder.build());
 		return Optional.of(atom);
