@@ -70,6 +70,7 @@ public final class RemoteBFTNetworkBridge {
 			call.enqueue(new Callback() {
 				@Override
 				public void onFailure(Call call, IOException e) {
+					log.info("=".repeat(50) + "\n" + call.request().url() + "\n" + call.request().body() + "\n" +  "=".repeat(50));
 					logRequestFailed(newRequestId, newRequestTime, e);
 					emitter.onError(e);
 				}
@@ -82,6 +83,9 @@ public final class RemoteBFTNetworkBridge {
 							logRequestSuccessful(newRequestId, newRequestTime, responseString);
 							emitter.onSuccess(responseString);
 						} catch (IOException e) {
+							log.info("=".repeat(50) + "\n" + call.request().url() + "\n" + call.request().body() + "\n" +  "=".repeat(50));
+							log.info("=".repeat(50) + "\n" + response.body() + "\n" + "=".repeat(50));
+
 							logRequestFailed(newRequestId, newRequestTime, e);
 							emitter.onError(new IllegalArgumentException(String.format(
 								"Request %s failed, cannot parse response: %s",
@@ -104,7 +108,7 @@ public final class RemoteBFTNetworkBridge {
 
 	private void logRequestSuccessful(int requestId, long requestTime, String body) {
 		final var requestDuration = System.currentTimeMillis() - requestTime;
-		log.debug("Request {} ({}ms): successful {}", requestId, requestDuration, body);
+		log.info("Request {} ({}ms): successful {}", requestId, requestDuration, body);
 	}
 
 	private void logRequestFailed(int requestId, long requestTime, int code, String body) {
