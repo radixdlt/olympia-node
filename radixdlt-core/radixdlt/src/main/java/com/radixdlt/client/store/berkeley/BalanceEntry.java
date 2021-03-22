@@ -117,6 +117,10 @@ public class BalanceEntry {
 		return owner.equals(rri.getAddress());
 	}
 
+	public boolean isStake() {
+		return delegate != null;
+	}
+
 	public boolean isNegative() {
 		return negative;
 	}

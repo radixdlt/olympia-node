@@ -71,7 +71,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -97,12 +96,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 	private static final String PROOF_DB_NAME = "radix.proof_db";
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String ATOM_LOG = "radix.ledger";
-	private static final Particle VOID_PARTICLE = new Particle() {
-		@Override
-		public Set<EUID> getDestinations() {
-			return Set.of();
-		}
-	};
 
 	private final Serialization serialization;
 	private final Hasher hasher;
@@ -248,9 +241,6 @@ public final class BerkeleyLedgerEntryStore implements LedgerEntryStore, Persist
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = deserializeOrElseFail(particleBytes, Particle.class);
 					particleConsumer.accept(SpunParticle.up(particle));
-				} else {
-					//TODO: eventually we may want to store down particles as well
-					particleConsumer.accept(SpunParticle.down(VOID_PARTICLE));
 				}
 
 				status = cursor.getNext(key, value, READ_COMMITTED);
