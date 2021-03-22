@@ -23,11 +23,6 @@ import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
-import org.radix.api.services.AtomsService;
-import org.radix.api.services.HighLevelApiService;
-import org.radix.api.services.LedgerService;
-import org.radix.api.services.NetworkService;
-import org.radix.api.services.SystemService;
 
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
