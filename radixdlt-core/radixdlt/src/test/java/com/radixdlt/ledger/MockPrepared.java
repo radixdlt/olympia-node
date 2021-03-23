@@ -24,11 +24,9 @@ import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 public class MockPrepared implements PreparedCommand {
 
 	private final Command command;
-	private final HashCode hash;
 
-	public MockPrepared(Command command, HashCode hash) {
+	public MockPrepared(Command command) {
 		this.command = command;
-		this.hash = hash;
 	}
 
 	@Override
@@ -38,6 +36,6 @@ public class MockPrepared implements PreparedCommand {
 
 	@Override
 	public HashCode hash() {
-		return hash;
+		return command.getId().asHashCode();
 	}
 }

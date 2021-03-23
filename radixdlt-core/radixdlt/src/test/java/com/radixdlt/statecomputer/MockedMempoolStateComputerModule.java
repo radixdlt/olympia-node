@@ -61,7 +61,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool, Hasher hasher) {
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(Command command, BFTNode origin) {
@@ -89,7 +89,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 				return new StateComputerLedger.StateComputerResult(
 					next == null
 						? ImmutableList.of()
-						: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
+						: ImmutableList.of(new MockPrepared(next)),
 					ImmutableMap.of()
 				);
 			}
