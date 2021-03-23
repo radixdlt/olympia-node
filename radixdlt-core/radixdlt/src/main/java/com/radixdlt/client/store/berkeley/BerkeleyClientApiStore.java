@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.store.ClientApiStore;
@@ -47,6 +48,7 @@ import com.sleepycat.je.OperationStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.serialization.DsonOutput.Output;
@@ -95,14 +97,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var list = new ArrayList<TokenBalance>();
 
 			do {
-				var success = deserializeBalanceEntry(data.getData())
-					.map(TokenBalance::from)
-					.onSuccess(list::add)
-					.isSuccess();
+				var entry = deserializeBalanceEntry(data.getData());
 
-				if (!success) {
+				if (!entry.isSuccess()) {
 					log.error("Error deserializing existing balance while scanning DB for address {}", address);
+				} else {
+					entry.toOptional()
+						.filter(Predicate.not(BalanceEntry::isSupply))
+						.filter(Predicate.not(BalanceEntry::isStake))
+						.map(TokenBalance::from)
+						.ifPresent(list::add);
 				}
+
 			}
 			while (cursor.getNext(key, data, null) == OperationStatus.SUCCESS);
 
@@ -253,7 +259,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Optional<BalanceEntry> toBalanceEntry(Particle p) {
-		if (p instanceof TransferrableTokensParticle) {
+		if (p instanceof StakedTokensParticle) {
+			var a = (StakedTokensParticle) p;
+			return Optional.of(BalanceEntry.create(
+				a.getAddress(),
+				a.getDelegateAddress(),
+				a.getTokDefRef(),
+				a.getGranularity(),
+				a.getAmount()
+			));
+		} else if (p instanceof TransferrableTokensParticle) {
 			var a = (TransferrableTokensParticle) p;
 			return Optional.of(BalanceEntry.create(
 				a.getAddress(),
