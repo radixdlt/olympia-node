@@ -204,7 +204,7 @@ public class RadixEngineStateComputerTest {
 		).buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, hasher.hash(cmd), atom, PermissionLevel.USER);
+		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
@@ -226,7 +226,7 @@ public class RadixEngineStateComputerTest {
 		Atom clientAtom = atom.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
+		return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
 	}
 
 	@Test

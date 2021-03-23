@@ -123,8 +123,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 
@@ -150,8 +149,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 
