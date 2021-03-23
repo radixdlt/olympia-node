@@ -22,7 +22,6 @@ import com.radixdlt.atom.ParticleGroup;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -34,12 +33,9 @@ import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
@@ -91,23 +87,24 @@ public class StakedTokensTest {
 			null
 		);
 		this.transferrableTokensParticle = transferrableTokens(UInt256.TEN);
-		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.virtualSpinDown(rriParticle),
-			CMMicroInstruction.spinUp(tokenDefinitionParticle),
-			CMMicroInstruction.spinUp(this.transferrableTokensParticle),
-			CMMicroInstruction.particleGroup(),
-			CMMicroInstruction.virtualSpinDown(unregisterValidator(0)),
-			CMMicroInstruction.spinUp(registerValidator(1)),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(
-				this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()),
-				this.validatorKeyPair.euid(), this.validatorKeyPair.sign(HashUtils.zero256())
+
+		var builder = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.builder()
+				.virtualSpinDown(rriParticle)
+				.spinUp(tokenDefinitionParticle)
+				.spinUp(this.transferrableTokensParticle)
+				.build()
 			)
-		);
-		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())));
+			.addParticleGroup(ParticleGroup.builder()
+				.virtualSpinDown(unregisterValidator(0))
+				.spinUp(registerValidator(1))
+				.build());
+
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
+		builder.setSignature(this.validatorKeyPair.euid(), this.validatorKeyPair.sign(hashToSign));
+		var atom = builder.buildAtom();
+		this.engine.execute(List.of(atom));
 	}
 
 	@Test

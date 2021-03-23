@@ -17,16 +17,13 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.EngineStore;
@@ -111,11 +108,9 @@ public class RadixEngineTest {
 
 		// Act
 		// Assert
-		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(CMMicroInstruction.particleGroup()),
-			ImmutableMap.of()
-		);
-		var atom = new BaseAtom(cmInstruction, HashUtils.zero256());
+		var atom = Atom.newBuilder()
+			.addParticleGroup(ParticleGroup.builder().build())
+			.buildAtom();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
 	}
