@@ -59,12 +59,11 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-	private final Map<String, Function<JSONObject, JSONObject>> handlers = new HashMap<>();
+	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
 	private final SystemHandler systemHandler;
 	private final NetworkHandler networkHandler;
 	private final AtomHandler atomHandler;
 	private final LedgerHandler ledgerHandler;
-	private final HighLevelApiHandler highLevelApiHandler;
 
 	@Inject
 	public RadixJsonRpcServer(
@@ -72,9 +71,9 @@ public final class RadixJsonRpcServer {
 		NetworkHandler networkHandler,
 		AtomHandler atomHandler,
 		LedgerHandler ledgerHandler,
-		HighLevelApiHandler highLevelApiHandler
+		Map<String, JsonRpcHandler> additionalHandlers
 	) {
-		this(systemHandler, networkHandler, atomHandler, ledgerHandler, highLevelApiHandler, DEFAULT_MAX_REQUEST_SIZE);
+		this(systemHandler, networkHandler, atomHandler, ledgerHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
@@ -82,20 +81,19 @@ public final class RadixJsonRpcServer {
 		NetworkHandler networkHandler,
 		AtomHandler atomHandler,
 		LedgerHandler ledgerHandler,
-		HighLevelApiHandler highLevelApiHandler,
+		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {
 		this.systemHandler = systemHandler;
 		this.networkHandler = networkHandler;
 		this.atomHandler = atomHandler;
 		this.ledgerHandler = ledgerHandler;
-		this.highLevelApiHandler = highLevelApiHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 
-		fillHandlers();
+		fillHandlers(additionalHandlers);
 	}
 
-	private void fillHandlers() {
+	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
 		//BFT
 		handlers.put("BFT.start", systemHandler::handleBftStart);
 		handlers.put("BFT.stop", systemHandler::handleBftStop);
@@ -118,12 +116,7 @@ public final class RadixJsonRpcServer {
 		//TODO: check and fix method naming?
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 
-		//High level API's
-		handlers.put("radix.universeMagic", highLevelApiHandler::handleUniverseMagic);
-		handlers.put("radix.nativeToken", highLevelApiHandler::handleNativeToken);
-		handlers.put("radix.tokenBalances", highLevelApiHandler::handleTokenBalances);
-		handlers.put("radix.executedTransactions", highLevelApiHandler::handleExecutedTransactions);
-		handlers.put("radix.transactionStatus", highLevelApiHandler::handleTransactionStatus);
+		handlers.putAll(additionalHandlers);
 	}
 
 	/**
@@ -177,7 +170,7 @@ public final class RadixJsonRpcServer {
 
 		try {
 			return Optional.ofNullable(handlers.get(request.getString("method")))
-				.map(handler -> handler.apply(request))
+				.map(handler -> handler.execute(request))
 				.orElseGet(() -> methodNotFoundResponse(request.get("id")));
 
 		} catch (Exception e) {

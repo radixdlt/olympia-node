@@ -28,6 +28,8 @@ import org.radix.time.Time;
 
 import com.radixdlt.serialization.Serialization;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,7 +45,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class)
+			Map.of()
 		);
 
 		var response = new JSONObject(server.handleRpc(jsonObject().toString()));
@@ -76,7 +78,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class)
+			Map.of()
 		);
 
 		var response = new JSONObject(server.handleRpc(request.toString()));
@@ -95,7 +97,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class),
+			Map.of(),
 			5
 		);
 
