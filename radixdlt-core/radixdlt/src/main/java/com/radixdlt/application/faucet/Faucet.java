@@ -89,7 +89,7 @@ public final class Faucet {
 					var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 					var command = new Command(payload);
 					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-					request.onSuccess(atom.getAID());
+					request.onSuccess(command.getAtomId());
 				},
 				() -> {
 					log.info("Faucet not enough funds to fulfill request {}", request);

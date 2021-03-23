@@ -160,13 +160,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
-		Set<Atom> preparedAtoms = prepared.stream()
+		Set<Command> cmds = prepared.stream()
 			.map(p -> (RadixEngineCommand) p)
-			.map(c -> c.atom)
+			.map(c -> c.command)
 			.collect(Collectors.toSet());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Command> commands = mempool.getCommands(1, preparedAtoms);
+		final List<Command> commands = mempool.getCommands(1, cmds);
 		if (commands.isEmpty()) {
 			return null;
 		} else {
@@ -328,7 +328,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		List<Pair<Atom, Exception>> removed = this.mempool.committed(atomsCommitted);
+		List<Pair<Command, Exception>> removed = this.mempool.committed(atomsCommitted);
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
@@ -337,7 +337,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(atomsCommitted));
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(verifiedCommandsAndProof.getCommands()));
 		}
 	}
 }

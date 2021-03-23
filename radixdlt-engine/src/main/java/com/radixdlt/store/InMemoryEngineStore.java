@@ -73,7 +73,6 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements 
 		 // No-op
 	}
 
-	@Override
 	public boolean containsAtom(T atom) {
 		return atoms.contains(atom);
 	}

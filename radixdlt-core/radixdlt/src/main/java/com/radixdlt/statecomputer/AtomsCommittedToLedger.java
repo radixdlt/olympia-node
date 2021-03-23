@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.consensus.Command;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,17 +26,17 @@ import java.util.Objects;
  * Event signifying that an atom was committed to ledger successfully
  */
 public final class AtomsCommittedToLedger {
-    private final List<Atom> atoms;
+    private final List<Command> atoms;
 
-    private AtomsCommittedToLedger(List<Atom> atoms) {
+    private AtomsCommittedToLedger(List<Command> atoms) {
         this.atoms = atoms;
     }
 
-    public List<Atom> getAtoms() {
+    public List<Command> getAtoms() {
         return atoms;
     }
 
-    public static AtomsCommittedToLedger create(List<Atom> atoms) {
+    public static AtomsCommittedToLedger create(List<Command> atoms) {
         Objects.requireNonNull(atoms);
         return new AtomsCommittedToLedger(atoms);
     }

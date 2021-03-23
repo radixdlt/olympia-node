@@ -27,11 +27,6 @@ public class TransientEngineStore<T extends RadixEngineAtom, M> implements Engin
 	}
 
 	@Override
-	public boolean containsAtom(T atom) {
-		return transientStore.containsAtom(atom) || base.containsAtom(atom);
-	}
-
-	@Override
 	public <U extends Particle, V> V reduceUpParticles(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
 		throw new UnsupportedOperationException("Transient store should not require reduction.");
 	}

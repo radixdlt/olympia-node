@@ -50,7 +50,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Mempool<Command> mempool(
+	private Mempool mempool(
 		@MempoolMaxSize int maxSize,
 		SystemCounters systemCounters,
 		Random random,

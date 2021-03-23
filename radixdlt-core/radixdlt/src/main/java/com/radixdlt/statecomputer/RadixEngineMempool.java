@@ -27,7 +27,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -52,8 +51,8 @@ import java.util.stream.Stream;
  * A mempool which uses internal radix engine to be more efficient.
  */
 public final class RadixEngineMempool implements Mempool<Atom> {
-	private final ConcurrentHashMap<AID, Command> data = new ConcurrentHashMap<>();
-	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
+	private final ConcurrentHashMap<Command, Atom> data = new ConcurrentHashMap<>();
+	private final Map<CMMicroInstruction, Set<Command>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
 	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
@@ -87,8 +86,8 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			);
 		}
 
-		if (this.data.containsKey(atom.getAID())) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", atom.getAID()));
+		if (this.data.containsKey(command)) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getAtomId()));
 		}
 
 		try {
@@ -101,45 +100,36 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(atom.getAID(), command);
+		this.data.put(command, atom);
 
 		atom.uniqueInstructions()
-			.forEach(i -> particleIndex.merge(i, Set.of(atom.getAID()), Sets::union));
+			.forEach(i -> particleIndex.merge(i, Set.of(command), Sets::union));
 
 		updateCounts();
 	}
 
 	@Override
-	public List<Pair<Atom, Exception>> committed(List<Atom> commands) {
-		commands.forEach(a -> data.remove(a.getAID()));
-		final List<Pair<Atom, Exception>> removed = new ArrayList<>();
-		commands.stream()
-			.flatMap(Atom::uniqueInstructions)
+	public List<Pair<Command, Exception>> committed(List<Atom> atoms) {
+		final List<Pair<Command, Exception>> removed = new ArrayList<>();
+		atoms.forEach(atom -> atom.uniqueInstructions()
 			.flatMap(p -> {
-				Set<AID> aids = particleIndex.remove(p);
-				return aids != null ? aids.stream() : Stream.empty();
-			})
-			.forEach(aid -> {
-				var command = data.remove(aid);
+				Set<Command> cmds = particleIndex.remove(p);
+				return cmds != null ? cmds.stream() : Stream.empty();
+			}).forEach(cmd -> {
+				var toRemove = data.remove(cmd);
 				// TODO: Cleanup
-				if (command != null) {
-					Atom atom;
-					try {
-						atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
-
-					removed.add(Pair.of(atom, new RadixEngineMempoolException(
+				if (toRemove != null && !toRemove.equals(atom)) {
+					removed.add(Pair.of(cmd, new RadixEngineMempoolException(
 						new RadixEngineException(
-							atom,
+							toRemove,
 							RadixEngineErrorCode.CM_ERROR,
 							"State conflict",
 							DataPointer.ofAtom()
 						)
 					)));
 				}
-			});
+			})
+		);
 
 		updateCounts();
 		return removed;
@@ -147,16 +137,18 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<Command> getCommands(int count, Set<Atom> prepared) {
+	public List<Command> getCommands(int count, Set<Command> prepared) {
 		var copy = new HashSet<>(data.keySet());
 		prepared.stream()
+			.map(data::get)
+			.filter(Objects::nonNull)
 			.flatMap(Atom::uniqueInstructions)
 			.distinct()
 			.flatMap(i -> particleIndex.getOrDefault(i, Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
 
-		return copy.stream().map(data::get).limit(count).collect(Collectors.toList());
+		return copy.stream().limit(count).collect(Collectors.toList());
 	}
 
 	private void updateCounts() {
@@ -167,6 +159,6 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-				getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
 	}
 }

@@ -61,7 +61,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -143,7 +142,6 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
-				bind(Mempool.class).toInstance(mock(Mempool.class));
 
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));

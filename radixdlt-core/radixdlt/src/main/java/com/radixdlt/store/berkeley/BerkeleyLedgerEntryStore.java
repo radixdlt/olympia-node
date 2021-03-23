@@ -490,11 +490,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		return v;
 	}
 
-	@Override
-	public boolean containsAtom(Atom atom) {
-		return contains(atom.getAID());
-	}
-
 	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {
 		byte[] dson = serialization.toDson(particle, Output.ALL);
 		var particleKey = HashUtils.sha256(dson).asBytes();
@@ -580,8 +575,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		Atom atom,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var aid = atom.getAID();
 		var atomData = serialize(atom);
+		var cmd = new Command(atomData);
+		var aid = cmd.getAtomId();
 
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {

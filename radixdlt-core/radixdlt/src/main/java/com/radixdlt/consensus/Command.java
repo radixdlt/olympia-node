@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -26,7 +28,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.concurrent.Immutable;
@@ -44,14 +45,21 @@ public final class Command {
 	@JsonProperty("payload")
 	@DsonOutput(Output.ALL)
 	private final byte[] payload;
+	private final AID atomId;
 
 	@JsonCreator
 	public Command(@JsonProperty("payload") byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
+		var firstHash = HashUtils.sha256(payload);
+		this.atomId = AID.from(HashUtils.sha256(firstHash.asBytes()).asBytes());
 	}
 
 	public <T> T map(Function<byte[], T> mapper) {
 		return mapper.apply(payload);
+	}
+
+	public AID getAtomId() {
+		return atomId;
 	}
 
 	public byte[] getPayload() {
@@ -60,7 +68,7 @@ public final class Command {
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(payload);
+		return Objects.hash(atomId);
 	}
 
 	@Override
@@ -70,7 +78,7 @@ public final class Command {
 		}
 
 		Command other = (Command) o;
-		return Arrays.equals(this.payload, other.payload);
+		return Objects.equals(this.atomId, other.atomId);
 	}
 
 	@Override
