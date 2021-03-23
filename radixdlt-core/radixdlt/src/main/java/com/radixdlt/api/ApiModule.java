@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,16 +13,16 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.client.store.ClientApiStore;
-import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -35,6 +35,7 @@ import org.radix.api.http.NodeController;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.api.http.RpcController;
 import org.radix.api.http.SystemController;
+import org.radix.api.jsonrpc.JsonRpcHandler;
 import org.radix.api.services.AtomsService;
 
 /**
@@ -59,6 +60,7 @@ public final class ApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(ScheduledParticleFlush.class);
 
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		// For additional handlers
+		MapBinder.newMapBinder(binder(), String.class, JsonRpcHandler.class);
 	}
 }

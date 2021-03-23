@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.api.ApiModule;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
@@ -101,6 +102,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// API
 		install(new ApiModule());
+		if (properties.get("client_api.enable", false)) {
+			install(new ClientApiModule());
+		}
 
 		// Consensus
 		install(new PersistedBFTKeyModule());
@@ -159,7 +163,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new NodeWalletModule());
 		install(new ValidatorRegistratorModule());
 		install(new FaucetModule());
-		install(new ClientApiModule());
 
 		if (properties.get("chaos.enable", false)) {
 			install(new ChaosModule());

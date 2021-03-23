@@ -28,6 +28,7 @@ import org.radix.api.jsonrpc.handler.SystemHandler;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,9 +54,8 @@ public class RpcControllerTest {
 	private final NetworkHandler networkHandler = mock(NetworkHandler.class);
 	private final AtomHandler atomHandler = mock(AtomHandler.class);
 	private final LedgerHandler ledgerHandler = mock(LedgerHandler.class);
-	private final HighLevelApiHandler highLevelApiHandler = mock(HighLevelApiHandler.class);
 	private final RadixJsonRpcServer jsonRpcServer =
-		new RadixJsonRpcServer(systemHandler, networkHandler, atomHandler, ledgerHandler, highLevelApiHandler);
+		new RadixJsonRpcServer(systemHandler, networkHandler, atomHandler, ledgerHandler, Map.of());
 	private final RadixHttpWebsocketHandler websocketHandler = mock(RadixHttpWebsocketHandler.class);
 	private final RpcController rpcController = new RpcController(jsonRpcServer, websocketHandler);
 
