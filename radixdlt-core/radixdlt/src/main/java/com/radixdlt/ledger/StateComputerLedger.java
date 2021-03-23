@@ -259,7 +259,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				verifiedCommandsAndProof.getCommands(),
-				cmd -> cmd.getAtomId().asHashCode(),
+				cmd -> cmd.getId().asHashCode(),
 				verifiedCommandsAndProof.getProof().getAccumulatorState()
 			);
 

@@ -387,7 +387,7 @@ public final class LocalSyncService {
 		final var start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
 		final var end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
 		final var hashes = commandsAndProof.getCommands().stream()
-			.map(cmd -> cmd.getAtomId().asHashCode())
+			.map(cmd -> cmd.getId().asHashCode())
 			.collect(ImmutableList.toImmutableList());
 
 		return this.validatorSetVerifier.verifyValidatorSet(syncResponse)

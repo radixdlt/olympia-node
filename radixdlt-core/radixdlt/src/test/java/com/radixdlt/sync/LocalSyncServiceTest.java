@@ -336,7 +336,7 @@ public class LocalSyncServiceTest {
 		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
 		final var response = mock(DtoCommandsAndProof.class);
 		final var cmd = mock(Command.class);
-		when(cmd.getAtomId()).thenReturn(AID.ZERO);
+		when(cmd.getId()).thenReturn(AID.ZERO);
 		when(response.getCommands()).thenReturn(ImmutableList.of(cmd));
 		when(response.getHead()).thenReturn(respHead);
 		when(response.getTail()).thenReturn(respTail);

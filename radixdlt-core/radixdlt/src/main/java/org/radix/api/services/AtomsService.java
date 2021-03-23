@@ -137,7 +137,7 @@ public class AtomsService {
 		final var atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-		return command.getAtomId();
+		return command.getId();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
@@ -186,20 +186,20 @@ public class AtomsService {
 				.flatMap(p -> p.getDestinations().stream())
 				.collect(ImmutableSet.toImmutableSet());
 
-			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, cmd.getAtomId(), indicies));
-			getAtomStatusListeners(cmd.getAtomId()).forEach(listener -> listener.onStored(cmd.getAtomId()));
+			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, cmd.getId(), indicies));
+			getAtomStatusListeners(cmd.getId()).forEach(listener -> listener.onStored(cmd.getId()));
 		});
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
-		var atomId = failure.getCommand().getAtomId();
+		var atomId = failure.getCommand().getId();
 		var listeners = getAtomStatusListeners(atomId);
 		listeners.forEach(listener -> listener.onError(failure.getException()));
 	}
 
 	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
 		atomsRemovedFromMempool.forEach((cmd, e) -> {
-			final AID aid = cmd.getAtomId();
+			final AID aid = cmd.getId();
 			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
 		});
 	}

@@ -131,7 +131,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		@Override
 		public HashCode hash() {
-			return command.getAtomId().asHashCode();
+			return command.getId().asHashCode();
 		}
 	}
 

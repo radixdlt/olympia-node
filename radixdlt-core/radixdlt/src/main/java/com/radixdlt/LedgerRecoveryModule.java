@@ -97,7 +97,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
 		Command cmd = new Command(DefaultSerialization.getInstance().toDson(genesisAtom, DsonOutput.Output.ALL));
-		if (!atomIndex.contains(cmd.getAtomId())) {
+		if (!atomIndex.contains(cmd.getId())) {
 			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 

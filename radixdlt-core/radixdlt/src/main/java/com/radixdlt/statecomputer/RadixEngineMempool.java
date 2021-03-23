@@ -87,7 +87,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 		}
 
 		if (this.data.containsKey(command)) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getAtomId()));
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getId()));
 		}
 
 		try {

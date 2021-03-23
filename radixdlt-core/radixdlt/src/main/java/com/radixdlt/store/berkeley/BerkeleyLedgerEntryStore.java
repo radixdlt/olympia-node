@@ -577,7 +577,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 	) {
 		var atomData = serialize(atom);
 		var cmd = new Command(atomData);
-		var aid = cmd.getAtomId();
+		var aid = cmd.getId();
 
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {

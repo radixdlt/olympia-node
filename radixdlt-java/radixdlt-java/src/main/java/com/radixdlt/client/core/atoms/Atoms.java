@@ -24,6 +24,9 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 
+/**
+ * Temporary helper class
+ */
 public final class Atoms {
 	private Atoms() {
 		throw new IllegalStateException("cannot instantiate.");

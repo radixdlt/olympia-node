@@ -26,7 +26,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -45,21 +44,23 @@ public final class Command {
 	@JsonProperty("payload")
 	@DsonOutput(Output.ALL)
 	private final byte[] payload;
-	private final AID atomId;
+
+	private final AID id;
 
 	@JsonCreator
 	public Command(@JsonProperty("payload") byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
 		var firstHash = HashUtils.sha256(payload);
-		this.atomId = AID.from(HashUtils.sha256(firstHash.asBytes()).asBytes());
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		this.id = AID.from(secondHash.asBytes());
 	}
 
 	public <T> T map(Function<byte[], T> mapper) {
 		return mapper.apply(payload);
 	}
 
-	public AID getAtomId() {
-		return atomId;
+	public AID getId() {
+		return id;
 	}
 
 	public byte[] getPayload() {
@@ -68,7 +69,7 @@ public final class Command {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(atomId);
+		return Objects.hash(id);
 	}
 
 	@Override
@@ -78,14 +79,11 @@ public final class Command {
 		}
 
 		Command other = (Command) o;
-		return Objects.equals(this.atomId, other.atomId);
+		return Objects.equals(this.id, other.id);
 	}
 
 	@Override
 	public String toString() {
-		String payloadHashStr = Bytes.toHexString(payload);
-		return String.format("%s{payload=%s...}",
-				this.getClass().getSimpleName(),
-				payloadHashStr.substring(0, Math.min(20, payloadHashStr.length())));
+		return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
 	}
 }

@@ -114,6 +114,6 @@ public class AtomsServiceTest {
 			.buildAtom();
 
 		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		return Pair.of(atom, new Command(dson).getAtomId());
+		return Pair.of(atom, new Command(dson).getId());
 	}
 }
