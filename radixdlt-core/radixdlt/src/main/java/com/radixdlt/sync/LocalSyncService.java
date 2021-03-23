@@ -25,7 +25,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -91,7 +90,6 @@ public final class LocalSyncService {
 	private final SystemCounters systemCounters;
 	private final PeersView peersView;
 	private final Comparator<AccumulatorState> accComparator;
-	private final Hasher hasher;
 	private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
 	private final RemoteSyncResponseSignaturesVerifier signaturesVerifier;
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
@@ -113,7 +111,6 @@ public final class LocalSyncService {
 		SystemCounters systemCounters,
 		PeersView peersView,
 		Comparator<AccumulatorState> accComparator,
-		Hasher hasher,
 		RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
 		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
 		LedgerAccumulatorVerifier accumulatorVerifier,
@@ -130,7 +127,6 @@ public final class LocalSyncService {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.peersView = Objects.requireNonNull(peersView);
 		this.accComparator = Objects.requireNonNull(accComparator);
-		this.hasher = Objects.requireNonNull(hasher);
 		this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
 		this.signaturesVerifier = Objects.requireNonNull(signaturesVerifier);
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
@@ -391,7 +387,7 @@ public final class LocalSyncService {
 		final var start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
 		final var end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
 		final var hashes = commandsAndProof.getCommands().stream()
-			.map(hasher::hash)
+			.map(cmd -> cmd.getAtomId().asHashCode())
 			.collect(ImmutableList.toImmutableList());
 
 		return this.validatorSetVerifier.verifyValidatorSet(syncResponse)

@@ -24,7 +24,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessWithSyncRunner;
@@ -158,7 +157,6 @@ public class EpochsSyncModule extends AbstractModule {
 		SystemCounters systemCounters,
 		PeersView peersView,
 		Comparator<AccumulatorState> accComparator,
-		Hasher hasher,
 		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
 		LedgerAccumulatorVerifier accumulatorVerifier,
 		VerifiedSyncResponseSender verifiedSender,
@@ -175,7 +173,6 @@ public class EpochsSyncModule extends AbstractModule {
 				systemCounters,
 				peersView,
 				accComparator,
-				hasher,
 				remoteSyncResponseValidatorSetVerifier,
 				signaturesVerifier,
 				accumulatorVerifier,

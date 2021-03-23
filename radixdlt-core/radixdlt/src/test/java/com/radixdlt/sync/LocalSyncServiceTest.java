@@ -35,9 +35,9 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -60,7 +60,6 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.utils.RandomHasher;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,7 +76,6 @@ public class LocalSyncServiceTest {
 	private SystemCounters systemCounters;
 	private PeersView peersView;
 	private Comparator<AccumulatorState> accComparator;
-	private Hasher hasher;
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
 	private RemoteSyncResponseSignaturesVerifier signaturesVerifier;
 	private LedgerAccumulatorVerifier accumulatorVerifier;
@@ -95,7 +93,6 @@ public class LocalSyncServiceTest {
 		this.systemCounters = mock(SystemCounters.class);
 		this.peersView = mock(PeersView.class);
 		this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
-		this.hasher = new RandomHasher();
 		this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
 		this.signaturesVerifier = mock(RemoteSyncResponseSignaturesVerifier.class);
 		this.accumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
@@ -114,7 +111,6 @@ public class LocalSyncServiceTest {
 			systemCounters,
 			peersView,
 			accComparator,
-			hasher,
 			validatorSetVerifier,
 			signaturesVerifier,
 			accumulatorVerifier,
@@ -340,6 +336,7 @@ public class LocalSyncServiceTest {
 		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
 		final var response = mock(DtoCommandsAndProof.class);
 		final var cmd = mock(Command.class);
+		when(cmd.getAtomId()).thenReturn(AID.ZERO);
 		when(response.getCommands()).thenReturn(ImmutableList.of(cmd));
 		when(response.getHead()).thenReturn(respHead);
 		when(response.getTail()).thenReturn(respTail);
