@@ -16,6 +16,9 @@
  */
 package org.radix.api.services;
 
+import com.radixdlt.consensus.Command;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.Pair;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
@@ -81,11 +84,11 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeRetrieved() {
-		var atom = createAtom();
-		var optionalClientAtom = Optional.of(atom);
-		var aid = atom.getAID();
+		var atomAndId = createCommand();
+		var optionalAtom = Optional.of(atomAndId.getFirst());
+		var aid = atomAndId.getSecond();
 
-		when(store.get(aid)).thenReturn(optionalClientAtom);
+		when(store.get(aid)).thenReturn(optionalAtom);
 
 		var result = atomsService.getAtomByAtomId(aid);
 
@@ -100,14 +103,17 @@ public class AtomsServiceTest {
 		);
 	}
 
-	private Atom createAtom() {
+	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
 		var group1 = ParticleGroup.builder().spinUp(particle).build();
 
-		return Atom.newBuilder()
+		var atom = Atom.newBuilder()
 			.addParticleGroup(group1)
 			.message("Test message")
 			.buildAtom();
+
+		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
+		return Pair.of(atom, new Command(dson).getAtomId());
 	}
 }

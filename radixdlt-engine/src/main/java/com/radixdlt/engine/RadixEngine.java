@@ -26,7 +26,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
