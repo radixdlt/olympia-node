@@ -124,7 +124,7 @@ public final class Proposal implements ConsensusEvent {
 	@Override
 	public String toString() {
 		String who = author == null ? null : author.getSimpleName();
-		return String.format("%s{vertex=%s author=%s}", getClass().getSimpleName(), vertex, who);
+		return String.format("%s{vertex=%s author=%s tc=%s}", getClass().getSimpleName(), vertex, who, highestTC);
 	}
 
 	@Override

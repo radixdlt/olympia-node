@@ -195,8 +195,13 @@ public class ConsensusModuleTest {
 		};
 	}
 
+
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode) {
-		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), new Command(new byte[] {0}));
+		return createNextVertex(parent, bftNode, new Command(new byte[] {0}));
+	}
+
+	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Command command) {
+		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), command);
 		HashCode hash = hasher.hash(unverifiedVertex);
 		VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
 		BFTHeader next = new BFTHeader(
@@ -255,6 +260,34 @@ public class ConsensusModuleTest {
 		// Assert
 		verify(requestSender, times(1))
 			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+	}
+
+	@Test
+	public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
+		final var bftNode1 = BFTNode.random();
+		final var bftNode2 = BFTNode.random();
+		final var parentQc = vertexStore.highQC().highestQC();
+		final var parentVertex = createNextVertex(parentQc, bftNode1);
+		final var proposedVertex1 = createNextVertex(parentVertex.getFirst(), bftNode1, new Command(new byte[] {1}));
+		final var proposedVertex2 = createNextVertex(parentVertex.getFirst(), bftNode2, new Command(new byte[] {2}));
+		final var unsyncedHighQC1 = HighQC.from(proposedVertex1.getFirst(), proposedVertex1.getFirst(), Optional.empty());
+		final var unsyncedHighQC2 = HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
+
+		bftSync.syncToQC(unsyncedHighQC1, bftNode1);
+		bftSync.syncToQC(unsyncedHighQC2, bftNode2);
+
+		nothrowSleep(100);
+		final var response1 = new GetVerticesResponse(bftNode1, ImmutableList.of(proposedVertex1.getSecond()));
+		bftSync.responseProcessor().process(response1);
+
+		final var response2 = new GetVerticesResponse(bftNode2, ImmutableList.of(proposedVertex2.getSecond()));
+		bftSync.responseProcessor().process(response2);
+
+		verify(requestSender, times(1))
+			.dispatch(eq(bftNode1), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(proposedVertex1.getSecond().getId())));
+
+		verify(requestSender, times(1))
+			.dispatch(eq(bftNode2), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(proposedVertex2.getSecond().getId())));
 	}
 
 	private void nothrowSleep(long milliseconds) {

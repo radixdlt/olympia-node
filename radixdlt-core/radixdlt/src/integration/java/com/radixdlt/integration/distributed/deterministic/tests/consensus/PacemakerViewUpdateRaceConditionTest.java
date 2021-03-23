@@ -102,7 +102,7 @@ public class PacemakerViewUpdateRaceConditionTest {
 					return view -> sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
 				}
 			})
-			.build()
+			.buildWithoutEpochs()
 			.runUntil(nodeUnderTestReachesView(View.of(3)));
 
 		final var counters = test.getSystemCounters(nodeUnderTestIndex);
