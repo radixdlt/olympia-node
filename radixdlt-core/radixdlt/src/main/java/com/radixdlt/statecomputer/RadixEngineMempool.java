@@ -118,7 +118,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			}).forEach(cmd -> {
 				var toRemove = data.remove(cmd);
 				// TODO: Cleanup
-				if (toRemove != null && !toRemove.equals(atom)) {
+				if (!atom.equals(toRemove)) {
 					removed.add(Pair.of(cmd, new RadixEngineMempoolException(
 						new RadixEngineException(
 							toRemove,
