@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -74,7 +74,7 @@ public class EpochsLocalSyncServiceTest {
 	public void when_local_sync_request_for_previous_epoch__then_should_do_nothing() {
 		when(initialEpoch.getEpoch()).thenReturn(2L);
 
-		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		LedgerProof header = mock(LedgerProof.class);
 		when(header.getEpoch()).thenReturn(1L);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(header);
@@ -88,7 +88,7 @@ public class EpochsLocalSyncServiceTest {
 	public void when_local_sync_request_for_current_epoch__then_should_forward() {
 		when(initialEpoch.getEpoch()).thenReturn(2L);
 
-		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		LedgerProof header = mock(LedgerProof.class);
 		when(header.getEpoch()).thenReturn(2L);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(header);

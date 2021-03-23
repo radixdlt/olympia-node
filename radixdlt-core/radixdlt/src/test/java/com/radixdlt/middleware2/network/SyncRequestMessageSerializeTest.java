@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
@@ -27,7 +27,7 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
 	}
 
 	private static SyncRequestMessage get() {
-		return new SyncRequestMessage(1234, VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), null).toDto());
+		return new SyncRequestMessage(1234, LedgerProof.genesis(HashUtils.zero256(), null).toDto());
 	}
 
 }

@@ -17,9 +17,9 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.Atom;
@@ -36,7 +36,7 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 
 		final var atom = Atom.newBuilder();
 		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroupWith(new RRIParticle(rri), Spin.DOWN);
+		atom.addParticleGroup(ParticleGroup.builder().virtualSpinDown(new RRIParticle(rri)).build());
 		return atom.buildAtom();
 	}
 }

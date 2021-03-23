@@ -84,7 +84,7 @@ public class SubmitToMempool {
 		testObserver.awaitTerminalEvent();
 		testObserver.assertValueAt(testObserver.valueCount() - 1, e -> {
 			var statusAction = (SubmitAtomStatusAction) e;
-			return statusAction.getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+			return statusAction.getStatusNotification().getAtomStatus().equals(AtomStatus.CONFLICT_LOSER);
 		});
 	}
 

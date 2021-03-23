@@ -32,9 +32,9 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.utils.UInt256;
@@ -53,7 +53,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToRedelegate = TokenUnitConversions.unitsToSubunits(unstake.getAmount());
@@ -88,7 +88,17 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToRedelegate);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToRedelegate)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 	@Override
@@ -105,7 +115,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> unstakeParticles;
+		final ParticleGroup unstakeParticles;
 		try {
 			unstakeParticles = mapToParticles(unstake, stakeConsumables);
 		} catch (NotEnoughFungiblesException e) {
@@ -114,8 +124,6 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(unstakeParticles)
-		);
+		return Collections.singletonList(unstakeParticles);
 	}
 }

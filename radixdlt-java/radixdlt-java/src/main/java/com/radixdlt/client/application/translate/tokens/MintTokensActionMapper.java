@@ -31,8 +31,8 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
@@ -55,7 +55,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToBurn = TokenUnitConversions.unitsToSubunits(mint.getAmount());
@@ -88,7 +88,17 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToBurn);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToBurn)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 	@Override
@@ -124,7 +134,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				.filter(p -> p.getTokDefRef().equals(tokenRef))
 				.collect(Collectors.toList());
 
-		final List<SpunParticle> mintParticles;
+		final ParticleGroup mintParticles;
 		try {
 			mintParticles = mapToParticles(mintTokensAction, currentParticles);
 		} catch (NotEnoughFungiblesException e) {
@@ -136,8 +146,6 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(mintParticles)
-		);
+		return Collections.singletonList(mintParticles);
 	}
 }

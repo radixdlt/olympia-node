@@ -29,7 +29,7 @@ import java.util.Optional;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.fees.FeeTable;
+import com.radixdlt.client.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 

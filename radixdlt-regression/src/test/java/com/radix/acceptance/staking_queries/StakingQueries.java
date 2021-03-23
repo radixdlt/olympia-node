@@ -114,12 +114,14 @@ public class StakingQueries {
 		delegator1.unstakeTokens(PARTIAL_UNSTAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
 	}
 
+	/*
 	@When("^I request validator stake balance$")
 	public void request_validator_stake_balance() {
 		final var observer = new TestObserver<>();
 		this.validator.observeValidatorStake(this.validator.getAddress()).subscribe(observer);
 		this.observers.add(observer);
 	}
+	 */
 
 	@When("^I try to stake some tokens by delegator2$")
 	public void try_to_stake_tokens_by_not_registered_delegator() {

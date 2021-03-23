@@ -44,15 +44,24 @@ public class Conditions {
      * will block and keep checking for liveness, until a fixed amount of time has passed
      */
     public static void waitUntilNetworkHasLiveness(RemoteBFTNetwork network) {
-        waitUntilNetworkHasLiveness(network, Lists.newArrayList());
+        waitUntilNetworkHasLiveness(network, Lists.newArrayList(), false);
     }
 
     /**
      * will block and keep checking for liveness, until a fixed amount of time has passed. Can ignore some nodes.
      */
     public static void waitUntilNetworkHasLiveness(RemoteBFTNetwork network, List<String> nodesToIgnore) {
-        Set<String> offlineNodes = getOfflineNodes(network);
-        nodesToIgnore.addAll(offlineNodes);
+        waitUntilNetworkHasLiveness(network, nodesToIgnore, false);
+    }
+
+    /**
+     * will block and keep checking for liveness, until a fixed amount of time has passed. Can ignore some nodes and offline nodes.
+     */
+    public static void waitUntilNetworkHasLiveness(RemoteBFTNetwork network, List<String> nodesToIgnore, boolean ignoreOfflineNodes) {
+        if (ignoreOfflineNodes) {
+            Set<String> offlineNodes = getOfflineNodes(network);
+            nodesToIgnore.addAll(offlineNodes);
+        }
 
         logger.info("Waiting for network liveness...");
         AtomicBoolean hasLiveness = new AtomicBoolean(false);

@@ -28,8 +28,8 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
@@ -54,7 +54,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(BurnTokensAction burn, List<TransferrableTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(BurnTokensAction burn, List<TransferrableTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToBurn = TokenUnitConversions.unitsToSubunits(burn.getAmount());
@@ -87,7 +87,17 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToBurn);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToBurn)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 
@@ -110,15 +120,13 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> burnParticles;
+		final ParticleGroup burnGroup;
 		try {
-			burnParticles = mapToParticles(burnTokensAction, currentParticles);
+			burnGroup = mapToParticles(burnTokensAction, currentParticles);
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), burnAmount);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(burnParticles)
-		);
+		return Collections.singletonList(burnGroup);
 	}
 }

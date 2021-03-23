@@ -31,7 +31,6 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 
 import java.util.List;
 import java.util.Set;
@@ -52,10 +51,11 @@ public class UnregisterValidatorActionMapper implements StatefulActionToParticle
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(UnregisterValidatorAction action, Stream<Particle> store) throws StageActionException {
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
-		return ImmutableList.of(ParticleGroup.of(
-			SpunParticle.down(currentState.asParticle()),
-			SpunParticle.up(currentState.unregister())
-		));
+		return ImmutableList.of(ParticleGroup.builder()
+			.spinDown(currentState.asParticle())
+			.spinUp(currentState.unregister())
+			.build()
+		);
 	}
 
 }

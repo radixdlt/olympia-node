@@ -19,7 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import java.util.Objects;
 
 /**
@@ -27,11 +27,11 @@ import java.util.Objects;
  */
 public final class VerifiedCommandsAndProof {
 	private final ImmutableList<Command> commands;
-	private final VerifiedLedgerHeaderAndProof headerAndProof;
+	private final LedgerProof headerAndProof;
 
 	public VerifiedCommandsAndProof(
 		ImmutableList<Command> commands,
-		VerifiedLedgerHeaderAndProof headerAndProof
+		LedgerProof headerAndProof
 	) {
 		this.commands = Objects.requireNonNull(commands);
 		this.headerAndProof = Objects.requireNonNull(headerAndProof);
@@ -45,7 +45,7 @@ public final class VerifiedCommandsAndProof {
 		return commands.contains(command);
 	}
 
-	public VerifiedLedgerHeaderAndProof getHeader() {
+	public LedgerProof getProof() {
 		return headerAndProof;
 	}
 

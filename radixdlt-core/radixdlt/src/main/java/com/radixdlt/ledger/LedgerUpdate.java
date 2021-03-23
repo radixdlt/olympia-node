@@ -19,7 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,12 +35,12 @@ public final class LedgerUpdate {
 		return verifiedCommandsAndProof.getCommands();
 	}
 
-	public VerifiedLedgerHeaderAndProof getTail() {
-		return verifiedCommandsAndProof.getHeader();
+	public LedgerProof getTail() {
+		return verifiedCommandsAndProof.getProof();
 	}
 
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return verifiedCommandsAndProof.getHeader().getNextValidatorSet();
+		return verifiedCommandsAndProof.getProof().getNextValidatorSet();
 	}
 
 	@Override

@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
@@ -108,22 +108,22 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 					accumulatorState = accumulator.accumulate(accumulatorState, hasher.hash(command));
 				}
 			} else {
-				accumulatorState = base.getHeader().getAccumulatorState();
+				accumulatorState = base.getProof().getAccumulatorState();
 			}
 
 			LedgerHeader ledgerHeader = LedgerHeader.create(
-				base.getHeader().getEpoch(),
-				base.getHeader().getView(),
+				base.getProof().getEpoch(),
+				base.getProof().getView(),
 				accumulatorState,
-				base.getHeader().timestamp(),
-				base.getHeader().getNextValidatorSet().orElse(null)
+				base.getProof().timestamp(),
+				base.getProof().getNextValidatorSet().orElse(null)
 			);
-			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getHeader().getSignatures();
-			VerifiedLedgerHeaderAndProof headerAndProof = new VerifiedLedgerHeaderAndProof(
-				base.getHeader().toDto().getOpaque0(),
-				base.getHeader().toDto().getOpaque1(),
-				base.getHeader().toDto().getOpaque2(),
-				base.getHeader().toDto().getOpaque3(),
+			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
+			LedgerProof headerAndProof = new LedgerProof(
+				base.getProof().toDto().getOpaque0(),
+				base.getProof().toDto().getOpaque1(),
+				base.getProof().toDto().getOpaque2(),
+				base.getProof().toDto().getOpaque3(),
 				ledgerHeader,
 				signatures
 			);
@@ -218,7 +218,12 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
-		return correctReader.getEpochVerifiedHeader(epoch);
+	public Optional<LedgerProof> getEpochProof(long epoch) {
+		return correctReader.getEpochProof(epoch);
+	}
+
+	@Override
+	public Optional<LedgerProof> getLastProof() {
+		return correctReader.getLastProof();
 	}
 }

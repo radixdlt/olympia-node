@@ -32,12 +32,12 @@ Feature: Create Single Issuance Token Class
     When I submit a fixed-supply token-creation request with granularity 0
     Then I can observe the atom being rejected with a validation error
 
-  Scenario: 4: Transacting within granularity
-    Given I have access to a suitable Radix network
-    When I submit a fixed-supply token-creation request with granularity 2 scaled
-    And I observe the atom being accepted
-    And I submit a token transfer request of 100 scaled for "RLAU" to an arbitrary account
-    Then I can observe atom 2 being accepted
+  #Scenario: 4: Transacting within granularity
+    #Given I have access to a suitable Radix network
+    #When I submit a fixed-supply token-creation request with granularity 2 scaled
+    #And I observe the atom being accepted
+    #And I submit a token transfer request of 100 scaled for "RLAU" to an arbitrary account
+    #Then I can observe atom 2 being accepted
 
   Scenario: 5: Transacting outside granularity
     Given I have access to a suitable Radix network

@@ -29,7 +29,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -248,7 +248,7 @@ public final class ConsensusModule extends AbstractModule {
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
+		@LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		SystemCounters counters

@@ -17,6 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
@@ -27,7 +29,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
 
 import java.util.Optional;
@@ -39,7 +40,6 @@ import static org.radix.api.jsonrpc.AtomStatus.CONFLICT_LOSER;
 import static org.radix.api.jsonrpc.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_DUPLICATE;
 import static org.radix.api.jsonrpc.AtomStatus.MEMPOOL_FULL;
-import static org.radix.api.jsonrpc.AtomStatus.MISSING_DEPENDENCY;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
@@ -104,16 +104,15 @@ public class AtomStatusEpic {
 		private final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState;
 		private final AID aid;
 
-		public EpicAtomStatusListener(final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState, final AID aid) {
+		EpicAtomStatusListener(final BiConsumer<AtomStatus, JSONObject> sendAtomSubmissionState, final AID aid) {
 			this.sendAtomSubmissionState = sendAtomSubmissionState;
 			this.aid = aid;
 		}
 
 		@Override
-		public void onStored(CommittedAtom committedAtom) {
+		public void onStored(Atom committedAtom) {
 			sendAtomSubmissionState.accept(STORED, jsonObject()
 				.put("aid", committedAtom.getAID())
-				.put("stateVersion", committedAtom.getStateVersion())
 			);
 		}
 
@@ -151,22 +150,15 @@ public class AtomStatusEpic {
 
 		private AtomStatus extractAtomStatus(final RadixEngineException exception, final JSONObject data) {
 			switch (exception.getErrorCode()) {
-				case CONVERSION_ERROR:    // Fall through
 				case CM_ERROR:            // Fall through
 				case HOOK_ERROR:
 					if (exception.getCmError() != null) {
 						data.put("cmError", exception.getCmError().getErrMsg());
+						if (exception.getCmError().getErrorCode() == CMErrorCode.SPIN_CONFLICT) {
+							return CONFLICT_LOSER;
+						}
 					}
 					return EVICTED_FAILED_CM_VERIFICATION;
-
-				case VIRTUAL_STATE_CONFLICT:
-					return EVICTED_FAILED_CM_VERIFICATION;
-
-				case MISSING_DEPENDENCY:
-					return MISSING_DEPENDENCY;
-
-				case STATE_CONFLICT:
-					return CONFLICT_LOSER;
 
 				default: // Don't send back unhandled exception
 					return null;

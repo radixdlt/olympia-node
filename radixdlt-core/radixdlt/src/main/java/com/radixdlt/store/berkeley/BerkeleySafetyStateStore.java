@@ -17,6 +17,9 @@
 
 package com.radixdlt.store.berkeley;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
@@ -27,6 +30,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -36,12 +40,8 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 
-import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.database.DatabaseEnvironment;
-
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -70,7 +70,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		this.serialization = Objects.requireNonNull(serialization);
 
 		this.safetyStore = this.open();
-			this.systemCounters = Objects.requireNonNull(systemCounters);
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 
 		if (Boolean.valueOf(System.getProperty("db.check_integrity", "true"))) {
 			// TODO implement integrity check

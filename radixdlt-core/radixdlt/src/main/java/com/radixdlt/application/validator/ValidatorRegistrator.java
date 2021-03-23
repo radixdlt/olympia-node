@@ -34,11 +34,10 @@ import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,7 +50,7 @@ import java.util.Optional;
  */
 public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
-	private final RadixEngine<LedgerAtom> radixEngine;
+	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 	private final RadixAddress self;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
@@ -66,7 +65,7 @@ public final class ValidatorRegistrator {
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
@@ -89,14 +88,20 @@ public final class ValidatorRegistrator {
 
 		var builder = Atom.newBuilder();
 		var validatorUpdate = validatorState.map(
-			nonce -> ParticleGroup.of(
-				SpunParticle.down(new UnregisteredValidatorParticle(self, nonce)),
-				SpunParticle.up(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1))
-			),
-			r -> ParticleGroup.of(
-				SpunParticle.down(r),
-				SpunParticle.up(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
-			)
+			nonce -> {
+				var pgBuilder = ParticleGroup.builder();
+				var unregisterParticle = new UnregisteredValidatorParticle(self, nonce);
+				if (nonce == 0) {
+					pgBuilder.virtualSpinDown(unregisterParticle);
+				} else {
+					pgBuilder.spinDown(unregisterParticle);
+				}
+				return pgBuilder.spinUp(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1)).build();
+			},
+			r -> ParticleGroup.builder()
+				.spinDown(r)
+				.spinUp(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
+				.build()
 		);
 		builder.addParticleGroup(validatorUpdate);
 

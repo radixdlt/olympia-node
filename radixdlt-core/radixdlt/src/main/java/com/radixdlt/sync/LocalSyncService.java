@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -250,7 +250,7 @@ public final class LocalSyncService {
 		final var maybeMaxPeerHeader = currentState.responses().values()
 			.stream()
 			.map(StatusResponse::getHeader)
-			.max(Comparator.comparing(VerifiedLedgerHeaderAndProof::getAccumulatorState, accComparator))
+			.max(Comparator.comparing(LedgerProof::getAccumulatorState, accComparator))
 			.filter(h ->
 				accComparator.compare(
 					h.getAccumulatorState(),
@@ -296,7 +296,7 @@ public final class LocalSyncService {
 	private SyncState startSync(
 		SyncState currentState,
 		ImmutableList<BFTNode> candidatePeers,
-		VerifiedLedgerHeaderAndProof targetHeader
+		LedgerProof targetHeader
 	) {
 		log.trace("LocalSync: Syncing to target header {}, got {} candidate peers", targetHeader, candidatePeers.size());
 		return this.processSync(SyncingState.init(currentState.getCurrentHeader(), candidatePeers, targetHeader));
@@ -431,7 +431,7 @@ public final class LocalSyncService {
 	private SyncingState updateTargetIfNeeded(
 		SyncingState currentState,
 		ImmutableList<BFTNode> peers,
-		VerifiedLedgerHeaderAndProof header
+		LedgerProof header
 	) {
 		final var isNewerState =
 			accComparator.compare(

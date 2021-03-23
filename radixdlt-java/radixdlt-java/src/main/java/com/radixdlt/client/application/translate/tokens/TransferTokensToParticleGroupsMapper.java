@@ -28,6 +28,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.util.Collections;
@@ -43,7 +44,6 @@ import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
@@ -53,7 +53,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToTransfer = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
@@ -87,7 +87,17 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToTransfer);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToTransfer)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 	@Override
@@ -104,7 +114,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> transferParticles;
+		final ParticleGroup transferParticles;
 		try {
 			transferParticles = mapToParticles(transfer, tokenConsumables);
 		} catch (NotEnoughFungiblesException e) {
@@ -113,8 +123,6 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(transferParticles)
-		);
+		return Collections.singletonList(transferParticles);
 	}
 }

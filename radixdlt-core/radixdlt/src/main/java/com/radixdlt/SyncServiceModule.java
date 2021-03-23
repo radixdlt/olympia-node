@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
@@ -57,7 +57,7 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private SyncState initialSyncState(@LastProof VerifiedLedgerHeaderAndProof currentHeader) {
+	private SyncState initialSyncState(@LastProof LedgerProof currentHeader) {
 		return SyncState.IdleState.init(currentHeader);
 	}
 
@@ -88,7 +88,7 @@ public class SyncServiceModule extends AbstractModule {
 			DtoCommandsAndProof commandsAndProof = resp.getCommandsAndProof();
 			// TODO: Stateful ledger header verification:
 			// TODO: -verify rootHash matches
-			VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
+			LedgerProof nextHeader = new LedgerProof(
 				commandsAndProof.getTail().getOpaque0(),
 				commandsAndProof.getTail().getOpaque1(),
 				commandsAndProof.getTail().getOpaque2(),

@@ -39,7 +39,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedCommand;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -186,7 +186,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
-		} else if (message instanceof AtomCommittedToLedger) {
+		} else if (message instanceof AtomsCommittedToLedger) {
 			// Don't need to process
 		} else if (message instanceof MempoolAddFailure) {
 			// Don't need to process

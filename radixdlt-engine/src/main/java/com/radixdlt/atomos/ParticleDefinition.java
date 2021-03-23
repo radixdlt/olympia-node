@@ -18,13 +18,13 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Defines how to retrieve important properties from a given particle type.
@@ -36,14 +36,14 @@ public class ParticleDefinition<T extends Particle> {
 	private final Function<T, Set<RadixAddress>> addressMapper; // must be set (since we need to route the particle)
 	private final Function<T, Result> staticValidation; // may be null
 	private final Function<T, RRI> rriMapper; // may be null
-	private final Function<T, Spin> virtualizeSpin; // may be null
+	private final Predicate<T> virtualizeSpin; // may be null
 	private final boolean allowsTransitionsFromOutsideScrypts;
 
 	private ParticleDefinition(
 		Function<T, Set<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
 		Function<T, RRI> rriMapper,
-		Function<T, Spin> virtualizeSpin,
+		Predicate<T> virtualizeSpin,
 		boolean allowsTransitionsFromOutsideScrypts
 	) {
 		this.staticValidation = staticValidation;
@@ -65,7 +65,7 @@ public class ParticleDefinition<T extends Particle> {
 		return rriMapper;
 	}
 
-	Function<T, Spin> getVirtualizeSpin() {
+	Predicate<T> getVirtualizeSpin() {
 		return virtualizeSpin;
 	}
 
@@ -90,7 +90,7 @@ public class ParticleDefinition<T extends Particle> {
 		private Function<T, Set<RadixAddress>> addressMapper;
 		private Function<T, Result> staticValidation = x -> Result.success();
 		private Function<T, RRI> rriMapper;
-		private Function<T, Spin> virtualizeSpin;
+		private Predicate<T> virtualizedParticles = x -> false;
 		private boolean allowsTransitionsFromOutsideScrypts = false;
 
 		private Builder() {
@@ -116,8 +116,8 @@ public class ParticleDefinition<T extends Particle> {
 			return this;
 		}
 
-		public Builder<T> virtualizeSpin(Function<T, Spin> virtualizeSpin) {
-			this.virtualizeSpin = virtualizeSpin;
+		public Builder<T> virtualizeUp(Predicate<T> virtualizeParticles) {
+			this.virtualizedParticles = virtualizeParticles;
 			return this;
 		}
 
@@ -144,7 +144,7 @@ public class ParticleDefinition<T extends Particle> {
 				p -> addressMapper.apply((T) p),
 				staticValidation == null ? null : p -> staticValidation.apply((T) p),
 				rriMapper == null ? null : p -> rriMapper.apply((T) p),
-				virtualizeSpin == null ? null : p -> virtualizeSpin.apply((T) p),
+				p -> virtualizedParticles.test((T) p),
 				allowsTransitionsFromOutsideScrypts
 			);
 		}

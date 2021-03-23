@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.io.IOException;
@@ -26,6 +25,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.function.BiConsumer;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -46,11 +46,7 @@ public class SimpleAppendLog implements AppendLog {
 		this.sizeBufferR = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
 	}
 
-	public static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
-		return new CompressedAppendLog(open(path), counters);
-	}
-
-	public static AppendLog open(String path) throws IOException {
+	static AppendLog open(String path) throws IOException {
 		var channel = FileChannel.open(Path.of(path), EnumSet.of(READ, WRITE, CREATE));
 
 		channel.position(channel.size());
@@ -116,6 +112,25 @@ public class SimpleAppendLog implements AppendLog {
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Error while closing log", e);
+		}
+	}
+
+	@Override
+	public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
+		var offset = 0L;
+
+		synchronized (channel) {
+			var end = false;
+			while (!end) {
+				try {
+					var chunk = readChunk(offset);
+					chunkConsumer.accept(chunk.getFirst(), offset);
+					offset += chunk.getSecond() + Integer.BYTES;
+				} catch (IOException exception) {
+					chunkConsumer.accept(new byte[0], -1L);
+					end = true;
+				}
+			}
 		}
 	}
 

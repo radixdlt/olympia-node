@@ -15,9 +15,10 @@ package org.radix.api.http;/*
  * language governing permissions and limitations under the License.
  */
 
-import com.radixdlt.atom.LedgerAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class NodeControllerTest {
-	private final RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
+	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine = mock(RadixEngine.class);
 	private RadixAddress radixAddress = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	private EventDispatcher<ValidatorRegistration> dispatcher = mock(EventDispatcher.class);
 	private NodeController nodeController = new NodeController(radixAddress, radixEngine, dispatcher);

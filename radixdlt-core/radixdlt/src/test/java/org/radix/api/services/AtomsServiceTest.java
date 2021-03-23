@@ -19,7 +19,6 @@ package org.radix.api.services;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -28,16 +27,13 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.utils.RandomHasher;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -58,9 +54,9 @@ public class AtomsServiceTest {
 	private final Hasher hasher = new RandomHasher();
 	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved = mock(Observable.class);
 	private final Observable<MempoolAddFailure> mempoolAddFailures = mock(Observable.class);
-	private final Observable<AtomCommittedToLedger> ledgerCommitted = mock(Observable.class);
+	private final Observable<AtomsCommittedToLedger> ledgerCommitted = mock(Observable.class);
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher = mock(EventDispatcher.class);
-	private final LedgerEntryStore store = mock(LedgerEntryStore.class);
+	private final AtomIndex store = mock(AtomIndex.class);
 
 	private final AtomsService atomsService = new AtomsService(
 		mempoolAtomsRemoved,
@@ -97,7 +93,7 @@ public class AtomsServiceTest {
 
 		result.ifPresentOrElse(
 			jsonAtom -> {
-				assertEquals(":str:Test message", jsonAtom.getString("message"));
+				assertEquals(":str:Test message", jsonAtom.getString("m"));
 				assertEquals("radix.atom", jsonAtom.getString("serializer"));
 			},
 			() -> fail("Expecting non-empty result")
@@ -107,7 +103,7 @@ public class AtomsServiceTest {
 	private Atom createAtom() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
-		var group1 = ParticleGroup.of(SpunParticle.up(particle));
+		var group1 = ParticleGroup.builder().spinUp(particle).build();
 
 		return Atom.newBuilder()
 			.addParticleGroup(group1)

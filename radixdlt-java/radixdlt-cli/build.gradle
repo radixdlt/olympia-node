@@ -58,3 +58,26 @@ jacocoTestReport {
         csv.enabled false
     }
 }
+
+def networkName = properties.get('networkName', 'testnet')
+def enableAWSSecret = properties.get('enableAWSSecret', false)
+def recreateAWSSecret = properties.get('recreateAWSSecret', false)
+def fullNodeNumber = properties.get('fullNodeNumber', false)
+
+
+task generateNodeKey(type: Exec) {
+    dependsOn compileJava
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+    dependsOn ':radixdlt-java:jar'
+
+
+    group = "Execution"
+    description = "Generate Node key"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "com.radixdlt.cloud.AWSSecrets",
+            "--enable-aws-secrets=${enableAWSSecret}",
+            "--recreate-aws-secrets=${recreateAWSSecret}",
+            "--network-name=${networkName}",
+            "--full-node-number=${fullNodeNumber}"
+}

@@ -35,7 +35,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 
 import java.util.Objects;
 import java.util.Set;
@@ -108,7 +108,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			ledgerUpdateProcessors.forEach(p -> p.process((LedgerUpdate) message));
 		} else if (message instanceof VertexRequestTimeout) {
 			vertexStoreSync.vertexRequestTimeoutEventProcessor().process((VertexRequestTimeout) message);
-		} else if (message instanceof AtomCommittedToLedger) {
+		} else if (message instanceof AtomsCommittedToLedger) {
 			// Don't need to process
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());

@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -75,7 +75,7 @@ public class RemoteSyncServiceTest {
 		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
 		this.statusUpdateDispatcher =  rmock(RemoteEventDispatcher.class);
 
-		final var initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		final var initialHeader = mock(LedgerProof.class);
 		final var initialAccumulatorState = mock(AccumulatorState.class);
 		when(initialHeader.getAccumulatorState()).thenReturn(initialAccumulatorState);
 		when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
@@ -105,9 +105,9 @@ public class RemoteSyncServiceTest {
 		when(request.getHeader()).thenReturn(header);
 		BFTNode node = mock(BFTNode.class);
 		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
-		VerifiedLedgerHeaderAndProof verifiedHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		LedgerProof verifiedHeader = mock(LedgerProof.class);
 		when(verifiedHeader.toDto()).thenReturn(header);
-		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
+		when(verifiedCommandsAndProof.getProof()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(any())).thenReturn(verifiedCommandsAndProof);
 		processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
 		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
@@ -142,7 +142,7 @@ public class RemoteSyncServiceTest {
 
 	@Test
 	public void when_ledger_update_but_syncing__then_dont_send_status_update() {
-		final var tail = mock(VerifiedLedgerHeaderAndProof.class);
+		final var tail = mock(LedgerProof.class);
 		final var ledgerUpdate = mock(LedgerUpdate.class);
 		final var accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(2L);
@@ -154,9 +154,9 @@ public class RemoteSyncServiceTest {
 
 		when(this.localSyncService.getSyncState())
 			.thenReturn(SyncState.SyncingState.init(
-				mock(VerifiedLedgerHeaderAndProof.class),
+				mock(LedgerProof.class),
 				ImmutableList.of(),
-				mock(VerifiedLedgerHeaderAndProof.class))
+				mock(LedgerProof.class))
 			);
 
 		verifyNoMoreInteractions(peersView);

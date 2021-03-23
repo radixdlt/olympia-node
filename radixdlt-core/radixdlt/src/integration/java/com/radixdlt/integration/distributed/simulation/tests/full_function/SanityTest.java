@@ -45,7 +45,7 @@ public class SanityTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.fullFunctionNodes(View.of(10), SyncConfig.of(200L, 10, 5000L))
+		.fullFunctionNodes(View.of(10), SyncConfig.of(400L, 10, 2000L))
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {

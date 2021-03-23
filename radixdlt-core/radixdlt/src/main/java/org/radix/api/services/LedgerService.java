@@ -21,26 +21,19 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.AtomIndex;
 
 import static org.radix.api.jsonrpc.AtomStatus.DOES_NOT_EXIST;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
-import static com.radixdlt.serialization.DsonOutput.Output.API;
-
 public class LedgerService {
-	private final LedgerEntryStore ledger;
-	private final Serialization serialization;
+	private final AtomIndex ledger;
 
 	@Inject
-	public LedgerService(final LedgerEntryStore ledger, final Serialization serialization) {
+	public LedgerService(final AtomIndex ledger) {
 		this.ledger = ledger;
-		this.serialization = serialization;
 	}
 
 	public JSONObject getAtomStatus(final JSONObject request, final String aidStr) {

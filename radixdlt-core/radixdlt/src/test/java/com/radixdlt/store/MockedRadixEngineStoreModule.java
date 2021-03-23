@@ -23,19 +23,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.LedgerAtom;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.UInt256;
 
@@ -47,53 +44,26 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(
+	private EngineStore<Atom, LedgerAndBFTProof> engineStore(
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
+		var inMemoryEngineStore = new InMemoryEngineStore<Atom, LedgerAndBFTProof>();
 		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
 				.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
 			hasher.hash(command),
 			validatorSet
 		);
-		CommittedAtom committedAtom = CommittedAtom.create(
-			genesisAtom,
-			genesisLedgerHeader
-		);
-		if (!inMemoryEngineStore.containsAtom(committedAtom)) {
-			inMemoryEngineStore.storeAtom(committedAtom);
+		if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
+			var txn = inMemoryEngineStore.createTransaction();
+			inMemoryEngineStore.storeAtom(txn, genesisAtom);
+			txn.commit();
 		}
 		return inMemoryEngineStore;
-	}
-
-	@Provides
-	private RadixEngineAtomicCommitManager atomicCommitManager() {
-		return new RadixEngineAtomicCommitManager() {
-			@Override
-			public void startTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void commitTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void abortTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void save(VerifiedVertexStoreState vertexStoreState) {
-				// no-op
-			}
-		};
 	}
 }

@@ -20,9 +20,9 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.engine.AtomChecker;
-import com.radixdlt.atom.LedgerAtom;
 
 /**
  * Module which provides an atom checker that does not require fees.
@@ -30,7 +30,7 @@ import com.radixdlt.atom.LedgerAtom;
 public class NoFeeModule extends AbstractModule {
 	@Provides
 	@Singleton
-	private AtomChecker<LedgerAtom> noFeeLedgerAtomChecker() {
+	private AtomChecker<Atom> noFeeLedgerAtomChecker() {
 		return (atom, permissionLevel) ->
 			atom.getCMInstruction().getMicroInstructions().isEmpty()
 				? Result.error("atom has no instructions")

@@ -23,7 +23,6 @@ import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -44,9 +43,9 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 		RRIParticle rriParticle = new RRIParticle(rri, 0);
 		UniqueParticle uniqueParticle = new UniqueParticle("test", address, 1);
 		ParticleGroup particleGroup = ParticleGroup.builder()
-				.addParticle(rriParticle, Spin.DOWN)
-				.addParticle(uniqueParticle, Spin.UP)
-				.build();
+			.virtualSpinDown(rriParticle)
+			.spinUp(uniqueParticle)
+			.build();
 		AtomBuilder atom = Atom.newBuilder();
 		atom.addParticleGroup(particleGroup);
 		var hashToSign = atom.computeHashToSign();

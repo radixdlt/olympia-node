@@ -28,8 +28,8 @@ import java.io.IOException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 
-import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.open;
-import static com.radixdlt.store.berkeley.atom.SimpleAppendLog.openCompressed;
+import static com.radixdlt.store.berkeley.atom.AppendLog.openCompressed;
+import static com.radixdlt.store.berkeley.atom.AppendLog.openSimple;
 
 public class SimpleAppendLogTest {
 	private final SystemCounters systemCounters = mock(SystemCounters.class);
@@ -41,16 +41,16 @@ public class SimpleAppendLogTest {
 	public void appendLogCanBeCreated() throws IOException {
 		String path = createTempPath();
 
-		readAfterWrite(open(path));
+		readAfterWrite(openSimple(path));
 	}
 
 	@Test
 	public void appendLogCanBeReadFromTheBeginning() throws IOException {
 		var path = createTempPath();
 
-		writeLogEntriesAndClose(open(path));
+		writeLogEntriesAndClose(openSimple(path));
 
-		readSequentially(open(path));
+		readSequentially(openSimple(path));
 	}
 
 	@Test

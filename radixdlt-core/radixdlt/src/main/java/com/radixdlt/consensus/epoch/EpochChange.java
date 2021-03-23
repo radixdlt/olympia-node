@@ -18,17 +18,17 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import java.util.Objects;
 
 /**
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final VerifiedLedgerHeaderAndProof proof;
+	private final LedgerProof proof;
 	private final BFTConfiguration bftConfiguration;
 
-	public EpochChange(VerifiedLedgerHeaderAndProof proof, BFTConfiguration bftConfiguration) {
+	public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
 		this.proof = Objects.requireNonNull(proof);
 		this.bftConfiguration = Objects.requireNonNull(bftConfiguration);
 	}
@@ -37,7 +37,7 @@ public final class EpochChange {
 		return bftConfiguration;
 	}
 
-	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
+	public LedgerProof getGenesisHeader() {
 		return bftConfiguration.getVertexStoreState().getRootHeader();
 	}
 
@@ -45,7 +45,7 @@ public final class EpochChange {
 		return proof.getEpoch() + 1;
 	}
 
-	public VerifiedLedgerHeaderAndProof getProof() {
+	public LedgerProof getProof() {
 		return proof;
 	}
 

@@ -38,12 +38,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+
 /**
  * Tests BFT System verification logic
  */
 public class SystemTest {
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 
 	@Before
 	public void setup() {
@@ -56,7 +58,7 @@ public class SystemTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			store
 		);
 	}
@@ -67,8 +69,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -78,7 +80,7 @@ public class SystemTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256())))
+		assertThatThrownBy(() -> this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256()))))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
@@ -90,8 +92,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -100,19 +102,19 @@ public class SystemTest {
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER);
+		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, nextSystemParticle)).isEqualTo(Spin.UP);
 	}
 
 	@Test
 	public void executing_system_update_with_bad_epoch_should_fail() {
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(-1, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -120,7 +122,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -128,11 +132,11 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_bad_view_should_fail() {
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(1, -1, 1);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, -1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -140,7 +144,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -148,11 +154,11 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_bad_timestamp_should_fail() {
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(1, 1, -1);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, 1, -1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -160,7 +166,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -168,7 +176,7 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_non_increasing_view_should_fail() {
-		preconditionFailure(1, 0);
+		preconditionFailure(0, 0);
 	}
 
 	@Test
@@ -178,7 +186,7 @@ public class SystemTest {
 
 	@Test
 	public void executing_system_update_with_epoch_starting_at_view_1_should_fail() {
-		preconditionFailure(2, 1);
+		preconditionFailure(1, 1);
 	}
 
 	@Test
@@ -188,8 +196,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 10, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -197,20 +205,22 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
 	}
 
 	private void preconditionFailure(long epoch, long view) {
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(epoch, view, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(systemParticle),
+			CMMicroInstruction.spinUp(nextSystemParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -218,7 +228,9 @@ public class SystemTest {
 			ImmutableMap.of()
 		);
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.TRANSITION_PRECONDITION_FAILURE);

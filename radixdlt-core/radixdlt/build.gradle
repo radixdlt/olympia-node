@@ -128,8 +128,6 @@ dependencies {
     // generateDevUniverse task to depend on those projects
     implementation project(':radixdlt-engine')
     implementation project(':radixdlt-java-common')
-    implementation platform('software.amazon.awssdk:bom:2.16.3')
-    implementation 'software.amazon.awssdk:secretsmanager:2.16.3'
     implementation 'com.github.radixdlt:jackson-databind:feature~strict-property-ordering-downgraded-version-SNAPSHOT'
 
     implementation "com.github.akarnokd:rxjava3-extensions"
