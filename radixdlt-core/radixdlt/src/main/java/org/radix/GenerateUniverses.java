@@ -76,11 +76,8 @@ import org.apache.commons.cli.ParseException;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 import org.radix.universe.output.HelmUniverseOutput;
-import org.radix.utils.IOUtils;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
