@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -53,10 +52,9 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private Mempool mempool(
 		@MempoolMaxSize int maxSize,
 		SystemCounters systemCounters,
-		Random random,
-		Hasher hasher
+		Random random
 	) {
-		return new SimpleMempool(maxSize, hasher::hash, systemCounters, random);
+		return new SimpleMempool(maxSize, systemCounters, random);
 	}
 
 	@Provides
