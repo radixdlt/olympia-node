@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -31,7 +32,6 @@ import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerBytesFeeEntry;
 import com.radixdlt.fees.PerParticleFeeEntry;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
 import com.radixdlt.utils.UInt256;
 
@@ -42,7 +42,7 @@ public class TokenFeeModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<AtomChecker<LedgerAtom>>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<AtomChecker<Atom>>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

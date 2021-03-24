@@ -18,20 +18,12 @@
 package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.name.Named;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.StateReducer;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * Module responsible for the mempool filler chaos attack
@@ -39,7 +31,6 @@ import com.radixdlt.identifiers.RadixAddress;
 public final class MempoolFillerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ECKeyPair.class).annotatedWith(MempoolFillerKey.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 				.permitDuplicates();
@@ -48,32 +39,12 @@ public final class MempoolFillerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private StateReducer<?, ?> mempoolFillerWallet(
-		@NativeToken RRI tokenRRI,
-		@MempoolFillerKey RadixAddress mempoolFillerAddress
-	) {
-		return new InMemoryWalletReducer(tokenRRI, mempoolFillerAddress);
+	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>("chaos", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
 	}
 
-	@Provides
-	@MempoolFillerKey
-	private RadixAddress mempoolFillerAddress(@MempoolFillerKey ECPublicKey pubKey, @Named("magic") int magic) {
-		return new RadixAddress((byte) magic, pubKey);
-	}
-
-	@Provides
-	@MempoolFillerKey
-	private ECPublicKey mempoolFillerKey(@MempoolFillerKey ECKeyPair keyPair) {
-		return keyPair.getPublicKey();
-	}
-
-	@Provides
-	public EventProcessor<MempoolFillerUpdate> messageFloodUpdateEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.messageFloodUpdateProcessor();
-	}
-
-	@Provides
-	public EventProcessor<ScheduledMempoolFill> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return mempoolFiller.scheduledMempoolFillEventProcessor();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>("chaos", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
 	}
 }

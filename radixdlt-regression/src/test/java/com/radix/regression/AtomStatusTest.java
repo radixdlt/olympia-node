@@ -18,14 +18,15 @@
 package com.radix.regression;
 
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
+import com.radixdlt.client.core.atoms.Atoms;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -72,12 +73,11 @@ public class AtomStatusTest {
 
 	@Test
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
-		for (Atom atom : RadixEnv.getBootstrapConfig().getConfig().getGenesis()) {
-			TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
-			this.rpcClient.getAtomStatus(atom.getAid()).subscribe(atomStatusTestObserver);
-			atomStatusTestObserver.awaitTerminalEvent();
-			atomStatusTestObserver.assertValue(AtomStatus.STORED);
-		}
+		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
+		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
+		this.rpcClient.getAtomStatus(Atoms.atomIdOf(atom)).subscribe(atomStatusTestObserver);
+		atomStatusTestObserver.awaitTerminalEvent();
+		atomStatusTestObserver.assertValue(AtomStatus.STORED);
 	}
 
 	@Test
@@ -95,9 +95,8 @@ public class AtomStatusTest {
 		Transaction transaction = api.createTransaction();
 		RRI unique = RRI.of(api.getAddress(), "test");
 		transaction.stage(PutUniqueIdAction.create(unique));
-		Atom atom = api.getIdentity().addSignature(transaction.buildAtom())
-			.blockingGet();
-		AID aid = atom.getAid();
+		var atom = api.getIdentity().addSignature(transaction.buildAtom())
+			.blockingGet().buildAtom();
 
 		String subscriberId = UUID.randomUUID().toString();
 
@@ -105,7 +104,7 @@ public class AtomStatusTest {
 		this.rpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.rpcClient.sendGetAtomStatusNotifications(subscriberId, aid).blockingAwait();
+					this.rpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.atomIdOf(atom)).blockingAwait();
 					this.rpcClient.pushAtom(atom).blockingAwait();
 				}
 			})

@@ -28,18 +28,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -50,7 +47,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	protected void configure() {
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
-		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		bind(DeterministicSender.class).to(ControlledSender.class);
 
@@ -64,17 +60,8 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
 			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
-	}
 
-
-	@Provides
-	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(DtoLedgerHeaderAndProof.class);
-	}
-
-	@Provides
-	RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.getRemoteDispatcher(DtoCommandsAndProof.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
 	}
 
 	@Provides

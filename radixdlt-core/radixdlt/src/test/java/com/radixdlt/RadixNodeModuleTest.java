@@ -45,6 +45,7 @@ public class RadixNodeModuleTest {
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
 		Files.delete(new File("nonesuch.ks"));
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
+		when(properties.get(eq("consensus.pacemaker_rate"), anyDouble())).thenReturn(2.0);
 
 		this.radixNodeModule = new RadixNodeModule(properties);
 

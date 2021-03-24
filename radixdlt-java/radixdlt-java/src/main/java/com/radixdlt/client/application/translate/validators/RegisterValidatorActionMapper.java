@@ -27,11 +27,10 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 
 import java.util.List;
 import java.util.Set;
@@ -52,10 +51,17 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(RegisterValidatorAction action, Stream<Particle> store) throws StageActionException {
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
-		return ImmutableList.of(ParticleGroup.of(
-			SpunParticle.down(currentState.asParticle()),
-			SpunParticle.up(currentState.register(action.getUrl(), action.getAllowedDelegators()))
-		));
+		var particle = currentState.asParticle();
+		var isVirtual = particle instanceof UnregisteredValidatorParticle && ((UnregisteredValidatorParticle) particle).getNonce() == 0;
+		var builder = ParticleGroup.builder();
+		if (isVirtual) {
+			builder.virtualSpinDown(particle);
+		} else {
+			builder.spinDown(particle);
+		}
+		builder.spinUp(currentState.register(action.getUrl(), action.getAllowedDelegators()));
+
+		return ImmutableList.of(builder.build());
 	}
 
 }

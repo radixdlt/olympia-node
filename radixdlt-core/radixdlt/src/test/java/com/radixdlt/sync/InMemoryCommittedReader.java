@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -36,11 +36,11 @@ import java.util.TreeMap;
  * A correct in memory committed reader used for testing
  */
 class InMemoryCommittedReader implements CommittedReader {
-
+	private final Object lock = new Object();
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
-	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
+	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
 
 	@Inject
 	InMemoryCommittedReader(
@@ -53,40 +53,58 @@ class InMemoryCommittedReader implements CommittedReader {
 
 	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
-			long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
-					: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-			for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
-				commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
-			}
+			synchronized (lock) {
+				var commands = update.getNewCommands();
+				long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
+				for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
+					int index = (int) (version - firstVersion);
+					commandsAndProof.put(
+						version,
+						new VerifiedCommandsAndProof(
+							commands.subList(index, commands.size()),
+							update.getTail()
+						)
+					);
+				}
 
-			if (update.getTail().isEndOfEpoch()) {
-				this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				if (update.getTail().isEndOfEpoch()) {
+					this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+				}
 			}
 		};
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+		synchronized (lock) {
+			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 
-		if (entry != null) {
-			ImmutableList<Command> cmds = accumulatorVerifier
-				.verifyAndGetExtension(
-					start.getLedgerHeader().getAccumulatorState(),
-					entry.getValue().getCommands(),
-					hasher::hash,
-					entry.getValue().getHeader().getAccumulatorState()
-				).orElseThrow(() -> new RuntimeException());
+			if (entry != null) {
+				ImmutableList<Command> cmds = accumulatorVerifier
+					.verifyAndGetExtension(
+						start.getLedgerHeader().getAccumulatorState(),
+						entry.getValue().getCommands(),
+						cmd -> cmd.getId().asHashCode(),
+						entry.getValue().getProof().getAccumulatorState()
+					).orElseThrow(() -> new RuntimeException());
 
-			return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
+				return new VerifiedCommandsAndProof(cmds, entry.getValue().getProof());
+			}
+
+			return null;
 		}
-
-		return null;
 	}
 
 	@Override
-	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
-		return Optional.ofNullable(epochProofs.get(epoch));
+	public Optional<LedgerProof> getEpochProof(long epoch) {
+		synchronized (lock) {
+			return Optional.ofNullable(epochProofs.get(epoch));
+		}
+	}
+
+	@Override
+	public Optional<LedgerProof> getLastProof() {
+		return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
 	}
 }

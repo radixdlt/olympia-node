@@ -22,13 +22,13 @@
 
 package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 import io.reactivex.Observable;
-import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -94,7 +94,7 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	List<ParticleGroup> getStagedAndClear(String uuid);
+	AtomBuilder getStagedAndClear(String uuid);
 
 	/**
 	 * Retrieves all staged particle groups without clearing the staging area
@@ -104,5 +104,5 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	List<ParticleGroup> getStaged(String uuid);
+	AtomBuilder getStaged(String uuid);
 }

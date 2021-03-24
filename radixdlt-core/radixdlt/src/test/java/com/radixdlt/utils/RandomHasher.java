@@ -33,6 +33,11 @@ public class RandomHasher implements Hasher {
     private final Map<Object, HashCode> cache = new HashMap<>();
 
     @Override
+    public int bytes() {
+        return 32;
+    }
+
+    @Override
     public HashCode hash(Object o) {
         cache.putIfAbsent(o, HashUtils.random256());
         return cache.get(o);

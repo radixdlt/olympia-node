@@ -38,7 +38,11 @@ dependencies {
     api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
     api 'com.google.guava:guava'
     api 'com.github.bitcoinj:bitcoinj'
-
+    implementation platform('software.amazon.awssdk:bom:2.16.3')
+    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
+            {
+                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+            }
     testImplementation 'org.objenesis:objenesis'
     testImplementation 'org.javassist:javassist'
     testImplementation 'net.bytebuddy:byte-buddy'

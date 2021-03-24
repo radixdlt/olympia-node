@@ -21,12 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.recovery.MockedRecoveryModule;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -52,8 +51,8 @@ public class OneByzantineGenesisTest {
 			.addTestModules(ConsensusMonitors.noneCommitted())
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -63,8 +62,8 @@ public class OneByzantineGenesisTest {
 			.addTestModules(ConsensusMonitors.noneCommitted())
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying(Monitor.NONE_COMMITTED, error -> assertThat(error).isPresent());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).hasEntrySatisfying(Monitor.CONSENSUS_NONE_COMMITTED, error -> assertThat(error).isPresent());
 	}
 
 	@Test
@@ -75,8 +74,8 @@ public class OneByzantineGenesisTest {
 			.addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 }

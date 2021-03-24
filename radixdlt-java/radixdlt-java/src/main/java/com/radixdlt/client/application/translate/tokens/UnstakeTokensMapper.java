@@ -22,18 +22,19 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.utils.UInt256;
@@ -52,7 +53,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToRedelegate = TokenUnitConversions.unitsToSubunits(unstake.getAmount());
@@ -60,7 +61,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			throw new NotEnoughFungiblesException(totalAmountToRedelegate, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -69,25 +70,35 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			amt ->
 				new StakedTokensParticle(
 					unstake.getDelegate(),
+					unstake.getFrom(),
 					amt,
 					granularity,
-					unstake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					unstake.getFrom(),
 					amt,
 					granularity,
-					unstake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToRedelegate);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToRedelegate)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 	@Override
@@ -101,10 +112,10 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 
 		List<StakedTokensParticle> stakeConsumables = store
 			.map(StakedTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> unstakeParticles;
+		final ParticleGroup unstakeParticles;
 		try {
 			unstakeParticles = mapToParticles(unstake, stakeConsumables);
 		} catch (NotEnoughFungiblesException e) {
@@ -113,8 +124,6 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(unstakeParticles)
-		);
+		return Collections.singletonList(unstakeParticles);
 	}
 }

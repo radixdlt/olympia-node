@@ -2,6 +2,8 @@ ntp=false
 ntp.pool=pool.ntp.org
 
 universe=$RADIXDLT_UNIVERSE
+universe.location=$RADIXDLT_UNIVERSE_LOCATION
+node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
 
 network.seeds=$RADIXDLT_NETWORK_SEEDS_REMOTE
 network.discovery.urls=$RADIXDLT_NETWORK_DISCOVERY_URLS
@@ -13,3 +15,4 @@ chaos.enable=$RADIXDLT_CHAOS_ENABLE
 
 host.ip=$RADIXDLT_HOST_IP_ADDRESS
 cp.port=$RADIXDLT_CP_PORT
+db.location=$RADIXDLT_DB_LOCATION

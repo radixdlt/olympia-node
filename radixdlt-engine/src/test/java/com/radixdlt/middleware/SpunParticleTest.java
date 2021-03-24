@@ -1,6 +1,7 @@
 package com.radixdlt.middleware;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;

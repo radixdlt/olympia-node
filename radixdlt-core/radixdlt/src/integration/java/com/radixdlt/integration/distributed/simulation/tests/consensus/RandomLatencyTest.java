@@ -19,11 +19,10 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import org.junit.Test;
@@ -68,8 +67,10 @@ public class RandomLatencyTest {
 			.numNodes(3)
 			.build();
 
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	/**
@@ -81,7 +82,9 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.build();
 
-		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
+
+		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

@@ -17,8 +17,7 @@
 
 package com.radixdlt.network.messaging;
 
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.processors.PublishProcessor;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.radix.network.messaging.Message;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,24 +26,24 @@ import static org.mockito.Mockito.mock;
 
 public class MessageCentralMockProvider {
 
-    private MessageCentralMockProvider() {
-    }
+	private MessageCentralMockProvider() {
+	}
 
-    public static MessageCentral get() {
-        final PublishProcessor<MessageFromPeer<?>> messageProcessor = PublishProcessor.create();
-        final MessageCentral messageCentral = mock(MessageCentral.class);
+	public static MessageCentral get() {
+		final PublishSubject<MessageFromPeer<?>> messageProcessor = PublishSubject.create();
+		final MessageCentral messageCentral = mock(MessageCentral.class);
 
-        doAnswer(invocation -> {
-            messageProcessor.onNext(new MessageFromPeer<Message>(invocation.getArgument(0), invocation.getArgument(1)));
-            return null;
-        }).when(messageCentral).send(any(), any());
+		doAnswer(invocation -> {
+			messageProcessor.onNext(new MessageFromPeer<Message>(invocation.getArgument(0), invocation.getArgument(1)));
+			return null;
+		}).when(messageCentral).send(any(), any());
 
-        doAnswer(invocation ->
-            Flowable.fromPublisher(messageProcessor)
-                .filter(p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.getMessage()))
-        ).when(messageCentral).messagesOf(any());
+		doAnswer(invocation ->
+			messageProcessor
+				.filter(p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.getMessage()))
+		).when(messageCentral).messagesOf(any());
 
-        return messageCentral;
-    }
+		return messageCentral;
+	}
 
 }

@@ -18,7 +18,6 @@
 package org.radix.universe;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Sha256Hasher;
 import java.io.IOException;
 import java.util.Properties;
@@ -29,7 +28,7 @@ import com.radixdlt.utils.Bytes;
 
 /**
  * Checks that "universe" property in resource
- * default.config can be deserialised and validated.
+ * default.config can be deserialized and validated.
  */
 public class UniverseValidationTest {
 	private static final String PROPERTIES_FILE = "/default.config";
@@ -39,13 +38,6 @@ public class UniverseValidationTest {
 		byte[] bytes = Bytes.fromBase64String(universeBase64());
 		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
 		UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
-	}
-
-	@Test(expected = UnsupportedOperationException.class)
-	public void testLoadingUniverseHasImmutableGenesis() throws Exception {
-		byte[] bytes = Bytes.fromBase64String(universeBase64());
-		Universe universe = DefaultSerialization.getInstance().fromDson(bytes, Universe.class);
-		universe.getGenesis().add(new Atom());
 	}
 
 	private String universeBase64() throws IOException {

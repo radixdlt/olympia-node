@@ -17,52 +17,6 @@
 
 package com.radixdlt.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Names;
-import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LedgerEntryStore;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -72,7 +26,65 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.CommittedReader;
+import io.reactivex.rxjava3.schedulers.Timed;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies that on restarts (simulated via creation of new injectors) that the application
@@ -83,7 +95,7 @@ public class RecoveryTest {
 
 	@Parameters
 	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{10L}, {1000000L}
 		});
 	}
@@ -97,6 +109,10 @@ public class RecoveryTest {
 	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final long epochCeilingView;
 
+	@Inject
+	@Genesis
+	private Atom genesisAtom;
+
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
 		this.network = new DeterministicNetwork(
@@ -108,6 +124,20 @@ public class RecoveryTest {
 
 	@Before
 	public void setup() {
+		Guice.createInjector(
+			new MockedGenesisAtomModule(),
+			new CryptoModule(),
+			new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.of(ecKeyPair));
+				}
+			}
+		).injectMembers(this);
+
 		this.currentInjector = createRunner(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
@@ -115,11 +145,11 @@ public class RecoveryTest {
 	@After
 	public void teardown() {
 		if (this.currentInjector != null) {
-			LedgerEntryStore ledgerStore = this.currentInjector.getInstance(LedgerEntryStore.class);
+			var ledgerStore = this.currentInjector.getInstance(BerkeleyLedgerEntryStore.class);
 			ledgerStore.close();
-			PersistentSafetyStateStore safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
+			var safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
 			safetyStore.close();
-			DatabaseEnvironment dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
+			var dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
 			dbEnv.stop();
 		}
 	}
@@ -131,11 +161,16 @@ public class RecoveryTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(PeersView.class).toInstance(List::of);
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
@@ -143,16 +178,16 @@ public class RecoveryTest {
 					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
-			new PersistedNodeForTestingModule(ecKeyPair)
+			new PersistedNodeForTestingModule()
 		);
 	}
 
-	private RadixEngine<LedgerAtom> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerAndBFTProof>>() { }));
 	}
 
-	private CommittedAtomsStore getAtomStore() {
-		return currentInjector.getInstance(CommittedAtomsStore.class);
+	private CommittedReader getCommittedReader() {
+		return currentInjector.getInstance(CommittedReader.class);
 	}
 
 	private EpochView getLastEpochView() {
@@ -184,14 +219,14 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom> radixEngine = getRadixEngine();
+		var radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
 		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine();
+		var restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}
@@ -200,15 +235,15 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_header() {
 		// Arrange
 		processForCount(100);
-		CommittedAtomsStore atomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> proof = atomStore.getLastVerifiedHeader();
+		var reader = getCommittedReader();
+		Optional<LedgerProof> proof = reader.getLastProof();
 
 		// Act
 		restartNode();
 
 		// Assert
-		CommittedAtomsStore restartedAtomStore = getAtomStore();
-		Optional<VerifiedLedgerHeaderAndProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
+		var restartedReader = getCommittedReader();
+		Optional<LedgerProof> restartedProof = restartedReader.getLastProof();
 		assertThat(restartedProof).isEqualTo(proof);
 	}
 
@@ -222,8 +257,8 @@ public class RecoveryTest {
 		restartNode();
 
 		// Assert
-		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
-			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
+		LedgerProof restartedEpochProof = currentInjector.getInstance(
+			Key.get(LedgerProof.class, LastEpochProof.class)
 		);
 
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
@@ -255,14 +290,26 @@ public class RecoveryTest {
 		// Assert
 		assertThat(network.allMessages())
 			.hasSize(3)
-			.haveExactly(1,
-				new Condition<>(msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
-					"A single epoched scheduled timeout has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof ScheduledLocalTimeout,
-					"A single scheduled timeout update has been emitted"))
-			.haveExactly(1,
-				new Condition<>(msg -> msg.message() instanceof Proposal,
-					"A proposal has been emitted"));
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
+					"A single epoched scheduled timeout has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof ScheduledLocalTimeout,
+					"A single scheduled timeout update has been emitted"
+				)
+			)
+			.haveExactly(
+				1,
+				new Condition<>(
+					msg -> msg.message() instanceof Proposal,
+					"A proposal has been emitted"
+				)
+			);
 	}
 }

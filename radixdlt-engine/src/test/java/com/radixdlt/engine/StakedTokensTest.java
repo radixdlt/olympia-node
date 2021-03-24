@@ -17,6 +17,8 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleGroup;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,13 +46,15 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 	private RRI tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
@@ -71,7 +75,7 @@ public class StakedTokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			this.store
 		);
 
@@ -88,12 +92,12 @@ public class StakedTokensTest {
 		);
 		this.transferrableTokensParticle = transferrableTokens(UInt256.TEN);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(rriParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(tokenDefinitionParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(this.transferrableTokensParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(rriParticle),
+			CMMicroInstruction.spinUp(tokenDefinitionParticle),
+			CMMicroInstruction.spinUp(this.transferrableTokensParticle),
 			CMMicroInstruction.particleGroup(),
-			CMMicroInstruction.checkSpinAndPush(unregisterValidator(0), Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(registerValidator(1), Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(unregisterValidator(0)),
+			CMMicroInstruction.spinUp(registerValidator(1)),
 			CMMicroInstruction.particleGroup()
 		);
 		final var instruction = new CMInstruction(
@@ -103,124 +107,129 @@ public class StakedTokensTest {
 				this.validatorKeyPair.euid(), this.validatorKeyPair.sign(HashUtils.zero256())
 			)
 		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())));
 	}
 
 	@Test
 	public void stake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		final var instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(registerValidator(1), Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(registerValidator(2), Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(this.transferrableTokensParticle, Spin.UP),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
 
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		var builder = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(registerValidator(1))
+					.spinUp(registerValidator(2))
+					.spinUp(stakeParticle)
+					.spinDown(this.transferrableTokensParticle)
+					.build()
+			);
 
-		assertThat(this.store.getSpin(this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.UP);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
+
+		this.engine.execute(List.of(builder.buildAtom()));
+
+		assertThat(this.store.getSpin(null, this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.UP);
 	}
 
 	@Test
 	public void unstake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		final var instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(registerValidator(1), Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(registerValidator(2), Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(this.transferrableTokensParticle, Spin.UP),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		var builder = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(registerValidator(1))
+					.spinUp(registerValidator(2))
+					.spinUp(stakeParticle)
+					.spinDown(this.transferrableTokensParticle)
+					.build()
+			);
+
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
+		this.engine.execute(List.of(builder.buildAtom()));
+
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
-		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(tranferrableParticle, Spin.NEUTRAL),
-			CMMicroInstruction.particleGroup()
-		);
-		CMInstruction instruction2 = new CMInstruction(
-			instructions2,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
+		var builder2 = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(stakeParticle)
+					.spinUp(tranferrableParticle)
+					.build()
+			);
+		var hashToSign2 = builder2.computeHashToSign();
+		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
+		this.engine.execute(List.of(builder2.buildAtom()));
 
-		this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256()));
-
-		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
 	}
 
 	@Test
 	public void unstake_partial_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		final var instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(registerValidator(1), Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(registerValidator(2), Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(this.transferrableTokensParticle, Spin.UP),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		var builder = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(registerValidator(1))
+					.spinUp(registerValidator(2))
+					.spinUp(stakeParticle)
+					.spinDown(this.transferrableTokensParticle)
+					.build()
+			);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
+		this.engine.execute(List.of(builder.buildAtom()));
+
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
-		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(partialStakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(tranferrableParticle, Spin.NEUTRAL),
-			CMMicroInstruction.particleGroup()
-		);
-		CMInstruction instruction2 = new CMInstruction(
-			instructions2,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
+		var builder2 = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(stakeParticle)
+					.spinUp(partialStakeParticle)
+					.spinUp(tranferrableParticle)
+					.build()
+			);
+		var hashToSign2 = builder2.computeHashToSign();
+		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
+		this.engine.execute(List.of(builder2.buildAtom()));
 
-		this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256()));
-
-		assertThat(this.store.getSpin(tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(partialStakeParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(stakeParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, partialStakeParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
 	}
 
 	@Test
 	public void move_staked_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		final var instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(registerValidator(1), Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(registerValidator(2), Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(this.transferrableTokensParticle, Spin.UP),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
-		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
-		ImmutableList<CMMicroInstruction> instructions2 = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(stakeParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(restakeParticle, Spin.NEUTRAL),
-			CMMicroInstruction.particleGroup()
-		);
-		CMInstruction instruction2 = new CMInstruction(
-			instructions2,
-			ImmutableMap.of(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()))
-		);
+		var builder = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(registerValidator(1))
+					.spinUp(registerValidator(2))
+					.spinUp(stakeParticle)
+					.spinDown(this.transferrableTokensParticle)
+					.build()
+			);
+		var hashToSign = builder.computeHashToSign();
+		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
+		this.engine.execute(List.of(builder.buildAtom()));
 
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction2, HashUtils.zero256())))
+
+		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
+		var builder2 = Atom.newBuilder()
+			.addParticleGroup(
+				ParticleGroup.builder()
+					.spinDown(stakeParticle)
+					.spinUp(restakeParticle)
+					.build()
+			);
+		var hashToSign2 = builder2.computeHashToSign();
+		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
+
+		assertThatThrownBy(() -> this.engine.execute(List.of(builder2.buildAtom())))
 			.isInstanceOf(RadixEngineException.class)
 			.hasMessageContaining("Can't send staked tokens");
 	}

@@ -36,53 +36,47 @@ Scenario: 5. Minimum fee charged for small atom
   And I submit that atom to the network with the computed minimum fee,
   Then I can see that the fee is 40 millirads
 
-Scenario: 6. Greater than minimum fee for larger atom 
-  Given I have a connection to a Radix network,
-  When I create an atom with a size larger than 3072 bytes,
-  And I submit that atom to the network with the computed minimum fee,
-  Then I can see that the fee is greater than 40 millirads
-
-Scenario: 7. Atom creating mutable supply charged higher fee
+Scenario: 6. Atom creating mutable supply charged higher fee
   Given I have a connection to a Radix network,
   When I create an atom that creates a mutable supply token,
   And I submit that atom to the network with the computed minimum fee,
   Then I can see that the fee is at least 1 rad
 
-Scenario: 8. Atom creating fixed supply charged higher fee
+Scenario: 7. Atom creating fixed supply charged higher fee
   Given I have a connection to a Radix network,
   When I create an atom that creates a fixed supply token,
   And I submit that atom to the network with the computed minimum fee,
   Then I can see that the fee is at least 1 rad
 
-Scenario: 9. Atoms with handcrafted fee groups are accepted by the network
+Scenario: 8. Atoms with handcrafted fee groups are accepted by the network
   Given I have a connection to a Radix network,
   When I submit an atom with a handcrafted fee group,
   Then I can see that atom being accepted by the network
 
-Scenario: 10. Atoms with fee groups with output ttps are rejected by the network
-  Given I have a connection to a Radix network,
-  When I submit an atom with a fee group with two output TransferrableTokensParticles,
-  Then I can see that atom being rejected by the network
+#Scenario: 9. Atoms with fee groups with output ttps are rejected by the network
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a fee group with two output TransferrableTokensParticles,
+  #Then I can see that atom being rejected by the network
 
-Scenario: 11. Atoms with fee groups with input ttps smaller than output ttp are rejected by the network
+Scenario: 10. Atoms with fee groups with input ttps smaller than output ttp are rejected by the network
   Given I have a connection to a Radix network,
   When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
   Then I can see that atom being rejected by the network
 
-Scenario: 12. Atom required fee can be calculated and atom with a smaller fee is rejected
-  Given I have a connection to a Radix network,
-  When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
-  And I submit this atom with a smaller fee than that returned by the service,
-  Then I can see that atom being rejected by the network
+#Scenario: 11. Atom required fee can be calculated and atom with a smaller fee is rejected
+  #Given I have a connection to a Radix network,
+  #When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
+  #And I submit this atom with a smaller fee than that returned by the service,
+  #Then I can see that atom being rejected by the network
 
-Scenario: 13. Atom required fee can be calculated and submitted atom is accepted
+Scenario: 12. Atom required fee can be calculated and submitted atom is accepted
   Given I have a connection to a Radix network,
   When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
   And I submit this atom with a fee as returned by the service,
   Then I can see that atom being accepted by the network
 
-Scenario: 14. Particle fee can be calculated by comparing two atoms fees
-  Given I have a connection to a Radix network,
-  When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
-  And I add another particle that creates a fixed supply token to that atom and ask the service for required fee again,
-  Then I can calculate the fee for that extra particle
+#Scenario: 13. Particle fee can be calculated by comparing two atoms fees
+  #Given I have a connection to a Radix network,
+  #When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
+  #And I add another particle that creates a fixed supply token to that atom and ask the service for required fee again,
+  #Then I can calculate the fee for that extra particle

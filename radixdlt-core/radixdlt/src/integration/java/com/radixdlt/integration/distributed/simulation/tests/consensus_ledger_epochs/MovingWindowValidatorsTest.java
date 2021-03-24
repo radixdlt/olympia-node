@@ -20,13 +20,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -62,8 +61,8 @@ public class MovingWindowValidatorsTest {
 				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -78,8 +77,8 @@ public class MovingWindowValidatorsTest {
 				ConsensusMonitors.epochCeilingView(View.of(100))
 			)
 			.build();
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -95,8 +94,8 @@ public class MovingWindowValidatorsTest {
 			)
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -111,7 +110,7 @@ public class MovingWindowValidatorsTest {
 			)
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

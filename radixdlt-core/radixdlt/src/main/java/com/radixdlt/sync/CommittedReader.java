@@ -17,18 +17,17 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.NextCommittedLimitReachedException;
+
 import java.util.Optional;
 
 /**
  * Reader of committed commands
  */
 public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
-		throws NextCommittedLimitReachedException;
-
-	Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch);
+	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start);
+	Optional<LedgerProof> getEpochProof(long epoch);
+	Optional<LedgerProof> getLastProof();
 }

@@ -48,6 +48,8 @@ public interface SystemCounters {
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
+		PACEMAKER_VIEW("pacemaker.view"),
+
 		// Count of database accesses
 		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
 		COUNT_BDB_LEDGER_CREATE_TX("count.bdb.ledger.create_tx"),
@@ -63,12 +65,13 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_LAST_COMMITTED("count.bdb.ledger.last_committed"),
 		COUNT_BDB_LEDGER_LAST_VERTEX("count.bdb.ledger.last_vertex"),
 		COUNT_BDB_LEDGER_SAVE("count.bdb.ledger.save"),
-		COUNT_BDB_LEDGER_SAVE_TX("count.bdb.ledger.save_tx"),
 		COUNT_BDB_LEDGER_SEARCH("count.bdb.ledger.search"),
 		COUNT_BDB_LEDGER_TOTAL("count.bdb.ledger.total"),
 		COUNT_BDB_LEDGER_BYTES_READ("count.bdb.ledger.bytes.read"),
 		COUNT_BDB_LEDGER_BYTES_WRITE("count.bdb.ledger.bytes.write"),
 		COUNT_BDB_LEDGER_DELETES("count.bdb.ledger.deletes"),
+		COUNT_BDB_LEDGER_PROOFS_ADDED("count.bdb.ledger.proofs.added"),
+		COUNT_BDB_LEDGER_PROOFS_REMOVED("count.bdb.ledger.proofs.removed"),
 
 		COUNT_BDB_ADDRESS_BOOK_TOTAL("count.bdb.address_book.total"),
 		COUNT_BDB_ADDRESS_BOOK_BYTES_READ("count.bdb.address_book.bytes.read"),
@@ -78,6 +81,8 @@ public interface SystemCounters {
 		COUNT_BDB_SAFETY_STATE_TOTAL("count.bdb.safety_state.total"),
 		COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
 		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
+
+		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
@@ -95,7 +100,6 @@ public interface SystemCounters {
 		ELAPSED_BDB_LEDGER_LAST_COMMITTED("elapsed.bdb.ledger.last_committed"),
 		ELAPSED_BDB_LEDGER_LAST_VERTEX("elapsed.bdb.ledger.last_vertex"),
 		ELAPSED_BDB_LEDGER_SAVE("elapsed.bdb.ledger.save"),
-		ELAPSED_BDB_LEDGER_SAVE_TX("elapsed.bdb.ledger.save_tx"),
 		ELAPSED_BDB_LEDGER_SEARCH("elapsed.bdb.ledger.search"),
 		ELAPSED_BDB_LEDGER_TOTAL("elapsed.bdb.ledger.total"),
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
@@ -108,9 +112,10 @@ public interface SystemCounters {
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
+		STARTUP_TIME_MS("startup.time_ms"),
+
 		HASHED_BYTES("hashed.bytes"),
 
-		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
 		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
@@ -121,14 +126,24 @@ public interface SystemCounters {
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
 
-		MEMPOOL_FAILURE_COUNT("mempool.failure_count"),
+
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+		MEMPOOL_ADD_SUCCESS("mempool.add_success"),
+		MEMPOOL_PROPOSED_TRANSACTION("mempool.proposed_transaction"),
+		MEMPOOL_ERRORS_HOOK("mempool.errors.hook"),
+		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
+		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
 
-		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
-		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
+		RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
+		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
+		RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
+
 		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
+		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
+		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
+		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
@@ -136,7 +151,8 @@ public interface SystemCounters {
 
 		NETWORKING_UDP_DROPPED_MESSAGES("networking.udp.dropped_messages"),
 		NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
-		NETWORKING_TCP_OPENED("networking.tcp.opened"),
+		NETWORKING_TCP_IN_OPENED("networking.tcp.in_opened"),
+		NETWORKING_TCP_OUT_OPENED("networking.tcp.out_opened"),
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),

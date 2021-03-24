@@ -23,10 +23,11 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.HashMap;

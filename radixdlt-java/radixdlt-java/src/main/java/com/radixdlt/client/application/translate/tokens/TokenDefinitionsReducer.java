@@ -22,16 +22,17 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.constraintmachine.Particle;
 
 /**
  * Reduces particles at an address into concrete Tokens and their states
@@ -78,7 +79,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 		return state.mergeTokenClass(
 			tokenDefinitionParticle.getRRI(),
 			tokenDefinitionParticle.getName(),
-			tokenDefinitionParticle.getSymbol(),
+			tokenDefinitionParticle.getRRI().getName(),
 			tokenDefinitionParticle.getDescription(),
 			tokenDefinitionParticle.getIconUrl(),
 			null,
@@ -91,7 +92,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 		return state.mergeTokenClass(
 			tokenDefinitionParticle.getRRI(),
 			tokenDefinitionParticle.getName(),
-			tokenDefinitionParticle.getSymbol(),
+			tokenDefinitionParticle.getRRI().getName(),
 			tokenDefinitionParticle.getDescription(),
 			tokenDefinitionParticle.getIconUrl(),
 			TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getSupply()),

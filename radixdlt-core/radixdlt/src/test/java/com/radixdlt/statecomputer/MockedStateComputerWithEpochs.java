@@ -20,10 +20,10 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -37,22 +37,19 @@ import java.util.function.Function;
 public final class MockedStateComputerWithEpochs implements StateComputer {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochHighView;
-	private final Hasher hasher;
 	private final MockedStateComputer stateComputer;
 
 	public MockedStateComputerWithEpochs(
-		Hasher hasher,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochHighView
 	) {
-		this.hasher = Objects.requireNonNull(hasher);
 		this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
 		this.epochHighView = Objects.requireNonNull(epochHighView);
-		this.stateComputer = new MockedStateComputer(hasher);
+		this.stateComputer = new MockedStateComputer();
 	}
 
 	@Override
-	public void addToMempool(Command command) {
+	public void addToMempool(Command command, BFTNode origin) {
 		// No-op
 	}
 
@@ -71,7 +68,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	) {
 		if (view.compareTo(epochHighView) >= 0) {
 			return new StateComputerResult(
-				next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
+				next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next)),
 				ImmutableMap.of(),
 				validatorSetMapping.apply(epoch + 1)
 			);

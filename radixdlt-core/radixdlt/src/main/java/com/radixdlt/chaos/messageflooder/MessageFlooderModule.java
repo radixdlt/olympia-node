@@ -18,11 +18,11 @@
 package com.radixdlt.chaos.messageflooder;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.environment.EventProcessor;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 
 /**
@@ -38,13 +38,13 @@ public final class MessageFlooderModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(MessageFlooderUpdate.class);
 	}
 
-	@Provides
-	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
-		return messageFlooder.messageFloodUpdateProcessor();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
+		return new EventProcessorOnRunner<>("chaos", MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
 	}
 
-	@Provides
-	public EventProcessor<ScheduledMessageFlood> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
-		return messageFlooder.scheduledMessageFloodProcessor();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
+		return new EventProcessorOnRunner<>("chaos", ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
 	}
 }

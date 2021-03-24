@@ -21,10 +21,6 @@ package com.radixdlt.engine;
  * Error codes that describe exceptions thrown by Radix Engine
  */
 public enum RadixEngineErrorCode {
-	CONVERSION_ERROR,
 	CM_ERROR,
-	HOOK_ERROR,
-	VIRTUAL_STATE_CONFLICT,
-	STATE_CONFLICT,
-	MISSING_DEPENDENCY
+	HOOK_ERROR
 }

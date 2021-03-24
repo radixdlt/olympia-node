@@ -21,17 +21,16 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radix.acceptance.atomic_transactions_with_dependence.FungibleParticleTransitioner.FungibleParticleTransition;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.utils.UInt256;
@@ -57,14 +56,14 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	public MintAndTransferTokensActionMapper() {
 		this((mint, transfer) -> {
 			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
-			mint.getRemoved().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.DOWN));
-			mint.getMigrated().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
-			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
+			mint.getRemoved().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinDown);
+			mint.getMigrated().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
+			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 
 			ParticleGroupBuilder transferParticleGroupBuilder = ParticleGroup.builder();
-			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.DOWN));
-			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
-			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
+			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinDown);
+			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
+			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 
 			return Arrays.asList(
 				mintParticleGroupBuilder.build(),
@@ -122,12 +121,12 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		MintAndTransferTokensAction action
 	) {
 		return new TransferrableTokensParticle(
+			action.getTo(),
 			TokenUnitConversions.unitsToSubunits(action.getAmount()),
 			granularity,
-			action.getTo(),
-			System.nanoTime(),
 			action.getTokenDefinitionReference(),
-			permissions
+			permissions,
+			System.nanoTime()
 		);
 	}
 
@@ -139,20 +138,20 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new TransferrableTokensParticle(
+					tokenDefRef.getAddress(),
 					amt,
 					consumable.getGranularity(),
-					tokenDefRef.getAddress(),
-					System.nanoTime(),
 					tokenDefRef,
-					consumable.getTokenPermissions()
+					consumable.getTokenPermissions(),
+					System.nanoTime()
 				),
 				mintedTokens -> mintedTokens,
 				(amt, consumable) -> new UnallocatedTokensParticle(
 					amt,
 					consumable.getGranularity(),
-					System.nanoTime(),
 					tokenDefRef,
-					consumable.getTokenPermissions()
+					consumable.getTokenPermissions(),
+					System.nanoTime()
 				),
 				unallocated -> unallocated,
 				UnallocatedTokensParticle::getAmount

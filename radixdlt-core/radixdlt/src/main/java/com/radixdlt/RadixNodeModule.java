@@ -17,12 +17,17 @@
 
 package com.radixdlt;
 
-import com.google.inject.AbstractModule;
+import com.radixdlt.api.ApiModule;
+import org.radix.universe.system.LocalSystem;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.application.NodeWalletModule;
+import com.radixdlt.application.faucet.FaucetModule;
+import com.radixdlt.application.validator.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
-import com.radixdlt.checkpoint.CheckpointModule;
+import com.radixdlt.client.ClientApiModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -32,14 +37,17 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.LedgerLocalMempoolModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
@@ -48,12 +56,12 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.store.DatabasePropertiesModule;
-import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.store.PersistenceModule;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncRunnerModule;
-import com.radixdlt.universe.Universe;
-
-import org.radix.universe.system.LocalSystem;
+import com.radixdlt.universe.UniverseModule;
 
 /**
  * Module which manages everything in a single node
@@ -69,8 +77,10 @@ public final class RadixNodeModule extends AbstractModule {
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
 
+		bindConstant().annotatedWith(MempoolThrottleMs.class).to(20L);
 		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
-		bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 200));
+		final long syncPatience = properties.get("sync.patience", 2000L);
+		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 		bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
@@ -92,6 +102,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// API
 		install(new ApiModule());
+		if (properties.get("client_api.enable", false)) {
+			install(new ClientApiModule());
+		}
 
 		// Consensus
 		install(new PersistedBFTKeyModule());
@@ -101,11 +114,9 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// Ledger
 		install(new LedgerModule());
-		install(new LedgerCommandGeneratorModule());
-		install(new LedgerLocalMempoolModule());
+		install(new MempoolReceiverModule());
 
 		// Mempool Relay
-		install(new MempoolReceiverModule());
 		install(new MempoolRelayerModule());
 
 		// Sync
@@ -125,10 +136,8 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineStoreModule());
 
 		// Checkpoints
-		install(new CheckpointModule());
-
-		// Genesis validators
-		install(new GenesisValidatorSetFromUniverseModule());
+		install(new RadixEngineCheckpointModule());
+		install(new UniverseModule());
 
 		// Fees
 		install(new TokenFeeModule());
@@ -150,6 +159,11 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new AddressBookModule());
 		install(new HostIpModule(properties));
 
+		// Application
+		install(new NodeWalletModule());
+		install(new ValidatorRegistratorModule());
+		install(new FaucetModule());
+
 		if (properties.get("chaos.enable", false)) {
 			install(new ChaosModule());
 		}
@@ -160,10 +174,10 @@ public final class RadixNodeModule extends AbstractModule {
 	LocalSystem localSystem(
 		@Self BFTNode self,
 		InfoSupplier infoSupplier,
-		Universe universe,
-		HostIp hostIp
+		HostIp hostIp,
+		TCPConfiguration tcpConfiguration
 	) {
 		String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		return LocalSystem.create(self, infoSupplier, universe, host);
+		return LocalSystem.create(self, infoSupplier, host, tcpConfiguration.networkPort(30000));
 	}
 }

@@ -167,7 +167,12 @@ public class NettyTCPTransportTest {
 			}
 
 			@Override
-			public int maxChannelCount(int defaultValue) {
+			public int maxInChannelCount(int defaultValue) {
+				return 1024;
+			}
+
+			@Override
+			public int maxOutChannelCount(int defaultValue) {
 				return 1024;
 			}
 

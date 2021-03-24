@@ -17,6 +17,19 @@
 
 package com.radixdlt.integration.recovery;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -25,6 +38,9 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -34,6 +50,8 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -46,14 +64,18 @@ import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventProcessor;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
-import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Base58;
-import io.reactivex.rxjava3.schedulers.Timed;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -61,18 +83,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+
+import io.reactivex.rxjava3.schedulers.Timed;
 
 @RunWith(Parameterized.class)
 public class OneNodeAlwaysAliveSafetyTest {
@@ -80,7 +92,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
-		return List.of(new Object[][] {
+		return List.of(new Object[][]{
 			{5}
 		});
 	}
@@ -97,6 +109,10 @@ public class OneNodeAlwaysAliveSafetyTest {
 	@Inject
 	private NodeEvents nodeEvents;
 
+	@Inject
+	@Genesis
+	private Atom genesisAtom;
+
 	private int lastNodeToCommit;
 
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
@@ -110,13 +126,25 @@ public class OneNodeAlwaysAliveSafetyTest {
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
-		this.network = new DeterministicNetwork(allNodes,
+		this.network = new DeterministicNetwork(
+			allNodes,
 			MessageSelector.firstSelector(),
 			(message, queue) -> message.message() instanceof GetVerticesRequest
 				|| message.message() instanceof LocalSyncRequest
 		);
 
 		Guice.createInjector(
+			new MockedGenesisAtomModule(),
+			new CryptoModule(),
+			new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(ImmutableList.copyOf(nodeKeys));
+				}
+			},
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -130,8 +158,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 						ViewQuorumReached.class,
 						(node, viewQuorumReached) -> {
 							if (viewQuorumReached.votingResult() instanceof FormedQC
-									&& ((FormedQC) viewQuorumReached.votingResult())
-										.getQC().getCommittedAndLedgerStateProof().isPresent()) {
+								&& ((FormedQC) viewQuorumReached.votingResult())
+								.getQC().getCommittedAndLedgerStateProof().isPresent()) {
 								lastNodeToCommit = network.lookup(node);
 							}
 						}
@@ -152,7 +180,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(LedgerEntryStore.class).close();
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
@@ -164,8 +192,24 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
-			new PersistedNodeForTestingModule(ecKeyPair),
+			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(PeersView.class).toInstance(List::of);
+					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bindConstant().annotatedWith(DatabaseLocation.class)
+						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
+				}
+
 				@ProvidesIntoSet
 				@ProcessOnDispatch
 				private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(@Self BFTNode node) {
@@ -176,17 +220,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@ProcessOnDispatch
 				private EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor(@Self BFTNode node) {
 					return nodeEvents.processor(node, ViewQuorumReached.class);
-				}
-
-				@Override
-				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}
 			}
 		);

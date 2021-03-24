@@ -25,7 +25,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -66,7 +66,7 @@ public class MockedRecoveryModule extends AbstractModule {
 
 	@Provides
 	private BFTConfiguration configuration(
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		@LastEpochProof LedgerProof proof,
 		BFTValidatorSet validatorSet
 	) {
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash, validatorSet));
@@ -86,13 +86,13 @@ public class MockedRecoveryModule extends AbstractModule {
 
 	@Provides
 	@LastEpochProof
-	public VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+	public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+		return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 
 	@Provides
 	@LastProof
-	private VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration bftConfiguration) {
+	private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
 		return bftConfiguration.getVertexStoreState().getRootHeader();
 	}
 }

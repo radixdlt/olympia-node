@@ -17,24 +17,32 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.Atom;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
+import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.utils.UInt256;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,19 +53,17 @@ import java.util.stream.Stream;
 public final class InMemoryWallet {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
-	private final ImmutableList<TransferrableTokensParticle> particles;
-	private final UInt256 balance;
+	private final Set<TransferrableTokensParticle> particles;
 	private final TokDefParticleFactory factory;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private final Random random;
 
-	private InMemoryWallet(RRI tokenRRI, RadixAddress address, ImmutableList<TransferrableTokensParticle> particles) {
+	private InMemoryWallet(RRI tokenRRI, RadixAddress address, Random random, Set<TransferrableTokensParticle> particles) {
 		this.tokenRRI = tokenRRI;
 		this.address = address;
+		this.random = random;
 		this.particles = particles;
-		this.balance = particles.stream()
-			.map(TransferrableTokensParticle::getAmount)
-			.reduce(UInt256::add)
-			.orElse(UInt256.ZERO);
+
 		this.factory = TokDefParticleFactory.create(
 			tokenRRI,
 			ImmutableMap.of(
@@ -68,18 +74,28 @@ public final class InMemoryWallet {
 		);
 	}
 
-	public static InMemoryWallet create(RRI tokenRRI, RadixAddress address) {
+	public static InMemoryWallet create(RRI tokenRRI, RadixAddress address, Random random) {
 		Objects.requireNonNull(tokenRRI);
 		Objects.requireNonNull(address);
+		Objects.requireNonNull(random);
 
-		return new InMemoryWallet(tokenRRI, address, ImmutableList.of());
+		return new InMemoryWallet(tokenRRI, address, random, Collections.newSetFromMap(new ConcurrentHashMap<>()));
 	}
 
-	public UInt256 getBalance() {
-		return balance;
+	public int getNumParticles() {
+		return particles.size();
 	}
 
-	private Optional<UInt256> downParticles(
+	public BigDecimal getBalance() {
+		var balance = particles.stream()
+			.map(TransferrableTokensParticle::getAmount)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
+
+		return TokenUnitConversions.subunitsToUnits(balance);
+	}
+
+	private static Optional<UInt256> downParticles(
 		UInt256 amount,
 		LinkedList<TransferrableTokensParticle> particles,
 		Consumer<TransferrableTokensParticle> onDown
@@ -98,38 +114,58 @@ public final class InMemoryWallet {
 		return Optional.of(spent.subtract(amount));
 	}
 
-	private Optional<Atom> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
-		Atom atom = new Atom();
+	public Optional<ParticleGroup> createFeeGroup() {
+		return createFeeGroup(new LinkedList<>(particles));
+	}
+
+	private Optional<ParticleGroup> createFeeGroup(LinkedList<TransferrableTokensParticle> mutableList) {
 		ParticleGroup.ParticleGroupBuilder feeBuilder = ParticleGroup.builder();
-		feeBuilder.addParticle(factory.createUnallocated(fee), Spin.UP);
-		Optional<UInt256> remainder = downParticles(fee, mutableList, p -> feeBuilder.addParticle(p, Spin.DOWN));
-		if (remainder.isEmpty()) {
+		feeBuilder.spinUp(factory.createUnallocated(fee));
+		Optional<UInt256> remainder = downParticles(fee, mutableList, feeBuilder::spinDown);
+		return remainder.map(r -> {
+		    if (!r.isZero()) {
+				TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
+				mutableList.add(particle);
+				feeBuilder.spinUp(particle);
+		    }
+
+		    return feeBuilder.build();
+		});
+	}
+
+	private Optional<AtomBuilder> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
+		AtomBuilder atom = Atom.newBuilder();
+		Optional<ParticleGroup> feeGroup = createFeeGroup(mutableList);
+		if (feeGroup.isEmpty()) {
 			return Optional.empty();
 		}
-		remainder.filter(r -> !r.isZero()).ifPresent(r -> {
-			TransferrableTokensParticle particle = factory.createTransferrable(address, r);
-			mutableList.add(particle);
-			feeBuilder.addParticle(particle, Spin.UP);
-		});
-		atom.addParticleGroup(feeBuilder.build());
+		atom.addParticleGroup(feeGroup.get());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
-		builder.addParticle(factory.createTransferrable(to, amount), Spin.UP);
-		Optional<UInt256> remainder2 = downParticles(amount, mutableList, p -> builder.addParticle(p, Spin.DOWN));
+		builder.spinUp(factory.createTransferrable(to, amount, random.nextLong()));
+		Optional<UInt256> remainder2 = downParticles(amount, mutableList, builder::spinDown);
 		if (remainder2.isEmpty()) {
 			return Optional.empty();
 		}
 		remainder2.filter(r -> !r.isZero()).ifPresent(r -> {
-			TransferrableTokensParticle particle = factory.createTransferrable(address, r);
+			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 			mutableList.add(particle);
-			builder.addParticle(particle, Spin.UP);
+			builder.spinUp(particle);
 		});
 		atom.addParticleGroup(builder.build());
 		return Optional.of(atom);
 	}
 
-	public Set<Atom> createParallelTransactions(RadixAddress to, int max) {
-		Stream<Optional<Atom>> atoms = particles.stream()
+	public Optional<AtomBuilder> createTransaction(RadixAddress to, UInt256 amount) {
+		LinkedList<TransferrableTokensParticle> shuffledParticles = new LinkedList<>(particles);
+		Collections.shuffle(shuffledParticles);
+		return createTransaction(shuffledParticles, to, amount);
+	}
+
+	public List<AtomBuilder> createParallelTransactions(RadixAddress to, int max) {
+		List<TransferrableTokensParticle> shuffledParticles = new ArrayList<>(particles);
+		Collections.shuffle(shuffledParticles);
+		Stream<Optional<AtomBuilder>> atoms = shuffledParticles.stream()
 			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0)
 			.map(t -> {
 				var mutableList = new LinkedList<TransferrableTokensParticle>();
@@ -138,57 +174,47 @@ public final class InMemoryWallet {
 				return createTransaction(mutableList, to, amount.isZero() ? UInt256.ONE : amount);
 			});
 
-	    var mutableList = new LinkedList<TransferrableTokensParticle>();
-	    particles.stream().filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
-			.limit(3)
-			.forEach(mutableList::add);
-		UInt256 dustAmount = particles.stream()
-			.map(TransferrableTokensParticle::getAmount)
-			.filter(a -> a.compareTo(fee.multiply(UInt256.TWO)) <= 0)
-			.reduce(UInt256.ZERO, UInt256::add);
-		Stream<Optional<Atom>> dustAtom = Stream.of(createTransaction(mutableList, to, dustAmount.subtract(fee)));
+		List<TransferrableTokensParticle> dust = shuffledParticles.stream()
+			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
+			.collect(Collectors.toList());
 
-		return Stream.concat(atoms, dustAtom)
+		Stream<Optional<AtomBuilder>> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
+			.map(LinkedList::new)
+			.map(mutableList -> {
+				UInt256 dustAmount = mutableList.stream()
+					.map(TransferrableTokensParticle::getAmount)
+					.reduce(UInt256.ZERO, UInt256::add);
+				return createTransaction(mutableList, to, dustAmount.subtract(fee));
+			});
+
+		return Stream.concat(atoms, dustAtoms)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.limit(max)
-			.collect(Collectors.toSet());
+			.collect(Collectors.toList());
 	}
 
-	public InMemoryWallet addParticle(TransferrableTokensParticle p) {
+	public void addParticle(TransferrableTokensParticle p) {
 		if (!p.getTokDefRef().equals(tokenRRI)) {
-			return this;
+			return;
 		}
 
 		if (!address.equals(p.getAddress())) {
-			return this;
+			return;
 		}
 
-		return new InMemoryWallet(
-			tokenRRI,
-			address,
-			ImmutableList.<TransferrableTokensParticle>builder()
-				.addAll(particles)
-				.add(p)
-				.build()
-		);
+		particles.add(p);
 	}
 
-	public InMemoryWallet removeParticle(TransferrableTokensParticle p) {
+	public void removeParticle(TransferrableTokensParticle p) {
 		if (!p.getTokDefRef().equals(tokenRRI)) {
-			return this;
+			return;
 		}
 
 		if (!address.equals(p.getAddress())) {
-			return this;
+			return;
 		}
 
-		return new InMemoryWallet(
-			tokenRRI,
-			address,
-			particles.stream()
-				.filter(particle -> !p.equals(particle))
-				.collect(ImmutableList.toImmutableList())
-		);
+		particles.remove(p);
 	}
 }

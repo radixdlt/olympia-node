@@ -26,7 +26,7 @@ apply plugin: 'project-report'
 apply plugin: 'maven-publish'
 
 dependencies {
-    api project(':radixdlt-java-common')
+    api project(':radixdlt-engine')
 
     api 'com.squareup.okhttp3:okhttp'
     api 'com.squareup.okhttp3:logging-interceptor'

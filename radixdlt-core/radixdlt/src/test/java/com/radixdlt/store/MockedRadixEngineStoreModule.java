@@ -21,62 +21,49 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.utils.UInt256;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 	}
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(Hasher hasher) {
-		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
-		final ClientAtom genesisAtom = ClientAtom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(0, 0, 0), Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(new SystemParticle(1, 0, 0), Spin.NEUTRAL)
-			),
-			hasher
+	private EngineStore<Atom, LedgerAndBFTProof> engineStore(
+		@Genesis Atom genesisAtom,
+		Hasher hasher,
+		Serialization serialization,
+		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
+	) {
+		var inMemoryEngineStore = new InMemoryEngineStore<Atom, LedgerAndBFTProof>();
+		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		Command command = new Command(payload);
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
+				.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
+		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
+			hasher.hash(command),
+			validatorSet
 		);
-		inMemoryEngineStore.storeAtom(genesisAtom);
+		if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
+			var txn = inMemoryEngineStore.createTransaction();
+			inMemoryEngineStore.storeAtom(txn, genesisAtom);
+			txn.commit();
+		}
 		return inMemoryEngineStore;
-	}
-
-	@Provides
-	private RadixEngineAtomicCommitManager atomicCommitManager() {
-		return new RadixEngineAtomicCommitManager() {
-			@Override
-			public void startTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void commitTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void abortTransaction() {
-				// no-op
-			}
-
-			@Override
-			public void save(VerifiedVertexStoreState vertexStoreState) {
-				// no-op
-			}
-		};
 	}
 }

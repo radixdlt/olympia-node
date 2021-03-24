@@ -19,10 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import org.junit.Test;
 
@@ -56,7 +55,7 @@ public class UniformLatencyTest {
 				ConsensusMonitors.directParents()
 			)
 			.build();
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

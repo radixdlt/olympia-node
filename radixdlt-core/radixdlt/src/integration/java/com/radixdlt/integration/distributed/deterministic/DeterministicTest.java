@@ -44,6 +44,8 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -59,6 +61,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -102,18 +106,12 @@ public final class DeterministicTest {
 	}
 
 	public static class Builder {
-		private enum LedgerType {
-			MOCKED_LEDGER,
-			LEDGER_AND_EPOCHS_AND_SYNC
-		}
-
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private MessageSelector messageSelector = MessageSelector.firstSelector();
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private long pacemakerTimeout = 1000L;
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
 		private Module overrideModule = null;
-		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 
 		private Builder() {
@@ -163,18 +161,6 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public Builder epochHighView(View epochHighView) {
-			Objects.requireNonNull(epochHighView);
-			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
-			modules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-				}
-			});
-			return this;
-		}
-
 		public Builder pacemakerTimeout(long pacemakerTimeout) {
 			if (pacemakerTimeout <= 0) {
 				throw new IllegalArgumentException("Pacemaker timeout must be positive: " + pacemakerTimeout);
@@ -183,11 +169,39 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public DeterministicTest build() {
-			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
-				? epoch -> completeEqualWeightValidatorSet(this.nodes)
-				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
+		public DeterministicTest buildWithEpochs(View epochHighView) {
+			Objects.requireNonNull(epochHighView);
+			modules.add(new FunctionalNodeModule(true, true, false, false, false, true, false));
+			addEpochedConsensusProcessorModule(epochHighView);
+			return build();
+		}
 
+		public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
+			Objects.requireNonNull(epochHighView);
+			modules.add(new FunctionalNodeModule(true, true, false, false, false, true, true));
+			modules.add(new MockedCommittedReaderModule());
+			modules.add(new AbstractModule() {
+				@Provides
+				private PeersView peersView() {
+					return () -> nodes;
+				}
+
+				@Provides
+				private SyncConfig syncConfig() {
+					return syncConfig;
+				}
+			});
+			addEpochedConsensusProcessorModule(epochHighView);
+			return build();
+		}
+
+		public DeterministicTest buildWithoutEpochs() {
+			modules.add(new FunctionalNodeModule(true, false, false, false, false, false, false));
+			addNonEpochedConsensusProcessorModule();
+			return build();
+		}
+
+		private DeterministicTest build() {
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
@@ -205,52 +219,6 @@ public final class DeterministicTest {
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
-			modules.add(new FunctionalNodeModule(
-				true,
-				ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC,
-				false,
-				false,
-				ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC,
-				false
-			));
-
-			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
-				modules.add(new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(BFTValidatorSet.class).toInstance(validatorSet);
-						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
-					}
-
-					@ProvidesIntoSet
-					private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
-						return processor::processLocalTimeout;
-					}
-
-					@ProvidesIntoSet
-					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-						return processor::processViewUpdate;
-					}
-				});
-			} else {
-				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
-				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
-				modules.add(new AbstractModule() {
-					@Override
-					public void configure() {
-						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
-						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
-						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
-					}
-
-					@Provides
-					public Function<Long, BFTValidatorSet> epochToNodeMapper() {
-						return epochToValidatorSetMapping;
-					}
-				});
-			}
 
 			return new DeterministicTest(
 				this.nodes,
@@ -259,6 +227,53 @@ public final class DeterministicTest {
 				Modules.combine(modules.build()),
 				overrideModule
 			);
+		}
+
+		private void addNonEpochedConsensusProcessorModule() {
+			final var validatorSet = validatorSetMapping().apply(1L);
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(BFTValidatorSet.class).toInstance(validatorSet);
+					bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
+				}
+
+				@ProvidesIntoSet
+				private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
+					return processor::processLocalTimeout;
+				}
+
+				@ProvidesIntoSet
+				private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
+					return processor::processViewUpdate;
+				}
+			});
+		}
+
+		private void addEpochedConsensusProcessorModule(View epochHighView) {
+			// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
+			Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping()::apply;
+			modules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+					bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+					bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
+					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
+					bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
+				}
+
+				@Provides
+				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
+					return epochToValidatorSetMapping;
+				}
+			});
+		}
+
+		private LongFunction<BFTValidatorSet> validatorSetMapping() {
+			return epochNodeWeightMapping == null
+				? epoch -> completeEqualWeightValidatorSet(this.nodes)
+				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 		}
 
 		private static BFTValidatorSet completeEqualWeightValidatorSet(ImmutableList<BFTNode> nodes) {
@@ -385,6 +400,30 @@ public final class DeterministicTest {
 			}
 			Proposal p = (Proposal) message.message();
 			return (p.getView().number() > maxViewNumber);
+		};
+	}
+
+	public static Predicate<Timed<ControlledMessage>> viewUpdateOnNode(View view, int nodeIndex) {
+		return timedMsg -> {
+			final var message = timedMsg.value();
+			if (!(message.message() instanceof ViewUpdate)) {
+				return false;
+			}
+			final var viewUpdate = (ViewUpdate) message.message();
+			return message.channelId().receiverIndex() == nodeIndex
+				&& viewUpdate.getCurrentView().gte(view);
+		};
+	}
+
+	public static Predicate<Timed<ControlledMessage>> ledgerStateVersionOnNode(long stateVersion, int nodeIndex) {
+		return timedMsg -> {
+			final var message = timedMsg.value();
+			if (!(message.message() instanceof LedgerUpdate)) {
+				return false;
+			}
+			final var ledgerUpdate = (LedgerUpdate) message.message();
+			return message.channelId().receiverIndex() == nodeIndex
+				&& ledgerUpdate.getTail().getStateVersion() >= stateVersion;
 		};
 	}
 

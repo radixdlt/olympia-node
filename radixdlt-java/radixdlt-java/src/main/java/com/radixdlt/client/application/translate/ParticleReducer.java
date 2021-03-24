@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 
 /**
  * Temporary class for reducing up particles into an application state.

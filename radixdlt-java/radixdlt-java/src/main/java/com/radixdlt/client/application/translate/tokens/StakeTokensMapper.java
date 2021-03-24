@@ -24,19 +24,21 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.utils.UInt256;
@@ -65,7 +67,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			throw new NotEnoughFungiblesException(totalAmountToRedelegate, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -73,22 +75,22 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					stake.getFrom(),
 					amt,
 					granularity,
-					stake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new StakedTokensParticle(
 					stake.getDelegate(),
+					stake.getFrom(),
 					amt,
 					granularity,
-					stake.getFrom(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
@@ -128,7 +130,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			.getOrDefault(TransferrableTokensParticle.class, ImmutableList.of())
 			.stream()
 			.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
 		try {
@@ -139,12 +141,16 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			);
 		}
 
-		// TODO @Incomplete: remove debug statements
-		System.out.println(stake);
-		particles.forEach(sp -> System.out.println(sp.getSpin() + " " + sp.getParticle()));
+		var builder = ParticleGroup.builder();
+		particles
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
 
-		return Collections.singletonList(
-			ParticleGroup.of(particles)
-		);
+		return Collections.singletonList(builder.build());
 	}
 }

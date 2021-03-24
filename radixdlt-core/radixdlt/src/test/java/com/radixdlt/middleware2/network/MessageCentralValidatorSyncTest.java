@@ -30,15 +30,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -141,9 +139,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		HashCode vertexId0 = mock(HashCode.class);
 		HashCode vertexId1 = mock(HashCode.class);
@@ -162,9 +158,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		UnverifiedVertex vertex1 = mock(UnverifiedVertex.class);
 
@@ -182,9 +176,7 @@ public class MessageCentralValidatorSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(system.getKey()).thenReturn(key);
+		when(system.getKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(peer.getSystem()).thenReturn(system);
 		final var highQc1 = mock(HighQC.class);
 		final var highQc2 = mock(HighQC.class);
@@ -198,42 +190,5 @@ public class MessageCentralValidatorSyncTest {
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.highQC().equals(highQc1));
 		testObserver.assertValueAt(1, v -> v.highQC().equals(highQc2));
-	}
-
-	@Test
-	public void when_send_get_epoch_request__then_message_central_will_send_get_epoch_request() {
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(PeerWithSystem.class)));
-		sync.sendGetEpochRequest(self, 12345);
-		verify(messageCentral, times(1)).send(any(), any(GetEpochRequestMessage.class));
-	}
-
-	@Test
-	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(PeerWithSystem.class)));
-		sync.sendGetEpochResponse(self, mock(VerifiedLedgerHeaderAndProof.class));
-		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
-	}
-
-	@Test
-	public void when_subscribed_to_epoch_requests__then_should_receive_requests() {
-		BFTNode author = mock(BFTNode.class);
-
-		TestSubscriber<GetEpochRequest> testObserver = sync.epochRequests().test();
-		messageCentral.send(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
-
-		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().equals(author));
-	}
-
-	@Test
-	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
-		BFTNode author = mock(BFTNode.class);
-		VerifiedLedgerHeaderAndProof ancestor = mock(VerifiedLedgerHeaderAndProof.class);
-
-		TestSubscriber<GetEpochResponse> testObserver = sync.epochResponses().test();
-		messageCentral.send(mock(Peer.class), new GetEpochResponseMessage(author, 12345, ancestor));
-
-		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpochProof().equals(ancestor) && r.getAuthor().equals(author));
 	}
 }

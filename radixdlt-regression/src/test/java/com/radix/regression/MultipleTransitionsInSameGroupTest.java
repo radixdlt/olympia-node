@@ -18,23 +18,25 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.Atoms;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -82,21 +84,21 @@ public class MultipleTransitionsInSameGroupTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
-		ParticleGroup definitionGroup = ParticleGroup.of(
-			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
-			SpunParticle.up(tokenDefinition),
-			SpunParticle.up(unallocatedTokens)
-		);
-		ParticleGroup mintGroup = ParticleGroup.of(
-			SpunParticle.down(unallocatedTokens),
-			SpunParticle.up(mintedTokens)
-		);
+		ParticleGroup definitionGroup = ParticleGroup.builder()
+			.virtualSpinDown(new RRIParticle(tokenDefinition.getRRI()))
+			.spinUp(tokenDefinition)
+			.spinUp(unallocatedTokens)
+			.build();
+		ParticleGroup mintGroup = ParticleGroup.builder()
+			.spinDown(unallocatedTokens)
+			.spinUp(mintedTokens)
+			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount());
 
-		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
-			SpunParticle.down(mintedTokens),
-			SpunParticle.up(output)
-		);
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
+			.spinDown(mintedTokens)
+			.spinUp(output)
+			.build();
 
 		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
@@ -115,26 +117,26 @@ public class MultipleTransitionsInSameGroupTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
-		ParticleGroup definitionGroup = ParticleGroup.of(
-			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
-			SpunParticle.up(tokenDefinition),
-			SpunParticle.up(unallocatedTokens)
-		);
-		ParticleGroup mintGroup = ParticleGroup.of(
-			SpunParticle.down(unallocatedTokens),
-			SpunParticle.up(mintedTokens)
-		);
+		ParticleGroup definitionGroup = ParticleGroup.builder()
+			.virtualSpinDown(new RRIParticle(tokenDefinition.getRRI()))
+			.spinUp(tokenDefinition)
+			.spinUp(unallocatedTokens)
+			.build();
+		ParticleGroup mintGroup = ParticleGroup.builder()
+			.spinDown(unallocatedTokens)
+			.spinUp(mintedTokens)
+			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
 			myAddress,
 			tokenDefinition,
 			mintedTokens.getAmount().multiply(UInt256.TWO)
 		);
 
-		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
-			SpunParticle.down(mintedTokens),
-			SpunParticle.down(mintedTokens),
-			SpunParticle.up(output)
-		);
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
+			.spinDown(mintedTokens)
+			.spinDown(mintedTokens)
+			.spinUp(output)
+			.build();
 
 		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
@@ -143,7 +145,7 @@ public class MultipleTransitionsInSameGroupTest {
 		));
 
 		result.awaitCount(1);
-		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		result.dispose();
 	}
 
@@ -153,27 +155,27 @@ public class MultipleTransitionsInSameGroupTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
-		ParticleGroup definitionGroup = ParticleGroup.of(
-			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
-			SpunParticle.up(tokenDefinition),
-			SpunParticle.up(unallocatedTokens)
-		);
-		ParticleGroup mintGroup = ParticleGroup.of(
-			SpunParticle.down(unallocatedTokens),
-			SpunParticle.up(mintedTokens)
-		);
+		ParticleGroup definitionGroup = ParticleGroup.builder()
+			.virtualSpinDown(new RRIParticle(tokenDefinition.getRRI()))
+			.spinUp(tokenDefinition)
+			.spinUp(unallocatedTokens)
+			.build();
+		ParticleGroup mintGroup = ParticleGroup.builder()
+			.spinDown(unallocatedTokens)
+			.spinUp(mintedTokens)
+			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
 			myAddress,
 			tokenDefinition,
 			mintedTokens.getAmount().multiply(UInt256.THREE)
 		);
 
-		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
-			SpunParticle.down(mintedTokens),
-			SpunParticle.down(mintedTokens),
-			SpunParticle.down(mintedTokens),
-			SpunParticle.up(output)
-		);
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
+			.spinDown(mintedTokens)
+			.spinDown(mintedTokens)
+			.spinDown(mintedTokens)
+			.spinUp(output)
+			.build();
 
 		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
@@ -182,7 +184,7 @@ public class MultipleTransitionsInSameGroupTest {
 		));
 
 		result.awaitCount(1);
-		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
 		result.dispose();
 	}
 
@@ -192,12 +194,12 @@ public class MultipleTransitionsInSameGroupTest {
 		UInt256 amount
 	) {
 		return new TransferrableTokensParticle(
+			myAddress,
 			amount,
 			UInt256.ONE,
-			myAddress,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 
@@ -206,26 +208,26 @@ public class MultipleTransitionsInSameGroupTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
-		ParticleGroup definitionGroup = ParticleGroup.of(
-			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
-			SpunParticle.up(tokenDefinition),
-			SpunParticle.up(unallocatedTokens)
-		);
-		ParticleGroup mintGroup = ParticleGroup.of(
-			SpunParticle.down(unallocatedTokens),
-			SpunParticle.up(mintedTokens)
-		);
+		ParticleGroup definitionGroup = ParticleGroup.builder()
+			.virtualSpinDown(new RRIParticle(tokenDefinition.getRRI()))
+			.spinUp(tokenDefinition)
+			.spinUp(unallocatedTokens)
+			.build();
+		ParticleGroup mintGroup = ParticleGroup.builder()
+			.spinDown(unallocatedTokens)
+			.spinUp(mintedTokens)
+			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
 			myAddress,
 			tokenDefinition,
 			mintedTokens.getAmount().divide(UInt256.TWO)
 		);
 
-		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
-			SpunParticle.down(mintedTokens),
-			SpunParticle.up(output),
-			SpunParticle.up(output)
-		);
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
+			.spinDown(mintedTokens)
+			.spinUp(output)
+			.spinUp(output)
+			.build();
 
 		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
@@ -241,33 +243,34 @@ public class MultipleTransitionsInSameGroupTest {
 		return new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenPermissions(),
+			System.nanoTime()
 		);
 	}
 
 	private MutableSupplyTokenDefinitionParticle createTokenDefinition(RadixAddress myAddress) {
 		return new MutableSupplyTokenDefinitionParticle(
-			myAddress,
+			RRI.of(myAddress, "FLO"),
 			"Cookie Token",
-			"FLO",
 			"Cookies!",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-			),
-			null,
-			null
+			)
 		);
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
-		Atom unsignedAtom = Atom.create(particleGroups, "magic:0xdeadbeef");
+		AtomBuilder unsignedAtom = Atom.newBuilder();
+		particleGroups.forEach(unsignedAtom::addParticleGroup);
+		unsignedAtom.message("magic:0xdeadbeef");
 		// Sign and submit
-		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
@@ -275,7 +278,7 @@ public class MultipleTransitionsInSameGroupTest {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.atomIdOf(signedAtom)).blockingAwait();
 					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 				}
 			})

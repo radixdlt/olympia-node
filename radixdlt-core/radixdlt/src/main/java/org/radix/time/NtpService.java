@@ -54,9 +54,9 @@ public class NtpService {
 					// Send request
 					socket.setSoTimeout(5000);
 
-					InetAddress address = InetAddress.getByName(server);
-					byte[] buf = new NtpMessage().toByteArray();
-					DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 123);
+					var address = InetAddress.getByName(server);
+					var buf = new NtpMessage().toByteArray();
+					var packet = new DatagramPacket(buf, buf.length, address, 123);
 
 					// Set the transmit timestamp *just* before sending the packet
 					// ToDo: Does this actually improve performance or not?

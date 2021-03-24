@@ -22,13 +22,14 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
@@ -38,9 +39,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.identifiers.RadixAddress;
@@ -53,7 +54,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(BurnTokensAction burn, List<TransferrableTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(BurnTokensAction burn, List<TransferrableTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToBurn = TokenUnitConversions.unitsToSubunits(burn.getAmount());
@@ -61,7 +62,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new NotEnoughFungiblesException(totalAmountToBurn, UInt256.ZERO);
 		}
 
-		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final RRI token = currentParticles.get(0).getTokDefRef();
 		final UInt256 granularity = currentParticles.get(0).getGranularity();
 		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
 
@@ -69,24 +70,34 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			TransferrableTokensParticle::getAmount,
 			amt ->
 				new TransferrableTokensParticle(
+					burn.getAddress(),
 					amt,
 					granularity,
-					burn.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new UnallocatedTokensParticle(
 					totalAmountToBurn,
 					granularity,
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToBurn);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToBurn)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 
@@ -106,18 +117,16 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
 		final List<TransferrableTokensParticle> currentParticles = store.map(TransferrableTokensParticle.class::cast)
-			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.filter(p -> p.getTokDefRef().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> burnParticles;
+		final ParticleGroup burnGroup;
 		try {
-			burnParticles = mapToParticles(burnTokensAction, currentParticles);
+			burnGroup = mapToParticles(burnTokensAction, currentParticles);
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), burnAmount);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(burnParticles)
-		);
+		return Collections.singletonList(burnGroup);
 	}
 }

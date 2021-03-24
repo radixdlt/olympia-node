@@ -21,14 +21,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
-import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.FProposalsPerViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochLedgerStatusUpdateDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import java.util.function.Predicate;
@@ -83,11 +84,11 @@ public final class NetworkDroppers {
 		};
 	}
 
-	public static Module oneNodePerEpochResponseDropped() {
+	public static Module oneNodePerEpochLedgerStatusUpdateDropped() {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper() {
-				return new OneNodePerEpochResponseDropper();
+				return new OneNodePerEpochLedgerStatusUpdateDropper();
 			}
 		};
 	}
@@ -115,6 +116,17 @@ public final class NetworkDroppers {
 					GetVerticesResponse.class,
 					GetVerticesErrorResponse.class,
 					GetVerticesRequest.class
+				);
+			}
+		};
+	}
+
+	public static Module dropAllProposals() {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper() {
+				return new MessageDropper(
+					Proposal.class
 				);
 			}
 		};

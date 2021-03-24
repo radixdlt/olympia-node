@@ -31,7 +31,7 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
@@ -39,8 +39,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -101,7 +101,7 @@ public class ParticleGroups {
 
 		@Override
 		public List<ParticleGroup> mapToParticleGroups(CreateEmptyGroupAction action) {
-			return Collections.singletonList(new ParticleGroup(Collections.emptyList()));
+			return Collections.singletonList(ParticleGroup.builder().build());
 		}
 	}
 
@@ -323,7 +323,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		awaitAtomStatus(atomNumber, AtomStatus.CONFLICT_LOSER);
 	}
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")

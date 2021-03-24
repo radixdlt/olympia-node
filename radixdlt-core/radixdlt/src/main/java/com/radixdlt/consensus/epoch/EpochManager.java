@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -38,7 +37,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.Vote;
@@ -57,13 +55,12 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -76,6 +73,7 @@ import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,33 +82,8 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class EpochManager {
-	/**
-	 * A sender of GetEpoch RPC requests/responses
-	 */
-	public interface SyncEpochsRPCSender {
-
-		/**
-		 * Send a request to a peer for proof of an epoch
-		 * @param node the peer to send to
-		 * @param epoch the epoch to retrieve proof for
-		 */
-		void sendGetEpochRequest(BFTNode node, long epoch);
-
-		/**
-		 * Send an epoch proof resposne to a peer
-		 *
-		 * TODO: currently just actually sending an ancestor but should contain
-		 * TODO: proof as well
-		 *
-		 * @param node the peer to send to
-		 * @param ancestor the ancestor of the epoch
-		 */
-		void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
-	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
 	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
@@ -122,7 +95,6 @@ public final class EpochManager {
 	private final SystemCounters counters;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
 	private final PacemakerStateFactory pacemakerStateFactory;
 
 	private EpochChange currentEpoch;
@@ -137,6 +109,8 @@ public final class EpochManager {
 	private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
 	private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
+	private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+
 	private final PersistentSafetyStateStore persistentSafetyStateStore;
 
 	@Inject
@@ -147,8 +121,8 @@ public final class EpochManager {
 		BFTSync initialBFTSync,
 		Set<EventProcessor<BFTInsertUpdate>> initialBFTUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> initialBFTRebuildUpdateProcessors,
+		RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
 		EpochChange initialEpoch,
-		SyncEpochsRPCSender epochsRPCSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		BFTSyncFactory bftSyncFactory,
@@ -156,7 +130,6 @@ public final class EpochManager {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
 		Hasher hasher,
 		HashSigner signer,
 		PacemakerTimeoutCalculator timeoutCalculator,
@@ -177,14 +150,14 @@ public final class EpochManager {
 			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 		}
 
+		this.ledgerStatusUpdateDispatcher = Objects.requireNonNull(ledgerStatusUpdateDispatcher);
+
 		this.syncRequestProcessors = initialSyncRequestProcessors;
 		this.bftUpdateProcessors = initialBFTUpdateProcessors;
 		this.bftRebuildProcessors = initialBFTRebuildUpdateProcessors;
 
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
-		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
@@ -300,13 +273,14 @@ public final class EpochManager {
 			log.info("EPOCH_CHANGE: broadcasting next epoch");
 			final ImmutableSet<BFTValidator> currentAndNextValidators =
 					ImmutableSet.<BFTValidator>builder()
-							.addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
-							.addAll(this.currentEpoch.getBFTConfiguration().getValidatorSet().getValidators())
-							.build();
+						.addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
+						.addAll(this.currentEpoch.getBFTConfiguration().getValidatorSet().getValidators())
+						.build();
 
+			final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
 			for (BFTValidator validator : currentAndNextValidators) {
 				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode(), epochChange.getProof());
+					this.ledgerStatusUpdateDispatcher.dispatch(validator.getNode(), ledgerStatusUpdate);
 				}
 			}
 		}
@@ -354,40 +328,6 @@ public final class EpochManager {
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	public void processGetEpochRequest(GetEpochRequest request) {
-		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
-
-		if (this.currentEpoch() > request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getProof());
-		} else {
-			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
-				this.self::getSimpleName, () -> request, this::currentEpoch
-			);
-
-			// TODO: Send better error message back
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), null);
-		}
-	}
-
-	public void processGetEpochResponse(GetEpochResponse response) {
-		log.trace("GET_EPOCH_RESPONSE: {}", response);
-
-		if (response.getEpochProof() == null) {
-			log.warn("Received empty GetEpochResponse {}", response);
-			// TODO: retry
-			return;
-		}
-
-		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
-		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
-		} else {
-			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
-				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);
-			}
-		}
-	}
-
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 
@@ -410,9 +350,6 @@ public final class EpochManager {
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
 			queuedEvents.computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>()).add(consensusEvent);
 			counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
-
-			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());
 			return;
 		}
 
@@ -440,6 +377,7 @@ public final class EpochManager {
 				return;
 			}
 
+			log.trace("Processing ViewUpdate: {}", epochViewUpdate);
 			bftEventProcessor.processViewUpdate(epochViewUpdate.getViewUpdate());
 		};
 	}
@@ -479,9 +417,6 @@ public final class EpochManager {
 		}
 		if (responseEpoch > this.currentEpoch()) {
 			log.debug("SYNC_ERROR: Received higher epoch error response: {} current epoch: {}", response, this.currentEpoch());
-
-			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(response.getSender(), this.currentEpoch());
 		} else {
 			// Current epoch
 			syncBFTResponseProcessor.processGetVerticesErrorResponse(response);

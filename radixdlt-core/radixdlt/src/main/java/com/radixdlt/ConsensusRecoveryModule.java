@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -37,7 +37,7 @@ import com.radixdlt.store.LastEpochProof;
 import java.util.Optional;
 
 /**
- * Manages consensus recovery on restarts
+ * Manages consensus recovery on startup
  */
 public class ConsensusRecoveryModule extends AbstractModule {
 	@Provides
@@ -64,7 +64,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
 
 	@Provides
 	private BFTValidatorSet validatorSet(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
+		@LastEpochProof LedgerProof lastEpochProof
 	) {
 		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
 	}
@@ -77,7 +77,13 @@ public class ConsensusRecoveryModule extends AbstractModule {
 				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
 			if (safetyStateEpoch > initialEpoch.getEpoch()) {
-				throw new IllegalStateException("Last vote is in a future epoch.");
+				throw new IllegalStateException(
+					String.format(
+						"Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+						safetyStateEpoch,
+						initialEpoch.getEpoch()
+					)
+				);
 			} else if (safetyStateEpoch == initialEpoch.getEpoch()) {
 				return Optional.of(safetyState);
 			} else {
@@ -85,6 +91,4 @@ public class ConsensusRecoveryModule extends AbstractModule {
 			}
 		}).orElse(new SafetyState());
 	}
-
-
 }

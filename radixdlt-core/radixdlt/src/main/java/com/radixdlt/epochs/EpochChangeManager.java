@@ -25,7 +25,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -54,7 +54,7 @@ public final class EpochChangeManager {
 
 	private void sendLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		Optional<EpochChange> epochChangeOptional = ledgerUpdate.getNextValidatorSet().map(validatorSet -> {
-			VerifiedLedgerHeaderAndProof header = ledgerUpdate.getTail();
+			LedgerProof header = ledgerUpdate.getTail();
 			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
 			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 			LedgerHeader nextLedgerHeader = LedgerHeader.create(

@@ -27,6 +27,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Helper class to set up environment with dispatched events
@@ -45,17 +48,20 @@ public final class Dispatchers {
 		@Inject
 		private SystemCounters systemCounters;
 
+		@Inject
+		private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
+
 		private final Class<T> c;
-		private final SystemCounters.CounterType counterType;
+		private final Function<T, SystemCounters.CounterType> counterTypeMapper;
 		private final boolean enableLogging;
 
 		DispatcherProvider(
 			Class<T> c,
-			@Nullable SystemCounters.CounterType counterType,
+			@Nullable Function<T, SystemCounters.CounterType> counterTypeMapper,
 			boolean enableLogging
 		) {
 			this.c = c;
-			this.counterType = counterType;
+			this.counterTypeMapper = counterTypeMapper;
 			this.enableLogging = enableLogging;
 		}
 
@@ -63,10 +69,14 @@ public final class Dispatchers {
 		public EventDispatcher<T> get() {
 			final EventDispatcher<T> dispatcher = environmentProvider.get().getDispatcher(c);
 			final RateLimiter logLimiter = RateLimiter.create(1.0);
+			final Set<EventProcessor<T>> processors = onDispatchProcessors.stream()
+				.flatMap(p -> p.getProcessor(c).stream())
+				.collect(Collectors.toSet());
 			return e -> {
 				dispatcher.dispatch(e);
-				if (counterType != null) {
-					systemCounters.increment(counterType);
+				processors.forEach(p -> p.process(e));
+				if (counterTypeMapper != null) {
+					systemCounters.increment(counterTypeMapper.apply(e));
 				}
 				if (enableLogging) {
 					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
@@ -106,15 +116,32 @@ public final class Dispatchers {
 	private static final class RemoteDispatcherProvider<T> implements Provider<RemoteEventDispatcher<T>> {
 		@Inject
 		private Provider<Environment> environmentProvider;
+		@Inject
+		private SystemCounters systemCounters;
+		private final SystemCounters.CounterType counterType;
 		private final Class<T> c;
 
 		RemoteDispatcherProvider(Class<T> c) {
+		    this(c, null);
+		}
+
+		RemoteDispatcherProvider(
+			Class<T> c,
+			@Nullable SystemCounters.CounterType counterType
+		) {
 			this.c = c;
+			this.counterType = counterType;
 		}
 
 		@Override
 		public RemoteEventDispatcher<T> get() {
-			return environmentProvider.get().getRemoteDispatcher(c);
+			RemoteEventDispatcher<T> dispatcher = environmentProvider.get().getRemoteDispatcher(c);
+			return (node, e) -> {
+				dispatcher.dispatch(node, e);
+				if (counterType != null) {
+					systemCounters.increment(counterType);
+				}
+			};
 		}
 	}
 
@@ -122,8 +149,12 @@ public final class Dispatchers {
 		return new DispatcherProvider<>(c, null, false);
 	}
 
-	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, SystemCounters.CounterType counterType, boolean enableLogging) {
-		return new DispatcherProvider<>(c, counterType, enableLogging);
+	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
+		Class<T> c,
+		Function<T, SystemCounters.CounterType> counterTypeMapper,
+		boolean enableLogging
+	) {
+		return new DispatcherProvider<>(c, counterTypeMapper, enableLogging);
 	}
 
 	public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c, boolean enableLogging) {
@@ -140,5 +171,9 @@ public final class Dispatchers {
 
 	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
 		return new RemoteDispatcherProvider<>(c);
+	}
+
+	public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c, SystemCounters.CounterType counterType) {
+		return new RemoteDispatcherProvider<>(c, counterType);
 	}
 }

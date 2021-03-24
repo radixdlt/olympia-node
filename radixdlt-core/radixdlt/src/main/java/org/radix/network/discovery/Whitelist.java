@@ -53,10 +53,10 @@ public class Whitelist {
 		String[] segments;
 		int[] output;
 
-		if (host.contains(".")) {			// IPV4 //
+		if (host.contains(".")) {            // IPV4 //
 			output = new int[4];
 			segments = host.split("\\.");
-		} else if (host.contains(":")) { 	// IPV6 //
+		} else if (host.contains(":")) {    // IPV6 //
 			output = new int[8];
 			segments = host.split(":");
 		} else {
@@ -80,8 +80,8 @@ public class Whitelist {
 			return true;
 		}
 
-		return false;
-	}
+			return false;
+		}
 
 	private boolean isInRange(String parameter, String address) {
 		String[] hosts = parameter.split("-");
@@ -119,8 +119,8 @@ public class Whitelist {
 			return true;
 		}
 
-		return false;
-	}
+			return false;
+		}
 
 	private boolean isMasked(String parameter, String address) {
 		int[] target = convert(address);

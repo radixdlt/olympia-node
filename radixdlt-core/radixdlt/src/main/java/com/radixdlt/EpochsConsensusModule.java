@@ -38,7 +38,7 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
@@ -75,7 +75,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -123,7 +123,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private EpochChange initialEpoch(
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		@LastEpochProof LedgerProof proof,
 		BFTConfiguration initialBFTConfig
 	) {
 		return new EpochChange(proof, initialBFTConfig);
@@ -222,7 +222,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			hasher,
 			voteDispatcher,
 			timeSupplier,
-			initialViewUpdate
+			initialViewUpdate,
+			counters
 		);
 	}
 

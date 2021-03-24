@@ -16,44 +16,24 @@
  */
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.utils.Pair;
+
 import java.util.List;
 import java.util.Set;
 
 /**
  * Basic mempool functionality.
- * Implementations are expected to be thread safe.
  * <p>
  * Note that conceptually, a mempoolcan be thought of as a list indexable
- * by hash and ordered FIFO by {@link #add(Command)} call order.
+ * by hash.
  */
-public interface Mempool {
+public interface Mempool<T> {
 	/**
-	 * Add a command to the local mempool.
-	 * Should be called after atom has been validated.
-	 *
+	 * Add a transaction to the local mempool.
 	 * @param command The command to add.
-	 * @throws MempoolFullException if the mempool cannot accept new submissions.
-	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void add(Command command) throws MempoolFullException, MempoolDuplicateException;
-
-	/**
-	 * Remove the referenced atom from the local mempool after it has
-	 * been committed by consensus.
-	 *
-	 * @param cmdHash The hash of the command to remove
-	 */
-	void removeCommitted(HashCode cmdHash);
-
-	/**
-	 * Remove the referenced atom from the local mempool after it has
-	 * been rejected by consensus.
-	 *
-	 * @param cmdHash The hash of the command to remove
-	 */
-	void removeRejected(HashCode cmdHash);
+	void add(Command command) throws MempoolRejectedException;
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
@@ -66,12 +46,7 @@ public interface Mempool {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<Command> getCommands(int count, Set<HashCode> seen);
+	List<Command> getCommands(int count, Set<Command> seen);
 
-	/**
-	 * Return approximate count of commands in the mempool.
-	 * Note that this value will be approximate, and will change dynamically
-	 * as atoms are added and removed.
-	 */
-	int count();
+	List<Pair<Command, Exception>> committed(List<T> committed);
 }

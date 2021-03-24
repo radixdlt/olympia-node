@@ -21,13 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -35,10 +32,9 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
@@ -131,8 +127,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
-		SyncVerticesRPCRx, SyncEpochsRPCRx {
+		ProposalBroadcaster, SyncVerticesResponseSender, BFTEventsRx, SyncVerticesRPCRx, RxRemoteEnvironment {
 		private final Flowable<Object> myMessages;
 		private final BFTNode thisNode;
 
@@ -173,18 +168,6 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetEpochRequest(BFTNode node, long epoch) {
-			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
-		}
-
-		@Override
-		public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
-		}
-
-		@Override
 		public Flowable<ConsensusEvent> localBftEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
@@ -205,15 +188,6 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Flowable<GetEpochRequest> epochRequests() {
-			return myMessages.ofType(GetEpochRequest.class);
-		}
-
-		@Override
-		public Flowable<GetEpochResponse> epochResponses() {
-			return myMessages.ofType(GetEpochResponse.class);
-		}
-
 		public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
 			return myMessages.ofType(RemoteEvent.class)
 				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, eventClass));

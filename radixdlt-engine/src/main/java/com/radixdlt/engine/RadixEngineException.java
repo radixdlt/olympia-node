@@ -27,16 +27,18 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
+	private final RadixEngineAtom atom;
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;
 	private final CMError cmError;
 
-	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
-		this(errorCode, message, dp, null);
+	public RadixEngineException(RadixEngineAtom atom, RadixEngineErrorCode errorCode, String message, DataPointer dp) {
+		this(atom, errorCode, message, dp, null);
 	}
 
-	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
-		super(message + (cmError == null ? "" : "\n" + cmError));
+	public RadixEngineException(RadixEngineAtom atom, RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
+		super(message + " " + atom + " " + dp + " " + (cmError == null ? "" : "\n" + cmError));
+		this.atom = atom;
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;
 		this.cmError = cmError;

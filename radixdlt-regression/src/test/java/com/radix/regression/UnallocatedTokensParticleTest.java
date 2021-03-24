@@ -22,16 +22,15 @@ import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Observable;
@@ -51,25 +50,25 @@ public class UnallocatedTokensParticleTest {
 		List<ParticleGroup> groups = new ArrayList<>();
 
 		MutableSupplyTokenDefinitionParticle particle = new MutableSupplyTokenDefinitionParticle(
-			api.getAddress(),
+			RRI.of(api.getAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"Best Token",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
-			),
-			null,
-			null
+			)
 		);
 
-		groups.add(ParticleGroup.of(SpunParticle.up(particle)));
+		groups.add(ParticleGroup.builder().spinUp(particle).build());
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -101,17 +100,18 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.currentTimeMillis(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.currentTimeMillis()
 		);
 
-		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
+		groups.add(ParticleGroup.builder().spinUp(unallocatedParticle).build());
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -134,43 +134,44 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle0 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.nanoTime()
 		);
 
 		UnallocatedTokensParticle unallocatedParticle1 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
+			System.nanoTime()
 		);
 
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = new MutableSupplyTokenDefinitionParticle(
-			api.getAddress(),
+			RRI.of(api.getAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"Coolest token",
 			UInt256.ONE,
+			null,
+			null,
 			ImmutableMap.of(
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
-			),
-			null,
-			null
+			)
 		);
 
-		groups.add(ParticleGroup.of(
-			SpunParticle.up(unallocatedParticle0),
-			SpunParticle.up(unallocatedParticle1),
-			SpunParticle.up(tokenDefinitionParticle)
-		));
+		groups.add(ParticleGroup.builder()
+			.spinUp(unallocatedParticle0)
+			.spinUp(unallocatedParticle1)
+			.spinUp(tokenDefinitionParticle)
+			.build()
+		);
 
-		Atom unsignedAtom = api.buildAtomWithFee(groups);
+		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
+			.map(AtomBuilder::buildAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();

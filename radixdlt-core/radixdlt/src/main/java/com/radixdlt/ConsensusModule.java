@@ -29,7 +29,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -75,7 +75,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -207,7 +207,8 @@ public final class ConsensusModule extends AbstractModule {
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier,
-		ViewUpdate initialViewUpdate
+		ViewUpdate initialViewUpdate,
+        SystemCounters systemCounters
 	) {
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
 		return new Pacemaker(
@@ -224,7 +225,8 @@ public final class ConsensusModule extends AbstractModule {
 			hasher,
 			voteDispatcher,
 			timeSupplier,
-			initialViewUpdate
+			initialViewUpdate,
+			systemCounters
 		);
 	}
 
@@ -246,7 +248,7 @@ public final class ConsensusModule extends AbstractModule {
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
+		@LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		SystemCounters counters

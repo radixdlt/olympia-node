@@ -20,14 +20,13 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -60,15 +59,17 @@ public class RandomVoteAndViewTimeoutDropperTest {
 	@Test
 	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run();
+		final var runningTest = test.run();
+		final var checkResults = runningTest.awaitCompletion();
 
-		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+
+		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
 		System.out.println(statistics);
 
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

@@ -30,22 +30,32 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.statecomputer.AtomCommittedToLedger;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.InvalidProposedCommand;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.StatusRequest;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -58,6 +68,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	private final EpochManager epochManager;
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
+	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
@@ -66,16 +77,24 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
-		EventProcessor<SyncInProgress> syncTimeoutProcessor,
+		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
+		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
+		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
+		EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
-		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
-		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
+		RemoteEventProcessor<StatusRequest> statusRequestProcessor,
+		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
+		RemoteEventProcessor<SyncRequest> syncRequestProcessor,
+		RemoteEventProcessor<SyncResponse> syncResponseProcessor,
+		RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor,
+		Set<EventProcessorOnRunner<?>> processorOnRunners
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
+		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
 
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
@@ -86,7 +105,15 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
-		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
+		processorsBuilder.put(SyncCheckTrigger.class, e -> syncCheckTriggerProcessor.process((SyncCheckTrigger) e));
+		processorsBuilder.put(
+			SyncCheckReceiveStatusTimeout.class,
+			e -> syncCheckReceiveStatusTimeoutProcessor.process((SyncCheckReceiveStatusTimeout) e)
+		);
+		processorsBuilder.put(SyncRequestTimeout.class, e -> syncRequestTimeoutProcessor.process((SyncRequestTimeout) e));
+		processorsBuilder.put(SyncLedgerUpdateTimeout.class, e ->
+			syncLedgerUpdateTimeoutProcessor.process((SyncLedgerUpdateTimeout) e)
+		);
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
@@ -98,12 +125,24 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
 		);
 		remoteProcessorsBuilder.put(
-			DtoLedgerHeaderAndProof.class,
-			(node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event)
+			StatusRequest.class,
+			(node, event) -> statusRequestProcessor.process(node, (StatusRequest) event)
 		);
 		remoteProcessorsBuilder.put(
-			DtoCommandsAndProof.class,
-			(node, event) -> syncResponseProcessor.process(node, (DtoCommandsAndProof) event)
+			StatusResponse.class,
+			(node, event) -> statusResponseProcessor.process(node, (StatusResponse) event)
+		);
+		remoteProcessorsBuilder.put(
+			SyncRequest.class,
+			(node, event) -> syncRequestProcessor.process(node, (SyncRequest) event)
+		);
+		remoteProcessorsBuilder.put(
+			SyncResponse.class,
+			(node, event) -> syncResponseProcessor.process(node, (SyncResponse) event)
+		);
+		remoteProcessorsBuilder.put(
+			LedgerStatusUpdate.class,
+			(node, event) -> ledgerStatusUpdateProcessor.process(node, (LedgerStatusUpdate) event)
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
@@ -111,6 +150,16 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	@Override
 	public void start() {
 		epochManager.start();
+	}
+
+	private static <T> boolean execute(
+		T event,
+		EventProcessorOnRunner<?> processor
+	) {
+		Class<T> eventClass = (Class<T>) event.getClass();
+		Optional<EventProcessor<T>> ep = processor.getProcessor(eventClass);
+		ep.ifPresent(p -> p.process(event));
+		return ep.isPresent();
 	}
 
 	@Override
@@ -135,15 +184,24 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
-		} else if (message instanceof GetEpochRequest) {
-			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
-		} else if (message instanceof GetEpochResponse) {
-			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
 		} else if (message instanceof LedgerUpdate) {
 			// Don't need to process
-		} else if (message instanceof AtomCommittedToLedger) {
+		} else if (message instanceof AtomsCommittedToLedger) {
+			// Don't need to process
+		} else if (message instanceof MempoolAddFailure) {
+			// Don't need to process
+		} else if (message instanceof AtomsRemovedFromMempool) {
+			// Don't need to process
+		} else if (message instanceof InvalidProposedCommand) {
 			// Don't need to process
 		} else {
+			boolean found = false;
+			for (EventProcessorOnRunner<?> p : processorOnRunners) {
+				found = execute(message, p) || found;
+			}
+			if (found) {
+				return;
+			}
 
 			EventProcessor<Object> processor = eventProcessors.get(message.getClass());
 			if (processor != null) {

@@ -23,9 +23,9 @@
 package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Comparator;
@@ -75,7 +75,7 @@ final class ValidatorRegistrationState {
 			);
 		}
 
-		return new RegisteredValidatorParticle(this.address, allowedDelegators, url, this.nonce + 1);
+		return new RegisteredValidatorParticle(this.address, ImmutableSet.copyOf(allowedDelegators), url, this.nonce + 1);
 	}
 
 	/**

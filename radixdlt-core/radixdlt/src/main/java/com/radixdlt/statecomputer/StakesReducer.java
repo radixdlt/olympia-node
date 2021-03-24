@@ -30,11 +30,9 @@ import java.util.function.Supplier;
  */
 public final class StakesReducer implements StateReducer<Stakes, StakedTokensParticle> {
     private final RRI stakingToken;
-    private final Supplier<Stakes> initial;
 
-    public StakesReducer(RRI stakingToken, Supplier<Stakes> initial) {
+    public StakesReducer(RRI stakingToken) {
         this.stakingToken = Objects.requireNonNull(stakingToken);
-        this.initial = Objects.requireNonNull(initial);
     }
 
     @Override
@@ -49,7 +47,7 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
 
     @Override
     public Supplier<Stakes> initial() {
-        return initial;
+        return Stakes::create;
     }
 
     @Override

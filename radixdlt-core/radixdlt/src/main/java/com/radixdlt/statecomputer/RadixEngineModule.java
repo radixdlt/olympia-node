@@ -31,18 +31,21 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.store.CMStore;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.Pair;
 
 import java.util.Set;
-import java.util.function.UnaryOperator;
+import java.util.function.Predicate;
 
 /**
  * Module which manages execution of commands
@@ -50,8 +53,11 @@ import java.util.function.UnaryOperator;
 public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 	}
 
 	@Provides
@@ -91,27 +97,28 @@ public class RadixEngineModule extends AbstractModule {
 	}
 
 	@Provides
-	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
-		return atomOS.buildVirtualLayer();
+	private Predicate<Particle> buildVirtualLayer(CMAtomOS atomOS) {
+		return atomOS.virtualizedUpParticles();
 	}
 
 	@Provides
 	@Singleton
-	private RadixEngine<LedgerAtom> getRadixEngine(
+	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
-		UnaryOperator<CMStore> virtualStoreLayer,
-		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		RegisteredValidators initialRegisteredValidators,
-		Stakes initialStakes,
+		Predicate<Particle> virtualStoreLayer,
+		EngineStore<Atom, LedgerAndBFTProof> engineStore,
+		AtomChecker<Atom> ledgerAtomChecker,
+		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
+		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
+		var radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
-			ledgerAtomChecker
+			ledgerAtomChecker,
+			batchVerifier
 		);
 
 		// TODO: Convert to something more like the following:
@@ -121,13 +128,16 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		radixEngine.addStateReducer(new ValidatorsReducer(() -> initialRegisteredValidators));
-		radixEngine.addStateReducer(new StakesReducer(stakeToken, () -> initialStakes));
+		radixEngine.addStateReducer(new ValidatorsReducer(), true);
+		radixEngine.addStateReducer(new StakesReducer(stakeToken), true);
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(new LastSystemParticleReducer());
+		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
 
-		stateReducers.forEach(radixEngine::addStateReducer);
+		// Additional state reducers are not required for consensus so don't need to include their
+		// state in transient branches;
+		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
+		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
 
 		return radixEngine;
 	}

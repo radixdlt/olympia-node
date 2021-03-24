@@ -65,7 +65,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -91,7 +91,7 @@ import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
@@ -168,9 +168,9 @@ public class ConsensusModuleTest {
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
-				VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+				LedgerProof proof = mock(LedgerProof.class);
 				when(proof.getView()).thenReturn(View.genesis());
-				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(proof);
+				bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
 				bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
 					.toInstance(RateLimiter.create(Double.MAX_VALUE));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
@@ -195,8 +195,13 @@ public class ConsensusModuleTest {
 		};
 	}
 
+
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode) {
-		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), new Command(new byte[] {0}));
+		return createNextVertex(parent, bftNode, new Command(new byte[] {0}));
+	}
+
+	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Command command) {
+		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), command);
 		HashCode hash = hasher.hash(unverifiedVertex);
 		VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
 		BFTHeader next = new BFTHeader(
@@ -255,6 +260,34 @@ public class ConsensusModuleTest {
 		// Assert
 		verify(requestSender, times(1))
 			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+	}
+
+	@Test
+	public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
+		final var bftNode1 = BFTNode.random();
+		final var bftNode2 = BFTNode.random();
+		final var parentQc = vertexStore.highQC().highestQC();
+		final var parentVertex = createNextVertex(parentQc, bftNode1);
+		final var proposedVertex1 = createNextVertex(parentVertex.getFirst(), bftNode1, new Command(new byte[] {1}));
+		final var proposedVertex2 = createNextVertex(parentVertex.getFirst(), bftNode2, new Command(new byte[] {2}));
+		final var unsyncedHighQC1 = HighQC.from(proposedVertex1.getFirst(), proposedVertex1.getFirst(), Optional.empty());
+		final var unsyncedHighQC2 = HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
+
+		bftSync.syncToQC(unsyncedHighQC1, bftNode1);
+		bftSync.syncToQC(unsyncedHighQC2, bftNode2);
+
+		nothrowSleep(100);
+		final var response1 = new GetVerticesResponse(bftNode1, ImmutableList.of(proposedVertex1.getSecond()));
+		bftSync.responseProcessor().process(response1);
+
+		final var response2 = new GetVerticesResponse(bftNode2, ImmutableList.of(proposedVertex2.getSecond()));
+		bftSync.responseProcessor().process(response2);
+
+		verify(requestSender, times(1))
+			.dispatch(eq(bftNode1), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(proposedVertex1.getSecond().getId())));
+
+		verify(requestSender, times(1))
+			.dispatch(eq(bftNode2), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(proposedVertex2.getSecond().getId())));
 	}
 
 	private void nothrowSleep(long milliseconds) {

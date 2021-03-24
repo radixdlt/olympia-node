@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 
 /**
@@ -43,7 +43,7 @@ public interface FeeProcessor {
 	void process(
 		ActionProcessor actionProcessor,
 		RadixAddress address,
-		Atom feelessAtom,
+		AtomBuilder feelessAtom,
 		Optional<BigDecimal> optionalFee
 	);
 }

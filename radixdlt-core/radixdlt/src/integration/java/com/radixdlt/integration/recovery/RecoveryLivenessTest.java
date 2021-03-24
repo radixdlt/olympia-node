@@ -17,47 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageQueue;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
-import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
-import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.statecomputer.EpochCeilingView;
-
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.utils.Base58;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -69,7 +28,60 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.database.DatabaseEnvironment;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
+import com.radixdlt.CryptoModule;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageQueue;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.addressbook.PeersView;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.utils.Base58;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.reactivex.rxjava3.schedulers.Timed;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Various liveness+recovery tests
@@ -89,11 +101,15 @@ public class RecoveryLivenessTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
+	@Inject
+	@Genesis
+	private Atom genesisAtom;
+
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final ECKeyPair universeKey = ECKeyPair.generateNew();
-	private final List<ECKeyPair> nodeKeys;
+	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
 	private MessageMutator messageMutator;
 
@@ -101,7 +117,7 @@ public class RecoveryLivenessTest {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
-			.collect(Collectors.toList());
+			.collect(ImmutableList.toImmutableList());
 		this.epochCeilingView = epochCeilingView;
 	}
 
@@ -118,14 +134,16 @@ public class RecoveryLivenessTest {
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		Guice.createInjector(
+			new MockedGenesisAtomModule(),
+			new CryptoModule(),
 			new AbstractModule() {
 				@Override
-				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+				public void configure() {
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 				}
-			},
-			new SafetyCheckerModule(),
-			new NodeEventsModule()
+			}
 		).injectMembers(this);
 
 		this.nodeCreators = nodeKeys.stream()
@@ -143,7 +161,7 @@ public class RecoveryLivenessTest {
 	}
 
 	private void stopDatabase(Injector injector) {
-		injector.getInstance(LedgerEntryStore.class).close();
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
@@ -155,14 +173,18 @@ public class RecoveryLivenessTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
-			new PersistedNodeForTestingModule(ecKeyPair),
+			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
 					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
@@ -175,11 +197,23 @@ public class RecoveryLivenessTest {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		stopDatabase(this.nodes.set(index, injector));
+		withThreadCtx(injector, () -> injector.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+	}
 
-		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-		ThreadContext.put("bftNode", bftNode);
+	private void initSync() {
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+			final var injector = nodeCreators.get(nodeIndex).get();
+			withThreadCtx(injector, () -> {
+				// need to manually init sync check, normally sync runner schedules it periodically
+				injector.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
+			});
+		}
+	}
+
+	private void withThreadCtx(Injector injector, Runnable r) {
+		ThreadContext.put("bftNode", " " + injector.getInstance(Key.get(BFTNode.class, Self.class)));
 		try {
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+			r.run();
 		} finally {
 			ThreadContext.remove("bftNode");
 		}
@@ -261,7 +295,10 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	@Test
@@ -283,7 +320,10 @@ public class RecoveryLivenessTest {
 					restartNode(nodeIndex);
 				}
 			}
+			initSync();
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	@Test
@@ -301,7 +341,10 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 
 	/**
@@ -310,7 +353,7 @@ public class RecoveryLivenessTest {
 	 */
 	@Test
 	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
-		int f = (nodes.size()  - 1) / 3;
+		int f = (nodes.size() - 1) / 3;
 		if (f <= 0) {
 			// if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
 			return;
@@ -331,6 +374,9 @@ public class RecoveryLivenessTest {
 			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
+			initSync();
 		}
+
+		assertThat(epochView.getEpoch()).isGreaterThan(1);
 	}
 }

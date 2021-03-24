@@ -26,11 +26,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
-import hu.akarnokd.rxjava3.operators.FlowableTransformers;
-import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.processors.PublishProcessor;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.channel.ChannelInboundHandler;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,7 +90,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
 
-	private final PublishProcessor<Flowable<InboundMessage>> channels = PublishProcessor.create();
+	private final PublishSubject<Observable<InboundMessage>> channels = PublishSubject.create();
 
 	private final TCPTransportControl control;
 
@@ -157,7 +155,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	}
 
 	@Override
-	public Flowable<InboundMessage> start() {
+	public Observable<InboundMessage> start() {
 		if (log.isInfoEnabled()) {
 			log.info("TCP transport {}", localAddress());
 		}
@@ -173,7 +171,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) {
-					setupChannel(ch, true, CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
+					setupChannel(ch, control.outHandler(), CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
 				}
 			});
 
@@ -187,7 +185,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 				@Override
 				public void initChannel(SocketChannel ch) {
 					log.info("Connection from {}:{}", ch.remoteAddress().getHostString(), ch.remoteAddress().getPort());
-					setupChannel(ch, false, SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
+					setupChannel(ch, control.inHandler(), SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
 				}
 			});
 		if (log.isDebugEnabled() || log.isTraceEnabled()) {
@@ -205,16 +203,10 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
 
-		return channels
-			.onBackpressureBuffer(
-				CHANNELS_BUFFER_SIZE,
-				() -> log.error("TCP channels buffer overflow!"),
-				BackpressureOverflowStrategy.DROP_LATEST
-			)
-			.compose(FlowableTransformers.flatMapAsync(v -> v, Schedulers.single(), false));
+		return Observable.merge(channels);
 	}
 
-	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
+	private void setupChannel(SocketChannel ch, ChannelInboundHandler handler, int rcvBufSize, int sndBufSize) {
 		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
 		final int headerLength = TCPConstants.LENGTH_HEADER;
 		ch.config()
@@ -225,13 +217,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		if (log.isDebugEnabled()) {
 			ch.pipeline().addLast(new LoggingHandler(LogSink.using(log), debugData));
 		}
-		if (isOutbound) {
-			ch.pipeline()
-				.addLast("connections", control.handler());
-		}
+
+		ch.pipeline().addLast("connections", handler);
 
 		final var messageHandler = new TCPNettyMessageHandler(this.counters, this.messageBufferSize);
-		channels.onNext(messageHandler.inboundMessageRx());
+		channels.onNext(messageHandler.inboundMessageRx().toObservable());
 
 		ch.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))

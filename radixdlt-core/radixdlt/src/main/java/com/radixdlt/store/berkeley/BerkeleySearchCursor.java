@@ -19,7 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
+import com.radixdlt.utils.Longs;
 import org.bouncycastle.util.Arrays;
 
 import java.util.Objects;
@@ -28,53 +28,32 @@ import java.util.Objects;
  * A Tempo implementation of a {@link SearchCursor}
  */
 public class BerkeleySearchCursor implements SearchCursor {
-	private final StoreIndex.LedgerIndexType type;
 	private final byte[] primary;
-	private final byte[] index;
+	private final byte[] data;
 	private final BerkeleyLedgerEntryStore store;
 
-	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, StoreIndex.LedgerIndexType type, byte[] primary, byte[] index) {
-		this.type = type;
+	BerkeleySearchCursor(BerkeleyLedgerEntryStore store, byte[] primary, byte[] data) {
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
-		this.index = Arrays.clone(Objects.requireNonNull(index));
 		this.store = store;
-	}
-
-	@Override
-	public StoreIndex.LedgerIndexType getType() {
-		return this.type;
+		this.data = data;
 	}
 
 	public byte[] getPrimary() {
 		return this.primary;
 	}
 
-	public byte[] getIndex() {
-		return this.index;
+	@Override
+	public long getStateVersion() {
+		return Longs.fromByteArray(this.primary, 0);
 	}
 
 	@Override
 	public AID get() {
-		return AID.from(this.primary, Long.BYTES + 1);
+		return AID.from(this.data, Long.BYTES);
 	}
 
 	@Override
 	public SearchCursor next() {
 		return this.store.getNext(this);
-	}
-
-	@Override
-	public SearchCursor previous() {
-		return this.store.getPrev(this);
-	}
-
-	@Override
-	public SearchCursor first() {
-		return this.store.getFirst(this);
-	}
-
-	@Override
-	public SearchCursor last() {
-		return this.store.getLast(this);
 	}
 }

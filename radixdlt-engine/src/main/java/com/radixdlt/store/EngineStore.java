@@ -24,11 +24,13 @@ import java.util.function.BiFunction;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
+public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(T atom);
+	void storeAtom(Transaction txn, T atom);
+
+	void storeMetadata(Transaction txn, M metadata);
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.
@@ -40,10 +42,9 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	 * @param <V> the class of the state to reduce to
 	 * @return the computed, reduced state
 	 */
-	<U extends Particle, V> V compute(
+	<U extends Particle, V> V reduceUpParticles(
 		Class<U> particleClass,
 		V initial,
-		BiFunction<V, U, V> outputReducer,
-		BiFunction<V, U, V> inputReducer
+		BiFunction<V, U, V> outputReducer
 	);
 }

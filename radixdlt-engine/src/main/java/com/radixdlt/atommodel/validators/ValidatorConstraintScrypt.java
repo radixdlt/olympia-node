@@ -24,7 +24,6 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
@@ -54,7 +53,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
 			.singleAddressMapper(UnregisteredValidatorParticle::getAddress)
 			.staticValidation(checkAddress(UnregisteredValidatorParticle::getAddress))
-			.virtualizeSpin(p -> p.getNonce() == 0 ? Spin.UP : null) // virtualize first instance as UP
+			.virtualizeUp(p -> p.getNonce() == 0) // virtualize first instance as UP
 			.build()
 		);
 

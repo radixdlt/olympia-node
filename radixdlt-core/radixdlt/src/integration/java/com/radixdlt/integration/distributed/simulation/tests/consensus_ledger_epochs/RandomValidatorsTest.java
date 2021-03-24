@@ -20,13 +20,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -87,8 +86,8 @@ public class RandomValidatorsTest {
 			.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper())
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -97,8 +96,8 @@ public class RandomValidatorsTest {
 			.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper())
 			.build();
 
-		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
+		final var checkResults = bftTest.run().awaitCompletion();
+		assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
 	}
 
 }

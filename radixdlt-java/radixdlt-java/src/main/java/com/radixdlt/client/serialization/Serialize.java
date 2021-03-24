@@ -22,26 +22,25 @@
 
 package com.radixdlt.client.serialization;
 
-import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.SystemParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.ledger.AtomEvent;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.RadixLocalSystem;
@@ -67,7 +66,6 @@ public final class Serialize {
 			return Arrays.asList(
 				Atom.class,
 				AtomEvent.class,
-				ParticleGroup.class,
 				Particle.class,
 				RRIParticle.class,
 				SpunParticle.class,

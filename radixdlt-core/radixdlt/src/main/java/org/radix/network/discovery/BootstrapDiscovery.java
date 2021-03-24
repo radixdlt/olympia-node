@@ -25,18 +25,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
 import com.google.inject.Inject;
-
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -54,7 +55,8 @@ public class BootstrapDiscovery {
 	private static final Logger log = LogManager.getLogger();
 	private final int defaultPort;
 
-	private final ImmutableSet<TransportInfo> hosts;
+	private Set<String> unresolvedHostNames = new HashSet<>();
+	private Set<TransportInfo> hosts = new HashSet<>();
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -65,7 +67,7 @@ public class BootstrapDiscovery {
 	 * - contained in IPv4 addresses: [0-9.]
 	 * - contained in IPv6 addresses: [a-zA-Z0-9:]
 	 * - contained in non-internationalized DNS names: [a-zA-Z0-9]
-	 *   https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
+	 * https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
 	 */
 	@VisibleForTesting
 	static String toHost(byte[] buf, int len) {
@@ -92,9 +94,9 @@ public class BootstrapDiscovery {
 
 		// allow nodes to connect to others, bypassing TLS handshake
 		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
-			log.info("Allowing TLS handshake bypass...");
-			SSLFix.trustAllHosts();
-		}
+		log.info("Allowing TLS handshake bypass...");
+		SSLFix.trustAllHosts();
+	}
 
 		List<String> hostNames = Lists.newArrayList();
 		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
@@ -111,8 +113,8 @@ public class BootstrapDiscovery {
 
 				String host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
 				if (host != null) {
-					log.info("seeding from random host: {}",  host);
-					hostNames.add(host);
+				log.info("seeding from random host: {}", host);
+				hostNames.add(host);
 				}
 			} catch (MalformedURLException ignoreConcreteHost) {
 				// concrete host addresses end up here.
@@ -123,14 +125,14 @@ public class BootstrapDiscovery {
 
 		Whitelist whitelist = Whitelist.from(properties);
 
-		this.hosts = hostNames.stream()
-			.map(String::trim)
-			.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
-			.distinct()
-			.map(this::toDefaultTransportInfo)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.collect(ImmutableSet.toImmutableSet());
+		this.unresolvedHostNames.addAll(
+			hostNames.stream()
+				.map(String::trim)
+				.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
+				.collect(Collectors.toSet())
+		);
+
+		this.resolveHostNames();
 	}
 
 	/**
@@ -161,17 +163,17 @@ public class BootstrapDiscovery {
 
 				// read data
 				input = new BufferedInputStream(conn.getInputStream());
-				int n = input.read(buf);
-				if (n > 0) {
-					host = toHost(buf, n);
-					if (host != null) {
-						// FIXME - Disable broken connection testing now that we no longer
-						// use TCP for exchanging data.  Needs resolving when we have a
-						// workable mechanism for node connectivity checking.
-						//testConnection(host, checkPort, connectionTimeout);
-						return host;
+					int n = input.read(buf);
+					if (n > 0) {
+						host = toHost(buf, n);
+						if (host != null) {
+							// FIXME - Disable broken connection testing now that we no longer
+							// use TCP for exchanging data.  Needs resolving when we have a
+							// workable mechanism for node connectivity checking.
+							//testConnection(host, checkPort, connectionTimeout);
+							return host;
+						}
 					}
-				}
 			} catch (IOException e) {
 				// rejected, offline, etc. - this is expected
 				log.info("host is not reachable", e);
@@ -206,11 +208,32 @@ public class BootstrapDiscovery {
 	 * @return A collection of transports for discovery hosts
 	 */
 	public Collection<TransportInfo> discoveryHosts() {
-		List<TransportInfo> results = this.hosts.stream()
-			.collect(Collectors.toList());
-
+		this.resolveHostNames();
+		final var results = new ArrayList<>(this.hosts);
 		Collections.shuffle(results);
 		return results;
+	}
+
+	private void resolveHostNames() {
+		if (this.unresolvedHostNames.isEmpty()) {
+			return;
+		}
+
+		final var newlyResolvedHosts = this.unresolvedHostNames.stream()
+			.map(host -> Pair.of(host, this.toDefaultTransportInfo(host)))
+			.filter(p -> p.getSecond().isPresent())
+			.collect(ImmutableSet.toImmutableSet());
+
+		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
+			.collect(ImmutableSet.toImmutableSet());
+
+		this.unresolvedHostNames.removeAll(newlyResolvedHostsNames);
+
+		this.hosts.addAll(
+			newlyResolvedHosts.stream()
+				.map(p -> p.getSecond().get())
+				.collect(Collectors.toSet())
+		);
 	}
 
 	@VisibleForTesting

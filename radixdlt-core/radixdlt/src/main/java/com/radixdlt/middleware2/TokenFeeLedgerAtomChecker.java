@@ -17,33 +17,23 @@
 
 package com.radixdlt.middleware2;
 
+import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 
-import java.util.List;
 import java.util.Set;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -51,7 +41,7 @@ import javax.inject.Inject;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
+public class TokenFeeLedgerAtomChecker implements AtomChecker<Atom> {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -70,7 +60,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom) {
+	public Result check(Atom atom, PermissionLevel permissionLevel) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
@@ -80,23 +70,14 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.success();
 		}
 
-		// no need for fees if a system update
-		// TODO: update should also have no message
-		if (atom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isCheckSpin)
-				.allMatch(i -> i.getParticle() instanceof SystemParticle)
-		) {
+		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
 			return Result.success();
 		}
 
-		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
-		final Atom completeAtom;
-		if (atom instanceof ClientAtom) {
-			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
-		} else if (atom instanceof CommittedAtom) {
-			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
-		} else {
-			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
+		// no need for fees if a system update
+		// TODO: update should also have no message
+		if (atom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
+			return Result.success();
 		}
 
 		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
@@ -104,91 +85,34 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom too big: " + totalSize);
 		}
 
-		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
-		Set<Particle> outputParticles = atomWithoutFeeGroup.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
-		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
-
-		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
-		UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
+		// FIXME: This logic needs to move into the constraint machine
+		Set<Particle> outputParticles = atom.upParticles().collect(Collectors.toSet());
+		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
+		UInt256 feePaid = computeFeePaid(atom);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
-			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
+			String message = String.format(
+				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
+				TokenUnitConversions.subunitsToUnits(feePaid),
+				TokenUnitConversions.subunitsToUnits(requiredMinimumFee),
+				totalSize
+			);
 			return Result.error(message);
 		}
 
 		return Result.success();
 	}
 
-	private boolean isMagic(LedgerAtom atom) {
+	private boolean isMagic(Atom atom) {
 		final var message = atom.getMessage();
 		return message != null && message.startsWith("magic:0xdeadbeef");
 	}
 
-	private boolean isFeeGroup(ParticleGroup pg) {
-		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.getParticles().stream()
-			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
-		List<SpunParticle> spunTransferableTokens = Optional.ofNullable(grouping.remove(TransferrableTokensParticle.class))
-			.orElseGet(List::of);
-		List<SpunParticle> spunUnallocatedTokens = Optional.ofNullable(grouping.remove(UnallocatedTokensParticle.class))
-			.orElseGet(List::of);
-
-		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
-		if (!grouping.isEmpty() || spunTransferableTokens.isEmpty() || spunUnallocatedTokens.isEmpty()) {
-			return false;
-		}
-
-		final Map<Spin, List<TransferrableTokensParticle>> transferableParticlesBySpin =
-			spunTransferableTokens.stream().collect(
-					Collectors.groupingBy(SpunParticle::getSpin,
-					Collectors.mapping(sp -> (TransferrableTokensParticle) sp.getParticle(), Collectors.toList())));
-
-		// Needs to be at least some down transferrable tokens
-		final var downTransferrableParticles = transferableParticlesBySpin.get(Spin.DOWN);
-		if (downTransferrableParticles == null || downTransferrableParticles.isEmpty()) {
-			return false;
-		}
-
-		return allUpForFeeToken(spunUnallocatedTokens)
-				&& allSameAddressAndForFee(transferableParticlesBySpin)
-				&& noSuperfluousParticles(transferableParticlesBySpin);
-	}
-
-	// Check that all transferable particles are in for the same address and for the fee token
-	private boolean allSameAddressAndForFee(Map<Spin, List<TransferrableTokensParticle>> particlesBySpin) {
-		final RadixAddress addr = particlesBySpin.get(Spin.DOWN).get(0).getAddress();
-		return particlesBySpin.values().stream()
-				.allMatch(transferableTokens -> transferableTokens.stream().allMatch(ttp ->
-						ttp.getAddress().equals(addr) && this.feeTokenRri.equals(ttp.getTokDefRef())));
-	}
-
-	// Check that all unallocated particles are in the up state and for the fee token
-	private boolean allUpForFeeToken(List<SpunParticle> spunUnallocatedTokens) {
-		return spunUnallocatedTokens.stream()
-			.allMatch(this::isUpAndForFee);
-	}
-
-	private boolean isUpAndForFee(SpunParticle sp) {
-		if (sp.isUp()) {
-			UnallocatedTokensParticle utp = (UnallocatedTokensParticle) sp.getParticle();
-			return this.feeTokenRri.equals(utp.getTokDefRef());
-		}
-		return false;
-	}
-
-	// Check that there is at most one output particle
-    // TODO: look into preventing fees with too much "dust" as previously implemented
-	private boolean noSuperfluousParticles(Map<Spin, List<TransferrableTokensParticle>> particlesBySpin) {
-		final List<TransferrableTokensParticle> outputParticles = particlesBySpin.getOrDefault(Spin.UP, List.of());
-		return outputParticles.size() <= 1;
-	}
-
-	private UInt256 computeFeePaid(Stream<ParticleGroup> feeParticleGroups) {
-		// We can use UInt256 here, as all fees are paid in a single token
-		// type.  As there can be no more than UInt256.MAX_VALUE tokens of
-		// a given type, a UInt256 cannot overflow.
-		return feeParticleGroups
-			.flatMap(pg -> pg.particles(Spin.UP))
+	// TODO: Need to make sure that these unallocated particles are never DOWNED.
+	private UInt256 computeFeePaid(Atom atom) {
+		return atom.upParticles()
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
+			.filter(u -> u.getTokDefRef().equals(this.feeTokenRri))
 			.map(UnallocatedTokensParticle::getAmount)
 			.reduce(UInt256.ZERO, UInt256::add);
 	}

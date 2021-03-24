@@ -21,23 +21,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -46,12 +44,12 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 
-import static com.radixdlt.client.application.translate.tokens.TokenUnitConversions.unitsToSubunits;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import static com.radixdlt.application.TokenUnitConversions.unitsToSubunits;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -213,13 +211,13 @@ public class TokenFees {
 		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
 		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
-				SpunParticle.down(inParticle),
-				SpunParticle.up(new UnallocatedTokensParticle(
-						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-				SpunParticle.up(new TransferrableTokensParticle(
-						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
-		));
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.build();
 
 		t.stage(feeParticleGroup);
 
@@ -247,15 +245,15 @@ public class TokenFees {
 		final UInt256 changeAmountFirstParticle = UInt256.ONE;
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
-			SpunParticle.down(inParticle),
-			SpunParticle.up(new UnallocatedTokensParticle(
-				feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-			SpunParticle.up(new TransferrableTokensParticle(
-				changeAmountFirstParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-			SpunParticle.up(new TransferrableTokensParticle(
-				changeAmountSecondParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
-		));
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmountFirstParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmountSecondParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.build();
 
 		t.stage(feeParticleGroup);
 
@@ -279,24 +277,24 @@ public class TokenFees {
 
 		// acquired ttp is first split into two ttps, one being just 40 millirads
 		final TransferrableTokensParticle exchangedParticle1 = new TransferrableTokensParticle(
+			address,
 			unitsToSubunits(BigDecimal.valueOf(40, 3)),
 			UInt256.ONE,
-			address,
-			System.nanoTime(),
 			feeTokenRri,
-			inParticle.getTokenPermissions()
+			inParticle.getTokenPermissions(),
+			System.nanoTime()
 		);
 
 		// 2nd exchanged particle gets the remaining amount
 		final TransferrableTokensParticle exchangedParticle2 = new TransferrableTokensParticle(
-				inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE, address,
-				System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
+				address, inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE,
+				feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime());
 
-		final ParticleGroup exchangeParticleGroup = new ParticleGroup(List.of(
-				SpunParticle.down(inParticle),
-				SpunParticle.up(exchangedParticle1),
-				SpunParticle.up(exchangedParticle2)
-		));
+		final ParticleGroup exchangeParticleGroup = ParticleGroup.builder()
+			.spinDown(inParticle)
+			.spinUp(exchangedParticle1)
+			.spinUp(exchangedParticle2)
+			.build();
 		t.stage(exchangeParticleGroup);
 
 		// fee amount is 80 millirads
@@ -309,14 +307,14 @@ public class TokenFees {
 		assertTrue(changeAmount.compareTo(exchangedParticle1.getAmount()) >= 0);
 
 		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
-		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
-				SpunParticle.down(exchangedParticle1),
-				SpunParticle.down(exchangedParticle2),
-				SpunParticle.up(new UnallocatedTokensParticle(
-						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
-				SpunParticle.up(new TransferrableTokensParticle(
-						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
-		));
+		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
+			.spinDown(exchangedParticle1)
+			.spinDown(exchangedParticle2)
+			.spinUp(new UnallocatedTokensParticle(
+				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
+			.spinUp(new TransferrableTokensParticle(
+				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())
+			).build();
 
 		t.stage(feeParticleGroup);
 
@@ -425,7 +423,7 @@ public class TokenFees {
 		for (Action action: actions) {
 			t.stage(action);
 		}
-		final Atom feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
+		final AtomBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
 		return this.api.getMinimumRequiredFee(feelessAtom);
 	}
 
@@ -434,7 +432,7 @@ public class TokenFees {
 				.getUpParticles(this.api.getAddress(), null)
 				.filter(TransferrableTokensParticle.class::isInstance)
 				.map(TransferrableTokensParticle.class::cast)
-				.filter(ttp -> ttp.getTokenDefinitionReference().equals(this.api.getNativeTokenRef()))
+				.filter(ttp -> ttp.getTokDefRef().equals(this.api.getNativeTokenRef()))
 				.findFirst()
 				.get();
 	}
@@ -475,37 +473,14 @@ public class TokenFees {
 
 	// Fee computation
 	private BigDecimal feeFrom(Atom atom) {
-		UInt256 totalFee = atom.particleGroups()
-			.filter(this::isFeeGroup)
-			.flatMap(pg -> pg.particles(Spin.UP))
+		UInt256 totalFee = atom.upParticles()
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
+			.filter(u -> u.getTokDefRef().equals(this.api.getNativeTokenRef()))
 			.map(UnallocatedTokensParticle::getAmount)
 			.reduce(UInt256.ZERO, UInt256::add);
 
 		return TokenUnitConversions.subunitsToUnits(totalFee);
-	}
-
-	private boolean isFeeGroup(ParticleGroup pg) {
-		// No free storage in metadata
-		if (!pg.getMetaData().isEmpty()) {
-			return false;
-		}
-		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.spunParticles()
-			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
-		List<SpunParticle> spunTransferableTokens = grouping.remove(TransferrableTokensParticle.class);
-		List<SpunParticle> spunUnallocatedTokens = grouping.remove(UnallocatedTokensParticle.class);
-		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
-		if (grouping.isEmpty() && spunUnallocatedTokens != null) {
-			ImmutableList<TransferrableTokensParticle> transferableTokens = spunTransferableTokens == null
-				? ImmutableList.of()
-				: spunTransferableTokens.stream()
-					.map(SpunParticle::getParticle)
-					.map(p -> (TransferrableTokensParticle) p)
-					.collect(ImmutableList.toImmutableList());
-			return allUpForFeeToken(spunUnallocatedTokens) && allSameAddressAndForFeeToken(transferableTokens);
-		}
-		return false;
 	}
 
 	// Check that all transferable particles are in for the same address and for the fee token
@@ -516,7 +491,7 @@ public class TokenFees {
 		RRI feeTokenRri = this.api.getNativeTokenRef();
 		RadixAddress addr = transferableTokens.get(0).getAddress();
 		return transferableTokens.stream()
-			.allMatch(ttp -> ttp.getAddress().equals(addr) && feeTokenRri.equals(ttp.getTokenDefinitionReference()));
+			.allMatch(ttp -> ttp.getAddress().equals(addr) && feeTokenRri.equals(ttp.getTokDefRef()));
 	}
 
 	// Check that all unallocated particles are in the up state and for the fee token

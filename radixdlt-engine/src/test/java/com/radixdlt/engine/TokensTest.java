@@ -24,9 +24,11 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 public class TokensTest {
-	private RadixEngine<RadixEngineAtom> engine;
-	private EngineStore<RadixEngineAtom> store;
+	private RadixEngine<RadixEngineAtom, Void> engine;
+	private EngineStore<RadixEngineAtom, Void> store;
 
 	@Before
 	public void setup() {
@@ -40,7 +42,7 @@ public class TokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.buildVirtualLayer(),
+			cmAtomOS.virtualizedUpParticles(),
 			store
 		);
 	}
@@ -69,9 +71,9 @@ public class TokensTest {
 			ImmutableMap.of()
 		);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpinAndPush(rriParticle, Spin.UP),
-			CMMicroInstruction.checkSpinAndPush(tokenDefinitionParticle, Spin.NEUTRAL),
-			CMMicroInstruction.checkSpinAndPush(transferrableTokensParticle, Spin.NEUTRAL),
+			CMMicroInstruction.virtualSpinDown(rriParticle),
+			CMMicroInstruction.spinUp(tokenDefinitionParticle),
+			CMMicroInstruction.spinUp(transferrableTokensParticle),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -80,11 +82,12 @@ public class TokensTest {
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
+		var atom = new BaseAtom(instruction, HashUtils.zero256());
+		this.engine.execute(List.of(atom));
 
 		// Assert
-		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(tokenDefinitionParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(transferrableTokensParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, rriParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(null, tokenDefinitionParticle)).isEqualTo(Spin.UP);
+		assertThat(this.store.getSpin(null, transferrableTokensParticle)).isEqualTo(Spin.UP);
 	}
 }

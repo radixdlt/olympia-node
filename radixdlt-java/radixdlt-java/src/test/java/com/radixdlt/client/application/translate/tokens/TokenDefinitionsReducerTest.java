@@ -22,20 +22,20 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 
 import org.junit.Test;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -46,9 +46,9 @@ public class TokenDefinitionsReducerTest {
 	public void testTokenWithNoMint() {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getIconUrl()).thenReturn("http://foo");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
@@ -70,9 +70,9 @@ public class TokenDefinitionsReducerTest {
 	public void testFixedTokenWithNoMint() {
 		FixedSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(FixedSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getSupply()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
@@ -93,9 +93,9 @@ public class TokenDefinitionsReducerTest {
 		final UInt256 hundred = UInt256.TEN.pow(2);
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
+		when(tokenRef.getName()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
-		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(TokenTransition.MINT,
@@ -103,12 +103,11 @@ public class TokenDefinitionsReducerTest {
 
 		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getTokenDefinitionReference()).thenReturn(tokenRef);
+		when(minted.getTokDefRef()).thenReturn(tokenRef);
 
 		UnallocatedTokensParticle unallocatedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(unallocatedTokensParticle.getAmount()).thenReturn(UInt256.MAX_VALUE.subtract(hundred));
 		when(unallocatedTokensParticle.getTokDefRef()).thenReturn(tokenRef);
-		when(unallocatedTokensParticle.euid()).thenReturn(EUID.ONE);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), tokenDefinitionParticle);

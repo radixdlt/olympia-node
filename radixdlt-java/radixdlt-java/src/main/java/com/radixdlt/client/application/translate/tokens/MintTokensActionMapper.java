@@ -23,15 +23,16 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.atom.ParticleGroup;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,14 +48,14 @@ import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.constraintmachine.Particle;
 
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintTokensAction> {
 	public MintTokensActionMapper() {
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)
+	private static ParticleGroup mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToBurn = TokenUnitConversions.unitsToSubunits(mint.getAmount());
@@ -72,22 +73,32 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				new UnallocatedTokensParticle(
 					amt,
 					granularity,
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				),
 			amt ->
 				new TransferrableTokensParticle(
+					mint.getAddress(),
 					amt,
 					granularity,
-					mint.getAddress(),
-					System.nanoTime(),
 					token,
-					permissions
+					permissions,
+					System.nanoTime()
 				)
 		);
 
-		return mapper.mapToParticles(currentParticles, totalAmountToBurn);
+		var builder = ParticleGroup.builder();
+		mapper.mapToParticles(currentParticles, totalAmountToBurn)
+			.forEach(sp -> {
+				if (sp.getSpin() == Spin.UP) {
+					builder.spinUp(sp.getParticle());
+				} else {
+					builder.spinDown(sp.getParticle());
+				}
+			});
+
+		return builder.build();
 	}
 
 	@Override
@@ -123,7 +134,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				.filter(p -> p.getTokDefRef().equals(tokenRef))
 				.collect(Collectors.toList());
 
-		final List<SpunParticle> mintParticles;
+		final ParticleGroup mintParticles;
 		try {
 			mintParticles = mapToParticles(mintTokensAction, currentParticles);
 		} catch (NotEnoughFungiblesException e) {
@@ -135,8 +146,6 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			);
 		}
 
-		return Collections.singletonList(
-			ParticleGroup.of(mintParticles)
-		);
+		return Collections.singletonList(mintParticles);
 	}
 }
