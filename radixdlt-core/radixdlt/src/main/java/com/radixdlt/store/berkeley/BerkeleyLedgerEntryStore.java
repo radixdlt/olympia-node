@@ -517,23 +517,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 	private void downParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
-		var downedParticle = entry();
+		final var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
 			throw new IllegalStateException("Downing particle does not exist " + particleId);
 		}
 
-		if (downedParticle.getSize() == 0) {
+		if (downedParticle.getData().length == 0) {
 			throw new IllegalStateException("Particle was already spun down: " + particleId);
 		}
 
+		var serializedParticle = new byte[downedParticle.getData().length - EUID.BYTES];
+		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
+
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(particleKey), downEntry());
-
-		var serializedParticle = new byte[downedParticle.getSize() - EUID.BYTES];
-		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-
-		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
 		particleConsumer.accept(SpunParticle.down(particle));
 	}
 
