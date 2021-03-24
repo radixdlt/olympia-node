@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -69,12 +68,10 @@ public class TokensTest {
 			ImmutableMap.of()
 		);
 		var builder = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(rriParticle)
-				.spinUp(tokenDefinitionParticle)
-				.spinUp(transferrableTokensParticle)
-				.build()
-			);
+			.virtualSpinDown(rriParticle)
+			.spinUp(tokenDefinitionParticle)
+			.spinUp(transferrableTokensParticle)
+			.particleGroup();
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		var atom = builder.buildAtom();

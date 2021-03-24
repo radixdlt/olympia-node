@@ -46,6 +46,8 @@ public final class AtomBuilder {
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
 
+	private ParticleGroup.ParticleGroupBuilder currentPGBuilder = ParticleGroup.builder();
+
 	AtomBuilder() {
 	}
 
@@ -58,12 +60,43 @@ public final class AtomBuilder {
 		return localUpParticles.values().stream();
 	}
 
+	public AtomBuilder spinUp(Particle particle) {
+		Objects.requireNonNull(particle, "particle is required");
+		currentPGBuilder.spinUp(particle);
+		return this;
+	}
+
+	public AtomBuilder virtualSpinDown(Particle particle) {
+		Objects.requireNonNull(particle, "particle is required");
+		currentPGBuilder.virtualSpinDown(particle);
+		return this;
+	}
+
+	public AtomBuilder spinDown(Particle particle) {
+		Objects.requireNonNull(particle, "particle is required");
+		currentPGBuilder.spinDown(particle);
+		return this;
+	}
+
+	public AtomBuilder spinDown(HashCode particleHash) {
+		Objects.requireNonNull(particleHash, "particleHash is required");
+		currentPGBuilder.spinDown(particleHash);
+		return this;
+	}
+
+	public AtomBuilder particleGroup() {
+		var pg = currentPGBuilder.build();
+		addParticleGroup(pg);
+		currentPGBuilder = ParticleGroup.builder();
+		return this;
+	}
+
 	/**
 	 * Add a particle group to this atom
 	 *
 	 * @param particleGroup The particle group
 	 */
-	public AtomBuilder addParticleGroup(ParticleGroup particleGroup) {
+	private AtomBuilder addParticleGroup(ParticleGroup particleGroup) {
 		Objects.requireNonNull(particleGroup, "particleGroup is required");
 		this.particleGroups.add(particleGroup);
 		particleGroup.getInstructions().forEach(i -> {

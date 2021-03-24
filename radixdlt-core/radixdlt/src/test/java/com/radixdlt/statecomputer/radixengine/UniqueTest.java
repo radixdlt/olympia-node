@@ -29,7 +29,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -81,15 +80,13 @@ public final class UniqueTest {
 		RRI rri = RRI.of(address, "test");
 		RRIParticle rriParticle = new RRIParticle(rri, 0);
 		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		ParticleGroup particleGroup = ParticleGroup.builder()
+		AtomBuilder atomBuilder = Atom.newBuilder()
 			.virtualSpinDown(rriParticle)
 			.spinUp(uniqueParticle)
-			.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atom.buildAtom();
+			.particleGroup();
+		HashCode hashToSign = atomBuilder.computeHashToSign();
+		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return atomBuilder.buildAtom();
 	}
 
 	@Test

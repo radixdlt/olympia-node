@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -114,46 +113,46 @@ public final class InMemoryWallet {
 		return Optional.of(spent.subtract(amount));
 	}
 
-	public Optional<ParticleGroup> createFeeGroup() {
-		return createFeeGroup(new LinkedList<>(particles));
+	public boolean createFeeGroup(AtomBuilder atomBuilder) {
+		return createFeeGroup(atomBuilder, new LinkedList<>(particles));
 	}
 
-	private Optional<ParticleGroup> createFeeGroup(LinkedList<TransferrableTokensParticle> mutableList) {
-		ParticleGroup.ParticleGroupBuilder feeBuilder = ParticleGroup.builder();
-		feeBuilder.spinUp(factory.createUnallocated(fee));
-		Optional<UInt256> remainder = downParticles(fee, mutableList, feeBuilder::spinDown);
-		return remainder.map(r -> {
-		    if (!r.isZero()) {
-				TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
-				mutableList.add(particle);
-				feeBuilder.spinUp(particle);
-		    }
+	private boolean createFeeGroup(AtomBuilder atomBuilder, LinkedList<TransferrableTokensParticle> mutableList) {
+		atomBuilder.spinUp(factory.createUnallocated(fee));
+		Optional<UInt256> remainder = downParticles(fee, mutableList, atomBuilder::spinDown);
+		if (remainder.isEmpty()) {
+			return false;
+		}
+		var r = remainder.get();
+		if (!r.isZero()) {
+			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
+			mutableList.add(particle);
+			atomBuilder.spinUp(particle);
+		}
 
-		    return feeBuilder.build();
-		});
+		atomBuilder.particleGroup();
+		return true;
 	}
 
 	private Optional<AtomBuilder> createTransaction(LinkedList<TransferrableTokensParticle> mutableList, RadixAddress to, UInt256 amount) {
-		AtomBuilder atom = Atom.newBuilder();
-		Optional<ParticleGroup> feeGroup = createFeeGroup(mutableList);
-		if (feeGroup.isEmpty()) {
+		AtomBuilder atomBuilder = Atom.newBuilder();
+		boolean success = createFeeGroup(atomBuilder, mutableList);
+		if (!success) {
 			return Optional.empty();
 		}
-		atom.addParticleGroup(feeGroup.get());
 
-		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
-		builder.spinUp(factory.createTransferrable(to, amount, random.nextLong()));
-		Optional<UInt256> remainder2 = downParticles(amount, mutableList, builder::spinDown);
+		atomBuilder.spinUp(factory.createTransferrable(to, amount, random.nextLong()));
+		Optional<UInt256> remainder2 = downParticles(amount, mutableList, atomBuilder::spinDown);
 		if (remainder2.isEmpty()) {
 			return Optional.empty();
 		}
 		remainder2.filter(r -> !r.isZero()).ifPresent(r -> {
 			TransferrableTokensParticle particle = factory.createTransferrable(address, r, random.nextLong());
 			mutableList.add(particle);
-			builder.spinUp(particle);
+			atomBuilder.spinUp(particle);
 		});
-		atom.addParticleGroup(builder.build());
-		return Optional.of(atom);
+		atomBuilder.particleGroup();
+		return Optional.of(atomBuilder);
 	}
 
 	public Optional<AtomBuilder> createTransaction(RadixAddress to, UInt256 amount) {

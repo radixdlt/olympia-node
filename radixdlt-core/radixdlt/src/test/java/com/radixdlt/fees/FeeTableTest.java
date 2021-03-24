@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
@@ -58,12 +57,14 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomNotMinimum() {
 		FeeTable ft = get();
-		var a = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 1")).build())
-			.addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 2")).build());
+		var atom = Atom.newBuilder()
+			.spinUp(makeParticle("test message 1"))
+			.particleGroup()
+			.spinUp(makeParticle("test message 2"))
+			.particleGroup()
+			.buildAtom();
 
-		Atom ca = a.buildAtom();
-		UInt256 fee = ft.feeFor(ca, ca.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
+		UInt256 fee = ft.feeFor(atom, atom.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
 		assertEquals(UInt256.SIX, fee);
 	}
 
@@ -83,10 +84,12 @@ public class FeeTableTest {
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
 		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-		AtomBuilder a = Atom.newBuilder().addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 3")).build());
-		Atom ca = a.buildAtom();
-		ImmutableSet<Particle> outputs = ca.upParticles().collect(ImmutableSet.toImmutableSet());
-		assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
+		Atom atom = Atom.newBuilder()
+			.spinUp(makeParticle("test message 3"))
+			.particleGroup()
+			.buildAtom();
+		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());
+		assertThatThrownBy(() -> ft.feeFor(atom, outputs, 1))
 			.isInstanceOf(ArithmeticException.class)
 			.hasMessageStartingWith("Fee overflow");
 	}

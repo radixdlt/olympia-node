@@ -28,7 +28,6 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -99,21 +98,18 @@ public class FixedTokenTest {
 			System.currentTimeMillis()
 		);
 
-		ParticleGroup particleGroup = ParticleGroup.builder()
+		atomBuilder
 			.virtualSpinDown(rriParticle)
 			.spinUp(fixedSupply)
 			.spinUp(token)
-			.build();
-
-		atomBuilder.addParticleGroup(particleGroup);
+			.particleGroup();
 
 		return token;
 	}
 
 	private void spendToken(AtomBuilder atomBuilder, TransferrableTokensParticle p, int times) {
-		var builder = ParticleGroup.builder();
 		for (int i = 0; i < times; i++) {
-			builder.spinDown(p);
+			atomBuilder.spinDown(p);
 			var token = new TransferrableTokensParticle(
 				p.getAddress(),
 				p.getAmount(),
@@ -122,9 +118,9 @@ public class FixedTokenTest {
 				ImmutableMap.of(),
 				1
 			);
-			builder.spinUp(token);
+			atomBuilder.spinUp(token);
 		}
-		atomBuilder.addParticleGroup(builder.build());
+		atomBuilder.particleGroup();
 	}
 
 	@Test

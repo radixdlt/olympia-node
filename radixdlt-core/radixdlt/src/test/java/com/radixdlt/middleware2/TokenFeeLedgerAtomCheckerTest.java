@@ -20,7 +20,6 @@ package com.radixdlt.middleware2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -35,7 +34,6 @@ import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
 
@@ -72,11 +70,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
 		final var rri = RRI.of(address, "test");
 		final var rriParticle = new RRIParticle(rri);
-		AtomBuilder atom = Atom.newBuilder().addParticleGroup(
-			ParticleGroup.builder().virtualSpinDown(rriParticle).build()
-		);
-		Atom ledgerAtom = atom.buildAtom();
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
+		var atom = Atom.newBuilder()
+			.virtualSpinDown(rriParticle)
+			.particleGroup()
+			.buildAtom();
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -95,12 +93,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_fee__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
-		var atom = Atom.newBuilder().addParticleGroup(
-			ParticleGroup.builder().spinUp(particle).build()
-		);
-		Atom ledgerAtom = atom.buildAtom();
+		var atom = Atom.newBuilder()
+			.spinUp(particle)
+			.particleGroup().buildAtom();
 
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
 	}
 
@@ -115,16 +112,15 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(particle1).build())
-			.addParticleGroup(ParticleGroup.builder()
-				.spinUp(unallocatedParticle)
-				.spinDown(tokenInputParticle)
-				.spinUp(tokenOutputParticle)
-				.build()
-			);
-		Atom ledgerAtom = atom.buildAtom();
+			.spinUp(particle1)
+			.particleGroup()
+			.spinUp(unallocatedParticle)
+			.spinDown(tokenInputParticle)
+			.spinUp(tokenOutputParticle)
+			.particleGroup()
+			.buildAtom();
 
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -136,15 +132,14 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(particle1).build())
-			.addParticleGroup(ParticleGroup.builder()
-				.spinUp(unallocatedParticle)
-				.spinDown(tokenInputParticle)
-				.build()
-			);
-		Atom ledgerAtom = atom.buildAtom();
+			.spinUp(particle1)
+			.particleGroup()
+			.spinUp(unallocatedParticle)
+			.spinDown(tokenInputParticle)
+			.particleGroup()
+			.buildAtom();
 
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -157,17 +152,14 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		UniqueParticle extraFeeGroupParticle = new UniqueParticle("BAR", address, 0L);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(particle1).build())
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinUp(unallocatedParticle)
-					.spinDown(tokenInputParticle)
-					.spinUp(extraFeeGroupParticle)
-					.build()
-			);
-		Atom ledgerAtom = atom.buildAtom();
+			.spinUp(particle1)
+			.particleGroup()
+			.spinUp(unallocatedParticle)
+			.spinDown(tokenInputParticle)
+			.spinUp(extraFeeGroupParticle)
+			.buildAtom();
 
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
 	}
 
@@ -182,15 +174,14 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle particle4 = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(particle1).build())
-			.addParticleGroup(ParticleGroup.builder()
-				.spinUp(particle2)
-				.spinDown(particle3)
-				.spinUp(particle4)
-				.build()
-			);
-		Atom ledgerAtom = atom.buildAtom();
+			.spinUp(particle1)
+			.particleGroup()
+			.spinUp(particle2)
+			.spinDown(particle3)
+			.spinUp(particle4)
+			.particleGroup()
+			.buildAtom();
 
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 }

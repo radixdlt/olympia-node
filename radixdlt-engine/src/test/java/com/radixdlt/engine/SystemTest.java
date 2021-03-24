@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.CMAtomOS;
@@ -66,11 +65,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		// Act
 		// Assert
@@ -86,11 +84,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		// Act
 		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
@@ -104,11 +101,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(-1, 1, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -121,11 +117,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, -1, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -138,11 +133,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -172,11 +166,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		// Act
 		// Assert
@@ -190,11 +183,10 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
 		var atom = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(systemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-			).buildAtom();
+			.virtualSpinDown(systemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)

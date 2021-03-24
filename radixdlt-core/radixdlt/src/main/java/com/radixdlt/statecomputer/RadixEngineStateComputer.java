@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -200,12 +199,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			? new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp)
 			: new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
 
-		final Atom systemUpdate = Atom.newBuilder().addParticleGroup(
-			ParticleGroup.builder()
-				.spinDown(lastSystemParticle)
-				.spinUp(nextSystemParticle)
-				.build()
-		).buildAtom();
+		final Atom systemUpdate = Atom.newBuilder()
+			.spinDown(lastSystemParticle)
+			.spinUp(nextSystemParticle)
+			.particleGroup()
+			.buildAtom();
 		try {
 			branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {

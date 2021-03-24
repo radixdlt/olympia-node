@@ -19,6 +19,7 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -106,6 +107,10 @@ public final class ParticleGroup {
 			Objects.requireNonNull(particle, "particle is required");
 			var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
 			var particleHash = HashUtils.sha256(dson);
+			return spinDown(particleHash);
+		}
+
+		public final ParticleGroupBuilder spinDown(HashCode particleHash) {
 			this.instructions.add(CMMicroInstruction.spinDown(particleHash));
 			return this;
 		}

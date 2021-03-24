@@ -18,7 +18,6 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -89,16 +88,13 @@ public class StakedTokensTest {
 		this.transferrableTokensParticle = transferrableTokens(UInt256.TEN);
 
 		var builder = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(rriParticle)
-				.spinUp(tokenDefinitionParticle)
-				.spinUp(this.transferrableTokensParticle)
-				.build()
-			)
-			.addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(unregisterValidator(0))
-				.spinUp(registerValidator(1))
-				.build());
+			.virtualSpinDown(rriParticle)
+			.spinUp(tokenDefinitionParticle)
+			.spinUp(this.transferrableTokensParticle)
+			.particleGroup()
+			.virtualSpinDown(unregisterValidator(0))
+			.spinUp(registerValidator(1))
+			.particleGroup();
 
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
@@ -112,14 +108,11 @@ public class StakedTokensTest {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 
 		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
+			.spinDown(registerValidator(1))
+			.spinUp(registerValidator(2))
+			.spinUp(stakeParticle)
+			.spinDown(this.transferrableTokensParticle)
+			.particleGroup();
 
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
@@ -134,14 +127,11 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
+			.spinDown(registerValidator(1))
+			.spinUp(registerValidator(2))
+			.spinUp(stakeParticle)
+			.spinDown(this.transferrableTokensParticle)
+			.particleGroup();
 
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
@@ -149,12 +139,10 @@ public class StakedTokensTest {
 
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
 		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(tranferrableParticle)
-					.build()
-			);
+			.spinDown(stakeParticle)
+			.spinUp(tranferrableParticle)
+			.particleGroup();
+
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 		this.engine.execute(List.of(builder2.buildAtom()));
@@ -167,14 +155,11 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
+			.spinDown(registerValidator(1))
+			.spinUp(registerValidator(2))
+			.spinUp(stakeParticle)
+			.spinDown(this.transferrableTokensParticle)
+			.particleGroup();
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
 		this.engine.execute(List.of(builder.buildAtom()));
@@ -182,13 +167,10 @@ public class StakedTokensTest {
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
 		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(partialStakeParticle)
-					.spinUp(tranferrableParticle)
-					.build()
-			);
+			.spinDown(stakeParticle)
+			.spinUp(partialStakeParticle)
+			.spinUp(tranferrableParticle)
+			.particleGroup();
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 		this.engine.execute(List.of(builder2.buildAtom()));
@@ -202,14 +184,11 @@ public class StakedTokensTest {
 	public void move_staked_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
+			.spinDown(registerValidator(1))
+			.spinUp(registerValidator(2))
+			.spinUp(stakeParticle)
+			.spinDown(this.transferrableTokensParticle)
+			.particleGroup();
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
 		this.engine.execute(List.of(builder.buildAtom()));
@@ -217,12 +196,9 @@ public class StakedTokensTest {
 
 		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
 		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(restakeParticle)
-					.build()
-			);
+			.spinDown(stakeParticle)
+			.spinUp(restakeParticle)
+			.particleGroup();
 		var hashToSign2 = builder2.computeHashToSign();
 		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
 

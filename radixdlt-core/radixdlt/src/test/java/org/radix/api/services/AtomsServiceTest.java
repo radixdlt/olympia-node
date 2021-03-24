@@ -106,10 +106,10 @@ public class AtomsServiceTest {
 	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
-		var group1 = ParticleGroup.builder().spinUp(particle).build();
 
 		var atom = Atom.newBuilder()
-			.addParticleGroup(group1)
+			.spinUp(particle)
+			.particleGroup()
 			.message("Test message")
 			.buildAtom();
 

@@ -65,7 +65,6 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -197,11 +196,11 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		Atom atom = Atom.newBuilder().addParticleGroup(ParticleGroup.builder()
+		Atom atom = Atom.newBuilder()
 			.spinDown(lastSystemParticle)
 			.spinUp(nextSystemParticle)
-			.build()
-		).buildAtom();
+			.particleGroup()
+			.buildAtom();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
@@ -215,12 +214,10 @@ public class RadixEngineStateComputerTest {
 		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
 			address, 0
 		);
-		ParticleGroup particleGroup = ParticleGroup.builder()
+		AtomBuilder atom = Atom.newBuilder()
 			.virtualSpinDown(unregisteredValidatorParticle)
 			.spinUp(registeredValidatorParticle)
-			.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
+			.particleGroup();
 		HashCode hashToSign = atom.computeHashToSign();
 		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		Atom clientAtom = atom.buildAtom();
