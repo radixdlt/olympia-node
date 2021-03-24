@@ -29,7 +29,9 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -42,6 +44,15 @@ public final class AtomBuilder {
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
 	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
+	private final Map<HashCode, Particle> remoteUpParticles = new HashMap<>();
+
+	AtomBuilder(List<Particle> upParticles) {
+		for (var p : upParticles) {
+			var dson = DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
+			var particleHash = HashUtils.sha256(dson);
+			remoteUpParticles.put(particleHash, p);
+		}
+	}
 
 	AtomBuilder() {
 	}
@@ -53,6 +64,10 @@ public final class AtomBuilder {
 
 	public Stream<Particle> localUpParticles() {
 		return localUpParticles.values().stream();
+	}
+
+	public Stream<Particle> allUpParticles() {
+		return Stream.concat(localUpParticles.values().stream(), remoteUpParticles.values().stream());
 	}
 
 	public AtomBuilder spinUp(Particle particle) {
@@ -81,6 +96,7 @@ public final class AtomBuilder {
 		Objects.requireNonNull(particleHash, "particleHash is required");
 		this.instructions.add(CMMicroInstruction.spinDown(particleHash));
 		localUpParticles.remove(particleHash);
+		remoteUpParticles.remove(particleHash);
 		return this;
 	}
 

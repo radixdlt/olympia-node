@@ -34,6 +34,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
@@ -69,7 +70,8 @@ public class MockedRecoveryModule extends AbstractModule {
 		@LastEpochProof LedgerProof proof,
 		BFTValidatorSet validatorSet
 	) {
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash, validatorSet));
+		var accumulatorState = new AccumulatorState(0, genesisHash);
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet));
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
@@ -87,7 +89,8 @@ public class MockedRecoveryModule extends AbstractModule {
 	@Provides
 	@LastEpochProof
 	public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-		return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		return LedgerProof.genesis(accumulatorState, validatorSet);
 	}
 
 	@Provides

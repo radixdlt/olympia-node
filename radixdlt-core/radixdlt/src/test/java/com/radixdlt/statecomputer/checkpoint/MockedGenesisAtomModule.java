@@ -44,7 +44,7 @@ public final class MockedGenesisAtomModule extends AbstractModule {
 	    install(new RadixNativeTokenModule());
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
-		bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

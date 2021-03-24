@@ -170,7 +170,7 @@ public class RadixEngineStateComputerTest {
 		byte[] payload = serialization.toDson(genesisAtoms.get(0), DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
-			hasher.hash(command),
+			new AccumulatorState(0, hasher.hash(command)),
 			genesisValidatorSet
 		);
 		if (!genesisLedgerHeader.isEndOfEpoch()) {

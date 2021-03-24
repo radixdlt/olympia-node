@@ -88,9 +88,9 @@ public final class LedgerHeader {
 		this.timestamp = timestamp;
 	}
 
-	public static LedgerHeader genesis(HashCode accumulator, BFTValidatorSet nextValidators) {
+	public static LedgerHeader genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators) {
 		return new LedgerHeader(
-			0, View.genesis(), new AccumulatorState(0, accumulator), 0,
+			0, View.genesis(), accumulatorState, 0,
 			nextValidators == null ? null : nextValidators.getValidators()
 		);
 	}

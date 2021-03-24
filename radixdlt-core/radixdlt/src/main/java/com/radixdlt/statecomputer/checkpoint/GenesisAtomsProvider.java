@@ -25,6 +25,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
@@ -33,13 +34,15 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomProvider implements Provider<List<Atom>> {
+public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
@@ -48,7 +51,7 @@ public final class GenesisAtomProvider implements Provider<List<Atom>> {
 	private final TokenDefinition tokenDefinition;
 
 	@Inject
-	public GenesisAtomProvider(
+	public GenesisAtomsProvider(
 		@Named("magic") int magic,
 		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
 		@NativeToken TokenDefinition tokenDefinition,
@@ -82,44 +85,57 @@ public final class GenesisAtomProvider implements Provider<List<Atom>> {
 				);
 			}
 		});
-		final var builder = Atom.newBuilder().message(helloMessage());
+
+		var genesisAtoms = new ArrayList<Atom>();
+
+		final var tokenBuilder = Atom.newBuilder();
 		CheckpointUtils.createTokenDefinition(
-			builder,
+			tokenBuilder,
 			magic,
 			universeKey.getPublicKey(),
 			tokenDefinition,
 			tokenIssuances
 		);
-		CheckpointUtils.createValidators(
-			builder,
-			magic,
-			validatorKeys
-		);
-		CheckpointUtils.createStakes(
-			builder,
-			magic,
-			stakeDelegations
-		);
-		CheckpointUtils.createEpochUpdate(builder);
+		var tokenHashToSign = tokenBuilder.computeHashToSign();
+		tokenBuilder.setSignature(universeKey.euid(), universeKey.sign(tokenHashToSign));
+		genesisAtoms.add(tokenBuilder.buildAtom());
 
-		final var signingKeys = Streams.concat(
-			Stream.of(this.universeKey),
-			validatorKeys.stream(),
-			stakeDelegations.stream().map(StakeDelegation::staker)
-		).collect(ImmutableList.toImmutableList());
+		var upParticles = new ArrayList<Particle>();
+		tokenBuilder.allUpParticles().forEach(upParticles::add);
 
-		HashCode hashToSign = builder.computeHashToSign();
-		signingKeys.forEach(keyPair -> {
-			builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		});
+		for (var validatorKey : validatorKeys) {
+			var validatorBuilder = Atom.newBuilder();
+			CheckpointUtils.createValidator(
+				validatorBuilder,
+				magic,
+				validatorKey
+			);
 
-		return List.of(builder.buildAtom());
-	}
+			var hashToSign = validatorBuilder.computeHashToSign();
+			validatorBuilder.setSignature(validatorKey.euid(), validatorKey.sign(hashToSign));
+			genesisAtoms.add(validatorBuilder.buildAtom());
 
-	/*
-	 * Create the 'hello' message particle at the given universes
-	 */
-	private static String helloMessage() {
-		return "Radix... just imagine!";
+			validatorBuilder.allUpParticles().forEach(upParticles::add);
+		}
+
+		for (var stakeDelegation : stakeDelegations) {
+			var stakesBuilder = Atom.newBuilder(upParticles);
+			CheckpointUtils.createStake(
+				stakesBuilder,
+				magic,
+				stakeDelegation
+			);
+			var hashToSign = stakesBuilder.computeHashToSign();
+			stakesBuilder.setSignature(stakeDelegation.staker().euid(), stakeDelegation.staker().sign(hashToSign));
+			genesisAtoms.add(stakesBuilder.buildAtom());
+			upParticles.clear();
+			stakesBuilder.allUpParticles().forEach(upParticles::add);
+		}
+
+		var epochUpdateBuilder = Atom.newBuilder();
+		CheckpointUtils.createEpochUpdate(epochUpdateBuilder);
+		genesisAtoms.add(epochUpdateBuilder.buildAtom());
+
+		return genesisAtoms;
 	}
 }

@@ -28,8 +28,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -58,10 +60,6 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			Command command = new Command(payload);
 			BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
 					.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
-			LedgerProof genesisLedgerHeader = LedgerProof.genesis(
-				hasher.hash(command),
-				validatorSet
-			);
 			if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
 				var txn = inMemoryEngineStore.createTransaction();
 				inMemoryEngineStore.storeAtom(txn, genesisAtom);

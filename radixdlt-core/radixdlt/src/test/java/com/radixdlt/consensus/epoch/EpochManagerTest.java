@@ -84,6 +84,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -211,23 +212,26 @@ public class EpochManagerTest {
 			@Provides
 			@LastProof
 			LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
-				return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
+				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+				return LedgerProof.genesis(accumulatorState, validatorSet);
 			}
 
 			@Provides
 			@LastEpochProof
 			LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-				return LedgerProof.genesis(HashUtils.zero256(), validatorSet);
+				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+				return LedgerProof.genesis(accumulatorState, validatorSet);
 			}
 
 			@Provides
 			BFTConfiguration bftConfiguration(@Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
+				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
 				UnverifiedVertex unverifiedVertex = UnverifiedVertex.createGenesis(
-					LedgerHeader.genesis(HashUtils.zero256(), validatorSet)
+					LedgerHeader.genesis(accumulatorState, validatorSet)
 				);
 				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
-				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
+				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
 					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty())
@@ -252,7 +256,8 @@ public class EpochManagerTest {
 		// Arrange
 		epochManager.start();
 		BFTValidatorSet nextValidatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-		LedgerHeader header = LedgerHeader.genesis(HashUtils.zero256(), nextValidatorSet);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet);
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header);
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(

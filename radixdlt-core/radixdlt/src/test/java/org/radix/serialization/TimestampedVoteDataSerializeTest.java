@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 
 public class TimestampedVoteDataSerializeTest extends SerializeObject<TimestampedVoteData> {
 	public TimestampedVoteDataSerializeTest() {
@@ -31,7 +32,8 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
 		BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
 		BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
 		BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);

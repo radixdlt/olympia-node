@@ -23,6 +23,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
 import java.util.Optional;
@@ -33,7 +34,8 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 	}
 
 	private static GetVerticesErrorResponseMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
 		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
 		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
