@@ -18,11 +18,9 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
@@ -76,17 +74,16 @@ public final class UniqueTest {
 	}
 
 	private Atom uniqueAtom(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		AtomBuilder atomBuilder = Atom.newBuilder()
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var rri = RRI.of(address, "test");
+		var rriParticle = new RRIParticle(rri, 0);
+		var uniqueParticle = new UniqueParticle("test", address, random.nextLong());
+		var atomBuilder = Atom.newBuilder()
 			.virtualSpinDown(rriParticle)
 			.spinUp(uniqueParticle)
 			.particleGroup();
-		HashCode hashToSign = atomBuilder.computeHashToSign();
-		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atomBuilder.buildAtom();
+		var hashToSign = atomBuilder.computeHashToSign();
+		return atomBuilder.signAndBuild(keyPair.sign(hashToSign));
 	}
 
 	@Test

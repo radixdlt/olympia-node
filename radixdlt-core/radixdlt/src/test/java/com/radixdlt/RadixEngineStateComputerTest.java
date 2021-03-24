@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -200,7 +199,7 @@ public class RadixEngineStateComputerTest {
 			.spinDown(lastSystemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
@@ -214,16 +213,15 @@ public class RadixEngineStateComputerTest {
 		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
 			address, 0
 		);
-		AtomBuilder atom = Atom.newBuilder()
+		AtomBuilder builder = Atom.newBuilder()
 			.virtualSpinDown(unregisteredValidatorParticle)
 			.spinUp(registeredValidatorParticle)
 			.particleGroup();
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		Atom clientAtom = atom.buildAtom();
-		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		var hashToSign = builder.computeHashToSign();
+		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
+		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
 	@Test

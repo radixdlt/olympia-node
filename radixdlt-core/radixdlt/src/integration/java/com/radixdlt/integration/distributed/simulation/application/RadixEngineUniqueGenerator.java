@@ -45,8 +45,7 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 			.spinUp(uniqueParticle)
 			.particleGroup();
 		var hashToSign = atomBuilder.computeHashToSign();
-		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var clientAtom = atomBuilder.buildAtom();
+		var clientAtom = atomBuilder.signAndBuild(keyPair.sign(hashToSign));
 		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}

@@ -17,8 +17,6 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -38,6 +36,6 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 		return Atom.newBuilder()
 			.virtualSpinDown(new RRIParticle(rri))
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 	}
 }

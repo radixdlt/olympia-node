@@ -82,9 +82,8 @@ public final class Faucet {
 					log.info("Faucet sending tokens to {}", request.getAddress());
 
 					var hashToSign = builder.computeHashToSign();
-					builder.setSignature(self.euid(), hashSigner.sign(hashToSign));
 					builder.message(String.format("Sent you %s %s", amount, nativeToken.getName()));
-					var atom = builder.buildAtom();
+					var atom = builder.signAndBuild(hashSigner.sign(hashToSign));
 					var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 					var command = new Command(payload);
 					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

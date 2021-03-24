@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -31,7 +30,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -41,7 +39,6 @@ import com.radixdlt.serialization.DeserializeException;
 import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -64,7 +61,7 @@ public final class Atom {
 
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
-	private final ImmutableMap<EUID, ECDSASignature> signatures;
+	private final ECDSASignature signature;
 
 	private final ImmutableList<CMMicroInstruction> instructions;
 	private final HashCode witness;
@@ -81,11 +78,11 @@ public final class Atom {
 	private Atom(
 		@JsonProperty("m") String message,
 		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
-		@JsonProperty("s") ImmutableMap<EUID, ECDSASignature> signatures
+		@JsonProperty("s") ECDSASignature signature
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signatures == null ? ImmutableMap.of() : signatures,
+			signature,
 			message,
 			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
 		);
@@ -93,22 +90,22 @@ public final class Atom {
 
 	private Atom(
 		ImmutableList<CMMicroInstruction> instructions,
-		ImmutableMap<EUID, ECDSASignature> signatures,
+		ECDSASignature signature,
 		String message,
 		HashCode witness
 	) {
 		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
-		this.signatures = Objects.requireNonNull(signatures);
+		this.signature = signature;
 		this.witness = witness;
 	}
 
 	static Atom create(
 		ImmutableList<CMMicroInstruction> instructions,
-		ImmutableMap<EUID, ECDSASignature> signatures,
+		ECDSASignature signature,
 		String message
 	) {
-		return new Atom(instructions, signatures, message, computeHashToSign(instructions));
+		return new Atom(instructions, signature, message, computeHashToSign(instructions));
 	}
 
 	// FIXME: need to include message
@@ -129,12 +126,8 @@ public final class Atom {
 		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
 	}
 
-	public Optional<ECDSASignature> getSignature(EUID euid) {
-		return Optional.ofNullable(this.signatures.get(euid));
-	}
-
-	public Map<EUID, ECDSASignature> getSignatures() {
-		return this.signatures;
+	public Optional<ECDSASignature> getSignature() {
+		return Optional.ofNullable(this.signature);
 	}
 
 	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {

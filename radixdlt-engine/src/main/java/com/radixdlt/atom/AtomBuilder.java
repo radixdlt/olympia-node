@@ -19,14 +19,12 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 
 import java.util.HashMap;
@@ -41,7 +39,6 @@ import java.util.stream.Stream;
 public final class AtomBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
-	private final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
 	private final Map<HashCode, Particle> remoteUpParticles = new HashMap<>();
 
@@ -108,15 +105,19 @@ public final class AtomBuilder {
 		return Atom.computeHashToSign(instructions.build());
 	}
 
-	public Atom buildAtom() {
+	public Atom buildWithoutSignature() {
 		return Atom.create(
 			instructions.build(),
-			ImmutableMap.copyOf(this.signatures),
+			null,
 			this.message
 		);
 	}
 
-	public void setSignature(EUID id, ECDSASignature signature) {
-		this.signatures.put(id, signature);
+	public Atom signAndBuild(ECDSASignature signature) {
+		return Atom.create(
+			instructions.build(),
+			signature,
+			this.message
+		);
 	}
 }

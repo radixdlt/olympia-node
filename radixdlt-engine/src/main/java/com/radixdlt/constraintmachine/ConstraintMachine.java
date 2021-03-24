@@ -24,7 +24,6 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -91,7 +90,7 @@ public final class ConstraintMachine {
 		private final Map<Particle, Spin> currentSpins;
 		private final Map<HashCode, Particle> upParticles = new HashMap<>();
 		private final HashCode witness;
-		private final Map<EUID, ECDSASignature> signatures;
+		private final Optional<ECDSASignature> signature;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 		private final CMStore store;
 		private final CMStore.Transaction txn;
@@ -101,14 +100,14 @@ public final class ConstraintMachine {
 			CMStore store,
 			PermissionLevel permissionLevel,
 			HashCode witness,
-			Map<EUID, ECDSASignature> signatures
+			Optional<ECDSASignature> signature
 		) {
 			this.txn = txn;
 			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
-			this.signatures = signatures;
+			this.signature = signature;
 		}
 
 		public Optional<Particle> loadUpParticle(HashCode particleHash) {
@@ -160,12 +159,11 @@ public final class ConstraintMachine {
 		}
 
 		private boolean verifySignedWith(ECPublicKey publicKey) {
-			if (signatures == null || signatures.isEmpty() || witness == null) {
+			if (signature.isEmpty() || witness == null) {
 				return false;
 			}
 
-			final ECDSASignature signature = signatures.get(publicKey.euid());
-			return publicKey.verify(witness, signature);
+			return publicKey.verify(witness, signature.get());
 		}
 
 		Particle getCurParticle() {
@@ -505,7 +503,7 @@ public final class ConstraintMachine {
 			cmStore,
 			permissionLevel,
 			atom.getWitness(),
-			atom.getSignatures()
+			atom.getSignature()
 		);
 
 		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), downedParticles);

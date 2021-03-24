@@ -22,9 +22,9 @@
 
 package com.radixdlt.client.application.identity;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.crypto.exception.CryptoException;
-import com.radixdlt.identifiers.EUID;
 
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.crypto.ECKeyPair;
@@ -40,17 +40,15 @@ public class LocalRadixIdentity implements RadixIdentity {
 		this.myKey = myKey;
 	}
 
-	public AtomBuilder syncAddSignature(AtomBuilder atom) {
-		ECDSASignature signature = myKey.sign(atom.computeHashToSign().asBytes());
-		EUID signatureId = myKey.euid();
-		atom.setSignature(signatureId, signature);
-		return atom;
+	public Atom syncAddSignature(AtomBuilder builder) {
+		ECDSASignature signature = myKey.sign(builder.computeHashToSign().asBytes());
+		return builder.signAndBuild(signature);
 	}
 
 	@Override
-	public Single<AtomBuilder> addSignature(AtomBuilder atom) {
+	public Single<Atom> addSignature(AtomBuilder atom) {
 		return Single.create(emitter -> {
-			final AtomBuilder signedAtom = syncAddSignature(atom);
+			final Atom signedAtom = syncAddSignature(atom);
 			emitter.onSuccess(signedAtom);
 		});
 	}

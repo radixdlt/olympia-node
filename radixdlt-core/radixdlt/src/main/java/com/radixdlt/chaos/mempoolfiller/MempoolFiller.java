@@ -17,7 +17,6 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.AtomBuilder;
@@ -33,7 +32,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -126,10 +124,9 @@ public final class MempoolFiller {
 			);
 
 			List<BFTNode> peers = peersView.peers();
-			atoms.forEach(atom -> {
-				HashCode hashToSign = atom.computeHashToSign();
-				atom.setSignature(selfAddress.euid(), hashSigner.sign(hashToSign));
-				Atom clientAtom = atom.buildAtom();
+			atoms.forEach(atomBuilder -> {
+				var hashToSign = atomBuilder.computeHashToSign();
+				var clientAtom = atomBuilder.signAndBuild(hashSigner.sign(hashToSign));
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
