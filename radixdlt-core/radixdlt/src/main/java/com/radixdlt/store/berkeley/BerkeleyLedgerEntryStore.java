@@ -521,8 +521,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
-			throw new IllegalStateException("Dowing particle does not exist " + particleId);
+			throw new IllegalStateException("Downing particle does not exist " + particleId);
 		}
+
+		if (downedParticle.getSize() == 0) {
+			throw new IllegalStateException("Particle was already spun down: " + particleId);
+		}
+
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(particleKey), downEntry());
 
@@ -607,17 +612,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom", e);
-		} catch (UniqueConstraintException e) {
-			if (transaction != null) {
-				transaction.abort();
-			}
-			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
-			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
+			e.printStackTrace();
+			throw new BerkeleyStoreException("Unable to store atom: " + atom.toInstructionsString(), e);
 		}
 	}
 
