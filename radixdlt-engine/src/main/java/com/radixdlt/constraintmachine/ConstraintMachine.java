@@ -32,9 +32,11 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -90,6 +92,7 @@ public final class ConstraintMachine {
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
 		private final Map<HashCode, Particle> upParticles = new HashMap<>();
+		private final Set<HashCode> downParticles = new HashSet<>();
 		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
@@ -115,6 +118,11 @@ public final class ConstraintMachine {
 			if (upParticles.containsKey(particleHash)) {
 				return Optional.of(upParticles.get(particleHash));
 			}
+
+			if (downParticles.contains(particleHash)) {
+				return Optional.empty();
+			}
+
 			return store.loadUpParticle(txn, particleHash);
 		}
 
@@ -151,6 +159,7 @@ public final class ConstraintMachine {
 		public Optional<Particle> checkUpAndPush(HashCode particleHash) {
 			var maybeParticle = loadUpParticle(particleHash);
 			upParticles.remove(particleHash);
+			downParticles.add(particleHash);
 			return maybeParticle;
 		}
 

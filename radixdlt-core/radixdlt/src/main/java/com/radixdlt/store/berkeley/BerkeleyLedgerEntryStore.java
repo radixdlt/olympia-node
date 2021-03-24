@@ -64,7 +64,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,7 +80,6 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
-import static com.sleepycat.je.LockMode.READ_COMMITTED;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
@@ -518,18 +516,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void downParticle(com.sleepycat.je.Transaction txn, HashCode particleId) {
 		var particleKey = particleId.asBytes();
 		// TODO: check for up Particle state
-		var downedParticle = entry();
+		final var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
-			throw new IllegalStateException("Dowing particle does not exist " + particleId);
+			throw new IllegalStateException("Downing particle does not exist " + particleId);
 		}
+
+		if (downedParticle.getData().length == 0) {
+			throw new IllegalStateException("Particle was already spun down: " + particleId);
+		}
+
+		var serializedParticle = new byte[downedParticle.getData().length - EUID.BYTES];
+		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
+
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(particleKey), downEntry());
-
-		var serializedParticle = new byte[downedParticle.getSize() - EUID.BYTES];
-		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-
-		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
 		particleConsumer.accept(SpunParticle.down(particle));
 	}
 
@@ -607,17 +609,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom", e);
-		} catch (UniqueConstraintException e) {
-			if (transaction != null) {
-				transaction.abort();
-			}
-			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
-			throw new BerkeleyStoreException("Fatal unique constraint exception", e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + atom.toInstructionsString(), e);
 		}
 	}
 
@@ -695,7 +691,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var particleId = hasher.hash(particle);
 		var key = entry(particleId.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status == SUCCESS) {
 			return entryToSpin(value);
 		} else {
@@ -707,7 +703,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash) {
 		var key = entry(particleHash.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
