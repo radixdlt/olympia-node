@@ -355,7 +355,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			try {
 				this.engineStore.storeAtom(txn, atom);
 			} catch (Exception e) {
-				logger.error("Store atoms failed: {} downedParticles: {}", atom, downedParticles);
+				logger.error("Store of atom {} failed. downedParticles: {}", atom, downedParticles);
 				throw e;
 			}
 

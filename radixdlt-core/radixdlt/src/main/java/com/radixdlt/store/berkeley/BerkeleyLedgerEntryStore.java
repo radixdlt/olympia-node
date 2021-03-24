@@ -64,7 +64,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.UniqueConstraintException;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,7 +79,7 @@ import java.util.function.Supplier;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
-import static com.sleepycat.je.LockMode.*;
+import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
@@ -614,7 +613,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 			if (transaction != null) {
 				transaction.abort();
 			}
-			e.printStackTrace();
 			throw new BerkeleyStoreException("Unable to store atom:\n" + atom.toInstructionsString(), e);
 		}
 	}
