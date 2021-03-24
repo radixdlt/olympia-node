@@ -228,7 +228,7 @@ public final class GenerateUniverses {
 
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+					bind(new TypeLiteral<List<Atom>>() { }).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
 					var selfIssuance = TokenIssuance.of(
 						universeKey.getPublicKey(), UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)

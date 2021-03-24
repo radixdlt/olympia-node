@@ -36,6 +36,8 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationT
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.observers.TestObserver;
+
+import java.util.List;
 import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
@@ -73,11 +75,13 @@ public class AtomStatusTest {
 
 	@Test
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
-		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
-		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
-		this.rpcClient.getAtomStatus(Atoms.atomIdOf(atom)).subscribe(atomStatusTestObserver);
-		atomStatusTestObserver.awaitTerminalEvent();
-		atomStatusTestObserver.assertValue(AtomStatus.STORED);
+		List<Atom> atoms = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
+		for (var atom : atoms) {
+			TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
+			this.rpcClient.getAtomStatus(Atoms.atomIdOf(atom)).subscribe(atomStatusTestObserver);
+			atomStatusTestObserver.awaitTerminalEvent();
+			atomStatusTestObserver.assertValue(AtomStatus.STORED);
+		}
 	}
 
 	@Test

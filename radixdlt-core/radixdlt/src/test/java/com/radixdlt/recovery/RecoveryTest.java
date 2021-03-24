@@ -111,7 +111,7 @@ public class RecoveryTest {
 
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
@@ -162,7 +162,7 @@ public class RecoveryTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);

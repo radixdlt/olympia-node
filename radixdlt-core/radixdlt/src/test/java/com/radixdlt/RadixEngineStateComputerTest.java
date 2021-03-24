@@ -101,7 +101,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -160,14 +160,14 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
+		branch.execute(genesisAtoms, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
 		);
 		radixEngine.deleteBranches();
 
-		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		byte[] payload = serialization.toDson(genesisAtoms.get(0), DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
 			hasher.hash(command),
@@ -176,7 +176,7 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		radixEngine.execute(genesisAtoms, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
 	}
 
 	@Before

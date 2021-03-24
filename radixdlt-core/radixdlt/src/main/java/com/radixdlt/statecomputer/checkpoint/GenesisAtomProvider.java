@@ -33,12 +33,13 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomProvider implements Provider<Atom> {
+public final class GenesisAtomProvider implements Provider<List<Atom>> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
@@ -64,7 +65,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 	}
 
 	@Override
-	public Atom get() {
+	public List<Atom> get() {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
@@ -112,7 +113,7 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 			builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
 		});
 
-		return builder.buildAtom();
+		return List.of(builder.buildAtom());
 	}
 
 	/*

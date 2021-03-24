@@ -91,14 +91,16 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		AtomIndex atomIndex,
 		CommittedReader committedReader,
-		@Genesis Atom genesisAtom,
+		@Genesis List<Atom> genesisAtoms,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		Command cmd = new Command(DefaultSerialization.getInstance().toDson(genesisAtom, DsonOutput.Output.ALL));
-		if (!atomIndex.contains(cmd.getId())) {
-			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
+		for (var genesisAtom : genesisAtoms) {
+			Command cmd = new Command(DefaultSerialization.getInstance().toDson(genesisAtom, DsonOutput.Output.ALL));
+			if (!atomIndex.contains(cmd.getId())) {
+				storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
+			}
 		}
 
 		return committedReader.getLastProof().orElseThrow();

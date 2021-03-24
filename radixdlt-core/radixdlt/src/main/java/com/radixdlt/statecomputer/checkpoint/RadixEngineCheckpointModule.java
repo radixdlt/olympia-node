@@ -27,6 +27,8 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 
+import java.util.List;
+
 /**
  * Configures the module in charge of "weak-subjectivity" or checkpoints
  * which the node will always align with
@@ -40,9 +42,9 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Provides
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
-	private RRI nativeToken(@Genesis Atom atom) {
+	private RRI nativeToken(@Genesis List<Atom> atoms) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = atom.upParticles()
+		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::upParticles)
 			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
 			.map(p -> (MutableSupplyTokenDefinitionParticle) p)
 			.map(MutableSupplyTokenDefinitionParticle::getRRI)
