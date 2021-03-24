@@ -19,14 +19,12 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput;
 
 /**
@@ -36,17 +34,13 @@ import com.radixdlt.serialization.DsonOutput;
 public class RadixEngineUniqueGenerator implements CommandGenerator {
 	@Override
 	public Command nextCommand() {
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var keyPair = ECKeyPair.generateNew();
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, 1);
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
-			.build();
-		AtomBuilder atomBuilder = Atom.newBuilder()
+		var rri = RRI.of(address, "test");
+		var rriParticle = new RRIParticle(rri, 0);
+		var uniqueParticle = new UniqueParticle("test", address, 1);
+		var atomBuilder = Atom.newBuilder()
 			.virtualSpinDown(rriParticle)
 			.spinUp(uniqueParticle)
 			.particleGroup();
