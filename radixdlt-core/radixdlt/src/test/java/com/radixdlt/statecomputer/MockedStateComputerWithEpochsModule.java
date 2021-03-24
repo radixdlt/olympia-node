@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -32,9 +31,8 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Singleton
 	private StateComputer stateComputer(
 		@EpochCeilingView View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
-		Hasher hasher
+		Function<Long, BFTValidatorSet> validatorSetMapping
 	) {
-		return new MockedStateComputerWithEpochs(hasher, validatorSetMapping, epochHighView);
+		return new MockedStateComputerWithEpochs(validatorSetMapping, epochHighView);
 	}
 }

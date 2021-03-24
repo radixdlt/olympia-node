@@ -42,6 +42,7 @@ import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
@@ -88,13 +89,15 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@LastStoredProof
 	LedgerProof lastStoredProof(
 		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		AtomIndex atomIndex,
 		CommittedReader committedReader,
 		@Genesis Atom genesisAtom,
 		Hasher hasher,
 		Serialization serialization,
 		ValidatorSetBuilder validatorSetBuilder
 	) throws RadixEngineException {
-		if (!radixEngine.contains(genesisAtom)) {
+		Command cmd = new Command(DefaultSerialization.getInstance().toDson(genesisAtom, DsonOutput.Output.ALL));
+		if (!atomIndex.contains(cmd.getId())) {
 			storeGenesis(radixEngine, genesisAtom, validatorSetBuilder, serialization, hasher);
 		}
 

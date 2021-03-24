@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -68,6 +69,10 @@ public final class AID implements Comparable<AID> {
 			);
 		}
 		System.arraycopy(this.value, 0, array, offset, BYTES);
+	}
+
+	public HashCode asHashCode() {
+		return HashCode.fromBytes(value);
 	}
 
 	@Override

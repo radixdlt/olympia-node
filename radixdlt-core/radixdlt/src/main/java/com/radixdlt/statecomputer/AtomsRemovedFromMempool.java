@@ -18,7 +18,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
@@ -30,18 +30,18 @@ import java.util.function.BiConsumer;
  * after a commit.
  */
 public final class AtomsRemovedFromMempool {
-    private final List<Pair<Atom, Exception>> removed;
+    private final List<Pair<Command, Exception>> removed;
 
-    private AtomsRemovedFromMempool(List<Pair<Atom, Exception>> removed) {
+    private AtomsRemovedFromMempool(List<Pair<Command, Exception>> removed) {
         this.removed = removed;
     }
 
-    public static AtomsRemovedFromMempool create(List<Pair<Atom, Exception>> removed) {
+    public static AtomsRemovedFromMempool create(List<Pair<Command, Exception>> removed) {
         Objects.requireNonNull(removed);
         return new AtomsRemovedFromMempool(removed);
     }
 
-    public void forEach(BiConsumer<Atom, Exception> biConsumer) {
+    public void forEach(BiConsumer<Command, Exception> biConsumer) {
         removed.forEach(p -> biConsumer.accept(p.getFirst(), p.getSecond()));
     }
 

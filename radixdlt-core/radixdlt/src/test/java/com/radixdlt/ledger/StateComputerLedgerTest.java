@@ -64,7 +64,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-	private Mempool<Command> mempool;
+	private Mempool mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
@@ -123,8 +123,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 
@@ -150,8 +149,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 

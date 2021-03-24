@@ -96,7 +96,7 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static Atom createAtom(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
+	private static Atom createAtom(ECKeyPair keyPair, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
@@ -116,20 +116,20 @@ public class MempoolTest {
 		return atom.buildAtom();
 	}
 
-	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce, int numParticles) {
-		Atom atom = createAtom(keyPair, hasher, nonce, numParticles);
+	private static Command createCommand(ECKeyPair keyPair, int nonce, int numParticles) {
+		Atom atom = createAtom(keyPair, nonce, numParticles);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
-	private static Command createCommand(ECKeyPair keyPair, Hasher hasher) {
-		Atom atom = createAtom(keyPair, hasher, 0, 1);
+	private static Command createCommand(ECKeyPair keyPair) {
+		Atom atom = createAtom(keyPair, 0, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
-	private static Command createCommand(ECKeyPair keyPair, Hasher hasher, int nonce) {
-		Atom atom = createAtom(keyPair, hasher, nonce, 1);
+	private static Command createCommand(ECKeyPair keyPair, int nonce) {
+		Atom atom = createAtom(keyPair, nonce, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
@@ -139,7 +139,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 
 		// Act
 		processor.handleMessage(self, MempoolAdd.create(command));
@@ -155,7 +155,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 
 		// Act
 		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command));
@@ -171,7 +171,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 
 		// Act
 		processor.handleMessage(self, MempoolAddSuccess.create(command));
@@ -185,7 +185,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 
 		// Act
 		processor.handleMessage(self, MempoolAddSuccess.create(command, getFirstPeer()));
@@ -199,7 +199,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
@@ -215,12 +215,12 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher, 0, 2);
+		Command command = createCommand(keyPair, 0, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, hasher, 0, 1);
+		Command command2 = createCommand(keyPair, 0, 1);
 		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(command2);
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
@@ -247,7 +247,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher, 1);
+		Command command = createCommand(keyPair, 1);
 
 		// Act
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
@@ -262,7 +262,7 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher);
+		Command command = createCommand(keyPair);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn(1L);
@@ -282,12 +282,12 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher, 0, 2);
+		Command command = createCommand(keyPair, 0, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, hasher, 0, 1);
+		Command command2 = createCommand(keyPair, 0, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn(1L);
@@ -303,14 +303,14 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, hasher, 0, 2);
+		Command command = createCommand(keyPair, 0, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
-		Command command2 = createCommand(keyPair, hasher, 0, 3);
+		Command command2 = createCommand(keyPair, 0, 3);
 		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command2));
 
 		// Act
-		Command command3 = createCommand(keyPair, hasher, 0, 1);
+		Command command3 = createCommand(keyPair, 0, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn(1L);

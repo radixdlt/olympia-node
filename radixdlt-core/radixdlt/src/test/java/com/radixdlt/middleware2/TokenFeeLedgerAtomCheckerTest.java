@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerParticleFeeEntry;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.ParticleGroup;
@@ -86,7 +85,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(), ImmutableMap.of()
 		);
-		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 
 		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())

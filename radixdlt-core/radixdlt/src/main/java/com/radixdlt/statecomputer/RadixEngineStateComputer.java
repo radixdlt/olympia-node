@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -71,7 +70,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
-	private final Hasher hasher;
 
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
@@ -87,7 +85,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Mempool<Atom> mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
@@ -103,7 +100,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochCeilingView = epochCeilingView;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
-		this.hasher = Objects.requireNonNull(hasher);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
 		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
@@ -115,18 +111,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
-		private final HashCode hash;
 		private final Atom atom;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineCommand(
 			Command command,
-			HashCode hash,
 			Atom atom,
 			PermissionLevel permissionLevel
 		) {
 			this.command = command;
-			this.hash = hash;
 			this.atom = atom;
 			this.permissionLevel = permissionLevel;
 		}
@@ -138,7 +131,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		@Override
 		public HashCode hash() {
-			return hash;
+			return command.getId().asHashCode();
 		}
 	}
 
@@ -160,13 +153,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
-		Set<Atom> preparedAtoms = prepared.stream()
+		Set<Command> cmds = prepared.stream()
 			.map(p -> (RadixEngineCommand) p)
-			.map(c -> c.atom)
+			.map(c -> c.command)
 			.collect(Collectors.toSet());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Command> commands = mempool.getCommands(1, preparedAtoms);
+		final List<Command> commands = mempool.getCommands(1, cmds);
 		if (commands.isEmpty()) {
 			return null;
 		} else {
@@ -223,7 +216,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
 			command,
-			hasher.hash(command),
 			systemUpdate,
 			PermissionLevel.SUPER_USER
 		);
@@ -249,8 +241,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				return;
 			}
 
-			var hash = hasher.hash(next);
-			var radixEngineCommand = new RadixEngineCommand(next, hash, atom, PermissionLevel.USER);
+			var radixEngineCommand = new RadixEngineCommand(next, atom, PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}
@@ -328,7 +319,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		List<Pair<Atom, Exception>> removed = this.mempool.committed(atomsCommitted);
+		List<Pair<Command, Exception>> removed = this.mempool.committed(atomsCommitted);
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
@@ -337,7 +328,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(atomsCommitted));
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(verifiedCommandsAndProof.getCommands()));
 		}
 	}
 }

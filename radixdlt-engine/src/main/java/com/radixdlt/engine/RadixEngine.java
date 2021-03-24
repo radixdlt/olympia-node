@@ -383,8 +383,4 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 
 	}
-
-	public boolean contains(T atom) {
-		return engineStore.containsAtom(atom);
-	}
 }

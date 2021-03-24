@@ -17,7 +17,6 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
@@ -110,10 +109,8 @@ public class AtomStatusEpic {
 		}
 
 		@Override
-		public void onStored(Atom committedAtom) {
-			sendAtomSubmissionState.accept(STORED, jsonObject()
-				.put("aid", committedAtom.getAID())
-			);
+		public void onStored(AID atomId) {
+			sendAtomSubmissionState.accept(STORED, jsonObject().put("aid", atomId));
 		}
 
 		@Override

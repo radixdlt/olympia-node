@@ -47,6 +47,4 @@ public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
 		V initial,
 		BiFunction<V, U, V> outputReducer
 	);
-
-	boolean containsAtom(T atom);
 }

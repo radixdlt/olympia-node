@@ -35,16 +35,16 @@ public class Mempools {
 		return new Mempool<>() {
 			@Override
 			public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-			    // No-op
+				// No-op
 			}
 
 			@Override
-			public List<Pair<T, Exception>> committed(List<T> committed) {
+			public List<Pair<Command, Exception>> committed(List<T> committed) {
 				return List.of();
 			}
 
 			@Override
-			public List<Command> getCommands(int count, Set<T> seen) {
+			public List<Command> getCommands(int count, Set<Command> seen) {
 				return List.of();
 			}
 		};

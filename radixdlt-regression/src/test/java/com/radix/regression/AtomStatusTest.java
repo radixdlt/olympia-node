@@ -26,6 +26,7 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
+import com.radixdlt.client.core.atoms.Atoms;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -74,7 +75,7 @@ public class AtomStatusTest {
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
 		Atom atom = RadixEnv.getBootstrapConfig().getConfig().getGenesis();
 		TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
-		this.rpcClient.getAtomStatus(atom.getAID()).subscribe(atomStatusTestObserver);
+		this.rpcClient.getAtomStatus(Atoms.atomIdOf(atom)).subscribe(atomStatusTestObserver);
 		atomStatusTestObserver.awaitTerminalEvent();
 		atomStatusTestObserver.assertValue(AtomStatus.STORED);
 	}
@@ -103,7 +104,7 @@ public class AtomStatusTest {
 		this.rpcClient.observeAtomStatusNotifications(subscriberId)
 			.doOnNext(n -> {
 				if (n.getType() == NotificationType.START) {
-					this.rpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAID()).blockingAwait();
+					this.rpcClient.sendGetAtomStatusNotifications(subscriberId, Atoms.atomIdOf(atom)).blockingAwait();
 					this.rpcClient.pushAtom(atom).blockingAwait();
 				}
 			})

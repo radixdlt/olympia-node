@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -223,10 +222,6 @@ public final class Atom implements RadixEngineAtom {
 	@Override
 	public HashCode getWitness() {
 		return witness;
-	}
-
-	public AID getAID() {
-		return AID.from(witness.asBytes());
 	}
 
 	public String getMessage() {

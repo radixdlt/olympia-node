@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -53,15 +52,14 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private Mempool<Command> mempool(
 		@MempoolMaxSize int maxSize,
 		SystemCounters systemCounters,
-		Random random,
-		Hasher hasher
+		Random random
 	) {
-		return new SimpleMempool(maxSize, hasher::hash, systemCounters, random);
+		return new SimpleMempool(maxSize, systemCounters, random);
 	}
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool, Hasher hasher) {
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(Command command, BFTNode origin) {
@@ -89,7 +87,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 				return new StateComputerLedger.StateComputerResult(
 					next == null
 						? ImmutableList.of()
-						: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
+						: ImmutableList.of(new MockPrepared(next)),
 					ImmutableMap.of()
 				);
 			}
