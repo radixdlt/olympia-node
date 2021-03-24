@@ -273,7 +273,7 @@ public class MultipleTransitionsInSameGroupTest {
 				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
 					unsignedAtom.spinUp(i.getParticle());
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-					unsignedAtom.spinDown(i.getParticle());
+					unsignedAtom.virtualSpinDown(i.getParticle());
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
 					unsignedAtom.spinDown(i.getParticleHash());
 				}
