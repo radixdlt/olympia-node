@@ -217,8 +217,7 @@ public class RadixEngineStateComputerTest {
 			.virtualSpinDown(unregisteredValidatorParticle)
 			.spinUp(registeredValidatorParticle)
 			.particleGroup();
-		var hashToSign = builder.computeHashToSign();
-		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		var atom = builder.signAndBuild(keyPair::sign);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);

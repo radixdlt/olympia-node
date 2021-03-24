@@ -92,8 +92,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			tokenDefinition,
 			tokenIssuances
 		);
-		var tokenHashToSign = tokenBuilder.computeHashToSign();
-		var tokenAtom = tokenBuilder.signAndBuild(universeKey.sign(tokenHashToSign));
+		var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign);
 		genesisAtoms.add(tokenAtom);
 
 		var upParticles = new ArrayList<Particle>();
@@ -107,8 +106,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				validatorKey
 			);
 
-			var hashToSign = validatorBuilder.computeHashToSign();
-			var validatorAtom = validatorBuilder.signAndBuild(validatorKey.sign(hashToSign));
+			var validatorAtom = validatorBuilder.signAndBuild(validatorKey::sign);
 			genesisAtoms.add(validatorAtom);
 
 			validatorBuilder.allUpParticles().forEach(upParticles::add);
@@ -121,8 +119,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				magic,
 				stakeDelegation
 			);
-			var hashToSign = stakesBuilder.computeHashToSign();
-			var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker().sign(hashToSign));
+			var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
 			genesisAtoms.add(stakeAtom);
 			upParticles.clear();
 			stakesBuilder.allUpParticles().forEach(upParticles::add);

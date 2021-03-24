@@ -111,8 +111,7 @@ public class MempoolTest {
 				.spinUp(uniqueParticle);
 		}
 		atomBuilder.particleGroup();
-		var hashToSign = atomBuilder.computeHashToSign();
-		return atomBuilder.signAndBuild(keyPair.sign(hashToSign));
+		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, int nonce, int numParticles) {

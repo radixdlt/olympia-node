@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -101,7 +102,7 @@ public final class AtomBuilder {
 		return this;
 	}
 
-	public HashCode computeHashToSign() {
+	private HashCode computeHashToSign() {
 		return Atom.computeHashToSign(instructions.build());
 	}
 
@@ -113,7 +114,9 @@ public final class AtomBuilder {
 		);
 	}
 
-	public Atom signAndBuild(ECDSASignature signature) {
+	public Atom signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
+		var hashToSign = computeHashToSign();
+		var signature = signatureProvider.apply(hashToSign);
 		return Atom.create(
 			instructions.build(),
 			signature,

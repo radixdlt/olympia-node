@@ -129,13 +129,11 @@ public class FixedTokenTest {
 		var keyPair = ECKeyPair.generateNew();
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
-		var hashToSign = builder.computeHashToSign();
-		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		var atom = builder.signAndBuild(keyPair::sign);
 		sut.execute(List.of(atom));
 		var builder2 = Atom.newBuilder();
 		spendToken(builder2, upToken, 1);
-		var hashToSign2 = builder2.computeHashToSign();
-		var atom2 = builder2.signAndBuild(keyPair.sign(hashToSign2));
+		var atom2 = builder2.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom2));
@@ -149,8 +147,7 @@ public class FixedTokenTest {
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 1);
-		var hashToSign = builder.computeHashToSign();
-		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom));
@@ -164,8 +161,7 @@ public class FixedTokenTest {
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 2);
-		var hashToSign = builder.computeHashToSign();
-		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);

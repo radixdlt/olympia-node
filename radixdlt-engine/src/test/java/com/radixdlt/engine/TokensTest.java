@@ -72,8 +72,7 @@ public class TokensTest {
 			.spinUp(tokenDefinitionParticle)
 			.spinUp(transferrableTokensParticle)
 			.particleGroup();
-		var hashToSign = builder.computeHashToSign();
-		var atom = builder.signAndBuild(keyPair.sign(hashToSign));
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act
 		this.engine.execute(List.of(atom));

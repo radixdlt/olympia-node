@@ -82,8 +82,7 @@ public final class UniqueTest {
 			.virtualSpinDown(rriParticle)
 			.spinUp(uniqueParticle)
 			.particleGroup();
-		var hashToSign = atomBuilder.computeHashToSign();
-		return atomBuilder.signAndBuild(keyPair.sign(hashToSign));
+		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
 	@Test

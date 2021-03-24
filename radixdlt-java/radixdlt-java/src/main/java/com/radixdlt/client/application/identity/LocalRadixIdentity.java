@@ -29,7 +29,6 @@ import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECDSASignature;
 
 import io.reactivex.Single;
 
@@ -40,15 +39,10 @@ public class LocalRadixIdentity implements RadixIdentity {
 		this.myKey = myKey;
 	}
 
-	public Atom syncAddSignature(AtomBuilder builder) {
-		ECDSASignature signature = myKey.sign(builder.computeHashToSign().asBytes());
-		return builder.signAndBuild(signature);
-	}
-
 	@Override
-	public Single<Atom> addSignature(AtomBuilder atom) {
+	public Single<Atom> addSignature(AtomBuilder builder) {
 		return Single.create(emitter -> {
-			final Atom signedAtom = syncAddSignature(atom);
+			final Atom signedAtom = builder.signAndBuild(this.myKey::sign);
 			emitter.onSuccess(signedAtom);
 		});
 	}
