@@ -28,13 +28,11 @@ import com.google.inject.name.Named;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -83,32 +81,25 @@ public final class GenesisAtomProvider implements Provider<Atom> {
 				);
 			}
 		});
-		final var epochParticleGroup = CheckpointUtils.createEpochUpdate();
-		final var xrdParticleGroups = CheckpointUtils.createTokenDefinition(
+		final var builder = Atom.newBuilder().message(helloMessage());
+		CheckpointUtils.createTokenDefinition(
+			builder,
 			magic,
 			universeKey.getPublicKey(),
 			tokenDefinition,
 			tokenIssuances
 		);
-
-		final var validatorParticleGroup = CheckpointUtils.createValidators(
+		CheckpointUtils.createValidators(
+			builder,
 			magic,
 			validatorKeys
 		);
-		final var stakingParticleGroups = CheckpointUtils.createStakes(
+		CheckpointUtils.createStakes(
+			builder,
 			magic,
-			stakeDelegations,
-			xrdParticleGroups.stream().flatMap(ParticleGroup::upParticles).collect(Collectors.toList())
+			stakeDelegations
 		);
-
-		final var builder = Atom.newBuilder().message(helloMessage());
-		xrdParticleGroups.forEach(builder::addParticleGroup);
-		builder.addParticleGroup(validatorParticleGroup);
-
-		if (!stakingParticleGroups.isEmpty()) {
-			stakingParticleGroups.forEach(builder::addParticleGroup);
-		}
-		builder.addParticleGroup(epochParticleGroup);
+		CheckpointUtils.createEpochUpdate(builder);
 
 		final var signingKeys = Streams.concat(
 			Stream.of(this.universeKey),

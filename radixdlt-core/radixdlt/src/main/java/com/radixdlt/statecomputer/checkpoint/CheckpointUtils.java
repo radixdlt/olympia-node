@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
@@ -29,7 +30,6 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
@@ -39,7 +39,6 @@ import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +55,11 @@ public final class CheckpointUtils {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static ParticleGroup createEpochUpdate() {
+	public static void createEpochUpdate(AtomBuilder atomBuilder) {
 		var builder = ParticleGroup.builder();
 		builder.virtualSpinDown(new SystemParticle(0, 0, 0));
 		builder.spinUp(new SystemParticle(1, 0, 0));
-		return builder.build();
+		atomBuilder.addParticleGroup(builder.build());
 	}
 
 	private static Optional<UInt256> downTransferrableParticles(
@@ -102,7 +101,8 @@ public final class CheckpointUtils {
 		return Optional.of(spent.subtract(amount));
 	}
 
-	public static List<ParticleGroup> createTokenDefinition(
+	public static void createTokenDefinition(
+		AtomBuilder atomBuilder,
 		byte magic,
 		ECPublicKey key,
 		TokenDefinition tokenDefinition,
@@ -149,10 +149,15 @@ public final class CheckpointUtils {
 		}
 
 		ParticleGroup issuanceParticleGroup = builder.build();
-		return List.of(tokDefParticleGroup, issuanceParticleGroup);
+		atomBuilder.addParticleGroup(tokDefParticleGroup);
+		atomBuilder.addParticleGroup(issuanceParticleGroup);
 	}
 
-	public static ParticleGroup createValidators(byte magic, ImmutableList<ECKeyPair> validatorKeys) {
+	public static void createValidators(
+		AtomBuilder atomBuilder,
+		byte magic,
+		ImmutableList<ECKeyPair> validatorKeys
+	) {
 		var builder = ParticleGroup.builder();
 		validatorKeys.forEach(key -> {
 			RadixAddress validatorAddress = new RadixAddress(magic, key.getPublicKey());
@@ -161,15 +166,15 @@ public final class CheckpointUtils {
 			builder.virtualSpinDown(validatorDown);
 			builder.spinUp(validatorUp);
 		});
-		return builder.build();
+		atomBuilder.addParticleGroup(builder.build());
 	}
 
-	public static List<ParticleGroup> createStakes(
+	public static void createStakes(
+		AtomBuilder atomBuilder,
 		byte magic,
-		ImmutableList<StakeDelegation> delegations,
-		List<Particle> xrdParticles
+		ImmutableList<StakeDelegation> delegations
 	) {
-		final ImmutableMap<ECPublicKey, TransferrableTokensParticle> tokensByKey = xrdParticles.stream()
+		final ImmutableMap<ECPublicKey, TransferrableTokensParticle> tokensByKey = atomBuilder.localUpParticles()
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.collect(ImmutableMap.toImmutableMap(ttp -> ttp.getAddress().getPublicKey(), Function.identity()));
@@ -181,13 +186,12 @@ public final class CheckpointUtils {
 		delegations.stream().map(StakeDelegation::delegate).distinct()
 			.forEach(delegate -> delegateNonces.put(delegate, 1L));
 
-		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(xrdParticles.stream()
+		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(atomBuilder.localUpParticles()
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.findAny().orElseThrow()
 		);
 
-		List<ParticleGroup> particleGroups = new ArrayList<>();
 		for (final var entry : stakesByKey.entrySet()) {
 			final var particles = Lists.newArrayList(tokensByKey.get(entry.getKey()));
 			final var delegationsOfKey = entry.getValue();
@@ -215,9 +219,8 @@ public final class CheckpointUtils {
 					builder.spinUp(particle);
 				}
 			}
-			particleGroups.add(builder.build());
+			atomBuilder.addParticleGroup(builder.build());
 		}
-		return particleGroups;
 	}
 
 }
