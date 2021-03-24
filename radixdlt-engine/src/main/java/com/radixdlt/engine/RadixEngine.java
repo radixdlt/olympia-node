@@ -31,6 +31,8 @@ import com.radixdlt.store.EngineStore;
 
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +47,8 @@ import java.util.function.Predicate;
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom, M> {
+	private static final Logger logger = LogManager.getLogger();
+
 	private static class ApplicationStateComputer<U, V extends Particle, T extends RadixEngineAtom, M> {
 		private final Class<V> particleClass;
 		private final BiFunction<U, V, U> outputReducer;
@@ -348,7 +352,12 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		for (T atom : atoms) {
 			// TODO: combine verification and storage
 			var downedParticles = this.verify(txn, atom, permissionLevel);
-			this.engineStore.storeAtom(txn, atom);
+			try {
+				this.engineStore.storeAtom(txn, atom);
+			} catch (Exception e) {
+				logger.error("Store atoms failed: {} downedParticles: {}", atom, downedParticles);
+				throw e;
+			}
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state

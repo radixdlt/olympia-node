@@ -80,8 +80,7 @@ import java.util.function.Supplier;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
-import static com.sleepycat.je.LockMode.DEFAULT;
-import static com.sleepycat.je.LockMode.READ_COMMITTED;
+import static com.sleepycat.je.LockMode.*;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
@@ -617,7 +616,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 				transaction.abort();
 			}
 			e.printStackTrace();
-			throw new BerkeleyStoreException("Unable to store atom: " + atom.toInstructionsString(), e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + atom.toInstructionsString(), e);
 		}
 	}
 
@@ -695,7 +694,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 		var particleId = hasher.hash(particle);
 		var key = entry(particleId.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status == SUCCESS) {
 			return entryToSpin(value);
 		} else {
@@ -707,7 +706,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 	public Optional<Particle> loadUpParticle(Transaction tx, HashCode particleHash) {
 		var key = entry(particleHash.asBytes());
 		var value = entry();
-		var status = particleDatabase.get(unwrap(tx), key, value, READ_COMMITTED);
+		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {
 			return Optional.empty();
 		}
