@@ -115,7 +115,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 		// make sure that the sync target node actually processed all the requests from test node
 		// and test node didn't communicate directly with a validator
 		assertThat(
-			syncNodeCounters.get(CounterType.REMOTE_SYNC_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
+			syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
 		).isBetween(-2L, 2L); // small discrepancies are fine
 	}
 
