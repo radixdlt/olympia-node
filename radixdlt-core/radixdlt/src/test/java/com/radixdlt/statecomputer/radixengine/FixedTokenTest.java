@@ -107,17 +107,18 @@ public class FixedTokenTest {
 	}
 
 	private void spendToken(AtomBuilder atomBuilder, TransferrableTokensParticle p, int times) {
+		var token = new TransferrableTokensParticle(
+			p.getAddress(),
+			p.getAmount().multiply(UInt256.from(times)),
+			p.getGranularity(),
+			p.getTokDefRef(),
+			ImmutableMap.of(),
+			1
+		);
+		atomBuilder.spinUp(token);
+
 		for (int i = 0; i < times; i++) {
 			atomBuilder.spinDown(p);
-			var token = new TransferrableTokensParticle(
-				p.getAddress(),
-				p.getAmount(),
-				p.getGranularity(),
-				p.getTokDefRef(),
-				ImmutableMap.of(),
-				1
-			);
-			atomBuilder.spinUp(token);
 		}
 		atomBuilder.particleGroup();
 	}
@@ -140,6 +141,26 @@ public class FixedTokenTest {
 	}
 
 	@Test
+	public void token_creation_then_double_spend_should_fail() throws RadixEngineException {
+		// Arrange
+		createInjector().injectMembers(this);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		var builder = Atom.newBuilder();
+		var upToken = createToken(keyPair, builder);
+		var atom = builder.signAndBuild(keyPair::sign);
+		sut.execute(List.of(atom));
+
+
+		var builder2 = Atom.newBuilder();
+		spendToken(builder2, upToken, 2);
+		var atom2 = builder2.signAndBuild(keyPair::sign);
+
+		// Act/Assert
+		assertThatThrownBy(() -> sut.execute(List.of(atom2))).isInstanceOf(RadixEngineException.class);
+	}
+
+
+	@Test
 	public void atomic_token_creation_and_spend_should_succeed() throws RadixEngineException {
 		// Arrange
 		createInjector().injectMembers(this);
@@ -152,6 +173,7 @@ public class FixedTokenTest {
 		// Act/Assert
 		sut.execute(List.of(atom));
 	}
+
 
 	@Test
 	public void atomic_token_creation_and_double_spend_should_fail() {
