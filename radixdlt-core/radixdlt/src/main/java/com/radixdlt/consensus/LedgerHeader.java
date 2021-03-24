@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;

@@ -20,8 +20,6 @@ package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Streams;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
@@ -36,8 +34,6 @@ import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Generates a genesis atom
