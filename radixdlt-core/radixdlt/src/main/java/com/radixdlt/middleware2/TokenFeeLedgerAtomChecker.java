@@ -61,7 +61,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 
 	@Override
 	public Result check(Atom atom, PermissionLevel permissionLevel) {
-		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
+		if (atom.getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
 

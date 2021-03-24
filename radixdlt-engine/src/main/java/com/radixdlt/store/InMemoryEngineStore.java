@@ -46,7 +46,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	@Override
 	public void storeAtom(Transaction txn, Atom atom) {
 		synchronized (lock) {
-			for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
+			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
 					var particle = microInstruction.getParticle();
