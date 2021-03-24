@@ -111,6 +111,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 	@Override
 	public List<Pair<Command, Exception>> committed(List<Atom> atoms) {
 		final List<Pair<Command, Exception>> removed = new ArrayList<>();
+		final Set<Atom> atomsSet = new HashSet<>(atoms);
 		atoms.forEach(atom -> atom.uniqueInstructions()
 			.flatMap(p -> {
 				Set<Command> cmds = particleIndex.remove(p);
@@ -118,12 +119,12 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			}).forEach(cmd -> {
 				var toRemove = data.remove(cmd);
 				// TODO: Cleanup
-				if (!atom.equals(toRemove)) {
+				if (toRemove != null && !atomsSet.contains(toRemove)) {
 					removed.add(Pair.of(cmd, new RadixEngineMempoolException(
 						new RadixEngineException(
 							toRemove,
 							RadixEngineErrorCode.CM_ERROR,
-							"State conflict",
+							"Mempool evicted",
 							DataPointer.ofAtom()
 						)
 					)));
