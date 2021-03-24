@@ -21,6 +21,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.DefaultSerialization;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
@@ -490,14 +491,12 @@ public final class ConstraintMachine {
 	 * Validates a CM instruction and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(
 		CMStore.Transaction txn,
 		CMStore cmStore,
-		CMInstruction cmInstruction,
-		HashCode witness,
+		Atom atom,
 		PermissionLevel permissionLevel,
 		Map<HashCode, Particle> downedParticles
 	) {
@@ -505,10 +504,10 @@ public final class ConstraintMachine {
 			txn,
 			cmStore,
 			permissionLevel,
-			witness,
-			cmInstruction.getSignatures()
+			atom.getWitness(),
+			atom.getSignatures()
 		);
 
-		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions(), downedParticles);
+		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), downedParticles);
 	}
 }

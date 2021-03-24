@@ -275,8 +275,7 @@ public final class RadixEngine<M> {
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
 			virtualizedCMStore,
-			atom.getCMInstruction(),
-			atom.getWitness(),
+			atom,
 			permissionLevel,
 			downedParticles
 		);
@@ -350,8 +349,7 @@ public final class RadixEngine<M> {
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			final var cmInstruction = atom.getCMInstruction();
-			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
 				// Treat check spin as the first push for now
 				if (!microInstruction.isCheckSpin()) {
 					continue;

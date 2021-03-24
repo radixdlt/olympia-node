@@ -603,7 +603,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			atom.getCMInstruction().getMicroInstructions().stream()
+			atom.getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 

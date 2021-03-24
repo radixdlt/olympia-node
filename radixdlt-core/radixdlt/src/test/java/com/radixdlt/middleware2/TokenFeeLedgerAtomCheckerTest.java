@@ -27,7 +27,6 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.FeeTable;
@@ -41,8 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TokenFeeLedgerAtomCheckerTest {
 
@@ -79,13 +76,8 @@ public class TokenFeeLedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		Atom ledgerAtom = mock(Atom.class);
-		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(), ImmutableMap.of()
-		);
-		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
-
-		assertThat(checker.check(ledgerAtom, PermissionLevel.SUPER_USER).getErrorMessage())
+		var atom = Atom.newBuilder().buildAtom();
+		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("instructions");
 	}
 
