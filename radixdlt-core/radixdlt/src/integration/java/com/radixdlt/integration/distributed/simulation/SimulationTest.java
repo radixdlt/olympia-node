@@ -47,7 +47,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
@@ -95,6 +94,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -185,6 +185,7 @@ public class SimulationTest {
 		private Module networkModule;
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
+		private ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes;
 
 		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
@@ -222,6 +223,15 @@ public class SimulationTest {
 
 		public Builder pacemakerTimeout(long pacemakerTimeout) {
 			this.pacemakerTimeout = pacemakerTimeout;
+			return this;
+		}
+
+		/**
+		 * A mapping from a node index to a list of other nodes indices.
+		 * If key is not present, then address book for that node contains all other nodes.
+		 */
+		public Builder addressBook(ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes) {
+			this.addressBookNodes = addressBookNodes;
 			return this;
 		}
 
@@ -322,15 +332,6 @@ public class SimulationTest {
 				protected void configure() {
 					bind(SyncConfig.class).toInstance(syncConfig);
 				}
-
-				@Provides
-				@Singleton
-				PeersView peersView(@Self BFTNode self) {
-					return () -> nodes.stream()
-						.map(k -> BFTNode.create(k.getPublicKey()))
-						.filter(n -> !n.equals(self))
-						.collect(Collectors.toList());
-				}
 			});
 			return this;
 		}
@@ -364,15 +365,6 @@ public class SimulationTest {
 				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
 					return new RadixAddress((byte) magic, self.getKey());
 				}
-
-				@Provides
-				@Singleton
-				PeersView peersView(@Self BFTNode self) {
-					return () -> nodes.stream()
-						.map(k -> BFTNode.create(k.getPublicKey()))
-						.filter(n -> !n.equals(self))
-						.collect(Collectors.toList());
-				}
 			});
 			return this;
 		}
@@ -397,15 +389,6 @@ public class SimulationTest {
 							.map(node -> BFTNode.create(node.getPublicKey()))
 							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
-				}
-
-				@Provides
-				@Singleton
-				PeersView peersView(@Self BFTNode self) {
-					return () -> nodes.stream()
-						.map(k -> BFTNode.create(k.getPublicKey()))
-						.filter(n -> !n.equals(self))
-						.collect(Collectors.toList());
 				}
 			});
 			return this;
@@ -449,15 +432,6 @@ public class SimulationTest {
 				@Self
 				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
 					return new RadixAddress((byte) magic, self.getKey());
-				}
-
-				@Provides
-				@Singleton
-				PeersView peersView(@Self BFTNode self) {
-					return () -> nodes.stream()
-							.map(k -> BFTNode.create(k.getPublicKey()))
-							.filter(n -> !n.equals(self))
-							.collect(Collectors.toList());
 				}
 			});
 
@@ -524,7 +498,7 @@ public class SimulationTest {
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new MockedAddressBookModule());
+			modules.add(new MockedAddressBookModule(this.addressBookNodes));
 
 			// Functional
 			modules.add(new FunctionalNodeModule(

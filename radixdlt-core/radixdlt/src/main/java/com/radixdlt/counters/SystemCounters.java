@@ -125,7 +125,7 @@ public interface SystemCounters {
 		SYNC_PROCESSED("sync.processed"),
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
-
+		REMOTE_SYNC_REQUESTS_PROCESSED("sync.remote_sync_requests_processed"),
 
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
