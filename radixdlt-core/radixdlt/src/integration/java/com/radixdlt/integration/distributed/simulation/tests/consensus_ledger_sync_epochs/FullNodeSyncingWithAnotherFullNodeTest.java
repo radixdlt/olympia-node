@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -29,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.SyncMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -47,7 +47,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 	private static final ImmutableList<Integer> VALIDATORS = ImmutableList.of(0, 1);
 	private static final int NON_VALIDATOR_SYNC_NODE = 2;
 	private static final int NODE_UNDER_TEST = 3;
-	private static final int MAX_STATE_VERSION_LAG = 300;
+	private static final int MAX_LEDGER_SYNC_LAG = 300;
 
 	private final Builder testBuilder;
 
@@ -65,7 +65,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed(10)
 			)
-			.overrideWithIncorrectModule(new AbstractModule() {
+			.overrideWithIncorrectModule(new AbstractModule() { // TODO: remove this hack
 				@Provides
 				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
 					return mapper.apply(0L);
@@ -83,7 +83,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 				ConsensusMonitors.directParents(),
 				LedgerMonitors.consensusToLedger(),
 				LedgerMonitors.ordered(),
-				ConsensusMonitors.epochCeilingView(View.of(100))
+				ConsensusMonitors.epochCeilingView(View.of(100)),
+				SyncMonitors.maxLedgerSyncLag(MAX_LEDGER_SYNC_LAG)
 			);
 	}
 
@@ -97,14 +98,6 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 		final var testNodeCounters = runningTest.getNetwork()
 			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST));
 
-		final var maxStateVersion = runningTest.getNetwork()
-			.getSystemCounters().values().stream()
-			.map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
-			.max(Long::compareTo)
-			.get();
-
-		// make sure we're no more than MAX_STATE_VERSION_LAG versions behind the max version
-		assertTrue(testNodeCounters.get(CounterType.LEDGER_STATE_VERSION) + MAX_STATE_VERSION_LAG >= maxStateVersion);
 		// just to be sure that node wasn't a validator
 		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROPOSALS_MADE));
 		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROCESSED));
