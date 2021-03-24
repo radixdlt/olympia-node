@@ -88,7 +88,7 @@ public class GetNextCommittedCommandsTest {
 	private Injector injector;
 
 	@Inject
-	private EngineStore<Atom, LedgerAndBFTProof> committedAtomsStore;
+	private EngineStore<LedgerAndBFTProof> committedAtomsStore;
 
 	@Inject
 	private CommittedReader committedReader;

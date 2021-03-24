@@ -37,13 +37,13 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private final RadixAddress selfAddress;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
 
 	@Inject
 	public NodeController(
 		@Self RadixAddress selfAddress,
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
 	) {
 		this.selfAddress = selfAddress;

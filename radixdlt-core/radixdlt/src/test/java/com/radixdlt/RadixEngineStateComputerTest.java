@@ -105,7 +105,7 @@ public class RadixEngineStateComputerTest {
 	private Atom genesisAtom;
 
 	@Inject
-	private RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -115,7 +115,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<Atom, LedgerAndBFTProof> engineStore;
+	private EngineStore<LedgerAndBFTProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -134,7 +134,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<Atom, LedgerAndBFTProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);

@@ -58,7 +58,7 @@ public class FixedTokenTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private RadixEngine<Atom, LedgerAndBFTProof> sut;
+	private RadixEngine<LedgerAndBFTProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(

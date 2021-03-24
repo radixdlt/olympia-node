@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.util.List;
 
 public class TokensTest {
-	private RadixEngine<RadixEngineAtom, Void> engine;
-	private EngineStore<RadixEngineAtom, Void> store;
+	private RadixEngine<Void> engine;
+	private EngineStore<Void> store;
 
 	@Before
 	public void setup() {

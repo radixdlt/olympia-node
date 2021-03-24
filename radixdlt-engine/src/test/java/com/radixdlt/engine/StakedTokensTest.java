@@ -49,8 +49,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
-	private RadixEngine<RadixEngineAtom, Void> engine;
-	private EngineStore<RadixEngineAtom, Void> store;
+	private RadixEngine<Void> engine;
+	private EngineStore<Void> store;
 	private RRI tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());

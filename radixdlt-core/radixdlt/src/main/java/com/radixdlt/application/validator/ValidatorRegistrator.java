@@ -50,7 +50,7 @@ import java.util.Optional;
  */
 public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final RadixAddress self;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
@@ -65,7 +65,7 @@ public final class ValidatorRegistrator {
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;

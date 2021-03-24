@@ -20,7 +20,6 @@ package com.radixdlt.application.faucet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
@@ -48,7 +47,7 @@ public final class Faucet {
 	private static final Logger log = LogManager.getLogger();
 
 	private final RadixAddress self;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
 	private final Serialization serialization;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -61,7 +60,7 @@ public final class Faucet {
 		@Named("RadixEngine") HashSigner hashSigner,
 		@NativeToken RRI nativeToken,
 		Serialization serialization,
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;

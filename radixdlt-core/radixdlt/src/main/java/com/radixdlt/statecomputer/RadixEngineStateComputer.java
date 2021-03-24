@@ -67,7 +67,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Mempool<Atom> mempool;
 	private final Serialization serialization;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 
@@ -81,7 +81,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Mempool<Atom> mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
@@ -169,7 +169,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
-		RadixEngineBranch<Atom, LedgerAndBFTProof> branch,
+		RadixEngineBranch<LedgerAndBFTProof> branch,
 		long epoch,
 		View view,
 		long timestamp,
@@ -225,7 +225,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void executeUserCommand(
-		RadixEngineBranch<Atom, LedgerAndBFTProof> branch,
+		RadixEngineBranch<LedgerAndBFTProof> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder

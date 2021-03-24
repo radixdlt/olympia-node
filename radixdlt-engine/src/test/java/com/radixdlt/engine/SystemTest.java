@@ -41,8 +41,8 @@ import java.util.List;
  * Tests BFT System verification logic
  */
 public class SystemTest {
-	private RadixEngine<RadixEngineAtom, Void> engine;
-	private EngineStore<RadixEngineAtom, Void> store;
+	private RadixEngine<Void> engine;
+	private EngineStore<Void> store;
 
 	@Before
 	public void setup() {

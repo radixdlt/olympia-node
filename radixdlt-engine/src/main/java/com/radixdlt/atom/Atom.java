@@ -32,7 +32,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -54,7 +53,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("radix.atom")
-public final class Atom implements RadixEngineAtom {
+public final class Atom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -204,7 +203,6 @@ public final class Atom implements RadixEngineAtom {
 		return instructionsBuilder.build();
 	}
 
-	@Override
 	public CMInstruction getCMInstruction() {
 		return new CMInstruction(instructions, signatures);
 	}
@@ -219,7 +217,6 @@ public final class Atom implements RadixEngineAtom {
 			.map(CMMicroInstruction::getParticle);
 	}
 
-	@Override
 	public HashCode getWitness() {
 		return witness;
 	}

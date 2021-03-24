@@ -41,7 +41,7 @@ import javax.inject.Inject;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker<Atom> {
+public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;

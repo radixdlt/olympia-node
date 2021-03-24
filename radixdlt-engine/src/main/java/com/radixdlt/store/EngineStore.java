@@ -17,18 +17,18 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.function.BiFunction;
 
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore<T extends RadixEngineAtom, M> extends CMStore {
+public interface EngineStore<M> extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(Transaction txn, T atom);
+	void storeAtom(Transaction txn, Atom atom);
 
 	void storeMetadata(Transaction txn, M metadata);
 

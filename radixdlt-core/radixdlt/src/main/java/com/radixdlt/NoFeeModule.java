@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.engine.AtomChecker;
 
@@ -30,7 +29,7 @@ import com.radixdlt.engine.AtomChecker;
 public class NoFeeModule extends AbstractModule {
 	@Provides
 	@Singleton
-	private AtomChecker<Atom> noFeeLedgerAtomChecker() {
+	private AtomChecker noFeeLedgerAtomChecker() {
 		return (atom, permissionLevel) ->
 			atom.getCMInstruction().getMicroInstructions().isEmpty()
 				? Result.error("atom has no instructions")

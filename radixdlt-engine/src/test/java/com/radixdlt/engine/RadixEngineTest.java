@@ -75,9 +75,9 @@ public class RadixEngineTest {
 	}
 
 	private ConstraintMachine constraintMachine;
-	private EngineStore<RadixEngineAtom, Void> engineStore;
+	private EngineStore<Void> engineStore;
 	private Predicate<Particle> virtualStore;
-	private RadixEngine<RadixEngineAtom, Void> radixEngine;
+	private RadixEngine<Void> radixEngine;
 
 	@Before
 	public void setup() {
@@ -100,7 +100,7 @@ public class RadixEngineTest {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<RadixEngineAtom, Void> engine = new RadixEngine<>(
+		RadixEngine<Void> engine = new RadixEngine<>(
 			cm,
 			cmAtomOS.virtualizedUpParticles(),
 			new InMemoryEngineStore<>()

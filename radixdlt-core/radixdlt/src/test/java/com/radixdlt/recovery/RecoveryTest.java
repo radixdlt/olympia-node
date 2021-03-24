@@ -182,8 +182,8 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerAndBFTProof>>() { }));
+	private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
 	}
 
 	private CommittedReader getCommittedReader() {
