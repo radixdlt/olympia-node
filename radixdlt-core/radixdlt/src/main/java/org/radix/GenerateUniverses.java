@@ -44,13 +44,11 @@ import com.radixdlt.universe.TestUniverseConfigModule;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import org.apache.logging.log4j.util.Strings;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
@@ -163,34 +161,35 @@ public final class GenerateUniverses {
 
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
 
-			final List<String> listOfValidators= Optional
-				.ofNullable(System.getenv("NODE_NAME_PREFIX"))
-				.orElse( new ArrayList<String>());
+//			final List<String> listOfValidators= Optional
+//				.ofNullable(System.getenv("NODE_NAME_PREFIX"))
+//				.orElse( new ArrayList<String>());
 
 			if (stakes.isEmpty()) {
 				throw new IllegalArgumentException("Must specify at least one staking amount");
 			}
-			if (validatorsCount <= 0 && ) {
+			if (validatorsCount <= 0) {
 				throw new IllegalArgumentException("There must be at least one validator");
 			}
 
 			//check for the environment variable and if exists, create keys using the names from the environment variable else using the validator count
 
-			final ImmutableList<ValidatorKeyWithName> validatorKeyMaps;
-			if( validatorsCount > 0) {
-				validatorKeyMaps = getValidatorKeys(validatorsCount);
-			}else{
-				validatorKeyMaps = getValidatorKeys(validatorList);
-			}
-			final ImmutableList<ECKeyPair> validatorKeys = validatorKeyMaps.stream()
-				.map(ValidatorKeyWithName::getKeyPair)
+			final ImmutableList<KeyDetails> keyDetails;
+//			if( validatorsCount > 0) {
+//				keyDetails = getValidatorKeys(validatorsCount);
+//			}else{
+//				keyDetails = getValidatorKeys(validatorList);
+//			}
+
+			keyDetails = getValidatorKeys(validatorsCount);
+
+			final ImmutableList<ECKeyPair> validatorKeys = keyDetails.stream()
+				.map(KeyDetails::getKeyPair)
 				.collect(ImmutableList.toImmutableList());
 
-			final ImmutableList<StakeDelegationWithName> stakeDelegationMaps = getStakeDelegation(
-				validatorKeyMaps, stakes
-			);
-			final ImmutableList<StakeDelegation> stakeDelegations = stakeDelegationMaps.stream()
-				.map(StakeDelegationWithName::getStakeDelegation)
+			final ImmutableList<KeyDetails> keysDetailsWithStakeDelegation = getStakeDelegation(keyDetails, stakes);
+			final ImmutableList<StakeDelegation> stakeDelegations = keysDetailsWithStakeDelegation.stream()
+				.map(KeyDetails::getStakeDelegation)
 				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
@@ -282,8 +281,8 @@ public final class GenerateUniverses {
 
 			if (outputPrivateKeys) {
 				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
-				outputNumberedKeys("VALIDATOR_%s", validatorKeyMaps, helmUniverseOutput, awsSecretsOutputOptions);
-				outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker), helmUniverseOutput,
+				outputNumberedKeys("VALIDATOR_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
+				outputNumberedKeys("STAKER_%s", keysDetailsWithStakeDelegation, helmUniverseOutput,
 					awsSecretsOutputOptions);
 			}
 			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe, helmUniverseOutput, awsSecretsOutputOptions);
@@ -296,24 +295,28 @@ public final class GenerateUniverses {
 		}
 	}
 
-	private static ImmutableList<ValidatorKeyWithName> getValidatorKeys(int validatorsCount) {
+	private static ImmutableList<KeyDetails> getValidatorKeys(int validatorsCount) {
+		String nodeNamePrefix =  Optional
+			.ofNullable(System.getenv("NODE_NAME_PREFIX"))
+			.orElse("node");
+
 		return IntStream.range(0, validatorsCount)
 			.mapToObj(n -> {
-				var validatorKeyObj = new HashMap<String,ECKeyPair>();
+				String nodeName = String.format("%s%s",nodeNamePrefix, n);
 				String keypath = String.format(VALIDATOR_TEMPLATE, n);
 				ECKeyPair key;
 				key = getValidatorEcKeyPair(keypath);
-				return new ValidatorKeyWithName(keypath,key);
+				return new KeyDetails(nodeName,key,keypath);
 			})
 			.collect(ImmutableList.toImmutableList());
 	}
 
-	private static ImmutableList<ValidatorKeyWithName> getValidatorKeys(List<String> validators) {
+	private static ImmutableList<KeyDetails> getValidatorKeys(List<String> validators) {
 		return validators.stream()
 			.map(validator -> {
-				String keypath = validator;
+				String keypath = String.format("%s.ks",validator);
 				ECKeyPair key = getValidatorEcKeyPair(keypath);
-				return new ValidatorKeyWithName(keypath,key);
+				return new KeyDetails(validator,key,keypath);
 			})
 			.collect(ImmutableList.toImmutableList());
 	}
@@ -332,34 +335,42 @@ public final class GenerateUniverses {
 		return key;
 	}
 
-	private static ImmutableList<StakeDelegationWithName> getStakeDelegation(List<ValidatorKeyWithName> validatorKeyWithNames, List<UInt256> stakes) {
+	private static ImmutableList<KeyDetails> getStakeDelegation(List<KeyDetails> keyDetails, List<UInt256> stakes) {
 		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
-		return IntStream.range(0, validatorKeyWithNames.size()).mapToObj(
+		String nodeNamePrefix =  Optional
+			.ofNullable(System.getenv("NODE_NAME_PREFIX"))
+			.orElse("node");
+		return IntStream.range(0, keyDetails.size()).mapToObj(
 			n -> {
-				String keypath = String.format(STAKER_TEMPLATE, n++);
-				var validator = validatorKeyWithNames.get(n);
-				return getStakeDelegationMap(stakesCycle, keypath, validator);
+				String nodeName = String.format("%s%s",nodeNamePrefix, n);
+				String stakerKeypath = String.format(STAKER_TEMPLATE, n);
+				var validator = keyDetails.get(n);
+				validator.setNodeName(nodeName);
+				return getStakeDelegationMap(stakesCycle, stakerKeypath, validator);
 			}
 		).collect(ImmutableList.toImmutableList());
 	}
+//
+//	private static ImmutableList<KeyDetails> getStakeDelegation(List<KeyDetails> keyDetails, List<UInt256> stakes,boolean existingList) {
+//		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+//		return keyDetails.stream().map(
+//			keyDetail -> {
+//				String keypath = keyDetail.getNodeName() + "staker.ks";
+//				return getStakeDelegationMap(stakesCycle, keypath, keyDetail);
+//			}
+//		).collect(ImmutableList.toImmutableList());
+//	}
 
-	private static ImmutableList<StakeDelegationWithName> getStakeDelegation(List<ValidatorKeyWithName> validatorKeyWithNames, List<UInt256> stakes,boolean existingList) {
-		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
-		return validatorKeyWithNames.stream().map(
-			validatorKeyWithName -> {
-				String keypath = validatorKeyWithName.getName() + "staker.ks";
-				return getStakeDelegationMap(stakesCycle, keypath, validatorKeyWithName);
-			}
-		).collect(ImmutableList.toImmutableList());
-	}
-
-	private static StakeDelegationWithName getStakeDelegationMap(Iterator<UInt256> stakesCycle, String keypath, ValidatorKeyWithName validator) {
+	private static KeyDetails getStakeDelegationMap(Iterator<UInt256> stakesCycle, String keypath, KeyDetails validator) {
 		try {
 			final ECKeyPair stakerKey = Keys.readKey(keypath,
 				"wallet",
 				"RADIX_STAKER_KEYSTORE_PASSWORD",
 				"RADIX_STAKER_KEY_PASSWORD");
-			return new StakeDelegationWithName(keypath, StakeDelegation.of(stakerKey, validator.getKeyPair().getPublicKey(), stakesCycle.next()));
+			StakeDelegation stakeDelegation = StakeDelegation.of(stakerKey, validator.getKeyPair().getPublicKey(), stakesCycle.next());
+			validator.setStakeDelegation(stakeDelegation);
+			validator.setStakerKeyPairName(keypath);
+			return validator;
 		} catch (CryptoException | IOException e) {
 			throw new IllegalStateException("While reading staker keys", e);
 		}
@@ -396,17 +407,16 @@ public final class GenerateUniverses {
 
 	private static void outputNumberedKeys(
 		String template,
-		List<ValidatorKeyWithName> keys,
+		List<KeyDetails> keys,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
 	) {
-		;
 		final String VALIDATOR_PREFIX = "VALIDATOR";
 
 		if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 			IntStream.range(0, keys.size()).forEach(i -> {
 				String keyname = String.format(template, i);
-				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(keys.get(i).getPrivateKey()));
+				System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(keys.get(i).getKeyPair().getPrivateKey()));
 			});
 		}
 
@@ -414,17 +424,16 @@ public final class GenerateUniverses {
 			List<Map<String, Object>> validators = IntStream.range(0,keys.size())
 				.mapToObj(i -> {
 					var validator = new HashMap<String, Object>();
-					String nodeNamePrefix =  Optional
-						.ofNullable(System.getenv("NODE_NAME_PREFIX"))
-						.orElse("node");
 
 					validator.put("node",i);
-					validator.put("host",String.format("%s%s",nodeNamePrefix, i));
+					validator.put("host",keys.get(i).getNodeName());
+					validator.put("validatorKeypath",keys.get(i).getValidatorKeyPairName());
+					validator.put("stakerKeypath",keys.get(i).getStakerKeyPairName());
 					if (template.startsWith(VALIDATOR_PREFIX)) {
 						validator.put("seedsRemote", "");
-						validator.put("privateKey", Bytes.toBase64String(keys.get(i).getPrivateKey()));
+						validator.put("privateKey", Bytes.toBase64String(keys.get(i).getKeyPair().getPrivateKey()));
 					} else if (template.startsWith("STAKER")) {
-						validator.put("stakingKey", Bytes.toBase64String(keys.get(i).getPrivateKey()));
+						validator.put("stakingKey", Bytes.toBase64String(keys.get(i).getStakeDelegation().staker().getPrivateKey()));
 					}
 					return validator;
 				})
@@ -595,23 +604,24 @@ public final class GenerateUniverses {
 			Object keyData;
 			String keyFile,secretName,keyFileSecretName;
 			if(template.startsWith("STAKER")){
-					//v.get("type") is a list,
 				 keyData = v.get("stakingKey");
-				 keyFile = String.format("staker%s.ks", (int) v.get("node")); // keyfile name is from the
+//				 keyFile = String.format("staker%s.ks", (int) v.get("node"));
+				 keyFile = (String) v.get("validatorKeypath"); // keyfile name is from the
 				 secretName = String.format("%s/%s/staker", awsSecretsOutputOptions.getNetworkName(), name);
 				 keyFileSecretName = String.format("%s/%s/staker_key", awsSecretsOutputOptions.getNetworkName(), name);
 
 			}
 			else if(template.startsWith(validatorPrefix)){
 				 keyData = v.get("privateKey");
-				 keyFile = String.format("validator%s.ks", (int) v.get("node"));
+//				 keyFile = String.format("validator%s.ks", (int) v.get("node"));
+				 keyFile = (String) v.get("stakerKeypath"); // keyfile name is from the
 				 secretName = String.format("%s/%s/validator", awsSecretsOutputOptions.getNetworkName(), name);
 				 keyFileSecretName = String.format("%s/%s/validator_key", awsSecretsOutputOptions.getNetworkName(), name);
 			}
 			else {
 				throw new IllegalStateException("Invalid template string");
 			}
-
+			validatorAwsSecret.put("key",keyData);
 			writeTextAWSSecret(validatorAwsSecret, secretName, awsSecretsOutputOptions, compress);
 
 			var keyFileAwsSecret = new HashMap<String, Object>();
@@ -632,32 +642,47 @@ public final class GenerateUniverses {
 		}
 }
 
-class ValidatorKeyWithName extends  {
-	private String name;
+class KeyDetails {
+
+	private String nodeName;
+	private String validatorKeyPairName;
+	private String stakerKeyPairName;
 	private ECKeyPair keyPair;
-	ValidatorKeyWithName(String name, ECKeyPair keyPair){
-		this.name = name;
+	private StakeDelegation stakeDelegation;
+	KeyDetails(String nodeName, ECKeyPair keyPair,String validatorKeyPairName){
+		this.nodeName = nodeName;
 		this.keyPair = keyPair;
+		this.validatorKeyPairName = validatorKeyPairName;
 	}
-	public String getName(){
-		return  name;
+
+	public void setStakeDelegation(StakeDelegation stakeDelegation) {
+		this.stakeDelegation = stakeDelegation;
 	}
+
+	public String getNodeName(){
+		return nodeName;
+	}
+	public void setNodeName(String nodeName){
+		this.nodeName = nodeName;
+	}
+
 	public ECKeyPair getKeyPair(){
 		return keyPair;
 	}
-}
 
-class StakeDelegationWithName {
-	private String name;
-	private StakeDelegation stakeDelegation;
-	StakeDelegationWithName(String name, StakeDelegation stakeDelegation){
-		this.name = name;
-		this.stakeDelegation = stakeDelegation;
-	}
-	public String getName(){
-		return  name;
-	}
-	public StakeDelegation getStakeDelegation(){
+	public StakeDelegation getStakeDelegation() {
 		return stakeDelegation;
+	}
+
+	public String getValidatorKeyPairName() {
+		return validatorKeyPairName;
+	}
+
+	public String getStakerKeyPairName() {
+		return stakerKeyPairName;
+	}
+
+	public void setStakerKeyPairName(String stakerKeyPairName) {
+		this.stakerKeyPairName = stakerKeyPairName;
 	}
 }
