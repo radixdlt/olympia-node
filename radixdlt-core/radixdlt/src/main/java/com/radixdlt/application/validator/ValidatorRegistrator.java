@@ -89,10 +89,13 @@ public final class ValidatorRegistrator {
 
 	private void process(ValidatorRegistration registration) {
 		var validatorState = radixEngine.getComputedState(ValidatorState.class);
-		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 
-		var particles = new ArrayList<Particle>(wallet.particles());
+		var particles = new ArrayList<Particle>();
 		particles.add(validatorState.currentParticle());
+		if (feeTable != null) {
+			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+			particles.addAll(wallet.particles());
+		}
 		var txBuilder = ActionTxBuilder.newBuilder(self, particles);
 
 		try {

@@ -25,8 +25,10 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
@@ -38,9 +40,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class ActionTxBuilder {
@@ -48,6 +52,8 @@ public final class ActionTxBuilder {
 	private final Map<ParticleId, Particle> upParticles = new HashMap<>();
 	private final Set<ParticleId> downVirtualParticles;
 	private final RadixAddress address;
+	// TODO: remove
+	private final Random random = new Random();
 
 	private ActionTxBuilder(
 		RadixAddress address,
@@ -68,6 +74,10 @@ public final class ActionTxBuilder {
 		return new ActionTxBuilder(address, Set.of(), List.of());
 	}
 
+	private void particleGroup() {
+		atomBuilder.particleGroup();
+	}
+
 	private void up(Particle particle) {
 		atomBuilder.spinUp(particle);
 	}
@@ -80,6 +90,23 @@ public final class ActionTxBuilder {
 	private void down(ParticleId particleId) {
 		atomBuilder.spinDown(particleId);
 		upParticles.remove(particleId);
+	}
+
+	private <T extends Particle> T find(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		String errorMessage
+	) throws ActionTxException {
+		var substateRead = Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles())
+			.filter(particleClass::isInstance)
+			.map(particleClass::cast)
+			.filter(particlePredicate)
+			.findFirst();
+		if (substateRead.isEmpty()) {
+			throw new ActionTxException(errorMessage);
+		}
+
+		return substateRead.get();
 	}
 
 	private <T extends Particle> T down(
@@ -96,10 +123,12 @@ public final class ActionTxBuilder {
 		Optional<T> virtualParticle,
 		String errorMessage
 	) throws ActionTxException {
-		var substateDown = Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles())
+		var allUpParticles = Stream.concat(atomBuilder.localUpParticles(), upParticles.values().stream())
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
+			.collect(Collectors.toSet());
+		var substateDown = allUpParticles.stream()
 			.peek(p -> this.down(ParticleId.of(p)))
 			.findFirst()
 			.or(() -> {
@@ -126,8 +155,8 @@ public final class ActionTxBuilder {
 			);
 
 		var substateUp = new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1);
-		atomBuilder.spinUp(substateUp);
-		atomBuilder.particleGroup();
+		up(substateUp);
+		particleGroup();
 		return this;
 	}
 
@@ -139,25 +168,110 @@ public final class ActionTxBuilder {
 				"Already unregistered."
 			);
 		var substateUp = new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1);
-		atomBuilder.spinUp(substateUp);
-		atomBuilder.particleGroup();
+		up(substateUp);
+		particleGroup();
 		return this;
 	}
 
-
-	private UInt256 downTransferrable(RRI rri, UInt256 amount, String errorMessage) throws ActionTxException {
+	private <T extends Particle> UInt256 downFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Function<T, UInt256> amountMapper,
+		UInt256 amount,
+		String errorMessage
+	) throws ActionTxException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
 			var substateDown = down(
-				TransferrableTokensParticle.class,
-				p -> p.getAddress().equals(address) && p.getTokDefRef().equals(rri),
+				particleClass,
+				particlePredicate,
 				errorMessage
 			);
 
-			spent = spent.add(substateDown.getAmount());
+			spent = spent.add(amountMapper.apply(substateDown));
 		}
 
 		return spent.subtract(amount);
+	}
+
+	public ActionTxBuilder createMutableToken(TokenDefinition tokenDefinition) throws ActionTxException {
+		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
+		down(
+			RRIParticle.class,
+			p -> p.getRri().equals(tokenRRI),
+			Optional.of(new RRIParticle(tokenRRI)),
+			"RRI not available"
+		);
+		final var factory = TokDefParticleFactory.create(
+			tokenRRI, tokenDefinition.getTokenPermissions(), UInt256.ONE
+		);
+		up(factory.createUnallocated(UInt256.MAX_VALUE));
+		up(new MutableSupplyTokenDefinitionParticle(
+			tokenRRI,
+			tokenDefinition.getName(),
+			tokenDefinition.getDescription(),
+			tokenDefinition.getGranularity(),
+			tokenDefinition.getIconUrl(),
+			tokenDefinition.getTokenUrl(),
+			tokenDefinition.getTokenPermissions()
+		));
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+		var tokenDefSubstate = find(
+			MutableSupplyTokenDefinitionParticle.class,
+			p -> p.getRRI().equals(rri),
+			"Could not find token rri " + rri
+		);
+
+		final var factory = TokDefParticleFactory.create(
+			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+		);
+		up(factory.createTransferrable(to, amount, random.nextLong()));
+		var remainder = downFungible(
+			UnallocatedTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri),
+			UnallocatedTokensParticle::getAmount,
+			amount,
+			"Not enough balance to for transfer."
+		);
+		if (!remainder.isZero()) {
+			var substateUp = factory.createUnallocated(remainder);
+			up(substateUp);
+		}
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+		var tokenDefSubstate = find(
+			MutableSupplyTokenDefinitionParticle.class,
+			p -> p.getRRI().equals(rri),
+			"Could not find token rri " + rri
+		);
+
+		final var factory = TokDefParticleFactory.create(
+			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+		);
+		up(factory.createTransferrable(to, amount, random.nextLong()));
+		var remainder = downFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amount,
+			"Not enough balance to for transfer."
+		);
+		if (!remainder.isZero()) {
+			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
+			up(substateUp);
+		}
+		particleGroup();
+
+		return this;
 	}
 
 	public ActionTxBuilder burnForFee(RRI rri, UInt256 amount) throws ActionTxException {
@@ -171,13 +285,19 @@ public final class ActionTxBuilder {
 			UInt256.ONE
 		);
 		up(factory.createUnallocated(amount));
-		UInt256 remainder = downTransferrable(rri, amount, "Not enough balance to burn for fees.");
+		var remainder = downFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amount,
+			"Not enough balance to burn for fees."
+		);
 		if (!remainder.isZero()) {
-			var substateUp = factory.createTransferrable(address, remainder, System.currentTimeMillis());
+			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
 			up(substateUp);
 		}
 
-		atomBuilder.particleGroup();
+		particleGroup();
 		return this;
 	}
 

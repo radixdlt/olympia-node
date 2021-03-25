@@ -23,6 +23,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Objects;
 
@@ -50,6 +51,11 @@ public final class ParticleId {
 
 	public byte[] asBytes() {
 		return particleId.asBytes();
+	}
+
+	@Override
+	public String toString() {
+		return Hex.toHexString(particleId.asBytes());
 	}
 
 	@Override

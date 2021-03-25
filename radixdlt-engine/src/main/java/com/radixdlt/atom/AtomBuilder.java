@@ -20,12 +20,9 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,14 +37,12 @@ import java.util.stream.Stream;
 public final class AtomBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
-	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
-	private final Map<HashCode, Particle> remoteUpParticles = new HashMap<>();
+	private final Map<ParticleId, Particle> localUpParticles = new HashMap<>();
+	private final Map<ParticleId, Particle> remoteUpParticles = new HashMap<>();
 
 	AtomBuilder(List<Particle> upParticles) {
 		for (var p : upParticles) {
-			var dson = DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
-			var particleHash = HashUtils.sha256(dson);
-			remoteUpParticles.put(particleHash, p);
+			remoteUpParticles.put(ParticleId.of(p), p);
 		}
 	}
 
@@ -70,9 +65,7 @@ public final class AtomBuilder {
 	public AtomBuilder spinUp(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.spinUp(particle));
-		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		localUpParticles.put(particleHash, particle);
+		localUpParticles.put(ParticleId.of(particle), particle);
 		return this;
 	}
 
