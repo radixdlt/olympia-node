@@ -364,8 +364,12 @@ public final class GenerateUniverses {
 			List<Map<String, Object>> validators = IntStream.range(0,keys.size())
 				.mapToObj(i -> {
 					Map<String, Object> validator = new HashMap<>();
+					String nodeNamePrefix =  Optional
+						.ofNullable(System.getenv("NODE_NAME_PREFIX"))
+						.orElse("node");
+
 					validator.put("node",i);
-					validator.put("host",String.format("node%s", i));
+					validator.put("host",String.format("%s%s",nodeNamePrefix, i));
 					if (template.startsWith(VALIDATOR_PREFIX)) {
 						validator.put("seedsRemote", "");
 						validator.put("privateKey", Bytes.toBase64String(keys.get(i).getPrivateKey()));

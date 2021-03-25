@@ -39,7 +39,7 @@ def helmConfigOut = properties.get('helmConfigOut', '.')
 def networkName = properties.get('network-name', 'test')
 def enableAWSSecret = properties.get('enableAWSSecret', false)
 def recreateAWSSecret = properties.get('recreateAWSSecret', false)
-
+def nodeNamePrefix = properties.get('nodeNamePrefix',"node");
 startScripts {
     classpath = files('src/resources') + classpath
     // ^^ will prepend '$APP_HOME/lib/resources' to the classpath, which we'll use it as a pattern below
@@ -194,7 +194,7 @@ task generateDevUniverse(type: Exec) {
     //dependsOn tasks.withType(Jar)
     dependsOn ':radixdlt-java-common:jar'
     dependsOn ':radixdlt-engine:jar'
-
+    environment "NODE_NAME_PREFIX",nodeNamePrefix
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
