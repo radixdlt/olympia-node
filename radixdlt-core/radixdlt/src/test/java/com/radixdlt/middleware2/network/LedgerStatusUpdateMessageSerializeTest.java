@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
 public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObject<LedgerStatusUpdateMessage> {
@@ -27,7 +28,8 @@ public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObje
 	}
 
 	private static LedgerStatusUpdateMessage get() {
-		return new LedgerStatusUpdateMessage(1234, LedgerProof.genesis(HashUtils.zero256(), null));
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		return new LedgerStatusUpdateMessage(1234, LedgerProof.genesis(accumulatorState, null));
 	}
 
 }

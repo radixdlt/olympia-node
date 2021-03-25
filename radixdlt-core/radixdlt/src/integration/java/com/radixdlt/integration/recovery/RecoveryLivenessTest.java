@@ -103,7 +103,7 @@ public class RecoveryLivenessTest {
 
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -178,7 +178,7 @@ public class RecoveryLivenessTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);

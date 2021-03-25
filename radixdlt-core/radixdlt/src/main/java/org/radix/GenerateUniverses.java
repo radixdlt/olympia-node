@@ -38,7 +38,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.universe.DevUniverseConfigModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.GenesisAtomProvider;
+import com.radixdlt.statecomputer.checkpoint.GenesisAtomsProvider;
 import com.radixdlt.universe.ProductionUniverseConfigModule;
 import com.radixdlt.universe.TestUniverseConfigModule;
 import com.radixdlt.universe.UniverseConfig;
@@ -228,7 +228,7 @@ public final class GenerateUniverses {
 
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(Atom.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+					bind(new TypeLiteral<List<Atom>>() { }).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
 					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
 					var selfIssuance = TokenIssuance.of(
 						universeKey.getPublicKey(), UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)

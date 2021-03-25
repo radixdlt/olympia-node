@@ -35,6 +35,7 @@ import org.radix.utils.IOUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Module which manages universe configuration
@@ -72,7 +73,7 @@ public final class UniverseModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	Atom genesisAtom(Universe universe) {
+	List<Atom> genesisAtoms(Universe universe) {
 		return universe.getGenesis();
 	}
 }

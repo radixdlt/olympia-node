@@ -49,11 +49,14 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -66,6 +69,7 @@ public class MempoolTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject @Self private BFTNode self;
+	@Inject @Genesis private List<Atom> genesisAtoms;
 	@Inject private Hasher hasher;
 	@Inject private DeterministicProcessor processor;
 	@Inject private DeterministicNetwork network;
@@ -261,8 +265,8 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn(1L);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -286,8 +290,8 @@ public class MempoolTest {
 		// Act
 		Command command2 = createCommand(keyPair, 0, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn(1L);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -309,8 +313,8 @@ public class MempoolTest {
 		// Act
 		Command command3 = createCommand(keyPair, 0, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn(1L);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

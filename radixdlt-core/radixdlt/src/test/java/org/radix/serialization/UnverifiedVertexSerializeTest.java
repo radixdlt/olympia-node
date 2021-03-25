@@ -26,6 +26,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 
 public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVertex> {
 	public UnverifiedVertexSerializeTest() {
@@ -34,7 +35,8 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
 	private static UnverifiedVertex get() {
 		View view = View.of(1234567891L);
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
 		BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

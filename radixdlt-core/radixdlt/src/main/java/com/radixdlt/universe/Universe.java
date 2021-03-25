@@ -32,6 +32,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Objects;
 
 @SerializerId2("radix.universe")
@@ -48,7 +49,7 @@ public class Universe {
 		private UniverseType type;
 		private Long timestamp;
 		private ECPublicKey creator;
-		private Atom atom;
+		private List<Atom> atoms;
 
 		private Builder() {
 			// Nothing to do here
@@ -131,12 +132,12 @@ public class Universe {
 		/**
 		 * Adds an atom to the genesis atom list.
 		 *
-		 * @param genesisAtom The atom to add to the genesis atom list.
+		 * @param genesisAtoms The atoms to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder setAtom(Atom genesisAtom) {
-			Objects.requireNonNull(genesisAtom);
-			this.atom = genesisAtom;
+		public Builder setAtoms(List<Atom> genesisAtoms) {
+			Objects.requireNonNull(genesisAtoms);
+			this.atoms = genesisAtoms;
 			return this;
 		}
 
@@ -215,7 +216,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private Atom genesis;
+	private List<Atom> genesis;
 
 	private ECPublicKey creator;
 
@@ -236,7 +237,7 @@ public class Universe {
 		this.type = builder.type;
 		this.timestamp = builder.timestamp.longValue();
 		this.creator = builder.creator;
-		this.genesis = builder.atom;
+		this.genesis = builder.atoms;
 	}
 
 	/**
@@ -318,7 +319,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public Atom getGenesis() {
+	public List<Atom> getGenesis() {
 		return genesis;
 	}
 

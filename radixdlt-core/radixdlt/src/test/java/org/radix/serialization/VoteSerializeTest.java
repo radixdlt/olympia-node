@@ -31,6 +31,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 
 import java.util.Optional;
 
@@ -43,7 +44,7 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		View view = View.of(1234567891L);
 		HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(new AccumulatorState(0,  HashUtils.zero256()), null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
