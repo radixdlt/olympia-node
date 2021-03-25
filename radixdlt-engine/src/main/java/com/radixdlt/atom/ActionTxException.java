@@ -16,28 +16,10 @@
  *
  */
 
-package com.radixdlt.application.validator;
+package com.radixdlt.atom;
 
-import com.radixdlt.constraintmachine.Particle;
-
-import java.util.Objects;
-
-/**
- * The validator state of a node
- */
-public final class ValidatorState {
-    private final Particle currentParticle;
-
-    private ValidatorState(Particle currentParticle) {
-        this.currentParticle = currentParticle;
-    }
-
-    public static ValidatorState create(Particle currentParticle) {
-        Objects.requireNonNull(currentParticle);
-        return new ValidatorState(currentParticle);
-    }
-
-    public Particle currentParticle() {
-        return currentParticle;
-    }
+public class ActionTxException extends RuntimeException {
+	public ActionTxException(String message) {
+		super(message);
+	}
 }

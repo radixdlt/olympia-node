@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
@@ -99,17 +100,14 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 		tokenBuilder.allUpParticles().forEach(upParticles::add);
 
 		for (var validatorKey : validatorKeys) {
-			var validatorBuilder = Atom.newBuilder();
-			CheckpointUtils.createValidator(
-				validatorBuilder,
-				magic,
-				validatorKey
-			);
-
-			var validatorAtom = validatorBuilder.signAndBuild(validatorKey::sign);
+			var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
+			var validatorBuilder = ActionTxBuilder.newBuilder();
+			var validatorAtom = validatorBuilder
+				.validatorRegister(validatorAddress)
+				.signAndBuild(validatorKey::sign);
 			genesisAtoms.add(validatorAtom);
 
-			validatorBuilder.allUpParticles().forEach(upParticles::add);
+			validatorBuilder.upParticles().forEach(upParticles::add);
 		}
 
 		for (var stakeDelegation : stakeDelegations) {

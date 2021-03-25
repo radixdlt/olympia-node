@@ -17,9 +17,9 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleId;
-import com.radixdlt.constraintmachine.Particle;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
@@ -43,7 +42,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,11 +95,10 @@ public class StakedTokensTest {
 			.particleGroup();
 		var atom0 = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		var builder1 = Atom.newBuilder()
-			.virtualSpinDown(unregisterValidator(0))
-			.spinUp(registerValidator(1))
-			.particleGroup();
-		var atom1 = builder1.signAndBuild(this.validatorKeyPair::sign);
+		var atom1 = ActionTxBuilder.newBuilder()
+			.validatorRegister(this.validatorAddress)
+			.signAndBuild(this.validatorKeyPair::sign);
+
 		this.engine.execute(List.of(atom0, atom1));
 	}
 
@@ -201,10 +198,6 @@ public class StakedTokensTest {
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom2)))
 			.isInstanceOf(RadixEngineException.class)
 			.hasMessageContaining("Can't send staked tokens");
-	}
-
-	private UnregisteredValidatorParticle unregisterValidator(long nonce) {
-		return new UnregisteredValidatorParticle(this.validatorAddress, nonce);
 	}
 
 	private RegisteredValidatorParticle registerValidator(long nonce) {

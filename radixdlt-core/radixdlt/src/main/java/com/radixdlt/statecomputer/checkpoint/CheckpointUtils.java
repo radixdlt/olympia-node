@@ -29,9 +29,7 @@ import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -141,19 +139,6 @@ public final class CheckpointUtils {
 				}
 			}
 		}
-		atomBuilder.particleGroup();
-	}
-
-	public static void createValidator(
-		AtomBuilder atomBuilder,
-		byte magic,
-		ECKeyPair key
-	) {
-		RadixAddress validatorAddress = new RadixAddress(magic, key.getPublicKey());
-		UnregisteredValidatorParticle validatorDown = new UnregisteredValidatorParticle(validatorAddress, 0L);
-		RegisteredValidatorParticle validatorUp = new RegisteredValidatorParticle(validatorAddress, ImmutableSet.of(), 1L);
-		atomBuilder.virtualSpinDown(validatorDown);
-		atomBuilder.spinUp(validatorUp);
 		atomBuilder.particleGroup();
 	}
 

@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -30,11 +29,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -207,20 +204,13 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
-			address, ImmutableSet.of(), 1
-		);
-		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
-			address, 0
-		);
-		AtomBuilder builder = Atom.newBuilder()
-			.virtualSpinDown(unregisteredValidatorParticle)
-			.spinUp(registeredValidatorParticle)
-			.particleGroup();
-		var atom = builder.signAndBuild(keyPair::sign);
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var atom = ActionTxBuilder.newBuilder()
+			.validatorRegister(address)
+			.signAndBuild(keyPair::sign);
+
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		Command cmd = new Command(payload);
+		var cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 

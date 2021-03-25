@@ -74,6 +74,10 @@ public final class InMemoryWallet {
 		);
 	}
 
+	public Set<TransferrableTokensParticle> particles() {
+		return particles;
+	}
+
 	public static InMemoryWallet create(RRI tokenRRI, RadixAddress address, Random random) {
 		Objects.requireNonNull(tokenRRI);
 		Objects.requireNonNull(address);
