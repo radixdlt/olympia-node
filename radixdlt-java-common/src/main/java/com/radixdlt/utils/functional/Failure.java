@@ -17,6 +17,7 @@
 
 package com.radixdlt.utils.functional;
 
+import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -50,12 +51,14 @@ public final class Failure {
 
 	@Override
 	public String toString() {
-		return new StringJoiner(", ", "Error(", ")")
-			.add(message)
-			.toString();
+		return message;
 	}
 
 	public static Failure failure(final String message) {
 		return new Failure(message);
+	}
+
+	public static Failure failure(final String format, Object ... values) {
+		return new Failure(MessageFormat.format(format, values));
 	}
 }

@@ -1,4 +1,4 @@
-package org.radix.api.jsonrpc;/*
+/*
  * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
@@ -14,18 +14,21 @@ package org.radix.api.jsonrpc;/*
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package org.radix.api.jsonrpc;
 
 import org.junit.Test;
 import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.services.HighLevelApiService;
 
 import com.radixdlt.client.store.TokenBalance;
+import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -65,19 +68,59 @@ public class HighLevelApiHandlerTest {
 		assertEquals("8", list.getJSONObject(2).getString("amount"));
 	}
 
-	//TODO: test methods below should be removed once stubs will be replaced with real implementations
-
 	@Test
-	public void stubNativeToken() {
+	public void testNativeToken() {
 		var service = mock(HighLevelApiService.class);
 		var handler = new HighLevelApiHandler(service);
 
-		when(service.getAddress()).thenReturn(RadixAddress.from(KNOWN_ADDRESS_STRING));
+		when(service.getNativeTokenDescription())
+			.thenReturn(buildNativeToken());
 
+		var response = handler.handleNativeToken(jsonObject().put("id", "1"));
+		assertNotNull(response);
 
-		var result = handler.handleNativeToken(jsonObject().put("id", "1"));
+		var result = response.getJSONObject("result");
 		assertNotNull(result);
+		assertEquals("XRD", result.getString("name"));
+		assertEquals("XRD XDR", result.getString("description"));
+		assertEquals(UInt256.ONE, result.get("granularity"));
+		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
 	}
+
+	@Test
+	public void testTokenInfo() {
+		var service = mock(HighLevelApiService.class);
+		var handler = new HighLevelApiHandler(service);
+
+		when(service.getTokenDescription(any(RRI.class)))
+			.thenReturn(buildToken("FOO"));
+
+		var params = jsonObject().put("resourceIdentifier", RRI.of(KNOWN_ADDRESS, "FOO").toString());
+		var response = handler.handleTokenInfo(jsonObject().put("id", "1").put("params", params));
+		assertNotNull(response);
+
+		var result = response.getJSONObject("result");
+		assertNotNull(result);
+		assertEquals("FOO", result.getString("name"));
+		assertEquals("FOO FOO", result.getString("description"));
+		assertEquals(UInt256.ONE, result.get("granularity"));
+		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
+	}
+
+	private Result<TokenDefinitionRecord> buildNativeToken() {
+		return buildToken("XRD");
+	}
+
+	private Result<TokenDefinitionRecord> buildToken(String name) {
+		return Result.ok(
+			TokenDefinitionRecord.create(
+				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt256.ONE, UInt256.EIGHT,
+				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
+				false, Map.of()
+			));
+	}
+
+	//TODO: test methods below should be removed once stubs will be replaced with real implementations
 
 	@Test
 	public void stubExecutedTransactions() {
