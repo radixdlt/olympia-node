@@ -363,7 +363,7 @@ public final class GenerateUniverses {
 		if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 			List<Map<String, Object>> validators = IntStream.range(0,keys.size())
 				.mapToObj(i -> {
-					Map<String, Object> validator = new HashMap<>();
+					var validator = new HashMap<String, Object>();
 					String nodeNamePrefix =  Optional
 						.ofNullable(System.getenv("NODE_NAME_PREFIX"))
 						.orElse("node");
@@ -540,7 +540,7 @@ public final class GenerateUniverses {
 
 
 		validators.forEach(v -> {
-			Map<String, Object> validatorAwsSecret = new HashMap<>();
+			var validatorAwsSecret = new HashMap<String, Object>();
 			String name = (String) v.get("host");
 			Object keyData;
 			String keyFile,secretName,keyFileSecretName;
@@ -563,7 +563,7 @@ public final class GenerateUniverses {
 
 			writeTextAWSSecret(validatorAwsSecret, secretName, awsSecretsOutputOptions, compress);
 
-			Map<String, Object> keyFileAwsSecret = new HashMap<>();
+			var keyFileAwsSecret = new HashMap<String, Object>();
 			try {
 				byte[] data = Files.readAllBytes(Paths.get(keyFile));
 				keyFileAwsSecret.put("key", data);
