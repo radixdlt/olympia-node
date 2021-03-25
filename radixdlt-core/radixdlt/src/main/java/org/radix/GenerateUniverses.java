@@ -44,6 +44,7 @@ import com.radixdlt.universe.TestUniverseConfigModule;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import org.apache.logging.log4j.util.Strings;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
@@ -81,7 +82,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
@@ -160,21 +160,38 @@ public final class GenerateUniverses {
 			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
 			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
 			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
-			final int validatorsCount = Integer.parseInt(
-				getOption(cmd, 'v').orElseThrow(() -> new IllegalArgumentException("Must specify number of validators"))
-			);
+
+			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
+
+			final List<String> listOfValidators= Optional
+				.ofNullable(System.getenv("NODE_NAME_PREFIX"))
+				.orElse( new ArrayList<String>());
 
 			if (stakes.isEmpty()) {
 				throw new IllegalArgumentException("Must specify at least one staking amount");
 			}
-			if (validatorsCount <= 0) {
+			if (validatorsCount <= 0 && ) {
 				throw new IllegalArgumentException("There must be at least one validator");
 			}
 
-			final ImmutableList<ECKeyPair> validatorKeys = getValidatorKeys(validatorsCount);
-			final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
-				Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
+			//check for the environment variable and if exists, create keys using the names from the environment variable else using the validator count
+
+			final ImmutableList<ValidatorKeyWithName> validatorKeyMaps;
+			if( validatorsCount > 0) {
+				validatorKeyMaps = getValidatorKeys(validatorsCount);
+			}else{
+				validatorKeyMaps = getValidatorKeys(validatorList);
+			}
+			final ImmutableList<ECKeyPair> validatorKeys = validatorKeyMaps.stream()
+				.map(ValidatorKeyWithName::getKeyPair)
+				.collect(ImmutableList.toImmutableList());
+
+			final ImmutableList<StakeDelegationWithName> stakeDelegationMaps = getStakeDelegation(
+				validatorKeyMaps, stakes
 			);
+			final ImmutableList<StakeDelegation> stakeDelegations = stakeDelegationMaps.stream()
+				.map(StakeDelegationWithName::getStakeDelegation)
+				.collect(ImmutableList.toImmutableList());
 
 			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
 			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
@@ -265,7 +282,7 @@ public final class GenerateUniverses {
 
 			if (outputPrivateKeys) {
 				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
-				outputNumberedKeys("VALIDATOR_%s", validatorKeys, helmUniverseOutput, awsSecretsOutputOptions);
+				outputNumberedKeys("VALIDATOR_%s", validatorKeyMaps, helmUniverseOutput, awsSecretsOutputOptions);
 				outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker), helmUniverseOutput,
 					awsSecretsOutputOptions);
 			}
@@ -279,42 +296,75 @@ public final class GenerateUniverses {
 		}
 	}
 
-	private static ImmutableList<ECKeyPair> getValidatorKeys(int validatorsCount) {
+	private static ImmutableList<ValidatorKeyWithName> getValidatorKeys(int validatorsCount) {
 		return IntStream.range(0, validatorsCount)
 			.mapToObj(n -> {
-				try {
-					return Keys.readKey(
-						String.format(VALIDATOR_TEMPLATE, n),
-						"node",
-						"RADIX_VALIDATOR_KEYSTORE_PASSWORD",
-						"RADIX_VALIDATOR_KEY_PASSWORD"
-					);
-				} catch (CryptoException | IOException e) {
-					throw new IllegalStateException("While reading validator keys", e);
-				}
+				var validatorKeyObj = new HashMap<String,ECKeyPair>();
+				String keypath = String.format(VALIDATOR_TEMPLATE, n);
+				ECKeyPair key;
+				key = getValidatorEcKeyPair(keypath);
+				return new ValidatorKeyWithName(keypath,key);
 			})
 			.collect(ImmutableList.toImmutableList());
 	}
 
-	private static ImmutableList<StakeDelegation> getStakeDelegation(List<ECPublicKey> validators, List<UInt256> stakes) {
-		int n = 0;
-		final ImmutableList.Builder<StakeDelegation> stakeDelegations = ImmutableList.builder();
-		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
-		for (ECPublicKey validator : validators) {
-			try {
-				final ECKeyPair stakerKey = Keys.readKey(
-					String.format(STAKER_TEMPLATE, n++),
-					"wallet",
-					"RADIX_STAKER_KEYSTORE_PASSWORD",
-					"RADIX_STAKER_KEY_PASSWORD"
-				);
-				stakeDelegations.add(StakeDelegation.of(stakerKey, validator, stakesCycle.next()));
-			} catch (CryptoException | IOException e) {
-				throw new IllegalStateException("While reading staker keys", e);
-			}
-		}
-		return stakeDelegations.build();
+	private static ImmutableList<ValidatorKeyWithName> getValidatorKeys(List<String> validators) {
+		return validators.stream()
+			.map(validator -> {
+				String keypath = validator;
+				ECKeyPair key = getValidatorEcKeyPair(keypath);
+				return new ValidatorKeyWithName(keypath,key);
+			})
+			.collect(ImmutableList.toImmutableList());
 	}
+
+	private static ECKeyPair getValidatorEcKeyPair(String keypath) {
+		ECKeyPair key;
+		try {
+			key = Keys.readKey(
+				keypath,
+				"node",
+				"RADIX_VALIDATOR_KEYSTORE_PASSWORD",
+				"RADIX_VALIDATOR_KEY_PASSWORD");
+		} catch (CryptoException | IOException e) {
+			throw new IllegalStateException("While reading validator keys", e);
+		}
+		return key;
+	}
+
+	private static ImmutableList<StakeDelegationWithName> getStakeDelegation(List<ValidatorKeyWithName> validatorKeyWithNames, List<UInt256> stakes) {
+		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+		return IntStream.range(0, validatorKeyWithNames.size()).mapToObj(
+			n -> {
+				String keypath = String.format(STAKER_TEMPLATE, n++);
+				var validator = validatorKeyWithNames.get(n);
+				return getStakeDelegationMap(stakesCycle, keypath, validator);
+			}
+		).collect(ImmutableList.toImmutableList());
+	}
+
+	private static ImmutableList<StakeDelegationWithName> getStakeDelegation(List<ValidatorKeyWithName> validatorKeyWithNames, List<UInt256> stakes,boolean existingList) {
+		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+		return validatorKeyWithNames.stream().map(
+			validatorKeyWithName -> {
+				String keypath = validatorKeyWithName.getName() + "staker.ks";
+				return getStakeDelegationMap(stakesCycle, keypath, validatorKeyWithName);
+			}
+		).collect(ImmutableList.toImmutableList());
+	}
+
+	private static StakeDelegationWithName getStakeDelegationMap(Iterator<UInt256> stakesCycle, String keypath, ValidatorKeyWithName validator) {
+		try {
+			final ECKeyPair stakerKey = Keys.readKey(keypath,
+				"wallet",
+				"RADIX_STAKER_KEYSTORE_PASSWORD",
+				"RADIX_STAKER_KEY_PASSWORD");
+			return new StakeDelegationWithName(keypath, StakeDelegation.of(stakerKey, validator.getKeyPair().getPublicKey(), stakesCycle.next()));
+		} catch (CryptoException | IOException e) {
+			throw new IllegalStateException("While reading staker keys", e);
+		}
+	}
+
 
 	// We just generate issuances in the amounts of the stake delegations here
 	private static ImmutableList<TokenIssuance> getTokenIssuances(ImmutableList<StakeDelegation> stakeDelegations) {
@@ -346,7 +396,7 @@ public final class GenerateUniverses {
 
 	private static void outputNumberedKeys(
 		String template,
-		List<ECKeyPair> keys,
+		List<ValidatorKeyWithName> keys,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
 	) {
@@ -545,8 +595,9 @@ public final class GenerateUniverses {
 			Object keyData;
 			String keyFile,secretName,keyFileSecretName;
 			if(template.startsWith("STAKER")){
+					//v.get("type") is a list,
 				 keyData = v.get("stakingKey");
-				 keyFile = String.format("staker%s.ks", (int) v.get("node"));
+				 keyFile = String.format("staker%s.ks", (int) v.get("node")); // keyfile name is from the
 				 secretName = String.format("%s/%s/staker", awsSecretsOutputOptions.getNetworkName(), name);
 				 keyFileSecretName = String.format("%s/%s/staker_key", awsSecretsOutputOptions.getNetworkName(), name);
 
@@ -579,4 +630,34 @@ public final class GenerateUniverses {
 				awsSecretsOutputOptions.getNetworkName()
 			);
 		}
+}
+
+class ValidatorKeyWithName extends  {
+	private String name;
+	private ECKeyPair keyPair;
+	ValidatorKeyWithName(String name, ECKeyPair keyPair){
+		this.name = name;
+		this.keyPair = keyPair;
+	}
+	public String getName(){
+		return  name;
+	}
+	public ECKeyPair getKeyPair(){
+		return keyPair;
+	}
+}
+
+class StakeDelegationWithName {
+	private String name;
+	private StakeDelegation stakeDelegation;
+	StakeDelegationWithName(String name, StakeDelegation stakeDelegation){
+		this.name = name;
+		this.stakeDelegation = stakeDelegation;
+	}
+	public String getName(){
+		return  name;
+	}
+	public StakeDelegation getStakeDelegation(){
+		return stakeDelegation;
+	}
 }
