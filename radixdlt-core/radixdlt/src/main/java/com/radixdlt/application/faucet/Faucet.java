@@ -55,6 +55,8 @@ public final class Faucet {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final RRI nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+
 
 	@Inject
 	public Faucet(
@@ -81,6 +83,7 @@ public final class Faucet {
 		try {
 			var atom = ActionTxBuilder.newBuilder(self, wallet.particleList())
 				.transferNative(nativeToken, request.getAddress(), amount)
+				.burnForFee(nativeToken, FEE)
 				.signAndBuild(hashSigner::sign);
 			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 			var command = new Command(payload);

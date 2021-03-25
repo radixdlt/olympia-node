@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -256,7 +257,26 @@ public final class ActionTxBuilder {
 		return spent.subtract(amount);
 	}
 
+
+	public ActionTxBuilder mutex(String id) throws ActionTxException {
+		assertHasAddress("Must have address");
+
+		final var tokenRRI = RRI.of(address, id);
+		down(
+			RRIParticle.class,
+			p -> p.getRri().equals(tokenRRI),
+			Optional.of(new RRIParticle(tokenRRI)),
+			"RRI not available"
+		);
+		up(new UniqueParticle(id, address, 1));
+		particleGroup();
+
+		return this;
+	}
+
 	public ActionTxBuilder createMutableToken(TokenDefinition tokenDefinition) throws ActionTxException {
+		assertHasAddress("Must have address");
+
 		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
 		down(
 			RRIParticle.class,
