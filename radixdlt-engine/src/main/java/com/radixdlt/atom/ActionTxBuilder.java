@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -74,6 +75,14 @@ public final class ActionTxBuilder {
 		return new ActionTxBuilder(address, Set.of(), List.of());
 	}
 
+	public static ActionTxBuilder newSystemBuilder(List<Particle> upParticleList) {
+		return new ActionTxBuilder(null, Set.of(), upParticleList);
+	}
+
+	public static ActionTxBuilder newSystemBuilder() {
+		return new ActionTxBuilder(null, Set.of(), List.of());
+	}
+
 	private void particleGroup() {
 		atomBuilder.particleGroup();
 	}
@@ -111,6 +120,14 @@ public final class ActionTxBuilder {
 
 	private <T extends Particle> T down(
 		Class<T> particleClass,
+		Optional<T> virtualParticle,
+		String errorMessage
+	) throws ActionTxException {
+		return down(particleClass, p -> true, virtualParticle, errorMessage);
+	}
+
+	private <T extends Particle> T down(
+		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws ActionTxException {
@@ -143,6 +160,51 @@ public final class ActionTxBuilder {
 		}
 
 		return substateDown.get();
+	}
+
+	private void assertHasAddress(String message) throws ActionTxException {
+		if (address == null) {
+			throw new ActionTxException(message);
+		}
+	}
+
+	private void assertIsSystem(String message) throws ActionTxException {
+		if (address != null) {
+			throw new ActionTxException(message);
+		}
+	}
+
+	public ActionTxBuilder systemNextView(long view, long timestamp) throws ActionTxException {
+		assertIsSystem("Not permitted as user to execute system next view");
+
+		var substateDown =
+			down(
+				SystemParticle.class,
+				Optional.of(new SystemParticle(0, 0, 0)),
+				"No System particle available"
+			);
+		if (view <= substateDown.getView()) {
+			throw new ActionTxException("Next view isn't higher than current view.");
+		}
+		up(new SystemParticle(substateDown.getEpoch(), view, timestamp));
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder systemNextEpoch(long timestamp) throws ActionTxException {
+		assertIsSystem("Not permitted as user to execute system next epoch");
+
+		var substateDown =
+			down(
+				SystemParticle.class,
+				Optional.of(new SystemParticle(0, 0, 0)),
+				"No System particle available"
+			);
+		up(new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
+		particleGroup();
+
+		return this;
 	}
 
 	public ActionTxBuilder validatorRegister() throws ActionTxException {
@@ -274,6 +336,43 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
+	public ActionTxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws ActionTxException {
+		assertHasAddress("Must have an address.");
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		var substateDown = down(
+			RegisteredValidatorParticle.class,
+			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
+			"Cannot delegate to " + delegateAddress
+		);
+
+		var substateUp = substateDown.copyWithNonce(substateDown.getNonce() + 1);
+		up(substateUp);
+		up(factory.createStaked(delegateAddress, address, amount, random.nextLong()));
+		var remainder = downFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amount,
+			"Not enough balance to for transfer."
+		);
+		if (!remainder.isZero()) {
+			var remainderState = factory.createTransferrable(address, remainder, random.nextLong());
+			up(remainderState);
+		}
+		particleGroup();
+
+		return this;
+	}
+
 	public ActionTxBuilder burnForFee(RRI rri, UInt256 amount) throws ActionTxException {
 		// HACK
 		var factory = TokDefParticleFactory.create(
@@ -303,6 +402,10 @@ public final class ActionTxBuilder {
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {
 		return atomBuilder.signAndBuild(signer);
+	}
+
+	public Atom buildWithoutSignature() {
+		return atomBuilder.buildWithoutSignature();
 	}
 
 	public Stream<Particle> upParticles() {
