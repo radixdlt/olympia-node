@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.checkpoint;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.atom.TokenDefinition;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;

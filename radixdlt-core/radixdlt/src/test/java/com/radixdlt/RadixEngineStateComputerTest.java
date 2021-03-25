@@ -30,6 +30,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.ActionTxBuilder;
+import com.radixdlt.atom.ActionTxException;
 import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTHeader;
@@ -203,10 +204,10 @@ public class RadixEngineStateComputerTest {
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
-	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
+	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws ActionTxException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var atom = ActionTxBuilder.newBuilder()
-			.validatorRegister(address)
+		var atom = ActionTxBuilder.newBuilder(address)
+			.validatorRegister()
 			.signAndBuild(keyPair::sign);
 
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
@@ -242,7 +243,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() {
+	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
@@ -261,7 +262,7 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	@Ignore("Difficult to include staking. Refactor then reenable")
-	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
+	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() throws Exception {
 		// Arrange
 		RadixEngineCommand cmd = registerCommand(unregisteredNode);
 		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
@@ -328,7 +329,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_additional_cmds_should_fail() {
+	public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
@@ -354,7 +355,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_different_validator_signed_should_fail() {
+	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);

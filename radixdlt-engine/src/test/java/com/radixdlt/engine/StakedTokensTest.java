@@ -60,7 +60,7 @@ public class StakedTokensTest {
 	private TransferrableTokensParticle transferrableTokensParticle;
 
 	@Before
-	public void setup() throws RadixEngineException {
+	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
@@ -95,8 +95,8 @@ public class StakedTokensTest {
 			.particleGroup();
 		var atom0 = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		var atom1 = ActionTxBuilder.newBuilder()
-			.validatorRegister(this.validatorAddress)
+		var atom1 = ActionTxBuilder.newBuilder(this.validatorAddress)
+			.validatorRegister()
 			.signAndBuild(this.validatorKeyPair::sign);
 
 		this.engine.execute(List.of(atom0, atom1));

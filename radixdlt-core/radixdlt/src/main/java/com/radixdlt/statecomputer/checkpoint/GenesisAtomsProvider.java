@@ -24,6 +24,8 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.ActionTxBuilder;
+import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TokenDefinition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
@@ -99,15 +101,19 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 		var upParticles = new ArrayList<Particle>();
 		tokenBuilder.allUpParticles().forEach(upParticles::add);
 
-		for (var validatorKey : validatorKeys) {
-			var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-			var validatorBuilder = ActionTxBuilder.newBuilder();
-			var validatorAtom = validatorBuilder
-				.validatorRegister(validatorAddress)
-				.signAndBuild(validatorKey::sign);
-			genesisAtoms.add(validatorAtom);
+		try {
+			for (var validatorKey : validatorKeys) {
+				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
+				var validatorBuilder = ActionTxBuilder.newBuilder(validatorAddress);
+				var validatorAtom = validatorBuilder
+					.validatorRegister()
+					.signAndBuild(validatorKey::sign);
+				genesisAtoms.add(validatorAtom);
 
-			validatorBuilder.upParticles().forEach(upParticles::add);
+				validatorBuilder.upParticles().forEach(upParticles::add);
+			}
+		} catch (ActionTxException e) {
+			throw new IllegalStateException(e);
 		}
 
 		for (var stakeDelegation : stakeDelegations) {

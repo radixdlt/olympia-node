@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.statecomputer.checkpoint;
+package com.radixdlt.atom;
 
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;

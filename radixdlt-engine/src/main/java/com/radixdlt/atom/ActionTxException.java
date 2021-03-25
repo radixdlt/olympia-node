@@ -18,7 +18,7 @@
 
 package com.radixdlt.atom;
 
-public class ActionTxException extends RuntimeException {
+public class ActionTxException extends Exception {
 	public ActionTxException(String message) {
 		super(message);
 	}

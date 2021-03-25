@@ -93,25 +93,24 @@ public final class ValidatorRegistrator {
 
 		var particles = new ArrayList<Particle>(wallet.particles());
 		particles.add(validatorState.currentParticle());
-		var txBuilder = ActionTxBuilder.newBuilder(particles);
+		var txBuilder = ActionTxBuilder.newBuilder(self, particles);
 
 		try {
 			if (registration.isRegister()) {
-				txBuilder.validatorRegister(self);
+				txBuilder.validatorRegister();
 			} else {
-				txBuilder.validatorUnregister(self);
+				txBuilder.validatorUnregister();
+			}
+
+			if (feeTable != null) {
+				txBuilder.burnForFee(tokenRRI, FEE);
 			}
 		} catch (ActionTxException e) {
 			logger.warn(e.getMessage());
 			return;
 		}
 
-		if (feeTable != null) {
-			txBuilder.burnForFee(self, tokenRRI, FEE);
-		}
-
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
-
 		var atom = txBuilder.signAndBuild(hashSigner::sign);
 		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 		var command = new Command(payload);

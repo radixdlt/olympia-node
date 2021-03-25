@@ -47,22 +47,25 @@ public final class ActionTxBuilder {
 	private final AtomBuilder atomBuilder;
 	private final Map<ParticleId, Particle> upParticles = new HashMap<>();
 	private final Set<ParticleId> downVirtualParticles;
+	private final RadixAddress address;
 
 	private ActionTxBuilder(
+		RadixAddress address,
 		Set<ParticleId> downVirtualParticles,
 		List<Particle> upParticlesList
 	) {
+		this.address = address;
 		this.atomBuilder = Atom.newBuilder();
 		this.downVirtualParticles = new HashSet<>(downVirtualParticles);
 		upParticlesList.forEach(p -> upParticles.put(ParticleId.of(p), p));
 	}
 
-	public static ActionTxBuilder newBuilder(List<Particle> upParticleList) {
-		return new ActionTxBuilder(Set.of(), upParticleList);
+	public static ActionTxBuilder newBuilder(RadixAddress address, List<Particle> upParticleList) {
+		return new ActionTxBuilder(address, Set.of(), upParticleList);
 	}
 
-	public static ActionTxBuilder newBuilder() {
-		return new ActionTxBuilder(Set.of(), List.of());
+	public static ActionTxBuilder newBuilder(RadixAddress address) {
+		return new ActionTxBuilder(address, Set.of(), List.of());
 	}
 
 	private void up(Particle particle) {
@@ -79,12 +82,21 @@ public final class ActionTxBuilder {
 		upParticles.remove(particleId);
 	}
 
-	private <T extends Particle> Optional<T> down(
+	private <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle
-	) {
-		return Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles())
+		String errorMessage
+	) throws ActionTxException {
+		return down(particleClass, particlePredicate, Optional.empty(), errorMessage);
+	}
+
+	private <T extends Particle> T down(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Optional<T> virtualParticle,
+		String errorMessage
+	) throws ActionTxException {
+		var substateDown = Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles())
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -97,15 +109,21 @@ public final class ActionTxBuilder {
 				}
 				return virtualParticle;
 			});
+		if (substateDown.isEmpty()) {
+			throw new ActionTxException(errorMessage);
+		}
+
+		return substateDown.get();
 	}
 
-	public ActionTxBuilder validatorRegister(RadixAddress address) {
+	public ActionTxBuilder validatorRegister() throws ActionTxException {
 		var substateDown =
 			down(
 				UnregisteredValidatorParticle.class,
 				p -> p.getAddress().equals(address),
-				Optional.of(new UnregisteredValidatorParticle(address, 0L))
-			).orElseThrow(() -> new ActionTxException("Already a validator"));
+				Optional.of(new UnregisteredValidatorParticle(address, 0L)),
+				"Already a validator"
+			);
 
 		var substateUp = new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1);
 		atomBuilder.spinUp(substateUp);
@@ -113,13 +131,13 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder validatorUnregister(RadixAddress address) {
+	public ActionTxBuilder validatorUnregister() throws ActionTxException {
 		var substateDown =
 			down(
 				RegisteredValidatorParticle.class,
 				p -> p.getAddress().equals(address),
-				Optional.empty()
-			).orElseThrow(() -> new ActionTxException("Already unregistered."));
+				"Already unregistered."
+			);
 		var substateUp = new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1);
 		atomBuilder.spinUp(substateUp);
 		atomBuilder.particleGroup();
@@ -127,25 +145,22 @@ public final class ActionTxBuilder {
 	}
 
 
-	private Optional<UInt256> downTransferrable(RadixAddress address, RRI rri, UInt256 amount) {
+	private UInt256 downTransferrable(RRI rri, UInt256 amount, String errorMessage) throws ActionTxException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
-			var substateDownMaybe = down(
+			var substateDown = down(
 				TransferrableTokensParticle.class,
 				p -> p.getAddress().equals(address) && p.getTokDefRef().equals(rri),
-				Optional.empty()
+				errorMessage
 			);
-			if (substateDownMaybe.isEmpty()) {
-				return Optional.empty();
-			}
 
-			spent = spent.add(substateDownMaybe.get().getAmount());
+			spent = spent.add(substateDown.getAmount());
 		}
 
-		return Optional.of(spent.subtract(amount));
+		return spent.subtract(amount);
 	}
 
-	public ActionTxBuilder burnForFee(RadixAddress address, RRI rri, UInt256 amount) {
+	public ActionTxBuilder burnForFee(RRI rri, UInt256 amount) throws ActionTxException {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
@@ -156,8 +171,7 @@ public final class ActionTxBuilder {
 			UInt256.ONE
 		);
 		up(factory.createUnallocated(amount));
-		UInt256 remainder = downTransferrable(address, rri, amount)
-			.orElseThrow(() -> new ActionTxException("Not enough balance to burn for fees."));
+		UInt256 remainder = downTransferrable(rri, amount, "Not enough balance to burn for fees.");
 		if (!remainder.isZero()) {
 			var substateUp = factory.createTransferrable(address, remainder, System.currentTimeMillis());
 			up(substateUp);
