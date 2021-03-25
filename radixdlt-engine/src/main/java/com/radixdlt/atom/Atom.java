@@ -70,10 +70,6 @@ public final class Atom {
 		return new AtomBuilder();
 	}
 
-	public static AtomBuilder newBuilder(List<Particle> upParticles) {
-		return new AtomBuilder(upParticles);
-	}
-
 	@JsonCreator
 	private Atom(
 		@JsonProperty("m") String message,

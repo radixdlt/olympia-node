@@ -25,7 +25,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -38,13 +37,6 @@ public final class AtomBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
 	private final Map<ParticleId, Particle> localUpParticles = new HashMap<>();
-	private final Map<ParticleId, Particle> remoteUpParticles = new HashMap<>();
-
-	AtomBuilder(List<Particle> upParticles) {
-		for (var p : upParticles) {
-			remoteUpParticles.put(ParticleId.of(p), p);
-		}
-	}
 
 	AtomBuilder() {
 	}
@@ -56,10 +48,6 @@ public final class AtomBuilder {
 
 	public Stream<Particle> localUpParticles() {
 		return localUpParticles.values().stream();
-	}
-
-	public Stream<Particle> allUpParticles() {
-		return Stream.concat(localUpParticles.values().stream(), remoteUpParticles.values().stream());
 	}
 
 	public AtomBuilder spinUp(Particle particle) {
@@ -78,7 +66,6 @@ public final class AtomBuilder {
 	public AtomBuilder spinDown(ParticleId particleId) {
 		this.instructions.add(CMMicroInstruction.spinDown(particleId));
 		localUpParticles.remove(particleId);
-		remoteUpParticles.remove(particleId);
 		return this;
 	}
 
