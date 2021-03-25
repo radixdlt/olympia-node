@@ -113,6 +113,7 @@ public final class RemoteSyncService {
 
 		log.trace("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
 
+		systemCounters.increment(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED);
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}
 
