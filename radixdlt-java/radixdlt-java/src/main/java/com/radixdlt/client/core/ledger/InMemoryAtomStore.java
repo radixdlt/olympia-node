@@ -27,6 +27,7 @@ import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
@@ -96,11 +97,20 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = Atom.newBuilder().addParticleGroup(particleGroup);
+				stagedAtom = Atom.newBuilder();
 				stagedAtoms.put(uuid, stagedAtom);
-			} else {
-				stagedAtom.addParticleGroup(particleGroup);
 			}
+
+			for (CMMicroInstruction i : particleGroup.getInstructions()) {
+				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+					stagedAtom.spinUp(i.getParticle());
+				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+					stagedAtom.virtualSpinDown(i.getParticle());
+				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+					stagedAtom.spinDown(i.getParticleHash());
+				}
+			}
+			stagedAtom.particleGroup();
 
 			particleGroup.upParticles().forEach(p -> {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());

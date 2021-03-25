@@ -23,7 +23,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -42,7 +41,7 @@ public class TokenFeeModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<AtomChecker<Atom>>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<AtomChecker>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

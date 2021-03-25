@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
@@ -29,17 +30,14 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +54,10 @@ public final class CheckpointUtils {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static ParticleGroup createEpochUpdate() {
-		var builder = ParticleGroup.builder();
-		builder.virtualSpinDown(new SystemParticle(0, 0, 0));
-		builder.spinUp(new SystemParticle(1, 0, 0));
-		return builder.build();
+	public static void createEpochUpdate(AtomBuilder atomBuilder) {
+		atomBuilder.virtualSpinDown(new SystemParticle(0, 0, 0));
+		atomBuilder.spinUp(new SystemParticle(1, 0, 0));
+		atomBuilder.particleGroup();
 	}
 
 	private static Optional<UInt256> downTransferrableParticles(
@@ -102,7 +99,8 @@ public final class CheckpointUtils {
 		return Optional.of(spent.subtract(amount));
 	}
 
-	public static List<ParticleGroup> createTokenDefinition(
+	public static void createTokenDefinition(
+		AtomBuilder atomBuilder,
 		byte magic,
 		ECPublicKey key,
 		TokenDefinition tokenDefinition,
@@ -116,7 +114,7 @@ public final class CheckpointUtils {
 		);
 
 		final var unallocated = factory.createUnallocated(UInt256.MAX_VALUE);
-		ParticleGroup tokDefParticleGroup = ParticleGroup.builder()
+		atomBuilder
 			.virtualSpinDown(new RRIParticle(tokenRRI))
 			.spinUp(new MutableSupplyTokenDefinitionParticle(
 				tokenRRI,
@@ -127,49 +125,49 @@ public final class CheckpointUtils {
 				tokenDefinition.getTokenUrl(),
 				tokenDefinition.getTokenPermissions()
 			))
-			.spinUp(unallocated)
-			.build();
+			.spinUp(unallocated);
+		atomBuilder.particleGroup();
 
 		// Merge issuances so we only have one TTP per address
-		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
 		final var issuedAmounts = issuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
 		var unallocatedParticles = Lists.newArrayList(unallocated);
 		for (final var issuance : issuedAmounts.entrySet()) {
 			final var amount = issuance.getValue();
 			if (!amount.isZero()) {
-				builder.spinUp(factory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount, 0));
-				UInt256 remainder = downParticles(amount, unallocatedParticles, builder::spinDown).orElseThrow();
+				atomBuilder.spinUp(factory.createTransferrable(new RadixAddress(magic, issuance.getKey()), amount, 0));
+				UInt256 remainder = downParticles(amount, unallocatedParticles, atomBuilder::spinDown).orElseThrow();
 				if (!remainder.isZero()) {
 					UnallocatedTokensParticle particle = factory.createUnallocated(remainder);
 					unallocatedParticles.add(particle);
-					builder.spinUp(particle);
+					atomBuilder.spinUp(particle);
 				}
 			}
 		}
-
-		ParticleGroup issuanceParticleGroup = builder.build();
-		return List.of(tokDefParticleGroup, issuanceParticleGroup);
+		atomBuilder.particleGroup();
 	}
 
-	public static ParticleGroup createValidators(byte magic, ImmutableList<ECKeyPair> validatorKeys) {
-		var builder = ParticleGroup.builder();
+	public static void createValidators(
+		AtomBuilder atomBuilder,
+		byte magic,
+		ImmutableList<ECKeyPair> validatorKeys
+	) {
 		validatorKeys.forEach(key -> {
 			RadixAddress validatorAddress = new RadixAddress(magic, key.getPublicKey());
 			UnregisteredValidatorParticle validatorDown = new UnregisteredValidatorParticle(validatorAddress, 0L);
 			RegisteredValidatorParticle validatorUp = new RegisteredValidatorParticle(validatorAddress, ImmutableSet.of(), 1L);
-			builder.virtualSpinDown(validatorDown);
-			builder.spinUp(validatorUp);
+			atomBuilder.virtualSpinDown(validatorDown);
+			atomBuilder.spinUp(validatorUp);
 		});
-		return builder.build();
+		atomBuilder.particleGroup();
 	}
 
-	public static List<ParticleGroup> createStakes(
+	public static void createStakes(
+		AtomBuilder atomBuilder,
 		byte magic,
-		ImmutableList<StakeDelegation> delegations,
-		List<Particle> xrdParticles
+		ImmutableList<StakeDelegation> delegations
 	) {
-		final ImmutableMap<ECPublicKey, TransferrableTokensParticle> tokensByKey = xrdParticles.stream()
+		final ImmutableMap<ECPublicKey, TransferrableTokensParticle> tokensByKey = atomBuilder.localUpParticles()
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.collect(ImmutableMap.toImmutableMap(ttp -> ttp.getAddress().getPublicKey(), Function.identity()));
@@ -181,43 +179,39 @@ public final class CheckpointUtils {
 		delegations.stream().map(StakeDelegation::delegate).distinct()
 			.forEach(delegate -> delegateNonces.put(delegate, 1L));
 
-		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(xrdParticles.stream()
+		TokDefParticleFactory factory = TokDefParticleFactory.createFrom(atomBuilder.localUpParticles()
 			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.findAny().orElseThrow()
 		);
 
-		List<ParticleGroup> particleGroups = new ArrayList<>();
 		for (final var entry : stakesByKey.entrySet()) {
 			final var particles = Lists.newArrayList(tokensByKey.get(entry.getKey()));
 			final var delegationsOfKey = entry.getValue();
 
 			final var stakerAddress = new RadixAddress(magic, entry.getKey());
 
-			ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
-
 			for (final var delegation : delegationsOfKey) {
 				ECPublicKey delegate = delegation.delegate();
 				long nonce = delegateNonces.get(delegate);
 				RadixAddress delegateAddress = new RadixAddress(magic, delegate);
-				builder.spinDown(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce));
-				builder.spinUp(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce + 1));
+				atomBuilder.spinDown(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce));
+				atomBuilder.spinUp(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), nonce + 1));
 				delegateNonces.put(delegate, nonce + 1);
 
 				final var amount = delegation.amount();
-				builder.spinUp(factory.createStaked(delegateAddress, stakerAddress, amount, 0));
+				atomBuilder.spinUp(factory.createStaked(delegateAddress, stakerAddress, amount, 0));
 
-				UInt256 remainder = downTransferrableParticles(amount, particles, builder::spinDown)
+				UInt256 remainder = downTransferrableParticles(amount, particles, atomBuilder::spinDown)
 					.orElseThrow();
 				if (!remainder.isZero()) {
 					var particle = factory.createTransferrable(stakerAddress, remainder, System.nanoTime());
 					particles.add(particle);
-					builder.spinUp(particle);
+					atomBuilder.spinUp(particle);
 				}
 			}
-			particleGroups.add(builder.build());
+			atomBuilder.particleGroup();
 		}
-		return particleGroups;
 	}
 
 }

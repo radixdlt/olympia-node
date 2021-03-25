@@ -41,7 +41,7 @@ import javax.inject.Inject;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker<Atom> {
+public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -61,7 +61,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<Atom> {
 
 	@Override
 	public Result check(Atom atom, PermissionLevel permissionLevel) {
-		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
+		if (atom.getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
 

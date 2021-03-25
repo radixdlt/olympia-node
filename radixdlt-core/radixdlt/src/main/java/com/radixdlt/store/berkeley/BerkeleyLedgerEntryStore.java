@@ -84,7 +84,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerAndBFTProof>, AtomIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, AtomIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -605,7 +605,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<Atom, LedgerA
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			atom.getCMInstruction().getMicroInstructions().stream()
+			atom.getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 

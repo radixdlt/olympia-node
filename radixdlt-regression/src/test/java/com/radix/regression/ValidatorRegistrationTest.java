@@ -31,7 +31,6 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -122,11 +121,10 @@ public class ValidatorRegistrationTest {
 	public void when_registering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.addParticleGroup(ParticleGroup.builder()
-					.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-					.spinDown(new RegisteredValidatorParticle(address, 1))
-					.spinDown(new RegisteredValidatorParticle(address, 2))
-					.build())
+				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
+				.spinDown(new RegisteredValidatorParticle(address, 1))
+				.spinDown(new RegisteredValidatorParticle(address, 2))
+				.particleGroup()
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
@@ -138,10 +136,9 @@ public class ValidatorRegistrationTest {
 	public void when_unregistering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.addParticleGroup(ParticleGroup.builder()
-					.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-					.spinDown(new UnregisteredValidatorParticle(address, 1))
-					.build())
+				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
+				.spinDown(new UnregisteredValidatorParticle(address, 1))
+				.particleGroup()
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);

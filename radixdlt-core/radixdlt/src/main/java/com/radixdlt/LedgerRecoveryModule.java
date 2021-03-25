@@ -58,7 +58,7 @@ import java.util.Optional;
 public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Atom genesisAtom,
 		ValidatorSetBuilder validatorSetBuilder,
 		Serialization serialization,
@@ -88,7 +88,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	@Singleton
 	@LastStoredProof
 	LedgerProof lastStoredProof(
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		AtomIndex atomIndex,
 		CommittedReader committedReader,
 		@Genesis Atom genesisAtom,

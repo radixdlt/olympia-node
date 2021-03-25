@@ -19,11 +19,11 @@ package com.radixdlt.store;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
@@ -36,17 +36,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements EngineStore<T, M> {
+public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
-	private final Map<HashCode, Pair<CMMicroInstruction, T>> storedParticles = new HashMap<>();
+	private final Map<HashCode, Pair<CMMicroInstruction, Atom>> storedParticles = new HashMap<>();
 	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
-	private final Set<T> atoms = new HashSet<>();
+	private final Set<Atom> atoms = new HashSet<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	@Override
-	public void storeAtom(Transaction txn, T atom) {
+	public void storeAtom(Transaction txn, Atom atom) {
 		synchronized (lock) {
-			for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
+			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
 					var particle = microInstruction.getParticle();
@@ -73,7 +73,7 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom, M> implements 
 		 // No-op
 	}
 
-	public boolean containsAtom(T atom) {
+	public boolean containsAtom(Atom atom) {
 		return atoms.contains(atom);
 	}
 

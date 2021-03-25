@@ -44,7 +44,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
@@ -99,21 +98,19 @@ public class MempoolTest {
 	private static Atom createAtom(ECKeyPair keyPair, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		ParticleGroup.ParticleGroupBuilder builder = ParticleGroup.builder();
+		AtomBuilder atomBuilder = Atom.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			RRI rri = RRI.of(address, "test" + i);
 			RRIParticle rriParticle = new RRIParticle(rri, nonce);
 			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
-			builder
+			atomBuilder
 				.virtualSpinDown(rriParticle)
 				.spinUp(uniqueParticle);
 		}
-		ParticleGroup particleGroup = builder.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atom.buildAtom();
+		atomBuilder.particleGroup();
+		HashCode hashToSign = atomBuilder.computeHashToSign();
+		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
+		return atomBuilder.buildAtom();
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, int nonce, int numParticles) {

@@ -23,6 +23,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.Atoms;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
@@ -267,7 +268,18 @@ public class MultipleTransitionsInSameGroupTest {
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
 		AtomBuilder unsignedAtom = Atom.newBuilder();
-		particleGroups.forEach(unsignedAtom::addParticleGroup);
+		for (var pg : particleGroups) {
+			for (CMMicroInstruction i : pg.getInstructions()) {
+				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+					unsignedAtom.spinUp(i.getParticle());
+				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+					unsignedAtom.virtualSpinDown(i.getParticle());
+				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+					unsignedAtom.spinDown(i.getParticleHash());
+				}
+			}
+			unsignedAtom.particleGroup();
+		}
 		unsignedAtom.message("magic:0xdeadbeef");
 		// Sign and submit
 		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();

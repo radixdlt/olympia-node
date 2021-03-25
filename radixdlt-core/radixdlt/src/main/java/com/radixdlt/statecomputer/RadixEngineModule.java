@@ -103,11 +103,11 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine(
+	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<Atom, LedgerAndBFTProof> engineStore,
-		AtomChecker<Atom> ledgerAtomChecker,
+		EngineStore<LedgerAndBFTProof> engineStore,
+		AtomChecker ledgerAtomChecker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,

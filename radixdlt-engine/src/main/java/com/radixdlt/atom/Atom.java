@@ -25,14 +25,12 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -43,6 +41,7 @@ import com.radixdlt.serialization.DeserializeException;
 import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -54,7 +53,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("radix.atom")
-public final class Atom implements RadixEngineAtom {
+public final class Atom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -108,15 +107,6 @@ public final class Atom implements RadixEngineAtom {
 		return new Atom(instructions, signatures, message, computeHashToSign(instructions));
 	}
 
-	public static Atom create(ImmutableList<CMMicroInstruction> instructions) {
-		return new Atom(
-			instructions,
-			ImmutableMap.of(),
-			null,
-			computeHashToSign(instructions)
-		);
-	}
-
 	// FIXME: need to include message
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
@@ -137,6 +127,10 @@ public final class Atom implements RadixEngineAtom {
 
 	public Optional<ECDSASignature> getSignature(EUID euid) {
 		return Optional.ofNullable(this.signatures.get(euid));
+	}
+
+	public Map<EUID, ECDSASignature> getSignatures() {
+		return this.signatures;
 	}
 
 	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {
@@ -204,9 +198,8 @@ public final class Atom implements RadixEngineAtom {
 		return instructionsBuilder.build();
 	}
 
-	@Override
-	public CMInstruction getCMInstruction() {
-		return new CMInstruction(instructions, signatures);
+	public List<CMMicroInstruction> getMicroInstructions() {
+		return instructions;
 	}
 
 	public Stream<CMMicroInstruction> uniqueInstructions() {
@@ -219,7 +212,6 @@ public final class Atom implements RadixEngineAtom {
 			.map(CMMicroInstruction::getParticle);
 	}
 
-	@Override
 	public HashCode getWitness() {
 		return witness;
 	}

@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -46,10 +47,10 @@ import java.util.function.Predicate;
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
-public final class RadixEngine<T extends RadixEngineAtom, M> {
+public final class RadixEngine<M> {
 	private static final Logger logger = LogManager.getLogger();
 
-	private static class ApplicationStateComputer<U, V extends Particle, T extends RadixEngineAtom, M> {
+	private static class ApplicationStateComputer<U, V extends Particle, M> {
 		private final Class<V> particleClass;
 		private final BiFunction<U, V, U> outputReducer;
 		private final BiFunction<U, V, U> inputReducer;
@@ -70,7 +71,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			this.includeInBranches = includeInBranches;
 		}
 
-		ApplicationStateComputer<U, V, T, M> copy() {
+		ApplicationStateComputer<U, V, M> copy() {
 			return new ApplicationStateComputer<>(
 				particleClass,
 				curValue,
@@ -80,7 +81,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			);
 		}
 
-		void initialize(EngineStore<T, M> engineStore) {
+		void initialize(EngineStore<M> engineStore) {
 			curValue = engineStore.reduceUpParticles(particleClass, curValue, outputReducer);
 		}
 
@@ -99,17 +100,17 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final Predicate<Particle> virtualStoreLayer;
-	private final EngineStore<T, M> engineStore;
-	private final AtomChecker<T> checker;
+	private final EngineStore<M> engineStore;
+	private final AtomChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
-	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T, M>> stateComputers = new HashMap<>();
-	private final List<RadixEngineBranch<T, M>> branches = new ArrayList<>();
+	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers = new HashMap<>();
+	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<T, M> engineStore
+		EngineStore<M> engineStore
 	) {
 		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchVerifier.empty());
 	}
@@ -117,8 +118,8 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
-		EngineStore<T, M> engineStore,
-		AtomChecker<T> checker,
+		EngineStore<M> engineStore,
+		AtomChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
@@ -165,7 +166,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	 * @param <V> the class of the particles to map
 	 */
 	public <U, V extends Particle> void addStateReducer(StateReducer<U, V> stateReducer, String name, boolean includeInBranches) {
-		ApplicationStateComputer<U, V, T, M> applicationStateComputer = new ApplicationStateComputer<>(
+		ApplicationStateComputer<U, V, M> applicationStateComputer = new ApplicationStateComputer<>(
 			stateReducer.particleClass(),
 			stateReducer.initial().get(),
 			stateReducer.outputReducer(),
@@ -208,21 +209,18 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 
 	/**
 	 * A cheap radix engine branch which is purely transient
-	 * @param <T> the type of engine atom
 	 */
-	public static class RadixEngineBranch<T extends RadixEngineAtom, M> {
-		private final RadixEngine<T, M> engine;
+	public static class RadixEngineBranch<M> {
+		private final RadixEngine<M> engine;
 
 		private RadixEngineBranch(
 			ConstraintMachine constraintMachine,
 			Predicate<Particle> virtualStoreLayer,
-			EngineStore<T, M> parentStore,
-			AtomChecker<T> checker,
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T, M>> stateComputers
+			EngineStore<M> parentStore,
+			AtomChecker checker,
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers
 		) {
-			TransientEngineStore<T, M> transientEngineStore = new TransientEngineStore<>(
-				parentStore
-			);
+			var transientEngineStore = new TransientEngineStore<M>(parentStore);
 
 			this.engine = new RadixEngine<>(
 				constraintMachine,
@@ -235,11 +233,11 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public void execute(List<T> atoms) throws RadixEngineException {
+		public void execute(List<Atom> atoms) throws RadixEngineException {
 			engine.execute(atoms);
 		}
 
-		public void execute(List<T> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
+		public void execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
 			engine.execute(atoms, null, permissionLevel);
 		}
 
@@ -254,15 +252,15 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 	}
 
-	public RadixEngineBranch<T, M> transientBranch() {
+	public RadixEngineBranch<M> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, T, M>> branchedStateComputers = new HashMap<>();
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> branchedStateComputers = new HashMap<>();
 			this.stateComputers.forEach((c, computer) -> {
 				if (computer.includeInBranches) {
 					branchedStateComputers.put(c, computer.copy());
 				}
 			});
-			RadixEngineBranch<T, M> branch = new RadixEngineBranch<>(
+			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
 				this.engineStore,
@@ -276,13 +274,12 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 	}
 
-	private HashMap<HashCode, Particle> verify(CMStore.Transaction txn, T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+	private HashMap<HashCode, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel) throws RadixEngineException {
 		var downedParticles = new HashMap<HashCode, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
 			virtualizedCMStore,
-			atom.getCMInstruction(),
-			atom.getWitness(),
+			atom,
 			permissionLevel,
 			downedParticles
 		);
@@ -314,7 +311,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	 * @param atoms atom to store
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public void execute(List<T> atoms) throws RadixEngineException {
+	public void execute(List<Atom> atoms) throws RadixEngineException {
 		execute(atoms, null, PermissionLevel.USER);
 	}
 
@@ -326,7 +323,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public void execute(List<T> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public void execute(List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -347,9 +344,9 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 		}
 	}
 
-	private void executeInternal(CMStore.Transaction txn, List<T> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	private void executeInternal(CMStore.Transaction txn, List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
-		for (T atom : atoms) {
+		for (var atom : atoms) {
 			// TODO: combine verification and storage
 			var downedParticles = this.verify(txn, atom, permissionLevel);
 			try {
@@ -361,8 +358,7 @@ public final class RadixEngine<T extends RadixEngineAtom, M> {
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			final var cmInstruction = atom.getCMInstruction();
-			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
 				// Treat check spin as the first push for now
 				if (!microInstruction.isCheckSpin()) {
 					continue;

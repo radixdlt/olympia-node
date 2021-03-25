@@ -20,8 +20,8 @@ package com.radixdlt.application.validator;
 
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 
-import java.util.function.Function;
-import java.util.function.LongFunction;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * The validator state of a node
@@ -51,11 +51,11 @@ public final class ValidatorState {
         return registeredParticle != null;
     }
 
-    public <T> T map(LongFunction<T> unregisteredMapper, Function<RegisteredValidatorParticle, T> registeredMapper) {
+    public void ifUnregisteredElse(LongConsumer unregisteredConsumer, Consumer<RegisteredValidatorParticle> registeredConsumer) {
         if (unregisteredNonce != null) {
-            return unregisteredMapper.apply(unregisteredNonce);
+            unregisteredConsumer.accept(unregisteredNonce);
         } else {
-            return registeredMapper.apply(registeredParticle);
+        	registeredConsumer.accept(registeredParticle);
         }
     }
 }

@@ -34,9 +34,10 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 		final var address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		final var rri = RRI.of(address, "test");
 
-		final var atom = Atom.newBuilder();
 		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroup(ParticleGroup.builder().virtualSpinDown(new RRIParticle(rri)).build());
-		return atom.buildAtom();
+		return Atom.newBuilder()
+			.virtualSpinDown(new RRIParticle(rri))
+			.particleGroup()
+			.buildAtom();
 	}
 }
