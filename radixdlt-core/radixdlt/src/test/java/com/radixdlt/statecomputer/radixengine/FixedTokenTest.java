@@ -19,7 +19,6 @@
 package com.radixdlt.statecomputer.radixengine;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -131,15 +130,11 @@ public class FixedTokenTest {
 		var keyPair = ECKeyPair.generateNew();
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = builder.buildAtom();
+		var atom = builder.signAndBuild(keyPair::sign);
 		sut.execute(List.of(atom));
 		var builder2 = Atom.newBuilder();
 		spendToken(builder2, upToken, 1);
-		var hashToSign2 = builder2.computeHashToSign();
-		builder2.setSignature(keyPair.euid(), keyPair.sign(hashToSign2));
-		var atom2 = builder2.buildAtom();
+		var atom2 = builder2.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom2));
@@ -152,17 +147,13 @@ public class FixedTokenTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = builder.buildAtom();
+		var atom = builder.signAndBuild(keyPair::sign);
 		sut.execute(List.of(atom));
 
 
 		var builder2 = Atom.newBuilder();
 		spendToken(builder2, upToken, 2);
-		var hashToSign2 = builder2.computeHashToSign();
-		builder2.setSignature(keyPair.euid(), keyPair.sign(hashToSign2));
-		var atom2 = builder2.buildAtom();
+		var atom2 = builder2.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(atom2))).isInstanceOf(RadixEngineException.class);
@@ -177,9 +168,7 @@ public class FixedTokenTest {
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 1);
-		HashCode hashToSign = builder.computeHashToSign();
-		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = builder.buildAtom();
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		sut.execute(List.of(atom));
@@ -194,9 +183,7 @@ public class FixedTokenTest {
 		var builder = Atom.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 2);
-		HashCode hashToSign = builder.computeHashToSign();
-		builder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		var atom = builder.buildAtom();
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);

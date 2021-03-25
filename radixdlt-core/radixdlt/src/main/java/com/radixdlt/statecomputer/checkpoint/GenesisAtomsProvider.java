@@ -92,9 +92,8 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			tokenDefinition,
 			tokenIssuances
 		);
-		var tokenHashToSign = tokenBuilder.computeHashToSign();
-		tokenBuilder.setSignature(universeKey.euid(), universeKey.sign(tokenHashToSign));
-		genesisAtoms.add(tokenBuilder.buildAtom());
+		var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign);
+		genesisAtoms.add(tokenAtom);
 
 		var upParticles = new ArrayList<Particle>();
 		tokenBuilder.allUpParticles().forEach(upParticles::add);
@@ -107,9 +106,8 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				validatorKey
 			);
 
-			var hashToSign = validatorBuilder.computeHashToSign();
-			validatorBuilder.setSignature(validatorKey.euid(), validatorKey.sign(hashToSign));
-			genesisAtoms.add(validatorBuilder.buildAtom());
+			var validatorAtom = validatorBuilder.signAndBuild(validatorKey::sign);
+			genesisAtoms.add(validatorAtom);
 
 			validatorBuilder.allUpParticles().forEach(upParticles::add);
 		}
@@ -121,16 +119,15 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				magic,
 				stakeDelegation
 			);
-			var hashToSign = stakesBuilder.computeHashToSign();
-			stakesBuilder.setSignature(stakeDelegation.staker().euid(), stakeDelegation.staker().sign(hashToSign));
-			genesisAtoms.add(stakesBuilder.buildAtom());
+			var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
+			genesisAtoms.add(stakeAtom);
 			upParticles.clear();
 			stakesBuilder.allUpParticles().forEach(upParticles::add);
 		}
 
 		var epochUpdateBuilder = Atom.newBuilder();
 		CheckpointUtils.createEpochUpdate(epochUpdateBuilder);
-		genesisAtoms.add(epochUpdateBuilder.buildAtom());
+		genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
 
 		return genesisAtoms;
 	}

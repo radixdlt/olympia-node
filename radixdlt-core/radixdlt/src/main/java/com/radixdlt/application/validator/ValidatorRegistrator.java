@@ -118,9 +118,7 @@ public final class ValidatorRegistrator {
 
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
 
-		var hashToSign = atomBuilder.computeHashToSign();
-		atomBuilder.setSignature(self.euid(), hashSigner.sign(hashToSign));
-		var atom = atomBuilder.buildAtom();
+		var atom = atomBuilder.signAndBuild(hashSigner::sign);
 		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

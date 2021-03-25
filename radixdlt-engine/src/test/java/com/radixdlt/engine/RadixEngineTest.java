@@ -109,7 +109,7 @@ public class RadixEngineTest {
 		// Assert
 		var atom = Atom.newBuilder()
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
 	}

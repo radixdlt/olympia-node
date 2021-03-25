@@ -73,7 +73,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = Atom.newBuilder().message("Simple test message").buildAtom();
+		var atom = Atom.newBuilder().message("Simple test message").buildWithoutSignature();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -111,7 +111,7 @@ public class AtomsServiceTest {
 			.spinUp(particle)
 			.particleGroup()
 			.message("Test message")
-			.buildAtom();
+			.buildWithoutSignature();
 
 		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		return Pair.of(atom, new Command(dson).getId());

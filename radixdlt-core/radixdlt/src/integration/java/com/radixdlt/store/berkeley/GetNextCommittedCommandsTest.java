@@ -232,7 +232,7 @@ public class GetNextCommittedCommandsTest {
 			.message("Atom for " + stateVersion)
 			.spinUp(new RRIParticle(rri))
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		final var proposedVertexId = HashUtils.random256();
 		final var proposedView = view.next().next();

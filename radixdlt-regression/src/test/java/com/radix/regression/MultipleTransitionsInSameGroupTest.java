@@ -282,7 +282,7 @@ public class MultipleTransitionsInSameGroupTest {
 		}
 		unsignedAtom.message("magic:0xdeadbeef");
 		// Sign and submit
-		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet().buildAtom();
+		var signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
