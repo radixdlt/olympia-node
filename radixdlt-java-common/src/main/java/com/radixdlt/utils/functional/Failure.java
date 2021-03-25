@@ -19,7 +19,6 @@ package com.radixdlt.utils.functional;
 
 import java.text.MessageFormat;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 /**
  * Simplest failure descriptor.
@@ -58,7 +57,7 @@ public final class Failure {
 		return new Failure(message);
 	}
 
-	public static Failure failure(final String format, Object ... values) {
+	public static Failure failure(final String format, Object... values) {
 		return new Failure(MessageFormat.format(format, values));
 	}
 }
