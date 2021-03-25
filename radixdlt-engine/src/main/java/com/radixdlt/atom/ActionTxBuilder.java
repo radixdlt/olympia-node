@@ -309,6 +309,33 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
+	public ActionTxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+		up(factory.createTransferrable(to, amount, random.nextLong()));
+		var remainder = downFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amount,
+			"Not enough balance to for transfer."
+		);
+		if (!remainder.isZero()) {
+			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
+			up(substateUp);
+		}
+		particleGroup();
+
+		return this;
+	}
+
 	public ActionTxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,

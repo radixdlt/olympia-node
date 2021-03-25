@@ -20,6 +20,8 @@ package com.radixdlt.application.faucet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.ActionTxBuilder;
+import com.radixdlt.atom.ActionTxException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
@@ -76,23 +78,18 @@ public final class Faucet {
 
 		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 
-		wallet.createTransaction(request.getAddress(), amount)
-			.ifPresentOrElse(
-				builder -> {
-					log.info("Faucet sending tokens to {}", request.getAddress());
-
-					builder.message(String.format("Sent you %s %s", amount, nativeToken.getName()));
-					var atom = builder.signAndBuild(hashSigner::sign);
-					var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-					var command = new Command(payload);
-					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-					request.onSuccess(command.getId());
-				},
-				() -> {
-					log.info("Faucet not enough funds to fulfill request {}", request);
-					request.onFailure("Not enough funds in Faucet.");
-				}
-			);
+		try {
+			var atom = ActionTxBuilder.newBuilder(self, wallet.particleList())
+				.transferNative(nativeToken, request.getAddress(), amount)
+				.signAndBuild(hashSigner::sign);
+			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+			var command = new Command(payload);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+			request.onSuccess(command.getId());
+		} catch (ActionTxException e) {
+			log.error("Faucet failed to fulfil request {}", request, e);
+			request.onFailure(e.getMessage());
+		}
 	}
 
 	public EventProcessor<FaucetRequest> requestEventProcessor() {
