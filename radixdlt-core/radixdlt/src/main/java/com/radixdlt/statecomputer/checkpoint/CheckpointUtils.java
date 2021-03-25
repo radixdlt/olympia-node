@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
@@ -59,12 +60,12 @@ public final class CheckpointUtils {
 	private static Optional<UInt256> downTransferrableParticles(
 		UInt256 amount,
 		List<TransferrableTokensParticle> particles,
-		Consumer<TransferrableTokensParticle> onDown
+		Consumer<ParticleId> onDown
 	) {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0 && !particles.isEmpty()) {
 			var particle = particles.remove(particles.size() - 1);
-			onDown.accept(particle);
+			onDown.accept(ParticleId.of(particle));
 			spent = spent.add(particle.getAmount());
 		}
 
@@ -79,12 +80,12 @@ public final class CheckpointUtils {
 	private static Optional<UInt256> downParticles(
 		UInt256 amount,
 		List<UnallocatedTokensParticle> particles,
-		Consumer<UnallocatedTokensParticle> onDown
+		Consumer<ParticleId> onDown
 	) {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0 && !particles.isEmpty()) {
 			var particle = particles.remove(particles.size() - 1);
-			onDown.accept(particle);
+			onDown.accept(ParticleId.of(particle));
 			spent = spent.add(particle.getAmount());
 		}
 
@@ -183,7 +184,7 @@ public final class CheckpointUtils {
 			.filter(p -> p.getAddress().equals(delegateAddress))
 			.findFirst().orElseThrow();
 
-		atomBuilder.spinDown(oldParticle);
+		atomBuilder.spinDown(ParticleId.of(oldParticle));
 		atomBuilder.spinUp(new RegisteredValidatorParticle(delegateAddress, ImmutableSet.of(), oldParticle.getNonce() + 1));
 
 		final var amount = delegation.amount();

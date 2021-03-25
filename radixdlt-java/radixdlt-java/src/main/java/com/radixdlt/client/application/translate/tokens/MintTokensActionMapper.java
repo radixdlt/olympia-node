@@ -24,6 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -94,7 +95,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(sp.getParticle());
+					builder.spinDown(ParticleId.of(sp.getParticle()));
 				}
 			});
 

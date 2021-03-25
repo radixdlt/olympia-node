@@ -21,6 +21,7 @@ package com.radixdlt.application.validator;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
@@ -92,12 +93,12 @@ public final class ValidatorRegistrator {
 				if (nonce == 0) {
 					atomBuilder.virtualSpinDown(unregisterParticle);
 				} else {
-					atomBuilder.spinDown(unregisterParticle);
+					atomBuilder.spinDown(ParticleId.of(unregisterParticle));
 				}
 				atomBuilder.spinUp(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1));
 			},
 			r -> ParticleGroup.builder()
-				.spinDown(r)
+				.spinDown(ParticleId.of(r))
 				.spinUp(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
 				.build()
 		);

@@ -107,7 +107,7 @@ public class InMemoryAtomStore implements AtomStore {
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
 					stagedAtom.virtualSpinDown(i.getParticle());
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-					stagedAtom.spinDown(i.getParticleHash());
+					stagedAtom.spinDown(i.getParticleId());
 				}
 			}
 			stagedAtom.particleGroup();

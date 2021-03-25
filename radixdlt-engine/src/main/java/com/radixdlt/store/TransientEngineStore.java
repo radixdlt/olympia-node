@@ -1,7 +1,7 @@
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
@@ -48,11 +48,11 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
-		if (transientStore.getSpin(particleHash) == Spin.NEUTRAL) {
-			return base.loadUpParticle(txn, particleHash);
+	public Optional<Particle> loadUpParticle(Transaction txn, ParticleId particleId) {
+		if (transientStore.getSpin(particleId) == Spin.NEUTRAL) {
+			return base.loadUpParticle(txn, particleId);
 		}
 
-		return transientStore.loadUpParticle(txn, particleHash);
+		return transientStore.loadUpParticle(txn, particleId);
 	}
 }

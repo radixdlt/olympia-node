@@ -151,7 +151,7 @@ public final class Atom {
 					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
 					additional = Stream.of(particleDson);
 				} else if (i.getMicroOp() == CMMicroOp.SPIN_DOWN) {
-					byte[] particleHash = i.getParticleHash().asBytes();
+					byte[] particleHash = i.getParticleId().asBytes();
 					additional = Stream.of(particleHash);
 				} else {
 					throw new IllegalStateException();
@@ -192,8 +192,8 @@ public final class Atom {
 
 				instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
 			} else if (bytes[0] == CMMicroOp.SPIN_DOWN.opCode()) {
-				var particleHash = HashCode.fromBytes(bytesIterator.next());
-				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));
+				var particleId = ParticleId.fromBytes(bytesIterator.next());
+				instructionsBuilder.add(CMMicroInstruction.spinDown(particleId));
 			} else {
 				throw new IllegalStateException();
 			}

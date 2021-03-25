@@ -18,6 +18,7 @@
 package com.radix.acceptance.atomic_transactions_with_dependence;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
@@ -56,12 +57,12 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	public MintAndTransferTokensActionMapper() {
 		this((mint, transfer) -> {
 			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
-			mint.getRemoved().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinDown);
+			mint.getRemoved().stream().map(t -> (Particle) t).map(ParticleId::of).forEach(mintParticleGroupBuilder::spinDown);
 			mint.getMigrated().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 
 			ParticleGroupBuilder transferParticleGroupBuilder = ParticleGroup.builder();
-			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinDown);
+			transfer.getRemoved().stream().map(t -> (Particle) t).map(ParticleId::of).forEach(transferParticleGroupBuilder::spinDown);
 			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 

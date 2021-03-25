@@ -32,6 +32,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
@@ -197,7 +198,7 @@ public class RadixEngineStateComputerTest {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		Atom atom = Atom.newBuilder()
-			.spinDown(lastSystemParticle)
+			.spinDown(ParticleId.of(lastSystemParticle))
 			.spinUp(nextSystemParticle)
 			.particleGroup()
 			.buildAtom();

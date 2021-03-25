@@ -23,6 +23,7 @@ import com.google.common.collect.Streams;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -97,12 +98,12 @@ public final class InMemoryWallet {
 	private static Optional<UInt256> downParticles(
 		UInt256 amount,
 		LinkedList<TransferrableTokensParticle> particles,
-		Consumer<TransferrableTokensParticle> onDown
+		Consumer<ParticleId> onDown
 	) {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0 && !particles.isEmpty()) {
 			TransferrableTokensParticle particle = particles.removeFirst();
-			onDown.accept(particle);
+			onDown.accept(ParticleId.of(particle));
 			spent = spent.add(particle.getAmount());
 		}
 

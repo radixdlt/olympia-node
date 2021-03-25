@@ -19,16 +19,14 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.DefaultSerialization;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -91,8 +89,8 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
-		private final Map<HashCode, Particle> upParticles = new HashMap<>();
-		private final Set<HashCode> downParticles = new HashSet<>();
+		private final Map<ParticleId, Particle> upParticles = new HashMap<>();
+		private final Set<ParticleId> downParticles = new HashSet<>();
 		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
@@ -114,16 +112,16 @@ public final class ConstraintMachine {
 			this.signatures = signatures;
 		}
 
-		public Optional<Particle> loadUpParticle(HashCode particleHash) {
-			if (upParticles.containsKey(particleHash)) {
-				return Optional.of(upParticles.get(particleHash));
+		public Optional<Particle> loadUpParticle(ParticleId particleId) {
+			if (upParticles.containsKey(particleId)) {
+				return Optional.of(upParticles.get(particleId));
 			}
 
-			if (downParticles.contains(particleHash)) {
+			if (downParticles.contains(particleId)) {
 				return Optional.empty();
 			}
 
-			return store.loadUpParticle(txn, particleHash);
+			return store.loadUpParticle(txn, particleId);
 		}
 
 		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
@@ -145,21 +143,20 @@ public final class ConstraintMachine {
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(particle, nextSpin);
 
-			var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-			var particleHash = HashUtils.sha256(dson);
+			var particleId = ParticleId.of(particle);
 			if (nextSpin == Spin.UP) {
-				upParticles.put(particleHash, particle);
+				upParticles.put(particleId, particle);
 			} else {
-				upParticles.remove(particleHash);
+				upParticles.remove(particleId);
 			}
 
 			return true;
 		}
 
-		public Optional<Particle> checkUpAndPush(HashCode particleHash) {
-			var maybeParticle = loadUpParticle(particleHash);
-			upParticles.remove(particleHash);
-			downParticles.add(particleHash);
+		public Optional<Particle> checkUpAndPush(ParticleId particleId) {
+			var maybeParticle = loadUpParticle(particleId);
+			upParticles.remove(particleId);
+			downParticles.add(particleId);
 			return maybeParticle;
 		}
 
@@ -392,7 +389,7 @@ public final class ConstraintMachine {
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
 		List<CMMicroInstruction> microInstructions,
-		Map<HashCode, Particle> downedParticles
+		Map<ParticleId, Particle> downedParticles
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
@@ -444,14 +441,14 @@ public final class ConstraintMachine {
 				}
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-				var particleHash = cmMicroInstruction.getParticleHash();
-				var maybeParticle = validationState.checkUpAndPush(particleHash);
+				var particleId = cmMicroInstruction.getParticleId();
+				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
 
 				var particle = maybeParticle.get();
-				downedParticles.put(cmMicroInstruction.getParticleHash(), particle);
+				downedParticles.put(cmMicroInstruction.getParticleId(), particle);
 				Optional<CMError> error = validateParticle(validationState, particle, true, dp);
 				if (error.isPresent()) {
 					return error;
@@ -507,7 +504,7 @@ public final class ConstraintMachine {
 		CMStore cmStore,
 		Atom atom,
 		PermissionLevel permissionLevel,
-		Map<HashCode, Particle> downedParticles
+		Map<ParticleId, Particle> downedParticles
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			txn,

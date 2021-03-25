@@ -18,6 +18,8 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParticleId;
+import com.radixdlt.constraintmachine.Particle;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +43,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,6 +60,7 @@ public class StakedTokensTest {
 	private RadixAddress validatorAddress = new RadixAddress(MAGIC, this.validatorKeyPair.getPublicKey());
 
 	private TransferrableTokensParticle transferrableTokensParticle;
+	private List<Particle> upParticles = new ArrayList<>();
 
 	@Before
 	public void setup() throws RadixEngineException {
@@ -96,6 +100,8 @@ public class StakedTokensTest {
 			.spinUp(registerValidator(1))
 			.particleGroup();
 
+		builder.allUpParticles().forEach(upParticles::add);
+
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
 		builder.setSignature(this.validatorKeyPair.euid(), this.validatorKeyPair.sign(hashToSign));
@@ -107,11 +113,12 @@ public class StakedTokensTest {
 	public void stake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 
-		var builder = Atom.newBuilder()
-			.spinDown(registerValidator(1))
+		var builder = Atom.newBuilder(upParticles);
+		builder
+			.spinDown(ParticleId.of(registerValidator(1)))
 			.spinUp(registerValidator(2))
 			.spinUp(stakeParticle)
-			.spinDown(this.transferrableTokensParticle)
+			.spinDown(ParticleId.of(this.transferrableTokensParticle))
 			.particleGroup();
 
 		var hashToSign = builder.computeHashToSign();
@@ -127,10 +134,10 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(registerValidator(1))
+			.spinDown(ParticleId.of(registerValidator(1)))
 			.spinUp(registerValidator(2))
 			.spinUp(stakeParticle)
-			.spinDown(this.transferrableTokensParticle)
+			.spinDown(ParticleId.of(this.transferrableTokensParticle))
 			.particleGroup();
 
 		var hashToSign = builder.computeHashToSign();
@@ -139,7 +146,7 @@ public class StakedTokensTest {
 
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
 		var builder2 = Atom.newBuilder()
-			.spinDown(stakeParticle)
+			.spinDown(ParticleId.of(stakeParticle))
 			.spinUp(tranferrableParticle)
 			.particleGroup();
 
@@ -155,10 +162,10 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(registerValidator(1))
+			.spinDown(ParticleId.of(registerValidator(1)))
 			.spinUp(registerValidator(2))
 			.spinUp(stakeParticle)
-			.spinDown(this.transferrableTokensParticle)
+			.spinDown(ParticleId.of(this.transferrableTokensParticle))
 			.particleGroup();
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
@@ -167,7 +174,7 @@ public class StakedTokensTest {
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
 		var builder2 = Atom.newBuilder()
-			.spinDown(stakeParticle)
+			.spinDown(ParticleId.of(stakeParticle))
 			.spinUp(partialStakeParticle)
 			.spinUp(tranferrableParticle)
 			.particleGroup();
@@ -184,10 +191,10 @@ public class StakedTokensTest {
 	public void move_staked_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(registerValidator(1))
+			.spinDown(ParticleId.of(registerValidator(1)))
 			.spinUp(registerValidator(2))
 			.spinUp(stakeParticle)
-			.spinDown(this.transferrableTokensParticle)
+			.spinDown(ParticleId.of(this.transferrableTokensParticle))
 			.particleGroup();
 		var hashToSign = builder.computeHashToSign();
 		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
@@ -196,7 +203,7 @@ public class StakedTokensTest {
 
 		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
 		var builder2 = Atom.newBuilder()
-			.spinDown(stakeParticle)
+			.spinDown(ParticleId.of(stakeParticle))
 			.spinUp(restakeParticle)
 			.particleGroup();
 		var hashToSign2 = builder2.computeHashToSign();

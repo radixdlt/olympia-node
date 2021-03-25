@@ -84,18 +84,10 @@ public final class AtomBuilder {
 		return this;
 	}
 
-	public AtomBuilder spinDown(Particle particle) {
-		Objects.requireNonNull(particle, "particle is required");
-		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		return spinDown(particleHash);
-	}
-
-	public AtomBuilder spinDown(HashCode particleHash) {
-		Objects.requireNonNull(particleHash, "particleHash is required");
-		this.instructions.add(CMMicroInstruction.spinDown(particleHash));
-		localUpParticles.remove(particleHash);
-		remoteUpParticles.remove(particleHash);
+	public AtomBuilder spinDown(ParticleId particleId) {
+		this.instructions.add(CMMicroInstruction.spinDown(particleId));
+		localUpParticles.remove(particleId);
+		remoteUpParticles.remove(particleId);
 		return this;
 	}
 
