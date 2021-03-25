@@ -28,6 +28,7 @@ public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
+	private static final String DEFAULT_PREFIX = "fullnode";
 
 	private AWSSecrets() {
 	}
@@ -37,6 +38,7 @@ public class AWSSecrets {
 		Options options = new Options();
 		options.addOption("h", "help", false, "Show usage information (this message)");
 		options.addOption("n", "full-node-number", true, "Number of full nodes");
+		options.addOption("p", "node-name-prefix", true, "Text prefix with which node name is numbered");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
@@ -62,13 +64,14 @@ public class AWSSecrets {
 			}
 
 			final String networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
+			final String namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
 				enableAwsSecrets, recreateAwsSecrets, networkName);
 			IntStream.range(0, fullNodeCount).forEach(i -> {
-				final String nodeName = String.format("fullnode%s", i);
+				final String nodeName = String.format("%s%s",namePrefix, i);
 				final String keyStoreName = String.format("%s.ks", nodeName);
 				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);

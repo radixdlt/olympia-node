@@ -63,6 +63,7 @@ def networkName = properties.get('networkName', 'testnet')
 def enableAWSSecret = properties.get('enableAWSSecret', false)
 def recreateAWSSecret = properties.get('recreateAWSSecret', false)
 def fullNodeNumber = properties.get('fullNodeNumber', false)
+def nodeNamePrefix = properties.get('nodeNamePrefix', "fullnode")
 
 
 task generateNodeKey(type: Exec) {
@@ -79,5 +80,6 @@ task generateNodeKey(type: Exec) {
             "--enable-aws-secrets=${enableAWSSecret}",
             "--recreate-aws-secrets=${recreateAWSSecret}",
             "--network-name=${networkName}",
-            "--full-node-number=${fullNodeNumber}"
+            "--full-node-number=${fullNodeNumber}",
+            "--node-name-prefix=${nodeNamePrefix}"
 }
