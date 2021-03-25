@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
@@ -40,6 +41,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.RadixConstants;
@@ -56,6 +58,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
@@ -90,8 +96,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher;
+	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
 	private final AtomicLong inputCounter = new AtomicLong();
+	private final CompositeDisposable disposable = new CompositeDisposable();
 
 	private Database executedTransactionsDatabase;
 	private Database tokenDefinitionDatabase;
@@ -103,13 +111,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
-		ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher
+		ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher,
+		Observable<AtomsCommittedToLedger> ledgerCommitted
 	) {
 		this.dbEnv = dbEnv;
 		this.store = store;
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
+		this.ledgerCommitted = ledgerCommitted;
 
 		open();
 	}
@@ -213,8 +223,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	public void close() {
-		//TODO: temporary hack
-		store.onParticleCommit(null); //Stop watching for new atoms
+		disposable.dispose();
 		storeCollectedParticles();
 
 		safeClose(executedTransactionsDatabase);
@@ -230,25 +239,25 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void addBalanceReadBytes(DatabaseEntry data) {
-		systemCounters.add(COUNT_APIDB_BALANCE_BYTES_READ, data.getData().length);
+		systemCounters.add(COUNT_APIDB_BALANCE_BYTES_READ, data.getSize());
 		systemCounters.increment(COUNT_APIDB_BALANCE_READ);
 		systemCounters.increment(COUNT_APIDB_BALANCE_TOTAL);
 	}
 
 	private void addBalanceWriteBytes(DatabaseEntry data) {
-		systemCounters.add(COUNT_APIDB_BALANCE_BYTES_WRITE, data.getData().length);
+		systemCounters.add(COUNT_APIDB_BALANCE_BYTES_WRITE, data.getSize());
 		systemCounters.increment(COUNT_APIDB_BALANCE_WRITE);
 		systemCounters.increment(COUNT_APIDB_BALANCE_TOTAL);
 	}
 
 	private void addTokenReadBytes(DatabaseEntry data) {
-		systemCounters.add(COUNT_APIDB_TOKEN_BYTES_READ, data.getData().length);
+		systemCounters.add(COUNT_APIDB_TOKEN_BYTES_READ, data.getSize());
 		systemCounters.increment(COUNT_APIDB_TOKEN_READ);
 		systemCounters.increment(COUNT_APIDB_TOKEN_TOTAL);
 	}
 
 	private void addTokenWriteBytes(DatabaseEntry data) {
-		systemCounters.add(COUNT_APIDB_TOKEN_BYTES_WRITE, data.getData().length);
+		systemCounters.add(COUNT_APIDB_TOKEN_BYTES_WRITE, data.getSize());
 		systemCounters.increment(COUNT_APIDB_TOKEN_WRITE);
 		systemCounters.increment(COUNT_APIDB_TOKEN_TOTAL);
 	}
@@ -305,13 +314,28 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				rebuildDatabase();
 			}
 
-			//TODO: switch to generalized committed atoms notifications.
-			store.onParticleCommit(this::newParticle);
-
 			scheduledFlushEventDispatcher.dispatch(ScheduledParticleFlush.create(), DEFAULT_FLUSH_INTERVAL);
+
+			disposable.add(ledgerCommitted
+							   .observeOn(Schedulers.io())
+							   .subscribe(this::processCommittedAtoms));
+
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
+	}
+
+	private void processCommittedAtoms(AtomsCommittedToLedger atomsCommittedToLedger) {
+		atomsCommittedToLedger.getAtoms().forEach(cmd -> {
+			try {
+				serialization.fromDson(cmd.getPayload(), Atom.class)
+					.uniqueInstructions()
+					.map(instruction -> SpunParticle.of(instruction.getParticle(), instruction.getNextSpin()))
+					.forEach(this::newParticle);
+			} catch (DeserializeException e) {
+				log.error("Error while deserializing atom committed to ledger. Skipping atom.", e);
+			}
+		});
 	}
 
 	private void safeClose(Database database) {

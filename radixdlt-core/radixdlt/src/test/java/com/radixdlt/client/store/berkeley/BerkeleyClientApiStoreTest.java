@@ -45,11 +45,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 
@@ -165,8 +169,20 @@ public class BerkeleyClientApiStoreTest {
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 
+		var ledgerCommitted = mock(Observable.class);
+		when(ledgerCommitted.observeOn(any())).thenReturn(ledgerCommitted);
+
+		var mock = mock(Disposable.class);
+		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer) any())).thenReturn(mock);
+
+
 		return new BerkeleyClientApiStore(
-			environment, ledgerStore, serialization, mock(SystemCounters.class), mock(ScheduledEventDispatcher.class)
+			environment,
+			ledgerStore,
+			serialization,
+			mock(SystemCounters.class),
+			mock(ScheduledEventDispatcher.class),
+			ledgerCommitted
 		);
 	}
 

@@ -20,7 +20,6 @@ package org.radix.api.jsonrpc;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
@@ -34,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.undertow.server.HttpServerExchange;
 

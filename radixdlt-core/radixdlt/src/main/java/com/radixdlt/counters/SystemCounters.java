@@ -98,25 +98,25 @@ public interface SystemCounters {
 		COUNT_APIDB_TOKEN_READ("count.apidb.token.read"),
 		COUNT_APIDB_TOKEN_WRITE("count.apidb.token.write"),
 		COUNT_APIDB_TOKEN_BYTES_READ("count.apidb.token.bytes.read"),
-		COUNT_APIDB_TOKEN_BYTES_WRITE("count.apidb.tokens.bytes.write"),
+		COUNT_APIDB_TOKEN_BYTES_WRITE("count.apidb.token.bytes.write"),
 
-		COUNT_APIDB_TRANSACTION_TOTAL("count.apidb.token.total"),
-		COUNT_APIDB_TRANSACTION_READ("count.apidb.token.read"),
-		COUNT_APIDB_TRANSACTION_WRITE("count.apidb.token.write"),
-		COUNT_APIDB_TRANSACTION_BYTES_READ("count.apidb.token.bytes.read"),
-		COUNT_APIDB_TRANSACTION_BYTES_WRITE("count.apidb.token.bytes.write"),
+		COUNT_APIDB_TRANSACTION_TOTAL("count.apidb.transaction.total"),
+		COUNT_APIDB_TRANSACTION_READ("count.apidb.transaction.read"),
+		COUNT_APIDB_TRANSACTION_WRITE("count.apidb.transaction.write"),
+		COUNT_APIDB_TRANSACTION_BYTES_READ("count.apidb.transaction.bytes.read"),
+		COUNT_APIDB_TRANSACTION_BYTES_WRITE("count.apidb.transaction.bytes.write"),
 
 		// Total elapsed time for database access, in microseconds
-		ELAPSED_APIDB_BALANCE_READ("elapsed.apidb.token.read"),
-		ELAPSED_APIDB_BALANCE_WRITE("elapsed.apidb.token.write"),
+		ELAPSED_APIDB_BALANCE_READ("elapsed.apidb.balance.read"),
+		ELAPSED_APIDB_BALANCE_WRITE("elapsed.apidb.balance.write"),
 
 		ELAPSED_APIDB_TOKEN_READ("elapsed.apidb.token.read"),
 		ELAPSED_APIDB_TOKEN_WRITE("elapsed.apidb.token.write"),
 
-		ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.token.read"),
-		ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.token.write"),
+		ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.transaction.read"),
+		ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.transaction.write"),
 
-		ELAPSED_APIDB_PARTICLE_FLUSH_TIME("count.apidb.particle.flush.time"),
+		ELAPSED_APIDB_PARTICLE_FLUSH_TIME("elapsed.apidb.particle.flush.time"),
 
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
 

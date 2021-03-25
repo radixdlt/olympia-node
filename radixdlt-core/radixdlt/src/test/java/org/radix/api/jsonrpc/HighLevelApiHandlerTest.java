@@ -82,7 +82,7 @@ public class HighLevelApiHandlerTest {
 		var result = response.getJSONObject("result");
 		assertNotNull(result);
 		assertEquals("XRD", result.getString("name"));
-		assertEquals("XRD XDR", result.getString("description"));
+		assertEquals("XRD XRD", result.getString("description"));
 		assertEquals(UInt256.ONE, result.get("granularity"));
 		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
 	}
