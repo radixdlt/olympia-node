@@ -1391,7 +1391,7 @@ public class RadixApplicationAPI {
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
 			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1424,7 +1424,7 @@ public class RadixApplicationAPI {
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
 			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 

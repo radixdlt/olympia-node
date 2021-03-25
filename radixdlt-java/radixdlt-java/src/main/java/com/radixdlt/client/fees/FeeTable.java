@@ -56,7 +56,7 @@ public final class FeeTable {
 	}
 
 	public UInt256 feeFor(AtomBuilder atomWithoutFees) {
-		Atom atom = atomWithoutFees.buildAtom();
+		Atom atom = atomWithoutFees.buildWithoutSignature();
 		// TODO: 2500 is hack to include worst case size of fee burning. Remove when possible
 		final int atomSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length + 2500;
 		final Set<Particle> outputs = atom.upParticles().collect(Collectors.toSet());

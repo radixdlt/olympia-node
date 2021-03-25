@@ -204,7 +204,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.spinDown(ParticleId.of(lastSystemParticle))
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 		try {
 			branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {

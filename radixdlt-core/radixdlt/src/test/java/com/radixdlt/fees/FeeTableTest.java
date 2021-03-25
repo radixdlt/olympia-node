@@ -62,7 +62,7 @@ public class FeeTableTest {
 			.particleGroup()
 			.spinUp(makeParticle("test message 2"))
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		UInt256 fee = ft.feeFor(atom, atom.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
 		assertEquals(UInt256.SIX, fee);
@@ -72,7 +72,7 @@ public class FeeTableTest {
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
 		AtomBuilder a = Atom.newBuilder();
-		Atom ca = a.buildAtom();
+		Atom ca = a.buildWithoutSignature();
 		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
@@ -87,7 +87,7 @@ public class FeeTableTest {
 		Atom atom = Atom.newBuilder()
 			.spinUp(makeParticle("test message 3"))
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());
 		assertThatThrownBy(() -> ft.feeFor(atom, outputs, 1))
 			.isInstanceOf(ArithmeticException.class)

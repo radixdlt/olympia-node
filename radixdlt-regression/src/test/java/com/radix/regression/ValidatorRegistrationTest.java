@@ -163,7 +163,7 @@ public class ValidatorRegistrationTest {
 
 		atomBuilder.message(message);
 		// Sign and submit
-		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet().buildAtom();
+		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 

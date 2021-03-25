@@ -100,7 +100,7 @@ public class AtomStatusTest {
 		RRI unique = RRI.of(api.getAddress(), "test");
 		transaction.stage(PutUniqueIdAction.create(unique));
 		var atom = api.getIdentity().addSignature(transaction.buildAtom())
-			.blockingGet().buildAtom();
+			.blockingGet();
 
 		String subscriberId = UUID.randomUUID().toString();
 

@@ -68,7 +68,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		// Act
 		// Assert
@@ -87,7 +87,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		// Act
 		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
@@ -104,7 +104,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -120,7 +120,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -136,7 +136,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
@@ -169,7 +169,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		// Act
 		// Assert
@@ -186,7 +186,7 @@ public class SystemTest {
 			.virtualSpinDown(systemParticle)
 			.spinUp(nextSystemParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)

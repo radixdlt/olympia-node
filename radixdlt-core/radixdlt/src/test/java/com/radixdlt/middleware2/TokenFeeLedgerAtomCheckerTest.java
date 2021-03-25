@@ -71,13 +71,13 @@ public class TokenFeeLedgerAtomCheckerTest {
 		var atom = Atom.newBuilder()
 			.virtualSpinDown(rriParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		var atom = Atom.newBuilder().buildAtom();
+		var atom = Atom.newBuilder().buildWithoutSignature();
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("instructions");
 	}
@@ -88,7 +88,8 @@ public class TokenFeeLedgerAtomCheckerTest {
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		var atom = Atom.newBuilder()
 			.spinUp(particle)
-			.particleGroup().buildAtom();
+			.particleGroup()
+			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("less than required minimum");
@@ -111,7 +112,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinDown(ParticleId.of(tokenInputParticle))
 			.spinUp(tokenOutputParticle)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -130,7 +131,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(unallocatedParticle)
 			.spinDown(ParticleId.of(tokenInputParticle))
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}
@@ -150,7 +151,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(unallocatedParticle)
 			.spinDown(ParticleId.of(tokenInputParticle))
 			.spinUp(extraFeeGroupParticle)
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 				.contains("less than required minimum");
@@ -173,7 +174,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinDown(ParticleId.of(particle3))
 			.spinUp(particle4)
 			.particleGroup()
-			.buildAtom();
+			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
 	}

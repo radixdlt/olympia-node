@@ -18,7 +18,6 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -112,9 +111,7 @@ public class MempoolTest {
 				.spinUp(uniqueParticle);
 		}
 		atomBuilder.particleGroup();
-		HashCode hashToSign = atomBuilder.computeHashToSign();
-		atomBuilder.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atomBuilder.buildAtom();
+		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, int nonce, int numParticles) {
