@@ -71,7 +71,7 @@ public class AWSSecrets {
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
 				enableAwsSecrets, recreateAwsSecrets, networkName);
 			IntStream.range(0, fullNodeCount).forEach(i -> {
-				final String nodeName = String.format("%s%s",namePrefix, i);
+				final String nodeName = String.format("%s%s", namePrefix, i);
 				final String keyStoreName = String.format("%s.ks", nodeName);
 				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
