@@ -32,17 +32,17 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Builder class for atom creation
+ * Low level builder class for transactions
  */
-public final class AtomBuilder {
+public final class TxLowLevelBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
 	private final Map<ParticleId, Particle> localUpParticles = new HashMap<>();
 
-	AtomBuilder() {
+	TxLowLevelBuilder() {
 	}
 
-	public AtomBuilder message(String message) {
+	public TxLowLevelBuilder message(String message) {
 		this.message = message;
 		return this;
 	}
@@ -51,26 +51,26 @@ public final class AtomBuilder {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
-	public AtomBuilder spinUp(Particle particle) {
+	public TxLowLevelBuilder spinUp(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.spinUp(particle));
 		localUpParticles.put(ParticleId.of(particle), particle);
 		return this;
 	}
 
-	public AtomBuilder virtualSpinDown(Particle particle) {
+	public TxLowLevelBuilder virtualSpinDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
 		return this;
 	}
 
-	public AtomBuilder spinDown(ParticleId particleId) {
+	public TxLowLevelBuilder spinDown(ParticleId particleId) {
 		this.instructions.add(CMMicroInstruction.spinDown(particleId));
 		localUpParticles.remove(particleId);
 		return this;
 	}
 
-	public AtomBuilder particleGroup() {
+	public TxLowLevelBuilder particleGroup() {
 		this.instructions.add(CMMicroInstruction.particleGroup());
 		return this;
 	}

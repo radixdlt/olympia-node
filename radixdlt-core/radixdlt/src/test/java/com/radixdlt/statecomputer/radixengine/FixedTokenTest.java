@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -76,7 +76,7 @@ public class FixedTokenTest {
 		);
 	}
 
-	private TransferrableTokensParticle createToken(ECKeyPair keyPair, AtomBuilder atomBuilder) {
+	private TransferrableTokensParticle createToken(ECKeyPair keyPair, TxLowLevelBuilder atomBuilder) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "XRD");
 		var rriParticle = new RRIParticle(rri, 0);
@@ -107,7 +107,7 @@ public class FixedTokenTest {
 		return token;
 	}
 
-	private void spendToken(AtomBuilder atomBuilder, TransferrableTokensParticle p, int times) {
+	private void spendToken(TxLowLevelBuilder atomBuilder, TransferrableTokensParticle p, int times) {
 		var token = new TransferrableTokensParticle(
 			p.getAddress(),
 			p.getAmount().multiply(UInt256.from(times)),

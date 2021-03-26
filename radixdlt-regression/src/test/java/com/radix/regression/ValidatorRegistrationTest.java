@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.Atoms;
@@ -147,13 +147,13 @@ public class ValidatorRegistrationTest {
 		observer.dispose();
 	}
 
-	private TestObserver<AtomStatusEvent> submitAtom(AtomBuilder atomBuilder) {
+	private TestObserver<AtomStatusEvent> submitAtom(TxLowLevelBuilder atomBuilder) {
 		return submitAtom(true, atomBuilder);
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 		String message = null;
 		if (addFee) {

@@ -20,8 +20,8 @@ package com.radixdlt.application.validator;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
@@ -96,7 +96,7 @@ public final class ValidatorRegistrator {
 			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			particles.addAll(wallet.particles());
 		}
-		var txBuilder = ActionTxBuilder.newBuilder(self, particles);
+		var txBuilder = TxBuilder.newBuilder(self, particles);
 
 		try {
 			if (registration.isRegister()) {
@@ -108,7 +108,7 @@ public final class ValidatorRegistrator {
 			if (feeTable != null) {
 				txBuilder.burnForFee(tokenRRI, FEE);
 			}
-		} catch (ActionTxException e) {
+		} catch (TxBuilderException e) {
 			logger.warn(e.getMessage());
 			return;
 		}

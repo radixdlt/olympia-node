@@ -20,8 +20,8 @@ package com.radixdlt.application.faucet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
@@ -81,7 +81,7 @@ public final class Faucet {
 		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 
 		try {
-			var atom = ActionTxBuilder.newBuilder(self, wallet.particleList())
+			var atom = TxBuilder.newBuilder(self, wallet.particleList())
 				.transferNative(nativeToken, request.getAddress(), amount)
 				.burnForFee(nativeToken, FEE)
 				.signAndBuild(hashSigner::sign);
@@ -89,7 +89,7 @@ public final class Faucet {
 			var command = new Command(payload);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 			request.onSuccess(command.getId());
-		} catch (ActionTxException e) {
+		} catch (TxBuilderException e) {
 			log.error("Faucet failed to fulfil request {}", request, e);
 			request.onFailure(e.getMessage());
 		}

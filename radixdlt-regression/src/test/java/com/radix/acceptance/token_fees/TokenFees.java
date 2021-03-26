@@ -26,7 +26,7 @@ import com.radixdlt.atom.ParticleId;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
@@ -424,7 +424,7 @@ public class TokenFees {
 		for (Action action: actions) {
 			t.stage(action);
 		}
-		final AtomBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
+		final TxLowLevelBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
 		return this.api.getMinimumRequiredFee(feelessAtom);
 	}
 

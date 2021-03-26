@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
@@ -71,7 +71,7 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		AtomBuilder a = Atom.newBuilder();
+		TxLowLevelBuilder a = Atom.newBuilder();
 		Atom ca = a.buildWithoutSignature();
 		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);

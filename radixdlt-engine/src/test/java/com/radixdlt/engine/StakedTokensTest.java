@@ -17,7 +17,7 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.ActionTxBuilder;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.ParticleId;
@@ -84,7 +84,7 @@ public class StakedTokensTest {
 			null,
 			UInt256.TEN
 		);
-		var tokDefBuilder = ActionTxBuilder.newBuilder(this.tokenOwnerAddress)
+		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
 			.createFixedToken(tokDef);
 
 		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
@@ -94,7 +94,7 @@ public class StakedTokensTest {
 			.forEach(p -> this.transferrableTokensParticle = p);
 
 
-		var atom1 = ActionTxBuilder.newBuilder(this.validatorAddress)
+		var atom1 = TxBuilder.newBuilder(this.validatorAddress)
 			.registerAsValidator()
 			.signAndBuild(this.validatorKeyPair::sign);
 

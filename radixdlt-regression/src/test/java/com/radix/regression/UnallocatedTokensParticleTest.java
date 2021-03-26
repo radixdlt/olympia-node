@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
@@ -64,7 +64,7 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.builder().spinUp(particle).build());
 
-		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
+		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
@@ -106,7 +106,7 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.builder().spinUp(unallocatedParticle).build());
 
-		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
+		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)
@@ -165,7 +165,7 @@ public class UnallocatedTokensParticleTest {
 			.build()
 		);
 
-		AtomBuilder unsignedAtom = api.buildAtomWithFee(groups);
+		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.addSignature(unsignedAtom)

@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -197,14 +197,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			validatorSet = null;
 		}
 
-		var systemUpdateBuilder = ActionTxBuilder.newSystemBuilder(List.of(lastSystemParticle));
+		var systemUpdateBuilder = TxBuilder.newSystemBuilder(List.of(lastSystemParticle));
 		try {
 			if (validatorSet == null) {
 				systemUpdateBuilder.systemNextView(view.number(), timestamp);
 			} else {
 				systemUpdateBuilder.systemNextEpoch(timestamp);
 			}
-		} catch (ActionTxException e) {
+		} catch (TxBuilderException e) {
 			throw new IllegalStateException("Could not create system update", e);
 		}
 

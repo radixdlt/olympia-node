@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
@@ -65,7 +65,7 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Object lock = new Object();
 	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
 
-	private final Map<String, AtomBuilder> stagedAtoms = new ConcurrentHashMap<>();
+	private final Map<String, TxLowLevelBuilder> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	private void softDeleteDependentsOf(Atom atom) {
@@ -121,7 +121,7 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
-	public AtomBuilder getStaged(String uuid) {
+	public TxLowLevelBuilder getStaged(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
@@ -130,11 +130,11 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
-	public AtomBuilder getStagedAndClear(String uuid) {
+	public TxLowLevelBuilder getStagedAndClear(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final AtomBuilder builder = stagedAtoms.remove(uuid);
+			final TxLowLevelBuilder builder = stagedAtoms.remove(uuid);
 			stagedParticleIndex.get(uuid).clear();
 			return builder;
 		}

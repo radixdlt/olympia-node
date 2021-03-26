@@ -18,8 +18,8 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
@@ -35,12 +35,12 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		try {
-			var atom = ActionTxBuilder.newBuilder(address)
+			var atom = TxBuilder.newBuilder(address)
 				.mutex("test")
 				.signAndBuild(keyPair::sign);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 			return new Command(payload);
-		} catch (ActionTxException e) {
+		} catch (TxBuilderException e) {
 			throw new RuntimeException(e);
 		}
 	}

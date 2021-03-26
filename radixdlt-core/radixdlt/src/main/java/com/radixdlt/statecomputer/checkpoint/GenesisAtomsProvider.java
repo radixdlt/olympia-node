@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
@@ -90,7 +90,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
 		try {
 			// Network token
-			var tokenBuilder = ActionTxBuilder.newBuilder(universeAddress)
+			var tokenBuilder = TxBuilder.newBuilder(universeAddress)
 				.createMutableToken(tokenDefinition);
 
 			for (var e : issuances.entrySet()) {
@@ -105,7 +105,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorBuilder = ActionTxBuilder.newBuilder(validatorAddress, upParticles);
+				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upParticles);
 				var validatorAtom = validatorBuilder
 					.registerAsValidator()
 					.signAndBuild(validatorKey::sign);
@@ -117,17 +117,17 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			for (var stakeDelegation : stakeDelegations) {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
 				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
-				var stakesBuilder = ActionTxBuilder.newBuilder(stakerAddress, upParticles)
+				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upParticles)
 					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
 				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
 				genesisAtoms.add(stakeAtom);
 				upParticles = stakesBuilder.upParticles();
 			}
 
-			var epochUpdateBuilder = ActionTxBuilder.newSystemBuilder()
+			var epochUpdateBuilder = TxBuilder.newSystemBuilder()
 				.systemNextEpoch(0);
 			genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
-		} catch (ActionTxException e) {
+		} catch (TxBuilderException e) {
 			throw new IllegalStateException(e);
 		}
 

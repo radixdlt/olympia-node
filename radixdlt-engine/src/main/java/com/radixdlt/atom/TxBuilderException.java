@@ -18,8 +18,8 @@
 
 package com.radixdlt.atom;
 
-public class ActionTxException extends Exception {
-	public ActionTxException(String message) {
+public class TxBuilderException extends Exception {
+	public TxBuilderException(String message) {
 		super(message);
 	}
 }

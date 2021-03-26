@@ -35,7 +35,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.atom.ParticleGroup;
@@ -268,7 +268,7 @@ public class MultipleTransitionsInSameGroupTest {
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
-		AtomBuilder unsignedAtom = Atom.newBuilder();
+		TxLowLevelBuilder unsignedAtom = Atom.newBuilder();
 		for (var pg : particleGroups) {
 			for (CMMicroInstruction i : pg.getInstructions()) {
 				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {

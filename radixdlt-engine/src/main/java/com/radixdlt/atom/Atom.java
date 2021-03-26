@@ -66,8 +66,8 @@ public final class Atom {
 	private final ImmutableList<CMMicroInstruction> instructions;
 	private final HashCode witness;
 
-	public static AtomBuilder newBuilder() {
-		return new AtomBuilder();
+	public static TxLowLevelBuilder newBuilder() {
+		return new TxLowLevelBuilder();
 	}
 
 	@JsonCreator

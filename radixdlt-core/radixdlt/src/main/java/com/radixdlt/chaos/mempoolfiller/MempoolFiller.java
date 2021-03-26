@@ -19,7 +19,7 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.ActionTxBuilder;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -115,7 +115,7 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			List<ActionTxBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
+			List<TxBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),

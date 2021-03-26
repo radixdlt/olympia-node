@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.atom.ParticleGroup;
@@ -94,7 +94,7 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	AtomBuilder getStagedAndClear(String uuid);
+	TxLowLevelBuilder getStagedAndClear(String uuid);
 
 	/**
 	 * Retrieves all staged particle groups without clearing the staging area
@@ -104,5 +104,5 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	AtomBuilder getStaged(String uuid);
+	TxLowLevelBuilder getStaged(String uuid);
 }

@@ -20,8 +20,8 @@ package com.radixdlt.chaos.mempoolfiller;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -84,19 +84,19 @@ public final class InMemoryWallet {
 		return TokenUnitConversions.subunitsToUnits(balance);
 	}
 
-	public List<ActionTxBuilder> createParallelTransactions(RadixAddress to, int max) {
+	public List<TxBuilder> createParallelTransactions(RadixAddress to, int max) {
 		List<TransferrableTokensParticle> shuffledParticles = new ArrayList<>(particles);
 		Collections.shuffle(shuffledParticles);
-		Stream<ActionTxBuilder> builders = shuffledParticles.stream()
+		Stream<TxBuilder> builders = shuffledParticles.stream()
 			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0)
 			.flatMap(t -> {
 				UInt256 amount = t.getAmount().subtract(fee).divide(UInt256.TWO);
 				try {
-					var builder = ActionTxBuilder.newBuilder(address, List.of(t))
+					var builder = TxBuilder.newBuilder(address, List.of(t))
 						.transferNative(tokenRRI, to, amount)
 						.burnForFee(tokenRRI, fee);
 					return Stream.of(builder);
-				} catch (ActionTxException e) {
+				} catch (TxBuilderException e) {
 					return Stream.of();
 				}
 			});
@@ -105,7 +105,7 @@ public final class InMemoryWallet {
 			.filter(t -> t.getAmount().compareTo(fee.multiply(UInt256.TWO)) <= 0)
 			.collect(Collectors.toList());
 
-		Stream<ActionTxBuilder> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
+		Stream<TxBuilder> dustAtoms = Streams.stream(Iterables.partition(dust, 3))
 			.flatMap(mutableList -> {
 				UInt256 dustAmount = mutableList.stream()
 					.map(TransferrableTokensParticle::getAmount)
@@ -113,11 +113,11 @@ public final class InMemoryWallet {
 				var particles = mutableList.stream().map(p -> (Particle) p).collect(Collectors.toList());
 
 				try {
-					var builder = ActionTxBuilder.newBuilder(address, particles)
+					var builder = TxBuilder.newBuilder(address, particles)
 						.transferNative(tokenRRI, to, dustAmount.subtract(fee))
 						.burnForFee(tokenRRI, fee);
 					return Stream.of(builder);
-				} catch (ActionTxException e) {
+				} catch (TxBuilderException e) {
 					return Stream.of();
 				}
 			});

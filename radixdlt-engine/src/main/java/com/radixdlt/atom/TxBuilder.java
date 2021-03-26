@@ -48,8 +48,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
-public final class ActionTxBuilder {
-	private final AtomBuilder atomBuilder;
+/**
+ * Creates a transaction from high level user actions
+ */
+public final class TxBuilder {
+	private final TxLowLevelBuilder atomBuilder;
 	private final Set<ParticleId> downParticles;
 	private final RadixAddress address;
 	private final Iterable<Particle> upParticles;
@@ -57,7 +60,7 @@ public final class ActionTxBuilder {
 	// TODO: remove
 	private final Random random = new Random();
 
-	private ActionTxBuilder(
+	private TxBuilder(
 		RadixAddress address,
 		Set<ParticleId> downVirtualParticles,
 		Iterable<Particle> upParticles
@@ -68,20 +71,20 @@ public final class ActionTxBuilder {
 		this.upParticles = upParticles;
 	}
 
-	public static ActionTxBuilder newBuilder(RadixAddress address, Iterable<Particle> upParticles) {
-		return new ActionTxBuilder(address, Set.of(), upParticles);
+	public static TxBuilder newBuilder(RadixAddress address, Iterable<Particle> upParticles) {
+		return new TxBuilder(address, Set.of(), upParticles);
 	}
 
-	public static ActionTxBuilder newBuilder(RadixAddress address) {
-		return new ActionTxBuilder(address, Set.of(), List.of());
+	public static TxBuilder newBuilder(RadixAddress address) {
+		return new TxBuilder(address, Set.of(), List.of());
 	}
 
-	public static ActionTxBuilder newSystemBuilder(Iterable<Particle> upParticleList) {
-		return new ActionTxBuilder(null, Set.of(), upParticleList);
+	public static TxBuilder newSystemBuilder(Iterable<Particle> upParticleList) {
+		return new TxBuilder(null, Set.of(), upParticleList);
 	}
 
-	public static ActionTxBuilder newSystemBuilder() {
-		return new ActionTxBuilder(null, Set.of(), List.of());
+	public static TxBuilder newSystemBuilder() {
+		return new TxBuilder(null, Set.of(), List.of());
 	}
 
 	private void particleGroup() {
@@ -113,14 +116,14 @@ public final class ActionTxBuilder {
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		var substateRead = StreamSupport.stream(upParticles().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
 			.findFirst();
 		if (substateRead.isEmpty()) {
-			throw new ActionTxException(errorMessage);
+			throw new TxBuilderException(errorMessage);
 		}
 
 		return substateRead.get();
@@ -130,7 +133,7 @@ public final class ActionTxBuilder {
 		Class<T> particleClass,
 		Optional<T> virtualParticle,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		return down(particleClass, p -> true, virtualParticle, errorMessage);
 	}
 
@@ -138,7 +141,7 @@ public final class ActionTxBuilder {
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		return down(particleClass, particlePredicate, Optional.empty(), errorMessage);
 	}
 
@@ -147,7 +150,7 @@ public final class ActionTxBuilder {
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		var substateDown = StreamSupport.stream(upParticles().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -163,25 +166,25 @@ public final class ActionTxBuilder {
 			});
 
 		if (substateDown.isEmpty()) {
-			throw new ActionTxException(errorMessage);
+			throw new TxBuilderException(errorMessage);
 		}
 
 		return substateDown.get();
 	}
 
 	private interface Mapper<T extends Particle, U extends Particle> {
-		U map(T t) throws ActionTxException;
+		U map(T t) throws TxBuilderException;
 	}
 
 	private interface Replacer<T extends Particle, U extends Particle> {
-		void with(Mapper<T, U> mapper) throws ActionTxException;
+		void with(Mapper<T, U> mapper) throws TxBuilderException;
 	}
 
 	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
@@ -193,7 +196,7 @@ public final class ActionTxBuilder {
 		Class<T> particleClass,
 		Optional<T> virtualParticle,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		T t = down(particleClass, virtualParticle, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
@@ -206,7 +209,7 @@ public final class ActionTxBuilder {
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
 		return replacer -> {
 			U u = replacer.map(t);
@@ -215,11 +218,11 @@ public final class ActionTxBuilder {
 	}
 
 	private interface FungibleMapper<U extends Particle> {
-		U map(UInt256 t) throws ActionTxException;
+		U map(UInt256 t) throws TxBuilderException;
 	}
 
 	private interface FungibleReplacer<U extends Particle> {
-		void with(FungibleMapper<U> mapper) throws ActionTxException;
+		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
 	private <T extends Particle> UInt256 downFungible(
@@ -228,7 +231,7 @@ public final class ActionTxBuilder {
 		Function<T, UInt256> amountMapper,
 		UInt256 amount,
 		String errorMessage
-	) throws ActionTxException {
+	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
 			var substateDown = down(
@@ -261,19 +264,19 @@ public final class ActionTxBuilder {
 	}
 
 
-	private void assertHasAddress(String message) throws ActionTxException {
+	private void assertHasAddress(String message) throws TxBuilderException {
 		if (address == null) {
-			throw new ActionTxException(message);
+			throw new TxBuilderException(message);
 		}
 	}
 
-	private void assertIsSystem(String message) throws ActionTxException {
+	private void assertIsSystem(String message) throws TxBuilderException {
 		if (address != null) {
-			throw new ActionTxException(message);
+			throw new TxBuilderException(message);
 		}
 	}
 
-	public ActionTxBuilder systemNextView(long view, long timestamp) throws ActionTxException {
+	public TxBuilder systemNextView(long view, long timestamp) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next view");
 
 		swap(
@@ -282,7 +285,7 @@ public final class ActionTxBuilder {
 			"No System particle available"
 		).with(substateDown -> {
 			if (view <= substateDown.getView()) {
-				throw new ActionTxException("Next view isn't higher than current view.");
+				throw new TxBuilderException("Next view isn't higher than current view.");
 			}
 			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
 		});
@@ -292,7 +295,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder systemNextEpoch(long timestamp) throws ActionTxException {
+	public TxBuilder systemNextEpoch(long timestamp) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next epoch");
 
 		swap(
@@ -305,7 +308,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder registerAsValidator() throws ActionTxException {
+	public TxBuilder registerAsValidator() throws TxBuilderException {
 		assertHasAddress("Must have address");
 
 		swap(
@@ -321,7 +324,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder unregisterAsValidator() throws ActionTxException {
+	public TxBuilder unregisterAsValidator() throws TxBuilderException {
 		assertHasAddress("Must have address");
 
 		swap(
@@ -336,9 +339,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-
-
-	public ActionTxBuilder mutex(String id) throws ActionTxException {
+	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, id);
@@ -354,7 +355,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws ActionTxException {
+	public TxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
@@ -389,7 +390,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws ActionTxException {
+	public TxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
@@ -417,7 +418,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
@@ -442,7 +443,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+	public TxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
@@ -467,7 +468,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws ActionTxException {
+	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
@@ -490,7 +491,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws ActionTxException {
+	public TxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
 		// HACK
 		var factory = TokDefParticleFactory.create(
@@ -522,7 +523,7 @@ public final class ActionTxBuilder {
 		return this;
 	}
 
-	public ActionTxBuilder burnForFee(RRI rri, UInt256 amount) throws ActionTxException {
+	public TxBuilder burnForFee(RRI rri, UInt256 amount) throws TxBuilderException {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,

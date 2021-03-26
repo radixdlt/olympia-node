@@ -29,8 +29,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.ActionTxBuilder;
-import com.radixdlt.atom.ActionTxException;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.ParticleId;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTHeader;
@@ -204,9 +204,9 @@ public class RadixEngineStateComputerTest {
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
-	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws ActionTxException {
+	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws TxBuilderException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var atom = ActionTxBuilder.newBuilder(address)
+		var atom = TxBuilder.newBuilder(address)
 			.registerAsValidator()
 			.signAndBuild(keyPair::sign);
 
