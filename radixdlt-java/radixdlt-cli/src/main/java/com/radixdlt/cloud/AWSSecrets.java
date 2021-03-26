@@ -9,7 +9,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -56,10 +59,23 @@ public class AWSSecrets {
 				usage(options);
 				return;
 			}
+			final String fullnodeNamesEnv= Optional.ofNullable(
+				(System.getenv("FULLNODE_NAMES")))
+				.orElse( "");
+			final List<String> listofFullNodes;
+
+			if(!fullnodeNamesEnv.trim().equals("")){
+				List<String> rawlist = new ArrayList<String>(Arrays.asList(fullnodeNamesEnv.split(",")));
+				listofFullNodes = rawlist.stream()
+					.map(entry -> entry.replaceAll("[^\\w-]",""))
+					.collect(Collectors.toList());
+			}else{
+				listofFullNodes = new ArrayList<>();
+			}
 
 			final int fullNodeCount = Integer
 				.parseInt(getOption(cmd, 'n').orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes")));
-			if (fullNodeCount <= 0) {
+			if (fullNodeCount <= 0 && listofFullNodes.size() <=0) {
 				throw new IllegalArgumentException("There must be at least one full node");
 			}
 
@@ -70,8 +86,16 @@ public class AWSSecrets {
 
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
 				enableAwsSecrets, recreateAwsSecrets, networkName);
-			IntStream.range(0, fullNodeCount).forEach(i -> {
-				final String nodeName = String.format("%s%s", namePrefix, i);
+			final List<String> fullnodes;
+			if(fullNodeCount>0){
+				fullnodes = IntStream.range(0, fullNodeCount).mapToObj(counter -> {
+					return String.format("%s%s", namePrefix, counter);
+				}).collect(Collectors.toList());
+			}else{
+				fullnodes = listofFullNodes;
+			}
+
+			fullnodes.forEach( nodeName -> {
 				final String keyStoreName = String.format("%s.ks", nodeName);
 				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
