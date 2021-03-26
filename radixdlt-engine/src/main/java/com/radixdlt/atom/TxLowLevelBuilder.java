@@ -51,20 +51,20 @@ public final class TxLowLevelBuilder {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
-	public TxLowLevelBuilder spinUp(Particle particle) {
+	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.spinUp(particle));
 		localUpParticles.put(SubstateId.of(particle), particle);
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualSpinDown(Particle particle) {
+	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
 		return this;
 	}
 
-	public TxLowLevelBuilder spinDown(SubstateId substateId) {
+	public TxLowLevelBuilder down(SubstateId substateId) {
 		this.instructions.add(CMMicroInstruction.spinDown(substateId));
 		localUpParticles.remove(substateId);
 		return this;

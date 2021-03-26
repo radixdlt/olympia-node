@@ -195,8 +195,8 @@ public class RadixEngineStateComputerTest {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		Atom atom = Atom.newBuilder()
-			.spinDown(SubstateId.of(lastSystemParticle))
-			.spinUp(nextSystemParticle)
+			.down(SubstateId.of(lastSystemParticle))
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);

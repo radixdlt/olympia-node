@@ -79,8 +79,8 @@ public final class UniqueTest {
 		var rriParticle = new RRIParticle(rri, 0);
 		var uniqueParticle = new UniqueParticle("test", address, random.nextLong());
 		var atomBuilder = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
+			.virtualDown(rriParticle)
+			.up(uniqueParticle)
 			.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);
 	}

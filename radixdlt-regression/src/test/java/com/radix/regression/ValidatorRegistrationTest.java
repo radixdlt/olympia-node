@@ -122,9 +122,9 @@ public class ValidatorRegistrationTest {
 	public void when_registering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
-				.spinDown(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
+				.virtualDown(new UnregisteredValidatorParticle(address, 0))
+				.down(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
+				.down(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
 				.particleGroup()
 		);
 
@@ -137,8 +137,8 @@ public class ValidatorRegistrationTest {
 	public void when_unregistering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
+				.virtualDown(new UnregisteredValidatorParticle(address, 0))
+				.down(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
 				.particleGroup()
 		);
 

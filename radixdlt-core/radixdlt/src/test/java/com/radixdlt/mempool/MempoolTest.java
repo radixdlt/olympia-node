@@ -107,8 +107,8 @@ public class MempoolTest {
 			RRIParticle rriParticle = new RRIParticle(rri, nonce);
 			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
 			atomBuilder
-				.virtualSpinDown(rriParticle)
-				.spinUp(uniqueParticle);
+				.virtualDown(rriParticle)
+				.up(uniqueParticle);
 		}
 		atomBuilder.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);

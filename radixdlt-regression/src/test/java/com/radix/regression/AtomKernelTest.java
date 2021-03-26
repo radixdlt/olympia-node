@@ -88,8 +88,8 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
 		);
 
@@ -105,8 +105,8 @@ public class AtomKernelTest {
 			10,
 			false,
 			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
 		);
 		observer.awaitCount(1);

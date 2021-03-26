@@ -92,16 +92,16 @@ public final class TxBuilder {
 	}
 
 	private void up(Particle particle) {
-		atomBuilder.spinUp(particle);
+		atomBuilder.up(particle);
 	}
 
 	private void virtualDown(Particle particle) {
-		atomBuilder.virtualSpinDown(particle);
+		atomBuilder.virtualDown(particle);
 		downParticles.add(SubstateId.ofVirtualSubstate(particle));
 	}
 
 	private void down(SubstateId substateId) {
-		atomBuilder.spinDown(substateId);
+		atomBuilder.down(substateId);
 		downParticles.add(substateId);
 	}
 

@@ -99,9 +99,9 @@ public class FixedTokenTest {
 		);
 
 		atomBuilder
-			.virtualSpinDown(rriParticle)
-			.spinUp(fixedSupply)
-			.spinUp(token)
+			.virtualDown(rriParticle)
+			.up(fixedSupply)
+			.up(token)
 			.particleGroup();
 
 		return token;
@@ -116,10 +116,10 @@ public class FixedTokenTest {
 			ImmutableMap.of(),
 			1
 		);
-		atomBuilder.spinUp(token);
+		atomBuilder.up(token);
 
 		for (int i = 0; i < times; i++) {
-			atomBuilder.spinDown(SubstateId.of(p));
+			atomBuilder.down(SubstateId.of(p));
 		}
 		atomBuilder.particleGroup();
 	}

@@ -107,10 +107,10 @@ public class StakedTokensTest {
 
 		var builder = Atom.newBuilder();
 		builder
-			.spinDown(SubstateId.of(registerValidator(1)))
-			.spinUp(registerValidator(2))
-			.spinUp(stakeParticle)
-			.spinDown(SubstateId.of(this.transferrableTokensParticle))
+			.down(SubstateId.of(registerValidator(1)))
+			.up(registerValidator(2))
+			.up(stakeParticle)
+			.down(SubstateId.of(this.transferrableTokensParticle))
 			.particleGroup();
 
 		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
@@ -125,10 +125,10 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(SubstateId.of(registerValidator(1)))
-			.spinUp(registerValidator(2))
-			.spinUp(stakeParticle)
-			.spinDown(SubstateId.of(this.transferrableTokensParticle))
+			.down(SubstateId.of(registerValidator(1)))
+			.up(registerValidator(2))
+			.up(stakeParticle)
+			.down(SubstateId.of(this.transferrableTokensParticle))
 			.particleGroup();
 
 		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
@@ -136,8 +136,8 @@ public class StakedTokensTest {
 
 		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
 		var builder2 = Atom.newBuilder()
-			.spinDown(SubstateId.of(stakeParticle))
-			.spinUp(tranferrableParticle)
+			.down(SubstateId.of(stakeParticle))
+			.up(tranferrableParticle)
 			.particleGroup();
 
 		var atom2 = builder2.signAndBuild(this.tokenOwnerKeyPair::sign);
@@ -151,10 +151,10 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(SubstateId.of(registerValidator(1)))
-			.spinUp(registerValidator(2))
-			.spinUp(stakeParticle)
-			.spinDown(SubstateId.of(this.transferrableTokensParticle))
+			.down(SubstateId.of(registerValidator(1)))
+			.up(registerValidator(2))
+			.up(stakeParticle)
+			.down(SubstateId.of(this.transferrableTokensParticle))
 			.particleGroup();
 		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom));
@@ -162,9 +162,9 @@ public class StakedTokensTest {
 		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
 		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
 		var builder2 = Atom.newBuilder()
-			.spinDown(SubstateId.of(stakeParticle))
-			.spinUp(partialStakeParticle)
-			.spinUp(tranferrableParticle)
+			.down(SubstateId.of(stakeParticle))
+			.up(partialStakeParticle)
+			.up(tranferrableParticle)
 			.particleGroup();
 		var atom2 = builder2.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom2));
@@ -178,10 +178,10 @@ public class StakedTokensTest {
 	public void move_staked_tokens() throws RadixEngineException {
 		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
 		var builder = Atom.newBuilder()
-			.spinDown(SubstateId.of(registerValidator(1)))
-			.spinUp(registerValidator(2))
-			.spinUp(stakeParticle)
-			.spinDown(SubstateId.of(this.transferrableTokensParticle))
+			.down(SubstateId.of(registerValidator(1)))
+			.up(registerValidator(2))
+			.up(stakeParticle)
+			.down(SubstateId.of(this.transferrableTokensParticle))
 			.particleGroup();
 		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom));
@@ -189,8 +189,8 @@ public class StakedTokensTest {
 
 		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
 		var builder2 = Atom.newBuilder()
-			.spinDown(SubstateId.of(stakeParticle))
-			.spinUp(restakeParticle)
+			.down(SubstateId.of(stakeParticle))
+			.up(restakeParticle)
 			.particleGroup();
 		var atom2 = builder2.signAndBuild(this.tokenOwnerKeyPair::sign);
 

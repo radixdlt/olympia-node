@@ -65,8 +65,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -84,8 +84,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -101,8 +101,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(-1, 1, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -117,8 +117,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, -1, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -133,8 +133,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -166,8 +166,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -183,8 +183,8 @@ public class SystemTest {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 

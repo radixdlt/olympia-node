@@ -272,11 +272,11 @@ public class MultipleTransitionsInSameGroupTest {
 		for (var pg : particleGroups) {
 			for (CMMicroInstruction i : pg.getInstructions()) {
 				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
-					unsignedAtom.spinUp(i.getParticle());
+					unsignedAtom.up(i.getParticle());
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-					unsignedAtom.virtualSpinDown(i.getParticle());
+					unsignedAtom.virtualDown(i.getParticle());
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-					unsignedAtom.spinDown(i.getParticleId());
+					unsignedAtom.down(i.getParticleId());
 				}
 			}
 			unsignedAtom.particleGroup();
