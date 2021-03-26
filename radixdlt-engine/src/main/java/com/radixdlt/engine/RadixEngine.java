@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
@@ -25,11 +26,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
+import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -274,15 +275,15 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private HashMap<SubstateId, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
+	private List<ParsedInstruction> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
 		throws RadixEngineException {
-		var downedParticles = new HashMap<SubstateId, Particle>();
+		var parsedInstructions = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
 			virtualizedCMStore,
 			atom,
 			permissionLevel,
-			downedParticles
+			parsedInstructions
 		);
 
 		if (error.isPresent()) {
@@ -302,7 +303,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		return downedParticles;
+		return parsedInstructions;
 	}
 
 	/**
@@ -349,35 +350,22 @@ public final class RadixEngine<M> {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
 		for (var atom : atoms) {
 			// TODO: combine verification and storage
-			var downedParticles = this.verify(txn, atom, permissionLevel);
+			var parsedInstructions = this.verify(txn, atom, permissionLevel);
 			try {
 				this.engineStore.storeAtom(txn, atom);
 			} catch (Exception e) {
-				logger.error("Store of atom {} failed. downedParticles: {}", atom, downedParticles);
+				logger.error("Store of atom {} failed. parsed: {}", atom, parsedInstructions);
 				throw e;
 			}
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
-				// Treat check spin as the first push for now
-				if (!microInstruction.isCheckSpin()) {
-					continue;
-				}
+			for (ParsedInstruction parsedInstruction : parsedInstructions) {
+				final var particle = parsedInstruction.getParticle();
+				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
+				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
-				final Particle particle;
-				if (microInstruction.getParticle() == null) {
-					particle = downedParticles.get(microInstruction.getParticleId());
-					if (particle == null) {
-						throw new IllegalStateException();
-					}
-				} else {
-					particle = microInstruction.getParticle();
-				}
-
-				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, microInstruction.getCheckSpin()));
-
-				if (microInstruction.getNextSpin() == Spin.UP) {
+				if (parsedInstruction.getSpin() == Spin.UP) {
 					checker.test(this::getComputedState);
 				}
 			}
@@ -387,6 +375,5 @@ public final class RadixEngine<M> {
 		if (meta != null) {
 			this.engineStore.storeMetadata(txn, meta);
 		}
-
 	}
 }

@@ -24,7 +24,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -70,11 +70,11 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() {
 		var particles = List.of(
-			SpunParticle.up(stake(UInt256.TWO)),
-			SpunParticle.up(stake(UInt256.FIVE)),
-			SpunParticle.up(transfer(UInt256.NINE)),
-			SpunParticle.up(transfer(UInt256.ONE)),
-			SpunParticle.down(transfer(UInt256.ONE))
+			ParsedInstruction.up(stake(UInt256.TWO)),
+			ParsedInstruction.up(stake(UInt256.FIVE)),
+			ParsedInstruction.up(transfer(UInt256.NINE)),
+			ParsedInstruction.up(transfer(UInt256.ONE)),
+			ParsedInstruction.down(transfer(UInt256.ONE))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -88,10 +88,10 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(List<SpunParticle> particles) {
+	private BerkeleyClientApiStore prepareApiStore(List<ParsedInstruction> particles) {
 		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
-			particles.forEach(invocation.<Consumer<SpunParticle>>getArgument(0));
+			particles.forEach(invocation.<Consumer<ParsedInstruction>>getArgument(0));
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 

@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
@@ -103,7 +103,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private Consumer<SpunParticle> particleConsumer = BerkeleyLedgerEntryStore::defaultParticleConsumer;
+	private Consumer<ParsedInstruction> particleConsumer = BerkeleyLedgerEntryStore::defaultParticleConsumer;
 
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 
@@ -272,7 +272,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	// TODO: Hack for Client Api store, remove at some point
-	public void forEach(Consumer<SpunParticle> particleConsumer) {
+	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
 		try (var cursor = particleDatabase.openCursor(null, null)) {
 			var key = entry();
 			var value = entry();
@@ -282,7 +282,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = deserializeOrElseFail(particleBytes, Particle.class);
-					particleConsumer.accept(SpunParticle.up(particle));
+					particleConsumer.accept(ParsedInstruction.up(particle));
 				}
 
 				status = cursor.getNext(key, value, DEFAULT);
@@ -291,7 +291,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	// TODO: Hack for Client Api store, remove at some point
-	public void onParticleCommit(Consumer<SpunParticle> particleConsumer) {
+	public void onParticleCommit(Consumer<ParsedInstruction> particleConsumer) {
 		this.particleConsumer = Optional.ofNullable(particleConsumer)
 			.orElse(BerkeleyLedgerEntryStore::defaultParticleConsumer);
 	}
@@ -305,7 +305,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
 	}
 
-	private static void defaultParticleConsumer(SpunParticle particle) {
+	private static void defaultParticleConsumer(ParsedInstruction particle) {
 		//Intentionally left blank
 	}
 
@@ -504,7 +504,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
-		particleConsumer.accept(SpunParticle.up(particle));
+		particleConsumer.accept(ParsedInstruction.up(particle));
 	}
 
 	private void downVirtualParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -532,7 +532,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(particleKey), downEntry());
-		particleConsumer.accept(SpunParticle.down(particle));
+		particleConsumer.accept(ParsedInstruction.down(particle));
 	}
 
 	private DatabaseEntry downEntry() {

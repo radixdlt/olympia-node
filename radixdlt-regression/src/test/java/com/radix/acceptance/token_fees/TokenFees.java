@@ -30,7 +30,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -488,12 +488,12 @@ public class TokenFees {
 	}
 
 	// Check that all unallocated particles are in the up state and for the fee token
-	private boolean allUpForFeeToken(List<SpunParticle> spunUnallocatedTokens) {
+	private boolean allUpForFeeToken(List<ParsedInstruction> spunUnallocatedTokens) {
 		return spunUnallocatedTokens.stream()
 			.allMatch(this::isUpAndForFee);
 	}
 
-	private boolean isUpAndForFee(SpunParticle sp) {
+	private boolean isUpAndForFee(ParsedInstruction sp) {
 		if (sp.getSpin() == Spin.UP) {
 			UnallocatedTokensParticle utp = (UnallocatedTokensParticle) sp.getParticle();
 			RRI feeTokenRri = this.api.getNativeTokenRef();

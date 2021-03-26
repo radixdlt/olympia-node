@@ -21,6 +21,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -387,7 +388,7 @@ public final class ConstraintMachine {
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
 		List<CMMicroInstruction> microInstructions,
-		Map<SubstateId, Particle> downedParticles
+		List<ParsedInstruction> parsedInstructions
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
@@ -415,6 +416,8 @@ public final class ConstraintMachine {
 					return error;
 				}
 
+
+				parsedInstructions.add(ParsedInstruction.up(nextParticle));
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
 				final var nextParticle = cmMicroInstruction.getParticle();
@@ -437,6 +440,8 @@ public final class ConstraintMachine {
 				if (error.isPresent()) {
 					return error;
 				}
+
+				parsedInstructions.add(ParsedInstruction.down(nextParticle));
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
 				var particleId = cmMicroInstruction.getParticleId();
@@ -446,11 +451,12 @@ public final class ConstraintMachine {
 				}
 
 				var particle = maybeParticle.get();
-				downedParticles.put(cmMicroInstruction.getParticleId(), particle);
 				Optional<CMError> error = validateParticle(validationState, particle, true, dp);
 				if (error.isPresent()) {
 					return error;
 				}
+
+				parsedInstructions.add(ParsedInstruction.down(particle));
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.PARTICLE_GROUP) {
 				if (particleIndex == 0) {
@@ -502,7 +508,7 @@ public final class ConstraintMachine {
 		CMStore cmStore,
 		Atom atom,
 		PermissionLevel permissionLevel,
-		Map<SubstateId, Particle> downedParticles
+		List<ParsedInstruction> parsedInstructions
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			txn,
@@ -512,6 +518,6 @@ public final class ConstraintMachine {
 			atom.getSignature()
 		);
 
-		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), downedParticles);
+		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), parsedInstructions);
 	}
 }

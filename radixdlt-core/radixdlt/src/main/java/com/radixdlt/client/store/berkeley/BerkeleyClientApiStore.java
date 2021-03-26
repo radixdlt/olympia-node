@@ -22,7 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.store.ClientApiStore;
@@ -62,7 +62,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final BerkeleyLedgerEntryStore store;
 	private final Serialization serialization;
 	private final ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
+	private final StackingCollector<ParsedInstruction> particleCollector = StackingCollector.create();
 
 	private Database executedTransactionsDatabase;
 	private Database balanceDatabase;
@@ -188,15 +188,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	private void newParticle(SpunParticle particle) {
+	private void newParticle(ParsedInstruction particle) {
 		particleCollector.push(particle);
 	}
 
-	private void storeSingleParticle(SpunParticle spunParticle) {
-		if (spunParticle.getSpin() == Spin.DOWN) {
-			storeSingleDownParticle(spunParticle.getParticle());
+	private void storeSingleParticle(ParsedInstruction parsedInstruction) {
+		if (parsedInstruction.getSpin() == Spin.DOWN) {
+			storeSingleDownParticle(parsedInstruction.getParticle());
 		} else {
-			storeSingleUpParticle(spunParticle.getParticle());
+			storeSingleUpParticle(parsedInstruction.getParticle());
 		}
 	}
 

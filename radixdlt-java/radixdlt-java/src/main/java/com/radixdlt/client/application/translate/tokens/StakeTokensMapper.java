@@ -36,7 +36,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.constraintmachine.Spin;
@@ -60,7 +60,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 		// Empty on purpose
 	}
 
-	private static List<SpunParticle> mapToParticles(StakeTokensAction stake, List<TransferrableTokensParticle> currentParticles)
+	private static List<ParsedInstruction> mapToParticles(StakeTokensAction stake, List<TransferrableTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
 
 		final UInt256 totalAmountToRedelegate = TokenUnitConversions.unitsToSubunits(stake.getAmount());
@@ -110,7 +110,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 	public List<ParticleGroup> mapToParticleGroups(StakeTokensAction stake, Stream<Particle> store) throws StageActionException {
 		final RRI tokenRef = stake.getRRI();
 
-		List<SpunParticle> particles = new ArrayList<>();
+		List<ParsedInstruction> particles = new ArrayList<>();
 		Map<? extends Class<? extends Particle>, List<Particle>> inputParticlesByClass = store
 			.collect(Collectors.groupingBy(Particle::getClass));
 
@@ -124,8 +124,8 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			throw StakeNotPossibleException.notAllowed(delegate.getAddress(), stake.getFrom());
 		}
 		RegisteredValidatorParticle newDelegate = delegate.copyWithNonce(delegate.getNonce() + 1);
-		particles.add(SpunParticle.down(delegate));
-		particles.add(SpunParticle.up(newDelegate));
+		particles.add(ParsedInstruction.down(delegate));
+		particles.add(ParsedInstruction.up(newDelegate));
 
 		List<TransferrableTokensParticle> stakeConsumables = inputParticlesByClass
 			.getOrDefault(TransferrableTokensParticle.class, ImmutableList.of())
