@@ -25,7 +25,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;

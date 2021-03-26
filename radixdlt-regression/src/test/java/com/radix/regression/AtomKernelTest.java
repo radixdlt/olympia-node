@@ -18,7 +18,6 @@
 package com.radix.regression;
 
 import com.google.common.base.Strings;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;

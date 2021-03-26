@@ -966,19 +966,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns an unsigned atom with the appropriate fees given a list of
-	 * particle groups to compose the atom.
-	 *
-	 * @param particleGroups particle groups to include in atom
-	 * @return unsigned atom with appropriate fees
-	 */
-	public TxLowLevelBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
-		Transaction t = createTransaction();
-		particleGroups.forEach(t::stage);
-		return t.buildAtom();
-	}
-
-	/**
 	 * Create a new transaction which is based off of the
 	 * current data in the atom store.
 	 *
@@ -1335,21 +1322,14 @@ public class RadixApplicationAPI {
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
 			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
 			Stream<Particle> particles = required.stream()
-				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid).filter(ctx.particleClass()::isInstance));
+				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid)
+					.filter(ctx.particleClass()::isInstance)
+				);
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
-		}
-
-		/**
-		 * Add a particle group to staging area in preparation for commitAndPush.
-		 *
-		 * @param particleGroup Particle group to add to staging area.
-		 */
-		public void stage(ParticleGroup particleGroup) {
-			universe.getAtomStore().stageParticleGroup(uuid, particleGroup);
 		}
 
 		/**

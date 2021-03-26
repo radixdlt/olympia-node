@@ -20,7 +20,6 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
 import com.radix.test.utils.TokenUtilities;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;

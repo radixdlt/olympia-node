@@ -19,6 +19,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -29,15 +30,10 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
-import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Test;
 import com.radixdlt.utils.UInt256;
 
@@ -46,8 +42,6 @@ public class UnallocatedTokensParticleTest {
 	public void given_an_account__when_the_account_executes_a_token_creation_without_unallocated_particles__then_the_atom_will_be_rejected() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api);
-
-		List<ParticleGroup> groups = new ArrayList<>();
 
 		MutableSupplyTokenDefinitionParticle particle = new MutableSupplyTokenDefinitionParticle(
 			RRI.of(api.getAddress(), "JOSH"),
@@ -62,13 +56,12 @@ public class UnallocatedTokensParticleTest {
 			)
 		);
 
-		groups.add(ParticleGroup.builder().spinUp(particle).build());
-
-		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
-
-		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.addSignature(unsignedAtom)
-			.flatMapObservable(a -> api.submitAtom(a).toObservable());
+		var builder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new RRIParticle(RRI.of(api.getAddress(), "JOSH")))
+			.up(particle)
+			.particleGroup();
+		var atom = api.getIdentity().addSignature(builder).blockingGet();
+		var updates = api.submitAtom(atom).toObservable();
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
 		updates
@@ -94,9 +87,7 @@ public class UnallocatedTokensParticleTest {
 			TokenSupplyType.FIXED
 		).blockUntilComplete();
 
-		List<ParticleGroup> groups = new ArrayList<>();
-
-		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
+		var unallocatedParticle = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			RRI.of(api.getAddress(), "JOSH"),
@@ -104,73 +95,11 @@ public class UnallocatedTokensParticleTest {
 			System.currentTimeMillis()
 		);
 
-		groups.add(ParticleGroup.builder().spinUp(unallocatedParticle).build());
-
-		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
-
-		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.addSignature(unsignedAtom)
-			.flatMapObservable(a -> api.submitAtom(a).toObservable());
-
-		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
-		updates
-			.doOnNext(System.out::println)
-			.ofType(SubmitAtomStatusAction.class)
-			.subscribe(testObserver);
-
-		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(i -> i.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
-	}
-
-	@Test
-	public void given_an_account__when_the_account_executes_a_token_creation_with_2_unallocated_particles__then_the_atom_will_be_rejected() {
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		TokenUtilities.requestTokensFor(api);
-
-		List<ParticleGroup> groups = new ArrayList<>();
-
-		UnallocatedTokensParticle unallocatedParticle0 = new UnallocatedTokensParticle(
-			UInt256.MAX_VALUE,
-			UInt256.ONE,
-			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
-			System.nanoTime()
-		);
-
-		UnallocatedTokensParticle unallocatedParticle1 = new UnallocatedTokensParticle(
-			UInt256.MAX_VALUE,
-			UInt256.ONE,
-			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
-			System.nanoTime()
-		);
-
-		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = new MutableSupplyTokenDefinitionParticle(
-			RRI.of(api.getAddress(), "JOSH"),
-			"Joshy Token",
-			"Coolest token",
-			UInt256.ONE,
-			null,
-			null,
-			ImmutableMap.of(
-				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-				TokenTransition.BURN, TokenPermission.NONE
-			)
-		);
-
-		groups.add(ParticleGroup.builder()
-			.spinUp(unallocatedParticle0)
-			.spinUp(unallocatedParticle1)
-			.spinUp(tokenDefinitionParticle)
-			.build()
-		);
-
-		TxLowLevelBuilder unsignedAtom = api.buildAtomWithFee(groups);
-
-		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.addSignature(unsignedAtom)
-			.flatMapObservable(a -> api.submitAtom(a).toObservable());
-
+		var builder = TxLowLevelBuilder.newBuilder()
+			.up(unallocatedParticle)
+			.particleGroup();
+		var atom = api.getIdentity().addSignature(builder).blockingGet();
+		var updates = api.submitAtom(atom).toObservable();
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
 		updates
 			.doOnNext(System.out::println)

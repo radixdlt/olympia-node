@@ -20,7 +20,6 @@ package com.radixdlt.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
