@@ -141,7 +141,7 @@ public class BalanceEntry {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public final boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -150,7 +150,6 @@ public class BalanceEntry {
 			var entry = (BalanceEntry) o;
 
 			return negative == entry.negative
-				&& serializer == entry.serializer
 				&& owner.equals(entry.owner)
 				&& Objects.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
@@ -161,8 +160,8 @@ public class BalanceEntry {
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(serializer, owner, delegate, rri, granularity, amount, negative);
+	public final int hashCode() {
+		return Objects.hash(owner, delegate, rri, granularity, amount, negative);
 	}
 
 	@Override
