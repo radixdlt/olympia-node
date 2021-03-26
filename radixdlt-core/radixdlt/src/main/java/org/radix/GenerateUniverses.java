@@ -161,33 +161,38 @@ public final class GenerateUniverses {
 
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
 
-//			final List<String> listOfValidators= Optional
-//				.ofNullable(System.getenv("NODE_NAME_PREFIX"))
-//				.orElse( new ArrayList<String>());
+			final String listOfValidatorsEnv= Optional
+				.ofNullable(
+					(System.getenv("NODE_NAMES")))
+				.orElse( "");
+
+			final List<String> listOfValidators= !listOfValidatorsEnv.trim().equals("") ?
+				new ArrayList<String>(Arrays.asList(listOfValidatorsEnv.split(","))): new ArrayList<>();
 
 			if (stakes.isEmpty()) {
 				throw new IllegalArgumentException("Must specify at least one staking amount");
 			}
-			if (validatorsCount <= 0) {
+			if (validatorsCount <= 0  && listOfValidators.size() <= 0) {
 				throw new IllegalArgumentException("There must be at least one validator");
 			}
 
-			//check for the environment variable and if exists, create keys using the names from the environment variable else using the validator count
-
 			final ImmutableList<KeyDetails> keyDetails;
-//			if( validatorsCount > 0) {
-//				keyDetails = getValidatorKeys(validatorsCount);
-//			}else{
-//				keyDetails = getValidatorKeys(validatorList);
-//			}
+			final ImmutableList<KeyDetails> keysDetailsWithStakeDelegation;
+			if(validatorsCount > 0){
+				keyDetails = getValidatorKeys(validatorsCount);
+				keysDetailsWithStakeDelegation = getStakeDelegation(keyDetails, stakes);
 
-			keyDetails = getValidatorKeys(validatorsCount);
+			}else {
+				keyDetails = getValidatorKeys(listOfValidators);
+				keysDetailsWithStakeDelegation = getStakeDelegationUsingExistingKeyList(keyDetails, stakes);
+			}
 
 			final ImmutableList<ECKeyPair> validatorKeys = keyDetails.stream()
 				.map(KeyDetails::getKeyPair)
 				.collect(ImmutableList.toImmutableList());
 
-			final ImmutableList<KeyDetails> keysDetailsWithStakeDelegation = getStakeDelegation(keyDetails, stakes);
+
+
 			final ImmutableList<StakeDelegation> stakeDelegations = keysDetailsWithStakeDelegation.stream()
 				.map(KeyDetails::getStakeDelegation)
 				.collect(ImmutableList.toImmutableList());
@@ -350,16 +355,16 @@ public final class GenerateUniverses {
 			}
 		).collect(ImmutableList.toImmutableList());
 	}
-//
-//	private static ImmutableList<KeyDetails> getStakeDelegation(List<KeyDetails> keyDetails, List<UInt256> stakes,boolean existingList) {
-//		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
-//		return keyDetails.stream().map(
-//			keyDetail -> {
-//				String keypath = keyDetail.getNodeName() + "staker.ks";
-//				return getStakeDelegationMap(stakesCycle, keypath, keyDetail);
-//			}
-//		).collect(ImmutableList.toImmutableList());
-//	}
+
+	private static ImmutableList<KeyDetails> getStakeDelegationUsingExistingKeyList(List<KeyDetails> keyDetails, List<UInt256> stakes) {
+		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+		return keyDetails.stream().map(
+			keyDetail -> {
+				String stakerKeypath = String.format("%s_staker.ks",keyDetail.getNodeName());
+				return getStakeDelegationMap(stakesCycle, stakerKeypath, keyDetail);
+			}
+		).collect(ImmutableList.toImmutableList());
+	}
 
 	private static KeyDetails getStakeDelegationMap(Iterator<UInt256> stakesCycle, String keypath, KeyDetails validator) {
 		try {
