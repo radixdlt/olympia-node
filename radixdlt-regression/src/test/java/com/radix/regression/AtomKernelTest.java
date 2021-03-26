@@ -19,7 +19,7 @@ package com.radix.regression;
 
 import com.google.common.base.Strings;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -88,8 +88,8 @@ public class AtomKernelTest {
 			1 << 20,
 			true,
 			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
 		);
 
@@ -105,8 +105,8 @@ public class AtomKernelTest {
 			10,
 			false,
 			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
 		);
 		observer.awaitCount(1);
@@ -125,7 +125,7 @@ public class AtomKernelTest {
 	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 		String message = Strings.repeat("X", messageSize);
 		if (addFee) {
@@ -157,7 +157,7 @@ public class AtomKernelTest {
 	private TestObserver<?> submitAtom(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 
 		String message = Strings.repeat("X", messageSize);

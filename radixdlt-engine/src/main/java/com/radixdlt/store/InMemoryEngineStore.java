@@ -17,14 +17,12 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -38,7 +36,7 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
-	private final Map<HashCode, Pair<CMMicroInstruction, Atom>> storedParticles = new HashMap<>();
+	private final Map<SubstateId, Pair<CMMicroInstruction, Atom>> storedParticles = new HashMap<>();
 	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
 	private final Set<Atom> atoms = new HashSet<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
@@ -50,14 +48,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
 					var particle = microInstruction.getParticle();
-					final HashCode particleHash;
+					final SubstateId substateId;
 					if (particle != null) {
-						particleHash = HashUtils.sha256(serialization.toDson(particle, DsonOutput.Output.ALL));
+						substateId = SubstateId.of(particle);
 					} else {
-						particleHash = microInstruction.getParticleHash();
+						substateId = microInstruction.getParticleId();
 					}
 					storedParticles.put(
-						particleHash,
+						substateId,
 						Pair.of(microInstruction, atom)
 					);
 					inOrderParticles.add(Pair.of(microInstruction.getParticle(), nextSpin));
@@ -104,21 +102,20 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 	@Override
 	public Spin getSpin(Transaction txn, Particle particle) {
-		var particleHash = HashUtils.sha256(serialization.toDson(particle, DsonOutput.Output.ALL));
-		return getSpin(particleHash);
+		return getSpin(SubstateId.of(particle));
 	}
 
-	public Spin getSpin(HashCode particleHash) {
+	public Spin getSpin(SubstateId substateId) {
 		synchronized (lock) {
-			var stored = storedParticles.get(particleHash);
+			var stored = storedParticles.get(substateId);
 			return stored == null ? Spin.NEUTRAL : stored.getFirst().getNextSpin();
 		}
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
-			var stored = storedParticles.get(particleHash);
+			var stored = storedParticles.get(substateId);
 			if (stored == null || stored.getFirst().getNextSpin() != Spin.UP) {
 				return Optional.empty();
 			}
@@ -126,5 +123,4 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			return Optional.of(stored.getFirst().getParticle());
 		}
 	}
-
 }

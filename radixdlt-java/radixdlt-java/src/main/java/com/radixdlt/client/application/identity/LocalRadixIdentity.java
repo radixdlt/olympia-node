@@ -26,7 +26,7 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.crypto.exception.CryptoException;
 
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 
@@ -40,7 +40,7 @@ public class LocalRadixIdentity implements RadixIdentity {
 	}
 
 	@Override
-	public Single<Atom> addSignature(AtomBuilder builder) {
+	public Single<Atom> addSignature(TxLowLevelBuilder builder) {
 		return Single.create(emitter -> {
 			final Atom signedAtom = builder.signAndBuild(this.myKey::sign);
 			emitter.onSuccess(signedAtom);

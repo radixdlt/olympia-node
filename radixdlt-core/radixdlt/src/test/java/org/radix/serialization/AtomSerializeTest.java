@@ -34,7 +34,7 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 
 		// add a particle to ensure atom is valid and has at least one shard
 		return Atom.newBuilder()
-			.virtualSpinDown(new RRIParticle(rri))
+			.virtualDown(new RRIParticle(rri))
 			.particleGroup()
 			.buildWithoutSignature();
 	}

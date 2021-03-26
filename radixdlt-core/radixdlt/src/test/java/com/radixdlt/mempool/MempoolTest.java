@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -101,14 +101,14 @@ public class MempoolTest {
 	private static Atom createAtom(ECKeyPair keyPair, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		AtomBuilder atomBuilder = Atom.newBuilder();
+		TxLowLevelBuilder atomBuilder = Atom.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			RRI rri = RRI.of(address, "test" + i);
 			RRIParticle rriParticle = new RRIParticle(rri, nonce);
 			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
 			atomBuilder
-				.virtualSpinDown(rriParticle)
-				.spinUp(uniqueParticle);
+				.virtualDown(rriParticle)
+				.up(uniqueParticle);
 		}
 		atomBuilder.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);

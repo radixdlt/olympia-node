@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
@@ -58,9 +58,9 @@ public class FeeTableTest {
 	public void testFeeForAtomNotMinimum() {
 		FeeTable ft = get();
 		var atom = Atom.newBuilder()
-			.spinUp(makeParticle("test message 1"))
+			.up(makeParticle("test message 1"))
 			.particleGroup()
-			.spinUp(makeParticle("test message 2"))
+			.up(makeParticle("test message 2"))
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -71,7 +71,7 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		AtomBuilder a = Atom.newBuilder();
+		TxLowLevelBuilder a = Atom.newBuilder();
 		Atom ca = a.buildWithoutSignature();
 		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
@@ -85,7 +85,7 @@ public class FeeTableTest {
 		);
 		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
 		Atom atom = Atom.newBuilder()
-			.spinUp(makeParticle("test message 3"))
+			.up(makeParticle("test message 3"))
 			.particleGroup()
 			.buildWithoutSignature();
 		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());

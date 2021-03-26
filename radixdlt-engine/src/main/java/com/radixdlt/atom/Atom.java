@@ -66,12 +66,8 @@ public final class Atom {
 	private final ImmutableList<CMMicroInstruction> instructions;
 	private final HashCode witness;
 
-	public static AtomBuilder newBuilder() {
-		return new AtomBuilder();
-	}
-
-	public static AtomBuilder newBuilder(List<Particle> upParticles) {
-		return new AtomBuilder(upParticles);
+	public static TxLowLevelBuilder newBuilder() {
+		return new TxLowLevelBuilder();
 	}
 
 	@JsonCreator
@@ -144,7 +140,7 @@ public final class Atom {
 					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
 					additional = Stream.of(particleDson);
 				} else if (i.getMicroOp() == CMMicroOp.SPIN_DOWN) {
-					byte[] particleHash = i.getParticleHash().asBytes();
+					byte[] particleHash = i.getParticleId().asBytes();
 					additional = Stream.of(particleHash);
 				} else {
 					throw new IllegalStateException();
@@ -185,8 +181,8 @@ public final class Atom {
 
 				instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
 			} else if (bytes[0] == CMMicroOp.SPIN_DOWN.opCode()) {
-				var particleHash = HashCode.fromBytes(bytesIterator.next());
-				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));
+				var particleId = SubstateId.fromBytes(bytesIterator.next());
+				instructionsBuilder.add(CMMicroInstruction.spinDown(particleId));
 			} else {
 				throw new IllegalStateException();
 			}

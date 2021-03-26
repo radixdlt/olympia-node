@@ -24,6 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.atomos.RRIParticle;
@@ -104,7 +105,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
-			.spinDown(unallocated)
+			.spinDown(SubstateId.of(unallocated))
 			.spinUp(minted);
 
 		final UInt256 leftOver = UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()));

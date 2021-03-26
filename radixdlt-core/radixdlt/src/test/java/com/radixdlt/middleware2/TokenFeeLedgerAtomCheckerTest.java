@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -68,7 +69,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		final var rri = RRI.of(address, "test");
 		final var rriParticle = new RRIParticle(rri);
 		var atom = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
+			.virtualDown(rriParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
@@ -86,7 +87,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		var atom = Atom.newBuilder()
-			.spinUp(particle)
+			.up(particle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -105,11 +106,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.spinUp(particle1)
+			.up(particle1)
 			.particleGroup()
-			.spinUp(unallocatedParticle)
-			.spinDown(tokenInputParticle)
-			.spinUp(tokenOutputParticle)
+			.up(unallocatedParticle)
+			.down(SubstateId.of(tokenInputParticle))
+			.up(tokenOutputParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -125,10 +126,10 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.spinUp(particle1)
+			.up(particle1)
 			.particleGroup()
-			.spinUp(unallocatedParticle)
-			.spinDown(tokenInputParticle)
+			.up(unallocatedParticle)
+			.down(SubstateId.of(tokenInputParticle))
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -145,11 +146,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		UniqueParticle extraFeeGroupParticle = new UniqueParticle("BAR", address, 0L);
 		var atom = Atom.newBuilder()
-			.spinUp(particle1)
+			.up(particle1)
 			.particleGroup()
-			.spinUp(unallocatedParticle)
-			.spinDown(tokenInputParticle)
-			.spinUp(extraFeeGroupParticle)
+			.up(unallocatedParticle)
+			.down(SubstateId.of(tokenInputParticle))
+			.up(extraFeeGroupParticle)
 			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
@@ -167,11 +168,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle particle4 = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		var atom = Atom.newBuilder()
-			.spinUp(particle1)
+			.up(particle1)
 			.particleGroup()
-			.spinUp(particle2)
-			.spinDown(particle3)
-			.spinUp(particle4)
+			.up(particle2)
+			.down(SubstateId.of(particle3))
+			.up(particle4)
 			.particleGroup()
 			.buildWithoutSignature();
 

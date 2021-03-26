@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -30,10 +29,10 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -196,8 +195,8 @@ public class RadixEngineStateComputerTest {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		Atom atom = Atom.newBuilder()
-			.spinDown(lastSystemParticle)
-			.spinUp(nextSystemParticle)
+			.down(SubstateId.of(lastSystemParticle))
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
@@ -205,21 +204,14 @@ public class RadixEngineStateComputerTest {
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
-	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
-			address, ImmutableSet.of(), 1
-		);
-		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
-			address, 0
-		);
-		AtomBuilder builder = Atom.newBuilder()
-			.virtualSpinDown(unregisteredValidatorParticle)
-			.spinUp(registeredValidatorParticle)
-			.particleGroup();
-		var atom = builder.signAndBuild(keyPair::sign);
+	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var atom = TxBuilder.newBuilder(address)
+			.registerAsValidator()
+			.signAndBuild(keyPair::sign);
+
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		Command cmd = new Command(payload);
+		var cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
@@ -251,7 +243,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() {
+	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
@@ -270,7 +262,7 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	@Ignore("Difficult to include staking. Refactor then reenable")
-	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
+	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() throws Exception {
 		// Arrange
 		RadixEngineCommand cmd = registerCommand(unregisteredNode);
 		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
@@ -337,7 +329,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_additional_cmds_should_fail() {
+	public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
@@ -363,7 +355,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_different_validator_signed_should_fail() {
+	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);

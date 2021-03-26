@@ -29,7 +29,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -108,7 +107,7 @@ public class AtomsServiceTest {
 		var particle = new UniqueParticle("particle message", address, 0);
 
 		var atom = Atom.newBuilder()
-			.spinUp(particle)
+			.up(particle)
 			.particleGroup()
 			.message("Test message")
 			.buildWithoutSignature();

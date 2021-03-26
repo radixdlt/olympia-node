@@ -20,84 +20,57 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
- * Builder class for atom creation
+ * Low level builder class for transactions
  */
-public final class AtomBuilder {
+public final class TxLowLevelBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
-	private final Map<HashCode, Particle> localUpParticles = new HashMap<>();
-	private final Map<HashCode, Particle> remoteUpParticles = new HashMap<>();
+	private final Map<SubstateId, Particle> localUpParticles = new HashMap<>();
 
-	AtomBuilder(List<Particle> upParticles) {
-		for (var p : upParticles) {
-			var dson = DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
-			var particleHash = HashUtils.sha256(dson);
-			remoteUpParticles.put(particleHash, p);
-		}
+	TxLowLevelBuilder() {
 	}
 
-	AtomBuilder() {
-	}
-
-	public AtomBuilder message(String message) {
+	public TxLowLevelBuilder message(String message) {
 		this.message = message;
 		return this;
 	}
 
-	public Stream<Particle> localUpParticles() {
-		return localUpParticles.values().stream();
+	public List<Particle> localUpParticles() {
+		return new ArrayList<>(localUpParticles.values());
 	}
 
-	public Stream<Particle> allUpParticles() {
-		return Stream.concat(localUpParticles.values().stream(), remoteUpParticles.values().stream());
-	}
-
-	public AtomBuilder spinUp(Particle particle) {
+	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.spinUp(particle));
-		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		localUpParticles.put(particleHash, particle);
+		localUpParticles.put(SubstateId.of(particle), particle);
 		return this;
 	}
 
-	public AtomBuilder virtualSpinDown(Particle particle) {
+	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
 		return this;
 	}
 
-	public AtomBuilder spinDown(Particle particle) {
-		Objects.requireNonNull(particle, "particle is required");
-		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		return spinDown(particleHash);
-	}
-
-	public AtomBuilder spinDown(HashCode particleHash) {
-		Objects.requireNonNull(particleHash, "particleHash is required");
-		this.instructions.add(CMMicroInstruction.spinDown(particleHash));
-		localUpParticles.remove(particleHash);
-		remoteUpParticles.remove(particleHash);
+	public TxLowLevelBuilder down(SubstateId substateId) {
+		this.instructions.add(CMMicroInstruction.spinDown(substateId));
+		localUpParticles.remove(substateId);
 		return this;
 	}
 
-	public AtomBuilder particleGroup() {
+	public TxLowLevelBuilder particleGroup() {
 		this.instructions.add(CMMicroInstruction.particleGroup());
 		return this;
 	}

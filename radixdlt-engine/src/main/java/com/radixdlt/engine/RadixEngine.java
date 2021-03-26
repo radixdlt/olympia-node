@@ -17,8 +17,8 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -145,8 +145,8 @@ public final class RadixEngine<M> {
 			}
 
 			@Override
-			public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
-				return engineStore.loadUpParticle(txn, particleHash);
+			public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+				return engineStore.loadUpParticle(txn, substateId);
 			}
 		};
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -274,8 +274,9 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private HashMap<HashCode, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		var downedParticles = new HashMap<HashCode, Particle>();
+	private HashMap<SubstateId, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
+		throws RadixEngineException {
+		var downedParticles = new HashMap<SubstateId, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
 			virtualizedCMStore,
@@ -366,7 +367,7 @@ public final class RadixEngine<M> {
 
 				final Particle particle;
 				if (microInstruction.getParticle() == null) {
-					particle = downedParticles.get(microInstruction.getParticleHash());
+					particle = downedParticles.get(microInstruction.getParticleId());
 					if (particle == null) {
 						throw new IllegalStateException();
 					}

@@ -68,9 +68,9 @@ public class TokensTest {
 			ImmutableMap.of()
 		);
 		var builder = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(tokenDefinitionParticle)
-			.spinUp(transferrableTokensParticle)
+			.virtualDown(rriParticle)
+			.up(tokenDefinitionParticle)
+			.up(transferrableTokensParticle)
 			.particleGroup();
 		var atom = builder.signAndBuild(keyPair::sign);
 

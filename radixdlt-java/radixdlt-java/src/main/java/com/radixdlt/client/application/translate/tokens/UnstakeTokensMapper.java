@@ -23,6 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -94,7 +95,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(sp.getParticle());
+					builder.spinDown(SubstateId.of(sp.getParticle()));
 				}
 			});
 

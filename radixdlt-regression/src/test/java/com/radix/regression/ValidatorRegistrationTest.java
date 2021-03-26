@@ -21,6 +21,7 @@ package com.radix.regression;
 import com.google.common.collect.ImmutableSet;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -28,7 +29,7 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.Atoms;
@@ -121,9 +122,9 @@ public class ValidatorRegistrationTest {
 	public void when_registering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(new RegisteredValidatorParticle(address, 1))
-				.spinDown(new RegisteredValidatorParticle(address, 2))
+				.virtualDown(new UnregisteredValidatorParticle(address, 0))
+				.down(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
+				.down(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
 				.particleGroup()
 		);
 
@@ -136,8 +137,8 @@ public class ValidatorRegistrationTest {
 	public void when_unregistering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
-				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(new UnregisteredValidatorParticle(address, 1))
+				.virtualDown(new UnregisteredValidatorParticle(address, 0))
+				.down(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
 				.particleGroup()
 		);
 
@@ -146,13 +147,13 @@ public class ValidatorRegistrationTest {
 		observer.dispose();
 	}
 
-	private TestObserver<AtomStatusEvent> submitAtom(AtomBuilder atomBuilder) {
+	private TestObserver<AtomStatusEvent> submitAtom(TxLowLevelBuilder atomBuilder) {
 		return submitAtom(true, atomBuilder);
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 		String message = null;
 		if (addFee) {

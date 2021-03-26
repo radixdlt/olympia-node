@@ -230,7 +230,7 @@ public class GetNextCommittedCommandsTest {
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
 		final var atom = Atom.newBuilder()
 			.message("Atom for " + stateVersion)
-			.spinUp(new RRIParticle(rri))
+			.up(new RRIParticle(rri))
 			.particleGroup()
 			.buildWithoutSignature();
 

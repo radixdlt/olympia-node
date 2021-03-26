@@ -18,30 +18,32 @@
 
 package com.radixdlt.application.validator;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.fees.FeeTable;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
 
 /**
  * Registers/Unregisters self as a validator by submitting request
@@ -49,6 +51,9 @@ import java.math.BigDecimal;
  */
 public final class ValidatorRegistrator {
 	private static final Logger logger = LogManager.getLogger();
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3)
+		.multiply(UInt256.from(50));
+
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final RadixAddress self;
 	private final HashSigner hashSigner;
@@ -59,15 +64,19 @@ public final class ValidatorRegistrator {
 	@Inject(optional = true)
 	private FeeTable feeTable;
 
+	private final RRI tokenRRI;
+
 	@Inject
 	public ValidatorRegistrator(
 		@Self RadixAddress self,
+		@NativeToken RRI tokenRRI,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
+		this.tokenRRI = tokenRRI;
 		this.hashSigner = hashSigner;
 		this.serialization = serialization;
 		this.radixEngine = radixEngine;
@@ -80,45 +89,32 @@ public final class ValidatorRegistrator {
 
 	private void process(ValidatorRegistration registration) {
 		var validatorState = radixEngine.getComputedState(ValidatorState.class);
-		if (registration.isRegister() == validatorState.isRegistered()) {
-			logger.warn("Node is already {}", registration.isRegister() ? "registered." : "unregistered.");
+
+		var particles = new ArrayList<Particle>();
+		particles.add(validatorState.currentParticle());
+		if (feeTable != null) {
+			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+			particles.addAll(wallet.particles());
+		}
+		var txBuilder = TxBuilder.newBuilder(self, particles);
+
+		try {
+			if (registration.isRegister()) {
+				txBuilder.registerAsValidator();
+			} else {
+				txBuilder.unregisterAsValidator();
+			}
+
+			if (feeTable != null) {
+				txBuilder.burnForFee(tokenRRI, FEE);
+			}
+		} catch (TxBuilderException e) {
+			logger.warn(e.getMessage());
 			return;
 		}
 
-		var atomBuilder = Atom.newBuilder();
-		validatorState.ifUnregisteredElse(
-			nonce -> {
-				var unregisterParticle = new UnregisteredValidatorParticle(self, nonce);
-				if (nonce == 0) {
-					atomBuilder.virtualSpinDown(unregisterParticle);
-				} else {
-					atomBuilder.spinDown(unregisterParticle);
-				}
-				atomBuilder.spinUp(new RegisteredValidatorParticle(self, ImmutableSet.of(), nonce + 1));
-			},
-			r -> ParticleGroup.builder()
-				.spinDown(r)
-				.spinUp(new UnregisteredValidatorParticle(self, r.getNonce() + 1))
-				.build()
-		);
-		atomBuilder.particleGroup();
-
-		if (feeTable != null) {
-			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			boolean success = wallet.createFeeGroup(atomBuilder);
-			if (!success) {
-				BigDecimal balance = wallet.getBalance();
-				logger.warn("Cannot {} since balance too low: {}",
-					registration.isRegister() ? "register" : "unregister",
-					balance
-				);
-				return;
-			}
-		}
-
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
-
-		var atom = atomBuilder.signAndBuild(hashSigner::sign);
+		var atom = txBuilder.signAndBuild(hashSigner::sign);
 		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 		var command = new Command(payload);
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

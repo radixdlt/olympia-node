@@ -16,25 +16,19 @@
  *
  */
 
-package com.radixdlt.client.fees;
+package com.radixdlt.atom;
 
-import java.util.Set;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.utils.UInt256;
+public class SubstateIdTest {
 
-/**
- * Fee entry.
- */
-public interface FeeEntry {
-	/**
-	 * Compute the fee for the specified atom with the specified outputs.
-	 *
-	 * @param atom The atom to compute the partial fee for
-	 * @param feeSize The size of the atom for fee calculation purposes
-	 * @param outputs The atom's output particles
-	 * @return The fee
-	 */
-	UInt256 feeFor(TxLowLevelBuilder atom, int feeSize, Set<Particle> outputs);
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(SubstateId.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

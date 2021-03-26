@@ -20,6 +20,8 @@ package com.radixdlt.application.faucet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
@@ -53,6 +55,8 @@ public final class Faucet {
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final RRI nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+
 
 	@Inject
 	public Faucet(
@@ -76,23 +80,19 @@ public final class Faucet {
 
 		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 
-		wallet.createTransaction(request.getAddress(), amount)
-			.ifPresentOrElse(
-				builder -> {
-					log.info("Faucet sending tokens to {}", request.getAddress());
-
-					builder.message(String.format("Sent you %s %s", amount, nativeToken.getName()));
-					var atom = builder.signAndBuild(hashSigner::sign);
-					var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-					var command = new Command(payload);
-					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-					request.onSuccess(command.getId());
-				},
-				() -> {
-					log.info("Faucet not enough funds to fulfill request {}", request);
-					request.onFailure("Not enough funds in Faucet.");
-				}
-			);
+		try {
+			var atom = TxBuilder.newBuilder(self, wallet.particleList())
+				.transferNative(nativeToken, request.getAddress(), amount)
+				.burnForFee(nativeToken, FEE)
+				.signAndBuild(hashSigner::sign);
+			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+			var command = new Command(payload);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+			request.onSuccess(command.getId());
+		} catch (TxBuilderException e) {
+			log.error("Faucet failed to fulfil request {}", request, e);
+			request.onFailure(e.getMessage());
+		}
 	}
 
 	public EventProcessor<FaucetRequest> requestEventProcessor() {
