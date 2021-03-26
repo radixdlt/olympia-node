@@ -158,14 +158,11 @@ public final class GenerateUniverses {
 			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
 			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
 			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
-
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
-
 			final String listOfValidatorsEnv= Optional
 				.ofNullable(
 					(System.getenv("NODE_NAMES")))
 				.orElse( "");
-
 			final List<String> listOfValidators= !listOfValidatorsEnv.trim().equals("") ?
 				new ArrayList<String>(Arrays.asList(listOfValidatorsEnv.split(","))): new ArrayList<>();
 
@@ -181,7 +178,6 @@ public final class GenerateUniverses {
 			if(validatorsCount > 0){
 				keyDetails = getValidatorKeys(validatorsCount);
 				keysDetailsWithStakeDelegation = getStakeDelegation(keyDetails, stakes);
-
 			}else {
 				keyDetails = getValidatorKeys(listOfValidators);
 				keysDetailsWithStakeDelegation = getStakeDelegationUsingExistingKeyList(keyDetails, stakes);
@@ -190,9 +186,6 @@ public final class GenerateUniverses {
 			final ImmutableList<ECKeyPair> validatorKeys = keyDetails.stream()
 				.map(KeyDetails::getKeyPair)
 				.collect(ImmutableList.toImmutableList());
-
-
-
 			final ImmutableList<StakeDelegation> stakeDelegations = keysDetailsWithStakeDelegation.stream()
 				.map(KeyDetails::getStakeDelegation)
 				.collect(ImmutableList.toImmutableList());
@@ -351,7 +344,7 @@ public final class GenerateUniverses {
 				String stakerKeypath = String.format(STAKER_TEMPLATE, n);
 				var validator = keyDetails.get(n);
 				validator.setNodeName(nodeName);
-				return getStakeDelegationMap(stakesCycle, stakerKeypath, validator);
+				return getStakeDelegation(stakesCycle, stakerKeypath, validator);
 			}
 		).collect(ImmutableList.toImmutableList());
 	}
@@ -360,21 +353,21 @@ public final class GenerateUniverses {
 		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
 		return keyDetails.stream().map(
 			keyDetail -> {
-				String stakerKeypath = String.format("%s_staker.ks",keyDetail.getNodeName());
-				return getStakeDelegationMap(stakesCycle, stakerKeypath, keyDetail);
+				String stakerKeyStore = String.format("%s_staker.ks",keyDetail.getNodeName());
+				return getStakeDelegation(stakesCycle, stakerKeyStore, keyDetail);
 			}
 		).collect(ImmutableList.toImmutableList());
 	}
 
-	private static KeyDetails getStakeDelegationMap(Iterator<UInt256> stakesCycle, String keypath, KeyDetails validator) {
+	private static KeyDetails getStakeDelegation(Iterator<UInt256> stakesCycle, String keyStore, KeyDetails validator) {
 		try {
-			final ECKeyPair stakerKey = Keys.readKey(keypath,
+			final ECKeyPair stakerKey = Keys.readKey(keyStore,
 				"wallet",
 				"RADIX_STAKER_KEYSTORE_PASSWORD",
 				"RADIX_STAKER_KEY_PASSWORD");
 			StakeDelegation stakeDelegation = StakeDelegation.of(stakerKey, validator.getKeyPair().getPublicKey(), stakesCycle.next());
 			validator.setStakeDelegation(stakeDelegation);
-			validator.setStakerKeyPairName(keypath);
+			validator.setStakerKeyStore(keyStore);
 			return validator;
 		} catch (CryptoException | IOException e) {
 			throw new IllegalStateException("While reading staker keys", e);
@@ -432,8 +425,8 @@ public final class GenerateUniverses {
 
 					validator.put("node",i);
 					validator.put("host",keys.get(i).getNodeName());
-					validator.put("validatorKeypath",keys.get(i).getValidatorKeyPairName());
-					validator.put("stakerKeypath",keys.get(i).getStakerKeyPairName());
+					validator.put("validatorKeyStore",keys.get(i).getValidatorKeyStore());
+					validator.put("stakerKeyStore",keys.get(i).getStakerKeyStore());
 					if (template.startsWith(VALIDATOR_PREFIX)) {
 						validator.put("seedsRemote", "");
 						validator.put("privateKey", Bytes.toBase64String(keys.get(i).getKeyPair().getPrivateKey()));
@@ -610,16 +603,14 @@ public final class GenerateUniverses {
 			String keyFile,secretName,keyFileSecretName;
 			if(template.startsWith("STAKER")){
 				 keyData = v.get("stakingKey");
-//				 keyFile = String.format("staker%s.ks", (int) v.get("node"));
-				 keyFile = (String) v.get("validatorKeypath"); // keyfile name is from the
+				 keyFile = (String) v.get("stakerKeyStore"); // keyfile name is from the
 				 secretName = String.format("%s/%s/staker", awsSecretsOutputOptions.getNetworkName(), name);
 				 keyFileSecretName = String.format("%s/%s/staker_key", awsSecretsOutputOptions.getNetworkName(), name);
 
 			}
 			else if(template.startsWith(validatorPrefix)){
 				 keyData = v.get("privateKey");
-//				 keyFile = String.format("validator%s.ks", (int) v.get("node"));
-				 keyFile = (String) v.get("stakerKeypath"); // keyfile name is from the
+				 keyFile = (String) v.get("validatorKeyStore"); // keyfile name is from the
 				 secretName = String.format("%s/%s/validator", awsSecretsOutputOptions.getNetworkName(), name);
 				 keyFileSecretName = String.format("%s/%s/validator_key", awsSecretsOutputOptions.getNetworkName(), name);
 			}
@@ -650,14 +641,14 @@ public final class GenerateUniverses {
 class KeyDetails {
 
 	private String nodeName;
-	private String validatorKeyPairName;
-	private String stakerKeyPairName;
+	private String validatorKeyStore;
+	private String stakerKeyStore;
 	private ECKeyPair keyPair;
 	private StakeDelegation stakeDelegation;
-	KeyDetails(String nodeName, ECKeyPair keyPair,String validatorKeyPairName){
+	KeyDetails(String nodeName, ECKeyPair keyPair,String validatorKeyStore){
 		this.nodeName = nodeName;
 		this.keyPair = keyPair;
-		this.validatorKeyPairName = validatorKeyPairName;
+		this.validatorKeyStore = validatorKeyStore;
 	}
 
 	public void setStakeDelegation(StakeDelegation stakeDelegation) {
@@ -679,15 +670,15 @@ class KeyDetails {
 		return stakeDelegation;
 	}
 
-	public String getValidatorKeyPairName() {
-		return validatorKeyPairName;
+	public String getValidatorKeyStore() {
+		return validatorKeyStore;
 	}
 
-	public String getStakerKeyPairName() {
-		return stakerKeyPairName;
+	public String getStakerKeyStore() {
+		return stakerKeyStore;
 	}
 
-	public void setStakerKeyPairName(String stakerKeyPairName) {
-		this.stakerKeyPairName = stakerKeyPairName;
+	public void setStakerKeyStore(String stakerKeyStore) {
+		this.stakerKeyStore = stakerKeyStore;
 	}
 }
