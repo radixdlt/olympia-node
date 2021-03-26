@@ -256,8 +256,15 @@ public final class TxBuilder {
 		String errorMessage
 	) {
 		return mapper -> {
-			up(mapper.map(amount));
-			var remainder = downFungible(particleClass, particlePredicate, amountMapper, amount, errorMessage);
+			var substateUp = mapper.map(amount);
+			up(substateUp);
+			var remainder = downFungible(
+				particleClass,
+				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
+				amountMapper,
+				amount,
+				errorMessage
+			);
 			if (!remainder.isZero()) {
 				up(remainderMapper.map(remainder));
 			}
