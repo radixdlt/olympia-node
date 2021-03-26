@@ -59,23 +59,21 @@ public class AWSSecrets {
 				usage(options);
 				return;
 			}
-			final String fullnodeNamesEnv= Optional.ofNullable(
-				(System.getenv("FULLNODE_NAMES")))
-				.orElse( "");
+			final String fullnodeNamesEnv = Optional.ofNullable((System.getenv("FULLNODE_NAMES"))).orElse("");
 			final List<String> listofFullNodes;
 
-			if(!fullnodeNamesEnv.trim().equals("")){
+			if (!fullnodeNamesEnv.trim().equals("")) {
 				List<String> rawlist = new ArrayList<String>(Arrays.asList(fullnodeNamesEnv.split(",")));
 				listofFullNodes = rawlist.stream()
-					.map(entry -> entry.replaceAll("[^\\w-]",""))
+					.map(entry -> entry.replaceAll("[^\\w-]", ""))
 					.collect(Collectors.toList());
-			}else{
+			} else {
 				listofFullNodes = new ArrayList<>();
 			}
 
 			final int fullNodeCount = Integer
 				.parseInt(getOption(cmd, 'n').orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes")));
-			if (fullNodeCount <= 0 && listofFullNodes.size() <=0) {
+			if (fullNodeCount <= 0 && listofFullNodes.size() <= 0) {
 				throw new IllegalArgumentException("There must be at least one full node");
 			}
 
@@ -87,15 +85,15 @@ public class AWSSecrets {
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
 				enableAwsSecrets, recreateAwsSecrets, networkName);
 			final List<String> fullnodes;
-			if(fullNodeCount>0){
+			if (fullNodeCount > 0) {
 				fullnodes = IntStream.range(0, fullNodeCount).mapToObj(counter -> {
 					return String.format("%s%s", namePrefix, counter);
 				}).collect(Collectors.toList());
-			}else{
+			} else {
 				fullnodes = listofFullNodes;
 			}
 
-			fullnodes.forEach( nodeName -> {
+			fullnodes.forEach(nodeName -> {
 				final String keyStoreName = String.format("%s.ks", nodeName);
 				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
