@@ -40,7 +40,6 @@ def networkName = properties.get('network-name', 'test')
 def enableAWSSecret = properties.get('enableAWSSecret', false)
 def recreateAWSSecret = properties.get('recreateAWSSecret', false)
 def nodeNamePrefix = properties.get('nodeNamePrefix',"node");
-def nodeList = properties.get('nodeList',"");
 startScripts {
     classpath = files('src/resources') + classpath
     // ^^ will prepend '$APP_HOME/lib/resources' to the classpath, which we'll use it as a pattern below
@@ -187,7 +186,7 @@ tasks.withType(Test){
 tasks.withType(Tar) {
     compression = Compression.GZIP
 }
-
+def nodeNames = System.getenv('NODE_NAMES') != null ? System.getenv('NODE_NAMES') :''
 task generateDevUniverse(type: Exec) {
     dependsOn compileJava
 
@@ -196,7 +195,7 @@ task generateDevUniverse(type: Exec) {
     dependsOn ':radixdlt-java-common:jar'
     dependsOn ':radixdlt-engine:jar'
     environment "NODE_NAME_PREFIX",nodeNamePrefix
-    environment "NODE_NAMES",nodeList
+    environment "NODE_NAMES",nodeNames
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
