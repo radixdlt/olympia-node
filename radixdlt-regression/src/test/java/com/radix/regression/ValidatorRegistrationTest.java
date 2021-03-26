@@ -121,7 +121,7 @@ public class ValidatorRegistrationTest {
 	@Test
 	public void when_registering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
-			Atom.newBuilder()
+			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new UnregisteredValidatorParticle(address, 0))
 				.down(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
 				.down(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
@@ -136,7 +136,7 @@ public class ValidatorRegistrationTest {
 	@Test
 	public void when_unregistering_twice__then_second_registration_fails() {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
-			Atom.newBuilder()
+			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new UnregisteredValidatorParticle(address, 0))
 				.down(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
 				.particleGroup()

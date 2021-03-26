@@ -68,7 +68,7 @@ public final class TxBuilder {
 		Iterable<Particle> upParticles
 	) {
 		this.address = address;
-		this.atomBuilder = Atom.newBuilder();
+		this.atomBuilder = TxLowLevelBuilder.newBuilder();
 		this.downParticles = new HashSet<>(downVirtualParticles);
 		this.upParticles = upParticles;
 	}

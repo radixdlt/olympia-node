@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -67,7 +68,7 @@ public class TokensTest {
 			rri,
 			ImmutableMap.of()
 		);
-		var builder = Atom.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(tokenDefinitionParticle)
 			.up(transferrableTokensParticle)

@@ -97,7 +97,7 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = Atom.newBuilder();
+				stagedAtom = TxLowLevelBuilder.newBuilder();
 				stagedAtoms.put(uuid, stagedAtom);
 			}
 

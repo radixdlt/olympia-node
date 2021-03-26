@@ -101,7 +101,7 @@ public class MempoolTest {
 	private static Atom createAtom(ECKeyPair keyPair, int nonce, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		TxLowLevelBuilder atomBuilder = Atom.newBuilder();
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			RRI rri = RRI.of(address, "test" + i);
 			RRIParticle rriParticle = new RRIParticle(rri, nonce);

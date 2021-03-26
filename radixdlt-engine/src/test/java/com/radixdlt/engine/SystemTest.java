@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.CMAtomOS;
@@ -64,7 +65,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -83,7 +84,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -100,7 +101,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_epoch_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(-1, 1, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -116,7 +117,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_view_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, -1, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -132,7 +133,7 @@ public class SystemTest {
 	public void executing_system_update_with_bad_timestamp_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -165,7 +166,7 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
@@ -182,7 +183,7 @@ public class SystemTest {
 	private void preconditionFailure(long epoch, long view) {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()

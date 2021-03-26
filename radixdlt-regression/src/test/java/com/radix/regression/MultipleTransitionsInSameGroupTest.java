@@ -268,7 +268,7 @@ public class MultipleTransitionsInSameGroupTest {
 
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		// Warning: fake fee using magic
-		TxLowLevelBuilder unsignedAtom = Atom.newBuilder();
+		var unsignedAtom = TxLowLevelBuilder.newBuilder();
 		for (var pg : particleGroups) {
 			for (CMMicroInstruction i : pg.getInstructions()) {
 				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {

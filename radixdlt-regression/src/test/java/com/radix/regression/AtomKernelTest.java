@@ -87,7 +87,7 @@ public class AtomKernelTest {
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
-			Atom.newBuilder()
+			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
 				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
@@ -104,7 +104,7 @@ public class AtomKernelTest {
 		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
 			10,
 			false,
-			Atom.newBuilder()
+			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
 				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
 				.particleGroup()
@@ -116,7 +116,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomEmpty() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(0, false, Atom.newBuilder());
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(0, false, TxLowLevelBuilder.newBuilder());
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
