@@ -207,7 +207,7 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws ActionTxException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var atom = ActionTxBuilder.newBuilder(address)
-			.validatorRegister()
+			.registerAsValidator()
 			.signAndBuild(keyPair::sign);
 
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);

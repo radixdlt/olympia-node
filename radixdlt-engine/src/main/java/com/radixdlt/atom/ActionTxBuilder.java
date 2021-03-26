@@ -163,6 +163,51 @@ public final class ActionTxBuilder {
 		return substateDown.get();
 	}
 
+	private interface Mapper<T extends Particle, U extends Particle> {
+		U map(T t) throws ActionTxException;
+	}
+
+	private interface Replacer<T extends Particle, U extends Particle> {
+		void with(Mapper<T, U> mapper) throws ActionTxException;
+	}
+
+	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		String errorMessage
+	) throws ActionTxException {
+		T t = down(particleClass, particlePredicate, errorMessage);
+		return replacer -> {
+			U u = replacer.map(t);
+			up(u);
+		};
+	}
+
+	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+		Class<T> particleClass,
+		Optional<T> virtualParticle,
+		String errorMessage
+	) throws ActionTxException {
+		T t = down(particleClass, virtualParticle, errorMessage);
+		return replacer -> {
+			U u = replacer.map(t);
+			up(u);
+		};
+	}
+
+	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Optional<T> virtualParticle,
+		String errorMessage
+	) throws ActionTxException {
+		T t = down(particleClass, particlePredicate, virtualParticle, errorMessage);
+		return replacer -> {
+			U u = replacer.map(t);
+			up(u);
+		};
+	}
+
 	private void assertHasAddress(String message) throws ActionTxException {
 		if (address == null) {
 			throw new ActionTxException(message);
@@ -178,16 +223,17 @@ public final class ActionTxBuilder {
 	public ActionTxBuilder systemNextView(long view, long timestamp) throws ActionTxException {
 		assertIsSystem("Not permitted as user to execute system next view");
 
-		var substateDown =
-			down(
-				SystemParticle.class,
-				Optional.of(new SystemParticle(0, 0, 0)),
-				"No System particle available"
-			);
-		if (view <= substateDown.getView()) {
-			throw new ActionTxException("Next view isn't higher than current view.");
-		}
-		up(new SystemParticle(substateDown.getEpoch(), view, timestamp));
+		replace(
+			SystemParticle.class,
+			Optional.of(new SystemParticle(0, 0, 0)),
+			"No System particle available"
+		).with(substateDown -> {
+			if (view <= substateDown.getView()) {
+				throw new ActionTxException("Next view isn't higher than current view.");
+			}
+			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
+		});
+
 		particleGroup();
 
 		return this;
@@ -196,43 +242,44 @@ public final class ActionTxBuilder {
 	public ActionTxBuilder systemNextEpoch(long timestamp) throws ActionTxException {
 		assertIsSystem("Not permitted as user to execute system next epoch");
 
-		var substateDown =
-			down(
-				SystemParticle.class,
-				Optional.of(new SystemParticle(0, 0, 0)),
-				"No System particle available"
-			);
-		up(new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
+		replace(
+			SystemParticle.class,
+			Optional.of(new SystemParticle(0, 0, 0)),
+			"No System particle available"
+		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
 		particleGroup();
 
 		return this;
 	}
 
-	public ActionTxBuilder validatorRegister() throws ActionTxException {
-		var substateDown =
-			down(
-				UnregisteredValidatorParticle.class,
-				p -> p.getAddress().equals(address),
-				Optional.of(new UnregisteredValidatorParticle(address, 0L)),
-				"Already a validator"
-			);
+	public ActionTxBuilder registerAsValidator() throws ActionTxException {
+		assertHasAddress("Must have address");
 
-		var substateUp = new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1);
-		up(substateUp);
+		replace(
+			UnregisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			Optional.of(new UnregisteredValidatorParticle(address, 0L)),
+			"Already a validator"
+		).with(
+			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1)
+		);
+
 		particleGroup();
 		return this;
 	}
 
-	public ActionTxBuilder validatorUnregister() throws ActionTxException {
-		var substateDown =
-			down(
-				RegisteredValidatorParticle.class,
-				p -> p.getAddress().equals(address),
-				"Already unregistered."
-			);
-		var substateUp = new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1);
-		up(substateUp);
+	public ActionTxBuilder unregisterAsValidator() throws ActionTxException {
+		assertHasAddress("Must have address");
+
+		replace(
+			RegisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			"Already unregistered."
+		).with(
+			substateDown -> new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1)
+		);
 		particleGroup();
+
 		return this;
 	}
 
@@ -262,19 +309,19 @@ public final class ActionTxBuilder {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, id);
-		down(
+		replace(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
-		);
-		up(new UniqueParticle(id, address, 1));
+		).with(rri -> new UniqueParticle(id, address, 1));
+
 		particleGroup();
 
 		return this;
 	}
 
-	public ActionTxBuilder createMutableToken(TokenDefinition tokenDefinition) throws ActionTxException {
+	public ActionTxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws ActionTxException {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
@@ -362,7 +409,6 @@ public final class ActionTxBuilder {
 			p -> p.getRRI().equals(rri),
 			"Could not find token rri " + rri
 		);
-
 		final var factory = TokDefParticleFactory.create(
 			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
 		);
@@ -395,14 +441,47 @@ public final class ActionTxBuilder {
 			UInt256.ONE
 		);
 
-		var substateDown = down(
+		replace(
 			RegisteredValidatorParticle.class,
 			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
 			"Cannot delegate to " + delegateAddress
+		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
+
+		up(factory.createStaked(delegateAddress, address, amount, random.nextLong()));
+		var remainder = downFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amount,
+			"Not enough balance to for transfer."
+		);
+		if (!remainder.isZero()) {
+			var remainderState = factory.createTransferrable(address, remainder, random.nextLong());
+			up(remainderState);
+		}
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws ActionTxException {
+		assertHasAddress("Must have an address.");
+
+		var tokenDefSubstate = find(
+			MutableSupplyTokenDefinitionParticle.class,
+			p -> p.getRRI().equals(rri),
+			"Could not find token rri " + rri
+		);
+		final var factory = TokDefParticleFactory.create(
+			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
 		);
 
-		var substateUp = substateDown.copyWithNonce(substateDown.getNonce() + 1);
-		up(substateUp);
+		replace(
+			RegisteredValidatorParticle.class,
+			p -> p.getAddress().equals(delegateAddress),
+			"Cannot find delegate " + delegateAddress
+		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
+
 		up(factory.createStaked(delegateAddress, address, amount, random.nextLong()));
 		var remainder = downFungible(
 			TransferrableTokensParticle.class,

@@ -28,7 +28,7 @@ import java.util.Objects;
 /**
  * Specifies high level parameters to a token definition
  */
-public final class TokenDefinition {
+public final class MutableTokenDefinition {
 	private final String symbol;
 	private final String name;
 	private final String description;
@@ -37,7 +37,7 @@ public final class TokenDefinition {
 	private final UInt256 granularity = UInt256.ONE;
 	private final Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions;
 
-	public TokenDefinition(
+	public MutableTokenDefinition(
 		String symbol,
 		String name,
 		String description,

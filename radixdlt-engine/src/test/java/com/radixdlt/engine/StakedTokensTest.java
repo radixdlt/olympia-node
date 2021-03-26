@@ -96,7 +96,7 @@ public class StakedTokensTest {
 		var atom0 = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		var atom1 = ActionTxBuilder.newBuilder(this.validatorAddress)
-			.validatorRegister()
+			.registerAsValidator()
 			.signAndBuild(this.validatorKeyPair::sign);
 
 		this.engine.execute(List.of(atom0, atom1));

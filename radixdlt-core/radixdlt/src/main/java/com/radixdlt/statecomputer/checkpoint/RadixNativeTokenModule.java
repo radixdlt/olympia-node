@@ -21,7 +21,7 @@ package com.radixdlt.statecomputer.checkpoint;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.atom.TokenDefinition;
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -41,8 +41,8 @@ public class RadixNativeTokenModule extends AbstractModule {
 
 	@Provides
 	@NativeToken
-	TokenDefinition tokenDefinition() {
-		return new TokenDefinition(
+	MutableTokenDefinition tokenDefinition() {
+		return new MutableTokenDefinition(
 			TokenDefinitionUtils.getNativeTokenShortCode(),
 			"Rads",
 			"Radix Native Tokens",

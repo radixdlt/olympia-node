@@ -100,9 +100,9 @@ public final class ValidatorRegistrator {
 
 		try {
 			if (registration.isRegister()) {
-				txBuilder.validatorRegister();
+				txBuilder.registerAsValidator();
 			} else {
-				txBuilder.validatorUnregister();
+				txBuilder.unregisterAsValidator();
 			}
 
 			if (feeTable != null) {

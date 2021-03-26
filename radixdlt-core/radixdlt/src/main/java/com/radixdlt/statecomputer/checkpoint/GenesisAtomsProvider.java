@@ -25,7 +25,7 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.atom.ActionTxException;
-import com.radixdlt.atom.TokenDefinition;
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
@@ -48,13 +48,13 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
-	private final TokenDefinition tokenDefinition;
+	private final MutableTokenDefinition tokenDefinition;
 
 	@Inject
 	public GenesisAtomsProvider(
 		@Named("magic") int magic,
 		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
-		@NativeToken TokenDefinition tokenDefinition,
+		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
@@ -109,7 +109,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
 				var validatorBuilder = ActionTxBuilder.newBuilder(validatorAddress);
 				var validatorAtom = validatorBuilder
-					.validatorRegister()
+					.registerAsValidator()
 					.signAndBuild(validatorKey::sign);
 				genesisAtoms.add(validatorAtom);
 
