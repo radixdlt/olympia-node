@@ -1274,38 +1274,6 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Add an action to the working area
-		 *
-		 * @param action action to add to the working area
-		 */
-		public void addToWorkingArea(Action action) {
-			workingArea.add(action);
-		}
-
-		/**
-		 * Retrieves the shards and particle types required to execute the
-		 * actions in the current working area.
-		 *
-		 * @return set of shard + particle types
-		 */
-		public Set<ShardedParticleStateId> getWorkingAreaRequirements() {
-			return workingArea.stream()
-				.filter(a -> requiredStateMappers.containsKey(a.getClass()))
-				.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
-				.collect(Collectors.toSet());
-		}
-
-		/**
-		 * Move all actions in the current working area to staging
-		 */
-		public void stageWorkingArea() throws StageActionException {
-			for (Action action : workingArea) {
-				stage(action);
-			}
-			workingArea.clear();
-		}
-
-		/**
 		 * Add an action to staging area in preparation for commitAndPush.
 		 * Collects the necessary particles to make the action happen.
 		 *

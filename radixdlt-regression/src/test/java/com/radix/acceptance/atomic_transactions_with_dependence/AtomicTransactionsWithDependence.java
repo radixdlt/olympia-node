@@ -17,11 +17,17 @@
 
 package com.radix.acceptance.atomic_transactions_with_dependence;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radix.test.utils.TokenUtilities;
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -47,7 +53,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -57,6 +63,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,6 +90,8 @@ public class AtomicTransactionsWithDependence {
 	private RadixApplicationAPI api;
 	private RadixNode nodeConnection;
 
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
+
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.api = RadixApplicationAPI.defaultBuilder()
@@ -103,7 +112,7 @@ public class AtomicTransactionsWithDependence {
 		this.observers.clear();
 	}
 
-	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
+	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) throws Exception {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeProcessor()
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
@@ -119,13 +128,14 @@ public class AtomicTransactionsWithDependence {
 		TokenUtilities.requestTokensFor(api);
 
 		this.properties.put(SYMBOL, "TEST0");
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
+		createToken(api);
 		i_can_observe_atom_being_accepted(1);
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = api.getAddress(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
+
 		Transaction tx = api.createTransaction();
 		tx.stage(new MintAndTransferTokensAction(RRI.of(api.getAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress));
 		tx.commitAndPush(nodeConnection)
@@ -137,7 +147,7 @@ public class AtomicTransactionsWithDependence {
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() throws Exception {
 		this.properties.put(SYMBOL, "TEST0");
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
+		createToken(api);
 		i_can_observe_atom_being_accepted(1);
 		this.observers.clear();
 
@@ -155,7 +165,7 @@ public class AtomicTransactionsWithDependence {
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in same group$")
-	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() {
+	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() throws Exception {
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mintTransition, transferTransition) -> {
 
 			ParticleGroupBuilder groupBuilder = ParticleGroup.builder();
@@ -171,7 +181,7 @@ public class AtomicTransactionsWithDependence {
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a higher index$")
-	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithAHigherIndex() {
+	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithAHigherIndex() throws Exception {
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> {
 			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
 			mint.getRemoved().stream().map(t -> (Particle) t).map(SubstateId::of).forEach(mintParticleGroupBuilder::spinDown);
@@ -206,19 +216,24 @@ public class AtomicTransactionsWithDependence {
 		awaitAtomStatus(atomNumber, AtomStatus.CONFLICT_LOSER);
 	}
 
-	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
+	private void createToken(RadixApplicationAPI api) throws Exception {
 		TestObserver<Object> observer = new TestObserver<>();
-		Transaction tx = api.createTransaction();
-		CreateTokenAction createTokenAction = CreateTokenAction.create(
-			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-			this.properties.get(NAME),
-			this.properties.get(DESCRIPTION),
-			new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
-			new BigDecimal(this.properties.get(GRANULARITY)),
-			tokenCreateSupplyType
-		);
-		tx.stage(createTokenAction);
-		tx.commitAndPush(nodeConnection)
+		var particles = api.getAtomStore().getUpParticles(api.getAddress(), null).collect(Collectors.toList());
+		var builder = TxBuilder.newBuilder(api.getAddress(), particles)
+			.createMutableToken(new MutableTokenDefinition(
+				this.properties.get(SYMBOL),
+				this.properties.get(NAME),
+				this.properties.get(DESCRIPTION),
+				null,
+				null,
+				ImmutableMap.of(
+					MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+					MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
+				)
+			))
+			.burnForFee(api.getNativeTokenRef(), fee);
+		var atom = api.getIdentity().addSignature(builder.toLowLevelBuilder()).blockingGet();
+		api.submitAtom(atom)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -235,8 +250,6 @@ public class AtomicTransactionsWithDependence {
 		testObserver.assertNoErrors();
 		testObserver.assertNoTimeout();
 		List<Object> events = testObserver.values();
-		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())

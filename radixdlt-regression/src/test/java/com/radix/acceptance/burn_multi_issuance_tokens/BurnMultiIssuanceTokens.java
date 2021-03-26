@@ -17,14 +17,18 @@
 
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
 import com.radix.test.utils.TokenUtilities;
-import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
-import com.radixdlt.client.application.translate.StageActionException;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.identifiers.RRI;
@@ -39,6 +43,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import com.radixdlt.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -46,11 +52,6 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.identifiers.RadixAddress;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.STORED;
@@ -95,8 +96,9 @@ public class BurnMultiIssuanceTokens {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
-	private final List<StageActionException> actionExceptions = Lists.newArrayList();
+	private final List<Exception> actionExceptions = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 
 	@After
 	public void cleanUp() {
@@ -112,7 +114,7 @@ public class BurnMultiIssuanceTokens {
 		setupApi();
 		this.properties.put(SYMBOL, symbol1);
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
-		createToken(TokenSupplyType.MUTABLE);
+		createToken();
 		awaitAtomStatus(STORED);
 		// Listening on state automatic for library
 	}
@@ -134,7 +136,7 @@ public class BurnMultiIssuanceTokens {
 		setupOtherApi();
 
 		this.properties.put(SYMBOL, symbol);
-		createToken(this.otherApix, TokenSupplyType.MUTABLE);
+		createToken(this.otherApix);
 		awaitAtomStatus(STORED);
 
 		Disposable d = this.api.pull(this.otherApix.getAddress());
@@ -203,12 +205,12 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
-		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(UnknownTokenException.class);
+		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(TxBuilderException.class);
 	}
 
 	@Then("^the client should be notified that the action failed because there's not that many tokens in supply$")
 	public void the_client_should_be_notified_that_the_action_failed_because_there_s_not_that_many_tokens_in_supply() throws Throwable {
-		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(InsufficientFundsException.class);
+		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(TxBuilderException.class);
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
@@ -246,57 +248,68 @@ public class BurnMultiIssuanceTokens {
 		this.disposables.add(this.otherApix.pull());
 	}
 
-	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
-		createToken(this.api, tokenCreateSupplyType);
+	private void createToken() throws TxBuilderException {
+		createToken(this.api);
 	}
 
-	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
+	private void createToken(RadixApplicationAPI api) throws TxBuilderException {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		CreateTokenAction createTokenAction = CreateTokenAction.create(
-			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-			this.properties.get(NAME),
-			this.properties.get(DESCRIPTION),
-			BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
-			BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
-			tokenCreateSupplyType
-		);
-		Transaction tx = api.createTransaction();
-		tx.stage(createTokenAction);
-		tx.commitAndPush(nodeConnection)
+		var particles = api.getAtomStore().getUpParticles(api.getAddress(), null).collect(Collectors.toList());
+		var builder = TxBuilder.newBuilder(api.getAddress(), particles)
+			.createMutableToken(new MutableTokenDefinition(
+				this.properties.get(SYMBOL),
+				this.properties.get(NAME),
+				this.properties.get(DESCRIPTION),
+				null,
+				null,
+				ImmutableMap.of(
+					MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+					MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
+				)
+			))
+			.burnForFee(api.getNativeTokenRef(), fee);
+		var atom = api.getIdentity().addSignature(builder.toLowLevelBuilder()).blockingGet();
+		api.submitAtom(atom)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
-		this.observers.add(observer);
+		observers.add(observer);
 	}
 
 	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
 		RRI rri = RRI.of(address, symbol);
-		TransferTokensAction tta = TransferTokensAction.create(rri, address, address, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>(Util.loggingObserver("Transfer Tokens"));
+
 		api.pullOnce(address).blockingAwait();
+		var particles = api.getAtomStore().getUpParticles(api.getAddress(), null).collect(Collectors.toList());
 		try {
-			Transaction tx = api.createTransaction();
-			tx.stage(tta);
-			tx.commitAndPush(nodeConnection)
-				.toObservable().subscribe(observer);
+			var builder = TxBuilder.newBuilder(api.getAddress(), particles)
+				.transfer(rri, address, TokenUnitConversions.unitsToSubunits(amount))
+				.burnForFee(api.getNativeTokenRef(), fee);
+
+			var atom = api.getIdentity().addSignature(builder.toLowLevelBuilder()).blockingGet();
+			api.submitAtom(atom).toObservable().subscribe(observer);
 			this.observers.add(observer);
-		} catch (StageActionException e) {
+		} catch (TxBuilderException e) {
 			this.actionExceptions.add(e);
 		}
 	}
 
 	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
-		RRI tokenClass = RRI.of(tokenAddress, symbol);
-		BurnTokensAction mta = BurnTokensAction.create(tokenClass, address, amount);
-		TestObserver<SubmitAtomAction> observer = new TestObserver<>(Util.loggingObserver("Burn Tokens"));
-		api.pullOnce(tokenAddress).blockingAwait();
+		RRI rri = RRI.of(tokenAddress, symbol);
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>(Util.loggingObserver("Transfer Tokens"));
+
+		api.pullOnce(address).blockingAwait();
+		var particles = api.getAtomStore().getUpParticles(api.getAddress(), null).collect(Collectors.toList());
 		try {
-			Transaction tx = api.createTransaction();
-			tx.stage(mta);
-			tx.commitAndPush(nodeConnection).toObservable().subscribe(observer);
+			var builder = TxBuilder.newBuilder(api.getAddress(), particles)
+				.burn(rri, TokenUnitConversions.unitsToSubunits(amount))
+				.burnForFee(api.getNativeTokenRef(), fee);
+
+			var atom = api.getIdentity().addSignature(builder.toLowLevelBuilder()).blockingGet();
+			api.submitAtom(atom).toObservable().subscribe(observer);
 			this.observers.add(observer);
-			observer.awaitTerminalEvent();
-		} catch (StageActionException e) {
+		} catch (TxBuilderException e) {
 			this.actionExceptions.add(e);
 		}
 	}
@@ -304,7 +317,6 @@ public class BurnMultiIssuanceTokens {
 	private void awaitAtomStatus(AtomStatus... finalStates) {
 		awaitAtomStatus(this.observers.size(), finalStates);
 	}
-
 
 	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
 		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
@@ -316,8 +328,6 @@ public class BurnMultiIssuanceTokens {
 		testObserver.assertNoErrors();
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
-		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
