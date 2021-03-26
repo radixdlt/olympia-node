@@ -128,7 +128,7 @@ public class HighLevelApiHandlerTest {
 		var handler = new HighLevelApiHandler(service);
 
 		var params = jsonObject().put("address", KNOWN_ADDRESS_STRING).put("size", 5);
-		var result = handler.handleExecutedTransactions(jsonObject().put("id", "1").put("params", params));
+		var result = handler.handleTransactionHistory(jsonObject().put("id", "1").put("params", params));
 
 		assertNotNull(result);
 	}

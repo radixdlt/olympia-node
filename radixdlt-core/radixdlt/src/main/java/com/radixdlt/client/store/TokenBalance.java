@@ -99,6 +99,6 @@ public class TokenBalance {
 	}
 
 	public JSONObject asJson() {
-		return jsonObject().put("token", rri.toString()).put("amount", amount.toString());
+		return jsonObject().put("rri", rri.toString()).put("amount", amount.toString());
 	}
 }

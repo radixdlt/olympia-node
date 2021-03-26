@@ -168,6 +168,7 @@ public class TokenDefinitionRecord {
 		return jsonObject()
 			.put("name", name)
 			.put("rri", rri)
+			.put("symbol", rri.getName())
 			.put("description", description)
 			.put("granularity", granularity)
 			.put("currentSupply", currentSupply)

@@ -63,7 +63,7 @@ public class ClientApiModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("radix.executedTransactions")
 	public JsonRpcHandler executedTransactions(HighLevelApiHandler highLevelApiHandler) {
-		return highLevelApiHandler::handleExecutedTransactions;
+		return highLevelApiHandler::handleTransactionHistory;
 	}
 
 	@ProvidesIntoMap

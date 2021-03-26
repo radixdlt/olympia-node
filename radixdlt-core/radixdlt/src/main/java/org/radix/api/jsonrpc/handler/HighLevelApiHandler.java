@@ -19,6 +19,7 @@ package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.AtomStatus;
+import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.HighLevelApiService;
 
@@ -30,6 +31,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -64,13 +66,13 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
-		return response(request, jsonObject().put("magic", highLevelApiService.getUniverseMagic()));
+		return response(request, jsonObject().put("networkId", highLevelApiService.getUniverseMagic()));
 	}
 
 	public JSONObject handleNativeToken(JSONObject request) {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
-				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				failure -> toErrorResponse(request, failure),
 				description -> response(request, description.asJson())
 			);
 	}
@@ -81,8 +83,8 @@ public class HighLevelApiHandler {
 			(params, tokenId) -> RRI.fromString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
-					failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
-					tokenDescription -> response(request, tokenDescription.asJson())
+					failure -> toErrorResponse(request, failure),
+					description -> response(request, description.asJson())
 				)
 		);
 	}
@@ -96,7 +98,7 @@ public class HighLevelApiHandler {
 		);
 	}
 
-	public JSONObject handleExecutedTransactions(JSONObject request) {
+	public JSONObject handleTransactionHistory(JSONObject request) {
 		return withRequiredParameters(request, Set.of("address", "size"), params -> {
 			var address = RadixAddress.fromString(params.getString("address"));
 			var size = safeInteger(params, "size").filter(value -> value > 0);
@@ -128,12 +130,17 @@ public class HighLevelApiHandler {
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
-		return highLevelApiService.getTokenBalances(radixAddress).fold(
-			failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
-			list -> jsonObject()
-				.put("owner", radixAddress.toString())
-				.put("tokenBalances", fromList(list, TokenBalance::asJson))
-		);
+		return highLevelApiService.getTokenBalances(radixAddress)
+			.fold(
+				failure -> toErrorResponse(request, failure),
+				list -> jsonObject()
+					.put("owner", radixAddress.toString())
+					.put("tokenBalances", fromList(list, TokenBalance::asJson))
+			);
+	}
+
+	private JSONObject toErrorResponse(JSONObject request, Failure failure) {
+		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
 	}
 
 	//TODO: remove all code below once functionality will be implemented
