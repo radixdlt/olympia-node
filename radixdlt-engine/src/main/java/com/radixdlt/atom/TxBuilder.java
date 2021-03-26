@@ -53,7 +53,7 @@ import java.util.stream.StreamSupport;
  */
 public final class TxBuilder {
 	private final TxLowLevelBuilder atomBuilder;
-	private final Set<ParticleId> downParticles;
+	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
 	private final Iterable<Particle> upParticles;
 
@@ -62,7 +62,7 @@ public final class TxBuilder {
 
 	private TxBuilder(
 		RadixAddress address,
-		Set<ParticleId> downVirtualParticles,
+		Set<SubstateId> downVirtualParticles,
 		Iterable<Particle> upParticles
 	) {
 		this.address = address;
@@ -97,18 +97,18 @@ public final class TxBuilder {
 
 	private void virtualDown(Particle particle) {
 		atomBuilder.virtualSpinDown(particle);
-		downParticles.add(ParticleId.ofVirtualParticle(particle));
+		downParticles.add(SubstateId.ofVirtualSubstate(particle));
 	}
 
-	private void down(ParticleId particleId) {
-		atomBuilder.spinDown(particleId);
-		downParticles.add(particleId);
+	private void down(SubstateId substateId) {
+		atomBuilder.spinDown(substateId);
+		downParticles.add(substateId);
 	}
 
 	public Iterable<Particle> upParticles() {
 		return Iterables.concat(
 			atomBuilder.localUpParticles(),
-			Iterables.filter(upParticles, p -> !downParticles.contains(ParticleId.of(p)))
+			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.of(p)))
 		);
 	}
 
@@ -155,7 +155,7 @@ public final class TxBuilder {
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
-			.peek(p -> this.down(ParticleId.of(p)))
+			.peek(p -> this.down(SubstateId.of(p)))
 			.findFirst()
 			.or(() -> {
 				if (virtualParticle.isPresent()) {

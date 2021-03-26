@@ -18,7 +18,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 
@@ -48,12 +48,12 @@ public final class CMMicroInstruction {
 
 	private final CMMicroOp operation;
 	private final Particle particle;
-	private final ParticleId particleId;
+	private final SubstateId substateId;
 
-	private CMMicroInstruction(CMMicroOp operation, Particle particle, ParticleId particleId) {
+	private CMMicroInstruction(CMMicroOp operation, Particle particle, SubstateId substateId) {
 		this.operation = operation;
 		this.particle = particle;
-		this.particleId = particleId;
+		this.substateId = substateId;
 	}
 
 	public CMMicroOp getMicroOp() {
@@ -64,8 +64,8 @@ public final class CMMicroInstruction {
 		return particle;
 	}
 
-	public ParticleId getParticleId() {
-		return particleId;
+	public SubstateId getParticleId() {
+		return substateId;
 	}
 
 	public boolean isPush() {
@@ -92,8 +92,8 @@ public final class CMMicroInstruction {
 		return operation.nextSpin;
 	}
 
-	public static CMMicroInstruction spinDown(ParticleId particleId) {
-		return new CMMicroInstruction(CMMicroOp.SPIN_DOWN, null, particleId);
+	public static CMMicroInstruction spinDown(SubstateId substateId) {
+		return new CMMicroInstruction(CMMicroOp.SPIN_DOWN, null, substateId);
 	}
 
 	public static CMMicroInstruction virtualSpinDown(Particle particle) {
@@ -114,13 +114,13 @@ public final class CMMicroInstruction {
 			operation,
 			particle != null
 				? HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL)) + ":" + particle
-				: particleId
+				: substateId
 		);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, particle, particleId);
+		return Objects.hash(operation, particle, substateId);
 	}
 
 	@Override
@@ -132,6 +132,6 @@ public final class CMMicroInstruction {
 		var other = (CMMicroInstruction) o;
 		return Objects.equals(this.operation, other.operation)
 			&& Objects.equals(this.particle, other.particle)
-			&& Objects.equals(this.particleId, other.particleId);
+			&& Objects.equals(this.substateId, other.substateId);
 	}
 }

@@ -19,7 +19,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -92,13 +92,13 @@ public class MultipleTransitionsInSameGroupTest {
 			.spinUp(unallocatedTokens)
 			.build();
 		ParticleGroup mintGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(unallocatedTokens))
+			.spinDown(SubstateId.of(unallocatedTokens))
 			.spinUp(mintedTokens)
 			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount());
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
 			.spinUp(output)
 			.build();
 
@@ -125,7 +125,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.spinUp(unallocatedTokens)
 			.build();
 		ParticleGroup mintGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(unallocatedTokens))
+			.spinDown(SubstateId.of(unallocatedTokens))
 			.spinUp(mintedTokens)
 			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
@@ -135,8 +135,8 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(mintedTokens))
-			.spinDown(ParticleId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
 			.spinUp(output)
 			.build();
 
@@ -163,7 +163,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.spinUp(unallocatedTokens)
 			.build();
 		ParticleGroup mintGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(unallocatedTokens))
+			.spinDown(SubstateId.of(unallocatedTokens))
 			.spinUp(mintedTokens)
 			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
@@ -173,9 +173,9 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(mintedTokens))
-			.spinDown(ParticleId.of(mintedTokens))
-			.spinDown(ParticleId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
 			.spinUp(output)
 			.build();
 
@@ -216,7 +216,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.spinUp(unallocatedTokens)
 			.build();
 		ParticleGroup mintGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(unallocatedTokens))
+			.spinDown(SubstateId.of(unallocatedTokens))
 			.spinUp(mintedTokens)
 			.build();
 		TransferrableTokensParticle output = createTransferrableTokens(
@@ -226,7 +226,7 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 
 		ParticleGroup duplicateTransitionsGroup = ParticleGroup.builder()
-			.spinDown(ParticleId.of(mintedTokens))
+			.spinDown(SubstateId.of(mintedTokens))
 			.spinUp(output)
 			.spinUp(output)
 			.build();

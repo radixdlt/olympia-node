@@ -27,7 +27,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -119,7 +119,7 @@ public class FixedTokenTest {
 		atomBuilder.spinUp(token);
 
 		for (int i = 0; i < times; i++) {
-			atomBuilder.spinDown(ParticleId.of(p));
+			atomBuilder.spinDown(SubstateId.of(p));
 		}
 		atomBuilder.particleGroup();
 	}

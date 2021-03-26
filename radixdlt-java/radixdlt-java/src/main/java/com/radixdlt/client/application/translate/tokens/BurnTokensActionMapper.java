@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -94,7 +94,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(ParticleId.of(sp.getParticle()));
+					builder.spinDown(SubstateId.of(sp.getParticle()));
 				}
 			});
 

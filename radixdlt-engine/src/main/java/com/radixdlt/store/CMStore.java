@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
@@ -53,5 +53,5 @@ public interface CMStore {
 	 */
 	Spin getSpin(Transaction txn, Particle particle);
 
-	Optional<Particle> loadUpParticle(Transaction txn, ParticleId particleId);
+	Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId);
 }

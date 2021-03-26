@@ -17,7 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -507,23 +507,23 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		particleConsumer.accept(SpunParticle.up(particle));
 	}
 
-	private void downVirtualParticle(com.sleepycat.je.Transaction txn, ParticleId particleId) {
-		var particleKey = particleId.asBytes();
+	private void downVirtualParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
+		var particleKey = substateId.asBytes();
 		// TODO: check for up Particle state
 		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
-	private void downParticle(com.sleepycat.je.Transaction txn, ParticleId particleId) {
-		var particleKey = particleId.asBytes();
+	private void downParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
+		var particleKey = substateId.asBytes();
 		// TODO: check for up Particle state
 		final var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
-			throw new IllegalStateException("Downing particle does not exist " + particleId);
+			throw new IllegalStateException("Downing particle does not exist " + substateId);
 		}
 
 		if (downedParticle.getData().length == 0) {
-			throw new IllegalStateException("Particle was already spun down: " + particleId);
+			throw new IllegalStateException("Particle was already spun down: " + substateId);
 		}
 
 		var serializedParticle = new byte[downedParticle.getData().length - EUID.BYTES];
@@ -562,7 +562,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
 			upParticle(txn, instruction.getParticle());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-			downVirtualParticle(txn, ParticleId.ofVirtualParticle(instruction.getParticle()));
+			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getParticle()));
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
 			final var particleId = instruction.getParticleId();
 			downParticle(txn, particleId);
@@ -698,8 +698,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction tx, ParticleId particleId) {
-		var key = entry(particleId.asBytes());
+	public Optional<Particle> loadUpParticle(Transaction tx, SubstateId substateId) {
+		var key = entry(substateId.asBytes());
 		var value = entry();
 		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {

@@ -37,7 +37,7 @@ import java.util.function.Function;
 public final class TxLowLevelBuilder {
 	private String message;
 	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
-	private final Map<ParticleId, Particle> localUpParticles = new HashMap<>();
+	private final Map<SubstateId, Particle> localUpParticles = new HashMap<>();
 
 	TxLowLevelBuilder() {
 	}
@@ -54,7 +54,7 @@ public final class TxLowLevelBuilder {
 	public TxLowLevelBuilder spinUp(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.instructions.add(CMMicroInstruction.spinUp(particle));
-		localUpParticles.put(ParticleId.of(particle), particle);
+		localUpParticles.put(SubstateId.of(particle), particle);
 		return this;
 	}
 
@@ -64,9 +64,9 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder spinDown(ParticleId particleId) {
-		this.instructions.add(CMMicroInstruction.spinDown(particleId));
-		localUpParticles.remove(particleId);
+	public TxLowLevelBuilder spinDown(SubstateId substateId) {
+		this.instructions.add(CMMicroInstruction.spinDown(substateId));
+		localUpParticles.remove(substateId);
 		return this;
 	}
 

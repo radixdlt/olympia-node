@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -109,7 +109,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(particle1)
 			.particleGroup()
 			.spinUp(unallocatedParticle)
-			.spinDown(ParticleId.of(tokenInputParticle))
+			.spinDown(SubstateId.of(tokenInputParticle))
 			.spinUp(tokenOutputParticle)
 			.particleGroup()
 			.buildWithoutSignature();
@@ -129,7 +129,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(particle1)
 			.particleGroup()
 			.spinUp(unallocatedParticle)
-			.spinDown(ParticleId.of(tokenInputParticle))
+			.spinDown(SubstateId.of(tokenInputParticle))
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -149,7 +149,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(particle1)
 			.particleGroup()
 			.spinUp(unallocatedParticle)
-			.spinDown(ParticleId.of(tokenInputParticle))
+			.spinDown(SubstateId.of(tokenInputParticle))
 			.spinUp(extraFeeGroupParticle)
 			.buildWithoutSignature();
 
@@ -171,7 +171,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.spinUp(particle1)
 			.particleGroup()
 			.spinUp(particle2)
-			.spinDown(ParticleId.of(particle3))
+			.spinDown(SubstateId.of(particle3))
 			.spinUp(particle4)
 			.particleGroup()
 			.buildWithoutSignature();

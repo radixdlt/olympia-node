@@ -27,50 +27,53 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Objects;
 
-public final class ParticleId {
-	private final HashCode particleId;
-	private ParticleId(HashCode particleId) {
-		this.particleId = Objects.requireNonNull(particleId);
+/**
+ * The id of a unique substate
+ */
+public final class SubstateId {
+	private final HashCode substateId;
+	private SubstateId(HashCode substateId) {
+		this.substateId = Objects.requireNonNull(substateId);
 	}
 
-	public static ParticleId of(Particle particle) {
+	public static SubstateId of(Particle particle) {
 		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		return new ParticleId(particleHash);
+		var substateHash = HashUtils.sha256(dson);
+		return new SubstateId(substateHash);
 	}
 
-	public static ParticleId ofVirtualParticle(Particle particle) {
+	public static SubstateId ofVirtualSubstate(Particle particle) {
 		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var particleHash = HashUtils.sha256(dson);
-		return new ParticleId(particleHash);
+		var substateHash = HashUtils.sha256(dson);
+		return new SubstateId(substateHash);
 	}
 
-	public static ParticleId fromBytes(byte[] bytes) {
-		return new ParticleId(HashCode.fromBytes(bytes));
+	public static SubstateId fromBytes(byte[] bytes) {
+		return new SubstateId(HashCode.fromBytes(bytes));
 	}
 
 	public byte[] asBytes() {
-		return particleId.asBytes();
+		return substateId.asBytes();
 	}
 
 	@Override
 	public String toString() {
-		return Hex.toHexString(particleId.asBytes());
+		return Hex.toHexString(substateId.asBytes());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particleId);
+		return Objects.hash(substateId);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ParticleId)) {
+		if (!(o instanceof SubstateId)) {
 			return false;
 		}
 
-		var other = (ParticleId) o;
+		var other = (SubstateId) o;
 
-		return Objects.equals(this.particleId, other.particleId);
+		return Objects.equals(this.substateId, other.substateId);
 	}
 }

@@ -22,7 +22,10 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public class FixedTokenDefinition {
+/**
+ * Describes a fixed token definition
+ */
+public final class FixedTokenDefinition {
 
 	private final String symbol;
 	private final String name;

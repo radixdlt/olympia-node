@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -148,7 +148,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(ParticleId.of(sp.getParticle()));
+					builder.spinDown(SubstateId.of(sp.getParticle()));
 				}
 			});
 

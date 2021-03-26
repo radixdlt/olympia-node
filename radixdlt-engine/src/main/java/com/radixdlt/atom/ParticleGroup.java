@@ -99,8 +99,8 @@ public final class ParticleGroup {
 			return this;
 		}
 
-		public final ParticleGroupBuilder spinDown(ParticleId particleId) {
-			this.instructions.add(CMMicroInstruction.spinDown(particleId));
+		public final ParticleGroupBuilder spinDown(SubstateId substateId) {
+			this.instructions.add(CMMicroInstruction.spinDown(substateId));
 			return this;
 		}
 

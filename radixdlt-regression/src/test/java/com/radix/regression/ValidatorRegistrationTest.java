@@ -21,7 +21,7 @@ package com.radix.regression;
 import com.google.common.collect.ImmutableSet;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -123,8 +123,8 @@ public class ValidatorRegistrationTest {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
 				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(ParticleId.of(new RegisteredValidatorParticle(address, 1)))
-				.spinDown(ParticleId.of(new RegisteredValidatorParticle(address, 2)))
+				.spinDown(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
+				.spinDown(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
 				.particleGroup()
 		);
 
@@ -138,7 +138,7 @@ public class ValidatorRegistrationTest {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			Atom.newBuilder()
 				.virtualSpinDown(new UnregisteredValidatorParticle(address, 0))
-				.spinDown(ParticleId.of(new UnregisteredValidatorParticle(address, 1)))
+				.spinDown(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
 				.particleGroup()
 		);
 

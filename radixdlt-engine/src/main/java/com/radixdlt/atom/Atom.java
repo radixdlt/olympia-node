@@ -181,7 +181,7 @@ public final class Atom {
 
 				instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
 			} else if (bytes[0] == CMMicroOp.SPIN_DOWN.opCode()) {
-				var particleId = ParticleId.fromBytes(bytesIterator.next());
+				var particleId = SubstateId.fromBytes(bytesIterator.next());
 				instructionsBuilder.add(CMMicroInstruction.spinDown(particleId));
 			} else {
 				throw new IllegalStateException();

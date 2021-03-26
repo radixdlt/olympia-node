@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -58,7 +58,7 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 		if (isVirtual) {
 			builder.virtualSpinDown(particle);
 		} else {
-			builder.spinDown(ParticleId.of(particle));
+			builder.spinDown(SubstateId.of(particle));
 		}
 		builder.spinUp(currentState.register(action.getUrl(), action.getAllowedDelegators()));
 

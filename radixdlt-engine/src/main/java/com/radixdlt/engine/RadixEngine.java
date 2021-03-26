@@ -18,7 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleId;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -145,8 +145,8 @@ public final class RadixEngine<M> {
 			}
 
 			@Override
-			public Optional<Particle> loadUpParticle(Transaction txn, ParticleId particleId) {
-				return engineStore.loadUpParticle(txn, particleId);
+			public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+				return engineStore.loadUpParticle(txn, substateId);
 			}
 		};
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -274,9 +274,9 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private HashMap<ParticleId, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
+	private HashMap<SubstateId, Particle> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
 		throws RadixEngineException {
-		var downedParticles = new HashMap<ParticleId, Particle>();
+		var downedParticles = new HashMap<SubstateId, Particle>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
 			virtualizedCMStore,
