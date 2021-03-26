@@ -20,6 +20,7 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -38,46 +39,44 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public final class ActionTxBuilder {
 	private final AtomBuilder atomBuilder;
-	private final Map<ParticleId, Particle> upParticles = new HashMap<>();
-	private final Set<ParticleId> downVirtualParticles;
+	private final Set<ParticleId> downParticles;
 	private final RadixAddress address;
+	private final Iterable<Particle> upParticles;
+
 	// TODO: remove
 	private final Random random = new Random();
 
 	private ActionTxBuilder(
 		RadixAddress address,
 		Set<ParticleId> downVirtualParticles,
-		List<Particle> upParticlesList
+		Iterable<Particle> upParticles
 	) {
 		this.address = address;
 		this.atomBuilder = Atom.newBuilder();
-		this.downVirtualParticles = new HashSet<>(downVirtualParticles);
-		upParticlesList.forEach(p -> upParticles.put(ParticleId.of(p), p));
+		this.downParticles = new HashSet<>(downVirtualParticles);
+		this.upParticles = upParticles;
 	}
 
-	public static ActionTxBuilder newBuilder(RadixAddress address, List<Particle> upParticleList) {
-		return new ActionTxBuilder(address, Set.of(), upParticleList);
+	public static ActionTxBuilder newBuilder(RadixAddress address, Iterable<Particle> upParticles) {
+		return new ActionTxBuilder(address, Set.of(), upParticles);
 	}
 
 	public static ActionTxBuilder newBuilder(RadixAddress address) {
 		return new ActionTxBuilder(address, Set.of(), List.of());
 	}
 
-	public static ActionTxBuilder newSystemBuilder(List<Particle> upParticleList) {
+	public static ActionTxBuilder newSystemBuilder(Iterable<Particle> upParticleList) {
 		return new ActionTxBuilder(null, Set.of(), upParticleList);
 	}
 
@@ -95,12 +94,19 @@ public final class ActionTxBuilder {
 
 	private void virtualDown(Particle particle) {
 		atomBuilder.virtualSpinDown(particle);
-		downVirtualParticles.add(ParticleId.ofVirtualParticle(particle));
+		downParticles.add(ParticleId.ofVirtualParticle(particle));
 	}
 
 	private void down(ParticleId particleId) {
 		atomBuilder.spinDown(particleId);
-		upParticles.remove(particleId);
+		downParticles.add(particleId);
+	}
+
+	public Iterable<Particle> upParticles() {
+		return Iterables.concat(
+			atomBuilder.localUpParticles(),
+			Iterables.filter(upParticles, p -> !downParticles.contains(ParticleId.of(p)))
+		);
 	}
 
 	private <T extends Particle> T find(
@@ -108,7 +114,7 @@ public final class ActionTxBuilder {
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws ActionTxException {
-		var substateRead = Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles())
+		var substateRead = StreamSupport.stream(upParticles().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -142,12 +148,10 @@ public final class ActionTxBuilder {
 		Optional<T> virtualParticle,
 		String errorMessage
 	) throws ActionTxException {
-		var allUpParticles = Stream.concat(atomBuilder.localUpParticles(), upParticles.values().stream())
+		var substateDown = StreamSupport.stream(upParticles().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
-			.collect(Collectors.toSet());
-		var substateDown = allUpParticles.stream()
 			.peek(p -> this.down(ParticleId.of(p)))
 			.findFirst()
 			.or(() -> {
@@ -157,6 +161,7 @@ public final class ActionTxBuilder {
 				}
 				return virtualParticle;
 			});
+
 		if (substateDown.isEmpty()) {
 			throw new ActionTxException(errorMessage);
 		}
@@ -172,7 +177,7 @@ public final class ActionTxBuilder {
 		void with(Mapper<T, U> mapper) throws ActionTxException;
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -184,7 +189,7 @@ public final class ActionTxBuilder {
 		};
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Optional<T> virtualParticle,
 		String errorMessage
@@ -196,7 +201,7 @@ public final class ActionTxBuilder {
 		};
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> replace(
+	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
@@ -209,79 +214,12 @@ public final class ActionTxBuilder {
 		};
 	}
 
-	private void assertHasAddress(String message) throws ActionTxException {
-		if (address == null) {
-			throw new ActionTxException(message);
-		}
+	private interface FungibleMapper<U extends Particle> {
+		U map(UInt256 t) throws ActionTxException;
 	}
 
-	private void assertIsSystem(String message) throws ActionTxException {
-		if (address != null) {
-			throw new ActionTxException(message);
-		}
-	}
-
-	public ActionTxBuilder systemNextView(long view, long timestamp) throws ActionTxException {
-		assertIsSystem("Not permitted as user to execute system next view");
-
-		replace(
-			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
-			"No System particle available"
-		).with(substateDown -> {
-			if (view <= substateDown.getView()) {
-				throw new ActionTxException("Next view isn't higher than current view.");
-			}
-			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
-		});
-
-		particleGroup();
-
-		return this;
-	}
-
-	public ActionTxBuilder systemNextEpoch(long timestamp) throws ActionTxException {
-		assertIsSystem("Not permitted as user to execute system next epoch");
-
-		replace(
-			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
-			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
-		particleGroup();
-
-		return this;
-	}
-
-	public ActionTxBuilder registerAsValidator() throws ActionTxException {
-		assertHasAddress("Must have address");
-
-		replace(
-			UnregisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address, 0L)),
-			"Already a validator"
-		).with(
-			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1)
-		);
-
-		particleGroup();
-		return this;
-	}
-
-	public ActionTxBuilder unregisterAsValidator() throws ActionTxException {
-		assertHasAddress("Must have address");
-
-		replace(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			"Already unregistered."
-		).with(
-			substateDown -> new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1)
-		);
-		particleGroup();
-
-		return this;
+	private interface FungibleReplacer<U extends Particle> {
+		void with(FungibleMapper<U> mapper) throws ActionTxException;
 	}
 
 	private <T extends Particle> UInt256 downFungible(
@@ -305,12 +243,106 @@ public final class ActionTxBuilder {
 		return spent.subtract(amount);
 	}
 
+	private <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Function<T, UInt256> amountMapper,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) {
+		return mapper -> {
+			up(mapper.map(amount));
+			var remainder = downFungible(particleClass, particlePredicate, amountMapper, amount, errorMessage);
+			if (!remainder.isZero()) {
+				up(remainderMapper.map(remainder));
+			}
+		};
+	}
+
+
+	private void assertHasAddress(String message) throws ActionTxException {
+		if (address == null) {
+			throw new ActionTxException(message);
+		}
+	}
+
+	private void assertIsSystem(String message) throws ActionTxException {
+		if (address != null) {
+			throw new ActionTxException(message);
+		}
+	}
+
+	public ActionTxBuilder systemNextView(long view, long timestamp) throws ActionTxException {
+		assertIsSystem("Not permitted as user to execute system next view");
+
+		swap(
+			SystemParticle.class,
+			Optional.of(new SystemParticle(0, 0, 0)),
+			"No System particle available"
+		).with(substateDown -> {
+			if (view <= substateDown.getView()) {
+				throw new ActionTxException("Next view isn't higher than current view.");
+			}
+			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
+		});
+
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder systemNextEpoch(long timestamp) throws ActionTxException {
+		assertIsSystem("Not permitted as user to execute system next epoch");
+
+		swap(
+			SystemParticle.class,
+			Optional.of(new SystemParticle(0, 0, 0)),
+			"No System particle available"
+		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder registerAsValidator() throws ActionTxException {
+		assertHasAddress("Must have address");
+
+		swap(
+			UnregisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			Optional.of(new UnregisteredValidatorParticle(address, 0L)),
+			"Already a validator"
+		).with(
+			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1)
+		);
+
+		particleGroup();
+		return this;
+	}
+
+	public ActionTxBuilder unregisterAsValidator() throws ActionTxException {
+		assertHasAddress("Must have address");
+
+		swap(
+			RegisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			"Already unregistered."
+		).with(
+			substateDown -> new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1)
+		);
+		particleGroup();
+
+		return this;
+	}
+
+
 
 	public ActionTxBuilder mutex(String id) throws ActionTxException {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, id);
-		replace(
+		swap(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),
 			Optional.of(new RRIParticle(tokenRRI)),
@@ -395,18 +427,16 @@ public final class ActionTxBuilder {
 		final var factory = TokDefParticleFactory.create(
 			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
 		);
-		up(factory.createTransferrable(to, amount, random.nextLong()));
-		var remainder = downFungible(
+
+		swapFungible(
 			UnallocatedTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri),
 			UnallocatedTokensParticle::getAmount,
+			factory::createUnallocated,
 			amount,
-			"Not enough balance to for transfer."
-		);
-		if (!remainder.isZero()) {
-			var substateUp = factory.createUnallocated(remainder);
-			up(substateUp);
-		}
+			"Not enough balance to for minting."
+		).with(amt -> factory.createTransferrable(to, amt, random.nextLong()));
+
 		particleGroup();
 
 		return this;
@@ -422,18 +452,16 @@ public final class ActionTxBuilder {
 			),
 			UInt256.ONE
 		);
-		up(factory.createTransferrable(to, amount, random.nextLong()));
-		var remainder = downFungible(
+
+		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
-			"Not enough balance to for transfer."
-		);
-		if (!remainder.isZero()) {
-			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
-			up(substateUp);
-		}
+			"Not enough balance for transfer."
+		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+
 		particleGroup();
 
 		return this;
@@ -448,18 +476,15 @@ public final class ActionTxBuilder {
 		final var factory = TokDefParticleFactory.create(
 			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
 		);
-		up(factory.createTransferrable(to, amount, random.nextLong()));
-		var remainder = downFungible(
+		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
-			"Not enough balance to for transfer."
-		);
-		if (!remainder.isZero()) {
-			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
-			up(substateUp);
-		}
+			"Not enough balance for transfer."
+		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+
 		particleGroup();
 
 		return this;
@@ -477,59 +502,21 @@ public final class ActionTxBuilder {
 			UInt256.ONE
 		);
 
-		replace(
+		swap(
 			RegisteredValidatorParticle.class,
 			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
 			"Cannot delegate to " + delegateAddress
 		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
 
-		up(factory.createStaked(delegateAddress, address, amount, random.nextLong()));
-		var remainder = downFungible(
+		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
-			"Not enough balance to for transfer."
-		);
-		if (!remainder.isZero()) {
-			var remainderState = factory.createTransferrable(address, remainder, random.nextLong());
-			up(remainderState);
-		}
-		particleGroup();
+			"Not enough balance for staking."
+		).with(amt -> factory.createStaked(delegateAddress, address, amount, random.nextLong()));
 
-		return this;
-	}
-
-	public ActionTxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws ActionTxException {
-		assertHasAddress("Must have an address.");
-
-		var tokenDefSubstate = find(
-			MutableSupplyTokenDefinitionParticle.class,
-			p -> p.getRRI().equals(rri),
-			"Could not find token rri " + rri
-		);
-		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
-		);
-
-		replace(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(delegateAddress),
-			"Cannot find delegate " + delegateAddress
-		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
-
-		up(factory.createStaked(delegateAddress, address, amount, random.nextLong()));
-		var remainder = downFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
-			amount,
-			"Not enough balance to for transfer."
-		);
-		if (!remainder.isZero()) {
-			var remainderState = factory.createTransferrable(address, remainder, random.nextLong());
-			up(remainderState);
-		}
 		particleGroup();
 
 		return this;
@@ -545,18 +532,14 @@ public final class ActionTxBuilder {
 			),
 			UInt256.ONE
 		);
-		up(factory.createUnallocated(amount));
-		var remainder = downFungible(
+		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
-			"Not enough balance to burn for fees."
-		);
-		if (!remainder.isZero()) {
-			var substateUp = factory.createTransferrable(address, remainder, random.nextLong());
-			up(substateUp);
-		}
+			"Not enough balance to for fee burn."
+		).with(factory::createUnallocated);
 
 		particleGroup();
 		return this;
@@ -568,9 +551,5 @@ public final class ActionTxBuilder {
 
 	public Atom buildWithoutSignature() {
 		return atomBuilder.buildWithoutSignature();
-	}
-
-	public Stream<Particle> upParticles() {
-		return Stream.concat(upParticles.values().stream(), atomBuilder.localUpParticles());
 	}
 }

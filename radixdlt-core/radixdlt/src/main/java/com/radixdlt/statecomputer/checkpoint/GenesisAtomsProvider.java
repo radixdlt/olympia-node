@@ -26,7 +26,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.atom.ActionTxException;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -101,19 +100,18 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign);
 			genesisAtoms.add(tokenAtom);
 
-			var upParticles = new ArrayList<Particle>();
-			tokenBuilder.upParticles().forEach(upParticles::add);
+			var upParticles = tokenBuilder.upParticles();
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorBuilder = ActionTxBuilder.newBuilder(validatorAddress);
+				var validatorBuilder = ActionTxBuilder.newBuilder(validatorAddress, upParticles);
 				var validatorAtom = validatorBuilder
 					.registerAsValidator()
 					.signAndBuild(validatorKey::sign);
 				genesisAtoms.add(validatorAtom);
 
-				validatorBuilder.upParticles().forEach(upParticles::add);
+				upParticles = validatorBuilder.upParticles();
 			}
 
 			for (var stakeDelegation : stakeDelegations) {
@@ -123,8 +121,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
 				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
 				genesisAtoms.add(stakeAtom);
-				upParticles.clear();
-				stakesBuilder.upParticles().forEach(upParticles::add);
+				upParticles = stakesBuilder.upParticles();
 			}
 
 			var epochUpdateBuilder = ActionTxBuilder.newSystemBuilder()

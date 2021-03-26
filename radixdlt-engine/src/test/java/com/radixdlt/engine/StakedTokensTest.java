@@ -42,6 +42,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,7 +88,8 @@ public class StakedTokensTest {
 			.createFixedToken(tokDef);
 
 		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
-		tokDefBuilder.upParticles().filter(TransferrableTokensParticle.class::isInstance)
+		StreamSupport.stream(tokDefBuilder.upParticles().spliterator(), false)
+			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.forEach(p -> this.transferrableTokensParticle = p);
 

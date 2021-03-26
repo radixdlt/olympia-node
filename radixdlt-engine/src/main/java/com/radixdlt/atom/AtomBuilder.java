@@ -24,11 +24,12 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Builder class for atom creation
@@ -46,8 +47,8 @@ public final class AtomBuilder {
 		return this;
 	}
 
-	public Stream<Particle> localUpParticles() {
-		return localUpParticles.values().stream();
+	public List<Particle> localUpParticles() {
+		return new ArrayList<>(localUpParticles.values());
 	}
 
 	public AtomBuilder spinUp(Particle particle) {
