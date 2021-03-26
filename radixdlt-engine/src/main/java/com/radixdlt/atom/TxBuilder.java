@@ -25,6 +25,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -524,7 +525,60 @@ public final class TxBuilder {
 			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amount, random.nextLong()));
+		).with(amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()));
+
+		particleGroup();
+
+		return this;
+	}
+
+	public TxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
+		assertHasAddress("Must have an address.");
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		swapFungible(
+			StakedTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			StakedTokensParticle::getAmount,
+			amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()),
+			amount,
+			"Not enough staked."
+		).with(amt -> factory.createTransferrable(address, amt, random.nextLong()));
+
+		particleGroup();
+
+		return this;
+	}
+
+	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
+	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
+		assertHasAddress("Must have an address.");
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		swapFungible(
+			StakedTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			StakedTokensParticle::getAmount,
+			amt -> factory.createStaked(from, address, amt, random.nextLong()),
+			amount,
+			"Not enough staked."
+		).with(amt -> factory.createStaked(to, address, amt, random.nextLong()));
 
 		particleGroup();
 

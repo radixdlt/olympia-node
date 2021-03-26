@@ -48,8 +48,8 @@ public final class MutableTokenDefinition {
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
 		this.description = Objects.requireNonNull(description);
-		this.iconUrl = Objects.requireNonNull(iconUrl);
-		this.tokenUrl = Objects.requireNonNull(tokenUrl);
+		this.iconUrl = iconUrl;
+		this.tokenUrl = tokenUrl;
 		this.tokenPermissions = Objects.requireNonNull(tokenPermissions);
 	}
 
