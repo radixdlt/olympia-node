@@ -163,8 +163,17 @@ public final class GenerateUniverses {
 				.ofNullable(
 					(System.getenv("NODE_NAMES")))
 				.orElse( "");
-			final List<String> listOfValidators= !listOfValidatorsEnv.trim().equals("") ?
-				new ArrayList<String>(Arrays.asList(listOfValidatorsEnv.split(","))): new ArrayList<>();
+			final List<String> listOfValidators;
+
+			if(!listOfValidatorsEnv.trim().equals("")){
+				List<String> rawlist = new ArrayList<String>(Arrays.asList(listOfValidatorsEnv.split(",")));
+				listOfValidators = rawlist.stream()
+					.map(entry -> entry.replaceAll("[^\\w-]",""))
+					.collect(Collectors.toList());
+			}
+			else{
+				listOfValidators = new ArrayList<>();
+			}
 
 			if (stakes.isEmpty()) {
 				throw new IllegalArgumentException("Must specify at least one staking amount");
