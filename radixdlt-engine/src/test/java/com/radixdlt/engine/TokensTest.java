@@ -2,20 +2,17 @@ package com.radixdlt.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
@@ -27,8 +24,8 @@ import org.junit.Test;
 import java.util.List;
 
 public class TokensTest {
-	private RadixEngine<RadixEngineAtom, Void> engine;
-	private EngineStore<RadixEngineAtom, Void> store;
+	private RadixEngine<Void> engine;
+	private EngineStore<Void> store;
 
 	@Before
 	public void setup() {
@@ -70,19 +67,14 @@ public class TokensTest {
 			rri,
 			ImmutableMap.of()
 		);
-		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.virtualSpinDown(rriParticle),
-			CMMicroInstruction.spinUp(tokenDefinitionParticle),
-			CMMicroInstruction.spinUp(transferrableTokensParticle),
-			CMMicroInstruction.particleGroup()
-		);
-		CMInstruction instruction = new CMInstruction(
-			instructions,
-			ImmutableMap.of(keyPair.euid(), keyPair.sign(HashUtils.zero256()))
-		);
+		var builder = Atom.newBuilder()
+			.virtualDown(rriParticle)
+			.up(tokenDefinitionParticle)
+			.up(transferrableTokensParticle)
+			.particleGroup();
+		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act
-		var atom = new BaseAtom(instruction, HashUtils.zero256());
 		this.engine.execute(List.of(atom));
 
 		// Assert

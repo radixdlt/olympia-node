@@ -22,10 +22,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
@@ -212,7 +213,7 @@ public class TokenFees {
 		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
 		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(inParticle)
+			.spinDown(SubstateId.of(inParticle))
 			.spinUp(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.spinUp(new TransferrableTokensParticle(
@@ -246,7 +247,7 @@ public class TokenFees {
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
 		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(inParticle)
+			.spinDown(SubstateId.of(inParticle))
 			.spinUp(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.spinUp(new TransferrableTokensParticle(
@@ -291,7 +292,7 @@ public class TokenFees {
 				feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime());
 
 		final ParticleGroup exchangeParticleGroup = ParticleGroup.builder()
-			.spinDown(inParticle)
+			.spinDown(SubstateId.of(inParticle))
 			.spinUp(exchangedParticle1)
 			.spinUp(exchangedParticle2)
 			.build();
@@ -308,8 +309,8 @@ public class TokenFees {
 
 		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
 		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(exchangedParticle1)
-			.spinDown(exchangedParticle2)
+			.spinDown(SubstateId.of(exchangedParticle1))
+			.spinDown(SubstateId.of(exchangedParticle2))
 			.spinUp(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.spinUp(new TransferrableTokensParticle(
@@ -423,7 +424,7 @@ public class TokenFees {
 		for (Action action: actions) {
 			t.stage(action);
 		}
-		final AtomBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
+		final TxLowLevelBuilder feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
 		return this.api.getMinimumRequiredFee(feelessAtom);
 	}
 

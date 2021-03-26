@@ -19,11 +19,10 @@ package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.AtomStatus;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.HighLevelApiService;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -44,8 +43,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
-import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
@@ -57,8 +54,6 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.services.ApiAtomStatus.FAILED;
 import static org.radix.api.services.ApiAtomStatus.PENDING;
 import static org.radix.api.services.ApiAtomStatus.fromAtomStatus;
-
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 
 public class HighLevelApiHandler {
 	private final HighLevelApiService highLevelApiService;
@@ -73,7 +68,23 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleNativeToken(JSONObject request) {
-		return response(request, stubNativeToken(highLevelApiService.getAddress()));
+		return highLevelApiService.getNativeTokenDescription()
+			.fold(
+				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				description -> response(request, description.asJson())
+			);
+	}
+
+	public JSONObject handleTokenInfo(JSONObject request) {
+		return withRequiredParameter(
+			request, "resourceIdentifier",
+			(params, tokenId) -> RRI.fromString(tokenId)
+				.flatMap(highLevelApiService::getTokenDescription)
+				.fold(
+					failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+					tokenDescription -> response(request, tokenDescription.asJson())
+				)
+		);
 	}
 
 	public JSONObject handleTokenBalances(JSONObject request) {
@@ -81,7 +92,7 @@ public class HighLevelApiHandler {
 			request, "address",
 			(params, address) -> RadixAddress.fromString(address)
 				.map(radixAddress -> response(request, formatTokenBalances(request, radixAddress)))
-				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Unable to recognize address"))
+				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize address"))
 		);
 	}
 
@@ -91,7 +102,7 @@ public class HighLevelApiHandler {
 			var size = safeInteger(params, "size").filter(value -> value > 0);
 
 			if (address.isEmpty() || size.isEmpty()) {
-				return errorResponse(request, INVALID_PARAMS,
+				return errorResponse(request, RpcError.INVALID_PARAMS,
 									 address.isEmpty() ? "Unable to recognize address" : "Invalid size"
 				);
 			}
@@ -110,16 +121,15 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
-		return withRequiredParameter(request, "atomIdentifier", (params, atomId) -> {
-			return AID.fromString(atomId)
+		return withRequiredParameter(request, "atomIdentifier", (params, atomId) ->
+			AID.fromString(atomId)
 				.map(aid -> response(request, stubTransactionStatus(aid)))
-				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Unable to recognize atom ID"));
-		});
+				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize atom ID")));
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
 		return highLevelApiService.getTokenBalances(radixAddress).fold(
-			failure -> errorResponse(request, SERVER_ERROR, failure.message()),
+			failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
 			list -> jsonObject()
 				.put("owner", radixAddress.toString())
 				.put("tokenBalances", fromList(list, TokenBalance::asJson))
@@ -130,27 +140,6 @@ public class HighLevelApiHandler {
 	//---------------------------------------------------------------------
 	// Stubs
 	//---------------------------------------------------------------------
-	private static JSONObject stubNativeToken(RadixAddress address) {
-		var tokenRRI = RRI.of(address, "XRD");
-		var permissions = Map.of(
-			TokenTransition.BURN, TokenPermission.ALL,
-			TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-		);
-
-		return jsonObject("{\n"
-							  + "\"name\": \"XRD\",\n"
-							  + "\"rri\": \"" + tokenRRI.toString() + "\",\n"
-							  + "\"symbol\": \"XRD\",\n"
-							  + "\"description\": \"Radix native token\",\n"
-							  + "\"granularity\": \"" + UInt256.ONE + "\",\n"
-							  + "\"isSupplyMutable\": false,\n"
-							  + "\"currentSupply\": \"" + TokenUnitConversions.unitsToSubunits(1000L) + "\",\n"
-							  + "\"tokenInfoURL\": \"https://www.radixdlt.com/get-tokens/\",\n"
-							  + "\"iconURL\": \"https://assets.coingecko.com/coins/images/13145/small/exrd_logo.png\",\n"
-							  + "\"tokenPermission\" : \n" + new JSONObject(permissions).toString() + "\n"
-							  + "}\n")
-			.orElseThrow(() -> new IllegalStateException("Unable to parse stub response"));
-	}
 
 	private final ConcurrentMap<AID, AtomStatus> atomStatuses = new ConcurrentHashMap<>();
 

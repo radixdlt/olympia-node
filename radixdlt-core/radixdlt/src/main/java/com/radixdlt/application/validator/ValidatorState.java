@@ -18,44 +18,26 @@
 
 package com.radixdlt.application.validator;
 
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.constraintmachine.Particle;
 
-import java.util.function.Function;
-import java.util.function.LongFunction;
+import java.util.Objects;
 
 /**
  * The validator state of a node
  */
 public final class ValidatorState {
-    private final Long unregisteredNonce;
-    private final RegisteredValidatorParticle registeredParticle;
+    private final Particle currentParticle;
 
-    private ValidatorState(Long unregisteredNonce, RegisteredValidatorParticle registeredParticle) {
-        this.unregisteredNonce = unregisteredNonce;
-        this.registeredParticle = registeredParticle;
+    private ValidatorState(Particle currentParticle) {
+        this.currentParticle = currentParticle;
     }
 
-    public static ValidatorState unregistered() {
-        return new ValidatorState(0L, null);
+    public static ValidatorState create(Particle currentParticle) {
+        Objects.requireNonNull(currentParticle);
+        return new ValidatorState(currentParticle);
     }
 
-    public static ValidatorState unregistered(long nonce) {
-        return new ValidatorState(nonce, null);
-    }
-
-    public static ValidatorState registered(RegisteredValidatorParticle registeredParticle) {
-        return new ValidatorState(null, registeredParticle);
-    }
-
-    public boolean isRegistered() {
-        return registeredParticle != null;
-    }
-
-    public <T> T map(LongFunction<T> unregisteredMapper, Function<RegisteredValidatorParticle, T> registeredMapper) {
-        if (unregisteredNonce != null) {
-            return unregisteredMapper.apply(unregisteredNonce);
-        } else {
-            return registeredMapper.apply(registeredParticle);
-        }
+    public Particle currentParticle() {
+        return currentParticle;
     }
 }

@@ -18,10 +18,16 @@
 package org.radix.api.services;
 
 import com.google.inject.Inject;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
+import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 
@@ -29,25 +35,51 @@ import java.util.List;
 
 public class HighLevelApiService {
 	private final Universe universe;
-	private final RadixAddress radixAddress;
 	private final ClientApiStore clientApiStore;
+	private final MutableSupplyTokenDefinitionParticle nativeTokenDefinition;
 
 	@Inject
-	public HighLevelApiService(Universe universe, @Self RadixAddress radixAddress, ClientApiStore clientApiStore) {
+	public HighLevelApiService(
+		Universe universe,
+		ClientApiStore clientApiStore,
+		@Genesis Atom genesisAtom
+	) {
 		this.universe = universe;
-		this.radixAddress = radixAddress;
 		this.clientApiStore = clientApiStore;
+		this.nativeTokenDefinition = nativeToken(genesisAtom);
 	}
 
 	public int getUniverseMagic() {
 		return universe.getMagic();
 	}
 
-	public RadixAddress getAddress() {
-		return radixAddress;
-	}
-
 	public Result<List<TokenBalance>> getTokenBalances(RadixAddress radixAddress) {
 		return clientApiStore.getTokenBalances(radixAddress);
 	}
+
+	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
+		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRRI())
+			.map(supply -> TokenDefinitionRecord.from(nativeTokenDefinition, supply));
+	}
+
+	public Result<TokenDefinitionRecord> getTokenDescription(RRI rri) {
+		return clientApiStore.getTokenDefinition(rri)
+			.flatMap(definition -> withSupply(rri, definition));
+	}
+
+	private Result<TokenDefinitionRecord> withSupply(RRI rri, TokenDefinitionRecord definition) {
+		return definition.isMutable()
+			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
+			   : Result.ok(definition);
+	}
+
+	private static MutableSupplyTokenDefinitionParticle nativeToken(Atom genesisAtom) {
+		return genesisAtom.upParticles()
+			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
+			.map(MutableSupplyTokenDefinitionParticle.class::cast)
+			.filter(particle -> particle.getRRI().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
+	}
+
 }

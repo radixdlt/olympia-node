@@ -22,8 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -31,10 +29,10 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -65,7 +63,6 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -102,10 +99,10 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	@Inject
-	private RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	private RadixEngineStateComputer sut;
@@ -115,7 +112,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<Atom, LedgerAndBFTProof> engineStore;
+	private EngineStore<LedgerAndBFTProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -134,7 +131,7 @@ public class RadixEngineStateComputerTest {
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<Atom, LedgerAndBFTProof>>() { }).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
@@ -161,23 +158,23 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(List.of(genesisAtom), PermissionLevel.SYSTEM);
+		branch.execute(genesisAtoms, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
 		);
 		radixEngine.deleteBranches();
 
-		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+		byte[] payload = serialization.toDson(genesisAtoms.get(0), DsonOutput.Output.ALL);
 		Command command = new Command(payload);
 		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
-			hasher.hash(command),
+			new AccumulatorState(0, hasher.hash(command)),
 			genesisValidatorSet
 		);
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(List.of(genesisAtom), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		radixEngine.execute(genesisAtoms, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
 	}
 
 	@Before
@@ -197,36 +194,25 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		Atom atom = Atom.newBuilder().addParticleGroup(ParticleGroup.builder()
-			.spinDown(lastSystemParticle)
-			.spinUp(nextSystemParticle)
-			.build()
-		).buildAtom();
+		Atom atom = Atom.newBuilder()
+			.down(SubstateId.of(lastSystemParticle))
+			.up(nextSystemParticle)
+			.particleGroup()
+			.buildWithoutSignature();
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
-	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
-			address, ImmutableSet.of(), 1
-		);
-		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
-			address, 0
-		);
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.virtualSpinDown(unregisteredValidatorParticle)
-			.spinUp(registeredValidatorParticle)
-			.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		Atom clientAtom = atom.buildAtom();
-		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
+	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var atom = TxBuilder.newBuilder(address)
+			.registerAsValidator()
+			.signAndBuild(keyPair::sign);
+
+		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
+		var cmd = new Command(payload);
+		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
 	}
 
 	@Test
@@ -257,7 +243,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() {
+	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
@@ -276,7 +262,7 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	@Ignore("Difficult to include staking. Refactor then reenable")
-	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
+	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() throws Exception {
 		// Arrange
 		RadixEngineCommand cmd = registerCommand(unregisteredNode);
 		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
@@ -343,7 +329,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_additional_cmds_should_fail() {
+	public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
@@ -369,7 +355,7 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_with_different_validator_signed_should_fail() {
+	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);

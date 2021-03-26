@@ -21,6 +21,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 
 public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
 	public BFTHeaderSerializeTest() {
@@ -29,7 +30,8 @@ public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
 
 	private static BFTHeader get() {
 		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
 		return new BFTHeader(view, HashUtils.random256(), ledgerHeader);
 	}
 }

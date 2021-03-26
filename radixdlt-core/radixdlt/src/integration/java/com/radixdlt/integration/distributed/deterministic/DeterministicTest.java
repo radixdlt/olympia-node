@@ -161,6 +161,11 @@ public final class DeterministicTest {
 			return this;
 		}
 
+		public Builder messageMutators(MessageMutator... messageMutators) {
+			final var combinedMutator = Stream.of(messageMutators).reduce(MessageMutator::andThen).get();
+			return this.messageMutator(combinedMutator);
+		}
+
 		public Builder pacemakerTimeout(long pacemakerTimeout) {
 			if (pacemakerTimeout <= 0) {
 				throw new IllegalArgumentException("Pacemaker timeout must be positive: " + pacemakerTimeout);

@@ -19,21 +19,21 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.DefaultSerialization;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -88,9 +88,10 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
-		private final Map<HashCode, Particle> upParticles = new HashMap<>();
+		private final Map<SubstateId, Particle> upParticles = new HashMap<>();
+		private final Set<SubstateId> downParticles = new HashSet<>();
 		private final HashCode witness;
-		private final Map<EUID, ECDSASignature> signatures;
+		private final Optional<ECDSASignature> signature;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 		private final CMStore store;
 		private final CMStore.Transaction txn;
@@ -100,21 +101,26 @@ public final class ConstraintMachine {
 			CMStore store,
 			PermissionLevel permissionLevel,
 			HashCode witness,
-			Map<EUID, ECDSASignature> signatures
+			Optional<ECDSASignature> signature
 		) {
 			this.txn = txn;
 			this.store = store;
 			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
-			this.signatures = signatures;
+			this.signature = signature;
 		}
 
-		public Optional<Particle> loadUpParticle(HashCode particleHash) {
-			if (upParticles.containsKey(particleHash)) {
-				return Optional.of(upParticles.get(particleHash));
+		public Optional<Particle> loadUpParticle(SubstateId substateId) {
+			if (upParticles.containsKey(substateId)) {
+				return Optional.of(upParticles.get(substateId));
 			}
-			return store.loadUpParticle(txn, particleHash);
+
+			if (downParticles.contains(substateId)) {
+				return Optional.empty();
+			}
+
+			return store.loadUpParticle(txn, substateId);
 		}
 
 		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
@@ -136,20 +142,20 @@ public final class ConstraintMachine {
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(particle, nextSpin);
 
-			var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-			var particleHash = HashUtils.sha256(dson);
+			var particleId = SubstateId.of(particle);
 			if (nextSpin == Spin.UP) {
-				upParticles.put(particleHash, particle);
+				upParticles.put(particleId, particle);
 			} else {
-				upParticles.remove(particleHash);
+				upParticles.remove(particleId);
 			}
 
 			return true;
 		}
 
-		public Optional<Particle> checkUpAndPush(HashCode particleHash) {
-			var maybeParticle = loadUpParticle(particleHash);
-			upParticles.remove(particleHash);
+		public Optional<Particle> checkUpAndPush(SubstateId substateId) {
+			var maybeParticle = loadUpParticle(substateId);
+			upParticles.remove(substateId);
+			downParticles.add(substateId);
 			return maybeParticle;
 		}
 
@@ -159,12 +165,11 @@ public final class ConstraintMachine {
 		}
 
 		private boolean verifySignedWith(ECPublicKey publicKey) {
-			if (signatures == null || signatures.isEmpty() || witness == null) {
+			if (signature.isEmpty() || witness == null) {
 				return false;
 			}
 
-			final ECDSASignature signature = signatures.get(publicKey.euid());
-			return publicKey.verify(witness, signature);
+			return publicKey.verify(witness, signature.get());
 		}
 
 		Particle getCurParticle() {
@@ -382,7 +387,7 @@ public final class ConstraintMachine {
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
 		List<CMMicroInstruction> microInstructions,
-		Map<HashCode, Particle> downedParticles
+		Map<SubstateId, Particle> downedParticles
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
@@ -434,14 +439,14 @@ public final class ConstraintMachine {
 				}
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-				var particleHash = cmMicroInstruction.getParticleHash();
-				var maybeParticle = validationState.checkUpAndPush(particleHash);
+				var particleId = cmMicroInstruction.getParticleId();
+				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
 
 				var particle = maybeParticle.get();
-				downedParticles.put(cmMicroInstruction.getParticleHash(), particle);
+				downedParticles.put(cmMicroInstruction.getParticleId(), particle);
 				Optional<CMError> error = validateParticle(validationState, particle, true, dp);
 				if (error.isPresent()) {
 					return error;
@@ -490,25 +495,23 @@ public final class ConstraintMachine {
 	 * Validates a CM instruction and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(
 		CMStore.Transaction txn,
 		CMStore cmStore,
-		CMInstruction cmInstruction,
-		HashCode witness,
+		Atom atom,
 		PermissionLevel permissionLevel,
-		Map<HashCode, Particle> downedParticles
+		Map<SubstateId, Particle> downedParticles
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			txn,
 			cmStore,
 			permissionLevel,
-			witness,
-			cmInstruction.getSignatures()
+			atom.getWitness(),
+			atom.getSignature()
 		);
 
-		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions(), downedParticles);
+		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), downedParticles);
 	}
 }

@@ -21,12 +21,11 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
@@ -58,20 +57,22 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomNotMinimum() {
 		FeeTable ft = get();
-		var a = Atom.newBuilder()
-			.addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 1")).build())
-			.addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 2")).build());
+		var atom = Atom.newBuilder()
+			.up(makeParticle("test message 1"))
+			.particleGroup()
+			.up(makeParticle("test message 2"))
+			.particleGroup()
+			.buildWithoutSignature();
 
-		Atom ca = a.buildAtom();
-		UInt256 fee = ft.feeFor(ca, ca.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
+		UInt256 fee = ft.feeFor(atom, atom.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
 		assertEquals(UInt256.SIX, fee);
 	}
 
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		AtomBuilder a = Atom.newBuilder();
-		Atom ca = a.buildAtom();
+		TxLowLevelBuilder a = Atom.newBuilder();
+		Atom ca = a.buildWithoutSignature();
 		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
@@ -83,10 +84,12 @@ public class FeeTableTest {
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
 		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-		AtomBuilder a = Atom.newBuilder().addParticleGroup(ParticleGroup.builder().spinUp(makeParticle("test message 3")).build());
-		Atom ca = a.buildAtom();
-		ImmutableSet<Particle> outputs = ca.upParticles().collect(ImmutableSet.toImmutableSet());
-		assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
+		Atom atom = Atom.newBuilder()
+			.up(makeParticle("test message 3"))
+			.particleGroup()
+			.buildWithoutSignature();
+		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());
+		assertThatThrownBy(() -> ft.feeFor(atom, outputs, 1))
 			.isInstanceOf(ArithmeticException.class)
 			.hasMessageStartingWith("Fee overflow");
 	}

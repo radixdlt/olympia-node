@@ -29,7 +29,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -73,7 +72,7 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = Atom.newBuilder().message("Simple test message").buildAtom();
+		var atom = Atom.newBuilder().message("Simple test message").buildWithoutSignature();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -106,12 +105,12 @@ public class AtomsServiceTest {
 	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var particle = new UniqueParticle("particle message", address, 0);
-		var group1 = ParticleGroup.builder().spinUp(particle).build();
 
 		var atom = Atom.newBuilder()
-			.addParticleGroup(group1)
+			.up(particle)
+			.particleGroup()
 			.message("Test message")
-			.buildAtom();
+			.buildWithoutSignature();
 
 		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		return Pair.of(atom, new Command(dson).getId());

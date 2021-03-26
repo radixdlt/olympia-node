@@ -18,18 +18,15 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.AtomBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -57,7 +54,7 @@ public final class UniqueTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<Atom, LedgerAndBFTProof> sut;
+	@Inject private RadixEngine<LedgerAndBFTProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -77,19 +74,15 @@ public final class UniqueTest {
 	}
 
 	private Atom uniqueAtom(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
-			.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atom.buildAtom();
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var rri = RRI.of(address, "test");
+		var rriParticle = new RRIParticle(rri, 0);
+		var uniqueParticle = new UniqueParticle("test", address, random.nextLong());
+		var atomBuilder = Atom.newBuilder()
+			.virtualDown(rriParticle)
+			.up(uniqueParticle)
+			.particleGroup();
+		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
 	@Test

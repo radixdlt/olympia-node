@@ -23,7 +23,6 @@ import javax.inject.Inject;
 
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -88,7 +87,7 @@ public class GetNextCommittedCommandsTest {
 	private Injector injector;
 
 	@Inject
-	private EngineStore<Atom, LedgerAndBFTProof> committedAtomsStore;
+	private EngineStore<LedgerAndBFTProof> committedAtomsStore;
 
 	@Inject
 	private CommittedReader committedReader;
@@ -228,10 +227,12 @@ public class GetNextCommittedCommandsTest {
 	}
 
 	private Pair<Atom, LedgerProof> generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
-		final var builder = Atom.newBuilder().message("Atom for " + stateVersion); // Make hash different
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
-		builder.addParticleGroup(ParticleGroup.builder().spinUp(new RRIParticle(rri)).build());
-		final var clientAtom = builder.buildAtom();
+		final var atom = Atom.newBuilder()
+			.message("Atom for " + stateVersion)
+			.up(new RRIParticle(rri))
+			.particleGroup()
+			.buildWithoutSignature();
 
 		final var proposedVertexId = HashUtils.random256();
 		final var proposedView = view.next().next();
@@ -264,6 +265,6 @@ public class GetNextCommittedCommandsTest {
 			committedLedgerHeader,
 			signatures
 		);
-		return Pair.of(clientAtom, proof);
+		return Pair.of(atom, proof);
 	}
 }

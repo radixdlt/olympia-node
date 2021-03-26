@@ -18,6 +18,7 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_CONSENSUS_START_ON_BOOT=true \
     RADIXDLT_CHAOS_ENABLE=true \
     RADIXDLT_DB_LOCATION=./RADIXDB \
+    RADIXDLT_ENABLE_FAUCET=false \
     RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks
 
 # install the radixdlt package

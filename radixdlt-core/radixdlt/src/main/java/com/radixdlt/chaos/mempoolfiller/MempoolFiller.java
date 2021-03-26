@@ -17,10 +17,9 @@
 
 package com.radixdlt.chaos.mempoolfiller;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,7 +32,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -50,7 +48,7 @@ import java.util.Random;
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
 	private final Serialization serialization;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
@@ -70,7 +68,7 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
 		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,
@@ -117,7 +115,7 @@ public final class MempoolFiller {
 			}
 
 			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			List<AtomBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
+			List<TxBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
 			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 				wallet.getBalance(),
@@ -126,10 +124,8 @@ public final class MempoolFiller {
 			);
 
 			List<BFTNode> peers = peersView.peers();
-			atoms.forEach(atom -> {
-				HashCode hashToSign = atom.computeHashToSign();
-				atom.setSignature(selfAddress.euid(), hashSigner.sign(hashToSign));
-				Atom clientAtom = atom.buildAtom();
+			atoms.forEach(atomBuilder -> {
+				var clientAtom = atomBuilder.signAndBuild(hashSigner::sign);
 				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 

@@ -1,23 +1,24 @@
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.engine.RadixEngineAtom;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class TransientEngineStore<T extends RadixEngineAtom, M> implements EngineStore<T, M> {
-	private final EngineStore<T, M> base;
-	private InMemoryEngineStore<T, M> transientStore = new InMemoryEngineStore<>();
+public class TransientEngineStore<M> implements EngineStore<M> {
+	private final EngineStore<M> base;
+	private InMemoryEngineStore<M> transientStore = new InMemoryEngineStore<>();
 
-	public TransientEngineStore(EngineStore<T, M> base) {
+	public TransientEngineStore(EngineStore<M> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
 	@Override
-	public void storeAtom(Transaction txn, T atom) {
+	public void storeAtom(Transaction txn, Atom atom) {
 		transientStore.storeAtom(txn, atom);
 	}
 
@@ -47,11 +48,11 @@ public class TransientEngineStore<T extends RadixEngineAtom, M> implements Engin
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
-		if (transientStore.getSpin(particleHash) == Spin.NEUTRAL) {
-			return base.loadUpParticle(txn, particleHash);
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+		if (transientStore.getSpin(substateId) == Spin.NEUTRAL) {
+			return base.loadUpParticle(txn, substateId);
 		}
 
-		return transientStore.loadUpParticle(txn, particleHash);
+		return transientStore.loadUpParticle(txn, substateId);
 	}
 }

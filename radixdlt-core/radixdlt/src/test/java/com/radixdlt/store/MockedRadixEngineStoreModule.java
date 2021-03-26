@@ -23,7 +23,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -36,6 +35,8 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
+
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
@@ -44,25 +45,23 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<Atom, LedgerAndBFTProof> engineStore(
-		@Genesis Atom genesisAtom,
+	private EngineStore<LedgerAndBFTProof> engineStore(
+		@Genesis List<Atom> genesisAtoms,
 		Hasher hasher,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
-		var inMemoryEngineStore = new InMemoryEngineStore<Atom, LedgerAndBFTProof>();
-		byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
-		Command command = new Command(payload);
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
-				.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
-		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
-			hasher.hash(command),
-			validatorSet
-		);
-		if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
-			var txn = inMemoryEngineStore.createTransaction();
-			inMemoryEngineStore.storeAtom(txn, genesisAtom);
-			txn.commit();
+		var inMemoryEngineStore = new InMemoryEngineStore<LedgerAndBFTProof>();
+		for (var genesisAtom : genesisAtoms) {
+			byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
+			Command command = new Command(payload);
+			BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
+					.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
+			if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
+				var txn = inMemoryEngineStore.createTransaction();
+				inMemoryEngineStore.storeAtom(txn, genesisAtom);
+				txn.commit();
+			}
 		}
 		return inMemoryEngineStore;
 	}

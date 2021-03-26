@@ -19,6 +19,7 @@
 package com.radixdlt.application.validator;
 
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -48,7 +49,7 @@ public final class ValidatorStateReducer implements StateReducer<ValidatorState,
 
 	@Override
 	public Supplier<ValidatorState> initial() {
-		return ValidatorState::unregistered;
+		return () -> ValidatorState.create(new UnregisteredValidatorParticle(radixAddress, 0L));
 	}
 
 	@Override
@@ -57,7 +58,7 @@ public final class ValidatorStateReducer implements StateReducer<ValidatorState,
 			if (!p.getAddress().equals(radixAddress)) {
 				return prev;
 			}
-			return ValidatorState.registered(p);
+			return ValidatorState.create(p);
 		};
 	}
 
@@ -67,7 +68,7 @@ public final class ValidatorStateReducer implements StateReducer<ValidatorState,
 			if (!p.getAddress().equals(radixAddress)) {
 				return prev;
 			}
-			return ValidatorState.unregistered(p.getNonce() + 1);
+			return ValidatorState.create(new UnregisteredValidatorParticle(radixAddress, p.getNonce() + 1));
 		};
 	}
 }

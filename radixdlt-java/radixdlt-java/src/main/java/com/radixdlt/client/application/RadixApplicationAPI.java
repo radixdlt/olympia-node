@@ -82,7 +82,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
@@ -972,7 +972,7 @@ public class RadixApplicationAPI {
 	 * @param particleGroups particle groups to include in atom
 	 * @return unsigned atom with appropriate fees
 	 */
-	public AtomBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
+	public TxLowLevelBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
 		Transaction t = createTransaction();
 		particleGroups.forEach(t::stage);
 		return t.buildAtom();
@@ -1084,7 +1084,7 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getActions();
 	}
 
-	public BigDecimal getMinimumRequiredFee(AtomBuilder atomWithoutFees) {
+	public BigDecimal getMinimumRequiredFee(TxLowLevelBuilder atomWithoutFees) {
 		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
 	}
 
@@ -1360,7 +1360,7 @@ public class RadixApplicationAPI {
 		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
 		 * @return an unsigned atom
 		 */
-		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
+		public TxLowLevelBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
 			var feelessBuilder = universe.getAtomStore().getStaged(this.uuid);
 			feelessBuilder.message(this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessBuilder, Optional.ofNullable(fee));
@@ -1377,7 +1377,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @return an unsigned atom
 		 */
-		public AtomBuilder buildAtom() {
+		public TxLowLevelBuilder buildAtom() {
 			return buildAtomWithFee(null);
 		}
 
@@ -1390,8 +1390,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
-			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
+			final TxLowLevelBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1423,8 +1423,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
-			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
-			final Single<Atom> atom = identity.addSignature(unsignedAtom).map(AtomBuilder::buildAtom);
+			final TxLowLevelBuilder unsignedAtom = buildAtomWithFee(fee);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 

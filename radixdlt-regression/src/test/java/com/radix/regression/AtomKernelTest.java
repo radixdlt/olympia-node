@@ -19,7 +19,7 @@ package com.radix.regression;
 
 import com.google.common.base.Strings;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -28,7 +28,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Atoms;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -88,11 +87,10 @@ public class AtomKernelTest {
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
-			Atom.newBuilder().addParticleGroup(ParticleGroup.builder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
-				.build()
-			)
+			Atom.newBuilder()
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.particleGroup()
 		);
 
 		observer.awaitTerminalEvent();
@@ -107,10 +105,9 @@ public class AtomKernelTest {
 			10,
 			false,
 			Atom.newBuilder()
-				.addParticleGroup(ParticleGroup.builder()
-					.virtualSpinDown(new RRIParticle(rri))
-					.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
-					.build())
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.particleGroup()
 		);
 		observer.awaitCount(1);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
@@ -128,7 +125,7 @@ public class AtomKernelTest {
 	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 		String message = Strings.repeat("X", messageSize);
 		if (addFee) {
@@ -138,7 +135,7 @@ public class AtomKernelTest {
 
 		atomBuilder.message(message);
 		// Sign and submit
-		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet().buildAtom();
+		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 
@@ -160,7 +157,7 @@ public class AtomKernelTest {
 	private TestObserver<?> submitAtom(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 
 		String message = Strings.repeat("X", messageSize);
@@ -172,7 +169,7 @@ public class AtomKernelTest {
 
 		atomBuilder.message(message);
 		// Sign and submit
-		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet().buildAtom();
+		var signedAtom = this.identity.addSignature(atomBuilder).blockingGet();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 		this.jsonRpcClient.pushAtom(signedAtom).subscribe(observer);

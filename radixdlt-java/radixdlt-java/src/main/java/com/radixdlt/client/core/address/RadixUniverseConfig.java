@@ -44,6 +44,7 @@ import org.bouncycastle.util.encoders.Base64;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.List;
 
 @SerializerId2("radix.universe")
 public class RadixUniverseConfig {
@@ -79,7 +80,7 @@ public class RadixUniverseConfig {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private Atom genesis;
+	private List<Atom> genesis;
 
 	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
 		byte[] bytes = Base64.decode(dsonBase64);
@@ -107,7 +108,7 @@ public class RadixUniverseConfig {
 	}
 
 	RadixUniverseConfig(
-		Atom genesis,
+		List<Atom> genesis,
 		long port,
 		String name,
 		String description,
@@ -147,7 +148,7 @@ public class RadixUniverseConfig {
 		return this.timestamp;
 	}
 
-	public Atom getGenesis() {
+	public List<Atom> getGenesis() {
 		return genesis;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,23 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.engine;
-
-import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.CMInstruction;
+package com.radixdlt.atommodel.tokens;
 
 /**
- * Radix Engine interface for retrieving a sequence of instructions to
- * verify and store in the engine.
+ * Marker interface for token definition particles
  */
-public interface RadixEngineAtom {
-
-	/**
-	 * Retrieve the sequence of instructions
-	 * @return sequence of instructions
-	 */
-	CMInstruction getCMInstruction();
-
-	// TODO: Change witness to be something implicit rather than explicit
-	HashCode getWitness();
+public interface TokenDefinitionParticle {
 }

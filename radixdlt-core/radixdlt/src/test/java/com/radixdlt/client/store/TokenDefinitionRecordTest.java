@@ -14,16 +14,28 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package com.radixdlt.client.store;
 
-package com.radix.acceptance.multiple_transactions;
+import org.junit.Test;
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
-import io.cucumber.junit.CucumberOptions.SnippetType;
-import org.junit.runner.RunWith;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunMultipleTransactions {
-	// Stub for running cucumber tests
+public class TokenDefinitionRecordTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(TokenDefinitionRecord.class)
+			.suppress(Warning.NONFINAL_FIELDS)
+			.withNonnullFields(
+				"name",
+				"rri",
+				"description",
+				"granularity",
+				"currentSupply",
+				"iconUrl",
+				"url",
+				"tokenPermissions"
+			)
+			.verify();
+	}
 }

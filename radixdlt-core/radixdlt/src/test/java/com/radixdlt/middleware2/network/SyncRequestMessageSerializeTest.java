@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
 public class SyncRequestMessageSerializeTest extends SerializeMessageObject<SyncRequestMessage> {
@@ -27,7 +28,8 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
 	}
 
 	private static SyncRequestMessage get() {
-		return new SyncRequestMessage(1234, LedgerProof.genesis(HashUtils.zero256(), null).toDto());
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		return new SyncRequestMessage(1234, LedgerProof.genesis(accumulatorState, null).toDto());
 	}
 
 }

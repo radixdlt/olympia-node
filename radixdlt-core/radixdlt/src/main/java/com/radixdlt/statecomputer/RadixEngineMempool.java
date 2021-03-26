@@ -55,11 +55,11 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 	private final Map<CMMicroInstruction, Set<Command>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	public RadixEngineMempool(
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@MempoolMaxSize int maxSize,
 		SystemCounters counters
 	) {
@@ -91,7 +91,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 		}
 
 		try {
-			RadixEngine.RadixEngineBranch<Atom, LedgerAndBFTProof> checker = radixEngine.transientBranch();
+			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
 			checker.execute(List.of(atom));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time

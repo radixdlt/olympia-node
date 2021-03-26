@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.validators;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
@@ -58,9 +59,15 @@ public final class RegisteredValidatorParticle extends Particle {
 		this(address, allowedDelegators, null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
+	@JsonCreator
+	public RegisteredValidatorParticle(
+		@JsonProperty("address") RadixAddress address,
+		@JsonProperty("allowedDelegators") ImmutableSet<RadixAddress> allowedDelegators,
+		@JsonProperty("url") String url,
+		@JsonProperty("nonce") long nonce
+	) {
 		this.address = Objects.requireNonNull(address);
-		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
+		this.allowedDelegators = allowedDelegators == null ? ImmutableSet.of() : allowedDelegators;
 		this.url = url;
 		this.nonce = nonce;
 	}
