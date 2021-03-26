@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -315,6 +316,41 @@ public final class ActionTxBuilder {
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
 		).with(rri -> new UniqueParticle(id, address, 1));
+
+		particleGroup();
+
+		return this;
+	}
+
+	public ActionTxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws ActionTxException {
+		assertHasAddress("Must have address");
+
+		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
+
+		down(
+			RRIParticle.class,
+			p -> p.getRri().equals(tokenRRI),
+			Optional.of(new RRIParticle(tokenRRI)),
+			"RRI not available"
+		);
+
+		up(new TransferrableTokensParticle(
+			address,
+			tokenDefinition.getSupply(),
+			tokenDefinition.getGranularity(),
+			tokenRRI,
+			ImmutableMap.of())
+		);
+
+		up(new FixedSupplyTokenDefinitionParticle(
+			tokenRRI,
+			tokenDefinition.getName(),
+			tokenDefinition.getDescription(),
+			tokenDefinition.getSupply(),
+			tokenDefinition.getGranularity(),
+			tokenDefinition.getIconUrl(),
+			tokenDefinition.getTokenUrl()
+		));
 
 		particleGroup();
 

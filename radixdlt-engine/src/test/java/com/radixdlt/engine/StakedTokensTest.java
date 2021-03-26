@@ -19,20 +19,19 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.ActionTxBuilder;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.ParticleId;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -76,24 +75,22 @@ public class StakedTokensTest {
 		);
 
 		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
-		final var rriParticle = new RRIParticle(this.tokenRri);
-		final var tokenDefinitionParticle = new FixedSupplyTokenDefinitionParticle(
-			this.tokenRri,
+		var tokDef = new FixedTokenDefinition(
 			"TEST",
+			"Test",
 			"description",
-			UInt256.TEN,
-			UInt256.ONE,
 			null,
-			null
+			null,
+			UInt256.TEN
 		);
-		this.transferrableTokensParticle = transferrableTokens(UInt256.TEN);
+		var tokDefBuilder = ActionTxBuilder.newBuilder(this.tokenOwnerAddress)
+			.createFixedToken(tokDef);
 
-		var builder = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(tokenDefinitionParticle)
-			.spinUp(this.transferrableTokensParticle)
-			.particleGroup();
-		var atom0 = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
+		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
+		tokDefBuilder.upParticles().filter(TransferrableTokensParticle.class::isInstance)
+			.map(TransferrableTokensParticle.class::cast)
+			.forEach(p -> this.transferrableTokensParticle = p);
+
 
 		var atom1 = ActionTxBuilder.newBuilder(this.validatorAddress)
 			.registerAsValidator()
