@@ -39,6 +39,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
+import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +59,7 @@ public final class TxBuilder {
 	private final Iterable<Particle> upParticles;
 
 	// TODO: remove
-	private final Random random = new Random();
+	private final Random random = new SecureRandom();
 
 	private TxBuilder(
 		RadixAddress address,
