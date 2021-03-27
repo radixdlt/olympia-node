@@ -53,7 +53,7 @@ public class UnregisterValidatorActionMapper implements StatefulActionToParticle
 	public List<ParticleGroup> mapToParticleGroups(UnregisterValidatorAction action, Stream<Particle> store) throws StageActionException {
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
 		return ImmutableList.of(ParticleGroup.builder()
-			.spinDown(SubstateId.of(currentState.asParticle()))
+			.spinDown(SubstateId.ofSubstate(currentState.asParticle()))
 			.spinUp(currentState.unregister())
 			.build()
 		);

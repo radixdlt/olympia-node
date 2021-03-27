@@ -23,7 +23,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +39,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Map<SubstateId, Pair<CMMicroInstruction, Atom>> storedParticles = new HashMap<>();
 	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
 	private final Set<Atom> atoms = new HashSet<>();
-	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	@Override
 	public void storeAtom(Transaction txn, Atom atom) {
@@ -47,18 +46,35 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
-					var particle = microInstruction.getParticle();
+
+					final Particle particle;
 					final SubstateId substateId;
-					if (particle != null) {
-						substateId = SubstateId.of(particle);
-					} else {
-						substateId = microInstruction.getParticleId();
+					try {
+						if (microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP
+							|| microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+							particle = DefaultSerialization.getInstance().fromDson(
+								microInstruction.getData(), Particle.class);
+							substateId = SubstateId.ofSubstate(microInstruction.getData());
+						} else if (microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+							substateId = SubstateId.fromBytes(microInstruction.getData());
+							var storedParticle = storedParticles.get(substateId);
+							if (storedParticle == null) {
+								particle = null;
+							} else {
+								var dson = storedParticle.getFirst().getData();
+								particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
+							}
+						} else {
+							continue;
+						}
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
 					}
-					storedParticles.put(
-						substateId,
-						Pair.of(microInstruction, atom)
-					);
-					inOrderParticles.add(Pair.of(microInstruction.getParticle(), nextSpin));
+
+					storedParticles.put(substateId, Pair.of(microInstruction, atom));
+					if (particle != null) {
+						inOrderParticles.add(Pair.of(particle, nextSpin));
+					}
 				}
 			}
 
@@ -102,7 +118,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 	@Override
 	public Spin getSpin(Transaction txn, Particle particle) {
-		return getSpin(SubstateId.of(particle));
+		return getSpin(SubstateId.ofSubstate(particle));
 	}
 
 	public Spin getSpin(SubstateId substateId) {
@@ -120,7 +136,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 				return Optional.empty();
 			}
 
-			return Optional.of(stored.getFirst().getParticle());
+			try {
+				var dson = stored.getFirst().getData();
+				var particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
+				return Optional.of(particle);
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
 		}
 	}
 }

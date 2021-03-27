@@ -20,9 +20,11 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,19 +59,31 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.instructions.add(CMMicroInstruction.spinUp(particle));
-		localUpParticles.put(SubstateId.of(particle), particle);
+		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		this.instructions.add(
+			CMMicroInstruction.create(
+				CMMicroInstruction.CMMicroOp.SPIN_UP.opCode(),
+				particleDson
+			)
+		);
+		localUpParticles.put(SubstateId.ofSubstate(particle), particle);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
+		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		this.instructions.add(
+			CMMicroInstruction.create(
+				CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN.opCode(),
+				particleDson
+			)
+		);
 		return this;
 	}
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
-		this.instructions.add(CMMicroInstruction.spinDown(substateId));
+		this.instructions.add(CMMicroInstruction.create(CMMicroInstruction.CMMicroOp.SPIN_DOWN.opCode(), substateId.asBytes()));
 		localUpParticles.remove(substateId);
 		return this;
 	}

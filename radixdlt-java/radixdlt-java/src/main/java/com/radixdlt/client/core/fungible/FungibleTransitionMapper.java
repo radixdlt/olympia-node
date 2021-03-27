@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.fungible;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;

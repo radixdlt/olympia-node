@@ -17,11 +17,9 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
+import org.bouncycastle.util.encoders.Hex;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class CMMicroInstruction {
@@ -44,28 +42,32 @@ public final class CMMicroInstruction {
 		public byte opCode() {
 			return opCode;
 		}
+
+		static CMMicroOp fromByte(byte op) {
+			for (var microOp : CMMicroOp.values()) {
+				if (microOp.opCode == op) {
+					return microOp;
+				}
+			}
+
+			throw new IllegalArgumentException("Unknown opcode: " + op);
+		}
 	}
 
 	private final CMMicroOp operation;
-	private final Particle particle;
-	private final SubstateId substateId;
+	private final byte[] data;
 
-	private CMMicroInstruction(CMMicroOp operation, Particle particle, SubstateId substateId) {
+	private CMMicroInstruction(CMMicroOp operation, byte[] data) {
 		this.operation = operation;
-		this.particle = particle;
-		this.substateId = substateId;
+		this.data = data;
 	}
 
 	public CMMicroOp getMicroOp() {
 		return operation;
 	}
 
-	public Particle getParticle() {
-		return particle;
-	}
-
-	public SubstateId getParticleId() {
-		return substateId;
+	public byte[] getData() {
+		return data;
 	}
 
 	public boolean isPush() {
@@ -92,35 +94,26 @@ public final class CMMicroInstruction {
 		return operation.nextSpin;
 	}
 
-	public static CMMicroInstruction spinDown(SubstateId substateId) {
-		return new CMMicroInstruction(CMMicroOp.SPIN_DOWN, null, substateId);
-	}
-
-	public static CMMicroInstruction virtualSpinDown(Particle particle) {
-		return new CMMicroInstruction(CMMicroOp.VIRTUAL_SPIN_DOWN, particle, null);
-	}
-
-	public static CMMicroInstruction spinUp(Particle particle) {
-		return new CMMicroInstruction(CMMicroOp.SPIN_UP, particle, null);
+	public static CMMicroInstruction create(byte op, byte[] data) {
+		var microOp = CMMicroOp.fromByte(op);
+		return new CMMicroInstruction(microOp, data);
 	}
 
 	public static CMMicroInstruction particleGroup() {
-		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, null, null);
+		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, new byte[0]);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s %s",
 			operation,
-			particle != null
-				? HashUtils.sha256(DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL)) + ":" + particle
-				: substateId
+			Hex.toHexString(data)
 		);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, particle, substateId);
+		return Objects.hash(operation, Arrays.hashCode(data));
 	}
 
 	@Override
@@ -131,7 +124,6 @@ public final class CMMicroInstruction {
 
 		var other = (CMMicroInstruction) o;
 		return Objects.equals(this.operation, other.operation)
-			&& Objects.equals(this.particle, other.particle)
-			&& Objects.equals(this.substateId, other.substateId);
+			&& Arrays.equals(this.data, other.data);
 	}
 }

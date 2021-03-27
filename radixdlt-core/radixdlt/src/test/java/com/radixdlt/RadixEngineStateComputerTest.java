@@ -196,7 +196,7 @@ public class RadixEngineStateComputerTest {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		Atom atom = TxLowLevelBuilder.newBuilder()
-			.down(SubstateId.of(lastSystemParticle))
+			.down(SubstateId.ofSubstate(lastSystemParticle))
 			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();

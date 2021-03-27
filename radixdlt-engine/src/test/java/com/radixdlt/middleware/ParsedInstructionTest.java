@@ -1,7 +1,7 @@
 package com.radixdlt.middleware;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;

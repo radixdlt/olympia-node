@@ -19,14 +19,14 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A group of particles representing one action, e.g. a transfer.
@@ -45,16 +45,6 @@ public final class ParticleGroup {
 
 	public List<CMMicroInstruction> getInstructions() {
 		return instructions;
-	}
-
-	/**
-	 * Get a stream of particles of a certain spin in this group
-	 * @return The particles in this group with that spin
-	 */
-	public Stream<Particle> upParticles() {
-		return this.instructions.stream()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(CMMicroInstruction::getParticle);
 	}
 
 	public static ParticleGroupBuilder builder() {
@@ -88,19 +78,29 @@ public final class ParticleGroup {
 		}
 
 		public final ParticleGroupBuilder spinUp(Particle particle) {
-			Objects.requireNonNull(particle, "particle is required");
-			this.instructions.add(CMMicroInstruction.spinUp(particle));
+			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+			this.instructions.add(
+				CMMicroInstruction.create(
+					CMMicroInstruction.CMMicroOp.SPIN_UP.opCode(),
+					particleDson
+				)
+			);
 			return this;
 		}
 
 		public final ParticleGroupBuilder virtualSpinDown(Particle particle) {
-			Objects.requireNonNull(particle, "particle is required");
-			this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
+			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+			this.instructions.add(
+				CMMicroInstruction.create(
+					CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN.opCode(),
+					particleDson
+				)
+			);
 			return this;
 		}
 
 		public final ParticleGroupBuilder spinDown(SubstateId substateId) {
-			this.instructions.add(CMMicroInstruction.spinDown(substateId));
+			this.instructions.add(CMMicroInstruction.create(CMMicroInstruction.CMMicroOp.SPIN_DOWN.opCode(), substateId.asBytes()));
 			return this;
 		}
 

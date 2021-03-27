@@ -23,6 +23,8 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
@@ -32,6 +34,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.DeserializeException;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.annotations.Nullable;
@@ -69,7 +72,15 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	private void softDeleteDependentsOf(Atom atom) {
-		atom.upParticles()
+		atom.uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
 			.forEach(p -> {
 				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
 				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
@@ -103,16 +114,26 @@ public class InMemoryAtomStore implements AtomStore {
 
 			for (CMMicroInstruction i : particleGroup.getInstructions()) {
 				if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
-					stagedAtom.up(i.getParticle());
+					try {
+						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						stagedAtom.up(particle);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-					stagedAtom.virtualDown(i.getParticle());
+					try {
+						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						stagedAtom.virtualDown(particle);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-					stagedAtom.down(i.getParticleId());
+					stagedAtom.down(SubstateId.fromBytes(i.getData()));
 				}
 			}
 			stagedAtom.particleGroup();
 
-			particleGroup.upParticles().forEach(p -> {
+			stagedAtom.localUpParticles().forEach(p -> {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
 				index.put(p, Spin.UP);
 				stagedParticleIndex.put(uuid, index);
@@ -162,7 +183,13 @@ public class InMemoryAtomStore implements AtomStore {
 				// stored atom must be deleted
 				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
 					atom.uniqueInstructions().forEach(i -> {
-						var spinParticleIndex = particleIndex.getOrDefault(i.getParticle(), Map.of());
+						Particle particle;
+						try {
+							particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						} catch (DeserializeException e) {
+							particle = null;
+						}
+						var spinParticleIndex = particleIndex.getOrDefault(particle, Map.of());
 						spinParticleIndex.getOrDefault(i.getNextSpin(), Set.of())
 							.forEach(a -> {
 								if (a.equals(atom)) {
@@ -181,10 +208,16 @@ public class InMemoryAtomStore implements AtomStore {
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
 					atom.uniqueInstructions().forEach(i -> {
-						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(i.getParticle());
+						Particle particle;
+						try {
+							particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						} catch (DeserializeException e) {
+							particle = null;
+						}
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(particle);
 						if (spinParticleIndex == null) {
 							spinParticleIndex = new EnumMap<>(Spin.class);
-							particleIndex.put(i.getParticle(), spinParticleIndex);
+							particleIndex.put(particle, spinParticleIndex);
 						}
 						spinParticleIndex.merge(
 							i.getNextSpin(),

@@ -36,15 +36,23 @@ public final class SubstateId {
 		this.substateId = Objects.requireNonNull(substateId);
 	}
 
-	public static SubstateId of(Particle particle) {
+	public static SubstateId ofSubstate(Particle particle) {
 		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var substateHash = HashUtils.sha256(dson);
+		return ofSubstate(dson);
+	}
+
+	public static SubstateId ofSubstate(byte[] substateBytes) {
+		var substateHash = HashUtils.sha256(substateBytes);
 		return new SubstateId(substateHash);
 	}
 
 	public static SubstateId ofVirtualSubstate(Particle particle) {
 		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		var substateHash = HashUtils.sha256(dson);
+		return ofVirtualSubstate(dson);
+	}
+
+	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
+		var substateHash = HashUtils.sha256(particleBytes);
 		return new SubstateId(substateHash);
 	}
 

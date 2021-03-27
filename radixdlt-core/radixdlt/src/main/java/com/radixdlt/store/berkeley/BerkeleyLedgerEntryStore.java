@@ -23,7 +23,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.counters.SystemCounters;
@@ -488,20 +487,26 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return v;
 	}
 
-	private void upParticle(com.sleepycat.je.Transaction txn, Particle particle) {
-		byte[] dson = serialization.toDson(particle, Output.ALL);
-		var particleKey = HashUtils.sha256(dson).asBytes();
+	private void upParticle(com.sleepycat.je.Transaction txn, byte[] substateBytes) {
+		// TODO: Cleanup indexing of substate class
+		final Particle particle;
+		try {
+			particle = serialization.fromDson(substateBytes, Particle.class);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+
+		byte[] particleKey = SubstateId.ofSubstate(substateBytes).asBytes();
 
 		final String idForClass = serialization.getIdForClass(particle.getClass());
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
 
-		byte[] serializedParticle = serialize(particle);
-
 		// Store class + particle
-		var value = new byte[EUID.BYTES + serializedParticle.length];
+		// TODO: Remove byte array copies
+		var value = new byte[EUID.BYTES + substateBytes.length];
 		System.arraycopy(indexableBytes, 0, value, 0, EUID.BYTES);
-		System.arraycopy(serializedParticle, 0, value, EUID.BYTES, serializedParticle.length);
+		System.arraycopy(substateBytes, 0, value, EUID.BYTES, substateBytes.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
 		particleConsumer.accept(ParsedInstruction.up(particle));
@@ -513,11 +518,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
-	private void downParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
-		var particleKey = substateId.asBytes();
+	private void downParticle(com.sleepycat.je.Transaction txn, byte[] substateId) {
 		// TODO: check for up Particle state
 		final var downedParticle = entry();
-		var status = particleDatabase.get(txn, entry(particleKey), downedParticle, DEFAULT);
+		var status = particleDatabase.get(txn, entry(substateId), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
 			throw new IllegalStateException("Downing particle does not exist " + substateId);
 		}
@@ -531,7 +535,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
 
 		// TODO: replace this with remove
-		particleDatabase.put(txn, entry(particleKey), downEntry());
+		particleDatabase.put(txn, entry(substateId), downEntry());
 		particleConsumer.accept(ParsedInstruction.down(particle));
 	}
 
@@ -560,12 +564,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
 		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
-			upParticle(txn, instruction.getParticle());
+			upParticle(txn, instruction.getData());
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getParticle()));
+			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
 		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-			final var particleId = instruction.getParticleId();
-			downParticle(txn, particleId);
+			downParticle(txn, instruction.getData());
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}

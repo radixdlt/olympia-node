@@ -58,7 +58,7 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 		if (isVirtual) {
 			builder.virtualSpinDown(particle);
 		} else {
-			builder.spinDown(SubstateId.of(particle));
+			builder.spinDown(SubstateId.ofSubstate(particle));
 		}
 		builder.spinUp(currentState.register(action.getUrl(), action.getAllowedDelegators()));
 

@@ -24,7 +24,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;

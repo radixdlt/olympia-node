@@ -83,19 +83,6 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_without_fee__result_has_error() {
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
-		var atom = TxLowLevelBuilder.newBuilder()
-			.up(particle)
-			.particleGroup()
-			.buildWithoutSignature();
-
-		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
-			.contains("less than required minimum");
-	}
-
-	@Test
 	public void when_validating_atom_with_fee__result_has_no_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
@@ -109,7 +96,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.up(particle1)
 			.particleGroup()
 			.up(unallocatedParticle)
-			.down(SubstateId.of(tokenInputParticle))
+			.down(SubstateId.ofSubstate(tokenInputParticle))
 			.up(tokenOutputParticle)
 			.particleGroup()
 			.buildWithoutSignature();
@@ -129,32 +116,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.up(particle1)
 			.particleGroup()
 			.up(unallocatedParticle)
-			.down(SubstateId.of(tokenInputParticle))
+			.down(SubstateId.ofSubstate(tokenInputParticle))
 			.particleGroup()
 			.buildWithoutSignature();
 
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_validating_atom_with_extra_particles_in_fee_group__result_has_error() {
-		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
-		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
-				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
-				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		UniqueParticle extraFeeGroupParticle = new UniqueParticle("BAR", address, 0L);
-		var atom = TxLowLevelBuilder.newBuilder()
-			.up(particle1)
-			.particleGroup()
-			.up(unallocatedParticle)
-			.down(SubstateId.of(tokenInputParticle))
-			.up(extraFeeGroupParticle)
-			.buildWithoutSignature();
-
-		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
-				.contains("less than required minimum");
 	}
 
 	@Test
@@ -171,7 +137,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			.up(particle1)
 			.particleGroup()
 			.up(particle2)
-			.down(SubstateId.of(particle3))
+			.down(SubstateId.ofSubstate(particle3))
 			.up(particle4)
 			.particleGroup()
 			.buildWithoutSignature();

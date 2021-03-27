@@ -118,7 +118,7 @@ public class FixedTokenTest {
 		atomBuilder.up(token);
 
 		for (int i = 0; i < times; i++) {
-			atomBuilder.down(SubstateId.of(p));
+			atomBuilder.down(SubstateId.ofSubstate(p));
 		}
 		atomBuilder.particleGroup();
 	}

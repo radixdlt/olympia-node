@@ -16,10 +16,8 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import java.util.Objects;
 
 public final class ParsedInstruction {

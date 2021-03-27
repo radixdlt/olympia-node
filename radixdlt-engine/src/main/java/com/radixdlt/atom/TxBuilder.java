@@ -114,7 +114,7 @@ public final class TxBuilder {
 	public Iterable<Particle> upParticles() {
 		return Iterables.concat(
 			lowLevelBuilder.localUpParticles(),
-			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.of(p)))
+			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)))
 		);
 	}
 
@@ -161,7 +161,7 @@ public final class TxBuilder {
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
-			.peek(p -> this.down(SubstateId.of(p)))
+			.peek(p -> this.down(SubstateId.ofSubstate(p)))
 			.findFirst()
 			.or(() -> {
 				if (virtualParticle.isPresent()) {

@@ -57,12 +57,13 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	public MintAndTransferTokensActionMapper() {
 		this((mint, transfer) -> {
 			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
-			mint.getRemoved().stream().map(t -> (Particle) t).map(SubstateId::of).forEach(mintParticleGroupBuilder::spinDown);
+			mint.getRemoved().stream().map(t -> (Particle) t).map(SubstateId::ofSubstate).forEach(mintParticleGroupBuilder::spinDown);
 			mint.getMigrated().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(mintParticleGroupBuilder::spinUp);
 
 			ParticleGroupBuilder transferParticleGroupBuilder = ParticleGroup.builder();
-			transfer.getRemoved().stream().map(t -> (Particle) t).map(SubstateId::of).forEach(transferParticleGroupBuilder::spinDown);
+			transfer.getRemoved().stream().map(t -> (Particle) t).map(SubstateId::ofSubstate)
+				.forEach(transferParticleGroupBuilder::spinDown);
 			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(transferParticleGroupBuilder::spinUp);
 

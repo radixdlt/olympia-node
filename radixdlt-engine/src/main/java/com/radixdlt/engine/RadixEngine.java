@@ -18,10 +18,11 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -325,7 +326,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public void execute(List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public List<ParsedTransaction> execute(List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -337,8 +338,9 @@ public final class RadixEngine<M> {
 			}
 			var txn = engineStore.createTransaction();
 			try {
-				executeInternal(txn, atoms, meta, permissionLevel);
+				var parsedTransactions = executeInternal(txn, atoms, meta, permissionLevel);
 				txn.commit();
+				return parsedTransactions;
 			} catch (Exception e) {
 				txn.abort();
 				throw e;
@@ -346,8 +348,14 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private void executeInternal(CMStore.Transaction txn, List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	private List<ParsedTransaction> executeInternal(
+		CMStore.Transaction txn,
+		List<Atom> atoms,
+		M meta,
+		PermissionLevel permissionLevel
+	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
+		var parsedTransactions = new ArrayList<ParsedTransaction>();
 		for (var atom : atoms) {
 			// TODO: combine verification and storage
 			var parsedInstructions = this.verify(txn, atom, permissionLevel);
@@ -369,11 +377,14 @@ public final class RadixEngine<M> {
 					checker.test(this::getComputedState);
 				}
 			}
+			parsedTransactions.add(new ParsedTransaction(parsedInstructions));
 		}
 
 		checker.testMetadata(meta, this::getComputedState);
 		if (meta != null) {
 			this.engineStore.storeMetadata(txn, meta);
 		}
+
+		return parsedTransactions;
 	}
 }

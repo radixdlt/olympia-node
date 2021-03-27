@@ -20,13 +20,14 @@ package com.radixdlt.constraintmachine;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -143,7 +144,7 @@ public final class ConstraintMachine {
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(particle, nextSpin);
 
-			var particleId = SubstateId.of(particle);
+			var particleId = SubstateId.ofSubstate(particle);
 			if (nextSpin == Spin.UP) {
 				upParticles.put(particleId, particle);
 			} else {
@@ -396,7 +397,14 @@ public final class ConstraintMachine {
 		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 			if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
-				final var nextParticle = cmMicroInstruction.getParticle();
+				// TODO: Cleanup indexing of substate class
+				final Particle nextParticle;
+				try {
+					nextParticle = DefaultSerialization.getInstance().fromDson(cmMicroInstruction.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
+				}
+
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
 					return Optional.of(new CMError(
@@ -416,11 +424,16 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-
 				parsedInstructions.add(ParsedInstruction.up(nextParticle));
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-				final var nextParticle = cmMicroInstruction.getParticle();
+				final Particle nextParticle;
+				try {
+					nextParticle = DefaultSerialization.getInstance().fromDson(cmMicroInstruction.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
+				}
+
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
 					return Optional.of(new CMError(
@@ -444,7 +457,7 @@ public final class ConstraintMachine {
 				parsedInstructions.add(ParsedInstruction.down(nextParticle));
 				particleIndex++;
 			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-				var particleId = cmMicroInstruction.getParticleId();
+				var particleId = SubstateId.fromBytes(cmMicroInstruction.getData());
 				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));

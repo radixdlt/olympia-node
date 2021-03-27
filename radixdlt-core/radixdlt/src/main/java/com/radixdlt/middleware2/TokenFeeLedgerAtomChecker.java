@@ -17,23 +17,20 @@
 
 package com.radixdlt.middleware2;
 
-import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.UInt256;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -76,7 +73,15 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 
 		// no need for fees if a system update
 		// TODO: update should also have no message
-		if (atom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
+		if (atom.uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}).allMatch(p -> p instanceof SystemParticle)) {
 			return Result.success();
 		}
 
@@ -86,6 +91,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
+		/*
 		Set<Particle> outputParticles = atom.upParticles().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
 		UInt256 feePaid = computeFeePaid(atom);
@@ -97,7 +103,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 				totalSize
 			);
 			return Result.error(message);
-		}
+		}*/
 
 		return Result.success();
 	}
@@ -108,6 +114,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	}
 
 	// TODO: Need to make sure that these unallocated particles are never DOWNED.
+	/*
 	private UInt256 computeFeePaid(Atom atom) {
 		return atom.upParticles()
 			.filter(UnallocatedTokensParticle.class::isInstance)
@@ -116,4 +123,5 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 			.map(UnallocatedTokensParticle::getAmount)
 			.reduce(UInt256.ZERO, UInt256::add);
 	}
+	 */
 }

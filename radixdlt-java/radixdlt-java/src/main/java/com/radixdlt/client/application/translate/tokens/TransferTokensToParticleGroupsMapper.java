@@ -94,7 +94,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(SubstateId.of(sp.getParticle()));
+					builder.spinDown(SubstateId.ofSubstate(sp.getParticle()));
 				}
 			});
 

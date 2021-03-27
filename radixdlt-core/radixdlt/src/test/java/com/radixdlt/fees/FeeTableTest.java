@@ -23,14 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -55,44 +53,12 @@ public class FeeTableTest {
 	}
 
 	@Test
-	public void testFeeForAtomNotMinimum() {
-		FeeTable ft = get();
-		var atom = TxLowLevelBuilder.newBuilder()
-			.up(makeParticle("test message 1"))
-			.particleGroup()
-			.up(makeParticle("test message 2"))
-			.particleGroup()
-			.buildWithoutSignature();
-
-		UInt256 fee = ft.feeFor(atom, atom.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
-		assertEquals(UInt256.SIX, fee);
-	}
-
-	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
 		Atom a = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
 		UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
-
-	@Test
-	public void testFeeOverflow() {
-		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.MAX_VALUE),
-			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
-		);
-		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-		Atom atom = TxLowLevelBuilder.newBuilder()
-			.up(makeParticle("test message 3"))
-			.particleGroup()
-			.buildWithoutSignature();
-		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());
-		assertThatThrownBy(() -> ft.feeFor(atom, outputs, 1))
-			.isInstanceOf(ArithmeticException.class)
-			.hasMessageStartingWith("Fee overflow");
-	}
-
 
 	@Test
 	public void testToString() {

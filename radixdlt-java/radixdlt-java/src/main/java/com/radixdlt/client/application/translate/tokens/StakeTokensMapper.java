@@ -36,7 +36,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.constraintmachine.Spin;
@@ -148,7 +148,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 				if (sp.getSpin() == Spin.UP) {
 					builder.spinUp(sp.getParticle());
 				} else {
-					builder.spinDown(SubstateId.of(sp.getParticle()));
+					builder.spinDown(SubstateId.ofSubstate(sp.getParticle()));
 				}
 			});
 

@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
@@ -288,12 +289,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			for (var cmd : verifiedCommandsAndProof.getCommands()) {
 				var atom = this.mapCommand(cmd);
 				atomsToCommit.add(atom);
-				final boolean isUserCommand = atom.upParticles().noneMatch(p -> p instanceof SystemParticle);
-				if (isUserCommand) {
-					systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
-				} else {
-					systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
-				}
 			}
 		} catch (DeserializeException e) {
 			throw new ByzantineQuorumException("Trying to commit bad atom", e);
@@ -304,8 +299,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			vertexStoreState
 		);
 
+		final List<ParsedTransaction> parsedTransactions;
 		try {
-			this.radixEngine.execute(
+			parsedTransactions = this.radixEngine.execute(
 				atomsToCommit,
 				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER
@@ -313,6 +309,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} catch (RadixEngineException e) {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atoms:\n%s", atomsToCommit), e);
 		}
+
+		parsedTransactions.forEach(t -> {
+			if (t.isUserCommand()) {
+				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
+			} else {
+				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
+			}
+		});
 
 		return atomsToCommit;
 	}

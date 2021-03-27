@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -30,10 +31,12 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.atom.ParsedInstruction;
+import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -214,7 +217,7 @@ public class TokenFees {
 			.virtualDown(new RRIParticle(RRI.of(address, "Test7")))
 			.up(new UniqueParticle("Test7", address, 1))
 			.particleGroup()
-			.down(SubstateId.of(inParticle))
+			.down(SubstateId.ofSubstate(inParticle))
 			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.up(new TransferrableTokensParticle(
@@ -246,7 +249,7 @@ public class TokenFees {
 			.virtualDown(new RRIParticle(RRI.of(address, "Test8")))
 			.up(new UniqueParticle("Test8", address, 1))
 			.particleGroup()
-			.down(SubstateId.of(inParticle))
+			.down(SubstateId.ofSubstate(inParticle))
 			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.up(new TransferrableTokensParticle(
@@ -298,12 +301,12 @@ public class TokenFees {
 			.virtualDown(new RRIParticle(RRI.of(address, "Test9")))
 			.up(new UniqueParticle("Test9", address, 1))
 			.particleGroup()
-			.down(SubstateId.of(inParticle))
+			.down(SubstateId.ofSubstate(inParticle))
 			.up(exchangedParticle1)
 			.up(exchangedParticle2)
 			.particleGroup()
-			.down(SubstateId.of(exchangedParticle1))
-			.down(SubstateId.of(exchangedParticle2))
+			.down(SubstateId.ofSubstate(exchangedParticle1))
+			.down(SubstateId.ofSubstate(exchangedParticle2))
 			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
 			.up(new TransferrableTokensParticle(
@@ -466,7 +469,15 @@ public class TokenFees {
 
 	// Fee computation
 	private BigDecimal feeFrom(Atom atom) {
-		UInt256 totalFee = atom.upParticles()
+		UInt256 totalFee = atom.uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
 			.filter(u -> u.getTokDefRef().equals(this.api.getNativeTokenRef()))
