@@ -21,6 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atommodel.system.SystemParticle;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public class ParsedTransaction {
 	private final List<ParsedInstruction> instructions;
@@ -31,5 +32,15 @@ public class ParsedTransaction {
 
 	public boolean isUserCommand() {
 		return instructions.stream().noneMatch(i -> i.getParticle() instanceof SystemParticle);
+	}
+
+	public List<ParsedInstruction> instructions() {
+		return instructions;
+	}
+
+	public Stream<Particle> upSubstates() {
+		return instructions.stream()
+			.filter(ParsedInstruction::isUp)
+			.map(ParsedInstruction::getParticle);
 	}
 }

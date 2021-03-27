@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 
 /**
@@ -32,5 +33,5 @@ public interface AtomChecker {
 	 * @param atom the atom to verify
 	 * @return result of the check
 	 */
-	Result check(Atom atom, PermissionLevel permissionLevel);
+	Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction);
 }

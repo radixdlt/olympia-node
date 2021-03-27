@@ -118,14 +118,14 @@ public class InMemoryAtomStore implements AtomStore {
 						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
 						stagedAtom.up(particle);
 					} catch (DeserializeException e) {
-						throw new IllegalStateException();
+						throw new IllegalStateException(e);
 					}
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
 					try {
 						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
 						stagedAtom.virtualDown(particle);
 					} catch (DeserializeException e) {
-						throw new IllegalStateException();
+						throw new IllegalStateException(e);
 					}
 				} else if (i.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
 					stagedAtom.down(SubstateId.fromBytes(i.getData()));

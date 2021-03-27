@@ -276,7 +276,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<ParsedInstruction> verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
+	private ParsedTransaction verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 		var parsedInstructions = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
@@ -292,8 +292,10 @@ public final class RadixEngine<M> {
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
+		var parsedTransaction = new ParsedTransaction(parsedInstructions);
+
 		if (checker != null) {
-			Result hookResult = checker.check(atom, permissionLevel);
+			Result hookResult = checker.check(atom, permissionLevel, parsedTransaction);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					atom,
@@ -304,7 +306,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		return parsedInstructions;
+		return parsedTransaction;
 	}
 
 	/**
@@ -358,17 +360,17 @@ public final class RadixEngine<M> {
 		var parsedTransactions = new ArrayList<ParsedTransaction>();
 		for (var atom : atoms) {
 			// TODO: combine verification and storage
-			var parsedInstructions = this.verify(txn, atom, permissionLevel);
+			var parsedTransaction = this.verify(txn, atom, permissionLevel);
 			try {
 				this.engineStore.storeAtom(txn, atom);
 			} catch (Exception e) {
-				logger.error("Store of atom {} failed. parsed: {}", atom, parsedInstructions);
+				logger.error("Store of atom {} failed. parsed: {}", atom, parsedTransaction);
 				throw e;
 			}
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			for (ParsedInstruction parsedInstruction : parsedInstructions) {
+			for (ParsedInstruction parsedInstruction : parsedTransaction.instructions()) {
 				final var particle = parsedInstruction.getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
@@ -377,7 +379,7 @@ public final class RadixEngine<M> {
 					checker.test(this::getComputedState);
 				}
 			}
-			parsedTransactions.add(new ParsedTransaction(parsedInstructions));
+			parsedTransactions.add(parsedTransaction);
 		}
 
 		checker.testMetadata(meta, this::getComputedState);

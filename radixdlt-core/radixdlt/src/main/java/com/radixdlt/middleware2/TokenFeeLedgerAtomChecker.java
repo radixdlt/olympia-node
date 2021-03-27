@@ -18,9 +18,12 @@
 package com.radixdlt.middleware2;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
@@ -31,8 +34,11 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.UInt256;
 
 import javax.inject.Inject;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
@@ -57,8 +63,8 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	}
 
 	@Override
-	public Result check(Atom atom, PermissionLevel permissionLevel) {
-		if (atom.getMicroInstructions().isEmpty()) {
+	public Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
+		if (parsedTransaction.instructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
 
@@ -91,10 +97,9 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
-		/*
-		Set<Particle> outputParticles = atom.upParticles().collect(Collectors.toSet());
+		Set<Particle> outputParticles = parsedTransaction.upSubstates().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
-		UInt256 feePaid = computeFeePaid(atom);
+		UInt256 feePaid = computeFeePaid(parsedTransaction);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format(
 				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
@@ -103,7 +108,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 				totalSize
 			);
 			return Result.error(message);
-		}*/
+		}
 
 		return Result.success();
 	}
@@ -114,14 +119,12 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	}
 
 	// TODO: Need to make sure that these unallocated particles are never DOWNED.
-	/*
-	private UInt256 computeFeePaid(Atom atom) {
-		return atom.upParticles()
+	private UInt256 computeFeePaid(ParsedTransaction parsedTransaction) {
+		return parsedTransaction.upSubstates()
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
 			.filter(u -> u.getTokDefRef().equals(this.feeTokenRri))
 			.map(UnallocatedTokensParticle::getAmount)
 			.reduce(UInt256.ZERO, UInt256::add);
 	}
-	 */
 }
