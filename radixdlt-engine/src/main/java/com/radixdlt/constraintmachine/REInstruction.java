@@ -22,18 +22,18 @@ import org.bouncycastle.util.encoders.Hex;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class CMInstruction {
-	public enum CMOp {
-		SPIN_UP((byte) 1, Spin.NEUTRAL, Spin.UP),
-		VIRTUAL_SPIN_DOWN((byte) 2, Spin.UP, Spin.DOWN),
-		SPIN_DOWN((byte) 3, Spin.UP, Spin.DOWN),
-		PARTICLE_GROUP((byte) 0, null, null);
+public final class REInstruction {
+	public enum REOp {
+		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
+		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
+		DOWN((byte) 3, Spin.UP, Spin.DOWN),
+		END((byte) 0, null, null);
 
 		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		CMOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, Spin checkSpin, Spin nextSpin) {
 			this.opCode = opCode;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
@@ -43,8 +43,8 @@ public final class CMInstruction {
 			return opCode;
 		}
 
-		static CMOp fromByte(byte op) {
-			for (var microOp : CMOp.values()) {
+		static REOp fromByte(byte op) {
+			for (var microOp : REOp.values()) {
 				if (microOp.opCode == op) {
 					return microOp;
 				}
@@ -54,15 +54,15 @@ public final class CMInstruction {
 		}
 	}
 
-	private final CMOp operation;
+	private final REOp operation;
 	private final byte[] data;
 
-	private CMInstruction(CMOp operation, byte[] data) {
+	private REInstruction(REOp operation, byte[] data) {
 		this.operation = operation;
 		this.data = data;
 	}
 
-	public CMOp getMicroOp() {
+	public REOp getMicroOp() {
 		return operation;
 	}
 
@@ -94,13 +94,13 @@ public final class CMInstruction {
 		return operation.nextSpin;
 	}
 
-	public static CMInstruction create(byte op, byte[] data) {
-		var microOp = CMOp.fromByte(op);
-		return new CMInstruction(microOp, data);
+	public static REInstruction create(byte op, byte[] data) {
+		var microOp = REOp.fromByte(op);
+		return new REInstruction(microOp, data);
 	}
 
-	public static CMInstruction particleGroup() {
-		return new CMInstruction(CMOp.PARTICLE_GROUP, new byte[0]);
+	public static REInstruction particleGroup() {
+		return new REInstruction(REOp.END, new byte[0]);
 	}
 
 	@Override
@@ -118,11 +118,11 @@ public final class CMInstruction {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof CMInstruction)) {
+		if (!(o instanceof REInstruction)) {
 			return false;
 		}
 
-		var other = (CMInstruction) o;
+		var other = (REInstruction) o;
 		return Objects.equals(this.operation, other.operation)
 			&& Arrays.equals(this.data, other.data);
 	}

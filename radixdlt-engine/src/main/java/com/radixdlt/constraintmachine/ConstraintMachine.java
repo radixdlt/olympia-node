@@ -388,19 +388,19 @@ public final class ConstraintMachine {
 	 */
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
-		List<CMInstruction> microInstructions,
+		List<REInstruction> instructions,
 		List<ParsedInstruction> parsedInstructions
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 
-		for (CMInstruction cmInstruction : microInstructions) {
+		for (REInstruction inst : instructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			if (cmInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_UP) {
+			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(cmInstruction.getData(), Particle.class);
+					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -414,7 +414,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmInstruction.getCheckSpin();
+				final Spin checkSpin = inst.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -426,10 +426,10 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.up(nextParticle));
 				particleIndex++;
-			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.VIRTUAL_SPIN_DOWN) {
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(cmInstruction.getData(), Particle.class);
+					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -443,7 +443,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmInstruction.getCheckSpin();
+				final Spin checkSpin = inst.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -456,8 +456,8 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.down(nextParticle));
 				particleIndex++;
-			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_DOWN) {
-				var particleId = SubstateId.fromBytes(cmInstruction.getData());
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
+				var particleId = SubstateId.fromBytes(inst.getData());
 				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -471,7 +471,7 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.down(particle));
 				particleIndex++;
-			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.PARTICLE_GROUP) {
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
 					return Optional.of(
 						new CMError(
@@ -495,7 +495,7 @@ public final class ConstraintMachine {
 				particleGroupIndex++;
 				particleIndex = 0;
 			} else {
-				throw new IllegalStateException("Unknown CM Operation: " + cmInstruction.getMicroOp());
+				throw new IllegalStateException("Unknown CM Operation: " + inst.getMicroOp());
 			}
 		}
 

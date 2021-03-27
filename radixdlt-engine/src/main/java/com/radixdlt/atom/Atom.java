@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
@@ -58,7 +58,7 @@ public final class Atom {
 	@DsonOutput({Output.ALL})
 	private final ECDSASignature signature;
 
-	private final ImmutableList<CMInstruction> instructions;
+	private final ImmutableList<REInstruction> instructions;
 	private final HashCode witness;
 
 	@JsonCreator
@@ -76,7 +76,7 @@ public final class Atom {
 	}
 
 	private Atom(
-		ImmutableList<CMInstruction> instructions,
+		ImmutableList<REInstruction> instructions,
 		ECDSASignature signature,
 		String message,
 		HashCode witness
@@ -88,7 +88,7 @@ public final class Atom {
 	}
 
 	static Atom create(
-		ImmutableList<CMInstruction> instructions,
+		ImmutableList<REInstruction> instructions,
 		ECDSASignature signature,
 		String message
 	) {
@@ -103,7 +103,7 @@ public final class Atom {
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static HashCode computeHashToSign(List<CMInstruction> instructions) {
+	public static HashCode computeHashToSign(List<REInstruction> instructions) {
 		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
@@ -117,32 +117,32 @@ public final class Atom {
 		return Optional.ofNullable(this.signature);
 	}
 
-	private static Stream<byte[]> serializedInstructions(List<CMInstruction> instructions) {
+	private static Stream<byte[]> serializedInstructions(List<REInstruction> instructions) {
 		return instructions.stream()
 			.flatMap(i -> Stream.of(new byte[] {i.getMicroOp().opCode()}, i.getData()));
 	}
 
-	private static ImmutableList<CMInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
+	private static ImmutableList<REInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
 		Objects.requireNonNull(bytesList);
-		Builder<CMInstruction> instructionsBuilder = ImmutableList.builder();
+		Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
 
 		Iterator<byte[]> bytesIterator = bytesList.iterator();
 		while (bytesIterator.hasNext()) {
 			byte[] bytes = bytesIterator.next();
 			byte[] dataBytes = bytesIterator.next();
-			var instruction = CMInstruction.create(bytes[0], dataBytes);
+			var instruction = REInstruction.create(bytes[0], dataBytes);
 			instructionsBuilder.add(instruction);
 		}
 
 		return instructionsBuilder.build();
 	}
 
-	public List<CMInstruction> getMicroInstructions() {
+	public List<REInstruction> getMicroInstructions() {
 		return instructions;
 	}
 
-	public Stream<CMInstruction> uniqueInstructions() {
-		return instructions.stream().filter(CMInstruction::isPush);
+	public Stream<REInstruction> uniqueInstructions() {
+		return instructions.stream().filter(REInstruction::isPush);
 	}
 
 	public HashCode getWitness() {

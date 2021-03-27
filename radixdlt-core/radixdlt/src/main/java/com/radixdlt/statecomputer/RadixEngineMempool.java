@@ -21,7 +21,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
@@ -52,7 +52,7 @@ import java.util.stream.Stream;
  */
 public final class RadixEngineMempool implements Mempool<Atom> {
 	private final ConcurrentHashMap<Command, Atom> data = new ConcurrentHashMap<>();
-	private final Map<CMInstruction, Set<Command>> particleIndex = new HashMap<>();
+	private final Map<REInstruction, Set<Command>> particleIndex = new HashMap<>();
 	private final int maxSize;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;

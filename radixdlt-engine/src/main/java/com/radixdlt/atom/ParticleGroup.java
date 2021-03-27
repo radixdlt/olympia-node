@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 
@@ -35,15 +35,15 @@ public final class ParticleGroup {
 	/**
 	 * The particles and their spin contained within this {@link ParticleGroup}.
 	 */
-	private ImmutableList<CMInstruction> instructions;
+	private ImmutableList<REInstruction> instructions;
 
-	private ParticleGroup(Iterable<CMInstruction> instructions) {
+	private ParticleGroup(Iterable<REInstruction> instructions) {
 		Objects.requireNonNull(instructions, "particles is required");
 
 		this.instructions = ImmutableList.copyOf(instructions);
 	}
 
-	public List<CMInstruction> getInstructions() {
+	public List<REInstruction> getInstructions() {
 		return instructions;
 	}
 
@@ -72,7 +72,7 @@ public final class ParticleGroup {
 	 * A builder for immutable {@link ParticleGroup}s
 	 */
 	public static class ParticleGroupBuilder {
-		private List<CMInstruction> instructions = new ArrayList<>();
+		private List<REInstruction> instructions = new ArrayList<>();
 
 		private ParticleGroupBuilder() {
 		}
@@ -80,8 +80,8 @@ public final class ParticleGroup {
 		public final ParticleGroupBuilder spinUp(Particle particle) {
 			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
 			this.instructions.add(
-				CMInstruction.create(
-					CMInstruction.CMOp.SPIN_UP.opCode(),
+				REInstruction.create(
+					REInstruction.REOp.UP.opCode(),
 					particleDson
 				)
 			);
@@ -91,8 +91,8 @@ public final class ParticleGroup {
 		public final ParticleGroupBuilder virtualSpinDown(Particle particle) {
 			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
 			this.instructions.add(
-				CMInstruction.create(
-					CMInstruction.CMOp.VIRTUAL_SPIN_DOWN.opCode(),
+				REInstruction.create(
+					REInstruction.REOp.VDOWN.opCode(),
 					particleDson
 				)
 			);
@@ -100,7 +100,7 @@ public final class ParticleGroup {
 		}
 
 		public final ParticleGroupBuilder spinDown(SubstateId substateId) {
-			this.instructions.add(CMInstruction.create(CMInstruction.CMOp.SPIN_DOWN.opCode(), substateId.asBytes()));
+			this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
 			return this;
 		}
 

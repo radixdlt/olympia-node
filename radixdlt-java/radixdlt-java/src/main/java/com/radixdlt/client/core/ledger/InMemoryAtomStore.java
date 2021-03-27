@@ -29,7 +29,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
@@ -112,22 +112,22 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedAtoms.put(uuid, stagedAtom);
 			}
 
-			for (CMInstruction i : particleGroup.getInstructions()) {
-				if (i.getMicroOp() == CMInstruction.CMOp.SPIN_UP) {
+			for (REInstruction i : particleGroup.getInstructions()) {
+				if (i.getMicroOp() == REInstruction.REOp.UP) {
 					try {
 						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
 						stagedAtom.up(particle);
 					} catch (DeserializeException e) {
 						throw new IllegalStateException(e);
 					}
-				} else if (i.getMicroOp() == CMInstruction.CMOp.VIRTUAL_SPIN_DOWN) {
+				} else if (i.getMicroOp() == REInstruction.REOp.VDOWN) {
 					try {
 						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
 						stagedAtom.virtualDown(particle);
 					} catch (DeserializeException e) {
 						throw new IllegalStateException(e);
 					}
-				} else if (i.getMicroOp() == CMInstruction.CMOp.SPIN_DOWN) {
+				} else if (i.getMicroOp() == REInstruction.REOp.DOWN) {
 					stagedAtom.down(SubstateId.fromBytes(i.getData()));
 				}
 			}

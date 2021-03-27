@@ -23,10 +23,10 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class CMInstructionTest {
+public class REInstructionTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(CMInstruction.class)
+		EqualsVerifier.forClass(REInstruction.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}

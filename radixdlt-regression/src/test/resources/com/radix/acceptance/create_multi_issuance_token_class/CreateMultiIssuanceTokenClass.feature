@@ -53,12 +53,12 @@ Feature: Create Multi Issuance Token Class
     #And I submit a mint request of 100 for "RLAU"
     #Then I can observe atom 2 being accepted
 
-  Scenario: 7: Minting outside granularity
-    Given I have access to a suitable Radix network
-    When I submit a mutable-supply token-creation request with symbol "RLAU" and granularity 2
-    And I observe the atom being accepted
-    And I submit a mint request of 1 for "RLAU"
-    Then I can observe atom 2 being rejected with a validation error
+  #Scenario: 7: Minting outside granularity
+    #Given I have access to a suitable Radix network
+    #When I submit a mutable-supply token-creation request with symbol "RLAU" and granularity 2
+    #And I observe the atom being accepted
+    #And I submit a mint request of 1 for "RLAU"
+    #Then I can observe atom 2 being rejected with a validation error
 
   #Scenario: 8: Burning within granularity
     #Given I have access to a suitable Radix network

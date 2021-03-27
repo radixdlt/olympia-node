@@ -34,7 +34,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -128,7 +128,7 @@ public class TokenFeeTest {
 		particles = genesis.stream()
 			.flatMap(Atom::uniqueInstructions)
 			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(CMInstruction::getData)
+			.map(REInstruction::getData)
 			.map(d -> {
 				try {
 					return DefaultSerialization.getInstance().fromDson(d, Particle.class);
