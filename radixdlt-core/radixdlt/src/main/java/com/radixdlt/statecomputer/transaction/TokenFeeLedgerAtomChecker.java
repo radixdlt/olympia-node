@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,25 +13,22 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.statecomputer.transaction;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.UInt256;
@@ -44,7 +41,7 @@ import java.util.stream.Collectors;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker {
+public class TokenFeeLedgerAtomChecker implements PostParsedChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -64,10 +61,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 
 	@Override
 	public Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
-		if (parsedTransaction.instructions().isEmpty()) {
-			return Result.error("atom has no instructions");
-		}
-
 		// FIXME: Magic should be removed at some point
 		if (isMagic(atom)) {
 			return Result.success();
@@ -79,15 +72,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 
 		// no need for fees if a system update
 		// TODO: update should also have no message
-		if (atom.uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(i -> {
-				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			}).allMatch(p -> p instanceof SystemParticle)) {
+		if (!parsedTransaction.isUserCommand()) {
 			return Result.success();
 		}
 

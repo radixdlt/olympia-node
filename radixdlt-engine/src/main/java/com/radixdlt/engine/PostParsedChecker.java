@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
  * This module checks for constraints outside of the FSM constraint
  * machine
  */
-public interface AtomChecker {
+public interface PostParsedChecker {
 
 	/**
 	 * Checks that an atom is well-formed

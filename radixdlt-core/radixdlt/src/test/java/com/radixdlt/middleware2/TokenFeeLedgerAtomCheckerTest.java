@@ -34,6 +34,7 @@ import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.transaction.TokenFeeLedgerAtomChecker;
 import com.radixdlt.utils.UInt256;
 
 import org.junit.Before;

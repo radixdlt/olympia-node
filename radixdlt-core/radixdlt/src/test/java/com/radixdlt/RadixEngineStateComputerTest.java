@@ -85,6 +85,7 @@ import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
@@ -184,7 +185,7 @@ public class RadixEngineStateComputerTest {
 		Injector injector = Guice.createInjector(
 			new RadixEngineCheckpointModule(),
 			new RadixEngineModule(),
-			new NoFeeModule(),
+			new EmptyTransactionCheckModule(),
 			new MockedGenesisAtomModule(),
 			getExternalModule()
 		);

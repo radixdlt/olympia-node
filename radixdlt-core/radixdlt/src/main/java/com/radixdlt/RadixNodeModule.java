@@ -18,6 +18,8 @@
 package com.radixdlt;
 
 import com.radixdlt.api.ApiModule;
+import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
+import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
@@ -135,12 +137,13 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new RadixEngineValidatorComputersModule());
 		install(new RadixEngineStoreModule());
 
+		// Post constraint checkers - Fees, emptiness
+		install(new EmptyTransactionCheckModule());
+		install(new TokenFeeModule());
+
 		// Checkpoints
 		install(new RadixEngineCheckpointModule());
 		install(new UniverseModule());
-
-		// Fees
-		install(new TokenFeeModule());
 
 		// Storage
 		install(new DatabasePropertiesModule());

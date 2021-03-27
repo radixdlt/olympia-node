@@ -103,7 +103,7 @@ public final class RadixEngine<M> {
 	private final CMStore virtualizedCMStore;
 	private final Predicate<Particle> virtualStoreLayer;
 	private final EngineStore<M> engineStore;
-	private final AtomChecker checker;
+	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
@@ -121,7 +121,7 @@ public final class RadixEngine<M> {
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<M> engineStore,
-		AtomChecker checker,
+		PostParsedChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
@@ -219,7 +219,7 @@ public final class RadixEngine<M> {
 			ConstraintMachine constraintMachine,
 			Predicate<Particle> virtualStoreLayer,
 			EngineStore<M> parentStore,
-			AtomChecker checker,
+			PostParsedChecker checker,
 			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers
 		) {
 			var transientEngineStore = new TransientEngineStore<M>(parentStore);
