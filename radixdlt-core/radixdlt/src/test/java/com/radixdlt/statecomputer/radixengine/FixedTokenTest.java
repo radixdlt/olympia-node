@@ -75,6 +75,7 @@ public class FixedTokenTest {
 		);
 	}
 
+
 	private TransferrableTokensParticle createToken(ECKeyPair keyPair, TxLowLevelBuilder atomBuilder) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "XRD");

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements PostParsedChecker {
+public class TokenFeeChecker implements PostParsedChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -49,7 +49,7 @@ public class TokenFeeLedgerAtomChecker implements PostParsedChecker {
 	private final Serialization serialization;
 
 	@Inject
-	public TokenFeeLedgerAtomChecker(
+	public TokenFeeChecker(
 		FeeTable feeTable,
 		@NativeToken RRI feeTokenRri,
 		Serialization serialization

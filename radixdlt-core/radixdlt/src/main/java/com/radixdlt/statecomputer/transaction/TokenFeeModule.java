@@ -42,7 +42,7 @@ public class TokenFeeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class)
-			.addBinding().to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
+			.addBinding().to(TokenFeeChecker.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
