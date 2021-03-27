@@ -20,7 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -562,12 +562,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, CMMicroInstruction instruction) {
-		if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, CMInstruction instruction) {
+		if (instruction.getMicroOp() == CMInstruction.CMOp.SPIN_UP) {
 			upParticle(txn, instruction.getData());
-		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+		} else if (instruction.getMicroOp() == CMInstruction.CMOp.VIRTUAL_SPIN_DOWN) {
 			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
-		} else if (instruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+		} else if (instruction.getMicroOp() == CMInstruction.CMOp.SPIN_DOWN) {
 			downParticle(txn, instruction.getData());
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
@@ -607,7 +607,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			// Update particles
 			atom.getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isPush)
+				.filter(CMInstruction::isPush)
 				.forEach(i -> this.updateParticle(transaction, i));
 
 		} catch (Exception e) {

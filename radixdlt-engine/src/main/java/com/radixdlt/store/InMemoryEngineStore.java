@@ -20,7 +20,7 @@ package com.radixdlt.store;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DeserializeException;
@@ -36,26 +36,26 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
-	private final Map<SubstateId, Pair<CMMicroInstruction, Atom>> storedParticles = new HashMap<>();
+	private final Map<SubstateId, Pair<CMInstruction, Atom>> storedParticles = new HashMap<>();
 	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
 	private final Set<Atom> atoms = new HashSet<>();
 
 	@Override
 	public void storeAtom(Transaction txn, Atom atom) {
 		synchronized (lock) {
-			for (CMMicroInstruction microInstruction : atom.getMicroInstructions()) {
+			for (CMInstruction microInstruction : atom.getMicroInstructions()) {
 				if (microInstruction.isPush()) {
 					Spin nextSpin = microInstruction.getNextSpin();
 
 					final Particle particle;
 					final SubstateId substateId;
 					try {
-						if (microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP
-							|| microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+						if (microInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_UP
+							|| microInstruction.getMicroOp() == CMInstruction.CMOp.VIRTUAL_SPIN_DOWN) {
 							particle = DefaultSerialization.getInstance().fromDson(
 								microInstruction.getData(), Particle.class);
 							substateId = SubstateId.ofSubstate(microInstruction.getData());
-						} else if (microInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
+						} else if (microInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_DOWN) {
 							substateId = SubstateId.fromBytes(microInstruction.getData());
 							var storedParticle = storedParticles.get(substateId);
 							if (storedParticle == null) {

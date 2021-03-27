@@ -388,19 +388,19 @@ public final class ConstraintMachine {
 	 */
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
-		List<CMMicroInstruction> microInstructions,
+		List<CMInstruction> microInstructions,
 		List<ParsedInstruction> parsedInstructions
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 
-		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
+		for (CMInstruction cmInstruction : microInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
+			if (cmInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_UP) {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(cmMicroInstruction.getData(), Particle.class);
+					nextParticle = DefaultSerialization.getInstance().fromDson(cmInstruction.getData(), Particle.class);
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -414,7 +414,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+				final Spin checkSpin = cmInstruction.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -426,10 +426,10 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.up(nextParticle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
+			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.VIRTUAL_SPIN_DOWN) {
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(cmMicroInstruction.getData(), Particle.class);
+					nextParticle = DefaultSerialization.getInstance().fromDson(cmInstruction.getData(), Particle.class);
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -443,7 +443,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+				final Spin checkSpin = cmInstruction.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -456,8 +456,8 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.down(nextParticle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-				var particleId = SubstateId.fromBytes(cmMicroInstruction.getData());
+			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.SPIN_DOWN) {
+				var particleId = SubstateId.fromBytes(cmInstruction.getData());
 				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -471,7 +471,7 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(ParsedInstruction.down(particle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.PARTICLE_GROUP) {
+			} else if (cmInstruction.getMicroOp() == CMInstruction.CMOp.PARTICLE_GROUP) {
 				if (particleIndex == 0) {
 					return Optional.of(
 						new CMError(
@@ -495,7 +495,7 @@ public final class ConstraintMachine {
 				particleGroupIndex++;
 				particleIndex = 0;
 			} else {
-				throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getMicroOp());
+				throw new IllegalStateException("Unknown CM Operation: " + cmInstruction.getMicroOp());
 			}
 		}
 

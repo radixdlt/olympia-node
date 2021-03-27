@@ -22,8 +22,8 @@ import org.bouncycastle.util.encoders.Hex;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class CMMicroInstruction {
-	public enum CMMicroOp {
+public final class CMInstruction {
+	public enum CMOp {
 		SPIN_UP((byte) 1, Spin.NEUTRAL, Spin.UP),
 		VIRTUAL_SPIN_DOWN((byte) 2, Spin.UP, Spin.DOWN),
 		SPIN_DOWN((byte) 3, Spin.UP, Spin.DOWN),
@@ -33,7 +33,7 @@ public final class CMMicroInstruction {
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		CMMicroOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+		CMOp(byte opCode, Spin checkSpin, Spin nextSpin) {
 			this.opCode = opCode;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
@@ -43,8 +43,8 @@ public final class CMMicroInstruction {
 			return opCode;
 		}
 
-		static CMMicroOp fromByte(byte op) {
-			for (var microOp : CMMicroOp.values()) {
+		static CMOp fromByte(byte op) {
+			for (var microOp : CMOp.values()) {
 				if (microOp.opCode == op) {
 					return microOp;
 				}
@@ -54,15 +54,15 @@ public final class CMMicroInstruction {
 		}
 	}
 
-	private final CMMicroOp operation;
+	private final CMOp operation;
 	private final byte[] data;
 
-	private CMMicroInstruction(CMMicroOp operation, byte[] data) {
+	private CMInstruction(CMOp operation, byte[] data) {
 		this.operation = operation;
 		this.data = data;
 	}
 
-	public CMMicroOp getMicroOp() {
+	public CMOp getMicroOp() {
 		return operation;
 	}
 
@@ -94,13 +94,13 @@ public final class CMMicroInstruction {
 		return operation.nextSpin;
 	}
 
-	public static CMMicroInstruction create(byte op, byte[] data) {
-		var microOp = CMMicroOp.fromByte(op);
-		return new CMMicroInstruction(microOp, data);
+	public static CMInstruction create(byte op, byte[] data) {
+		var microOp = CMOp.fromByte(op);
+		return new CMInstruction(microOp, data);
 	}
 
-	public static CMMicroInstruction particleGroup() {
-		return new CMMicroInstruction(CMMicroOp.PARTICLE_GROUP, new byte[0]);
+	public static CMInstruction particleGroup() {
+		return new CMInstruction(CMOp.PARTICLE_GROUP, new byte[0]);
 	}
 
 	@Override
@@ -118,11 +118,11 @@ public final class CMMicroInstruction {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof CMMicroInstruction)) {
+		if (!(o instanceof CMInstruction)) {
 			return false;
 		}
 
-		var other = (CMMicroInstruction) o;
+		var other = (CMInstruction) o;
 		return Objects.equals(this.operation, other.operation)
 			&& Arrays.equals(this.data, other.data);
 	}
