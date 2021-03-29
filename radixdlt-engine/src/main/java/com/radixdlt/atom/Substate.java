@@ -20,7 +20,9 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
 
-public class Substate {
+import java.util.Objects;
+
+public final class Substate {
 	private final Particle particle;
 	private final SubstateId substateId;
 
@@ -35,5 +37,21 @@ public class Substate {
 
 	public Particle getParticle() {
 		return particle;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(particle, substateId);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof Substate)) {
+			return false;
+		}
+
+		var other = (Substate) o;
+		return Objects.equals(this.particle, other.particle)
+			&& Objects.equals(this.substateId, other.substateId);
 	}
 }

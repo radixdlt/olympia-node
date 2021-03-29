@@ -16,6 +16,8 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,11 +72,11 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() {
 		var particles = List.of(
-			ParsedInstruction.up(stake(UInt256.TWO)),
-			ParsedInstruction.up(stake(UInt256.FIVE)),
-			ParsedInstruction.up(transfer(UInt256.NINE)),
-			ParsedInstruction.up(transfer(UInt256.ONE)),
-			ParsedInstruction.down(transfer(UInt256.ONE))
+			ParsedInstruction.up(new Substate(stake(UInt256.TWO), mock(SubstateId.class))),
+			ParsedInstruction.up(new Substate(stake(UInt256.FIVE), mock(SubstateId.class))),
+			ParsedInstruction.up(new Substate(transfer(UInt256.NINE), mock(SubstateId.class))),
+			ParsedInstruction.up(new Substate(transfer(UInt256.ONE), mock(SubstateId.class))),
+			ParsedInstruction.down(new Substate(transfer(UInt256.ONE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 

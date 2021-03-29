@@ -194,9 +194,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeSingleParticle(ParsedInstruction parsedInstruction) {
 		if (parsedInstruction.getSpin() == Spin.DOWN) {
-			storeSingleDownParticle(parsedInstruction.getParticle());
+			storeSingleDownParticle(parsedInstruction.getSubstate().getParticle());
 		} else {
-			storeSingleUpParticle(parsedInstruction.getParticle());
+			storeSingleUpParticle(parsedInstruction.getSubstate().getParticle());
 		}
 	}
 

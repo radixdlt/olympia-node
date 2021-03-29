@@ -452,16 +452,16 @@ public final class RadixEngine<M> {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
 			for (ParsedInstruction parsedInstruction : parsedTransaction.instructions()) {
-				final var particle = parsedInstruction.getParticle();
+				final var particle = parsedInstruction.getSubstate().getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
 				var cache = substateCache.get(particle.getClass());
 				if (cache != null) {
 					if (parsedInstruction.getSpin() == Spin.UP) {
-						cache.bringUp(new Substate(particle, SubstateId.ofSubstate(particle)));
+						cache.bringUp(parsedInstruction.getSubstate());
 					} else {
-						cache.shutDown(SubstateId.ofSubstate(particle));
+						cache.shutDown(parsedInstruction.getSubstate().getId());
 					}
 				}
 

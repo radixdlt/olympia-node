@@ -18,6 +18,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.system.SystemParticle;
 
 import java.util.List;
@@ -34,7 +35,7 @@ public final class ParsedTransaction {
 	}
 
 	public boolean isUserCommand() {
-		return instructions.stream().noneMatch(i -> i.getParticle() instanceof SystemParticle);
+		return instructions.stream().noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
 	public List<ParsedInstruction> instructions() {
@@ -44,6 +45,7 @@ public final class ParsedTransaction {
 	public Stream<Particle> upSubstates() {
 		return instructions.stream()
 			.filter(ParsedInstruction::isUp)
-			.map(ParsedInstruction::getParticle);
+			.map(ParsedInstruction::getSubstate)
+			.map(Substate::getParticle);
 	}
 }

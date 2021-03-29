@@ -282,7 +282,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = deserializeOrElseFail(particleBytes, Particle.class);
-					particleConsumer.accept(ParsedInstruction.up(particle));
 				}
 
 				status = cursor.getNext(key, value, DEFAULT);
@@ -542,7 +541,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		System.arraycopy(substateBytes, 0, value, EUID.BYTES, substateBytes.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
-		particleConsumer.accept(ParsedInstruction.up(particle));
 	}
 
 	private void downVirtualParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -569,7 +567,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(substateId), downEntry());
-		particleConsumer.accept(ParsedInstruction.down(particle));
 	}
 
 	private DatabaseEntry downEntry() {

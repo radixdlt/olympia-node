@@ -18,41 +18,43 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.Substate;
+
 import java.util.Objects;
 
 /**
  * Instruction which has been parsed and state checked by Radix Engine
  */
 public final class ParsedInstruction {
-	private final Particle particle;
+	private final Substate substate;
 	private final Spin spin;
 
-	private ParsedInstruction(Particle particle, Spin spin) {
-		Objects.requireNonNull(particle);
+	private ParsedInstruction(Substate substate, Spin spin) {
+		Objects.requireNonNull(substate);
 		Objects.requireNonNull(spin);
 
-		this.particle = particle;
+		this.substate = substate;
 		this.spin = spin;
 	}
 
-	public static ParsedInstruction up(Particle particle) {
-		return new ParsedInstruction(particle, Spin.UP);
+	public static ParsedInstruction up(Substate substate) {
+		return new ParsedInstruction(substate, Spin.UP);
 	}
 
-	public static ParsedInstruction down(Particle particle) {
-		return new ParsedInstruction(particle, Spin.DOWN);
+	public static ParsedInstruction down(Substate substate) {
+		return new ParsedInstruction(substate, Spin.DOWN);
 	}
 
-	public static ParsedInstruction of(Particle particle, Spin spin) {
-		return new ParsedInstruction(particle, spin);
+	public static ParsedInstruction of(Substate substate, Spin spin) {
+		return new ParsedInstruction(substate, spin);
 	}
 
-	public Particle getParticle() {
-		return particle;
+	public Substate getSubstate() {
+		return substate;
 	}
 
 	public <T extends Particle> T getParticle(Class<T> cls) {
-		return cls.cast(this.particle);
+		return cls.cast(substate.getParticle());
 	}
 
 	public Spin getSpin() {
@@ -75,16 +77,16 @@ public final class ParsedInstruction {
 
 		ParsedInstruction parsedInstruction = (ParsedInstruction) obj;
 
-		return Objects.equals(this.particle, parsedInstruction.particle) && Objects.equals(this.spin, parsedInstruction.spin);
+		return Objects.equals(this.substate, parsedInstruction.substate) && Objects.equals(this.spin, parsedInstruction.spin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particle, spin);
+		return Objects.hash(substate, spin);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), spin, particle);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), spin, substate);
 	}
 }
