@@ -19,9 +19,14 @@
 package com.radixdlt.application;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -32,6 +37,13 @@ import com.radixdlt.identifiers.RadixAddress;
  * it's node key.
  */
 public final class NodeWalletModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(MempoolFiller.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+			.addBinding().to(Balance.class).in(Scopes.SINGLETON);
+	}
+
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredSubstate(
 		@NativeToken RRI tokenRRI,

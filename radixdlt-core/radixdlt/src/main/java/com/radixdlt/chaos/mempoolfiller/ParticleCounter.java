@@ -1,8 +1,11 @@
 package com.radixdlt.chaos.mempoolfiller;
 
+import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -16,9 +19,10 @@ public final class ParticleCounter implements StateReducer<Integer, Transferrabl
 	private final RadixAddress address;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
+	@Inject
 	public ParticleCounter(
-		RRI tokenRRI,
-		RadixAddress address
+		@NativeToken RRI tokenRRI,
+		@Self RadixAddress address
 	) {
 		this.tokenRRI = Objects.requireNonNull(tokenRRI);
 		this.address = Objects.requireNonNull(address);

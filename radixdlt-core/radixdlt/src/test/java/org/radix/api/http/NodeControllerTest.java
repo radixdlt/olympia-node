@@ -62,32 +62,6 @@ public class NodeControllerTest {
 	}
 
 	@Test
-	public void testRespondWithNode() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
-		var exchange = createExchange(
-			"{}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-
-		when(radixEngine.getComputedState(Integer.class)).thenReturn(7);
-
-		nodeController.respondWithNode(exchange);
-
-		latch.await();
-		assertEquals(
-			"{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\"numParticles\":7}",
-			arg.get()
-		);
-	}
-
-	@Test
 	public void testHandleValidatorRegistration() throws InterruptedException {
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
