@@ -289,20 +289,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void open() {
-		var config = new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator());
-
 		try {
 			// This SuppressWarnings here is valid, as ownership of the underlying
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			var env = dbEnv.getEnvironment();
-			balanceDatabase = env.openDatabase(null, BALANCE_DB, config);
-			executedTransactionsDatabase = env.openDatabase(null, EXECUTED_TRANSACTIONS_DB, config);
-			tokenDefinitionDatabase = env.openDatabase(null, TOKEN_DEFINITION_DB, config);
+			var uniqueConfig = createUniqueConfig();
+
+			balanceDatabase = env.openDatabase(null, BALANCE_DB, uniqueConfig);
+			tokenDefinitionDatabase = env.openDatabase(null, TOKEN_DEFINITION_DB, uniqueConfig);
+			executedTransactionsDatabase = env.openDatabase(null, EXECUTED_TRANSACTIONS_DB, uniqueConfig);
 
 			if (System.getProperty("db.check_integrity", "1").equals("1")) {
 				//TODO: Implement recovery, basically should be the same as fresh DB handling
@@ -322,6 +318,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
 		}
+	}
+
+	private DatabaseConfig createUniqueConfig() {
+		return new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator());
 	}
 
 	private void processCommittedAtoms(AtomsCommittedToLedger atomsCommittedToLedger) {
