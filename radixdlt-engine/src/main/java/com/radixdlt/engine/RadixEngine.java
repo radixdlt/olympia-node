@@ -106,9 +106,17 @@ public final class RadixEngine<M> {
 	private static final class SubstateCache<T extends Particle> {
 		private final Predicate<T> particleCheck;
 		private final HashMap<SubstateId, T> cache = new HashMap<>();
+		private final boolean includeInBranches;
 
-		SubstateCache(Predicate<T> particleCheck) {
+		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
 			this.particleCheck = particleCheck;
+			this.includeInBranches = includeInBranches;
+		}
+
+		public SubstateCache<T> copy() {
+			var copy = new SubstateCache<>(particleCheck, includeInBranches);
+			copy.cache.putAll(cache);
+			return copy;
 		}
 
 		public SubstateCache<T> bringUp(Particle upSubstate) {
@@ -182,13 +190,13 @@ public final class RadixEngine<M> {
 		this.batchVerifier = batchVerifier;
 	}
 
-	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister) {
+	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
 				throw new IllegalStateException();
 			}
 
-			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate());
+			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
 			engineStore.reduceUpParticles(substateCacheRegister.getParticleClass(), cache, SubstateCache::bringUp);
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
@@ -273,9 +281,10 @@ public final class RadixEngine<M> {
 			Predicate<Particle> virtualStoreLayer,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers,
+			Map<Class<?>, SubstateCache<?>> substateCache
 		) {
-			var transientEngineStore = new TransientEngineStore<M>(parentStore);
+			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
 			this.engine = new RadixEngine<>(
 				constraintMachine,
@@ -285,6 +294,7 @@ public final class RadixEngine<M> {
 				BatchVerifier.empty()
 			);
 
+			engine.substateCache.putAll(substateCache);
 			engine.stateComputers.putAll(stateComputers);
 		}
 
@@ -294,6 +304,13 @@ public final class RadixEngine<M> {
 
 		public void execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
 			engine.execute(atoms, null, permissionLevel);
+		}
+
+		public <T> T getSubstateCache(
+			List<Class<? extends Particle>> particleClasses,
+			Function<Iterable<Particle>, T> func
+		) {
+			return engine.getSubstateCache(particleClasses, func);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -315,12 +332,19 @@ public final class RadixEngine<M> {
 					branchedStateComputers.put(c, computer.copy());
 				}
 			});
+			var branchedCache = new HashMap<Class<?>, SubstateCache<?>>();
+			this.substateCache.forEach((c, cache) -> {
+				if (cache.includeInBranches) {
+					branchedCache.put(c, cache.copy());
+				}
+			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
 				this.engineStore,
 				this.checker,
-				branchedStateComputers
+				branchedStateComputers,
+				branchedCache
 			);
 
 			branches.add(branch);

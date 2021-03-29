@@ -337,12 +337,13 @@ public final class TxBuilder {
 		}
 	}
 
-	public TxBuilder systemNextView(long view, long timestamp) throws TxBuilderException {
+	public TxBuilder systemNextView(long view, long timestamp, long currentEpoch) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next view");
 
 		swap(
 			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
+			p -> p.getEpoch() == currentEpoch,
+			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> {
 			if (view <= substateDown.getView()) {
@@ -356,12 +357,13 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder systemNextEpoch(long timestamp) throws TxBuilderException {
+	public TxBuilder systemNextEpoch(long timestamp, long currentEpoch) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next epoch");
 
 		swap(
 			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
+			p -> p.getEpoch() == currentEpoch,
+			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
 		particleGroup();

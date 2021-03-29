@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
@@ -154,8 +155,9 @@ public class RadixEngineModule extends AbstractModule {
 		radixEngine.addStateReducer(new ValidatorsReducer(), true);
 		radixEngine.addStateReducer(new StakesReducer(stakeToken), true);
 
-		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
+		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
+		radixEngine.addSubstateCache(systemCache, true);
+		radixEngine.addStateReducer(new SystemReducer(), true);
 
 		// Additional state reducers are not required for consensus so don't need to include their
 		// state in transient branches;
@@ -164,7 +166,7 @@ public class RadixEngineModule extends AbstractModule {
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
 
 		logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
-		substateCacheRegisters.forEach(radixEngine::addSubstateCache);
+		substateCacheRegisters.forEach(c -> radixEngine.addSubstateCache(c, false));
 
 		return radixEngine;
 	}

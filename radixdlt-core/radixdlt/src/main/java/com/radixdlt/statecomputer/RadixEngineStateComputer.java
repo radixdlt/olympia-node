@@ -177,17 +177,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long timestamp,
 		ImmutableList.Builder<PreparedCommand> successBuilder
 	) {
-		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
-		if (lastSystemParticle.getEpoch() != epoch) {
-			throw new IllegalStateException(
-				String.format(
-					"Consensus epoch(%s) and computer epoch(%s) out of synchrony",
-					epoch,
-					lastSystemParticle.getEpoch()
-				)
-			);
-		}
-
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
 			validatorSet = this.validatorSetBuilder.buildValidatorSet(
@@ -198,16 +187,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 			validatorSet = null;
 		}
 
-		var systemUpdateBuilder = TxBuilder.newSystemBuilder(List.of(lastSystemParticle));
-		try {
-			if (validatorSet == null) {
-				systemUpdateBuilder.systemNextView(view.number(), timestamp);
-			} else {
-				systemUpdateBuilder.systemNextEpoch(timestamp);
-			}
-		} catch (TxBuilderException e) {
-			throw new IllegalStateException("Could not create system update", e);
-		}
+		var systemUpdateBuilder = branch.getSubstateCache(
+			List.of(SystemParticle.class),
+			substates -> {
+				var builder = TxBuilder.newSystemBuilder(substates);
+				try {
+					if (validatorSet == null) {
+						builder.systemNextView(view.number(), timestamp, epoch);
+					} else {
+						builder.systemNextEpoch(timestamp, epoch);
+					}
+				} catch (TxBuilderException e) {
+					throw new IllegalStateException("Could not create system update", e);
+				}
+				return builder;
+			});
 
 		final var systemUpdate = systemUpdateBuilder.buildWithoutSignature();
 		try {
