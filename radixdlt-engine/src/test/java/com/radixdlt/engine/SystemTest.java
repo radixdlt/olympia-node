@@ -17,7 +17,6 @@
 
 package com.radixdlt.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -27,7 +26,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -90,10 +88,8 @@ public class SystemTest {
 			.buildWithoutSignature();
 
 		// Act
-		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
-
 		// Assert
-		assertThat(this.store.getSpin(null, nextSystemParticle)).isEqualTo(Spin.UP);
+		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
 	}
 
 	@Test

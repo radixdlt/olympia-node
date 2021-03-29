@@ -142,8 +142,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Particle particle) {
-		return getSpin(SubstateId.ofSubstate(particle));
+	public Spin getSpin(Transaction txn, Substate substate) {
+		return getSpin(substate.getId());
 	}
 
 	public Spin getSpin(SubstateId substateId) {

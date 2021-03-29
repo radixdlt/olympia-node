@@ -45,13 +45,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Particle particle) {
-		Spin transientSpin = transientStore.getSpin(txn, particle);
+	public Spin getSpin(Transaction txn, Substate substate) {
+		Spin transientSpin = transientStore.getSpin(txn, substate);
 		if (transientSpin != Spin.NEUTRAL) {
 			return transientSpin;
 		}
 
-		return base.getSpin(txn, particle);
+		return base.getSpin(txn, substate);
 	}
 
 	@Override

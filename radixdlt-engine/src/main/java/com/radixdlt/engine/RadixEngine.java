@@ -167,13 +167,13 @@ public final class RadixEngine<M> {
 			}
 
 			@Override
-			public Spin getSpin(Transaction txn, Particle particle) {
-				var curSpin = engineStore.getSpin(txn, particle);
+			public Spin getSpin(Transaction txn, Substate substate) {
+				var curSpin = engineStore.getSpin(txn, substate);
 				if (curSpin == Spin.DOWN) {
 					return curSpin;
 				}
 
-				if (virtualStoreLayer.test(particle)) {
+				if (virtualStoreLayer.test(substate.getParticle())) {
 					return Spin.UP;
 				}
 

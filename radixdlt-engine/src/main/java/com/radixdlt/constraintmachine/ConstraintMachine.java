@@ -22,6 +22,7 @@ import com.google.common.reflect.TypeToken;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -91,7 +92,7 @@ public final class ConstraintMachine {
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
-		private final Map<Particle, Spin> currentSpins;
+		private final Map<SubstateId, Spin> currentSpins;
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final HashCode witness;
@@ -127,12 +128,12 @@ public final class ConstraintMachine {
 			this.currentTransitionToken = currentTransitionToken;
 		}
 
-		public boolean checkSpinAndPush(int instructionIndex, Particle particle, Spin spin) {
+		public boolean checkSpinAndPush(int instructionIndex, Substate substate, Spin spin) {
 			final Spin currentSpin;
-			if (currentSpins.containsKey(particle)) {
-				currentSpin = currentSpins.get(particle);
+			if (currentSpins.containsKey(substate.getId())) {
+				currentSpin = currentSpins.get(substate.getId());
 			} else {
-				currentSpin = store.getSpin(txn, particle);
+				currentSpin = store.getSpin(txn, substate);
 			}
 
 			if (!currentSpin.equals(spin)) {
@@ -140,13 +141,12 @@ public final class ConstraintMachine {
 			}
 
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
-			currentSpins.put(particle, nextSpin);
+			currentSpins.put(substate.getId(), nextSpin);
 
 			if (nextSpin == Spin.UP) {
-				localUpParticles.put(instructionIndex, particle);
+				localUpParticles.put(instructionIndex, substate.getParticle());
 			} else {
-				var particleId = SubstateId.ofSubstate(particle);
-				remoteDownParticles.add(particleId);
+				remoteDownParticles.add(substate.getId());
 			}
 
 			return true;
@@ -418,7 +418,8 @@ public final class ConstraintMachine {
 					));
 				}
 				final Spin checkSpin = inst.getCheckSpin();
-				boolean okay = validationState.checkSpinAndPush(instructionIndex, nextParticle, checkSpin);
+				var substate = new Substate(nextParticle, SubstateId.ofSubstate(nextParticle));
+				boolean okay = validationState.checkSpinAndPush(instructionIndex, substate, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
@@ -447,7 +448,8 @@ public final class ConstraintMachine {
 					));
 				}
 				final Spin checkSpin = inst.getCheckSpin();
-				boolean okay = validationState.checkSpinAndPush(instructionIndex, nextParticle, checkSpin);
+				var substate = new Substate(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
+				boolean okay = validationState.checkSpinAndPush(instructionIndex, substate, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
