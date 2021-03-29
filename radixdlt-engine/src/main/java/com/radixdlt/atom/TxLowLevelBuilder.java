@@ -95,7 +95,6 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
 		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
-		localUpParticles.remove(substateId);
 		return this;
 	}
 
