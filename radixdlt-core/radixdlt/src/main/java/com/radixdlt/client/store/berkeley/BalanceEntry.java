@@ -89,10 +89,6 @@ public class BalanceEntry {
 		return createFull(owner, delegate, rri, granularity, amount, false);
 	}
 
-	public String toKey() {
-		return owner.toString() + "/" + rri.getName() + (delegate == null ? "" : "/" + delegate.toString());
-	}
-
 	public RadixAddress getOwner() {
 		return owner;
 	}

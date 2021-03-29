@@ -54,10 +54,14 @@ public final class JsonRpcUtil {
 			return code;
 		}
 
-	}
 
+	}
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
+	}
+
+	public static JSONObject params(JSONObject request) {
+		return request.getJSONObject("params");
 	}
 
 	public static Optional<JSONObject> jsonObject(String data) {

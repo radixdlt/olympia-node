@@ -177,10 +177,6 @@ public class TokenDefinitionRecord {
 			.put("mutable", mutable);
 	}
 
-	public String toKey() {
-		return rri.toString();
-	}
-
 	public boolean isMutable() {
 		return mutable;
 	}

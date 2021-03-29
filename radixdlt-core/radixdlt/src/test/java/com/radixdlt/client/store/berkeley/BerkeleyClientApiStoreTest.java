@@ -46,6 +46,8 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -188,7 +190,6 @@ public class BerkeleyClientApiStoreTest {
 
 		var mock = mock(Disposable.class);
 		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer) any())).thenReturn(mock);
-
 
 		return new BerkeleyClientApiStore(
 			environment,
