@@ -73,7 +73,7 @@ public final class Balance implements StateReducer<UInt256, TransferrableTokensP
 	public BiFunction<UInt256, TransferrableTokensParticle, UInt256> inputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
-				return balance.add(p.getAmount());
+				return balance.subtract(p.getAmount());
 			}
 			return balance;
 		};

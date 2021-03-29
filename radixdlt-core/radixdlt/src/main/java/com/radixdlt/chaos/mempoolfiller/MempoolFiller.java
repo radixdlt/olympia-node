@@ -136,7 +136,7 @@ public final class MempoolFiller {
 						var list = new ArrayList<Atom>();
 						var substateHolder = new AtomicReference<>(substate);
 						for (int i = 0; i < numTransactions; i++) {
-							var index = random.nextInt(Math.min(particleCount, 100));
+							var index = random.nextInt(Math.min(particleCount, 200));
 							try {
 								var atom = TxBuilder.newBuilder(selfAddress, substateHolder.get())
 									.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
