@@ -18,8 +18,13 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,10 +33,28 @@ import java.util.stream.Stream;
  * Transaction which has been successfully parsed and state checked by radix engine
  */
 public final class ParsedTransaction {
+	private final Atom atom;
 	private final List<ParsedInstruction> instructions;
 
-	public ParsedTransaction(List<ParsedInstruction> instructions) {
+	public ParsedTransaction(Atom atom, List<ParsedInstruction> instructions) {
+		this.atom = atom;
 		this.instructions = instructions;
+	}
+
+	// Hack, remove later
+	private static AID atomIdOf(Atom atom) {
+		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		var firstHash = HashUtils.sha256(dson);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return AID.from(secondHash.asBytes());
+	}
+
+	public Atom getAtom() {
+		return atom;
+	}
+
+	public AID getAtomId() {
+		return atomIdOf(atom);
 	}
 
 	public boolean isUserCommand() {

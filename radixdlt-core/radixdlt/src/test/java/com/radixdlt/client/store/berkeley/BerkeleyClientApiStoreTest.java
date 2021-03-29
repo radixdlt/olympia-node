@@ -40,7 +40,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;

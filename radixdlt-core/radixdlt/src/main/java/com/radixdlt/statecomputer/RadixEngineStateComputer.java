@@ -58,7 +58,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -67,7 +66,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<Atom> mempool;
+	private final Mempool<ParsedTransaction> mempool;
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
@@ -84,7 +83,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Mempool<Atom> mempool,
+		Mempool<ParsedTransaction> mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
@@ -113,16 +112,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
-		private final Atom atom;
+		private final ParsedTransaction transaction;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineCommand(
 			Command command,
-			Atom atom,
+			ParsedTransaction transaction,
 			PermissionLevel permissionLevel
 		) {
 			this.command = command;
-			this.atom = atom;
+			this.transaction = transaction;
 			this.permissionLevel = permissionLevel;
 		}
 
@@ -155,10 +154,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
-		Set<Command> cmds = prepared.stream()
+		List<ParsedTransaction> cmds = prepared.stream()
 			.map(p -> (RadixEngineCommand) p)
-			.map(c -> c.command)
-			.collect(Collectors.toSet());
+			.map(c -> c.transaction)
+			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
 		final List<Command> commands = mempool.getCommands(1, cmds);
@@ -204,8 +203,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			});
 
 		final var systemUpdate = systemUpdateBuilder.buildWithoutSignature();
+		final List<ParsedTransaction> txs;
 		try {
-			branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
@@ -214,7 +214,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
 			command,
-			systemUpdate,
+			txs.get(0),
 			PermissionLevel.SUPER_USER
 		);
 		successBuilder.add(radixEngineCommand);
@@ -229,17 +229,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
 		if (next != null) {
-			final Atom atom;
+			final List<ParsedTransaction> txs;
 			try {
-				atom = mapCommand(next);
-				branch.execute(List.of(atom));
+				var atom = mapCommand(next);
+				txs = branch.execute(List.of(atom));
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
 				return;
 			}
 
-			var radixEngineCommand = new RadixEngineCommand(next, atom, PermissionLevel.USER);
+			var radixEngineCommand = new RadixEngineCommand(next, txs.get(0), PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}
@@ -253,11 +253,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			try {
 				transientBranch.execute(
-					List.of(radixEngineCommand.atom),
+					List.of(radixEngineCommand.transaction.getAtom()),
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
-				throw new IllegalStateException("Re-execution of already prepared atom failed: " + radixEngineCommand.atom, e);
+				throw new IllegalStateException("Re-execution of already prepared atom failed: "
+					+ radixEngineCommand.transaction.getAtomId(), e);
 			}
 		}
 
@@ -277,7 +278,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private Pair<List<Atom>, List<ParsedTransaction>> commitInternal(
+	private List<ParsedTransaction> commitInternal(
 		VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		final var atomsToCommit = new ArrayList<Atom>();
@@ -314,16 +315,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return Pair.of(atomsToCommit, parsedTransactions);
+		return parsedTransactions;
 	}
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
+		var txCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
-		List<Pair<Command, Exception>> removed = this.mempool.committed(atomsCommitted.getFirst());
+		List<Pair<Command, Exception>> removed = this.mempool.committed(txCommitted);
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
@@ -333,7 +334,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: this is a bit hacky
 		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
 			var cmds = verifiedCommandsAndProof.getCommands();
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(cmds, atomsCommitted.getSecond()));
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(cmds, txCommitted));
 		}
 	}
 }

@@ -32,6 +32,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
@@ -41,7 +42,6 @@ import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -61,7 +61,7 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<ParsedTransaction>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);

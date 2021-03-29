@@ -302,12 +302,12 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public void execute(List<Atom> atoms) throws RadixEngineException {
-			engine.execute(atoms);
+		public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
+			return engine.execute(atoms);
 		}
 
-		public void execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
-			engine.execute(atoms, null, permissionLevel);
+		public List<ParsedTransaction> execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
+			return engine.execute(atoms, null, permissionLevel);
 		}
 
 		public <T> T getSubstateCache(
@@ -357,6 +357,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
+
 	private ParsedTransaction verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 		var parsedInstructions = new ArrayList<ParsedInstruction>();
@@ -373,7 +374,7 @@ public final class RadixEngine<M> {
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
-		var parsedTransaction = new ParsedTransaction(parsedInstructions);
+		var parsedTransaction = new ParsedTransaction(atom, parsedInstructions);
 
 		if (checker != null) {
 			Result hookResult = checker.check(atom, permissionLevel, parsedTransaction);
@@ -397,8 +398,8 @@ public final class RadixEngine<M> {
 	 * @param atoms atom to store
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public void execute(List<Atom> atoms) throws RadixEngineException {
-		execute(atoms, null, PermissionLevel.USER);
+	public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
+		return execute(atoms, null, PermissionLevel.USER);
 	}
 
 	/**

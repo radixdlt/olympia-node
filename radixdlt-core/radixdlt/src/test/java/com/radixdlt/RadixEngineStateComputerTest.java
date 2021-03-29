@@ -78,7 +78,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
@@ -205,22 +204,20 @@ public class RadixEngineStateComputerTest {
 		return builder.buildWithoutSignature();
 	}
 
-	private RadixEngineCommand systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
+	private Command systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
 		var atom = systemUpdateAtom(nextView, nextEpoch);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		Command cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
+		return new Command(payload);
 	}
 
-	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+	private static Command registerCommand(ECKeyPair keyPair) throws TxBuilderException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var atom = TxBuilder.newBuilder(address)
 			.registerAsValidator()
 			.signAndBuild(keyPair::sign);
 
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		var cmd = new Command(payload);
-		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
+		return new Command(payload);
 	}
 
 	@Test
@@ -254,36 +251,17 @@ public class RadixEngineStateComputerTest {
 	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd = registerCommand(keyPair);
+		var cmd = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
 			assertThat(s.getValidators()).hasSize(2);
 			assertThat(s.getValidators()).extracting(BFTValidator::getNode).doesNotContain(node);
-		});
-	}
-
-	@Test
-	@Ignore("Difficult to include staking. Refactor then reenable")
-	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() throws Exception {
-		// Arrange
-		RadixEngineCommand cmd = registerCommand(unregisteredNode);
-		BFTNode node = BFTNode.create(unregisteredNode.getPublicKey());
-
-		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, 1, View.of(10), 0);
-
-		// Assert
-		assertThat(result.getSuccessfulCommands()).hasSize(1);
-		assertThat(result.getFailedCommands()).isEmpty();
-		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
-			assertThat(s.getValidators()).hasSize(3);
-			assertThat(s.getValidators()).extracting(BFTValidator::getNode).contains(node);
 		});
 	}
 
@@ -322,7 +300,7 @@ public class RadixEngineStateComputerTest {
 	@Ignore("FIXME: Reinstate when upper bound on epoch view is in place.")
 	public void committing_epoch_high_views_should_fail() throws TxBuilderException {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(10, 1);
+		var cmd0 = systemUpdateCommand(10, 1);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -332,7 +310,7 @@ public class RadixEngineStateComputerTest {
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-			ImmutableList.of(cmd0.command()),
+			ImmutableList.of(cmd0),
 			ledgerProof
 		);
 
@@ -347,8 +325,8 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 2);
-		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		var cmd0 = systemUpdateCommand(0, 2);
+		var cmd1 = registerCommand(keyPair);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -358,7 +336,7 @@ public class RadixEngineStateComputerTest {
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-			ImmutableList.of(cmd0.command(), cmd1.command()),
+			ImmutableList.of(cmd0, cmd1),
 			ledgerProof
 		);
 
@@ -373,8 +351,8 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 2);
-		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		var cmd0 = systemUpdateCommand(0, 2);
+		var cmd1 = registerCommand(keyPair);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -386,7 +364,7 @@ public class RadixEngineStateComputerTest {
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-			ImmutableList.of(cmd1.command(), cmd0.command()),
+			ImmutableList.of(cmd1, cmd0),
 			ledgerProof
 		);
 
@@ -400,7 +378,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void committing_epoch_change_when_there_shouldnt_be_one__should_fail() throws TxBuilderException {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(1, 1);
+		var cmd0 = systemUpdateCommand(1, 1);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -412,7 +390,7 @@ public class RadixEngineStateComputerTest {
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-			ImmutableList.of(cmd0.command()),
+			ImmutableList.of(cmd0),
 			ledgerProof
 		);
 

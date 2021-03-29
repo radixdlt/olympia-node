@@ -25,9 +25,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
@@ -78,8 +76,7 @@ public class HighLevelApiService {
 	}
 
 	private static MutableSupplyTokenDefinitionParticle nativeToken(Atom genesisAtom) {
-		return genesisAtom.uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
+		return genesisAtom.bootUpInstructions()
 			.map(i -> {
 				try {
 					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);

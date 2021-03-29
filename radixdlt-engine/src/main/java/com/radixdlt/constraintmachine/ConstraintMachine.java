@@ -128,7 +128,12 @@ public final class ConstraintMachine {
 			this.currentTransitionToken = currentTransitionToken;
 		}
 
-		public boolean checkSpinAndPush(int instructionIndex, Substate substate, Spin spin) {
+		public void bootUp(int instructionIndex, Substate substate) {
+			currentSpins.put(substate.getId(), Spin.UP);
+			localUpParticles.put(instructionIndex, substate.getParticle());
+		}
+
+		public boolean virtualShutdown(Substate substate) {
 			final Spin currentSpin;
 			if (currentSpins.containsKey(substate.getId())) {
 				currentSpin = currentSpins.get(substate.getId());
@@ -136,18 +141,13 @@ public final class ConstraintMachine {
 				currentSpin = store.getSpin(txn, substate);
 			}
 
-			if (!currentSpin.equals(spin)) {
+			if (!currentSpin.equals(Spin.UP)) {
 				return false;
 			}
 
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(substate.getId(), nextSpin);
-
-			if (nextSpin == Spin.UP) {
-				localUpParticles.put(instructionIndex, substate.getParticle());
-			} else {
-				remoteDownParticles.add(substate.getId());
-			}
+			remoteDownParticles.add(substate.getId());
 
 			return true;
 		}
@@ -417,12 +417,8 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = inst.getCheckSpin();
 				var substate = new Substate(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
-				boolean okay = validationState.checkSpinAndPush(instructionIndex, substate, checkSpin);
-				if (!okay) {
-					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
-				}
+				validationState.bootUp(instructionIndex, substate);
 				Optional<CMError> error = validateParticle(validationState, nextParticle, false, dp);
 				if (error.isPresent()) {
 					return error;
@@ -447,9 +443,8 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = inst.getCheckSpin();
 				var substate = new Substate(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
-				boolean okay = validationState.checkSpinAndPush(instructionIndex, substate, checkSpin);
+				boolean okay = validationState.virtualShutdown(substate);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
