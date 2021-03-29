@@ -18,22 +18,23 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * The id of a unique substate
  */
 public final class SubstateId {
-	private final HashCode substateId;
-	private SubstateId(HashCode substateId) {
-		this.substateId = Objects.requireNonNull(substateId);
+	private final byte[] idBytes;
+
+	private SubstateId(byte[] idBytes) {
+		this.idBytes = Objects.requireNonNull(idBytes);
 	}
 
 	public static SubstateId ofSubstate(Particle particle) {
@@ -43,7 +44,7 @@ public final class SubstateId {
 
 	public static SubstateId ofSubstate(byte[] substateBytes) {
 		var substateHash = HashUtils.sha256(substateBytes);
-		return new SubstateId(substateHash);
+		return new SubstateId(substateHash.asBytes());
 	}
 
 	public static SubstateId ofVirtualSubstate(Particle particle) {
@@ -52,26 +53,27 @@ public final class SubstateId {
 	}
 
 	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
-		var substateHash = HashUtils.sha256(particleBytes);
-		return new SubstateId(substateHash);
+		var firstHash = HashUtils.sha256(particleBytes);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return new SubstateId(secondHash.asBytes());
 	}
 
 	public static SubstateId fromBytes(byte[] bytes) {
-		return new SubstateId(HashCode.fromBytes(bytes));
+		return new SubstateId(bytes);
 	}
 
 	public byte[] asBytes() {
-		return substateId.asBytes();
+		return idBytes;
 	}
 
 	@Override
 	public String toString() {
-		return Hex.toHexString(substateId.asBytes());
+		return Hex.toHexString(idBytes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(substateId);
+		return Arrays.hashCode(idBytes);
 	}
 
 	@Override
@@ -82,6 +84,6 @@ public final class SubstateId {
 
 		var other = (SubstateId) o;
 
-		return Objects.equals(this.substateId, other.substateId);
+		return Arrays.equals(this.idBytes, other.idBytes);
 	}
 }
