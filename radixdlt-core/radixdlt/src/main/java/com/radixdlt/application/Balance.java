@@ -31,6 +31,9 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+/**
+ * Balance reducer for local node
+ */
 public final class Balance implements StateReducer<UInt256, TransferrableTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;

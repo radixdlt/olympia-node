@@ -14,6 +14,9 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+/**
+ * Counts the number of UP substate which pass a predicate
+ */
 public final class ParticleCounter implements StateReducer<Integer, TransferrableTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;

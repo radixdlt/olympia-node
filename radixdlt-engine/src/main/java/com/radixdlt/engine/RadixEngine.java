@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
@@ -47,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -194,14 +194,10 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public interface ThrowingFunction<T, U> {
-		U apply(T t) throws TxBuilderException;
-	}
-
 	public <T> T getSubstateCache(
 		List<Class<? extends Particle>> particleClasses,
-		ThrowingFunction<Iterable<Particle>, T> func
-	) throws TxBuilderException {
+		Function<Iterable<Particle>, T> func
+	) {
 		synchronized (stateUpdateEngineLock) {
 			var substates = Iterables.concat(
 				particleClasses.stream()

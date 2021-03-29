@@ -46,6 +46,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 /**
  * Registers/Unregisters self as a validator by submitting request
@@ -97,31 +98,34 @@ public final class ValidatorRegistrator {
 			particleClasses.add(TransferrableTokensParticle.class);
 		}
 
-		try {
-			var txBuilder = radixEngine.getSubstateCache(
+			var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
 				particleClasses,
 				substate -> {
 					var builder = TxBuilder.newBuilder(self, substate);
-					if (registration.isRegister()) {
-						builder.registerAsValidator();
-					} else {
-						builder.unregisterAsValidator();
+					try {
+						if (registration.isRegister()) {
+							builder.registerAsValidator();
+						} else {
+							builder.unregisterAsValidator();
+						}
+
+						if (feeTable != null) {
+							builder.burnForFee(tokenRRI, FEE);
+						}
+					} catch (TxBuilderException e) {
+						logger.warn(e.getMessage());
+						return Optional.empty();
 					}
 
-					if (feeTable != null) {
-						builder.burnForFee(tokenRRI, FEE);
-					}
-
-					return builder;
+					return Optional.of(builder);
 				}
 			);
 			logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
-			var atom = txBuilder.signAndBuild(hashSigner::sign);
-			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-			var command = new Command(payload);
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-		} catch (TxBuilderException e) {
-			logger.warn(e.getMessage());
-		}
+			txBuilderMaybe.ifPresent(txBuilder -> {
+				var atom = txBuilder.signAndBuild(hashSigner::sign);
+				var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+				var command = new Command(payload);
+				this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+			});
 	}
 }

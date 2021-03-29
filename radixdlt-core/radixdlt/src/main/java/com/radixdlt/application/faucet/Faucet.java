@@ -42,6 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Faucet service which sends funds from this node to another address
@@ -80,25 +81,29 @@ public final class Faucet {
 	private void processRequest(FaucetRequest request) {
 		log.info("Faucet Request {}", request);
 
-
-		try {
-			var txBuilder = radixEngine.getSubstateCache(
-				List.of(TransferrableTokensParticle.class),
-				substate ->
-					TxBuilder.newBuilder(self, substate)
+		var builderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
+			List.of(TransferrableTokensParticle.class),
+			substate -> {
+				try {
+					var txBuilder = TxBuilder.newBuilder(self, substate)
 						.transferNative(nativeToken, request.getAddress(), amount)
-						.burnForFee(nativeToken, FEE)
-			);
-			var atom = txBuilder.signAndBuild(hashSigner::sign);
+						.burnForFee(nativeToken, FEE);
+					return Optional.of(txBuilder);
+				} catch (TxBuilderException e) {
+					log.error("Faucet failed to fulfil request {}", request, e);
+					request.onFailure(e.getMessage());
+					return Optional.empty();
+				}
+			}
+		);
 
+		builderMaybe.ifPresent(builder -> {
+			var atom = builder.signAndBuild(hashSigner::sign);
 			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 			var command = new Command(payload);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 			request.onSuccess(command.getId());
-		} catch (TxBuilderException e) {
-			log.error("Faucet failed to fulfil request {}", request, e);
-			request.onFailure(e.getMessage());
-		}
+		});
 	}
 
 	public EventProcessor<FaucetRequest> requestEventProcessor() {
