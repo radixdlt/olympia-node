@@ -20,6 +20,7 @@ package org.radix.api.jsonrpc;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
@@ -32,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -93,14 +93,14 @@ public class AtomsSubscribeEpic {
 
 	private void subscribe(final JSONObject params, final String subscriberId, final Object id) {
 		if (observers.containsKey(subscriberId)) {
-			callback.accept(errorResponse(id, SERVER_ERROR, "Subscriber + " + subscriberId + " already exists."));
+			callback.accept(errorResponse(id, RpcError.SERVER_ERROR, "Subscriber + " + subscriberId + " already exists."));
 			return;
 		}
 
 		var query = params.getJSONObject("query");
 
 		if (!query.has("address")) {
-			callback.accept(errorResponse(id, SERVER_ERROR, "Invalid query."));
+			callback.accept(errorResponse(id, RpcError.SERVER_ERROR, "Invalid query."));
 			return;
 		}
 

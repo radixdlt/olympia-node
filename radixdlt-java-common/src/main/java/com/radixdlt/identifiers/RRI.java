@@ -17,6 +17,8 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.functional.Result;
+
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -64,6 +66,14 @@ public final class RRI {
 		}
 
 		return new RRI(address, name);
+	}
+
+	public static Result<RRI> fromString(String s) {
+		try {
+			return Result.ok(from(s));
+		} catch (RuntimeException e) {
+			return Result.fail("Error while parsing RRI: {}", e.getMessage());
+		}
 	}
 
 	@Override

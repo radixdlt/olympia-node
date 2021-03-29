@@ -18,8 +18,8 @@
 package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
@@ -33,17 +33,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.undertow.server.HttpServerExchange;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
-import static org.radix.api.jsonrpc.JsonRpcUtil.PARSE_ERROR;
-import static org.radix.api.jsonrpc.JsonRpcUtil.REQUEST_TOO_LONG;
-import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.jsonrpc.JsonRpcUtil.methodNotFoundResponse;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -150,35 +144,34 @@ public final class RadixJsonRpcServer {
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
 		if (length > maxRequestSizeBytes) {
-			return errorResponse(REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
+			return errorResponse(RpcError.REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
 		}
 
 		return jsonObject(requestString)
 			.map(this::handle)
 			.map(Object::toString)
-			.orElseGet(() -> errorResponse(PARSE_ERROR, "unable to parse input").toString());
+			.orElseGet(() -> errorResponse(RpcError.PARSE_ERROR, "unable to parse input").toString());
 	}
 
 	private JSONObject handle(JSONObject request) {
 		if (!request.has("id")) {
-			return errorResponse(INVALID_PARAMS, "id missing");
+			return errorResponse(RpcError.INVALID_PARAMS, "id missing");
 		}
 
 		if (!request.has("method")) {
-			return errorResponse(INVALID_PARAMS, "method missing");
+			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
 		}
 
 		try {
 			return Optional.ofNullable(handlers.get(request.getString("method")))
 				.map(handler -> handler.execute(request))
-				.orElseGet(() -> methodNotFoundResponse(request.get("id")));
+				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
 
 		} catch (Exception e) {
-			var id = request.get("id");
 			if (request.has("params") && request.get("params") instanceof JSONObject) {
-				return errorResponse(id, SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
+				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
 			} else {
-				return errorResponse(id, SERVER_ERROR, e.getMessage());
+				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage());
 			}
 		}
 	}
