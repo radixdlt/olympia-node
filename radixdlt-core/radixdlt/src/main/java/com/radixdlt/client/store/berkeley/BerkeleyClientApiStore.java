@@ -21,8 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -96,8 +95,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledParticleFlush> scheduledFlushEventDispatcher;
+	private final StackingCollector<ParsedInstruction> particleCollector = StackingCollector.create();
 	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
-	private final StackingCollector<SpunParticle> particleCollector = StackingCollector.create();
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 
@@ -326,16 +325,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void processCommittedAtoms(AtomsCommittedToLedger atomsCommittedToLedger) {
-		atomsCommittedToLedger.getAtoms().forEach(cmd -> {
-			try {
-				serialization.fromDson(cmd.getPayload(), Atom.class)
-					.uniqueInstructions()
-					.map(instruction -> SpunParticle.of(instruction.getParticle(), instruction.getNextSpin()))
-					.forEach(this::newParticle);
-			} catch (DeserializeException e) {
-				log.error("Error while deserializing atom committed to ledger. Skipping atom.", e);
-			}
-		});
+		atomsCommittedToLedger.getParsedTxs().stream()
+			.flatMap(tx -> tx.instructions().stream())
+			.forEach(this::newParticle);
 	}
 
 	private void safeClose(Database database) {
@@ -352,20 +344,20 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	private void newParticle(SpunParticle particle) {
+	private void newParticle(ParsedInstruction particle) {
 		particleCollector.push(particle);
 		systemCounters.set(COUNT_APIDB_PARTICLE_QUEUE_SIZE, inputCounter.incrementAndGet());
 	}
 
-	private void storeSingleParticle(SpunParticle spunParticle) {
-		if (spunParticle.getParticle() instanceof TokenDefinitionParticle) {
-			storeTokenDefinition(spunParticle.getParticle());
+	private void storeSingleParticle(ParsedInstruction parsedInstruction) {
+		if (parsedInstruction.getParticle() instanceof TokenDefinitionParticle) {
+			storeTokenDefinition(parsedInstruction.getParticle());
 		} else {
 			//Store balance and supply
-			if (spunParticle.getSpin() == Spin.DOWN) {
-				storeSingleDownParticle(spunParticle.getParticle());
+			if (parsedInstruction.getSpin() == Spin.DOWN) {
+				storeSingleDownParticle(parsedInstruction.getParticle());
 			} else {
-				storeSingleUpParticle(spunParticle.getParticle());
+				storeSingleUpParticle(parsedInstruction.getParticle());
 			}
 		}
 	}

@@ -122,8 +122,8 @@ public class ValidatorRegistrationTest {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new UnregisteredValidatorParticle(address, 0))
-				.down(SubstateId.of(new RegisteredValidatorParticle(address, 1)))
-				.down(SubstateId.of(new RegisteredValidatorParticle(address, 2)))
+				.down(SubstateId.ofSubstate(new RegisteredValidatorParticle(address, 1)))
+				.down(SubstateId.ofSubstate(new RegisteredValidatorParticle(address, 2)))
 				.particleGroup()
 		);
 
@@ -137,7 +137,7 @@ public class ValidatorRegistrationTest {
 		TestObserver<AtomStatusEvent> observer = submitAtom(
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new UnregisteredValidatorParticle(address, 0))
-				.down(SubstateId.of(new UnregisteredValidatorParticle(address, 1)))
+				.down(SubstateId.ofSubstate(new UnregisteredValidatorParticle(address, 1)))
 				.particleGroup()
 		);
 

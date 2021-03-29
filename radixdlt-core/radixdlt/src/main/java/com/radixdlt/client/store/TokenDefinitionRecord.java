@@ -122,8 +122,6 @@ public class TokenDefinitionRecord {
 		Objects.requireNonNull(description);
 		Objects.requireNonNull(granularity);
 		Objects.requireNonNull(currentSupply);
-		Objects.requireNonNull(iconUrl);
-		Objects.requireNonNull(url);
 
 		return new TokenDefinitionRecord(
 			name, rri, description, granularity, currentSupply, iconUrl, url, mutable,

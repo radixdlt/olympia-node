@@ -18,6 +18,7 @@
 
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -29,7 +30,9 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -45,7 +48,15 @@ public final class Addresses {
 	}
 
 	public static Stream<RadixAddress> ofAtom(Atom atom) {
-		return atom.upParticles()
+		return atom.uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
 			.map(Addresses::getShardables)
 			.flatMap(Set::stream)
 			.distinct();

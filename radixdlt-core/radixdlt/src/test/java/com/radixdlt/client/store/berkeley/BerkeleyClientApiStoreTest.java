@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -80,12 +80,11 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() {
 		var particles = List.of(
-			SpunParticle.up(stake(UInt256.TWO)),
-			SpunParticle.up(stake(UInt256.FIVE)),
-			SpunParticle.up(transfer(UInt256.NINE)),
-			SpunParticle.up(transfer(UInt256.ONE)),
-			SpunParticle.up(emission(UInt256.TEN)),
-			SpunParticle.down(transfer(UInt256.ONE))
+			ParsedInstruction.up(stake(UInt256.TWO)),
+			ParsedInstruction.up(stake(UInt256.FIVE)),
+			ParsedInstruction.up(transfer(UInt256.NINE)),
+			ParsedInstruction.up(transfer(UInt256.ONE)),
+			ParsedInstruction.down(transfer(UInt256.ONE))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -101,7 +100,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() {
 		var particles = List.of(
-			SpunParticle.up(emission(UInt256.MAX_VALUE))
+			ParsedInstruction.up(emission(UInt256.MAX_VALUE))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -113,10 +112,10 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() {
 		var particles = List.of(
-			SpunParticle.up(emission(UInt256.MAX_VALUE)),
-			SpunParticle.down(emission(UInt256.TWO)),
-			SpunParticle.down(emission(UInt256.FIVE)),
-			SpunParticle.up(emission(UInt256.ONE))
+			ParsedInstruction.up(emission(UInt256.MAX_VALUE)),
+			ParsedInstruction.down(emission(UInt256.TWO)),
+			ParsedInstruction.down(emission(UInt256.FIVE)),
+			ParsedInstruction.up(emission(UInt256.ONE))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -129,7 +128,7 @@ public class BerkeleyClientApiStoreTest {
 	public void mutableTokenDefinitionIsStoredAndAccessible() {
 		var fooToken = mutableTokenDef("FOO");
 		var barToken = mutableTokenDef("BAR");
-		var particles = List.of(SpunParticle.up(fooToken), SpunParticle.up(barToken));
+		var particles = List.of(ParsedInstruction.up(fooToken), ParsedInstruction.up(barToken));
 		var clientApiStore = prepareApiStore(particles);
 
 		var fooDef = TokenDefinitionRecord.from(fooToken, UInt256.ZERO);
@@ -147,7 +146,7 @@ public class BerkeleyClientApiStoreTest {
 	public void fixedTokenDefinitionIsStoredAndAccessible() {
 		var fooToken = fixedTokenDef("FOO");
 		var barToken = fixedTokenDef("BAR");
-		var particles = List.of(SpunParticle.up(fooToken), SpunParticle.up(barToken));
+		var particles = List.of(ParsedInstruction.up(fooToken), ParsedInstruction.up(barToken));
 		var clientApiStore = prepareApiStore(particles);
 
 		var fooDef = TokenDefinitionRecord.from(fooToken);
@@ -162,10 +161,10 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(List<SpunParticle> particles) {
+	private BerkeleyClientApiStore prepareApiStore(List<ParsedInstruction> particles) {
 		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
-			particles.forEach(invocation.<Consumer<SpunParticle>>getArgument(0));
+			particles.forEach(invocation.<Consumer<ParsedInstruction>>getArgument(0));
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 

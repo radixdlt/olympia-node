@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,26 +13,21 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.constraintmachine;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.engine.AtomChecker;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Module which provides an atom checker that does not require fees.
- */
-public class NoFeeModule extends AbstractModule {
-	@Provides
-	@Singleton
-	private AtomChecker noFeeLedgerAtomChecker() {
-		return (atom, permissionLevel) ->
-			atom.getMicroInstructions().isEmpty()
-				? Result.error("atom has no instructions")
-				: Result.success();
+public class REInstructionTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(REInstruction.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

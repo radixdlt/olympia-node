@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,23 +28,30 @@ import java.util.Objects;
  */
 public final class AtomsCommittedToLedger {
     private final List<Command> atoms;
+    private final List<ParsedTransaction> parsedTxs;
 
-    private AtomsCommittedToLedger(List<Command> atoms) {
+    private AtomsCommittedToLedger(List<Command> atoms, List<ParsedTransaction> parsedTxs) {
         this.atoms = atoms;
+        this.parsedTxs = parsedTxs;
     }
 
     public List<Command> getAtoms() {
         return atoms;
     }
 
-    public static AtomsCommittedToLedger create(List<Command> atoms) {
+    public List<ParsedTransaction> getParsedTxs() {
+        return parsedTxs;
+    }
+
+    public static AtomsCommittedToLedger create(List<Command> atoms, List<ParsedTransaction> parsedTxs) {
         Objects.requireNonNull(atoms);
-        return new AtomsCommittedToLedger(atoms);
+        Objects.requireNonNull(parsedTxs);
+        return new AtomsCommittedToLedger(atoms, parsedTxs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(atoms);
+        return Objects.hash(atoms, parsedTxs);
     }
 
     @Override
@@ -53,6 +61,7 @@ public final class AtomsCommittedToLedger {
         }
 
         AtomsCommittedToLedger other = (AtomsCommittedToLedger) o;
-        return Objects.equals(this.atoms, other.atoms);
+        return Objects.equals(this.atoms, other.atoms)
+            && Objects.equals(this.parsedTxs, other.parsedTxs);
     }
 }

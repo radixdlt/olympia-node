@@ -20,12 +20,14 @@ package com.radixdlt.constraintmachine;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -142,7 +144,7 @@ public final class ConstraintMachine {
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(particle, nextSpin);
 
-			var particleId = SubstateId.of(particle);
+			var particleId = SubstateId.ofSubstate(particle);
 			if (nextSpin == Spin.UP) {
 				upParticles.put(particleId, particle);
 			} else {
@@ -386,16 +388,23 @@ public final class ConstraintMachine {
 	 */
 	Optional<CMError> validateMicroInstructions(
 		CMValidationState validationState,
-		List<CMMicroInstruction> microInstructions,
-		Map<SubstateId, Particle> downedParticles
+		List<REInstruction> instructions,
+		List<ParsedInstruction> parsedInstructions
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 
-		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
+		for (REInstruction inst : instructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_UP) {
-				final var nextParticle = cmMicroInstruction.getParticle();
+			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
+				// TODO: Cleanup indexing of substate class
+				final Particle nextParticle;
+				try {
+					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
+				}
+
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
 					return Optional.of(new CMError(
@@ -405,7 +414,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+				final Spin checkSpin = inst.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -415,9 +424,16 @@ public final class ConstraintMachine {
 					return error;
 				}
 
+				parsedInstructions.add(ParsedInstruction.up(nextParticle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.VIRTUAL_SPIN_DOWN) {
-				final var nextParticle = cmMicroInstruction.getParticle();
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
+				final Particle nextParticle;
+				try {
+					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
+				}
+
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
 					return Optional.of(new CMError(
@@ -427,7 +443,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+				final Spin checkSpin = inst.getCheckSpin();
 				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -437,22 +453,25 @@ public final class ConstraintMachine {
 				if (error.isPresent()) {
 					return error;
 				}
+
+				parsedInstructions.add(ParsedInstruction.down(nextParticle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.SPIN_DOWN) {
-				var particleId = cmMicroInstruction.getParticleId();
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
+				var particleId = SubstateId.fromBytes(inst.getData());
 				var maybeParticle = validationState.checkUpAndPush(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
 
 				var particle = maybeParticle.get();
-				downedParticles.put(cmMicroInstruction.getParticleId(), particle);
 				Optional<CMError> error = validateParticle(validationState, particle, true, dp);
 				if (error.isPresent()) {
 					return error;
 				}
+
+				parsedInstructions.add(ParsedInstruction.down(particle));
 				particleIndex++;
-			} else if (cmMicroInstruction.getMicroOp() == CMMicroInstruction.CMMicroOp.PARTICLE_GROUP) {
+			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
 					return Optional.of(
 						new CMError(
@@ -476,7 +495,7 @@ public final class ConstraintMachine {
 				particleGroupIndex++;
 				particleIndex = 0;
 			} else {
-				throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getMicroOp());
+				throw new IllegalStateException("Unknown CM Operation: " + inst.getMicroOp());
 			}
 		}
 
@@ -502,7 +521,7 @@ public final class ConstraintMachine {
 		CMStore cmStore,
 		Atom atom,
 		PermissionLevel permissionLevel,
-		Map<SubstateId, Particle> downedParticles
+		List<ParsedInstruction> parsedInstructions
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			txn,
@@ -512,6 +531,6 @@ public final class ConstraintMachine {
 			atom.getSignature()
 		);
 
-		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), downedParticles);
+		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), parsedInstructions);
 	}
 }

@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.fungible;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,26 +28,26 @@ public final class FungibleTransitionMapper<T extends Particle, U extends Partic
 		this.outputCreator = Objects.requireNonNull(outputCreator);
 	}
 
-	public List<SpunParticle> mapToParticles(
+	public List<ParsedInstruction> mapToParticles(
 		List<T> currentParticles,
 		UInt256 totalAmountToTransfer
 	) throws NotEnoughFungiblesException {
-		final List<SpunParticle> spunParticles = new ArrayList<>();
-		spunParticles.add(SpunParticle.up(
+		final List<ParsedInstruction> parsedInstructions = new ArrayList<>();
+		parsedInstructions.add(ParsedInstruction.up(
 			outputCreator.apply(totalAmountToTransfer)
 		));
 		UInt256 amountLeftToTransfer = totalAmountToTransfer;
 		for (T p : currentParticles) {
-			spunParticles.add(SpunParticle.down(p));
+			parsedInstructions.add(ParsedInstruction.down(p));
 			UInt256 particleAmount = inputAmountMapper.apply(p);
 			if (particleAmount.compareTo(amountLeftToTransfer) > 0) {
 				final UInt256 sendBackToSelf = particleAmount.subtract(amountLeftToTransfer);
-				spunParticles.add(SpunParticle.up(
+				parsedInstructions.add(ParsedInstruction.up(
 					inputCreator.apply(sendBackToSelf)
 				));
-				return spunParticles;
+				return parsedInstructions;
 			} else if (particleAmount.compareTo(amountLeftToTransfer) == 0) {
-				return spunParticles;
+				return parsedInstructions;
 			}
 
 			amountLeftToTransfer = amountLeftToTransfer.subtract(particleAmount);

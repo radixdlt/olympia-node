@@ -32,7 +32,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
@@ -58,6 +58,7 @@ public class RadixEngineModule extends AbstractModule {
 		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
+		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
 	}
 
 	@Provides
@@ -101,13 +102,28 @@ public class RadixEngineModule extends AbstractModule {
 		return atomOS.virtualizedUpParticles();
 	}
 
+
+	@Provides
+	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
+		return (atom, permissionLevel, parsed) -> {
+			for (var checker : checkers) {
+				var result = checker.check(atom, permissionLevel, parsed);
+				if (result.isError()) {
+					return result;
+				}
+			}
+
+			return Result.success();
+		};
+	}
+
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		Predicate<Particle> virtualStoreLayer,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		AtomChecker ledgerAtomChecker,
+		PostParsedChecker checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
@@ -117,7 +133,7 @@ public class RadixEngineModule extends AbstractModule {
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
-			ledgerAtomChecker,
+			checker,
 			batchVerifier
 		);
 

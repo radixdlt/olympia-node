@@ -20,9 +20,11 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +38,7 @@ import java.util.function.Function;
  */
 public final class TxLowLevelBuilder {
 	private String message;
-	private final ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
+	private final ImmutableList.Builder<REInstruction> instructions = ImmutableList.builder();
 	private final Map<SubstateId, Particle> localUpParticles = new HashMap<>();
 
 	TxLowLevelBuilder() {
@@ -57,25 +59,37 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.instructions.add(CMMicroInstruction.spinUp(particle));
-		localUpParticles.put(SubstateId.of(particle), particle);
+		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		this.instructions.add(
+			REInstruction.create(
+				REInstruction.REOp.UP.opCode(),
+				particleDson
+			)
+		);
+		localUpParticles.put(SubstateId.ofSubstate(particle), particle);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
+		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		this.instructions.add(
+			REInstruction.create(
+				REInstruction.REOp.VDOWN.opCode(),
+				particleDson
+			)
+		);
 		return this;
 	}
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
-		this.instructions.add(CMMicroInstruction.spinDown(substateId));
+		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
 		localUpParticles.remove(substateId);
 		return this;
 	}
 
 	public TxLowLevelBuilder particleGroup() {
-		this.instructions.add(CMMicroInstruction.particleGroup());
+		this.instructions.add(REInstruction.particleGroup());
 		return this;
 	}
 

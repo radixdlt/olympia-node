@@ -15,7 +15,9 @@ package org.radix.api.services;/*
  * language governing permissions and limitations under the License.
  */
 
+import com.radixdlt.atom.TxLowLevelBuilder;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atom.Atom;
@@ -34,7 +36,6 @@ import com.radixdlt.utils.functional.Result;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,10 +49,11 @@ public class HighLevelApiServiceTest {
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private final Atom genesisAtom = mock(Atom.class);
-	private final HighLevelApiService highLevelApiService;
+	private Atom genesisAtom;
+	private HighLevelApiService highLevelApiService;
 
-	{
+	@Before
+	public void setup() {
 		var permissions = Map.of(
 			TokenTransition.MINT, TokenPermission.ALL,
 			TokenTransition.BURN, TokenPermission.ALL
@@ -61,7 +63,10 @@ public class HighLevelApiServiceTest {
 			TOKEN, "XRD", "XRD XRD", UInt256.ONE, "", "", permissions
 		);
 
-		when(genesisAtom.upParticles()).thenReturn(Stream.of(nativeTokenParticle));
+		genesisAtom = TxLowLevelBuilder.newBuilder()
+			.up(nativeTokenParticle)
+			.buildWithoutSignature();
+
 		highLevelApiService = new HighLevelApiService(universe, clientApiStore, genesisAtom);
 	}
 

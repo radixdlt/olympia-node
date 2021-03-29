@@ -16,18 +16,22 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.statecomputer.transaction;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.atomos.Result;
+import com.radixdlt.engine.PostParsedChecker;
 
-public class CMMicroInstructionTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(CMMicroInstruction.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+/**
+ * Module which provides an atom checker that does not require fees.
+ */
+public class EmptyTransactionCheckModule extends AbstractModule {
+	@ProvidesIntoSet
+	private PostParsedChecker emptyTxChecker() {
+		return (atom, permissionLevel, parsedTransaction) ->
+			parsedTransaction.instructions().isEmpty()
+				? Result.error("atom has no instructions")
+				: Result.success();
 	}
 }

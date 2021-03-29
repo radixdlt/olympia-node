@@ -105,7 +105,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
-			.spinDown(SubstateId.of(unallocated))
+			.spinDown(SubstateId.ofSubstate(unallocated))
 			.spinUp(minted);
 
 		final UInt256 leftOver = UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()));

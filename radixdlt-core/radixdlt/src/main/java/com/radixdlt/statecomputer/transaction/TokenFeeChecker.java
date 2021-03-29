@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,18 +13,19 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -32,16 +33,15 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.UInt256;
 
+import javax.inject.Inject;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
 
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class TokenFeeLedgerAtomChecker implements AtomChecker {
+public class TokenFeeChecker implements PostParsedChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
@@ -49,7 +49,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	private final Serialization serialization;
 
 	@Inject
-	public TokenFeeLedgerAtomChecker(
+	public TokenFeeChecker(
 		FeeTable feeTable,
 		@NativeToken RRI feeTokenRri,
 		Serialization serialization
@@ -60,11 +60,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	}
 
 	@Override
-	public Result check(Atom atom, PermissionLevel permissionLevel) {
-		if (atom.getMicroInstructions().isEmpty()) {
-			return Result.error("atom has no instructions");
-		}
-
+	public Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
 		// FIXME: Magic should be removed at some point
 		if (isMagic(atom)) {
 			return Result.success();
@@ -76,7 +72,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 
 		// no need for fees if a system update
 		// TODO: update should also have no message
-		if (atom.upParticles().allMatch(p -> p instanceof SystemParticle)) {
+		if (!parsedTransaction.isUserCommand()) {
 			return Result.success();
 		}
 
@@ -86,9 +82,9 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
-		Set<Particle> outputParticles = atom.upParticles().collect(Collectors.toSet());
+		Set<Particle> outputParticles = parsedTransaction.upSubstates().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
-		UInt256 feePaid = computeFeePaid(atom);
+		UInt256 feePaid = computeFeePaid(parsedTransaction);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format(
 				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
@@ -108,8 +104,8 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker {
 	}
 
 	// TODO: Need to make sure that these unallocated particles are never DOWNED.
-	private UInt256 computeFeePaid(Atom atom) {
-		return atom.upParticles()
+	private UInt256 computeFeePaid(ParsedTransaction parsedTransaction) {
+		return parsedTransaction.upSubstates()
 			.filter(UnallocatedTokensParticle.class::isInstance)
 			.map(UnallocatedTokensParticle.class::cast)
 			.filter(u -> u.getTokDefRef().equals(this.feeTokenRri))

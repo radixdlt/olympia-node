@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,25 +13,25 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.statecomputer.transaction;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerBytesFeeEntry;
 import com.radixdlt.fees.PerParticleFeeEntry;
-import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -41,7 +41,8 @@ public class TokenFeeModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<AtomChecker>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), PostParsedChecker.class)
+			.addBinding().to(TokenFeeChecker.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

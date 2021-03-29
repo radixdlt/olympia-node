@@ -23,10 +23,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -59,7 +62,16 @@ public final class FeeTable {
 		Atom atom = atomWithoutFees.buildWithoutSignature();
 		// TODO: 2500 is hack to include worst case size of fee burning. Remove when possible
 		final int atomSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length + 2500;
-		final Set<Particle> outputs = atom.upParticles().collect(Collectors.toSet());
+		final Set<Particle> outputs = atom.uniqueInstructions()
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.collect(Collectors.toSet());
 		return feeFor(atomWithoutFees, outputs, atomSize);
 	}
 

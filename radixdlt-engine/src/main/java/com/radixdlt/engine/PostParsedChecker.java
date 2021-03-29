@@ -19,18 +19,19 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 
 /**
  * This module checks for constraints outside of the FSM constraint
  * machine
  */
-public interface AtomChecker {
+public interface PostParsedChecker {
 
 	/**
 	 * Checks that an atom is well-formed
 	 * @param atom the atom to verify
 	 * @return result of the check
 	 */
-	Result check(Atom atom, PermissionLevel permissionLevel);
+	Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction);
 }

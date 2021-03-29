@@ -22,9 +22,13 @@
 
 package com.radixdlt.client.core;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.TokenUnitConversions;
@@ -173,7 +177,15 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream().flatMap(Atom::upParticles)
+		this.nativeToken = config.getGenesis().stream().flatMap(Atom::uniqueInstructions)
+			.filter(i -> i.getNextSpin() == Spin.UP)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
 			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
 			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()
