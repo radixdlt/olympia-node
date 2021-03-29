@@ -123,19 +123,20 @@ public final class TxBuilder {
 		return Iterables.filter(remoteUpSubstate, s -> !downParticles.contains(s.getId()));
 	}
 
-	private <T extends Particle> T find(
+	private <T extends Particle> Substate findSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		int index,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = Streams.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
-		)
-			.filter(particleClass::isInstance)
-			.map(particleClass::cast)
-			.filter(particlePredicate)
+		var substateRead = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
 			.skip(index)
 			.findFirst();
 		if (substateRead.isEmpty()) {
@@ -523,7 +524,7 @@ public final class TxBuilder {
 			UInt256.ONE
 		);
 
-		var particle = find(
+		var substate = findSubstate(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri)
 				&& p.getAddress().equals(address)
@@ -532,7 +533,8 @@ public final class TxBuilder {
 			"Could not find large particle greater than " + minSize
 		);
 
-		down(SubstateId.ofSubstate(particle));
+		down(substate.getId());
+		var particle = (TransferrableTokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
 		up(factory.createTransferrable(address, amt1, random.nextLong()));
