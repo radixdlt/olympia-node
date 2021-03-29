@@ -99,6 +99,32 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	private static final class SubstateCache<T extends Particle> {
+		private final Predicate<T> particleCheck;
+		private final HashMap<SubstateId, T> cache = new HashMap<>();
+
+		SubstateCache(Predicate<T> particleCheck) {
+			this.particleCheck = particleCheck;
+		}
+
+		// TODO: Remove
+		public List<T> copyCache() {
+			return new ArrayList<>(cache.values());
+		}
+
+		public SubstateCache<T> bringUp(Particle upSubstate) {
+			if (particleCheck.test((T) upSubstate)) {
+				this.cache.put(SubstateId.ofSubstate(upSubstate), (T) upSubstate);
+			}
+			return this;
+		}
+
+		public SubstateCache<T> shutDown(SubstateId substateId) {
+			this.cache.remove(substateId);
+			return this;
+		}
+	}
+
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final Predicate<Particle> virtualStoreLayer;
@@ -106,6 +132,7 @@ public final class RadixEngine<M> {
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers = new HashMap<>();
+	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
 
@@ -156,6 +183,24 @@ public final class RadixEngine<M> {
 		this.batchVerifier = batchVerifier;
 	}
 
+	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister) {
+		synchronized (stateUpdateEngineLock) {
+			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
+				throw new IllegalStateException();
+			}
+
+			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate());
+			engineStore.reduceUpParticles(substateCacheRegister.getParticleClass(), cache, SubstateCache::bringUp);
+			substateCache.put(substateCacheRegister.getParticleClass(), cache);
+		}
+	}
+
+	public <U extends Particle> Iterable<U> getSubstateCache(Class<U> particleClass) {
+		synchronized (stateUpdateEngineLock) {
+			var cache = (SubstateCache<U>) substateCache.get(particleClass);
+			return cache.copyCache();
+		}
+	}
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -374,6 +419,15 @@ public final class RadixEngine<M> {
 				final var particle = parsedInstruction.getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
+
+				var cache = substateCache.get(particle.getClass());
+				if (cache != null) {
+					if (parsedInstruction.getSpin() == Spin.UP) {
+						cache.bringUp(particle);
+					} else {
+						cache.shutDown(SubstateId.ofSubstate(particle));
+					}
+				}
 
 				if (parsedInstruction.getSpin() == Spin.UP) {
 					checker.test(this::getComputedState);

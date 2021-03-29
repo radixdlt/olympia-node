@@ -36,6 +36,7 @@ import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
@@ -59,6 +60,7 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
 	@Provides
@@ -127,6 +129,7 @@ public class RadixEngineModule extends AbstractModule {
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
+		Set<SubstateCacheRegister<?>> substateCachRegisters,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		var radixEngine = new RadixEngine<>(
@@ -154,6 +157,7 @@ public class RadixEngineModule extends AbstractModule {
 		// state in transient branches;
 		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
+		substateCachRegisters.forEach(radixEngine::addSubstateCache);
 
 		return radixEngine;
 	}

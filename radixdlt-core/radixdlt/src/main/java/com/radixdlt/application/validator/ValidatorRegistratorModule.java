@@ -23,8 +23,10 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.engine.StateReducer;
+import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.identifiers.RadixAddress;
@@ -42,8 +44,13 @@ public final class ValidatorRegistratorModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private StateReducer<?, ?> validatorState(@Self RadixAddress self) {
-		return new ValidatorStateReducer(self);
+	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
+		return new SubstateCacheRegister<>(RegisteredValidatorParticle.class, p -> p.getAddress().equals(self));
+	}
+
+	@ProvidesIntoSet
+	private SubstateCacheRegister<?> unregisteredSubstate(@Self RadixAddress self) {
+		return new SubstateCacheRegister<>(UnregisteredValidatorParticle.class, p -> p.getAddress().equals(self));
 	}
 
 	@ProvidesIntoSet

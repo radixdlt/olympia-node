@@ -23,6 +23,8 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
@@ -88,10 +90,11 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		var validatorState = radixEngine.getComputedState(ValidatorState.class);
-
 		var particles = new ArrayList<Particle>();
-		particles.add(validatorState.currentParticle());
+
+		radixEngine.getSubstateCache(RegisteredValidatorParticle.class).forEach(particles::add);
+		radixEngine.getSubstateCache(UnregisteredValidatorParticle.class).forEach(particles::add);
+
 		if (feeTable != null) {
 			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
 			particles.addAll(wallet.particles());
