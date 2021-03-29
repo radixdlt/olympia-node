@@ -23,7 +23,10 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ParsedTransaction {
+/**
+ * Transaction which has been successfully parsed and state checked by radix engine
+ */
+public final class ParsedTransaction {
 	private final List<ParsedInstruction> instructions;
 
 	public ParsedTransaction(List<ParsedInstruction> instructions) {
