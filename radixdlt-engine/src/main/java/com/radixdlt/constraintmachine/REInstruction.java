@@ -27,6 +27,7 @@ public final class REInstruction {
 		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
 		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
 		DOWN((byte) 3, Spin.UP, Spin.DOWN),
+		LDOWN((byte) 4, Spin.UP, Spin.DOWN),
 		END((byte) 0, null, null);
 
 		private final Spin checkSpin;

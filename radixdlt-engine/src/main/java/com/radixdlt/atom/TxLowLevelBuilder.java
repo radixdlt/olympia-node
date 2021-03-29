@@ -18,13 +18,13 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.utils.Ints;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,8 +38,8 @@ import java.util.function.Function;
  */
 public final class TxLowLevelBuilder {
 	private String message;
-	private final ImmutableList.Builder<REInstruction> instructions = ImmutableList.builder();
-	private final Map<SubstateId, Particle> localUpParticles = new HashMap<>();
+	private final List<REInstruction> instructions = new ArrayList<>();
+	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 
 	TxLowLevelBuilder() {
 	}
@@ -53,20 +53,21 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public List<Particle> localUpParticles() {
+	public List<LocalSubstate> localUpSubstate() {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		var nextIndex = this.instructions.size();
 		this.instructions.add(
 			REInstruction.create(
 				REInstruction.REOp.UP.opCode(),
 				particleDson
 			)
 		);
-		localUpParticles.put(SubstateId.ofSubstate(particle), particle);
+		localUpParticles.put(nextIndex, new LocalSubstate(nextIndex, particle));
 		return this;
 	}
 
@@ -82,6 +83,16 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public TxLowLevelBuilder localDown(int index) {
+		var particle = localUpParticles.remove(index);
+		if (particle == null) {
+			throw new IllegalStateException("Local particle does not exist: " + index);
+		}
+		this.instructions.add(REInstruction.create(REInstruction.REOp.LDOWN.opCode(), Ints.toByteArray(index)));
+
+		return this;
+	}
+
 	public TxLowLevelBuilder down(SubstateId substateId) {
 		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
 		localUpParticles.remove(substateId);
@@ -94,12 +105,12 @@ public final class TxLowLevelBuilder {
 	}
 
 	private HashCode computeHashToSign() {
-		return Atom.computeHashToSign(instructions.build());
+		return Atom.computeHashToSign(instructions);
 	}
 
 	public Atom buildWithoutSignature() {
 		return Atom.create(
-			instructions.build(),
+			instructions,
 			null,
 			this.message
 		);
@@ -109,7 +120,7 @@ public final class TxLowLevelBuilder {
 		var hashToSign = computeHashToSign();
 		var signature = signatureProvider.apply(hashToSign);
 		return Atom.create(
-			instructions.build(),
+			instructions,
 			signature,
 			this.message
 		);

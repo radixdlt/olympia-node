@@ -23,7 +23,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -34,6 +33,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +63,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.IOException;
@@ -520,11 +521,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		final var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(substateId), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
-			throw new IllegalStateException("Downing particle does not exist " + substateId);
+			throw new IllegalStateException("Downing particle does not exist " + Hex.toHexString(substateId));
 		}
 
 		if (downedParticle.getData().length == 0) {
-			throw new IllegalStateException("Particle was already spun down: " + substateId);
+			throw new IllegalStateException("Particle was already spun down: " + Hex.toHexString(substateId));
 		}
 
 		var serializedParticle = new byte[downedParticle.getData().length - EUID.BYTES];
@@ -559,13 +560,19 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REInstruction instruction) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, REInstruction instruction) {
 		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
 			upParticle(txn, instruction.getData());
 		} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
 			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
 		} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
 			downParticle(txn, instruction.getData());
+		} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
+			// Optimize local down
+			var index = Ints.fromByteArray(instruction.getData());
+			var substate = tx.getMicroInstructions().get(index).getData();
+			var substateId = SubstateId.ofSubstate(substate).asBytes();
+			downParticle(txn, substateId);
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
@@ -605,7 +612,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			// Update particles
 			atom.getMicroInstructions().stream()
 				.filter(REInstruction::isPush)
-				.forEach(i -> this.updateParticle(transaction, i));
+				.forEach(i -> this.updateParticle(transaction, atom, i));
 
 		} catch (Exception e) {
 			if (transaction != null) {

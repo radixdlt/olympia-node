@@ -58,7 +58,7 @@ public final class Atom {
 	@DsonOutput({Output.ALL})
 	private final ECDSASignature signature;
 
-	private final ImmutableList<REInstruction> instructions;
+	private final List<REInstruction> instructions;
 	private final HashCode witness;
 
 	@JsonCreator
@@ -76,7 +76,7 @@ public final class Atom {
 	}
 
 	private Atom(
-		ImmutableList<REInstruction> instructions,
+		List<REInstruction> instructions,
 		ECDSASignature signature,
 		String message,
 		HashCode witness
@@ -88,7 +88,7 @@ public final class Atom {
 	}
 
 	static Atom create(
-		ImmutableList<REInstruction> instructions,
+		List<REInstruction> instructions,
 		ECDSASignature signature,
 		String message
 	) {

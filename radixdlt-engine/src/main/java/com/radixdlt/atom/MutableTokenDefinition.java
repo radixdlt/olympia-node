@@ -34,8 +34,26 @@ public final class MutableTokenDefinition {
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
-	private final UInt256 granularity = UInt256.ONE;
+	private final UInt256 granularity;
 	private final Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions;
+
+	public MutableTokenDefinition(
+		String symbol,
+		String name,
+		String description,
+		String iconUrl,
+		String tokenUrl,
+		UInt256 granularity,
+		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
+	) {
+		this.symbol = Objects.requireNonNull(symbol);
+		this.name = Objects.requireNonNull(name);
+		this.description = description;
+		this.iconUrl = iconUrl;
+		this.tokenUrl = tokenUrl;
+		this.granularity = granularity;
+		this.tokenPermissions = Objects.requireNonNull(tokenPermissions);
+	}
 
 	public MutableTokenDefinition(
 		String symbol,
@@ -45,12 +63,7 @@ public final class MutableTokenDefinition {
 		String tokenUrl,
 		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
 	) {
-		this.symbol = Objects.requireNonNull(symbol);
-		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.tokenPermissions = Objects.requireNonNull(tokenPermissions);
+		this(symbol, name, description, iconUrl, tokenUrl, UInt256.ONE, tokenPermissions);
 	}
 
 	public String getSymbol() {

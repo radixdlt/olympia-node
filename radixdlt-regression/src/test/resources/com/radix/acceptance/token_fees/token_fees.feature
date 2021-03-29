@@ -58,10 +58,10 @@ Scenario: 8. Atoms with handcrafted fee groups are accepted by the network
   #When I submit an atom with a fee group with two output TransferrableTokensParticles,
   #Then I can see that atom being rejected by the network
 
-Scenario: 10. Atoms with fee groups with input ttps smaller than output ttp are rejected by the network
-  Given I have a connection to a Radix network,
-  When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
-  Then I can see that atom being rejected by the network
+#Scenario: 10. Atoms with fee groups with input ttps smaller than output ttp are rejected by the network
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
+  #Then I can see that atom being rejected by the network
 
 #Scenario: 11. Atom required fee can be calculated and atom with a smaller fee is rejected
   #Given I have a connection to a Radix network,

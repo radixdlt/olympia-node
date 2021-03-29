@@ -48,6 +48,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -111,11 +112,19 @@ public final class TxBuilder {
 		downParticles.add(substateId);
 	}
 
+	private void localDown(int index) {
+		lowLevelBuilder.localDown(index);
+	}
+
 	public Iterable<Particle> upParticles() {
 		return Iterables.concat(
-			lowLevelBuilder.localUpParticles(),
-			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)))
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
+			remoteUpSubstates()
 		);
+	}
+
+	private Iterable<Particle> remoteUpSubstates() {
+		return Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)));
 	}
 
 	private <T extends Particle> T find(
@@ -157,7 +166,25 @@ public final class TxBuilder {
 		Optional<T> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateDown = StreamSupport.stream(upParticles().spliterator(), false)
+		var localDown = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.localDown(s.getIndex()))
+			.map(LocalSubstate::getParticle)
+			.map(particleClass::cast)
+			.findFirst();
+
+		if (localDown.isPresent()) {
+			return localDown.get();
+		}
+
+
+		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -482,6 +509,7 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
+		// TODO: Need to include mutable supply
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),

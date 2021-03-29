@@ -133,9 +133,9 @@ public class InMemoryAtomStore implements AtomStore {
 			}
 			stagedAtom.particleGroup();
 
-			stagedAtom.localUpParticles().forEach(p -> {
+			stagedAtom.localUpSubstate().forEach(p -> {
 				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
-				index.put(p, Spin.UP);
+				index.put(p.getParticle(), Spin.UP);
 				stagedParticleIndex.put(uuid, index);
 			});
 		}
