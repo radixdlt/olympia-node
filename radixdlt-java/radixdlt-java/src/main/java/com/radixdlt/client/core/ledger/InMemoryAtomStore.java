@@ -71,35 +71,6 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Map<String, TxLowLevelBuilder> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
-	private void softDeleteDependentsOf(Atom atom) {
-		atom.uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(i -> {
-				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.forEach(p -> {
-				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
-				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
-					.forEach(a -> {
-						AtomObservation observation = atoms.get(a);
-						if (observation.getAtom().equals(atom)) {
-							return;
-						}
-
-						if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
-							// This first so that leaves get deleted first
-							softDeleteDependentsOf(observation.getAtom());
-
-							atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
-						}
-					});
-			});
-	}
-
 	@Override
 	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
 		Objects.requireNonNull(uuid);
@@ -179,31 +150,6 @@ public class InMemoryAtomStore implements AtomStore {
 				final AtomObservationUpdateType nextUpdate = atomObservation.getUpdateType();
 				final AtomObservationUpdateType lastUpdate = curObservation != null ? curObservation.getUpdateType() : null;
 
-				// If a new hard observed atoms conflicts with a previously stored atom,
-				// stored atom must be deleted
-				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
-					atom.uniqueInstructions().forEach(i -> {
-						Particle particle;
-						try {
-							particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-						} catch (DeserializeException e) {
-							particle = null;
-						}
-						var spinParticleIndex = particleIndex.getOrDefault(particle, Map.of());
-						spinParticleIndex.getOrDefault(i.getNextSpin(), Set.of())
-							.forEach(a -> {
-								if (a.equals(atom)) {
-									return;
-								}
-								AtomObservation oldObservation = atoms.get(a);
-								if (oldObservation.isStore()) {
-									softDeleteDependentsOf(a);
-									atoms.put(a, AtomObservation.softDeleted(a));
-								}
-							});
-					});
-				}
-
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
@@ -230,10 +176,6 @@ public class InMemoryAtomStore implements AtomStore {
 					// Only update if type changes
 					include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
 						&& nextUpdate.getType() != lastUpdate.getType();
-				}
-
-				if (nextUpdate.getType() == Type.DELETE && include) {
-					softDeleteDependentsOf(atom);
 				}
 
 				final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
