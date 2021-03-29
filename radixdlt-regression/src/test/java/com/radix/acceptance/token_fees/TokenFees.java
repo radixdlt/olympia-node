@@ -23,12 +23,13 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
@@ -201,10 +202,7 @@ public class TokenFees {
 	@When("^I submit an atom with a handcrafted fee group,$")
 	public void i_submit_an_atom_with_a_handcrafted_fee_group() {
 		final RadixAddress address = this.api.getAddress();
-		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
-
-		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test7")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
@@ -212,29 +210,27 @@ public class TokenFees {
 		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
 		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
-		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(SubstateId.of(inParticle))
-			.spinUp(new UnallocatedTokensParticle(
+		var builder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new RRIParticle(RRI.of(address, "Test7")))
+			.up(new UniqueParticle("Test7", address, 1))
+			.particleGroup()
+			.down(SubstateId.of(inParticle))
+			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.spinUp(new TransferrableTokensParticle(
+			.up(new TransferrableTokensParticle(
 				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.build();
+			.particleGroup();
 
-		t.stage(feeParticleGroup);
-
-		t.commitAndPushWithoutFee()
-				.toObservable()
-				.doOnNext(this::printSubmitAtomAction)
-				.subscribe(this.observer);
+		var atom = api.getIdentity().addSignature(builder).blockingGet();
+		api.submitAtom(atom).toObservable()
+			.doOnNext(this::printSubmitAtomAction)
+			.subscribe(this.observer);
 	}
 
 	@When("^I submit an atom with a fee group with two output TransferrableTokensParticles,$")
 	public void i_submit_an_atom_with_a_fee_group_with_two_output_ttps() {
 		final RadixAddress address = this.api.getAddress();
-		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
-
-		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test8")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
@@ -246,32 +242,30 @@ public class TokenFees {
 		final UInt256 changeAmountFirstParticle = UInt256.ONE;
 		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
 
-		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(SubstateId.of(inParticle))
-			.spinUp(new UnallocatedTokensParticle(
+		var builder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new RRIParticle(RRI.of(address, "Test8")))
+			.up(new UniqueParticle("Test8", address, 1))
+			.particleGroup()
+			.down(SubstateId.of(inParticle))
+			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.spinUp(new TransferrableTokensParticle(
+			.up(new TransferrableTokensParticle(
 				address, changeAmountFirstParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.spinUp(new TransferrableTokensParticle(
+			.up(new TransferrableTokensParticle(
 				address, changeAmountSecondParticle, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.build();
+			.particleGroup();
 
-		t.stage(feeParticleGroup);
-
-		t.commitAndPushWithoutFee()
-				.toObservable()
-				.doOnNext(this::printSubmitAtomAction)
-				.subscribe(this.observer);
+		var atom = api.getIdentity().addSignature(builder).blockingGet();
+		api.submitAtom(atom).toObservable()
+			.doOnNext(this::printSubmitAtomAction)
+			.subscribe(this.observer);
 	}
 
 	@When("^I submit an atom with a fee group that has an input TransferrableTokensParticle "
 	      + "with a smaller value than the output TransferrableTokensParticle,$")
 	public void i_submit_an_atom_with_a_fee_group_that_has_an_input_ttp_with_a_smaller_value_than_the_output_ttp() {
 		final RadixAddress address = this.api.getAddress();
-		final Transaction t = this.api.createTransaction();
 		final RRI feeTokenRri = this.api.getNativeTokenRef();
-
-		t.stage(PutUniqueIdAction.create(RRI.of(address, "Test9")));
 
 		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
@@ -291,13 +285,6 @@ public class TokenFees {
 				address, inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE,
 				feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime());
 
-		final ParticleGroup exchangeParticleGroup = ParticleGroup.builder()
-			.spinDown(SubstateId.of(inParticle))
-			.spinUp(exchangedParticle1)
-			.spinUp(exchangedParticle2)
-			.build();
-		t.stage(exchangeParticleGroup);
-
 		// fee amount is 80 millirads
 		// 1st exchanged particle is not sufficient, 2nd one needs to be enough to cover the fee
 		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
@@ -307,22 +294,27 @@ public class TokenFees {
 		// asserting that change is higher than the 1st particle
 		assertTrue(changeAmount.compareTo(exchangedParticle1.getAmount()) >= 0);
 
-		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
-		final ParticleGroup feeParticleGroup = ParticleGroup.builder()
-			.spinDown(SubstateId.of(exchangedParticle1))
-			.spinDown(SubstateId.of(exchangedParticle2))
-			.spinUp(new UnallocatedTokensParticle(
+		var builder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new RRIParticle(RRI.of(address, "Test9")))
+			.up(new UniqueParticle("Test9", address, 1))
+			.particleGroup()
+			.down(SubstateId.of(inParticle))
+			.up(exchangedParticle1)
+			.up(exchangedParticle2)
+			.particleGroup()
+			.down(SubstateId.of(exchangedParticle1))
+			.down(SubstateId.of(exchangedParticle2))
+			.up(new UnallocatedTokensParticle(
 				feeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime()))
-			.spinUp(new TransferrableTokensParticle(
+			.up(new TransferrableTokensParticle(
 				address, changeAmount, UInt256.ONE, feeTokenRri, inParticle.getTokenPermissions(), System.nanoTime())
-			).build();
+			)
+			.particleGroup();
 
-		t.stage(feeParticleGroup);
-
-		t.commitAndPushWithoutFee()
-				.toObservable()
-				.doOnNext(this::printSubmitAtomAction)
-				.subscribe(this.observer);
+		var atom = api.getIdentity().addSignature(builder).blockingGet();
+		api.submitAtom(atom).toObservable()
+			.doOnNext(this::printSubmitAtomAction)
+			.subscribe(this.observer);
 	}
 
 	@When("^I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,$")

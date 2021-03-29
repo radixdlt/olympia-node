@@ -66,10 +66,6 @@ public final class Atom {
 	private final ImmutableList<CMMicroInstruction> instructions;
 	private final HashCode witness;
 
-	public static TxLowLevelBuilder newBuilder() {
-		return new TxLowLevelBuilder();
-	}
-
 	@JsonCreator
 	private Atom(
 		@JsonProperty("m") String message,

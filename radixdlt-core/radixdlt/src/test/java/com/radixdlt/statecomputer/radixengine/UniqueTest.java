@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.radixengine;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
@@ -78,7 +79,7 @@ public final class UniqueTest {
 		var rri = RRI.of(address, "test");
 		var rriParticle = new RRIParticle(rri, 0);
 		var uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		var atomBuilder = Atom.newBuilder()
+		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(uniqueParticle)
 			.particleGroup();

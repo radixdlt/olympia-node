@@ -18,7 +18,7 @@
 package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -107,7 +107,7 @@ public class RadixEngineTest {
 
 		// Act
 		// Assert
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.particleGroup()
 			.buildWithoutSignature();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))

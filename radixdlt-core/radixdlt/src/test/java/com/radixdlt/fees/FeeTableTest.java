@@ -57,7 +57,7 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomNotMinimum() {
 		FeeTable ft = get();
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(makeParticle("test message 1"))
 			.particleGroup()
 			.up(makeParticle("test message 2"))
@@ -71,9 +71,8 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		TxLowLevelBuilder a = Atom.newBuilder();
-		Atom ca = a.buildWithoutSignature();
-		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
+		Atom a = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
+		UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
 
@@ -84,7 +83,7 @@ public class FeeTableTest {
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
 		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-		Atom atom = Atom.newBuilder()
+		Atom atom = TxLowLevelBuilder.newBuilder()
 			.up(makeParticle("test message 3"))
 			.particleGroup()
 			.buildWithoutSignature();

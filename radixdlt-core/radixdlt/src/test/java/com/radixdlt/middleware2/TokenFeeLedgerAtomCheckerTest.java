@@ -20,8 +20,8 @@ package com.radixdlt.middleware2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -68,7 +68,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
 		final var rri = RRI.of(address, "test");
 		final var rriParticle = new RRIParticle(rri);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.particleGroup()
 			.buildWithoutSignature();
@@ -77,7 +77,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		var atom = Atom.newBuilder().buildWithoutSignature();
+		var atom = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
 		assertThat(checker.check(atom, PermissionLevel.SUPER_USER).getErrorMessage())
 			.contains("instructions");
 	}
@@ -86,7 +86,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_fee__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle)
 			.particleGroup()
 			.buildWithoutSignature();
@@ -105,7 +105,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle1)
 			.particleGroup()
 			.up(unallocatedParticle)
@@ -125,7 +125,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle1)
 			.particleGroup()
 			.up(unallocatedParticle)
@@ -145,7 +145,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		UniqueParticle extraFeeGroupParticle = new UniqueParticle("BAR", address, 0L);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle1)
 			.particleGroup()
 			.up(unallocatedParticle)
@@ -167,7 +167,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle particle4 = new TransferrableTokensParticle(
 				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle1)
 			.particleGroup()
 			.up(particle2)

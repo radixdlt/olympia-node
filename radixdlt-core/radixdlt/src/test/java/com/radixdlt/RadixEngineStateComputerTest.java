@@ -32,6 +32,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
@@ -194,7 +195,7 @@ public class RadixEngineStateComputerTest {
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		Atom atom = Atom.newBuilder()
+		Atom atom = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.of(lastSystemParticle))
 			.up(nextSystemParticle)
 			.particleGroup()

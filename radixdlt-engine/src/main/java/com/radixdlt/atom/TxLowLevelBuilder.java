@@ -42,6 +42,10 @@ public final class TxLowLevelBuilder {
 	TxLowLevelBuilder() {
 	}
 
+	public static TxLowLevelBuilder newBuilder() {
+		return new TxLowLevelBuilder();
+	}
+
 	public TxLowLevelBuilder message(String message) {
 		this.message = message;
 		return this;

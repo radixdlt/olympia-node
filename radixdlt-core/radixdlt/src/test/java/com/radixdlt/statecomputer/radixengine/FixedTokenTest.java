@@ -25,7 +25,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -129,11 +128,11 @@ public class FixedTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var builder = Atom.newBuilder();
+		var builder = TxLowLevelBuilder.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		var atom = builder.signAndBuild(keyPair::sign);
 		sut.execute(List.of(atom));
-		var builder2 = Atom.newBuilder();
+		var builder2 = TxLowLevelBuilder.newBuilder();
 		spendToken(builder2, upToken, 1);
 		var atom2 = builder2.signAndBuild(keyPair::sign);
 
@@ -146,13 +145,13 @@ public class FixedTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var builder = Atom.newBuilder();
+		var builder = TxLowLevelBuilder.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		var atom = builder.signAndBuild(keyPair::sign);
 		sut.execute(List.of(atom));
 
 
-		var builder2 = Atom.newBuilder();
+		var builder2 = TxLowLevelBuilder.newBuilder();
 		spendToken(builder2, upToken, 2);
 		var atom2 = builder2.signAndBuild(keyPair::sign);
 
@@ -166,7 +165,7 @@ public class FixedTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var builder = Atom.newBuilder();
+		var builder = TxLowLevelBuilder.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 1);
 		var atom = builder.signAndBuild(keyPair::sign);
@@ -181,7 +180,7 @@ public class FixedTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var builder = Atom.newBuilder();
+		var builder = TxLowLevelBuilder.newBuilder();
 		var upToken = createToken(keyPair, builder);
 		spendToken(builder, upToken, 2);
 		var atom = builder.signAndBuild(keyPair::sign);

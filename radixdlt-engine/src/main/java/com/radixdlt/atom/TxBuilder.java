@@ -25,6 +25,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -53,7 +54,7 @@ import java.util.stream.StreamSupport;
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
-	private final TxLowLevelBuilder atomBuilder;
+	private final TxLowLevelBuilder lowLevelBuilder;
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
 	private final Iterable<Particle> upParticles;
@@ -67,7 +68,7 @@ public final class TxBuilder {
 		Iterable<Particle> upParticles
 	) {
 		this.address = address;
-		this.atomBuilder = Atom.newBuilder();
+		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.downParticles = new HashSet<>(downVirtualParticles);
 		this.upParticles = upParticles;
 	}
@@ -88,27 +89,31 @@ public final class TxBuilder {
 		return new TxBuilder(null, Set.of(), List.of());
 	}
 
+	public TxLowLevelBuilder toLowLevelBuilder() {
+		return lowLevelBuilder;
+	}
+
 	private void particleGroup() {
-		atomBuilder.particleGroup();
+		lowLevelBuilder.particleGroup();
 	}
 
 	private void up(Particle particle) {
-		atomBuilder.up(particle);
+		lowLevelBuilder.up(particle);
 	}
 
 	private void virtualDown(Particle particle) {
-		atomBuilder.virtualDown(particle);
+		lowLevelBuilder.virtualDown(particle);
 		downParticles.add(SubstateId.ofVirtualSubstate(particle));
 	}
 
 	private void down(SubstateId substateId) {
-		atomBuilder.down(substateId);
+		lowLevelBuilder.down(substateId);
 		downParticles.add(substateId);
 	}
 
 	public Iterable<Particle> upParticles() {
 		return Iterables.concat(
-			atomBuilder.localUpParticles(),
+			lowLevelBuilder.localUpParticles(),
 			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.of(p)))
 		);
 	}
@@ -499,6 +504,29 @@ public final class TxBuilder {
 		return this;
 	}
 
+	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
+		var tokenDefSubstate = find(
+			MutableSupplyTokenDefinitionParticle.class,
+			p -> p.getRRI().equals(rri),
+			"Could not find token rri " + rri
+		);
+		final var factory = TokDefParticleFactory.create(
+			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+		);
+		swapFungible(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amount,
+			"Not enough balance for burn."
+		).with(amt -> factory.createUnallocated(amount));
+
+		particleGroup();
+
+		return this;
+	}
+
 	public TxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
 		// HACK
@@ -524,7 +552,60 @@ public final class TxBuilder {
 			amt -> factory.createTransferrable(address, amt, random.nextLong()),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amount, random.nextLong()));
+		).with(amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()));
+
+		particleGroup();
+
+		return this;
+	}
+
+	public TxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
+		assertHasAddress("Must have an address.");
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		swapFungible(
+			StakedTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			StakedTokensParticle::getAmount,
+			amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()),
+			amount,
+			"Not enough staked."
+		).with(amt -> factory.createTransferrable(address, amt, random.nextLong()));
+
+		particleGroup();
+
+		return this;
+	}
+
+	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
+	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
+		assertHasAddress("Must have an address.");
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		swapFungible(
+			StakedTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			StakedTokensParticle::getAmount,
+			amt -> factory.createStaked(from, address, amt, random.nextLong()),
+			amount,
+			"Not enough staked."
+		).with(amt -> factory.createStaked(to, address, amt, random.nextLong()));
 
 		particleGroup();
 
@@ -555,10 +636,10 @@ public final class TxBuilder {
 	}
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {
-		return atomBuilder.signAndBuild(signer);
+		return lowLevelBuilder.signAndBuild(signer);
 	}
 
 	public Atom buildWithoutSignature() {
-		return atomBuilder.buildWithoutSignature();
+		return lowLevelBuilder.buildWithoutSignature();
 	}
 }

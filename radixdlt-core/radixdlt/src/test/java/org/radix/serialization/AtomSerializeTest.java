@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -33,7 +34,7 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 		final var rri = RRI.of(address, "test");
 
 		// add a particle to ensure atom is valid and has at least one shard
-		return Atom.newBuilder()
+		return TxLowLevelBuilder.newBuilder()
 			.virtualDown(new RRIParticle(rri))
 			.particleGroup()
 			.buildWithoutSignature();

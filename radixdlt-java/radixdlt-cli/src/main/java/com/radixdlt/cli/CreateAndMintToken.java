@@ -22,11 +22,17 @@
 
 package com.radixdlt.cli;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.utils.UInt256;
 import picocli.CommandLine;
 
 import java.math.BigDecimal;
@@ -70,6 +76,9 @@ public class CreateAndMintToken implements Runnable {
 	)
 	private boolean useExisting;
 
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+
+
 	@Override
 	public void run() {
 		if (tokenName.isBlank()) {
@@ -84,30 +93,42 @@ public class CreateAndMintToken implements Runnable {
 
 		RadixApplicationAPI api = Utils.getAPI(identityInfo);
 		RRI tokenRRI = RRI.of(api.getAddress(), tokenName);
-		RadixApplicationAPI.Transaction transaction = api.createTransaction();
+		var txBuilder = TxBuilder.newBuilder(api.getAddress());
 
-		if (!useExisting) {
-			printfln("Creating token %s with %s", tokenName, tokenDescription);
+		try {
+			if (!useExisting) {
+				printfln("Creating token %s with %s", tokenName, tokenDescription);
+				txBuilder.createMutableToken(
+					new MutableTokenDefinition(
+						tokenName,
+						tokenName,
+						tokenDescription,
+						null,
+						null,
+						ImmutableMap.of(
+							MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+							MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
+						)
+					)
+				);
+			} else {
+				printfln("Using existing token %s", tokenName);
+			}
 
-			transaction.stage(CreateTokenAction.create(
-					tokenRRI,
-					tokenName,
-					tokenDescription,
-					BigDecimal.ZERO,
-					TokenUnitConversions.getMinimumGranularity(),
-					CreateTokenAction.TokenSupplyType.MUTABLE
-			));
-		} else {
-			printfln("Using existing token %s", tokenName);
-		}
+			if (amount != null && amount.compareTo(BigDecimal.ZERO) >= 0) {
+				printfln("Minting token for %f", amount);
+				txBuilder.mint(tokenRRI, api.getAddress(), TokenUnitConversions.unitsToSubunits(amount));
+			}
 
-		if (amount != null && amount.compareTo(BigDecimal.ZERO) >= 0) {
-			printfln("Minting token for %f", amount);
-			transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), amount));
+			txBuilder.burnForFee(api.getNativeTokenRef(), fee);
+		} catch (TxBuilderException e) {
+			throw new RuntimeException("Could not build transaction", e);
 		}
 
 		println("Committing transaction...");
-		transaction.commitAndPush()
+
+		var atom = api.getIdentity().addSignature(txBuilder.toLowLevelBuilder()).blockingGet();
+		api.submitAtom(atom)
 				.toObservable()
 				.blockingSubscribe(it -> println(it.toString()));
 		println("Done");
