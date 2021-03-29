@@ -126,6 +126,28 @@ public final class TxBuilder {
 	private <T extends Particle> T find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		int index,
+		String errorMessage
+	) throws TxBuilderException {
+		var substateRead = Streams.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		)
+			.filter(particleClass::isInstance)
+			.map(particleClass::cast)
+			.filter(particlePredicate)
+			.skip(index)
+			.findFirst();
+		if (substateRead.isEmpty()) {
+			throw new TxBuilderException(errorMessage);
+		}
+
+		return substateRead.get();
+	}
+
+	private <T extends Particle> T find(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
@@ -482,6 +504,37 @@ public final class TxBuilder {
 		return this;
 	}
 
+	// For mempool filler
+	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		var particle = find(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri)
+				&& p.getAddress().equals(address)
+				&& p.getAmount().compareTo(minSize) > 0,
+			index,
+			"Could not find large particle greater than " + minSize
+		);
+
+		down(SubstateId.ofSubstate(particle));
+		var amt1 = particle.getAmount().divide(UInt256.TWO);
+		var amt2 = particle.getAmount().subtract(amt1);
+		up(factory.createTransferrable(address, amt1, random.nextLong()));
+		up(factory.createTransferrable(address, amt2, random.nextLong()));
+		particleGroup();
+
+		return this;
+	}
+
 	public TxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		// HACK
 		var factory = TokDefParticleFactory.create(
@@ -660,6 +713,12 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
+	}
+
+	public Atom signAndBuildRemoteSubstateOnly(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+		var atom = lowLevelBuilder.signAndBuild(signer);
+		upSubstateConsumer.accept(remoteUpSubstates());
+		return atom;
 	}
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {

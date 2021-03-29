@@ -44,6 +44,8 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
 import java.util.function.Predicate;
@@ -52,6 +54,8 @@ import java.util.function.Predicate;
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
+	private static final Logger logger = LogManager.getLogger();
+
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
@@ -129,7 +133,7 @@ public class RadixEngineModule extends AbstractModule {
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
-		Set<SubstateCacheRegister<?>> substateCachRegisters,
+		Set<SubstateCacheRegister<?>> substateCacheRegisters,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		var radixEngine = new RadixEngine<>(
@@ -155,9 +159,12 @@ public class RadixEngineModule extends AbstractModule {
 
 		// Additional state reducers are not required for consensus so don't need to include their
 		// state in transient branches;
+		logger.info("RE - Initializing stateReducers: {} {}", stateReducers, namedStateReducers);
 		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
-		substateCachRegisters.forEach(radixEngine::addSubstateCache);
+
+		logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
+		substateCacheRegisters.forEach(radixEngine::addSubstateCache);
 
 		return radixEngine;
 	}

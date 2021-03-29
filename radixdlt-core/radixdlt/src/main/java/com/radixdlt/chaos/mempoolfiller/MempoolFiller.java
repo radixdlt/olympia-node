@@ -19,7 +19,11 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -30,17 +34,22 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Periodically fills the mempool with valid transactions
@@ -58,6 +67,8 @@ public final class MempoolFiller {
 	private final Random random;
 	private final HashSigner hashSigner;
 	private final RadixAddress selfAddress;
+	private final RRI nativeToken;
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private boolean enabled = false;
 	private int numTransactions;
@@ -66,6 +77,7 @@ public final class MempoolFiller {
 	@Inject
 	public MempoolFiller(
 		@Self RadixAddress selfAddress,
+		@NativeToken RRI nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
 		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
@@ -77,6 +89,7 @@ public final class MempoolFiller {
 		SystemCounters systemCounters
 	) {
 		this.selfAddress = selfAddress;
+		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
 		this.serialization = serialization;
 		this.radixEngine = radixEngine;
@@ -114,19 +127,32 @@ public final class MempoolFiller {
 				return;
 			}
 
-			InMemoryWallet wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			List<TxBuilder> atoms = wallet.createParallelTransactions(selfAddress, numTransactions);
-			logger.info("Mempool Filler (mempool: {} balance: {} particles: {}): Adding {} atoms to mempool...",
+			var particles = radixEngine.getSubstateCache(List.of(TransferrableTokensParticle.class));
+			var particleCount = radixEngine.getComputedState(Integer.class);
+			var substateHolder = new AtomicReference<>(particles);
+			var atoms = new ArrayList<Atom>();
+
+			for (int i = 0; i < numTransactions; i++) {
+				try {
+					var index = random.nextInt(Math.min(particleCount, 100));
+					var atom = TxBuilder.newBuilder(selfAddress, substateHolder.get())
+						.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
+						.burnForFee(nativeToken, fee)
+						.signAndBuildRemoteSubstateOnly(hashSigner::sign, substateHolder::set);
+					atoms.add(atom);
+				} catch (TxBuilderException e) {
+					break;
+				}
+			}
+
+			logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
 				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
-				wallet.getBalance(),
-				wallet.getNumParticles(),
 				atoms.size()
 			);
 
 			List<BFTNode> peers = peersView.peers();
-			atoms.forEach(atomBuilder -> {
-				var clientAtom = atomBuilder.signAndBuild(hashSigner::sign);
-				byte[] payload = serialization.toDson(clientAtom, DsonOutput.Output.ALL);
+			atoms.forEach(atom -> {
+				byte[] payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 				Command command = new Command(payload);
 
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
