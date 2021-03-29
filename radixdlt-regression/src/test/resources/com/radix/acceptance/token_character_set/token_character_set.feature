@@ -23,12 +23,12 @@ Feature: Restricted character set for token symbols
   #When I submit a mutable-supply token-creation request with symbol "123+DEF"
   #Then I can observe the atom being rejected with a failure
 
-Scenario: 4: Token symbol is OK
-  Given I have access to a suitable Radix network
-  When I submit a mutable-supply token-creation request with symbol "123DEF0"
-  Then I can observe the atom being accepted
+#Scenario: 4: Token symbol is OK
+  #Given I have access to a suitable Radix network
+  #When I submit a mutable-supply token-creation request with symbol "123DEF0"
+  #Then I can observe the atom being accepted
 
-Scenario: 5: Token symbol is OK
-  Given I have access to a suitable Radix network
-  When I submit a mutable-supply token-creation request with symbol "123Z"
-  Then I can observe the atom being accepted
+#Scenario: 5: Token symbol is OK
+  #Given I have access to a suitable Radix network
+  #When I submit a mutable-supply token-creation request with symbol "123Z"
+  #Then I can observe the atom being accepted
