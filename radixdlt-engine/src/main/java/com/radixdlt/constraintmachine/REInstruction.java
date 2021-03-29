@@ -22,6 +22,9 @@ import org.bouncycastle.util.encoders.Hex;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Unparsed Low level instruction into Radix Engine
+ */
 public final class REInstruction {
 	public enum REOp {
 		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
