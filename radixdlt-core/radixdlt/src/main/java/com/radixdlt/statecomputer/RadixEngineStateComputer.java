@@ -283,7 +283,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return serialization.fromDson(command.getPayload(), Atom.class);
 	}
 
-	private List<Atom> commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+	private Pair<List<Atom>, List<ParsedTransaction>> commitInternal(
+		VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState
+	) {
 		final var atomsToCommit = new ArrayList<Atom>();
 		try {
 			for (var cmd : verifiedCommandsAndProof.getCommands()) {
@@ -318,7 +320,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return atomsToCommit;
+		return Pair.of(atomsToCommit, parsedTransactions);
 	}
 
 	@Override
@@ -326,7 +328,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var atomsCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
-		List<Pair<Command, Exception>> removed = this.mempool.committed(atomsCommitted);
+		// TODO: Move this into engine
+		List<Pair<Command, Exception>> removed = this.mempool.committed(atomsCommitted.getFirst());
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
@@ -335,7 +338,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
 		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(verifiedCommandsAndProof.getCommands()));
+			var cmds = verifiedCommandsAndProof.getCommands();
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(cmds, atomsCommitted.getSecond()));
 		}
 	}
 }

@@ -19,7 +19,9 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -32,7 +34,8 @@ public interface ClientApiStore {
 	/**
 	 * Retrieve list of immediately spendable token balances.
 	 *
-	 * @param address	- client address
+	 * @param address client address
+	 *
 	 * @return list of token balances
 	 */
 	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
@@ -41,6 +44,25 @@ public interface ClientApiStore {
 	 * Flush intermediate storage and save particles into persistent DB.
 	 */
 	void storeCollectedParticles();
+
+	/**
+	 * Get current supply of the specified token.
+	 *
+	 * @param rri token for which supply is requested
+	 *
+	 * @return eventually consistent token supply
+	 */
+	Result<UInt256> getTokenSupply(RRI rri);
+
+	/**
+	 * Retrieve token definition. Note that for mutable supply tokens supply is returned zero.
+	 * If actual token supply value is necessary then {@link #getTokenSupply(RRI)} should be used.
+	 *
+	 * @param rri token for which definition is requested
+	 *
+	 * @return token definition.
+	 */
+	Result<TokenDefinitionRecord> getTokenDefinition(RRI rri);
 
 	EventProcessor<ScheduledParticleFlush> particleFlushProcessor();
 }

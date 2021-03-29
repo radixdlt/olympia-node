@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.AtomsService;
 
 import com.radixdlt.identifiers.RadixAddress;
@@ -31,9 +32,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
-import static org.radix.api.jsonrpc.JsonRpcUtil.PARSE_ERROR;
-import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
@@ -92,7 +90,7 @@ public class RadixJsonRpcPeer {
 		try {
 			jsonRpcRequest = new JSONObject(message);
 		} catch (JSONException e) {
-			callback.accept(this, errorResponse(PARSE_ERROR, e.getMessage()).toString());
+			callback.accept(this, errorResponse(RpcError.PARSE_ERROR, e.getMessage()).toString());
 			return;
 		}
 
@@ -104,7 +102,7 @@ public class RadixJsonRpcPeer {
 
 		if (STATUS_METHODS.contains(jsonRpcMethod) || SUBSCRIPTION_METHODS.contains(jsonRpcMethod)) {
 			if (!jsonRpcRequest.getJSONObject("params").has("subscriberId")) {
-				callback.accept(this, errorResponse(INVALID_PARAMS, "JSON-RPC: No subscriberId").toString());
+				callback.accept(this, errorResponse(RpcError.INVALID_PARAMS, "JSON-RPC: No subscriberId").toString());
 				return;
 			}
 
@@ -121,7 +119,7 @@ public class RadixJsonRpcPeer {
 					} else {
 						callback.accept(
 							RadixJsonRpcPeer.this,
-							errorResponse(SERVER_ERROR, "unable to process request: " + message).toString()
+							errorResponse(RpcError.SERVER_ERROR, "unable to process request: " + message).toString()
 						);
 					}
 				});
@@ -132,7 +130,7 @@ public class RadixJsonRpcPeer {
 	private boolean ensureRequestHas(final JSONObject jsonRpcRequest, final String... names) {
 		for (var name : names) {
 			if (!jsonRpcRequest.has(name)) {
-				callback.accept(this, errorResponse(INVALID_PARAMS, "JSON-RPC: No " + name).toString());
+				callback.accept(this, errorResponse(RpcError.INVALID_PARAMS, "JSON-RPC: No " + name).toString());
 				return false;
 			}
 		}

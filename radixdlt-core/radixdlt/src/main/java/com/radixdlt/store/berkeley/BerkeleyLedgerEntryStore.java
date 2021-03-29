@@ -100,8 +100,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private Consumer<ParsedInstruction> particleConsumer = BerkeleyLedgerEntryStore::defaultParticleConsumer;
-
 	private Database atomDatabase; // Atoms by primary keys (state version, no prefixes); Append-only
 
 	private Database atomIdDatabase; // Atoms by AID; Append-only
@@ -285,12 +283,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	// TODO: Hack for Client Api store, remove at some point
-	public void onParticleCommit(Consumer<ParsedInstruction> particleConsumer) {
-		this.particleConsumer = Optional.ofNullable(particleConsumer)
-			.orElse(BerkeleyLedgerEntryStore::defaultParticleConsumer);
-	}
-
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {
 		withTime(() -> {
@@ -298,10 +290,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
 		}, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
-	}
-
-	private static void defaultParticleConsumer(ParsedInstruction particle) {
-		//Intentionally left blank
 	}
 
 	private void open() {
@@ -505,7 +493,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		System.arraycopy(substateBytes, 0, value, EUID.BYTES, substateBytes.length);
 
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
-		particleConsumer.accept(ParsedInstruction.up(particle));
 	}
 
 	private void downVirtualParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -526,13 +513,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Particle was already spun down: " + substateId);
 		}
 
-		var serializedParticle = new byte[downedParticle.getData().length - EUID.BYTES];
-		System.arraycopy(downedParticle.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-		var particle = deserializeOrElseFail(serializedParticle, Particle.class);
-
 		// TODO: replace this with remove
 		particleDatabase.put(txn, entry(substateId), downEntry());
-		particleConsumer.accept(ParsedInstruction.down(particle));
 	}
 
 	private DatabaseEntry downEntry() {

@@ -71,6 +71,12 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleTransactionStatus;
 	}
 
+	@ProvidesIntoMap
+	@StringMapKey("radix.tokenInfo")
+	public JsonRpcHandler tokenInfo(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleTokenInfo;
+	}
+
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>("application",
