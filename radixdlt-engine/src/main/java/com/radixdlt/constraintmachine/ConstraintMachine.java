@@ -388,16 +388,16 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateMicroInstructions(
+	Optional<CMError> validateInstructions(
 		CMValidationState validationState,
-		List<REInstruction> instructions,
+		Atom atom,
 		List<ParsedInstruction> parsedInstructions
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 		int instructionIndex = 0;
 
-		for (REInstruction inst : instructions) {
+		for (REInstruction inst : atom.getMicroInstructions()) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class
@@ -418,7 +418,7 @@ public final class ConstraintMachine {
 					));
 				}
 				final Spin checkSpin = inst.getCheckSpin();
-				var substate = new Substate(nextParticle, SubstateId.ofSubstate(nextParticle));
+				var substate = new Substate(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				boolean okay = validationState.checkSpinAndPush(instructionIndex, substate, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
@@ -489,7 +489,7 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				var substateId = SubstateId.ofSubstate(particle);
+				var substateId = SubstateId.ofSubstate(atom, index);
 				parsedInstructions.add(ParsedInstruction.down(new Substate(particle, substateId)));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
@@ -554,6 +554,6 @@ public final class ConstraintMachine {
 			atom.getSignature()
 		);
 
-		return this.validateMicroInstructions(validationState, atom.getMicroInstructions(), parsedInstructions);
+		return this.validateInstructions(validationState, atom, parsedInstructions);
 	}
 }

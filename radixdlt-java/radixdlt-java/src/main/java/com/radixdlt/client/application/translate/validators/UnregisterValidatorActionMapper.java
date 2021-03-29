@@ -24,14 +24,13 @@ package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
 
 import java.util.List;
 import java.util.Set;
@@ -50,10 +49,10 @@ public class UnregisterValidatorActionMapper implements StatefulActionToParticle
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(UnregisterValidatorAction action, Stream<Particle> store) throws StageActionException {
+	public List<ParticleGroup> mapToParticleGroups(UnregisterValidatorAction action, Stream<Substate> store) throws StageActionException {
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
 		return ImmutableList.of(ParticleGroup.builder()
-			.spinDown(SubstateId.ofSubstate(currentState.asParticle()))
+			.spinDown(currentState.asSubstate().getId())
 			.spinUp(currentState.unregister())
 			.build()
 		);

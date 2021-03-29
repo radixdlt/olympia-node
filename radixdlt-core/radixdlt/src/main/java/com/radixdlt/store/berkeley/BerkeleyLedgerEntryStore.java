@@ -519,7 +519,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return v;
 	}
 
-	private void upParticle(com.sleepycat.je.Transaction txn, byte[] substateBytes) {
+	private void upParticle(com.sleepycat.je.Transaction txn, byte[] substateBytes, Atom atom, int index) {
 		// TODO: Cleanup indexing of substate class
 		final Particle particle;
 		try {
@@ -528,7 +528,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException();
 		}
 
-		byte[] particleKey = SubstateId.ofSubstate(substateBytes).asBytes();
+		byte[] particleKey = SubstateId.ofSubstate(atom, index).asBytes();
 
 		final String idForClass = serialization.getIdForClass(particle.getClass());
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
@@ -592,9 +592,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, REInstruction instruction) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, int instIndex) {
+		final var instruction = tx.getMicroInstructions().get(instIndex);
+
 		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
-			upParticle(txn, instruction.getData());
+			upParticle(txn, instruction.getData(), tx, instIndex);
 		} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
 			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
 		} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
@@ -602,9 +604,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
 			// Optimize local down
 			var index = Ints.fromByteArray(instruction.getData());
-			var substate = tx.getMicroInstructions().get(index).getData();
-			var substateId = SubstateId.ofSubstate(substate).asBytes();
+			var substateId = SubstateId.ofSubstate(tx, index).asBytes();
 			downParticle(txn, substateId);
+		} else if (instruction.getMicroOp() == REInstruction.REOp.END) {
+			// No-Op
+			return;
 		} else {
 			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
 		}
@@ -642,9 +646,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			atom.getMicroInstructions().stream()
-				.filter(REInstruction::isPush)
-				.forEach(i -> this.updateParticle(transaction, atom, i));
+			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
+				this.updateParticle(transaction, atom, i);
+			}
 
 		} catch (Exception e) {
 			if (transaction != null) {

@@ -193,14 +193,20 @@ public class RadixEngineStateComputerTest {
 		setupGenesis();
 	}
 
-	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
-		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
-		Atom atom = TxLowLevelBuilder.newBuilder()
-			.down(SubstateId.ofSubstate(lastSystemParticle))
-			.up(nextSystemParticle)
-			.particleGroup()
-			.buildWithoutSignature();
+	private Atom systemUpdateAtom(long nextView, long nextEpoch) throws TxBuilderException {
+		var substates = this.engineStore.upSubstates(SystemParticle.class, p -> true);
+		var builder = TxBuilder.newSystemBuilder(substates);
+		if (nextEpoch >= 2) {
+			builder.systemNextEpoch(0, nextEpoch - 1);
+		} else {
+			builder.systemNextView(nextView, 0, nextEpoch);
+		}
+
+		return builder.buildWithoutSignature();
+	}
+
+	private RadixEngineCommand systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
+		var atom = systemUpdateAtom(nextView, nextEpoch);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
 		Command cmd = new Command(payload);
 		return new RadixEngineCommand(cmd, atom, PermissionLevel.USER);
@@ -282,12 +288,19 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void preparing_system_update_from_vertex_should_fail() {
+	public void preparing_system_update_from_vertex_should_fail() throws TxBuilderException {
 		// Arrange
-		RadixEngineCommand cmd = systemUpdateCommand(1, 2, 1);
+		var atom = systemUpdateAtom(1, 1);
+		var illegalAtom = TxLowLevelBuilder.newBuilder()
+			.down(SubstateId.ofSubstate(atom, 1))
+			.up(new SystemParticle(1, 2, 0))
+			.buildWithoutSignature();
+
+		final byte[] payload = DefaultSerialization.getInstance().toDson(illegalAtom, Output.ALL);
+		var cmd = new Command(payload);
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(1), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, 1, View.of(1), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -307,9 +320,9 @@ public class RadixEngineStateComputerTest {
 	// Note that checking upper bound view for epoch now requires additional
 	// state not easily obtained where checked in the RadixEngine
 	@Ignore("FIXME: Reinstate when upper bound on epoch view is in place.")
-	public void committing_epoch_high_views_should_fail() {
+	public void committing_epoch_high_views_should_fail() throws TxBuilderException {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 1);
+		RadixEngineCommand cmd0 = systemUpdateCommand(10, 1);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -334,7 +347,7 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
@@ -360,7 +373,7 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_different_validator_signed_should_fail() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
@@ -385,9 +398,9 @@ public class RadixEngineStateComputerTest {
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
 	@Test
-	public void committing_epoch_change_when_there_shouldnt_be_one__should_fail() {
+	public void committing_epoch_change_when_there_shouldnt_be_one__should_fail() throws TxBuilderException {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 1, 1);
+		RadixEngineCommand cmd0 = systemUpdateCommand(1, 1);
 		LedgerProof ledgerProof = new LedgerProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),

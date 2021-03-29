@@ -23,9 +23,10 @@
 package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Comparator;
@@ -37,13 +38,13 @@ import java.util.stream.Stream;
  * The registration state of a certain validator address.
  */
 final class ValidatorRegistrationState {
-	private final Particle particle;
+	private final Substate substate;
 	private final RadixAddress address;
 	private final boolean registered;
 	private final long nonce;
 
-	private ValidatorRegistrationState(Particle particle, RadixAddress address, boolean registered, long nonce) {
-		this.particle = particle;
+	private ValidatorRegistrationState(Substate substate, RadixAddress address, boolean registered, long nonce) {
+		this.substate = substate;
 		this.address = address;
 		this.registered = registered;
 		this.nonce = nonce;
@@ -101,7 +102,7 @@ final class ValidatorRegistrationState {
 	 * @throws IllegalArgumentException if any particle is not of the correct type
 	 * @return the latest {@link ValidatorRegistrationState} (may be initial if none)
 	 */
-	static ValidatorRegistrationState from(Stream<Particle> store, RadixAddress address) {
+	static ValidatorRegistrationState from(Stream<Substate> store, RadixAddress address) {
 		Objects.requireNonNull(store, "store");
 		Objects.requireNonNull(address, "address");
 		return store
@@ -113,18 +114,17 @@ final class ValidatorRegistrationState {
 
 	/**
 	 * Extracts the validator registration state from a given validator registration particle
-	 * @param particle the {@link RegisteredValidatorParticle} or {@link UnregisteredValidatorParticle}
 	 * @throws IllegalArgumentException if the particle is not of the correct type
 	 * @return the extracted {@link ValidatorRegistrationState}
 	 */
-	static ValidatorRegistrationState from(Particle particle) {
-		Objects.requireNonNull(particle, "particle");
+	static ValidatorRegistrationState from(Substate substate) {
+		var particle = substate.getParticle();
 		if (particle instanceof RegisteredValidatorParticle) {
 			RegisteredValidatorParticle validator = (RegisteredValidatorParticle) particle;
-			return new ValidatorRegistrationState(particle, validator.getAddress(), true, validator.getNonce());
+			return new ValidatorRegistrationState(substate, validator.getAddress(), true, validator.getNonce());
 		} else if (particle instanceof  UnregisteredValidatorParticle) {
 			UnregisteredValidatorParticle unregistered = (UnregisteredValidatorParticle) particle;
-			return new ValidatorRegistrationState(particle, unregistered.getAddress(), false, unregistered.getNonce());
+			return new ValidatorRegistrationState(substate, unregistered.getAddress(), false, unregistered.getNonce());
 		} else {
 			throw new IllegalArgumentException(String.format("unknown particle: %s", particle));
 		}
@@ -138,8 +138,9 @@ final class ValidatorRegistrationState {
 	 */
 	static ValidatorRegistrationState initial(RadixAddress address) {
 		Objects.requireNonNull(address, "address");
-		UnregisteredValidatorParticle initialState = new UnregisteredValidatorParticle(address, 0);
-		return ValidatorRegistrationState.from(initialState);
+		var initialState = new UnregisteredValidatorParticle(address, 0);
+		var substate = new Substate(initialState, SubstateId.ofVirtualSubstate(initialState));
+		return ValidatorRegistrationState.from(substate);
 	}
 
 	@Override
@@ -153,20 +154,20 @@ final class ValidatorRegistrationState {
 		ValidatorRegistrationState that = (ValidatorRegistrationState) o;
 		return registered == that.registered
 			&& nonce == that.nonce
-			&& Objects.equals(particle, that.particle)
+			&& Objects.equals(substate, that.substate)
 			&& Objects.equals(address, that.address);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particle, address, registered, nonce);
+		return Objects.hash(substate, address, registered, nonce);
 	}
 
 	/**
 	 * Gets the underlying particle representing this state.
 	 */
-	Particle asParticle() {
-		return this.particle;
+	Substate asSubstate() {
+		return this.substate;
 	}
 
 	/**

@@ -46,20 +46,22 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	@Override
 	public void storeAtom(Transaction txn, Atom atom) {
 		synchronized (lock) {
-			for (REInstruction microInstruction : atom.getMicroInstructions()) {
-				if (microInstruction.isPush()) {
-					Spin nextSpin = microInstruction.getNextSpin();
+			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
+				var instruction = atom.getMicroInstructions().get(i);
+				if (instruction.isPush()) {
+					Spin nextSpin = instruction.getNextSpin();
 
 					final Particle particle;
 					final SubstateId substateId;
 					try {
-						if (microInstruction.getMicroOp() == REInstruction.REOp.UP
-							|| microInstruction.getMicroOp() == REInstruction.REOp.VDOWN) {
-							particle = DefaultSerialization.getInstance().fromDson(
-								microInstruction.getData(), Particle.class);
-							substateId = SubstateId.ofSubstate(microInstruction.getData());
-						} else if (microInstruction.getMicroOp() == REInstruction.REOp.DOWN) {
-							substateId = SubstateId.fromBytes(microInstruction.getData());
+						if (instruction.getMicroOp() == REInstruction.REOp.UP) {
+							particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
+							substateId = SubstateId.ofSubstate(atom, i);
+						} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
+							particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
+							substateId = SubstateId.ofVirtualSubstate(instruction.getData());
+						} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
+							substateId = SubstateId.fromBytes(instruction.getData());
 							var storedParticle = storedParticles.get(substateId);
 							if (storedParticle == null) {
 								particle = null;
@@ -67,19 +69,19 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 								var dson = storedParticle.getFirst().getData();
 								particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
 							}
-						} else if (microInstruction.getMicroOp() == REInstruction.REOp.LDOWN) {
-							int index = Ints.fromByteArray(microInstruction.getData());
+						} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
+							int index = Ints.fromByteArray(instruction.getData());
 							var dson = atom.getMicroInstructions().get(index).getData();
 							particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
-							substateId = SubstateId.ofSubstate(dson);
+							substateId = SubstateId.ofSubstate(atom, index);
 						} else {
-							throw new IllegalStateException("Unknown op " + microInstruction.getMicroOp());
+							throw new IllegalStateException("Unknown op " + instruction.getMicroOp());
 						}
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();
 					}
 
-					storedParticles.put(substateId, Pair.of(microInstruction, atom));
+					storedParticles.put(substateId, Pair.of(instruction, atom));
 					if (particle != null) {
 						inOrderParticles.add(Pair.of(new Substate(particle, substateId), nextSpin));
 					}
