@@ -36,12 +36,25 @@ public final class JsonRpcUtil {
 	/**
 	 * The following found at: https://www.jsonrpc.org/specification
 	 */
-	public static final int INVALID_REQUEST = -32600;
-	public static final int INVALID_PARAMS = -32602;
-	public static final int METHOD_NOT_FOUND = -32601;
-	public static final int REQUEST_TOO_LONG = -32001;
-	public static final int SERVER_ERROR = -32000;
-	public static final int PARSE_ERROR = -32700;
+	public enum RpcError {
+		INVALID_REQUEST(-32600),
+		INVALID_PARAMS(-32602),
+		METHOD_NOT_FOUND(-32601),
+		REQUEST_TOO_LONG(-32001),
+		SERVER_ERROR(-32000),
+		PARSE_ERROR(-32700);
+
+		private final int code;
+
+		RpcError(int code) {
+			this.code = code;
+		}
+
+		public int code() {
+			return code;
+		}
+
+	}
 
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
@@ -85,23 +98,19 @@ public final class JsonRpcUtil {
 		}
 	}
 
-	public static JSONObject methodNotFoundResponse(Object id) {
-		return errorResponse(id, METHOD_NOT_FOUND, "Method not found");
+	public static JSONObject errorResponse(Object id, RpcError code, String message) {
+		return commonFields(id).put("error", jsonObject().put("code", code.code()).put("message", message));
 	}
 
-	public static JSONObject errorResponse(Object id, int code, String message, JSONObject data) {
-		return errorResponse(id, code, message).put("data", data);
+	public static JSONObject errorResponse(JSONObject request, RpcError code, String message, JSONObject data) {
+		return errorResponse(request, code, message).put("data", data);
 	}
 
-	public static JSONObject errorResponse(Object id, int code, String message) {
-		return commonFields(id).put("error", jsonObject().put("code", code).put("message", message));
+	public static JSONObject errorResponse(JSONObject request, RpcError code, String message) {
+		return errorResponse(request.get("id"), code, message);
 	}
 
-	public static JSONObject errorResponse(JSONObject request, int code, String message) {
-		return commonFields(request.get("id")).put("error", jsonObject().put("code", code).put("message", message));
-	}
-
-	public static JSONObject errorResponse(int code, String message) {
+	public static JSONObject errorResponse(RpcError code, String message) {
 		return errorResponse(JSONObject.NULL, code, message);
 	}
 
@@ -131,7 +140,7 @@ public final class JsonRpcUtil {
 	) {
 		return withParameters(request, params -> {
 			if (!params.has(name)) {
-				return errorResponse(request, INVALID_REQUEST, "Field '" + name + "' not present in params");
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Field '" + name + "' not present in params");
 			} else {
 				return fn.apply(params, params.getString(name));
 			}
@@ -147,7 +156,7 @@ public final class JsonRpcUtil {
 			var allPresent = required.stream().filter(params::has).count() == required.size();
 
 			if (!allPresent) {
-				return errorResponse(request, INVALID_REQUEST, "Params misses one of fields " + required);
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Params misses one of fields " + required);
 			} else {
 				return fn.apply(params);
 			}
@@ -156,13 +165,13 @@ public final class JsonRpcUtil {
 
 	public static JSONObject withParameters(JSONObject request, Function<JSONObject, JSONObject> fn) {
 		if (!request.has("params")) {
-			return errorResponse(request, INVALID_REQUEST, "'params' field is required");
+			return errorResponse(request, RpcError.INVALID_REQUEST, "'params' field is required");
 		}
 
 		final Object paramsObject = request.get("params");
 
 		if (!(paramsObject instanceof JSONObject)) {
-			return errorResponse(request, INVALID_PARAMS, "'params' field must be a JSON object");
+			return errorResponse(request, RpcError.INVALID_PARAMS, "'params' field must be a JSON object");
 		}
 
 		return fn.apply((JSONObject) paramsObject);

@@ -53,6 +53,10 @@ public final class ParsedInstruction {
 		return substate;
 	}
 
+	public Particle getParticle() {
+		return substate.getParticle();
+	}
+
 	public <T extends Particle> T getParticle(Class<T> cls) {
 		return cls.cast(substate.getParticle());
 	}

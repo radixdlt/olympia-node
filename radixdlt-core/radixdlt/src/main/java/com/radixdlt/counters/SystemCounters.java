@@ -84,8 +84,42 @@ public interface SystemCounters {
 
 		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
 
+		// API DB metrics
+		COUNT_APIDB_PARTICLE_QUEUE_SIZE("count.apidb.particle.queue.size"),
+		COUNT_APIDB_PARTICLE_FLUSH_COUNT("count.apidb.particle.flush.count"),
+
+		COUNT_APIDB_BALANCE_TOTAL("count.apidb.balance.total"),
+		COUNT_APIDB_BALANCE_READ("count.apidb.balance.read"),
+		COUNT_APIDB_BALANCE_WRITE("count.apidb.balance.write"),
+		COUNT_APIDB_BALANCE_BYTES_READ("count.apidb.balance.bytes.read"),
+		COUNT_APIDB_BALANCE_BYTES_WRITE("count.apidb.balance.bytes.write"),
+
+		COUNT_APIDB_TOKEN_TOTAL("count.apidb.token.total"),
+		COUNT_APIDB_TOKEN_READ("count.apidb.token.read"),
+		COUNT_APIDB_TOKEN_WRITE("count.apidb.token.write"),
+		COUNT_APIDB_TOKEN_BYTES_READ("count.apidb.token.bytes.read"),
+		COUNT_APIDB_TOKEN_BYTES_WRITE("count.apidb.token.bytes.write"),
+
+		COUNT_APIDB_TRANSACTION_TOTAL("count.apidb.transaction.total"),
+		COUNT_APIDB_TRANSACTION_READ("count.apidb.transaction.read"),
+		COUNT_APIDB_TRANSACTION_WRITE("count.apidb.transaction.write"),
+		COUNT_APIDB_TRANSACTION_BYTES_READ("count.apidb.transaction.bytes.read"),
+		COUNT_APIDB_TRANSACTION_BYTES_WRITE("count.apidb.transaction.bytes.write"),
+
 		// Total elapsed time for database access, in microseconds
+		ELAPSED_APIDB_BALANCE_READ("elapsed.apidb.balance.read"),
+		ELAPSED_APIDB_BALANCE_WRITE("elapsed.apidb.balance.write"),
+
+		ELAPSED_APIDB_TOKEN_READ("elapsed.apidb.token.read"),
+		ELAPSED_APIDB_TOKEN_WRITE("elapsed.apidb.token.write"),
+
+		ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.transaction.read"),
+		ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.transaction.write"),
+
+		ELAPSED_APIDB_PARTICLE_FLUSH_TIME("elapsed.apidb.particle.flush.time"),
+
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
+
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
 		ELAPSED_BDB_LEDGER_CREATE_TX("elapsed.bdb.ledger.create_tx"),
 		ELAPSED_BDB_LEDGER_CONTAINS("elapsed.bdb.ledger.contains"),
@@ -102,6 +136,7 @@ public interface SystemCounters {
 		ELAPSED_BDB_LEDGER_SAVE("elapsed.bdb.ledger.save"),
 		ELAPSED_BDB_LEDGER_SEARCH("elapsed.bdb.ledger.search"),
 		ELAPSED_BDB_LEDGER_TOTAL("elapsed.bdb.ledger.total"),
+
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
 
 		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),

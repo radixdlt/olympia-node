@@ -34,6 +34,11 @@ public final class StackingCollector<T> {
 		return new StackingCollector<>();
 	}
 
+	/**
+	 * Add element to collector.
+	 *
+	 * @param element element to add.
+	 */
 	public void push(final T element) {
 		final var newHead = new Node<>(element);
 		Node<T> oldHead;
@@ -44,7 +49,15 @@ public final class StackingCollector<T> {
 		} while (!head.compareAndSet(oldHead, newHead));
 	}
 
-	public void consumeCollected(final Consumer<T> consumer) {
+	/**
+	 * Remove all collected elements and pass them to provided {@link Consumer} one by one.
+	 * This method guarantees that each element will be submitted to provided {@link Consumer} only once.
+	 *
+	 * @param consumer element consumer
+	 *
+	 * @return number of processed elements.
+	 */
+	public int consumeCollected(final Consumer<T> consumer) {
 		//Note: this is very performance critical method, so all internals are inlined
 		Node<T> head;
 
@@ -65,11 +78,14 @@ public final class StackingCollector<T> {
 			current = next;
 		}
 
+		int count = 0;
 		//Process elements
 		while (prev != null) {
 			consumer.accept(prev.element);
 			prev = prev.nextNode;
+			count++;
 		}
+		return count;
 	}
 
 	// CHECKSTYLE:OFF
