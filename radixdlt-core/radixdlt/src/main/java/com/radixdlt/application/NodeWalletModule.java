@@ -20,9 +20,11 @@ package com.radixdlt.application;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.chaos.mempoolfiller.InMemoryWalletReducer;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -34,6 +36,18 @@ import java.util.Random;
  * it's node key.
  */
 public final class NodeWalletModule extends AbstractModule {
+
+	@ProvidesIntoSet
+	private SubstateCacheRegister<?> registeredSubstate(
+		@NativeToken RRI tokenRRI,
+		@Self RadixAddress self
+	) {
+		return new SubstateCacheRegister<>(
+			TransferrableTokensParticle.class,
+			p -> p.getAddress().equals(self) && p.getTokDefRef().equals(tokenRRI)
+		);
+	}
+
 	@ProvidesIntoSet
 	private StateReducer<?, ?> nodeWallet(
 		@NativeToken RRI tokenRRI,

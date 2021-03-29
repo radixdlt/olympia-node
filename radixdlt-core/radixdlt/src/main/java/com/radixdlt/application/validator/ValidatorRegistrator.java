@@ -23,9 +23,9 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -90,17 +90,15 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		var particles = new ArrayList<Particle>();
-
-		radixEngine.getSubstateCache(RegisteredValidatorParticle.class).forEach(particles::add);
-		radixEngine.getSubstateCache(UnregisteredValidatorParticle.class).forEach(particles::add);
-
+		var particleClasses = new ArrayList<Class<? extends Particle>>();
+		particleClasses.add(RegisteredValidatorParticle.class);
+		particleClasses.add(UnregisteredValidatorParticle.class);
 		if (feeTable != null) {
-			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			particles.addAll(wallet.particles());
+			particleClasses.add(TransferrableTokensParticle.class);
 		}
-		var txBuilder = TxBuilder.newBuilder(self, particles);
 
+		var particles = radixEngine.getSubstateCache(particleClasses);
+		var txBuilder = TxBuilder.newBuilder(self, particles);
 		try {
 			if (registration.isRegister()) {
 				txBuilder.registerAsValidator();

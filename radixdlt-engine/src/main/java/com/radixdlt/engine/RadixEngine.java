@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
@@ -45,6 +46,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -195,10 +197,14 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public <U extends Particle> Iterable<U> getSubstateCache(Class<U> particleClass) {
+	public Iterable<Particle> getSubstateCache(List<Class<? extends Particle>> particleClasses) {
 		synchronized (stateUpdateEngineLock) {
-			var cache = (SubstateCache<U>) substateCache.get(particleClass);
-			return cache.copyCache();
+			return Iterables.concat(
+				particleClasses.stream()
+					.map(substateCache::get)
+					.map(SubstateCache::copyCache)
+					.collect(Collectors.toList())
+			);
 		}
 	}
 
