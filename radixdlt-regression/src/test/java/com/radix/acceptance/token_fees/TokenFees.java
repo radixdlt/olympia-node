@@ -506,7 +506,7 @@ public class TokenFees {
 
 	private boolean isUpAndForFee(ParsedInstruction sp) {
 		if (sp.getSpin() == Spin.UP) {
-			UnallocatedTokensParticle utp = (UnallocatedTokensParticle) sp.getParticle();
+			UnallocatedTokensParticle utp = sp.getParticle(UnallocatedTokensParticle.class);
 			RRI feeTokenRri = this.api.getNativeTokenRef();
 			return feeTokenRri.equals(utp.getTokDefRef());
 		}
