@@ -26,6 +26,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -37,6 +38,7 @@ import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Generates a genesis atom
@@ -97,31 +99,27 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var to = new RadixAddress(magic, e.getKey());
 				tokenBuilder.mint(rri, to, e.getValue());
 			}
-			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign);
+			var upSubstate = new AtomicReference<Iterable<Particle>>();
+			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
 			genesisAtoms.add(tokenAtom);
-
-			var upParticles = tokenBuilder.upParticles();
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upParticles);
+				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upSubstate.get());
 				var validatorAtom = validatorBuilder
 					.registerAsValidator()
-					.signAndBuild(validatorKey::sign);
+					.signAndBuild(validatorKey::sign, upSubstate::set);
 				genesisAtoms.add(validatorAtom);
-
-				upParticles = validatorBuilder.upParticles();
 			}
 
 			for (var stakeDelegation : stakeDelegations) {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
 				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
-				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upParticles)
+				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
 					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
-				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
+				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
 				genesisAtoms.add(stakeAtom);
-				upParticles = stakesBuilder.upParticles();
 			}
 
 			var epochUpdateBuilder = TxBuilder.newSystemBuilder()

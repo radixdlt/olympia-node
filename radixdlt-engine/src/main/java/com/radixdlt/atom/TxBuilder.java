@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -116,12 +118,6 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
-	public Iterable<Particle> upParticles() {
-		return Iterables.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
-			remoteUpSubstates()
-		);
-	}
 
 	private Iterable<Particle> remoteUpSubstates() {
 		return Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)));
@@ -132,7 +128,10 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = StreamSupport.stream(upParticles().spliterator(), false)
+		var substateRead = Streams.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -661,6 +660,16 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
+	}
+
+	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+		var atom = lowLevelBuilder.signAndBuild(signer);
+		var upSubstate = Iterables.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
+			remoteUpSubstates()
+		);
+		upSubstateConsumer.accept(upSubstate);
+		return atom;
 	}
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {
