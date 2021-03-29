@@ -60,7 +60,7 @@ public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
-	private final Iterable<Particle> upParticles;
+	private final Iterable<Substate> remoteUpSubstate;
 
 	// TODO: remove
 	private final Random random = new SecureRandom();
@@ -68,24 +68,24 @@ public final class TxBuilder {
 	private TxBuilder(
 		RadixAddress address,
 		Set<SubstateId> downVirtualParticles,
-		Iterable<Particle> upParticles
+		Iterable<Substate> remoteUpSubstate
 	) {
 		this.address = address;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.downParticles = new HashSet<>(downVirtualParticles);
-		this.upParticles = upParticles;
+		this.remoteUpSubstate = remoteUpSubstate;
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address, Iterable<Particle> upParticles) {
-		return new TxBuilder(address, Set.of(), upParticles);
+	public static TxBuilder newBuilder(RadixAddress address, Iterable<Substate> remoteUpSubstate) {
+		return new TxBuilder(address, Set.of(), remoteUpSubstate);
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
 		return new TxBuilder(address, Set.of(), List.of());
 	}
 
-	public static TxBuilder newSystemBuilder(Iterable<Particle> upParticleList) {
-		return new TxBuilder(null, Set.of(), upParticleList);
+	public static TxBuilder newSystemBuilder(Iterable<Substate> remoteUpSubstate) {
+		return new TxBuilder(null, Set.of(), remoteUpSubstate);
 	}
 
 	public static TxBuilder newSystemBuilder() {
@@ -119,8 +119,8 @@ public final class TxBuilder {
 	}
 
 
-	private Iterable<Particle> remoteUpSubstates() {
-		return Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)));
+	private Iterable<Substate> remoteUpSubstates() {
+		return Iterables.filter(remoteUpSubstate, s -> !downParticles.contains(s.getId()));
 	}
 
 	private <T extends Particle> T find(
@@ -131,7 +131,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
 			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
 		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -152,7 +152,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
 			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
 		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -204,12 +204,17 @@ public final class TxBuilder {
 			return localDown.get();
 		}
 
-
 		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
-			.filter(particleClass::isInstance)
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.down(s.getId()))
+			.map(Substate::getParticle)
 			.map(particleClass::cast)
-			.filter(particlePredicate)
-			.peek(p -> this.down(SubstateId.ofSubstate(p)))
 			.findFirst()
 			.or(() -> {
 				if (virtualParticle.isPresent()) {
@@ -717,16 +722,25 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public Atom signAndBuildRemoteSubstateOnly(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+	public Atom signAndBuildRemoteSubstateOnly(
+		Function<HashCode, ECDSASignature> signer,
+		Consumer<Iterable<Substate>> upSubstateConsumer
+	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
 		upSubstateConsumer.accept(remoteUpSubstates());
 		return atom;
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+	public Atom signAndBuild(
+		Function<HashCode, ECDSASignature> signer,
+		Consumer<Iterable<Substate>> upSubstateConsumer
+	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
 		var upSubstate = Iterables.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
+			lowLevelBuilder.localUpSubstate().stream()
+				.map(LocalSubstate::getParticle)
+				.map(p -> new Substate(p, SubstateId.ofSubstate(p)))
+				.collect(Collectors.toList()),
 			remoteUpSubstates()
 		);
 		upSubstateConsumer.accept(upSubstate);

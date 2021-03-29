@@ -19,6 +19,7 @@ package com.radixdlt.store;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -34,11 +35,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, Pair<REInstruction, Atom>> storedParticles = new HashMap<>();
-	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
+	private final List<Pair<Substate, Spin>> inOrderParticles = new ArrayList<>();
 	private final Set<Atom> atoms = new HashSet<>();
 
 	@Override
@@ -79,7 +81,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 					storedParticles.put(substateId, Pair.of(microInstruction, atom));
 					if (particle != null) {
-						inOrderParticles.add(Pair.of(particle, nextSpin));
+						inOrderParticles.add(Pair.of(new Substate(particle, substateId), nextSpin));
 					}
 				}
 			}
@@ -105,8 +107,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	) {
 		V v = initial;
 		synchronized (lock) {
-			for (Pair<Particle, Spin> spinParticle : inOrderParticles) {
-				Particle particle = spinParticle.getFirst();
+			for (Pair<Substate, Spin> spinParticle : inOrderParticles) {
+				Particle particle = spinParticle.getFirst().getParticle();
 				if (particleClass.isInstance(particle)) {
 					if (spinParticle.getSecond().equals(Spin.UP)) {
 						v = outputReducer.apply(v, particleClass.cast(particle));
@@ -115,6 +117,23 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			}
 		}
 		return v;
+	}
+
+	@Override
+	public <U extends Particle> Iterable<Substate> upSubstates(Class<U> substateClass, Predicate<U> substatePredicate) {
+		final List<Substate> substates = new ArrayList<>();
+		synchronized (lock) {
+			for (Pair<Substate, Spin> spinParticle : inOrderParticles) {
+				var particle = spinParticle.getFirst().getParticle();
+				if (spinParticle.getSecond().equals(Spin.UP)
+					&& substateClass.isInstance(particle)
+					&& substatePredicate.test(substateClass.cast(particle))
+				) {
+					substates.add(spinParticle.getFirst());
+				}
+			}
+		}
+		return substates;
 	}
 
 	@Override

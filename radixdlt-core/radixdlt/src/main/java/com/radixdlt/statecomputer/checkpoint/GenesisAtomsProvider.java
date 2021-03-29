@@ -23,10 +23,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -99,7 +99,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var to = new RadixAddress(magic, e.getKey());
 				tokenBuilder.mint(rri, to, e.getValue());
 			}
-			var upSubstate = new AtomicReference<Iterable<Particle>>();
+			var upSubstate = new AtomicReference<Iterable<Substate>>();
 			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
 			genesisAtoms.add(tokenAtom);
 

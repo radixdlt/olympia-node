@@ -1,6 +1,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -8,6 +9,7 @@ import com.radixdlt.constraintmachine.Spin;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;
@@ -30,6 +32,11 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	@Override
 	public <U extends Particle, V> V reduceUpParticles(Class<U> aClass, V v, BiFunction<V, U, V> biFunction) {
 		throw new UnsupportedOperationException("Transient store should not require reduction.");
+	}
+
+	@Override
+	public <U extends Particle> Iterable<Substate> upSubstates(Class<U> substateClass, Predicate<U> substatePredicate) {
+		throw new UnsupportedOperationException("Transient store should not require up substates.");
 	}
 
 	@Override

@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
@@ -67,6 +68,7 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +76,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -456,6 +459,38 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
+	}
+
+	public <U extends Particle> Iterable<Substate> upSubstates(
+		Class<U> substateClass,
+		Predicate<U> substatePredicate
+	) {
+		final String idForClass = serialization.getIdForClass(substateClass);
+		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+		final byte[] indexableBytes = numericClassId.toByteArray();
+
+		// In memory for now
+		// TODO: iterate using cursors
+		final List<Substate> substates = new ArrayList<>();
+
+		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+			var index = entry(indexableBytes);
+			var value = entry();
+			var substateIdBytes = entry();
+			var status = particleCursor.getSearchKey(index, substateIdBytes, value, null);
+			while (status == SUCCESS) {
+				// TODO: Remove memcpy
+				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
+				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+				U substate = deserializeOrElseFail(serializedParticle, substateClass);
+				if (substatePredicate.test(substate)) {
+					substates.add(new Substate(substate, SubstateId.fromBytes(substateIdBytes.getData())));
+				}
+				status = particleCursor.getNextDup(index, null, value, null);
+			}
+		}
+
+		return substates;
 	}
 
 	public <U extends Particle, V> V reduceUpParticles(

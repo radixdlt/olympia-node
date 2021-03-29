@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
@@ -39,7 +40,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +105,7 @@ public final class RadixEngine<M> {
 
 	private static final class SubstateCache<T extends Particle> {
 		private final Predicate<T> particleCheck;
-		private final HashMap<SubstateId, T> cache = new HashMap<>();
+		private final HashMap<SubstateId, Substate> cache = new HashMap<>();
 		private final boolean includeInBranches;
 
 		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
@@ -119,9 +119,9 @@ public final class RadixEngine<M> {
 			return copy;
 		}
 
-		public SubstateCache<T> bringUp(Particle upSubstate) {
-			if (particleCheck.test((T) upSubstate)) {
-				this.cache.put(SubstateId.ofSubstate(upSubstate), (T) upSubstate);
+		public SubstateCache<T> bringUp(Substate upSubstate) {
+			if (particleCheck.test((T) upSubstate.getParticle())) {
+				this.cache.put(upSubstate.getId(), upSubstate);
 			}
 			return this;
 		}
@@ -190,27 +190,31 @@ public final class RadixEngine<M> {
 		this.batchVerifier = batchVerifier;
 	}
 
-	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister, boolean includeInBranches) {
+	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
 				throw new IllegalStateException();
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			engineStore.reduceUpParticles(substateCacheRegister.getParticleClass(), cache, SubstateCache::bringUp);
+			var substateIterable = engineStore.upSubstates(
+				substateCacheRegister.getParticleClass(),
+				substateCacheRegister.getParticlePredicate()
+			);
+			substateIterable.forEach(cache::bringUp);
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}
 
 	public <T> T getSubstateCache(
 		List<Class<? extends Particle>> particleClasses,
-		Function<Iterable<Particle>, T> func
+		Function<Iterable<Substate>, T> func
 	) {
 		synchronized (stateUpdateEngineLock) {
 			var substates = Iterables.concat(
 				particleClasses.stream()
 					.map(substateCache::get)
-					.map(s -> (Collection<Particle>) s.cache.values())
+					.map(s -> s.cache.values())
 					.collect(Collectors.toList())
 			);
 
@@ -308,7 +312,7 @@ public final class RadixEngine<M> {
 
 		public <T> T getSubstateCache(
 			List<Class<? extends Particle>> particleClasses,
-			Function<Iterable<Particle>, T> func
+			Function<Iterable<Substate>, T> func
 		) {
 			return engine.getSubstateCache(particleClasses, func);
 		}
@@ -455,7 +459,7 @@ public final class RadixEngine<M> {
 				var cache = substateCache.get(particle.getClass());
 				if (cache != null) {
 					if (parsedInstruction.getSpin() == Spin.UP) {
-						cache.bringUp(particle);
+						cache.bringUp(new Substate(particle, SubstateId.ofSubstate(particle)));
 					} else {
 						cache.shutDown(SubstateId.ofSubstate(particle));
 					}
