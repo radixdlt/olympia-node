@@ -127,22 +127,31 @@ public final class MempoolFiller {
 				return;
 			}
 
-			var particles = radixEngine.getSubstateCache(List.of(TransferrableTokensParticle.class));
 			var particleCount = radixEngine.getComputedState(Integer.class);
-			var substateHolder = new AtomicReference<>(particles);
-			var atoms = new ArrayList<Atom>();
-
-			for (int i = 0; i < numTransactions; i++) {
-				try {
-					var index = random.nextInt(Math.min(particleCount, 100));
-					var atom = TxBuilder.newBuilder(selfAddress, substateHolder.get())
-						.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
-						.burnForFee(nativeToken, fee)
-						.signAndBuildRemoteSubstateOnly(hashSigner::sign, substateHolder::set);
-					atoms.add(atom);
-				} catch (TxBuilderException e) {
-					break;
-				}
+			final List<Atom> atoms;
+			try {
+				atoms = radixEngine.getSubstateCache(
+					List.of(TransferrableTokensParticle.class),
+					substate -> {
+						var list = new ArrayList<Atom>();
+						var substateHolder = new AtomicReference<>(substate);
+						for (int i = 0; i < numTransactions; i++) {
+							var index = random.nextInt(Math.min(particleCount, 100));
+							try {
+								var atom = TxBuilder.newBuilder(selfAddress, substateHolder.get())
+									.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
+									.burnForFee(nativeToken, fee)
+									.signAndBuildRemoteSubstateOnly(hashSigner::sign, substateHolder::set);
+								list.add(atom);
+							} catch (TxBuilderException e) {
+								break;
+							}
+						}
+						return list;
+					}
+				);
+			} catch (TxBuilderException e) {
+				throw new IllegalStateException();
 			}
 
 			logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",

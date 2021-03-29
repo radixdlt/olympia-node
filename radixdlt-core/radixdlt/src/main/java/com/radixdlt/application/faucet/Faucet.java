@@ -80,13 +80,17 @@ public final class Faucet {
 	private void processRequest(FaucetRequest request) {
 		log.info("Faucet Request {}", request);
 
-		var wallet = radixEngine.getSubstateCache(List.of(TransferrableTokensParticle.class));
 
 		try {
-			var atom = TxBuilder.newBuilder(self, wallet)
-				.transferNative(nativeToken, request.getAddress(), amount)
-				.burnForFee(nativeToken, FEE)
-				.signAndBuild(hashSigner::sign);
+			var txBuilder = radixEngine.getSubstateCache(
+				List.of(TransferrableTokensParticle.class),
+				substate ->
+					TxBuilder.newBuilder(self, substate)
+						.transferNative(nativeToken, request.getAddress(), amount)
+						.burnForFee(nativeToken, FEE)
+			);
+			var atom = txBuilder.signAndBuild(hashSigner::sign);
+
 			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 			var command = new Command(payload);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));

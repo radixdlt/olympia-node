@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
@@ -39,6 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,11 +109,6 @@ public final class RadixEngine<M> {
 
 		SubstateCache(Predicate<T> particleCheck) {
 			this.particleCheck = particleCheck;
-		}
-
-		// TODO: Remove
-		public List<T> copyCache() {
-			return new ArrayList<>(cache.values());
 		}
 
 		public SubstateCache<T> bringUp(Particle upSubstate) {
@@ -197,14 +194,23 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public Iterable<Particle> getSubstateCache(List<Class<? extends Particle>> particleClasses) {
+	public interface ThrowingFunction<T, U> {
+		U apply(T t) throws TxBuilderException;
+	}
+
+	public <T> T getSubstateCache(
+		List<Class<? extends Particle>> particleClasses,
+		ThrowingFunction<Iterable<Particle>, T> func
+	) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			return Iterables.concat(
+			var substates = Iterables.concat(
 				particleClasses.stream()
 					.map(substateCache::get)
-					.map(SubstateCache::copyCache)
+					.map(s -> (Collection<Particle>) s.cache.values())
 					.collect(Collectors.toList())
 			);
+
+			return func.apply(substates);
 		}
 	}
 
