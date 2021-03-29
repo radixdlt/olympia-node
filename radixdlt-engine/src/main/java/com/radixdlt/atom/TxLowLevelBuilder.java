@@ -67,7 +67,7 @@ public final class TxLowLevelBuilder {
 				particleDson
 			)
 		);
-		localUpParticles.put(nextIndex, new LocalSubstate(nextIndex, particle));
+		localUpParticles.put(nextIndex, LocalSubstate.create(nextIndex, particle));
 		return this;
 	}
 
