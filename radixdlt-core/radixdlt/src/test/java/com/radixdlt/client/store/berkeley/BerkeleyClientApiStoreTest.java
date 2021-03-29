@@ -101,10 +101,10 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private StakedTokensParticle stake(UInt256 amount) {
-		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, TOKEN_PERMISSIONS, 1L);
+		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, TOKEN_PERMISSIONS);
 	}
 
 	private TransferrableTokensParticle transfer(UInt256 amount) {
-		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, TOKEN_PERMISSIONS, 1L);
+		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, TOKEN_PERMISSIONS);
 	}
 }

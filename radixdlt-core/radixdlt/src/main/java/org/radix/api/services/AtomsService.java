@@ -184,8 +184,7 @@ public class AtomsService {
 			} catch (DeserializeException e) {
 				throw new IllegalStateException();
 			}
-			var indicies = atom.uniqueInstructions()
-				.filter(i -> i.getNextSpin() == Spin.UP)
+			var indicies = atom.bootUpInstructions()
 				.map(i -> {
 					try {
 						return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);

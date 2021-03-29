@@ -57,10 +57,6 @@ public final class StakedTokensParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("nonce")
-	@DsonOutput(Output.ALL)
-	private long nonce;
-
 	@JsonProperty("amount")
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
@@ -84,28 +80,8 @@ public final class StakedTokensParticle extends Particle {
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-	}
-
-	public StakedTokensParticle(
-		RadixAddress delegateAddress,
-		RadixAddress address,
-		UInt256 amount,
-		UInt256 granularity,
-		RRI tokenDefinitionReference,
-		Map<TokenTransition, TokenPermission> tokenPermissions,
-		long nonce
-	) {
-		this.delegateAddress = Objects.requireNonNull(delegateAddress);
-		this.address = Objects.requireNonNull(address);
-		this.granularity = Objects.requireNonNull(granularity);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = System.nanoTime();
-		this.amount = Objects.requireNonNull(amount);
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-		this.nonce = nonce;
 	}
 
 	@Override
@@ -165,23 +141,18 @@ public final class StakedTokensParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			tokenDefinitionReference,
 			amount,
 			granularity,
 			address,
-			delegateAddress,
-			nonce
+			delegateAddress
 		);
 	}
 
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	public long getNonce() {
-		return this.nonce;
 	}
 
 	@Override
@@ -193,13 +164,12 @@ public final class StakedTokensParticle extends Particle {
 			return false;
 		}
 		StakedTokensParticle that = (StakedTokensParticle) o;
-		return nonce == that.nonce
-				&& Objects.equals(delegateAddress, that.delegateAddress)
-				&& Objects.equals(address, that.address)
-				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-				&& Objects.equals(granularity, that.granularity)
-				&& Objects.equals(amount, that.amount)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions);
+		return Objects.equals(delegateAddress, that.delegateAddress)
+			&& Objects.equals(address, that.address)
+			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(amount, that.amount)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
@@ -209,7 +179,6 @@ public final class StakedTokensParticle extends Particle {
 			address,
 			tokenDefinitionReference,
 			granularity,
-			nonce,
 			amount,
 			tokenPermissions
 		);

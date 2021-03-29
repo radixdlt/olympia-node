@@ -91,8 +91,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL),
-			System.currentTimeMillis()
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
 		);
 
 		var builder = TxLowLevelBuilder.newBuilder()

@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
@@ -68,11 +66,5 @@ public class FeeTableTest {
 
 	private static FeeTable get() {
 		return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
-	}
-
-	private static UniqueParticle makeParticle(String message) {
-		final var kp = ECKeyPair.generateNew();
-		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-		return new UniqueParticle(message, address, 0);
 	}
 }

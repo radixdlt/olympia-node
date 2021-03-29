@@ -26,7 +26,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
@@ -48,8 +47,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@NativeToken
 	private RRI nativeToken(@Genesis List<Atom> atoms) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::uniqueInstructions)
-			.filter(i -> i.getNextSpin() == Spin.UP)
+		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::bootUpInstructions)
 			.map(i -> {
 				try {
 					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);

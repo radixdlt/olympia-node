@@ -29,6 +29,7 @@ import com.radixdlt.sanitytestsuite.scenario.radixhashing.RadixHashingTestScenar
 import com.radixdlt.sanitytestsuite.scenario.serialization.SerializationTestScenarioRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -54,6 +55,7 @@ public final class SanityTestSuiteExecutor {
 	);
 
 	@Test
+	@Ignore
 	public void test_sanity_suite() {
 		var sanityTestSuiteRoot = sanityTestSuiteRootFromFile();
 		var scenarioRunnerMap = makeScenarioRunnerMap();

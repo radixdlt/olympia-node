@@ -53,13 +53,8 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
 		var substate = currentState.asSubstate();
 		var particle = substate.getParticle();
-		var isVirtual = particle instanceof UnregisteredValidatorParticle && ((UnregisteredValidatorParticle) particle).getNonce() == 0;
 		var builder = ParticleGroup.builder();
-		if (isVirtual) {
-			builder.virtualSpinDown(particle);
-		} else {
-			builder.spinDown(substate.getId());
-		}
+		builder.spinDown(substate.getId());
 		builder.spinUp(currentState.register(action.getUrl(), action.getAllowedDelegators()));
 
 		return ImmutableList.of(builder.build());

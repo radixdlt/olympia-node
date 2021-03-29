@@ -148,8 +148,7 @@ public class AtomEventObserver {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
 					Atom atom = store.get(aid).orElseThrow();
-					if (atom.uniqueInstructions()
-						.filter(i -> i.getNextSpin() == Spin.UP)
+					if (atom.bootUpInstructions()
 						.map(i -> {
 							try {
 								return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);

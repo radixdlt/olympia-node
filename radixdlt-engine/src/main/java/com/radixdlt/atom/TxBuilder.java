@@ -41,11 +41,9 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -61,9 +59,6 @@ public final class TxBuilder {
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
 	private final Iterable<Substate> remoteUpSubstate;
-
-	// TODO: remove
-	private final Random random = new SecureRandom();
 
 	private TxBuilder(
 		RadixAddress address,
@@ -383,10 +378,10 @@ public final class TxBuilder {
 		swap(
 			UnregisteredValidatorParticle.class,
 			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address, 0L)),
+			Optional.of(new UnregisteredValidatorParticle(address)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1)
+			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
 		);
 
 		particleGroup();
@@ -401,7 +396,7 @@ public final class TxBuilder {
 			p -> p.getAddress().equals(address),
 			"Already unregistered."
 		).with(
-			substateDown -> new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1)
+			substateDown -> new UnregisteredValidatorParticle(address)
 		);
 		particleGroup();
 
@@ -417,7 +412,7 @@ public final class TxBuilder {
 			p -> p.getRri().equals(tokenRRI),
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
-		).with(rri -> new UniqueParticle(id, address, 1));
+		).with(rri -> new UniqueParticle(id, address));
 
 		particleGroup();
 
@@ -505,7 +500,7 @@ public final class TxBuilder {
 			factory::createUnallocated,
 			amount,
 			"Not enough balance to for minting."
-		).with(amt -> factory.createTransferrable(to, amt, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amt));
 
 		particleGroup();
 
@@ -537,8 +532,8 @@ public final class TxBuilder {
 		var particle = (TransferrableTokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
-		up(factory.createTransferrable(address, amt1, random.nextLong()));
-		up(factory.createTransferrable(address, amt2, random.nextLong()));
+		up(factory.createTransferrable(address, amt1));
+		up(factory.createTransferrable(address, amt2));
 		particleGroup();
 
 		return this;
@@ -559,10 +554,10 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amount));
 
 		particleGroup();
 
@@ -583,10 +578,10 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amount));
 
 		particleGroup();
 
@@ -606,7 +601,7 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for burn."
 		).with(amt -> factory.createUnallocated(amount));
@@ -632,16 +627,16 @@ public final class TxBuilder {
 			RegisteredValidatorParticle.class,
 			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
 			"Cannot delegate to " + delegateAddress
-		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
+		).with(RegisteredValidatorParticle::copy);
 
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()));
+		).with(amt -> factory.createStaked(delegateAddress, address, amt));
 
 		particleGroup();
 
@@ -664,10 +659,10 @@ public final class TxBuilder {
 			StakedTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()),
+			amt -> factory.createStaked(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createTransferrable(address, amt, random.nextLong()));
+		).with(amt -> factory.createTransferrable(address, amt));
 
 		particleGroup();
 
@@ -691,10 +686,10 @@ public final class TxBuilder {
 			StakedTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(from, address, amt, random.nextLong()),
+			amt -> factory.createStaked(from, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createStaked(to, address, amt, random.nextLong()));
+		).with(amt -> factory.createStaked(to, address, amt));
 
 		particleGroup();
 
@@ -715,7 +710,7 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance to for fee burn."
 		).with(factory::createUnallocated);

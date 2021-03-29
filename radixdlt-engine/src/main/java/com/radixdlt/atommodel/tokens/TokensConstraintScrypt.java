@@ -318,13 +318,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 								inputParticle, outputParticle
 							));
 						}
-						// .. and that the nonce has increased by exactly one
-						if ((inputParticle.getNonce() + 1) != outputParticle.getNonce()) {
-							return Result.error(String.format(
-								"validator nonce must increase by exactly one but: %d + 1 != %d",
-								inputParticle.getNonce(), outputParticle.getNonce()
-							));
-						}
 
 						return Result.success();
 					}

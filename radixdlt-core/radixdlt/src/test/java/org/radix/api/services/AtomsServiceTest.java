@@ -107,7 +107,7 @@ public class AtomsServiceTest {
 
 	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var particle = new UniqueParticle("particle message", address, 0);
+		var particle = new UniqueParticle("particle message", address);
 
 		var atom = TxLowLevelBuilder.newBuilder()
 			.up(particle)

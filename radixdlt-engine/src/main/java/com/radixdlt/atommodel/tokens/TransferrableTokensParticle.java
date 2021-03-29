@@ -40,23 +40,19 @@ import java.util.stream.Collectors;
  */
 @SerializerId2("radix.particles.transferrable_tokens")
 public final class TransferrableTokensParticle extends Particle {
-	@JsonProperty("address")
+	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenDefinitionReference")
+	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
-
-	@JsonProperty("amount")
+	@JsonProperty("a")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
@@ -72,28 +68,11 @@ public final class TransferrableTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
-		Map<TokenTransition, TokenPermission> tokenPermissions,
-		long nonce
-	) {
-		this.address = Objects.requireNonNull(address);
-		this.granularity = Objects.requireNonNull(granularity);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = nonce;
-		this.amount = Objects.requireNonNull(amount);
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-	}
-
-	public TransferrableTokensParticle(
-		RadixAddress address,
-		UInt256 amount,
-		UInt256 granularity,
-		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 	}
@@ -123,14 +102,14 @@ public final class TransferrableTokensParticle extends Particle {
 		return tokenPermissions.get(transition);
 	}
 
-	@JsonProperty("permissions")
+	@JsonProperty("p")
 	@DsonOutput(Output.ALL)
 	private Map<String, String> getJsonPermissions() {
 		return this.tokenPermissions.entrySet().stream()
 			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
 	}
 
-	@JsonProperty("permissions")
+	@JsonProperty("p")
 	private void setJsonPermissions(Map<String, String> permissions) {
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
@@ -152,16 +131,12 @@ public final class TransferrableTokensParticle extends Particle {
 			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
-			String.valueOf(address),
-			nonce);
+			String.valueOf(address)
+		);
 	}
 
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	public long getNonce() {
-		return this.nonce;
 	}
 
 	@Override
@@ -173,16 +148,15 @@ public final class TransferrableTokensParticle extends Particle {
 			return false;
 		}
 		TransferrableTokensParticle that = (TransferrableTokensParticle) o;
-		return nonce == that.nonce
-				&& Objects.equals(address, that.address)
-				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-				&& Objects.equals(granularity, that.granularity)
-				&& Objects.equals(amount, that.amount)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions);
+		return Objects.equals(address, that.address)
+			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(amount, that.amount)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenDefinitionReference, granularity, nonce, amount, tokenPermissions);
+		return Objects.hash(address, tokenDefinitionReference, granularity, amount, tokenPermissions);
 	}
 }

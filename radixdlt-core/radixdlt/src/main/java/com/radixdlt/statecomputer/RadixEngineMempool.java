@@ -102,6 +102,7 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 		this.data.put(command, atom);
 
+		// FIXME: This will have some issues with local shutdown instructions
 		atom.uniqueInstructions()
 			.forEach(i -> particleIndex.merge(i, Set.of(command), Sets::union));
 

@@ -72,7 +72,7 @@ public class UniqueTest {
 		var atom = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(RRI.of(otherRadixAddress, "thisisauniquestring")))
-			.up(new UniqueParticle("thisisauniquestring", otherRadixAddress, 1))
+			.up(new UniqueParticle("thisisauniquestring", otherRadixAddress))
 			.particleGroup()
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))

@@ -88,7 +88,7 @@ public class AtomKernelTest {
 			true,
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
-				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress()))
 				.particleGroup()
 		);
 
@@ -105,7 +105,7 @@ public class AtomKernelTest {
 			false,
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
-				.up(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress()))
 				.particleGroup()
 		);
 		observer.awaitCount(1);

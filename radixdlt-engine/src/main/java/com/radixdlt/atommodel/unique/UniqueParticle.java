@@ -38,19 +38,14 @@ public final class UniqueParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
-
 	UniqueParticle() {
 		// For serializer
 		super();
 	}
 
-	public UniqueParticle(String name, RadixAddress address, long nonce) {
+	public UniqueParticle(String name, RadixAddress address) {
 		this.name = Objects.requireNonNull(name);
 		this.address = address;
-		this.nonce = nonce;
 	}
 
 	@Override
@@ -68,7 +63,7 @@ public final class UniqueParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.name, this.address, this.nonce);
+		return Objects.hash(this.name, this.address);
 	}
 
 	@Override
@@ -77,8 +72,7 @@ public final class UniqueParticle extends Particle {
 			return false;
 		}
 		final var that = (UniqueParticle) obj;
-		return this.nonce == that.nonce
-			&& Objects.equals(this.name, that.name)
+		return Objects.equals(this.name, that.name)
 			&& Objects.equals(this.address, that.address);
 	}
 

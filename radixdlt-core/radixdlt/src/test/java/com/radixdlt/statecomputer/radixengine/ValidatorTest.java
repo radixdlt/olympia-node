@@ -77,9 +77,9 @@ public class ValidatorTest {
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var atom = TxLowLevelBuilder.newBuilder()
-			.virtualDown(new UnregisteredValidatorParticle(address, 0))
-			.up(new RegisteredValidatorParticle(address, 1))
-			.up(new RegisteredValidatorParticle(address, 2))
+			.virtualDown(new UnregisteredValidatorParticle(address))
+			.up(new RegisteredValidatorParticle(address))
+			.up(new RegisteredValidatorParticle(address))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
