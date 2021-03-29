@@ -142,7 +142,7 @@ public final class Atom {
 	}
 
 	public Stream<REInstruction> uniqueInstructions() {
-		return instructions.stream().filter(REInstruction::isPush);
+		return instructions.stream().filter(REInstruction::isUnique);
 	}
 
 	public HashCode getWitness() {
