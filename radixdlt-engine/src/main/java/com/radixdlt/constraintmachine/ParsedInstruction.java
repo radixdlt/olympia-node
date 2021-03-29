@@ -20,6 +20,9 @@ package com.radixdlt.constraintmachine;
 
 import java.util.Objects;
 
+/**
+ * Instruction which has been parsed and state checked by Radix Engine
+ */
 public final class ParsedInstruction {
 	private final Particle particle;
 	private final Spin spin;
