@@ -44,7 +44,7 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
             .map(node -> network.getDispatcher(ValidatorRegistration.class, node))
-            .subscribe(d -> d.dispatch(ValidatorRegistration.register()));
+            .subscribe(d -> d.dispatch(ValidatorRegistration.create(true)));
     }
 
     @Override

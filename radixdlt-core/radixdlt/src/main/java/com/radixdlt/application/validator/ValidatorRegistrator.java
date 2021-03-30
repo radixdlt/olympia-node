@@ -113,7 +113,7 @@ public final class ValidatorRegistrator {
 						builder.burnForFee(tokenRRI, FEE);
 					}
 				} catch (TxBuilderException e) {
-					logger.warn(e.getMessage());
+					registration.onFailure(e.getMessage());
 					return Optional.empty();
 				}
 
@@ -125,6 +125,7 @@ public final class ValidatorRegistrator {
 			var atom = txBuilder.signAndBuild(hashSigner::sign);
 			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 			var command = new Command(payload);
+			registration.onSuccess(command.getId());
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 		});
 	}

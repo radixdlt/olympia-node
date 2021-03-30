@@ -18,7 +18,9 @@
 
 package com.radixdlt.application.validator;
 
-import java.util.Objects;
+import com.radixdlt.identifiers.AID;
+
+import java.util.function.Consumer;
 
 /**
  * Event signaling whether a node should be registered/unregistered
@@ -26,43 +28,45 @@ import java.util.Objects;
  */
 public final class ValidatorRegistration {
 	private final boolean enabled;
+	private final Consumer<AID> onSuccess;
+	private final Consumer<String> onError;
 
-	private ValidatorRegistration(boolean enabled) {
+	private ValidatorRegistration(
+		boolean enabled,
+		Consumer<AID> onSuccess,
+		Consumer<String> onError
+	) {
 		this.enabled = enabled;
+		this.onSuccess = onSuccess;
+		this.onError = onError;
+	}
+
+	public static ValidatorRegistration create(boolean register) {
+		return new ValidatorRegistration(register, aid -> { }, err -> { });
+	}
+
+	public static ValidatorRegistration create(
+		boolean register,
+		Consumer<AID> onSuccess,
+		Consumer<String> onError
+	) {
+		return new ValidatorRegistration(register, onSuccess, onError);
 	}
 
 	public boolean isRegister() {
 		return enabled;
 	}
 
-	public static ValidatorRegistration register() {
-		return new ValidatorRegistration(true);
+	public void onSuccess(AID aid) {
+		onSuccess.accept(aid);
 	}
 
-	public static ValidatorRegistration unregister() {
-		return new ValidatorRegistration(false);
+	public void onFailure(String errorMessage) {
+		onError.accept(errorMessage);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s{%s}", this.getClass().getSimpleName(), this.enabled);
-	}
-
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		if (!(o instanceof ValidatorRegistration)) {
-			return false;
-		}
-
-		return this.enabled == ((ValidatorRegistration) o).enabled;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(enabled);
 	}
 }

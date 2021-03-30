@@ -21,23 +21,18 @@ import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
 import com.radixdlt.application.validator.ValidatorRegistration;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.Base58;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import io.undertow.io.Sender;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.util.HeaderMap;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,50 +54,6 @@ public class NodeControllerTest {
 
 		verify(handler).post(eq("/node/validator"), any());
 		verify(handler).get(eq("/node"), any());
-	}
-
-	@Test
-	public void testHandleValidatorRegistration() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
-		var exchange = createExchange(
-			"{ \"enabled\" : true}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-
-		nodeController.handleValidatorRegistration(exchange);
-
-		latch.await();
-		assertEquals("{}", arg.get());
-		verify(dispatcher).dispatch(eq(ValidatorRegistration.register()));
-	}
-
-	@Test
-	public void testHandleValidatorUnRegistration() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
-		var exchange = createExchange(
-			"{ \"enabled\" : false}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-
-		nodeController.handleValidatorRegistration(exchange);
-
-		latch.await();
-		assertEquals("{}", arg.get());
-		verify(dispatcher).dispatch(eq(ValidatorRegistration.unregister()));
 	}
 
 	private static HttpServerExchange createExchange(final String json, final Answer<Void> answer) {
