@@ -58,15 +58,12 @@ public class StakedTokensTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
 		final var cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			this.store
-		);
+		this.engine = new RadixEngine<>(cm, this.store);
 
 		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
 		var tokDef = new MutableTokenDefinition(

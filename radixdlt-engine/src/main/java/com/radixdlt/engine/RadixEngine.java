@@ -133,8 +133,6 @@ public final class RadixEngine<M> {
 	}
 
 	private final ConstraintMachine constraintMachine;
-	private final CMStore virtualizedCMStore;
-	private final Predicate<Particle> virtualStoreLayer;
 	private final EngineStore<M> engineStore;
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -145,46 +143,18 @@ public final class RadixEngine<M> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Predicate<Particle> virtualStoreLayer,
 		EngineStore<M> engineStore
 	) {
-		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchVerifier.empty());
+		this(constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Predicate<Particle> virtualStoreLayer,
 		EngineStore<M> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
-		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = new CMStore() {
-			@Override
-			public Transaction createTransaction() {
-				return engineStore.createTransaction();
-			}
-
-			@Override
-			public Spin getSpin(Transaction txn, Substate substate) {
-				var curSpin = engineStore.getSpin(txn, substate);
-				if (curSpin == Spin.DOWN) {
-					return curSpin;
-				}
-
-				if (virtualStoreLayer.test(substate.getParticle())) {
-					return Spin.UP;
-				}
-
-				return curSpin;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
-				return engineStore.loadUpParticle(txn, substateId);
-			}
-		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 		this.batchVerifier = batchVerifier;
@@ -282,7 +252,6 @@ public final class RadixEngine<M> {
 
 		private RadixEngineBranch(
 			ConstraintMachine constraintMachine,
-			Predicate<Particle> virtualStoreLayer,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
 			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers,
@@ -292,7 +261,6 @@ public final class RadixEngine<M> {
 
 			this.engine = new RadixEngine<>(
 				constraintMachine,
-				virtualStoreLayer,
 				transientEngineStore,
 				checker,
 				BatchVerifier.empty()
@@ -344,7 +312,6 @@ public final class RadixEngine<M> {
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
-				this.virtualStoreLayer,
 				this.engineStore,
 				this.checker,
 				branchedStateComputers,
@@ -363,7 +330,7 @@ public final class RadixEngine<M> {
 		var parsedInstructions = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
-			virtualizedCMStore,
+			engineStore,
 			atom,
 			permissionLevel,
 			parsedInstructions

@@ -144,8 +144,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Substate substate) {
-		return getSpin(substate.getId());
+	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
+		synchronized (lock) {
+			var stored = storedParticles.get(substateId);
+			return stored != null && stored.getFirst().getNextSpin().equals(Spin.DOWN);
+		}
 	}
 
 	public Spin getSpin(SubstateId substateId) {

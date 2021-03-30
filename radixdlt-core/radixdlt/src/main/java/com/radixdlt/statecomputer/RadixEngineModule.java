@@ -33,7 +33,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ParsedTransaction;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
@@ -49,7 +48,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * Module which manages execution of commands
@@ -99,14 +97,10 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
 		return new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(os.virtualizedUpParticles())
 			.setParticleTransitionProcedures(os.buildTransitionProcedures())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
-	}
-
-	@Provides
-	private Predicate<Particle> buildVirtualLayer(CMAtomOS atomOS) {
-		return atomOS.virtualizedUpParticles();
 	}
 
 
@@ -128,7 +122,6 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		ConstraintMachine constraintMachine,
-		Predicate<Particle> virtualStoreLayer,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
@@ -139,7 +132,6 @@ public class RadixEngineModule extends AbstractModule {
 	) {
 		var radixEngine = new RadixEngine<>(
 			constraintMachine,
-			virtualStoreLayer,
 			engineStore,
 			checker,
 			batchVerifier

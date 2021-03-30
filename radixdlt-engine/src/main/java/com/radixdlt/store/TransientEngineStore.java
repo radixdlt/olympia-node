@@ -45,13 +45,9 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Substate substate) {
-		Spin transientSpin = transientStore.getSpin(txn, substate);
-		if (transientSpin != Spin.NEUTRAL) {
-			return transientSpin;
-		}
-
-		return base.getSpin(txn, substate);
+	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
+		return transientStore.isVirtualDown(txn, substateId)
+			|| base.isVirtualDown(txn, substateId);
 	}
 
 	@Override

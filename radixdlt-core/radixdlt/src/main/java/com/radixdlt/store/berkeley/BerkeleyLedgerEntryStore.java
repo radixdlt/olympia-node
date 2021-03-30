@@ -712,15 +712,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Spin getSpin(Transaction tx, Substate substate) {
-		var key = entry(substate.getId().asBytes());
+	public boolean isVirtualDown(Transaction tx, SubstateId substateId) {
+		var key = entry(substateId.asBytes());
 		var value = entry();
 		var status = particleDatabase.get(unwrap(tx), key, value, DEFAULT);
-		if (status == SUCCESS) {
-			return entryToSpin(value);
-		} else {
-			return Spin.NEUTRAL;
-		}
+		return status == SUCCESS;
 	}
 
 	@Override

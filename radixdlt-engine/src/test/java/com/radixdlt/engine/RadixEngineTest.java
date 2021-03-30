@@ -82,10 +82,8 @@ public class RadixEngineTest {
 	public void setup() {
 		this.constraintMachine = mock(ConstraintMachine.class);
 		this.engineStore = TypedMocks.rmock(EngineStore.class);
-		this.virtualStore = TypedMocks.rmock(Predicate.class);
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
-			virtualStore,
 			engineStore
 		);
 	}
@@ -96,14 +94,11 @@ public class RadixEngineTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<Void> engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			new InMemoryEngineStore<>()
-		);
+		RadixEngine<Void> engine = new RadixEngine<>(cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert
