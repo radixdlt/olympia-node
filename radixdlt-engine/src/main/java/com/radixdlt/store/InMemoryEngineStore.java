@@ -83,7 +83,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 					storedParticles.put(substateId, Pair.of(instruction, atom));
 					if (particle != null) {
-						inOrderParticles.add(Pair.of(new Substate(particle, substateId), nextSpin));
+						inOrderParticles.add(Pair.of(Substate.create(particle, substateId), nextSpin));
 					}
 				}
 			}

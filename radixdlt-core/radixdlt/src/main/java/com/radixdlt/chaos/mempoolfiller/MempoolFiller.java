@@ -20,6 +20,7 @@ package com.radixdlt.chaos.mempoolfiller;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -28,7 +29,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
@@ -124,7 +124,7 @@ public final class MempoolFiller {
 		};
 	}
 
-	private Optional<Atom> createAtom(Iterable<Particle> substate, int index, Consumer<Iterable<Particle>> nextSubstate) {
+	private Optional<Atom> createAtom(Iterable<Substate> substate, int index, Consumer<Iterable<Substate>> nextSubstate) {
 		try {
 			var atom = TxBuilder.newBuilder(selfAddress, substate)
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)

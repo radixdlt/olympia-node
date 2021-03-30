@@ -168,7 +168,7 @@ public class InMemoryAtomStore implements AtomStore {
 						} catch (DeserializeException e) {
 							particle = null;
 						}
-						var substate = new Substate(particle, SubstateId.ofSubstate(atom, i));
+						var substate = Substate.create(particle, SubstateId.ofSubstate(atom, i));
 						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(substate);
 						if (spinParticleIndex == null) {
 							spinParticleIndex = new EnumMap<>(Spin.class);

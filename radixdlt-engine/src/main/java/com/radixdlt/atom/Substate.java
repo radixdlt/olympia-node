@@ -22,13 +22,23 @@ import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Objects;
 
+/**
+ * Application substate which can be booted up or shut down in radix engine
+ * through transactions.
+ */
 public final class Substate {
 	private final Particle particle;
 	private final SubstateId substateId;
 
-	public Substate(Particle particle, SubstateId substateId) {
+	private Substate(Particle particle, SubstateId substateId) {
 		this.particle = particle;
 		this.substateId = substateId;
+	}
+
+	public static Substate create(Particle particle, SubstateId substateId) {
+		Objects.requireNonNull(particle);
+		Objects.requireNonNull(substateId);
+		return new Substate(particle, substateId);
 	}
 
 	public SubstateId getId() {

@@ -735,7 +735,7 @@ public final class TxBuilder {
 		var atom = lowLevelBuilder.signAndBuild(signer);
 		var upSubstate = Iterables.concat(
 			lowLevelBuilder.localUpSubstate().stream()
-				.map(l -> new Substate(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
+				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
 				.collect(Collectors.toList()),
 			remoteUpSubstates()
 		);

@@ -82,11 +82,11 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() {
 		var particles = List.of(
-			ParsedInstruction.up(new Substate(stake(UInt256.TWO), mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(stake(UInt256.FIVE), mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(transfer(UInt256.NINE), mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(transfer(UInt256.ONE), mock(SubstateId.class))),
-			ParsedInstruction.down(new Substate(transfer(UInt256.ONE), mock(SubstateId.class)))
+			ParsedInstruction.up(Substate.create(stake(UInt256.TWO), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(stake(UInt256.FIVE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(transfer(UInt256.NINE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(transfer(UInt256.ONE), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(transfer(UInt256.ONE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -102,7 +102,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() {
 		var particles = List.of(
-			ParsedInstruction.up(new Substate(emission(UInt256.MAX_VALUE), mock(SubstateId.class)))
+			ParsedInstruction.up(Substate.create(emission(UInt256.MAX_VALUE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -114,10 +114,10 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() {
 		var particles = List.of(
-			ParsedInstruction.up(new Substate(emission(UInt256.MAX_VALUE), mock(SubstateId.class))),
-			ParsedInstruction.down(new Substate(emission(UInt256.TWO), mock(SubstateId.class))),
-			ParsedInstruction.down(new Substate(emission(UInt256.FIVE), mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(emission(UInt256.ONE), mock(SubstateId.class)))
+			ParsedInstruction.up(Substate.create(emission(UInt256.MAX_VALUE), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(emission(UInt256.TWO), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(emission(UInt256.FIVE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(emission(UInt256.ONE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -131,8 +131,8 @@ public class BerkeleyClientApiStoreTest {
 		var fooToken = mutableTokenDef("FOO");
 		var barToken = mutableTokenDef("BAR");
 		var particles = List.of(
-			ParsedInstruction.up(new Substate(fooToken, mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(barToken, mock(SubstateId.class)))
+			ParsedInstruction.up(Substate.create(fooToken, mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(barToken, mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -152,8 +152,8 @@ public class BerkeleyClientApiStoreTest {
 		var fooToken = fixedTokenDef("FOO");
 		var barToken = fixedTokenDef("BAR");
 		var particles = List.of(
-			ParsedInstruction.up(new Substate(fooToken, mock(SubstateId.class))),
-			ParsedInstruction.up(new Substate(barToken, mock(SubstateId.class)))
+			ParsedInstruction.up(Substate.create(fooToken, mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(barToken, mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 

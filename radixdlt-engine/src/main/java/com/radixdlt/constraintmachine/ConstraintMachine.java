@@ -425,7 +425,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				var substate = new Substate(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
+				var substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				validationState.bootUp(instructionIndex, substate);
 				Optional<CMError> error = validateParticle(validationState, nextParticle, false, dp);
 				if (error.isPresent()) {
@@ -451,7 +451,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				var substate = new Substate(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
+				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
 				var stateError = validationState.virtualShutdown(substate);
 				if (stateError.isPresent()) {
 					return Optional.of(new CMError(dp, stateError.get(), validationState));
@@ -477,7 +477,8 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				parsedInstructions.add(ParsedInstruction.down(new Substate(particle, substateId)));
+				var substate = Substate.create(particle, substateId);
+				parsedInstructions.add(ParsedInstruction.down(substate));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 				int index = Ints.fromByteArray(inst.getData());
@@ -493,7 +494,8 @@ public final class ConstraintMachine {
 				}
 
 				var substateId = SubstateId.ofSubstate(atom, index);
-				parsedInstructions.add(ParsedInstruction.down(new Substate(particle, substateId)));
+				var substate = Substate.create(particle, substateId);
+				parsedInstructions.add(ParsedInstruction.down(substate));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {

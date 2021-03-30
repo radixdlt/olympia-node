@@ -135,7 +135,7 @@ final class ValidatorRegistrationState {
 	static ValidatorRegistrationState initial(RadixAddress address) {
 		Objects.requireNonNull(address, "address");
 		var initialState = new UnregisteredValidatorParticle(address);
-		var substate = new Substate(initialState, SubstateId.ofVirtualSubstate(initialState));
+		var substate = Substate.create(initialState, SubstateId.ofVirtualSubstate(initialState));
 		return ValidatorRegistrationState.from(substate);
 	}
 

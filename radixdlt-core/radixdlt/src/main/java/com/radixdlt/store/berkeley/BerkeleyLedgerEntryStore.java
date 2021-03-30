@@ -281,7 +281,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = deserializeOrElseFail(particleBytes, Particle.class);
 					var substateId = SubstateId.fromBytes(key.getData());
-					particleConsumer.accept(ParsedInstruction.up(new Substate(particle, substateId)));
+					var substate = Substate.create(particle, substateId);
+					particleConsumer.accept(ParsedInstruction.up(substate));
 				}
 
 				status = cursor.getNext(key, value, DEFAULT);
@@ -471,9 +472,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				// TODO: Remove memcpy
 				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				U substate = deserializeOrElseFail(serializedParticle, substateClass);
-				if (substatePredicate.test(substate)) {
-					substates.add(new Substate(substate, SubstateId.fromBytes(substateIdBytes.getData())));
+				U floatingSubstate = deserializeOrElseFail(serializedParticle, substateClass);
+				if (substatePredicate.test(floatingSubstate)) {
+					substates.add(Substate.create(floatingSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				}
 				status = particleCursor.getNextDup(index, null, value, null);
 			}
