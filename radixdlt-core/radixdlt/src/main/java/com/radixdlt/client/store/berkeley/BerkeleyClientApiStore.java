@@ -282,21 +282,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return Instant.ofEpochSecond(buf.readLong(), buf.readInt());
 	}
 
-	private TxHistoryEntry parseTransaction(AID id, Atom tx, Instant instant) {
-		//TODO: finish
-//		this.txId = txId;
-//		this.date = date;
-//		this.fee = fee;
-//		this.message = message;
-//		this.actions = actions;
-		var fee = UInt256.ZERO;
-		var actions = new ArrayList<ActionEntry>();
-
-
-
-		return TxHistoryEntry.create(id, instant, fee, fromPlainString(tx.getMessage()).orElse(null), actions);
-	}
-
 	private Result<Tuple2<AID, Atom>> retrieveTx(AID id) {
 		return store.get(id)
 			.map(tx -> Result.ok(tuple(id, tx)))
@@ -431,6 +416,21 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		atomsCommittedToLedger.getParsedTxs().stream()
 			.flatMap(tx -> tx.instructions().stream())
 			.forEach(this::newParticle);
+	}
+
+	private TxHistoryEntry parseTransaction(AID id, Atom tx, Instant instant) {
+		//TODO: finish
+//		this.txId = txId;
+//		this.date = date;
+//		this.fee = fee;
+//		this.message = message;
+//		this.actions = actions;
+		var fee = UInt256.ZERO;
+		var actions = new ArrayList<ActionEntry>();
+
+
+
+		return TxHistoryEntry.create(id, instant, fee, fromPlainString(tx.getMessage()).orElse(null), actions);
 	}
 
 	private Optional<RadixAddress> extractCreator(Atom tx) {

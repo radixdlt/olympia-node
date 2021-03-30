@@ -53,9 +53,8 @@ public final class JsonRpcUtil {
 		public int code() {
 			return code;
 		}
-
-
 	}
+
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
 	}

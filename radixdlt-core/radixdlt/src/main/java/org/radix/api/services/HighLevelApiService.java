@@ -37,7 +37,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.time.Instant;
@@ -88,10 +87,14 @@ public class HighLevelApiService {
 
 	}
 
-	private Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
+	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
 		return response.stream()
-			.reduce((first, second) -> second)
+			.reduce(HighLevelApiService::findLast)
 			.map(TxHistoryEntry::timestamp);
+	}
+
+	private static <T> T findLast(T first, T second) {
+		return second;
 	}
 
 	private Result<TokenDefinitionRecord> withSupply(RRI rri, TokenDefinitionRecord definition) {
