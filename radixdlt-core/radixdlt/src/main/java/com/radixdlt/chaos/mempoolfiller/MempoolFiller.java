@@ -149,7 +149,7 @@ public final class MempoolFiller {
 					var list = new ArrayList<Atom>();
 					var substateHolder = new AtomicReference<>(substate);
 					for (int i = 0; i < numTransactions; i++) {
-						var index = random.nextInt(Math.min(particleCount, 200));
+						var index = random.nextInt(Math.min(particleCount, 500));
 						var maybeAtom = createAtom(substateHolder.get(), index, substateHolder::set);
 						if (maybeAtom.isEmpty()) {
 							break;
