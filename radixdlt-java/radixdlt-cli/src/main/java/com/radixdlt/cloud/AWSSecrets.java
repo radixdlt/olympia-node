@@ -9,7 +9,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,6 +31,7 @@ public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;
 	private static final String DEFAULT_NETWORK_NAME = "testnet";
+	private static final String DEFAULT_PREFIX = "fullnode";
 
 	private AWSSecrets() {
 	}
@@ -37,6 +41,7 @@ public class AWSSecrets {
 		Options options = new Options();
 		options.addOption("h", "help", false, "Show usage information (this message)");
 		options.addOption("n", "full-node-number", true, "Number of full nodes");
+		options.addOption("p", "node-name-prefix", true, "Text prefix with which node name is numbered");
 		options.addOption("as", "enable-aws-secrets", true, "Store as AWS Secrets(default: " + DEFAULT_ENABLE_AWS_SECRETS + ")");
 		options.addOption("rs", "recreate-aws-secrets", true, "Recreate AWS Secrets(default: " + DEFAULT_RECREATE_AWS_SECRETS + ")");
 		options.addOption("k", "network-name", true, "Network name(default: " + DEFAULT_NETWORK_NAME + ")");
@@ -54,21 +59,41 @@ public class AWSSecrets {
 				usage(options);
 				return;
 			}
+			final String fullnodeNamesEnv = Optional.ofNullable((System.getenv("FULLNODE_NAMES"))).orElse("");
+			final List<String> listofFullNodes;
+
+			if (!fullnodeNamesEnv.trim().equals("")) {
+				List<String> rawlist = new ArrayList<String>(Arrays.asList(fullnodeNamesEnv.split(",")));
+				listofFullNodes = rawlist.stream()
+					.map(entry -> entry.replaceAll("[^\\w-]", ""))
+					.collect(Collectors.toList());
+			} else {
+				listofFullNodes = new ArrayList<>();
+			}
 
 			final int fullNodeCount = Integer
 				.parseInt(getOption(cmd, 'n').orElseThrow(() -> new IllegalArgumentException("Must specify number of full nodes")));
-			if (fullNodeCount <= 0) {
+			if (fullNodeCount <= 0 && listofFullNodes.size() <= 0) {
 				throw new IllegalArgumentException("There must be at least one full node");
 			}
 
 			final String networkName = getOption(cmd, 'k').orElse(DEFAULT_NETWORK_NAME);
+			final String namePrefix = getOption(cmd, 'p').orElse(DEFAULT_PREFIX);
 			final boolean enableAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("as"));
 			final boolean recreateAwsSecrets = Boolean.parseBoolean(cmd.getOptionValue("rs"));
 
 			final AWSSecretsOutputOptions awsSecretsOutputOptions = new AWSSecretsOutputOptions(
 				enableAwsSecrets, recreateAwsSecrets, networkName);
-			IntStream.range(0, fullNodeCount).forEach(i -> {
-				final String nodeName = String.format("fullnode%s", i);
+			final List<String> fullnodes;
+			if (fullNodeCount > 0) {
+				fullnodes = IntStream.range(0, fullNodeCount).mapToObj(counter -> {
+					return String.format("%s%s", namePrefix, counter);
+				}).collect(Collectors.toList());
+			} else {
+				fullnodes = listofFullNodes;
+			}
+
+			fullnodes.forEach(nodeName -> {
 				final String keyStoreName = String.format("%s.ks", nodeName);
 				final String passwordName = "password";
 				final String keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreName);
