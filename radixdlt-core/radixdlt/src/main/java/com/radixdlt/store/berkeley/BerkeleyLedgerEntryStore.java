@@ -531,13 +531,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(value));
 	}
 
-	private void downVirtualParticle(com.sleepycat.je.Transaction txn, SubstateId substateId) {
+	private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		var particleKey = substateId.asBytes();
-		// TODO: check for up Particle state
 		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
-	private void downParticle(com.sleepycat.je.Transaction txn, byte[] substateId) {
+	private void downSubstate(com.sleepycat.je.Transaction txn, byte[] substateId) {
 		// TODO: check for up Particle state
 		final var downedParticle = entry();
 		var status = particleDatabase.get(txn, entry(substateId), downedParticle, DEFAULT);
@@ -549,8 +548,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Particle was already spun down: " + Hex.toHexString(substateId));
 		}
 
-		// TODO: replace this with remove
-		particleDatabase.put(txn, entry(substateId), downEntry());
+		particleDatabase.delete(txn, entry(substateId));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -582,14 +580,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
 			upParticle(txn, instruction.getData(), tx, instIndex);
 		} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
-			downVirtualParticle(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
+			downVirtualSubstate(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
 		} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
-			downParticle(txn, instruction.getData());
+			downSubstate(txn, instruction.getData());
 		} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
 			// Optimize local down
 			var index = Ints.fromByteArray(instruction.getData());
 			var substateId = SubstateId.ofSubstate(tx, index).asBytes();
-			downParticle(txn, substateId);
+			downSubstate(txn, substateId);
 		} else if (instruction.getMicroOp() == REInstruction.REOp.END) {
 			// No-Op
 			return;
