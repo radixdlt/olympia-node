@@ -28,6 +28,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
@@ -48,8 +49,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Periodically fills the mempool with valid transactions
@@ -121,6 +124,18 @@ public final class MempoolFiller {
 		};
 	}
 
+	private Optional<Atom> createAtom(Iterable<Particle> substate, int index, Consumer<Iterable<Particle>> nextSubstate) {
+		try {
+			var atom = TxBuilder.newBuilder(selfAddress, substate)
+				.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
+				.burnForFee(nativeToken, fee)
+				.signAndBuildRemoteSubstateOnly(hashSigner::sign, nextSubstate);
+			return Optional.of(atom);
+		} catch (TxBuilderException e) {
+			return Optional.empty();
+		}
+	}
+
 	public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
 		return p -> {
 			if (!enabled) {
@@ -135,15 +150,11 @@ public final class MempoolFiller {
 					var substateHolder = new AtomicReference<>(substate);
 					for (int i = 0; i < numTransactions; i++) {
 						var index = random.nextInt(Math.min(particleCount, 200));
-						try {
-							var atom = TxBuilder.newBuilder(selfAddress, substateHolder.get())
-								.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
-								.burnForFee(nativeToken, fee)
-								.signAndBuildRemoteSubstateOnly(hashSigner::sign, substateHolder::set);
-							list.add(atom);
-						} catch (TxBuilderException e) {
+						var maybeAtom = createAtom(substateHolder.get(), index, substateHolder::set);
+						if (maybeAtom.isEmpty()) {
 							break;
 						}
+						list.add(maybeAtom.get());
 					}
 					return list;
 				}
