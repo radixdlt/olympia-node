@@ -28,16 +28,6 @@ import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 
 public class CreateTokenWithoutDescriptionTest {
-
-	@Test
-	public void createMultiIssuanceTokenWithoutDescription() {
-		RadixIdentity testIdentity = RadixIdentities.createNew();
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), testIdentity);
-		TokenUtilities.requestTokensFor(api);
-		RRI tokenRRI2 = RRI.of(api.getAddress(), "TESTTOKEN2");
-		api.createMultiIssuanceToken(tokenRRI2, "TESTTOKEN2", null).blockUntilComplete();
-	}
-
 	@Test
 	public void createFixedIssuanceTokenWithoutDescription() {
 		RadixIdentity testIdentity = RadixIdentities.createNew();

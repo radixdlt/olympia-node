@@ -17,6 +17,13 @@
 
 package com.radix.acceptance.create_multi_issuance_token_class;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
@@ -29,10 +36,10 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.radixdlt.utils.UInt256;
 
@@ -43,7 +50,6 @@ import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.identifiers.RadixAddress;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +70,7 @@ public class CreateMultiIssuanceTokenClass {
 	private static final String INITIAL_SUPPLY = "initialSupply";
 	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
+	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 
 	private RadixApplicationAPI api;
 	private RadixIdentity identity;
@@ -98,52 +105,53 @@ public class CreateMultiIssuanceTokenClass {
 	}
 
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) {
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) throws Exception {
 		this.properties.put(SYMBOL, symbol);
 		this.properties.put(GRANULARITY, Long.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", "
 	      + "initialSupply (\\d+) and granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_name_symbol_initialSupply_and_granularity(
-			String name, String symbol, int initialSupply, int granularity) {
+			String name, String symbol, int initialSupply, int granularity) throws Exception {
 		this.properties.put(NAME, name);
 		this.properties.put(SYMBOL, symbol);
 		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
 		this.properties.put(GRANULARITY, Long.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", "
 	      + "description \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_name_description_symbol_initialSupply_and_granularity(
-			String name, String description, String symbol, int initialSupply, int granularity) {
+			String name, String description, String symbol, int initialSupply, int granularity) throws Exception {
 		this.properties.put(NAME, name);
 		this.properties.put(DESCRIPTION, description);
 		this.properties.put(SYMBOL, symbol);
 		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
 		this.properties.put(GRANULARITY, Long.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and initialSupply (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply) {
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply)
+		throws Exception {
 		this.properties.put(SYMBOL, symbol);
 		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mutable-supply token-creation request with granularity (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) {
+	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) throws Exception {
 		this.properties.put(GRANULARITY, Long.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\"$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol(String symbol) {
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol(String symbol) throws Exception {
 		this.properties.put(SYMBOL, symbol);
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken();
 	}
 
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
@@ -254,23 +262,34 @@ public class CreateMultiIssuanceTokenClass {
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
-	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
+	private void createToken() throws TxBuilderException {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		CreateTokenAction createTokenAction = CreateTokenAction.create(
-			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-			this.properties.get(NAME),
-			this.properties.get(DESCRIPTION),
-			BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
-			BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
-			tokenCreateSupplyType
-		);
-		Transaction tx = api.createTransaction();
-		tx.stage(createTokenAction);
-		tx.commitAndPush(nodeConnection)
+		var particles = api.getAtomStore().getUpParticles(api.getAddress(), null).collect(Collectors.toList());
+		var builder = TxBuilder.newBuilder(api.getAddress(), particles)
+			.createMutableToken(new MutableTokenDefinition(
+				this.properties.get(SYMBOL),
+				this.properties.get(NAME),
+				this.properties.get(DESCRIPTION),
+				null,
+				null,
+				UInt256.from(Long.parseLong(this.properties.get(GRANULARITY))),
+				ImmutableMap.of(
+					MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+					MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
+				)
+			))
+			.mint(
+				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
+				api.getAddress(),
+				TokenUnitConversions.unitsToSubunits(Long.parseLong(this.properties.get(INITIAL_SUPPLY)))
+			)
+			.burnForFee(api.getNativeTokenRef(), fee);
+		var atom = api.getIdentity().addSignature(builder.toLowLevelBuilder()).blockingGet();
+		api.submitAtom(atom)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
-		this.observers.add(observer);
+		observers.add(observer);
 	}
 
 	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
@@ -283,8 +302,6 @@ public class CreateMultiIssuanceTokenClass {
 		testObserver.assertNoErrors();
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
-		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())

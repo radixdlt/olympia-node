@@ -25,11 +25,11 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -51,7 +51,10 @@ import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-public class FixedTokenTest {
+public class MutableTokenTest {
+	private ECKeyPair keyPair = ECKeyPair.generateNew();
+	private RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -75,100 +78,78 @@ public class FixedTokenTest {
 		);
 	}
 
-
-	private TransferrableTokensParticle createToken(ECKeyPair keyPair, TxLowLevelBuilder atomBuilder) {
+	@Test
+	public void atomic_token_creation_and_spend_should_succeed() throws Exception {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RRI rri = RRI.of(address, "XRD");
-		var rriParticle = new RRIParticle(rri, 0);
-		var fixedSupply = new FixedSupplyTokenDefinitionParticle(
-			rri,
-			"XRD",
-			"Some description",
-			UInt256.TEN,
-			UInt256.ONE,
+		createInjector().injectMembers(this);
+		var tokDef = new MutableTokenDefinition(
+			"TEST",
+			"test",
+			"desc",
 			null,
-			null
+			null,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			)
 		);
-		var token = new TransferrableTokensParticle(
-			address,
-			UInt256.TEN,
-			UInt256.ONE,
-			rri,
-			ImmutableMap.of(),
-			System.currentTimeMillis()
-		);
-
-		atomBuilder
-			.virtualDown(rriParticle)
-			.up(fixedSupply)
-			.up(token)
-			.particleGroup();
-
-		return token;
-	}
-
-	private void spendToken(TxLowLevelBuilder atomBuilder, TransferrableTokensParticle p, int times) {
-		var token = new TransferrableTokensParticle(
-			p.getAddress(),
-			p.getAmount().multiply(UInt256.from(times)),
-			p.getGranularity(),
-			p.getTokDefRef(),
-			ImmutableMap.of(),
-			1
-		);
-		atomBuilder.up(token);
-
-		for (int i = 0; i < times; i++) {
-			atomBuilder.down(SubstateId.ofSubstate(p));
-		}
-		atomBuilder.particleGroup();
-	}
-
-	@Test
-	public void token_creation_then_spend_should_succeed() throws RadixEngineException {
-		// Arrange
-		createInjector().injectMembers(this);
-		var keyPair = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder();
-		var upToken = createToken(keyPair, builder);
-		var atom = builder.signAndBuild(keyPair::sign);
-		sut.execute(List.of(atom));
-		var builder2 = TxLowLevelBuilder.newBuilder();
-		spendToken(builder2, upToken, 1);
-		var atom2 = builder2.signAndBuild(keyPair::sign);
+		var atom = TxBuilder.newBuilder(address)
+			.createMutableToken(tokDef)
+			.mint(RRI.of(address, "TEST"), address, UInt256.SEVEN)
+			.transfer(RRI.of(address, "TEST"), address, UInt256.FIVE)
+			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		sut.execute(List.of(atom2));
+		sut.execute(List.of(atom));
 	}
 
 	@Test
-	public void token_creation_then_double_spend_should_fail() throws RadixEngineException {
+	public void can_create_no_description_token() throws TxBuilderException, RadixEngineException {
 		// Arrange
+
 		createInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder();
-		var upToken = createToken(keyPair, builder);
-		var atom = builder.signAndBuild(keyPair::sign);
-		sut.execute(List.of(atom));
-
-
-		var builder2 = TxLowLevelBuilder.newBuilder();
-		spendToken(builder2, upToken, 2);
-		var atom2 = builder2.signAndBuild(keyPair::sign);
+		var tokDef = new MutableTokenDefinition(
+			"TEST",
+			"test",
+			null,
+			null,
+			null,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			)
+		);
+		var atom = TxBuilder.newBuilder(address)
+			.createMutableToken(tokDef)
+			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(atom2))).isInstanceOf(RadixEngineException.class);
+		sut.execute(List.of(atom));
 	}
 
 	@Test
-	public void atomic_token_creation_and_double_spend_should_fail() {
+	public void burn_outside_of_granularity_should_fail() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder();
-		var upToken = createToken(keyPair, builder);
-		spendToken(builder, upToken, 2);
-		var atom = builder.signAndBuild(keyPair::sign);
+		var tokDef = new MutableTokenDefinition(
+			"TEST",
+			"test",
+			"desc",
+			null,
+			null,
+			UInt256.TWO,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			)
+		);
+		var atom = TxBuilder.newBuilder(address)
+			.createMutableToken(tokDef)
+			.mint(RRI.of(address, "TEST"), address, UInt256.EIGHT)
+			.burn(RRI.of(address, "TEST"), UInt256.ONE)
+			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);

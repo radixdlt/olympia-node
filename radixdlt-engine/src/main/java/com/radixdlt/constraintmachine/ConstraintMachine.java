@@ -30,6 +30,8 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
+import com.radixdlt.utils.Ints;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -90,8 +92,8 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
-		private final Map<SubstateId, Particle> upParticles = new HashMap<>();
-		private final Set<SubstateId> downParticles = new HashSet<>();
+		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
+		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final HashCode witness;
 		private final Optional<ECDSASignature> signature;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
@@ -114,11 +116,7 @@ public final class ConstraintMachine {
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
-			if (upParticles.containsKey(substateId)) {
-				return Optional.of(upParticles.get(substateId));
-			}
-
-			if (downParticles.contains(substateId)) {
+			if (remoteDownParticles.contains(substateId)) {
 				return Optional.empty();
 			}
 
@@ -129,7 +127,7 @@ public final class ConstraintMachine {
 			this.currentTransitionToken = currentTransitionToken;
 		}
 
-		public boolean checkSpinAndPush(Particle particle, Spin spin) {
+		public boolean checkSpinAndPush(int instructionIndex, Particle particle, Spin spin) {
 			final Spin currentSpin;
 			if (currentSpins.containsKey(particle)) {
 				currentSpin = currentSpins.get(particle);
@@ -144,20 +142,24 @@ public final class ConstraintMachine {
 			final Spin nextSpin = SpinStateMachine.next(currentSpin);
 			currentSpins.put(particle, nextSpin);
 
-			var particleId = SubstateId.ofSubstate(particle);
 			if (nextSpin == Spin.UP) {
-				upParticles.put(particleId, particle);
+				localUpParticles.put(instructionIndex, particle);
 			} else {
-				upParticles.remove(particleId);
+				var particleId = SubstateId.ofSubstate(particle);
+				remoteDownParticles.add(particleId);
 			}
 
 			return true;
 		}
 
-		public Optional<Particle> checkUpAndPush(SubstateId substateId) {
+		public Optional<Particle> localShutdown(int index) {
+			var maybeParticle = localUpParticles.remove(index);
+			return Optional.ofNullable(maybeParticle);
+		}
+
+		public Optional<Particle> shutdown(SubstateId substateId) {
 			var maybeParticle = loadUpParticle(substateId);
-			upParticles.remove(substateId);
-			downParticles.add(substateId);
+			remoteDownParticles.add(substateId);
 			return maybeParticle;
 		}
 
@@ -393,6 +395,7 @@ public final class ConstraintMachine {
 	) {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
+		int instructionIndex = 0;
 
 		for (REInstruction inst : instructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
@@ -415,7 +418,7 @@ public final class ConstraintMachine {
 					));
 				}
 				final Spin checkSpin = inst.getCheckSpin();
-				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
+				boolean okay = validationState.checkSpinAndPush(instructionIndex, nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
@@ -444,7 +447,7 @@ public final class ConstraintMachine {
 					));
 				}
 				final Spin checkSpin = inst.getCheckSpin();
-				boolean okay = validationState.checkSpinAndPush(nextParticle, checkSpin);
+				boolean okay = validationState.checkSpinAndPush(instructionIndex, nextParticle, checkSpin);
 				if (!okay) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
 				}
@@ -458,9 +461,24 @@ public final class ConstraintMachine {
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 				var particleId = SubstateId.fromBytes(inst.getData());
-				var maybeParticle = validationState.checkUpAndPush(particleId);
+				var maybeParticle = validationState.shutdown(particleId);
 				if (maybeParticle.isEmpty()) {
 					return Optional.of(new CMError(dp, CMErrorCode.SPIN_CONFLICT, validationState));
+				}
+
+				var particle = maybeParticle.get();
+				Optional<CMError> error = validateParticle(validationState, particle, true, dp);
+				if (error.isPresent()) {
+					return error;
+				}
+
+				parsedInstructions.add(ParsedInstruction.down(particle));
+				particleIndex++;
+			} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
+				int index = Ints.fromByteArray(inst.getData());
+				var maybeParticle = validationState.localShutdown(index);
+				if (maybeParticle.isEmpty()) {
+					return Optional.of(new CMError(dp, CMErrorCode.LOCAL_NONEXISTENT, validationState));
 				}
 
 				var particle = maybeParticle.get();
@@ -497,6 +515,8 @@ public final class ConstraintMachine {
 			} else {
 				throw new IllegalStateException("Unknown CM Operation: " + inst.getMicroOp());
 			}
+
+			instructionIndex++;
 		}
 
 		if (particleIndex != 0) {

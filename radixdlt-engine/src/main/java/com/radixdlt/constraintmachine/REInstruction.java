@@ -27,19 +27,22 @@ import java.util.Objects;
  */
 public final class REInstruction {
 	public enum REOp {
-		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, Spin.UP, Spin.DOWN),
-		END((byte) 0, null, null);
+		UP((byte) 1, Spin.NEUTRAL, Spin.UP, true),
+		VDOWN((byte) 2, Spin.UP, Spin.DOWN, true),
+		DOWN((byte) 3, Spin.UP, Spin.DOWN, true),
+		LDOWN((byte) 4, Spin.UP, Spin.DOWN, false),
+		END((byte) 0, null, null, false);
 
 		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
+		private final boolean isUnique;
 
-		REOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, Spin checkSpin, Spin nextSpin, boolean isUnique) {
 			this.opCode = opCode;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
+			this.isUnique = isUnique;
 		}
 
 		public byte opCode() {
@@ -71,6 +74,10 @@ public final class REInstruction {
 
 	public byte[] getData() {
 		return data;
+	}
+
+	public boolean isUnique() {
+		return operation.isUnique;
 	}
 
 	public boolean isPush() {

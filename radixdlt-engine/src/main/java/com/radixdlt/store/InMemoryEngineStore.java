@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,8 +65,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 								var dson = storedParticle.getFirst().getData();
 								particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
 							}
+						} else if (microInstruction.getMicroOp() == REInstruction.REOp.LDOWN) {
+							int index = Ints.fromByteArray(microInstruction.getData());
+							var dson = atom.getMicroInstructions().get(index).getData();
+							particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
+							substateId = SubstateId.ofSubstate(dson);
 						} else {
-							continue;
+							throw new IllegalStateException("Unknown op " + microInstruction.getMicroOp());
 						}
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();

@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -46,8 +47,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -111,11 +114,13 @@ public final class TxBuilder {
 		downParticles.add(substateId);
 	}
 
-	public Iterable<Particle> upParticles() {
-		return Iterables.concat(
-			lowLevelBuilder.localUpParticles(),
-			Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)))
-		);
+	private void localDown(int index) {
+		lowLevelBuilder.localDown(index);
+	}
+
+
+	private Iterable<Particle> remoteUpSubstates() {
+		return Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)));
 	}
 
 	private <T extends Particle> T find(
@@ -123,7 +128,10 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = StreamSupport.stream(upParticles().spliterator(), false)
+		var substateRead = Streams.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -157,7 +165,25 @@ public final class TxBuilder {
 		Optional<T> virtualParticle,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateDown = StreamSupport.stream(upParticles().spliterator(), false)
+		var localDown = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.localDown(s.getIndex()))
+			.map(LocalSubstate::getParticle)
+			.map(particleClass::cast)
+			.findFirst();
+
+		if (localDown.isPresent()) {
+			return localDown.get();
+		}
+
+
+		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
 			.filter(particlePredicate)
@@ -482,6 +508,7 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
+		// TODO: Need to include mutable supply
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
@@ -633,6 +660,16 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
+	}
+
+	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+		var atom = lowLevelBuilder.signAndBuild(signer);
+		var upSubstate = Iterables.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
+			remoteUpSubstates()
+		);
+		upSubstateConsumer.accept(upSubstate);
+		return atom;
 	}
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {

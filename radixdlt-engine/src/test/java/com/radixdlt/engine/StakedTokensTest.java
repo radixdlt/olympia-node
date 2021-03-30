@@ -39,6 +39,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
@@ -82,13 +83,11 @@ public class StakedTokensTest {
 		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
 			.createMutableToken(tokDef)
 			.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN);
-		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
-		tokDefBuilder.upParticles().forEach(upParticles::add);
+		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign, u -> u.forEach(upParticles::add));
 
 		var validatorBuilder = TxBuilder.newBuilder(this.validatorAddress)
 			.registerAsValidator();
-		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
-		validatorBuilder.upParticles().forEach(upParticles::add);
+		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign, u -> u.forEach(upParticles::add));
 
 		this.engine.execute(List.of(atom0, atom1));
 	}
@@ -103,12 +102,13 @@ public class StakedTokensTest {
 
 	@Test
 	public void unstake_tokens() throws Exception {
-		var builder = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
-			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN);
-		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
+		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
 		this.engine.execute(List.of(atom));
 
-		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, builder.upParticles())
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
 			.unstakeFrom(this.tokenRri, this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
@@ -117,12 +117,13 @@ public class StakedTokensTest {
 
 	@Test
 	public void unstake_partial_tokens() throws Exception {
-		var builder = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
-			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN);
-		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
+		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
 		this.engine.execute(List.of(atom));
 
-		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, builder.upParticles())
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
 			.unstakeFrom(this.tokenRri, this.validatorAddress, UInt256.SEVEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
@@ -131,12 +132,14 @@ public class StakedTokensTest {
 
 	@Test
 	public void move_staked_tokens() throws Exception {
-		var builder = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
-			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN);
-		var atom = builder.signAndBuild(this.tokenOwnerKeyPair::sign);
+
+		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
 		this.engine.execute(List.of(atom));
 
-		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, builder.upParticles())
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
 			.moveStake(this.tokenRri, this.validatorAddress, newAddress(), UInt256.SEVEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
