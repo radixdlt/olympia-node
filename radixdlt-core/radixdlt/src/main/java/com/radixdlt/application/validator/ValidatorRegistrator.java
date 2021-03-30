@@ -98,34 +98,34 @@ public final class ValidatorRegistrator {
 			particleClasses.add(TransferrableTokensParticle.class);
 		}
 
-			var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
-				particleClasses,
-				substate -> {
-					var builder = TxBuilder.newBuilder(self, substate);
-					try {
-						if (registration.isRegister()) {
-							builder.registerAsValidator();
-						} else {
-							builder.unregisterAsValidator();
-						}
-
-						if (feeTable != null) {
-							builder.burnForFee(tokenRRI, FEE);
-						}
-					} catch (TxBuilderException e) {
-						logger.warn(e.getMessage());
-						return Optional.empty();
+		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
+			particleClasses,
+			substate -> {
+				var builder = TxBuilder.newBuilder(self, substate);
+				try {
+					if (registration.isRegister()) {
+						builder.registerAsValidator();
+					} else {
+						builder.unregisterAsValidator();
 					}
 
-					return Optional.of(builder);
+					if (feeTable != null) {
+						builder.burnForFee(tokenRRI, FEE);
+					}
+				} catch (TxBuilderException e) {
+					logger.warn(e.getMessage());
+					return Optional.empty();
 				}
-			);
-			logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
-			txBuilderMaybe.ifPresent(txBuilder -> {
-				var atom = txBuilder.signAndBuild(hashSigner::sign);
-				var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-				var command = new Command(payload);
-				this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-			});
+
+				return Optional.of(builder);
+			}
+		);
+		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
+		txBuilderMaybe.ifPresent(txBuilder -> {
+			var atom = txBuilder.signAndBuild(hashSigner::sign);
+			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+			var command = new Command(payload);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+		});
 	}
 }
