@@ -534,9 +534,6 @@ public final class TxBuilder {
 			"Could not find large particle greater than " + minSize
 		);
 
-		logger.info("Split: address: {} substate: {}", address, substate);
-
-
 		down(substate.getId());
 		var particle = (TransferrableTokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);

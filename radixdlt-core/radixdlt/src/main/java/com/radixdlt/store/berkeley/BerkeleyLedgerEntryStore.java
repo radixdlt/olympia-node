@@ -476,7 +476,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				if (substatePredicate.test(rawSubstate)) {
 					substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				}
-				status = particleCursor.getNextDup(index, null, value, null);
+				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
 			}
 		}
 
