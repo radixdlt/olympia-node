@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Periodically fills the mempool with valid transactions
@@ -160,21 +161,30 @@ public final class MempoolFiller {
 				}
 			);
 
-			logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
-				systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
-				atoms.size()
-			);
+			var cmds = atoms.stream().map(a -> {
+				var payload = serialization.toDson(a, DsonOutput.Output.ALL);
+				return new Command(payload);
+			}).collect(Collectors.toList());
+
+			if (cmds.size() == 1) {
+				logger.info("Mempool Filler mempool: {} Adding atom {} to mempool...",
+					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
+					cmds.get(0).getId()
+				);
+			} else {
+				logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
+					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
+					cmds.size()
+				);
+			}
 
 			List<BFTNode> peers = peersView.peers();
-			atoms.forEach(atom -> {
-				byte[] payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-				Command command = new Command(payload);
-
+			cmds.forEach(cmd -> {
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
 				if (index == peers.size()) {
-					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(cmd));
 				} else {
-					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), MempoolAdd.create(command));
+					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), MempoolAdd.create(cmd));
 				}
 			});
 

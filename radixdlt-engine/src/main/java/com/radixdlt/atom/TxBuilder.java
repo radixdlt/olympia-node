@@ -40,6 +40,8 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.List;
@@ -55,6 +57,8 @@ import java.util.stream.StreamSupport;
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
@@ -509,6 +513,8 @@ public final class TxBuilder {
 
 	// For mempool filler
 	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
+		assertHasAddress("Must have address");
+
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
@@ -527,6 +533,9 @@ public final class TxBuilder {
 			index,
 			"Could not find large particle greater than " + minSize
 		);
+
+		logger.info("Split: address: {} substate: {}", address, substate);
+
 
 		down(substate.getId());
 		var particle = (TransferrableTokensParticle) substate.getParticle();

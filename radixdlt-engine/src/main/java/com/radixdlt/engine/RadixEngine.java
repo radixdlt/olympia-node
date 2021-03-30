@@ -119,7 +119,7 @@ public final class RadixEngine<M> {
 			return copy;
 		}
 
-		public boolean check(Particle particle) {
+		public boolean test(Particle particle) {
 			return particleCheck.test((T) particle);
 		}
 
@@ -429,7 +429,7 @@ public final class RadixEngine<M> {
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
 				var cache = substateCache.get(particle.getClass());
-				if (cache != null && cache.check(particle)) {
+				if (cache != null && cache.test(particle)) {
 					if (parsedInstruction.getSpin() == Spin.UP) {
 						cache.bringUp(parsedInstruction.getSubstate());
 					} else {

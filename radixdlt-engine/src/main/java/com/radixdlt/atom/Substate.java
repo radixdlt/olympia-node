@@ -64,4 +64,9 @@ public final class Substate {
 		return Objects.equals(this.particle, other.particle)
 			&& Objects.equals(this.substateId, other.substateId);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{raw=%s id=%s}", this.getClass().getSimpleName(), this.particle, this.substateId);
+	}
 }
