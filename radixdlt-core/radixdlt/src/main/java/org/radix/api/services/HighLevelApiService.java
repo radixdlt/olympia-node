@@ -46,11 +46,11 @@ public class HighLevelApiService {
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis Atom genesisAtom
+		@Genesis List<Atom> genesisAtoms
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
-		this.nativeTokenDefinition = nativeToken(genesisAtom);
+		this.nativeTokenDefinition = nativeToken(genesisAtoms);
 	}
 
 	public int getUniverseMagic() {
@@ -77,8 +77,8 @@ public class HighLevelApiService {
 			   : Result.ok(definition);
 	}
 
-	private static MutableSupplyTokenDefinitionParticle nativeToken(Atom genesisAtom) {
-		return genesisAtom.uniqueInstructions()
+	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Atom> genesisAtoms) {
+		return genesisAtoms.stream().flatMap(Atom::uniqueInstructions)
 			.filter(i -> i.getNextSpin() == Spin.UP)
 			.map(i -> {
 				try {
@@ -93,5 +93,4 @@ public class HighLevelApiService {
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
 	}
-
 }
