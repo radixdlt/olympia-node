@@ -28,8 +28,10 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -79,10 +81,32 @@ public class MutableTokenTest {
 	}
 
 	@Test
+	public void token_with_no_unallocated_should_fail() {
+		createInjector().injectMembers(this);
+		var particle = new MutableSupplyTokenDefinitionParticle(
+			RRI.of(address, "JOSH"),
+			"Joshy Token",
+			"Best Token",
+			UInt256.ONE,
+			null,
+			null,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.NONE
+			)
+		);
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new RRIParticle(RRI.of(address, "JOSH")))
+			.up(particle)
+			.particleGroup()
+			.signAndBuild(keyPair::sign);
+
+		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
 	public void atomic_token_creation_and_spend_should_succeed() throws Exception {
 		// Arrange
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
 			"TEST",
@@ -108,7 +132,6 @@ public class MutableTokenTest {
 	@Test
 	public void can_create_no_description_token() throws TxBuilderException, RadixEngineException {
 		// Arrange
-
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
 			"TEST",
