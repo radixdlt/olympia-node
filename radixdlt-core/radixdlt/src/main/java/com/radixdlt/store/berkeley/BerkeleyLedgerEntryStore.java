@@ -472,9 +472,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				// TODO: Remove memcpy
 				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				U floatingSubstate = deserializeOrElseFail(serializedParticle, substateClass);
-				if (substatePredicate.test(floatingSubstate)) {
-					substates.add(Substate.create(floatingSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
+				U rawSubstate = deserializeOrElseFail(serializedParticle, substateClass);
+				if (substatePredicate.test(rawSubstate)) {
+					substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				}
 				status = particleCursor.getNextDup(index, null, value, null);
 			}
