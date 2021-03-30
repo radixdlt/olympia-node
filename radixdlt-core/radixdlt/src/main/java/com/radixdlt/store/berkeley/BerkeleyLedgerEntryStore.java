@@ -280,6 +280,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					var substateId = SubstateId.fromBytes(key.getData());
+					particleConsumer.accept(ParsedInstruction.up(new Substate(particle, substateId)));
 				}
 
 				status = cursor.getNext(key, value, DEFAULT);
