@@ -74,8 +74,8 @@ Feature: Create Multi Issuance Token Class
     #And I submit a burn request of 1 for "RLAU"
     #Then I can observe atom 2 being rejected with a validation error
 
-  Scenario: 10: Initial supply
-    Given I have access to a suitable Radix network
-    When I submit a mutable-supply token-creation request with symbol "RLAU" and initialSupply 1000
-    Then I can observe the atom being accepted
-    And I can observe token "RLAU" balance equal to 1000
+  #Scenario: 10: Initial supply
+    #Given I have access to a suitable Radix network
+    #When I submit a mutable-supply token-creation request with symbol "RLAU" and initialSupply 1000
+    #Then I can observe the atom being accepted
+    #And I can observe token "RLAU" balance equal to 1000
