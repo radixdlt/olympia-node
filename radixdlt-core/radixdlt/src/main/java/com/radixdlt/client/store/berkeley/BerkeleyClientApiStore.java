@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -29,10 +29,10 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
-import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
@@ -49,7 +49,6 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -243,6 +242,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			var list = new ArrayList<TxHistoryEntry>();
+			var count = 0;
 
 			do {
 				deserializeTxId(data.getData())
@@ -255,7 +255,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
 			}
-			while (status == OperationStatus.SUCCESS);
+			while (status == OperationStatus.SUCCESS && ++count < size);
 
 			return Result.ok(list);
 		}
@@ -539,14 +539,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			serializeToEntry(value, balanceEntry.negate());
 		} else if (status == OperationStatus.SUCCESS) {
 			// Merge with existing balance
-			var success = deserializeBalanceEntry(oldValue.getData())
+			deserializeBalanceEntry(oldValue.getData())
 				.map(existingBalance -> existingBalance.subtract(balanceEntry))
 				.onSuccess(entry -> serializeToEntry(value, entry))
-				.isSuccess();
-
-			if (!success) {
-				log.error("Error deserializing existing balance for {}", balanceEntry);
-			}
+				.onFailure(failure -> log.error(failure.message()));
 		}
 
 		status = writeBalance(() -> balances.put(null, key, value), value);
