@@ -21,6 +21,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -37,7 +38,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-public final class InMemoryEngineStore<M> implements EngineStore<M> {
+public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
 	private final Map<SubstateId, Pair<REInstruction, Atom>> storedParticles = new HashMap<>();
 	private final List<Pair<Substate, Spin>> inOrderParticles = new ArrayList<>();
@@ -122,15 +123,12 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public <U extends Particle> Iterable<Substate> upSubstates(Class<U> substateClass, Predicate<U> substatePredicate) {
+	public Iterable<Substate> index(Class<? extends Particle> substateClass) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (Pair<Substate, Spin> spinParticle : inOrderParticles) {
 				var particle = spinParticle.getFirst().getParticle();
-				if (spinParticle.getSecond().equals(Spin.UP)
-					&& substateClass.isInstance(particle)
-					&& substatePredicate.test(substateClass.cast(particle))
-				) {
+				if (spinParticle.getSecond().equals(Spin.UP) && substateClass.isInstance(particle)) {
 					substates.add(spinParticle.getFirst());
 				}
 			}
