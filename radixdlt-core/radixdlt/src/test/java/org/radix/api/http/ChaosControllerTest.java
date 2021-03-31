@@ -39,7 +39,6 @@ import io.undertow.server.RoutingHandler;
 import io.undertow.util.HeaderMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,7 +58,7 @@ public class ChaosControllerTest {
 		chaosController.configureRoutes(handler);
 
 		verify(handler).put(eq("/api/chaos/message-flooder"), any());
-		verify(handler).put(eq("/api/chaos/mempool-filler"), any());
+		verify(handler).post(eq("/api/chaos/mempool-filler"), any());
 	}
 
 	@Test
@@ -91,32 +90,6 @@ public class ChaosControllerTest {
 		var value = captor.getValue();
 		assertEquals(Optional.of(10), value.getMessagesPerSec());
 		assertEquals(Optional.of(123), value.getCommandSize());
-	}
-
-	@Test
-	public void testHandleMempoolFill() throws InterruptedException {
-		final ChaosController chaosController = new ChaosController(mempool, message);
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
-		var exchange = createExchange(
-			"{ \"enabled\" : true}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-
-		chaosController.handleMempoolFill(exchange);
-
-		latch.await();
-		assertEquals("{}", arg.get());
-
-		var captor = ArgumentCaptor.forClass(MempoolFillerUpdate.class);
-		verify(mempool).dispatch(captor.capture());
-		assertTrue(captor.getValue().enabled());
 	}
 
 	private static HttpServerExchange createExchange(final String json, final Answer<Void> answer) {

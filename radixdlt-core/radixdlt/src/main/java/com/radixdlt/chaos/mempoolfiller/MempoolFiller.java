@@ -110,10 +110,12 @@ public final class MempoolFiller {
 			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
 			if (u.enabled() == enabled) {
+				u.onError("Already " + ((enabled) ? "enabled." : "disabled."));
 				return;
 			}
 
 			logger.info("Mempool Filler: Updating " + u.enabled());
+			u.onSuccess();
 
 			if (u.enabled()) {
 				enabled = true;
@@ -143,7 +145,7 @@ public final class MempoolFiller {
 			}
 
 			var particleCount = radixEngine.getComputedState(Integer.class);
-			final List<Atom> atoms = radixEngine.getSubstateCache(
+			final List<Atom> atoms = radixEngine.accessSubstateStoreCache(
 				substateStore -> {
 					var list = new ArrayList<Atom>();
 					var substateHolder = new AtomicReference<>(substateStore);

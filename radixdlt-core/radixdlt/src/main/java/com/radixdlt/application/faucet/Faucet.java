@@ -79,7 +79,7 @@ public final class Faucet {
 	private void processRequest(FaucetRequest request) {
 		log.info("Faucet Request {}", request);
 
-		var builderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
+		var builderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStoreCache(
 			substateStore -> {
 				try {
 					var txBuilder = TxBuilder.newBuilder(self, substateStore)

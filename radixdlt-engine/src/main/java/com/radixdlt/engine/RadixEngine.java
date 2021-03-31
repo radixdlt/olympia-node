@@ -181,7 +181,8 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public <T> T getSubstateCache(Function<SubstateStore, T> func) {
+	// TODO: access engine store index
+	public <T> T accessSubstateStoreCache(Function<SubstateStore, T> func) {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -281,7 +282,7 @@ public final class RadixEngine<M> {
 		}
 
 		public <T> T getSubstateCache(Function<SubstateStore, T> func) {
-			return engine.getSubstateCache(func);
+			return engine.accessSubstateStoreCache(func);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {

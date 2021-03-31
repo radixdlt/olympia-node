@@ -9,7 +9,6 @@ import com.radixdlt.constraintmachine.Spin;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;

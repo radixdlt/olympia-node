@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();

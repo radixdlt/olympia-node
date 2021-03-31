@@ -18,11 +18,9 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 /**
  *  A state that gives access to the state of a certain shard space
