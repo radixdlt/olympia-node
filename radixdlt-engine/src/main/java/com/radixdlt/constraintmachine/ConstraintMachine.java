@@ -405,7 +405,7 @@ public final class ConstraintMachine {
 		long particleIndex = 0;
 		int instructionIndex = 0;
 
-		for (REInstruction inst : atom.getMicroInstructions()) {
+		for (REInstruction inst : atom.getInstructions()) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class

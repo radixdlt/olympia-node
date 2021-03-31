@@ -607,7 +607,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, int instIndex) {
-		final var instruction = tx.getMicroInstructions().get(instIndex);
+		final var instruction = tx.getInstructions().get(instIndex);
 
 		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
 			upParticle(txn, instruction.getData(), tx, instIndex);
@@ -660,7 +660,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
+			for (int i = 0; i < atom.getInstructions().size(); i++) {
 				this.updateParticle(transaction, atom, i);
 			}
 

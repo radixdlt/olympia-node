@@ -46,8 +46,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	@Override
 	public void storeAtom(Transaction txn, Atom atom) {
 		synchronized (lock) {
-			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
-				var instruction = atom.getMicroInstructions().get(i);
+			for (int i = 0; i < atom.getInstructions().size(); i++) {
+				var instruction = atom.getInstructions().get(i);
 				if (instruction.isPush()) {
 					Spin nextSpin = instruction.getNextSpin();
 
@@ -71,7 +71,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 							}
 						} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
 							int index = Ints.fromByteArray(instruction.getData());
-							var dson = atom.getMicroInstructions().get(index).getData();
+							var dson = atom.getInstructions().get(index).getData();
 							particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
 							substateId = SubstateId.ofSubstate(atom, index);
 						} else {
