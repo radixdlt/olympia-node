@@ -122,8 +122,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				genesisAtoms.add(stakeAtom);
 			}
 
-			var epochUpdateBuilder = TxBuilder.newSystemBuilder()
-				.systemNextEpoch(0);
+			var epochUpdateBuilder = TxBuilder.newSystemBuilder().systemNextEpoch(0, 0);
 			genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
 		} catch (TxBuilderException e) {
 			throw new IllegalStateException(e);

@@ -23,7 +23,9 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -44,6 +46,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 /**
  * Registers/Unregisters self as a validator by submitting request
@@ -88,35 +91,41 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		var validatorState = radixEngine.getComputedState(ValidatorState.class);
-
-		var particles = new ArrayList<Particle>();
-		particles.add(validatorState.currentParticle());
+		var particleClasses = new ArrayList<Class<? extends Particle>>();
+		particleClasses.add(RegisteredValidatorParticle.class);
+		particleClasses.add(UnregisteredValidatorParticle.class);
 		if (feeTable != null) {
-			var wallet = radixEngine.getComputedState(InMemoryWallet.class);
-			particles.addAll(wallet.particles());
-		}
-		var txBuilder = TxBuilder.newBuilder(self, particles);
-
-		try {
-			if (registration.isRegister()) {
-				txBuilder.registerAsValidator();
-			} else {
-				txBuilder.unregisterAsValidator();
-			}
-
-			if (feeTable != null) {
-				txBuilder.burnForFee(tokenRRI, FEE);
-			}
-		} catch (TxBuilderException e) {
-			logger.warn(e.getMessage());
-			return;
+			particleClasses.add(TransferrableTokensParticle.class);
 		}
 
+		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
+			particleClasses,
+			substate -> {
+				var builder = TxBuilder.newBuilder(self, substate);
+				try {
+					if (registration.isRegister()) {
+						builder.registerAsValidator();
+					} else {
+						builder.unregisterAsValidator();
+					}
+
+					if (feeTable != null) {
+						builder.burnForFee(tokenRRI, FEE);
+					}
+				} catch (TxBuilderException e) {
+					logger.warn(e.getMessage());
+					return Optional.empty();
+				}
+
+				return Optional.of(builder);
+			}
+		);
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
-		var atom = txBuilder.signAndBuild(hashSigner::sign);
-		var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-		var command = new Command(payload);
-		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+		txBuilderMaybe.ifPresent(txBuilder -> {
+			var atom = txBuilder.signAndBuild(hashSigner::sign);
+			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
+			var command = new Command(payload);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+		});
 	}
 }

@@ -23,7 +23,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -40,6 +40,9 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Faucet service which sends funds from this node to another address
@@ -78,21 +81,29 @@ public final class Faucet {
 	private void processRequest(FaucetRequest request) {
 		log.info("Faucet Request {}", request);
 
-		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+		var builderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
+			List.of(TransferrableTokensParticle.class),
+			substate -> {
+				try {
+					var txBuilder = TxBuilder.newBuilder(self, substate)
+						.transferNative(nativeToken, request.getAddress(), amount)
+						.burnForFee(nativeToken, FEE);
+					return Optional.of(txBuilder);
+				} catch (TxBuilderException e) {
+					log.error("Faucet failed to fulfil request {}", request, e);
+					request.onFailure(e.getMessage());
+					return Optional.empty();
+				}
+			}
+		);
 
-		try {
-			var atom = TxBuilder.newBuilder(self, wallet.particleList())
-				.transferNative(nativeToken, request.getAddress(), amount)
-				.burnForFee(nativeToken, FEE)
-				.signAndBuild(hashSigner::sign);
+		builderMaybe.ifPresent(builder -> {
+			var atom = builder.signAndBuild(hashSigner::sign);
 			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
 			var command = new Command(payload);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 			request.onSuccess(command.getId());
-		} catch (TxBuilderException e) {
-			log.error("Faucet failed to fulfil request {}", request, e);
-			request.onFailure(e.getMessage());
-		}
+		});
 	}
 
 	public EventProcessor<FaucetRequest> requestEventProcessor() {

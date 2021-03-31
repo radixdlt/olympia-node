@@ -13,42 +13,46 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Reducer to keep track of the last system particle
+ * Reduces system level information
  */
-public final class LastSystemParticleReducer implements StateReducer<SystemParticle, SystemParticle> {
-    @Override
-    public Class<SystemParticle> stateClass() {
-        return SystemParticle.class;
-    }
+class SystemReducer implements StateReducer<EpochView, SystemParticle> {
 
-    @Override
-    public Class<SystemParticle> particleClass() {
-        return SystemParticle.class;
-    }
+	@Override
+	public Class<EpochView> stateClass() {
+		return EpochView.class;
+	}
 
-    @Override
-    public Supplier<SystemParticle> initial() {
-        return () -> new SystemParticle(0, 0, 0);
-    }
+	@Override
+	public Class<SystemParticle> particleClass() {
+		return SystemParticle.class;
+	}
 
-    @Override
-    public BiFunction<SystemParticle, SystemParticle, SystemParticle> outputReducer() {
-        return (prev, p) -> p;
-    }
+	@Override
+	public Supplier<EpochView> initial() {
+		return () -> new EpochView(0, View.of(0));
+	}
 
-    @Override
-    public BiFunction<SystemParticle, SystemParticle, SystemParticle> inputReducer() {
-        return (prev, p) -> prev;
-    }
+	@Override
+	public BiFunction<EpochView, SystemParticle, EpochView> outputReducer() {
+		return (cur, p) -> new EpochView(p.getEpoch(), View.of(p.getView()));
+	}
+
+	@Override
+	public BiFunction<EpochView, SystemParticle, EpochView> inputReducer() {
+		return (cur, p) -> cur;
+	}
 }

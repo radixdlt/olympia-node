@@ -16,28 +16,26 @@
  *
  */
 
-package com.radixdlt.application.validator;
+package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.Particle;
 
-import java.util.Objects;
+import java.util.function.Predicate;
 
-/**
- * The validator state of a node
- */
-public final class ValidatorState {
-    private final Particle currentParticle;
+public class SubstateCacheRegister<T extends Particle> {
+	private final Class<T> particleClass;
+	private final Predicate<T> particlePredicate;
 
-    private ValidatorState(Particle currentParticle) {
-        this.currentParticle = currentParticle;
-    }
+	public SubstateCacheRegister(Class<T> particleClass, Predicate<T> particlePredicate) {
+		this.particleClass = particleClass;
+		this.particlePredicate = particlePredicate;
+	}
 
-    public static ValidatorState create(Particle currentParticle) {
-        Objects.requireNonNull(currentParticle);
-        return new ValidatorState(currentParticle);
-    }
+	public Class<T> getParticleClass() {
+		return particleClass;
+	}
 
-    public Particle currentParticle() {
-        return currentParticle;
-    }
+	public Predicate<T> getParticlePredicate() {
+		return particlePredicate;
+	}
 }

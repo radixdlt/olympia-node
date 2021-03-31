@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
@@ -38,13 +39,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -99,6 +103,39 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	private static final class SubstateCache<T extends Particle> {
+		private final Predicate<T> particleCheck;
+		private final HashMap<SubstateId, T> cache = new HashMap<>();
+		private final boolean includeInBranches;
+
+		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
+			this.particleCheck = particleCheck;
+			this.includeInBranches = includeInBranches;
+		}
+
+		public SubstateCache<T> copy() {
+			var copy = new SubstateCache<>(particleCheck, includeInBranches);
+			copy.cache.putAll(cache);
+			return copy;
+		}
+
+		public boolean test(Particle particle) {
+			return particleCheck.test((T) particle);
+		}
+
+		public SubstateCache<T> bringUp(Particle upSubstate) {
+			if (particleCheck.test((T) upSubstate)) {
+				this.cache.put(SubstateId.ofSubstate(upSubstate), (T) upSubstate);
+			}
+			return this;
+		}
+
+		public SubstateCache<T> shutDown(SubstateId substateId) {
+			this.cache.remove(substateId);
+			return this;
+		}
+	}
+
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final Predicate<Particle> virtualStoreLayer;
@@ -106,6 +143,7 @@ public final class RadixEngine<M> {
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
 	private final Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers = new HashMap<>();
+	private final Map<Class<?>, SubstateCache<?>> substateCache = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 	private final BatchVerifier<M> batchVerifier;
 
@@ -156,6 +194,33 @@ public final class RadixEngine<M> {
 		this.batchVerifier = batchVerifier;
 	}
 
+	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister, boolean includeInBranches) {
+		synchronized (stateUpdateEngineLock) {
+			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
+				throw new IllegalStateException();
+			}
+
+			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
+			engineStore.reduceUpParticles(substateCacheRegister.getParticleClass(), cache, SubstateCache::bringUp);
+			substateCache.put(substateCacheRegister.getParticleClass(), cache);
+		}
+	}
+
+	public <T> T getSubstateCache(
+		List<Class<? extends Particle>> particleClasses,
+		Function<Iterable<Particle>, T> func
+	) {
+		synchronized (stateUpdateEngineLock) {
+			var substates = Iterables.concat(
+				particleClasses.stream()
+					.map(substateCache::get)
+					.map(s -> (Collection<Particle>) s.cache.values())
+					.collect(Collectors.toList())
+			);
+
+			return func.apply(substates);
+		}
+	}
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -220,9 +285,10 @@ public final class RadixEngine<M> {
 			Predicate<Particle> virtualStoreLayer,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
-			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers
+			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers,
+			Map<Class<?>, SubstateCache<?>> substateCache
 		) {
-			var transientEngineStore = new TransientEngineStore<M>(parentStore);
+			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
 			this.engine = new RadixEngine<>(
 				constraintMachine,
@@ -232,6 +298,7 @@ public final class RadixEngine<M> {
 				BatchVerifier.empty()
 			);
 
+			engine.substateCache.putAll(substateCache);
 			engine.stateComputers.putAll(stateComputers);
 		}
 
@@ -241,6 +308,13 @@ public final class RadixEngine<M> {
 
 		public void execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
 			engine.execute(atoms, null, permissionLevel);
+		}
+
+		public <T> T getSubstateCache(
+			List<Class<? extends Particle>> particleClasses,
+			Function<Iterable<Particle>, T> func
+		) {
+			return engine.getSubstateCache(particleClasses, func);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -262,12 +336,19 @@ public final class RadixEngine<M> {
 					branchedStateComputers.put(c, computer.copy());
 				}
 			});
+			var branchedCache = new HashMap<Class<?>, SubstateCache<?>>();
+			this.substateCache.forEach((c, cache) -> {
+				if (cache.includeInBranches) {
+					branchedCache.put(c, cache.copy());
+				}
+			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
 				this.virtualStoreLayer,
 				this.engineStore,
 				this.checker,
-				branchedStateComputers
+				branchedStateComputers,
+				branchedCache
 			);
 
 			branches.add(branch);
@@ -374,6 +455,15 @@ public final class RadixEngine<M> {
 				final var particle = parsedInstruction.getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
+
+				var cache = substateCache.get(particle.getClass());
+				if (cache != null && cache.test(particle)) {
+					if (parsedInstruction.getSpin() == Spin.UP) {
+						cache.bringUp(particle);
+					} else {
+						cache.shutDown(SubstateId.ofSubstate(particle));
+					}
+				}
 
 				if (parsedInstruction.getSpin() == Spin.UP) {
 					checker.test(this::getComputedState);

@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
@@ -36,6 +37,7 @@ import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
@@ -43,6 +45,8 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Set;
 import java.util.function.Predicate;
@@ -51,6 +55,8 @@ import java.util.function.Predicate;
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
+	private static final Logger logger = LogManager.getLogger();
+
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
@@ -59,6 +65,7 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
 	@Provides
@@ -127,6 +134,7 @@ public class RadixEngineModule extends AbstractModule {
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		Set<StateReducer<?, ?>> stateReducers,
 		Set<Pair<String, StateReducer<?, ?>>> namedStateReducers,
+		Set<SubstateCacheRegister<?>> substateCacheRegisters,
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
 		var radixEngine = new RadixEngine<>(
@@ -147,13 +155,18 @@ public class RadixEngineModule extends AbstractModule {
 		radixEngine.addStateReducer(new ValidatorsReducer(), true);
 		radixEngine.addStateReducer(new StakesReducer(stakeToken), true);
 
-		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
-		radixEngine.addStateReducer(new LastSystemParticleReducer(), true);
+		var systemCache = new SubstateCacheRegister<>(SystemParticle.class, p -> true);
+		radixEngine.addSubstateCache(systemCache, true);
+		radixEngine.addStateReducer(new SystemReducer(), true);
 
 		// Additional state reducers are not required for consensus so don't need to include their
 		// state in transient branches;
+		logger.info("RE - Initializing stateReducers: {} {}", stateReducers, namedStateReducers);
 		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
 		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
+
+		logger.info("RE - Initializing substate caches: {}", substateCacheRegisters);
+		substateCacheRegisters.forEach(c -> radixEngine.addSubstateCache(c, false));
 
 		return radixEngine;
 	}

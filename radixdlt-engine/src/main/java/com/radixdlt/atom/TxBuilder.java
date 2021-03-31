@@ -126,6 +126,28 @@ public final class TxBuilder {
 	private <T extends Particle> T find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
+		int index,
+		String errorMessage
+	) throws TxBuilderException {
+		var substateRead = Streams.concat(
+			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		)
+			.filter(particleClass::isInstance)
+			.map(particleClass::cast)
+			.filter(particlePredicate)
+			.skip(index)
+			.findFirst();
+		if (substateRead.isEmpty()) {
+			throw new TxBuilderException(errorMessage);
+		}
+
+		return substateRead.get();
+	}
+
+	private <T extends Particle> T find(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
@@ -315,12 +337,13 @@ public final class TxBuilder {
 		}
 	}
 
-	public TxBuilder systemNextView(long view, long timestamp) throws TxBuilderException {
+	public TxBuilder systemNextView(long view, long timestamp, long currentEpoch) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next view");
 
 		swap(
 			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
+			p -> p.getEpoch() == currentEpoch,
+			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> {
 			if (view <= substateDown.getView()) {
@@ -334,12 +357,13 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder systemNextEpoch(long timestamp) throws TxBuilderException {
+	public TxBuilder systemNextEpoch(long timestamp, long currentEpoch) throws TxBuilderException {
 		assertIsSystem("Not permitted as user to execute system next epoch");
 
 		swap(
 			SystemParticle.class,
-			Optional.of(new SystemParticle(0, 0, 0)),
+			p -> p.getEpoch() == currentEpoch,
+			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
 		particleGroup();
@@ -477,6 +501,37 @@ public final class TxBuilder {
 			"Not enough balance to for minting."
 		).with(amt -> factory.createTransferrable(to, amt, random.nextLong()));
 
+		particleGroup();
+
+		return this;
+	}
+
+	// For mempool filler
+	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
+		// HACK
+		var factory = TokDefParticleFactory.create(
+			rri,
+			ImmutableMap.of(
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			),
+			UInt256.ONE
+		);
+
+		var particle = find(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri)
+				&& p.getAddress().equals(address)
+				&& p.getAmount().compareTo(minSize) > 0,
+			index,
+			"Could not find large particle greater than " + minSize
+		);
+
+		down(SubstateId.ofSubstate(particle));
+		var amt1 = particle.getAmount().divide(UInt256.TWO);
+		var amt2 = particle.getAmount().subtract(amt1);
+		up(factory.createTransferrable(address, amt1, random.nextLong()));
+		up(factory.createTransferrable(address, amt2, random.nextLong()));
 		particleGroup();
 
 		return this;
@@ -660,6 +715,12 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
+	}
+
+	public Atom signAndBuildRemoteSubstateOnly(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+		var atom = lowLevelBuilder.signAndBuild(signer);
+		upSubstateConsumer.accept(remoteUpSubstates());
+		return atom;
 	}
 
 	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {

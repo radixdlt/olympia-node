@@ -15,8 +15,6 @@ package org.radix.api.http;/*
  * language governing permissions and limitations under the License.
  */
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.junit.Test;
@@ -30,7 +28,6 @@ import com.radixdlt.utils.Base58;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,36 +59,6 @@ public class NodeControllerTest {
 
 		verify(handler).post(eq("/node/validator"), any());
 		verify(handler).get(eq("/node"), any());
-	}
-
-	@Test
-	public void testRespondWithNode() throws InterruptedException {
-		var latch = new CountDownLatch(1);
-		var arg = new AtomicReference<String>();
-
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
-		var exchange = createExchange(
-			"{}",
-			invocation -> {
-				arg.set(invocation.getArgument(0, String.class));
-				latch.countDown();
-				return null;
-			}
-		);
-
-
-		var wallet = mock(InMemoryWallet.class);
-		when(radixEngine.getComputedState(InMemoryWallet.class)).thenReturn(wallet);
-		when(wallet.getBalance()).thenReturn(BigDecimal.ONE);
-		when(wallet.getNumParticles()).thenReturn(7);
-
-		nodeController.respondWithNode(exchange);
-
-		latch.await();
-		assertEquals(
-			"{\"address\":\"23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x\",\"balance\":1,\"numParticles\":7}",
-			arg.get()
-		);
 	}
 
 	@Test

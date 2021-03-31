@@ -19,15 +19,15 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.validator.ValidatorRegistration;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.chaos.mempoolfiller.InMemoryWallet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
@@ -59,11 +59,12 @@ public final class NodeController implements Controller {
 
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
-		var wallet = radixEngine.getComputedState(InMemoryWallet.class);
+		var particleCount = radixEngine.getComputedState(Integer.class);
+		var balance = radixEngine.getComputedState(UInt256.class);
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
-			.put("balance", wallet.getBalance())
-			.put("numParticles", wallet.getNumParticles()));
+			.put("balance", TokenUnitConversions.subunitsToUnits(balance))
+			.put("numParticles", particleCount));
 	}
 
 	@VisibleForTesting
