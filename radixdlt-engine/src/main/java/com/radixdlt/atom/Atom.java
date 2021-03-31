@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -31,6 +32,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
 import java.util.List;
@@ -55,7 +58,6 @@ public final class Atom {
 	private final ECDSASignature signature;
 
 	private final List<REInstruction> instructions;
-	private final HashCode witness;
 
 	@JsonCreator
 	private Atom(
@@ -64,29 +66,29 @@ public final class Atom {
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signature,
-			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
+			signature
 		);
 	}
 
 	private Atom(
 		List<REInstruction> instructions,
-		ECDSASignature signature,
-		HashCode witness
+		ECDSASignature signature
 	) {
 		this.instructions = Objects.requireNonNull(instructions);
 		this.signature = signature;
-		this.witness = witness;
 	}
 
 	static Atom create(
 		List<REInstruction> instructions,
 		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature, computeHashToSign(instructions));
+		return new Atom(instructions, signature);
 	}
 
-	// FIXME: need to include message
+	public HashCode computeHashToSign() {
+		return computeHashToSign(this.instructions);
+	}
+
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
 		instructions.forEach(outputStream::writeBytes);
@@ -136,13 +138,9 @@ public final class Atom {
 		return instructions.stream().filter(i -> i.getMicroOp() == REInstruction.REOp.UP);
 	}
 
-	public HashCode getWitness() {
-		return witness;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(witness);
+		return Objects.hash(signature, instructions);
 	}
 
 	@Override
@@ -152,12 +150,15 @@ public final class Atom {
 		}
 
 		Atom other = (Atom) o;
-		return Objects.equals(this.witness, other.witness);
+		return Objects.equals(this.signature, other.signature)
+			&& Objects.equals(this.instructions, other.instructions);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s {witness=%s}", this.getClass().getSimpleName(), this.witness);
+		return String.format("%s {id=%s}", this.getClass().getSimpleName(),
+			Hex.toHexString(DefaultSerialization.getInstance().toDson(this, Output.ALL))
+		);
 	}
 
 	public String toInstructionsString() {

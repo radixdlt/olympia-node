@@ -555,7 +555,7 @@ public final class ConstraintMachine {
 			txn,
 			cmStore,
 			permissionLevel,
-			atom.getWitness(),
+			atom.computeHashToSign(),
 			atom.getSignature()
 		);
 
