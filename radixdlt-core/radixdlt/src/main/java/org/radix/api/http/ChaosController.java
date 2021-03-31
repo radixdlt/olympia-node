@@ -51,7 +51,7 @@ public final class ChaosController implements Controller {
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.put("/api/chaos/message-flooder", this::handleMessageFlood);
-		handler.post("/api/chaos/mempool-filler", this::handleMempoolFill);
+		handler.put("/api/chaos/mempool-filler", this::handleMempoolFill);
 	}
 
 	@VisibleForTesting

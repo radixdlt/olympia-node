@@ -58,7 +58,7 @@ public class ChaosControllerTest {
 		chaosController.configureRoutes(handler);
 
 		verify(handler).put(eq("/api/chaos/message-flooder"), any());
-		verify(handler).post(eq("/api/chaos/mempool-filler"), any());
+		verify(handler).put(eq("/api/chaos/mempool-filler"), any());
 	}
 
 	@Test
