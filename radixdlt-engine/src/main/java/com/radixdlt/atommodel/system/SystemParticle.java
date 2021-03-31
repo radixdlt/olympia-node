@@ -28,25 +28,25 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("radix.particles.system_particle")
+@SerializerId2("s")
 public final class SystemParticle extends Particle {
-	@JsonProperty("epoch")
+	@JsonProperty("e")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long epoch;
 
-	@JsonProperty("view")
+	@JsonProperty("v")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long view;
 
-	@JsonProperty("timestamp")
+	@JsonProperty("t")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long timestamp;
 
 	@JsonCreator
 	public SystemParticle(
-		@JsonProperty("epoch") long epoch,
-		@JsonProperty("view") long view,
-		@JsonProperty("timestamp") long timestamp
+		@JsonProperty("e") long epoch,
+		@JsonProperty("v") long view,
+		@JsonProperty("t") long timestamp
 	) {
 		this.epoch = epoch;
 		this.view = view;

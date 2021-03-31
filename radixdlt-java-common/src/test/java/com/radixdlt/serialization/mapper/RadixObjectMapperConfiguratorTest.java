@@ -55,13 +55,13 @@ public class RadixObjectMapperConfiguratorTest {
 		// a1 -> field content "1"
 		// ac -> field name "c"
 		// a5 -> field content "5"
-		// jserializer -> field name "serializer"
+		// bsz -> field name "bsz"
 		// vtest.property_ordering -> field content "test.property_ordering"
 		// ax -> field name "x"
 		// a4 -> field content "4"
 		// az -> field name "z"
 		// a2 -> field content "2"
-		assertEquals(">aaa3aba1aca5jserializervtest.property_orderingaxa4aza2~", toText(serialized));
+		assertEquals(">aaa3aba1aca5bszvtest.property_orderingaxa4aza2~", toText(serialized));
 	}
 
 	@Test
@@ -83,9 +83,9 @@ public class RadixObjectMapperConfiguratorTest {
 		// a4 -> field content "4"
 		// ag -> field name "g"
 		// a6 -> field content "6"
-		// jserializer -> field name "serializer"
+		// bsz -> field name "sz"
 		// x?test.extended_property_ordering -> field content "test.extended_property_ordering"
-		assertEquals(">aaa3aba2aca1afa4aga6jserializerx?test.extended_property_ordering~", toText(serialized));
+		assertEquals(">aaa3aba2aca1afa4aga6bszx?test.extended_property_ordering~", toText(serialized));
 	}
 
 	//Somewhat artificial transformation to keep output within printable range

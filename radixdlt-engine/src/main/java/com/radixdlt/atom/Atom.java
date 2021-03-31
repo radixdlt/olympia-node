@@ -44,7 +44,7 @@ import javax.annotation.concurrent.Immutable;
  * An atom to be processed by radix engine
  */
 @Immutable
-@SerializerId2("radix.atom")
+@SerializerId2("atom")
 public final class Atom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})

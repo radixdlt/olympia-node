@@ -17,38 +17,25 @@
 package org.radix.api.services;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.Pair;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.utils.RandomHasher;
 
-import java.util.Optional;
-
 import io.reactivex.rxjava3.core.Observable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import static com.radixdlt.serialization.DsonOutput.Output;
 
@@ -82,40 +69,5 @@ public class AtomsServiceTest {
 
 		assertNotNull(result);
 		verify(mempoolAddEventDispatcher).dispatch(any());
-	}
-
-	@Test
-	public void atomCanBeRetrieved() {
-		var atomAndId = createCommand();
-		var optionalAtom = Optional.of(atomAndId.getFirst());
-		var aid = atomAndId.getSecond();
-
-		when(store.get(aid)).thenReturn(optionalAtom);
-
-		var result = atomsService.getAtomByAtomId(aid);
-
-		assertFalse(result.isEmpty());
-
-		result.ifPresentOrElse(
-			jsonAtom -> {
-				assertEquals(":str:Test message", jsonAtom.getString("m"));
-				assertEquals("radix.atom", jsonAtom.getString("serializer"));
-			},
-			() -> fail("Expecting non-empty result")
-		);
-	}
-
-	private Pair<Atom, AID> createCommand() {
-		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var particle = new UniqueParticle("particle message", address);
-
-		var atom = TxLowLevelBuilder.newBuilder()
-			.up(particle)
-			.particleGroup()
-			.message("Test message")
-			.buildWithoutSignature();
-
-		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
-		return Pair.of(atom, new Command(dson).getId());
 	}
 }
