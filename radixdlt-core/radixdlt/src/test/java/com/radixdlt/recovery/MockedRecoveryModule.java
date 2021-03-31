@@ -93,4 +93,9 @@ public class MockedRecoveryModule extends AbstractModule {
 		return LedgerProof.genesis(accumulatorState, validatorSet);
 	}
 
+	@Provides
+	@LastProof
+	private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
+		return bftConfiguration.getVertexStoreState().getRootHeader();
+	}
 }

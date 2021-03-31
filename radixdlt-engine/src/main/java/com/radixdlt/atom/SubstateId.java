@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;

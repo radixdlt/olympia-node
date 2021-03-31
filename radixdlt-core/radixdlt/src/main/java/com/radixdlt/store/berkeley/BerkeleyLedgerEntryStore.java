@@ -64,7 +64,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.IOException;

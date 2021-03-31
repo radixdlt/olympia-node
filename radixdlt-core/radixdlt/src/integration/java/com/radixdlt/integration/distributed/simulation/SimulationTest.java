@@ -35,23 +35,8 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RegisteredValidators;
-import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.MockedCryptoModule;
@@ -62,11 +47,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.store.AtomIndex;
-import com.radixdlt.store.LastProof;
-import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
 import com.radixdlt.sync.SyncRunnerModule;
@@ -103,7 +84,6 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
-import org.apache.commons.math3.analysis.function.Abs;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -533,69 +513,8 @@ public class SimulationTest {
 			// Persistence
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
-				modules.add(new AbstractModule() {
-					private LedgerProof storeGenesis(
-						RadixEngine<LedgerAndBFTProof> radixEngine,
-						List<Atom> genesisAtoms,
-						ValidatorSetBuilder validatorSetBuilder,
-						Serialization serialization,
-						LedgerAccumulator ledgerAccumulator
-					) throws RadixEngineException {
-						var branch = radixEngine.transientBranch();
-						branch.execute(genesisAtoms, PermissionLevel.SYSTEM);
-						final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
-							branch.getComputedState(RegisteredValidators.class),
-							branch.getComputedState(Stakes.class)
-						);
-						radixEngine.deleteBranches();
-
-						AccumulatorState accumulatorState = null;
-
-						for (var genesisAtom : genesisAtoms) {
-							var payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
-							var command = new Command(payload);
-							if (accumulatorState == null) {
-								accumulatorState = new AccumulatorState(0, command.getId().asHashCode());
-							} else {
-								accumulatorState = ledgerAccumulator.accumulate(accumulatorState, command.getId().asHashCode());
-							}
-						}
-
-						var genesisProof = LedgerProof.genesis(
-							accumulatorState,
-							genesisValidatorSet
-						);
-						if (!genesisProof.isEndOfEpoch()) {
-							throw new IllegalStateException("Genesis must be end of epoch");
-						}
-
-						radixEngine.execute(genesisAtoms, LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
-						return genesisProof;
-					}
-
-					@Provides
-					@Singleton
-					@LastProof
-					LedgerProof lastStoredProof(
-						RadixEngine<LedgerAndBFTProof> radixEngine,
-						@Genesis List<Atom> genesisAtoms,
-						Serialization serialization,
-						ValidatorSetBuilder validatorSetBuilder,
-						LedgerAccumulator ledgerAccumulator
-					) throws RadixEngineException {
-						return storeGenesis(radixEngine, genesisAtoms, validatorSetBuilder, serialization, ledgerAccumulator);
-					}
-				});
-			} else {
-
-				modules.add(new AbstractModule() {
-					@Provides
-					@LastProof
-					private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
-						return bftConfiguration.getVertexStoreState().getRootHeader();
-					}
-				});
 			}
+
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
 

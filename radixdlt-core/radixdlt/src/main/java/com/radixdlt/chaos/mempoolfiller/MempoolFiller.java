@@ -110,7 +110,7 @@ public final class MempoolFiller {
 			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
 			if (u.enabled() == enabled) {
-				u.onError("Already " + ((enabled) ? "enabled." : "disabled."));
+				u.onError("Already " + (enabled ? "enabled." : "disabled."));
 				return;
 			}
 

@@ -27,6 +27,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -70,5 +71,21 @@ public final class ParsedTransaction {
 			.filter(ParsedInstruction::isUp)
 			.map(ParsedInstruction::getSubstate)
 			.map(Substate::getParticle);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(atom, instructions);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ParsedTransaction)) {
+			return false;
+		}
+
+		var other = (ParsedTransaction) o;
+		return Objects.equals(this.atom, other.atom)
+			&& Objects.equals(this.instructions, other.instructions);
 	}
 }

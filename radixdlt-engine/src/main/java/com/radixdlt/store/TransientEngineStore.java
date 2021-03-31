@@ -1,6 +1,5 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.ParsedTransaction;

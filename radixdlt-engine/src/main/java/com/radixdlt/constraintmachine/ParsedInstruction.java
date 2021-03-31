@@ -80,12 +80,14 @@ public final class ParsedInstruction {
 
 		ParsedInstruction parsedInstruction = (ParsedInstruction) obj;
 
-		return Objects.equals(this.substate, parsedInstruction.substate) && Objects.equals(this.spin, parsedInstruction.spin);
+		return Objects.equals(this.instruction, parsedInstruction.instruction)
+			&& Objects.equals(this.substate, parsedInstruction.substate)
+			&& Objects.equals(this.spin, parsedInstruction.spin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(substate, spin);
+		return Objects.hash(instruction, substate, spin);
 	}
 
 	@Override

@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
