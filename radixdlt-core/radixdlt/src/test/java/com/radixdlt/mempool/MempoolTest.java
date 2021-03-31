@@ -23,9 +23,9 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -36,16 +36,13 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -68,8 +65,7 @@ public class MempoolTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject @Self private BFTNode self;
-	@Inject @Genesis private List<Atom> genesisAtoms;
-	@Inject private Hasher hasher;
+	@Inject @Genesis private List<Txn> genesisTxns;
 	@Inject private DeterministicProcessor processor;
 	@Inject private DeterministicNetwork network;
 	@Inject private RadixEngineStateComputer stateComputer;
@@ -98,7 +94,7 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static Atom createAtom(ECKeyPair keyPair, int numParticles) {
+	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
@@ -115,15 +111,13 @@ public class MempoolTest {
 	}
 
 	private static Command createCommand(ECKeyPair keyPair, int numParticles) {
-		Atom atom = createAtom(keyPair, numParticles);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return new Command(payload);
+		Txn txn = createTxn(keyPair, numParticles);
+		return new Command(txn.getPayload());
 	}
 
 	private static Command createCommand(ECKeyPair keyPair) {
-		Atom atom = createAtom(keyPair, 1);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return new Command(payload);
+		Txn txn = createTxn(keyPair, 1);
+		return new Command(txn.getPayload());
 	}
 
 	@Test
@@ -241,8 +235,8 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command command = createCommand(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -266,8 +260,8 @@ public class MempoolTest {
 		// Act
 		Command command2 = createCommand(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
@@ -289,8 +283,8 @@ public class MempoolTest {
 		// Act
 		Command command3 = createCommand(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
 		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
 		stateComputer.commit(commandsAndProof, null);
 

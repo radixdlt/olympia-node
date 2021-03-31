@@ -45,6 +45,13 @@ public final class SubstateId {
 		return AID.from(secondHash.asBytes());
 	}
 
+	public static SubstateId ofSubstate(AID txId, int index) {
+		byte[] id = new byte[AID.BYTES + Integer.BYTES];
+		txId.copyTo(id, 0);
+		Ints.copyTo(index, id, AID.BYTES);
+		return new SubstateId(id);
+	}
+
 	public static SubstateId ofSubstate(Atom atom, int index) {
 		byte[] id = new byte[AID.BYTES + Integer.BYTES];
 		atomIdOf(atom).copyTo(id, 0);

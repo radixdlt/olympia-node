@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.atom.Txn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -40,7 +41,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -111,7 +111,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	@Inject
 	@Genesis
-	private List<Atom> genesisAtoms;
+	private List<Txn> genesisTxns;
 
 	private int lastNodeToCommit;
 
@@ -197,7 +197,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
+					bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);

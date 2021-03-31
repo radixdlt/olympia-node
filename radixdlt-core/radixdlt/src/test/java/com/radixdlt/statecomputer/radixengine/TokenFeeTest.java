@@ -27,9 +27,9 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -78,7 +78,7 @@ public class TokenFeeTest {
 
 	@Inject
 	@Genesis
-	private List<Atom> genesis;
+	private List<Txn> genesisTxns;
 
 	@Inject
 	@Named("magic")

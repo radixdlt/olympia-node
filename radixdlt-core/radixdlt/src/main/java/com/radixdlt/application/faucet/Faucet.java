@@ -33,7 +33,6 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
@@ -95,9 +94,8 @@ public final class Faucet {
 		);
 
 		builderMaybe.ifPresent(builder -> {
-			var atom = builder.signAndBuild(hashSigner::sign);
-			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-			var command = new Command(payload);
+			var txn = builder.signAndBuild(hashSigner::sign);
+			var command = new Command(txn.getPayload());
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 			request.onSuccess(command.getId());
 		});

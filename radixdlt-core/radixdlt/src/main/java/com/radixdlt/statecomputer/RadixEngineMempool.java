@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.DataPointer;
@@ -37,7 +38,6 @@ import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Pair;
 
@@ -77,13 +77,6 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 
 	@Override
 	public void add(Command command) throws MempoolRejectedException {
-		Atom atom;
-		try {
-			atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
-		} catch (DeserializeException e) {
-			throw new MempoolRejectedException("Deserialize failure.");
-		}
-
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
@@ -97,7 +90,7 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 		final List<ParsedTransaction> parsedTransactions;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			parsedTransactions = checker.execute(List.of(atom));
+			parsedTransactions = checker.execute(List.of(Txn.create(command.getPayload())));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);
@@ -105,7 +98,7 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(command, atom);
+		this.data.put(command, parsedTransactions.get(0).getAtom());
 
 		for (var instruction : parsedTransactions.get(0).instructions()) {
 			if (instruction.getSpin() == Spin.DOWN) {
@@ -129,7 +122,7 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 	public List<Pair<Command, Exception>> committed(List<ParsedTransaction> transactions) {
 		final var removed = new ArrayList<Pair<Command, Exception>>();
 		final var atomIds = transactions.stream()
-			.map(ParsedTransaction::getAtomId)
+			.map(p -> p.getTxn().getId())
 			.collect(Collectors.toSet());
 
 		transactions.stream()
@@ -148,7 +141,7 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove))) {
 						removed.add(Pair.of(cmd, new RadixEngineMempoolException(
 							new RadixEngineException(
-								toRemove,
+								Txn.create(cmd.getPayload()),
 								RadixEngineErrorCode.CM_ERROR,
 								"Mempool evicted",
 								DataPointer.ofAtom()

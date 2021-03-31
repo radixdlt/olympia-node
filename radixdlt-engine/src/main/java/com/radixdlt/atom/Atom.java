@@ -76,7 +76,7 @@ public final class Atom {
 	}
 
 	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(this.instructions.stream());
+		return computeHashToSignFromBytes(getInstructions().stream());
 	}
 
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {

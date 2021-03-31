@@ -25,10 +25,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.ParsedTransaction;
@@ -36,15 +33,12 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Ints;
-import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +49,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 	}
 
-	private ParsedTransaction toParsed(Atom atom, InMemoryEngineStore<LedgerAndBFTProof> store) {
+	private ParsedTransaction toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
+		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
 
 		var instructions = new ArrayList<ParsedInstruction>();
@@ -97,28 +92,27 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			instructions.add(parsed);
 		}
 
-		return new ParsedTransaction(atom, instructions);
+		return new ParsedTransaction(txn, atom, instructions);
 	}
 
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAndBFTProof> engineStore(
-		@Genesis List<Atom> genesisAtoms,
-		Hasher hasher,
+		@Genesis List<Txn> genesisTxns,
 		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
 		var inMemoryEngineStore = new InMemoryEngineStore<LedgerAndBFTProof>();
-		for (var genesisAtom : genesisAtoms) {
-			byte[] payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
-			Command command = new Command(payload);
-			BFTValidatorSet validatorSet = BFTValidatorSet.from(genesisValidatorKeys.stream()
-					.map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
-			if (!inMemoryEngineStore.containsAtom(genesisAtom)) {
-				var txn = inMemoryEngineStore.createTransaction();
-				var instruction = toParsed(genesisAtom, inMemoryEngineStore);
-				inMemoryEngineStore.storeAtom(txn, instruction);
-				txn.commit();
+		for (var genesisTxn : genesisTxns) {
+			if (!inMemoryEngineStore.containsTxn(genesisTxn.getId())) {
+				try {
+					var txn = inMemoryEngineStore.createTransaction();
+					var instruction = toParsed(genesisTxn, inMemoryEngineStore);
+					inMemoryEngineStore.storeAtom(txn, instruction);
+					txn.commit();
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
 			}
 		}
 		return inMemoryEngineStore;

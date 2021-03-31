@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
@@ -25,6 +24,7 @@ import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	private final Object lock = new Object();
 	private final Map<SubstateId, ParsedInstruction> storedParticles = new HashMap<>();
 	private final List<Pair<Substate, Spin>> inOrderParticles = new ArrayList<>();
-	private final Set<Atom> atoms = new HashSet<>();
+	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
 	public void storeAtom(Transaction txn, ParsedTransaction parsed) {
@@ -49,7 +49,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 				inOrderParticles.add(Pair.of(instruction.getSubstate(), instruction.getSpin()));
 			}
 
-			atoms.add(parsed.getAtom());
+			txnIds.add(parsed.getTxn().getId());
 		}
 	}
 
@@ -58,8 +58,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		 // No-op
 	}
 
-	public boolean containsAtom(Atom atom) {
-		return atoms.contains(atom);
+	public boolean containsTxn(AID txnId) {
+		return txnIds.contains(txnId);
 	}
 
 	@Override

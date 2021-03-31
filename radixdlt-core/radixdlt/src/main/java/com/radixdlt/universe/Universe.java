@@ -18,7 +18,7 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -34,6 +34,7 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @SerializerId2("radix.universe")
 @SerializeWithHid
@@ -49,7 +50,7 @@ public class Universe {
 		private UniverseType type;
 		private Long timestamp;
 		private ECPublicKey creator;
-		private List<Atom> atoms;
+		private List<Txn> txns;
 
 		private Builder() {
 			// Nothing to do here
@@ -132,12 +133,12 @@ public class Universe {
 		/**
 		 * Adds an atom to the genesis atom list.
 		 *
-		 * @param genesisAtoms The atoms to add to the genesis atom list.
+		 * @param genesisTxns The atoms to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder setAtoms(List<Atom> genesisAtoms) {
-			Objects.requireNonNull(genesisAtoms);
-			this.atoms = genesisAtoms;
+		public Builder setAtoms(List<Txn> genesisTxns) {
+			Objects.requireNonNull(genesisTxns);
+			this.txns = genesisTxns;
 			return this;
 		}
 
@@ -216,7 +217,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private List<Atom> genesis;
+	private List<byte[]> genesis;
 
 	private ECPublicKey creator;
 
@@ -237,7 +238,9 @@ public class Universe {
 		this.type = builder.type;
 		this.timestamp = builder.timestamp.longValue();
 		this.creator = builder.creator;
-		this.genesis = builder.atoms;
+		this.genesis = builder.txns == null
+			? List.of()
+			: builder.txns.stream().map(Txn::getPayload).collect(Collectors.toList());
 	}
 
 	/**
@@ -319,8 +322,8 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public List<Atom> getGenesis() {
-		return genesis;
+	public List<Txn> getGenesis() {
+		return genesis.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	/**

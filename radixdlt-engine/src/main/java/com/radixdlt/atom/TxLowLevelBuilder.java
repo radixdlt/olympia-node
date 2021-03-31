@@ -19,9 +19,11 @@
 package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
 import java.nio.charset.StandardCharsets;
@@ -120,19 +122,35 @@ public final class TxLowLevelBuilder {
 		return Atom.computeHashToSign(instructions);
 	}
 
-	public Atom buildWithoutSignature() {
+	private static Txn atomToTxn(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return Txn.create(payload);
+	}
+
+	public Atom buildAtomWithoutSignature() {
 		return Atom.create(
 			instructions,
 			null
 		);
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
+	public Txn buildWithoutSignature() {
+		var atom = Atom.create(
+			instructions,
+			null
+		);
+
+		return atomToTxn(atom);
+	}
+
+	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
 		var hashToSign = computeHashToSign();
 		var signature = signatureProvider.apply(hashToSign);
-		return Atom.create(
+		var atom = Atom.create(
 			instructions,
 			signature
 		);
+
+		return atomToTxn(atom);
 	}
 }

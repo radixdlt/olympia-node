@@ -694,36 +694,37 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public Atom signAndBuildRemoteSubstateOnly(
+	public Txn signAndBuildRemoteSubstateOnly(
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
-		var atom = lowLevelBuilder.signAndBuild(signer);
+		var txn = lowLevelBuilder.signAndBuild(signer);
 		upSubstateConsumer.accept(this::remoteSubstates);
-		return atom;
+		return txn;
 	}
 
-	public Atom signAndBuild(
+	public Txn signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
-		var atom = lowLevelBuilder.signAndBuild(signer);
+		var txn = lowLevelBuilder.signAndBuild(signer);
 		SubstateStore upSubstate = c -> Iterables.concat(
 			lowLevelBuilder.localUpSubstate().stream()
 				.filter(l -> c.isInstance(l.getParticle()))
-				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
+				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
 				.collect(Collectors.toList()),
 			remoteSubstates(c)
 		);
 		upSubstateConsumer.accept(upSubstate);
-		return atom;
+
+		return txn;
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {
+	public Txn signAndBuild(Function<HashCode, ECDSASignature> signer) {
 		return lowLevelBuilder.signAndBuild(signer);
 	}
 
-	public Atom buildWithoutSignature() {
+	public Txn buildWithoutSignature() {
 		return lowLevelBuilder.buildWithoutSignature();
 	}
 }

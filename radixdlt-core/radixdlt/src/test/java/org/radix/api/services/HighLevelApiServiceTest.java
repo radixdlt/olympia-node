@@ -16,6 +16,7 @@ package org.radix.api.services;/*
  */
 
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class HighLevelApiServiceTest {
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
-	private Atom genesisAtom;
+	private Txn genesisAtom;
 	private HighLevelApiService highLevelApiService;
 
 	@Before

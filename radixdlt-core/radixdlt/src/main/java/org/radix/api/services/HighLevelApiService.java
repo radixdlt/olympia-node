@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
@@ -47,7 +48,7 @@ public class HighLevelApiService {
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis List<Atom> genesisAtoms
+		@Genesis List<Txn> genesisAtoms
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
@@ -78,8 +79,15 @@ public class HighLevelApiService {
 			   : Result.ok(definition);
 	}
 
-	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Atom> genesisAtoms) {
+	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Txn> genesisAtoms) {
 		return genesisAtoms.stream()
+			.map(txn -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
 			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {

@@ -23,13 +23,9 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -38,14 +34,12 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 /**
@@ -91,13 +85,6 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		var particleClasses = new ArrayList<Class<? extends Particle>>();
-		particleClasses.add(RegisteredValidatorParticle.class);
-		particleClasses.add(UnregisteredValidatorParticle.class);
-		if (feeTable != null) {
-			particleClasses.add(TransferrableTokensParticle.class);
-		}
-
 		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStoreCache(
 			substateStore -> {
 				var builder = TxBuilder.newBuilder(self, substateStore);
@@ -121,9 +108,8 @@ public final class ValidatorRegistrator {
 		);
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
 		txBuilderMaybe.ifPresent(txBuilder -> {
-			var atom = txBuilder.signAndBuild(hashSigner::sign);
-			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-			var command = new Command(payload);
+			var txn = txBuilder.signAndBuild(hashSigner::sign);
+			var command = new Command(txn.getPayload());
 			registration.onSuccess(command.getId());
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 		});

@@ -19,7 +19,7 @@
 package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ParsedTransaction;
@@ -29,8 +29,6 @@ import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.UInt256;
 
 import javax.inject.Inject;
@@ -46,23 +44,20 @@ public class TokenFeeChecker implements PostParsedChecker {
 
 	private final FeeTable feeTable;
 	private final RRI feeTokenRri;
-	private final Serialization serialization;
 
 	@Inject
 	public TokenFeeChecker(
 		FeeTable feeTable,
-		@NativeToken RRI feeTokenRri,
-		Serialization serialization
+		@NativeToken RRI feeTokenRri
 	) {
 		this.feeTable = feeTable;
 		this.feeTokenRri = feeTokenRri;
-		this.serialization = serialization;
 	}
 
 	@Override
-	public Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
-		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
-		if (totalSize > MAX_ATOM_SIZE) {
+	public Result check(Txn txn, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
+		final int totalSize = txn.getPayload().length;
+		if (txn.getPayload().length > MAX_ATOM_SIZE) {
 			return Result.error("atom too big: " + totalSize);
 		}
 
@@ -78,7 +73,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 
 		// FIXME: This logic needs to move into the constraint machine
 		Set<Particle> outputParticles = parsedTransaction.upSubstates().collect(Collectors.toSet());
-		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, totalSize);
+		UInt256 requiredMinimumFee = feeTable.feeFor(txn, outputParticles, totalSize);
 		UInt256 feePaid = computeFeePaid(parsedTransaction);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format(

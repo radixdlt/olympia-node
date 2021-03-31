@@ -23,6 +23,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -43,9 +44,6 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -54,7 +52,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -206,12 +203,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate.toInstructionsString()),	e
+				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate),	e
 			);
 		}
-		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
-			command,
+			new Command(systemUpdate.getPayload()),
 			txs.get(0),
 			PermissionLevel.SUPER_USER
 		);
@@ -229,9 +225,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (next != null) {
 			final List<ParsedTransaction> txs;
 			try {
-				var atom = mapCommand(next);
-				txs = branch.execute(List.of(atom));
-			} catch (RadixEngineException | DeserializeException e) {
+				txs = branch.execute(List.of(Txn.create(next.getPayload())));
+			} catch (RadixEngineException e) {
 				errorBuilder.put(next, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
 				return;
@@ -251,12 +246,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			try {
 				transientBranch.execute(
-					List.of(radixEngineCommand.transaction.getAtom()),
+					List.of(Txn.create(radixEngineCommand.command.getPayload())),
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Re-execution of already prepared atom failed: "
-					+ radixEngineCommand.transaction.getAtomId(), e);
+					+ radixEngineCommand.transaction.getTxn().getId(), e);
 			}
 		}
 
@@ -272,23 +267,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private Atom mapCommand(Command command) throws DeserializeException {
-		return serialization.fromDson(command.getPayload(), Atom.class);
-	}
-
 	private List<ParsedTransaction> commitInternal(
 		VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
-		final var atomsToCommit = new ArrayList<Atom>();
-		try {
-			for (var cmd : verifiedCommandsAndProof.getCommands()) {
-				var atom = this.mapCommand(cmd);
-				atomsToCommit.add(atom);
-			}
-		} catch (DeserializeException e) {
-			throw new ByzantineQuorumException("Trying to commit bad atom", e);
-		}
-
+		final var atomsToCommit = verifiedCommandsAndProof.getCommands().stream()
+			.map(c -> Txn.create(c.getPayload()))
+			.collect(Collectors.toList());
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(
 			verifiedCommandsAndProof.getProof(),
 			vertexStoreState

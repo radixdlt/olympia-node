@@ -22,13 +22,13 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
@@ -72,7 +72,7 @@ public final class UniqueTest {
 		);
 	}
 
-	private Atom uniqueAtom(ECKeyPair keyPair) {
+	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var rri = RRI.of(address, "test");
 		var rriParticle = new RRIParticle(rri);
@@ -89,11 +89,11 @@ public final class UniqueTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var committedAtom0 = uniqueAtom(keyPair);
+		var committedAtom0 = uniqueTxn(keyPair);
 		sut.execute(List.of(committedAtom0));
 
 		// Act/Assert
-		var committedAtom1 = uniqueAtom(keyPair);
+		var committedAtom1 = uniqueTxn(keyPair);
 		assertThatThrownBy(() -> sut.execute(List.of(committedAtom1))).isInstanceOf(RadixEngineException.class);
 	}
 }
