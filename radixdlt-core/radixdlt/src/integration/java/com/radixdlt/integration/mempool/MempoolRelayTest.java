@@ -184,7 +184,7 @@ public class MempoolRelayTest {
 					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 100L, 100L, 100L, 10));
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 100L, 10L, 10L, 10));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}
