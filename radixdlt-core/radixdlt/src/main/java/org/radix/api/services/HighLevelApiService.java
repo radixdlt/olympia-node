@@ -20,6 +20,7 @@ package org.radix.api.services;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
@@ -79,7 +80,7 @@ public class HighLevelApiService {
 		return genesisAtoms.stream().flatMap(Atom::bootUpInstructions)
 			.map(i -> {
 				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Cannot deserialize genesis");
 				}

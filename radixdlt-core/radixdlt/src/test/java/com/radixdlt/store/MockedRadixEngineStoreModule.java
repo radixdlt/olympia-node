@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -68,10 +69,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			final SubstateId substateId;
 			try {
 				if (instruction.getMicroOp() == REInstruction.REOp.UP) {
-					particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
+					particle = SubstateSerializer.deserialize(instruction.getData());
 					substateId = SubstateId.ofSubstate(atom, i);
 				} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
-					particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
+					particle = SubstateSerializer.deserialize(instruction.getData());
 					substateId = SubstateId.ofVirtualSubstate(instruction.getData());
 				} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
 					substateId = SubstateId.fromBytes(instruction.getData());
@@ -80,7 +81,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 				} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
 					int index = Ints.fromByteArray(instruction.getData());
 					var dson = atom.getInstructions().get(index).getData();
-					particle = DefaultSerialization.getInstance().fromDson(dson, Particle.class);
+					particle = SubstateSerializer.deserialize(dson);
 					substateId = SubstateId.ofSubstate(atom, index);
 				} else {
 					throw new IllegalStateException();

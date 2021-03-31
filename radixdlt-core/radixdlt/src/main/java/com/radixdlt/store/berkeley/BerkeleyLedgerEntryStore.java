@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.ParsedTransaction;
@@ -278,7 +279,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			while (status == SUCCESS) {
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
-					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					var particle = SubstateSerializer.deserialize(particleBytes);
 					var substateId = SubstateId.fromBytes(key.getData());
 					var substate = Substate.create(particle, substateId);
 					var instruction = REInstruction.create(REInstruction.REOp.UP.opCode(), particleBytes);
@@ -287,6 +288,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 				status = cursor.getNext(key, value, DEFAULT);
 			}
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Unable to deserialize substate");
 		}
 	}
 
@@ -470,10 +473,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				// TODO: Remove memcpy
 				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				var rawSubstate = deserializeOrElseFail(serializedParticle, Particle.class);
+				var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
 				substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
 			}
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Unable to deserialize substate");
 		}
 
 		return substates;
@@ -597,7 +602,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		System.arraycopy(e.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
 
 		try {
-			return Optional.of(serialization.fromDson(serializedParticle, Particle.class));
+			return Optional.of(SubstateSerializer.deserialize(serializedParticle));
 		} catch (DeserializeException ex) {
 			throw new IllegalStateException("Unable to deserialize particle");
 		}

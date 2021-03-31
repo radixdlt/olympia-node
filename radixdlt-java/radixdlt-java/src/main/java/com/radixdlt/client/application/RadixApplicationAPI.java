@@ -61,8 +61,6 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
-import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
-import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -134,8 +132,6 @@ public class RadixApplicationAPI {
 		return new RadixApplicationAPIBuilder()
 			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
-			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
-			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addReducer(new StakedTokenBalanceReducer())

@@ -19,18 +19,18 @@
 package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -40,6 +40,7 @@ public final class TxLowLevelBuilder {
 	private String message;
 	private final List<REInstruction> instructions = new ArrayList<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
+	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 
 	TxLowLevelBuilder() {
 	}
@@ -53,13 +54,17 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public Set<SubstateId> remoteDownSubstate() {
+		return remoteDownSubstate;
+	}
+
 	public List<LocalSubstate> localUpSubstate() {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		var particleDson = SubstateSerializer.serialize(particle);
 		var nextIndex = this.instructions.size();
 		this.instructions.add(
 			REInstruction.create(
@@ -73,13 +78,14 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		var particleBytes = SubstateSerializer.serialize(particle);
 		this.instructions.add(
 			REInstruction.create(
 				REInstruction.REOp.VDOWN.opCode(),
-				particleDson
+				particleBytes
 			)
 		);
+		remoteDownSubstate.add(SubstateId.ofVirtualSubstate(particleBytes));
 		return this;
 	}
 
@@ -95,6 +101,7 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
 		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
+		remoteDownSubstate.add(substateId);
 		return this;
 	}
 

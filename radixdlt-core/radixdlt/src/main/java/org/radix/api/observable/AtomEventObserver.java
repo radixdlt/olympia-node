@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -151,7 +152,7 @@ public class AtomEventObserver {
 					if (atom.bootUpInstructions()
 						.map(i -> {
 							try {
-								return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+								return SubstateSerializer.deserialize(i.getData());
 							} catch (DeserializeException e) {
 								throw new IllegalStateException();
 							}

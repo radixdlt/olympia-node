@@ -20,10 +20,10 @@ package com.radixdlt.constraintmachine;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
@@ -411,7 +411,7 @@ public final class ConstraintMachine {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+					nextParticle = SubstateSerializer.deserialize(inst.getData());
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -437,7 +437,7 @@ public final class ConstraintMachine {
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+					nextParticle = SubstateSerializer.deserialize(inst.getData());
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
@@ -451,7 +451,7 @@ public final class ConstraintMachine {
 						staticCheckResult.getErrorMessage()
 					));
 				}
-				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
+				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(inst.getData()));
 				var stateError = validationState.virtualShutdown(substate);
 				if (stateError.isPresent()) {
 					return Optional.of(new CMError(dp, stateError.get(), validationState));

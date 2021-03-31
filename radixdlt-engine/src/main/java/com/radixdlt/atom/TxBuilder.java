@@ -41,10 +41,8 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -57,35 +55,32 @@ import java.util.stream.StreamSupport;
  */
 public final class TxBuilder {
 	private final TxLowLevelBuilder lowLevelBuilder;
-	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
 	private final SubstateStore remoteSubstate;
 
 	private TxBuilder(
 		RadixAddress address,
-		Set<SubstateId> downVirtualParticles,
 		SubstateStore remoteSubstate
 	) {
 		this.address = address;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
-		this.downParticles = new HashSet<>(downVirtualParticles);
 		this.remoteSubstate = remoteSubstate;
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address, SubstateStore remoteSubstate) {
-		return new TxBuilder(address, Set.of(), remoteSubstate);
+		return new TxBuilder(address, remoteSubstate);
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
-		return new TxBuilder(address, Set.of(), c -> List.of());
+		return new TxBuilder(address, c -> List.of());
 	}
 
 	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
-		return new TxBuilder(null, Set.of(), remoteSubstate);
+		return new TxBuilder(null, remoteSubstate);
 	}
 
 	public static TxBuilder newSystemBuilder() {
-		return new TxBuilder(null, Set.of(), c -> List.of());
+		return new TxBuilder(null, c -> List.of());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -102,12 +97,10 @@ public final class TxBuilder {
 
 	private void virtualDown(Particle particle) {
 		lowLevelBuilder.virtualDown(particle);
-		downParticles.add(SubstateId.ofVirtualSubstate(particle));
 	}
 
 	private void down(SubstateId substateId) {
 		lowLevelBuilder.down(substateId);
-		downParticles.add(substateId);
 	}
 
 	private void localDown(int index) {
@@ -117,7 +110,7 @@ public final class TxBuilder {
 	private Iterable<Substate> remoteSubstates(Class<? extends Particle> particleClass) {
 		return Iterables.filter(
 			remoteSubstate.index(particleClass),
-			s -> !downParticles.contains(s.getId())
+			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		);
 	}
 

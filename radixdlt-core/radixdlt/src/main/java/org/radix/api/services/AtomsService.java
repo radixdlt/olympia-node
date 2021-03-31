@@ -19,6 +19,7 @@ package org.radix.api.services;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import org.json.JSONException;
@@ -187,7 +188,7 @@ public class AtomsService {
 			var indicies = atom.bootUpInstructions()
 				.map(i -> {
 					try {
-						return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						return SubstateSerializer.deserialize(i.getData());
 					} catch (DeserializeException e) {
 						throw new IllegalStateException();
 					}

@@ -21,11 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
@@ -50,7 +49,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::bootUpInstructions)
 			.map(i -> {
 				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}
