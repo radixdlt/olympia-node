@@ -23,11 +23,11 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
 import io.reactivex.Observable;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -76,7 +76,7 @@ public interface AtomStore {
 	 * @param uuid uuid of staged particles to include
 	 * @return a stream of all up particles of the current local view
 	 */
-	Stream<Particle> getUpParticles(RadixAddress address, @Nullable String uuid);
+	Stream<Substate> getUpParticles(RadixAddress address, @Nullable String uuid);
 
 	/**
 	 * Adds the particle group to the staging area for the given uuid
@@ -94,7 +94,7 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	AtomBuilder getStagedAndClear(String uuid);
+	TxLowLevelBuilder getStagedAndClear(String uuid);
 
 	/**
 	 * Retrieves all staged particle groups without clearing the staging area
@@ -104,5 +104,5 @@ public interface AtomStore {
 	 * @param uuid uuid to retrieve the staged particle groups for
 	 * @return all staged particle groups in the order they were staged
 	 */
-	AtomBuilder getStaged(String uuid);
+	TxLowLevelBuilder getStaged(String uuid);
 }

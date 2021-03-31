@@ -20,27 +20,32 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAtom;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolAtom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -53,20 +58,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
-@Singleton
-public final class RadixEngineMempool implements Mempool<Atom> {
-
+public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 	private final ConcurrentHashMap<Command, MempoolAtom> data = new ConcurrentHashMap<>();
-	private final Map<CMMicroInstruction, Set<Command>> particleIndex = new HashMap<>();
+	private final Map<SubstateId, Set<Command>> particleIndex = new HashMap<>();
 	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
+	private EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
 
 	@Inject
 	public RadixEngineMempool(
@@ -103,9 +105,10 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getId()));
 		}
 
+		final List<ParsedTransaction> parsedTransactions;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			checker.execute(List.of(atom));
+			parsedTransactions = checker.execute(List.of(atom));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);
@@ -115,35 +118,56 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 		this.data.put(command, MempoolAtom.create(atom, System.currentTimeMillis(), Optional.empty()));
 
-		atom.uniqueInstructions()
-			.forEach(i -> particleIndex.merge(i, Set.of(command), Sets::union));
+		for (var instruction : parsedTransactions.get(0).instructions()) {
+			if (instruction.getSpin() == Spin.DOWN) {
+				var substateId = instruction.getSubstate().getId();
+				particleIndex.merge(substateId, Set.of(command), Sets::union);
+			}
+		}
 
 		updateCounts();
 	}
 
+	// Hack, remove later
+	private static AID atomIdOf(Atom atom) {
+		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		var firstHash = HashUtils.sha256(dson);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return AID.from(secondHash.asBytes());
+	}
+
 	@Override
-	public List<Pair<Command, Exception>> committed(List<Atom> atoms) {
-		final List<Pair<Command, Exception>> removed = new ArrayList<>();
-		final Set<Atom> atomsSet = new HashSet<>(atoms);
-		atoms.forEach(atom -> atom.uniqueInstructions()
-			.flatMap(p -> {
-				Set<Command> cmds = particleIndex.remove(p);
-				return cmds != null ? cmds.stream() : Stream.empty();
-			}).forEach(cmd -> {
-				var toRemove = data.remove(cmd);
-				// TODO: Cleanup
-				if (toRemove != null && !atomsSet.contains(toRemove)) {
-					removed.add(Pair.of(cmd, new RadixEngineMempoolException(
-						new RadixEngineException(
-							toRemove.getAtom(),
-							RadixEngineErrorCode.CM_ERROR,
-							"Mempool evicted",
-							DataPointer.ofAtom()
-						)
-					)));
+	public List<Pair<Command, Exception>> committed(List<ParsedTransaction> transactions) {
+		final var removed = new ArrayList<Pair<Command, Exception>>();
+		final var atomIds = transactions.stream()
+			.map(ParsedTransaction::getAtomId)
+			.collect(Collectors.toSet());
+
+		transactions.stream()
+			.flatMap(t -> t.instructions().stream())
+			.filter(i -> i.getSpin() == Spin.DOWN)
+			.forEach(instruction -> {
+				var substateId = instruction.getSubstate().getId();
+				Set<Command> cmds = particleIndex.remove(substateId);
+				if (cmds == null) {
+					return;
 				}
-			})
-		);
+
+				for (var cmd : cmds) {
+					var toRemove = data.remove(cmd).getAtom();
+					// TODO: Cleanup
+					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove))) {
+						removed.add(Pair.of(cmd, new RadixEngineMempoolException(
+							new RadixEngineException(
+								toRemove,
+								RadixEngineErrorCode.CM_ERROR,
+								"Mempool evicted",
+								DataPointer.ofAtom()
+							)
+						)));
+					}
+				}
+			});
 
 		updateCounts();
 		return removed;
@@ -151,15 +175,12 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<Command> getCommands(int count, Set<Command> prepared) {
+	public List<Command> getCommands(int count, List<ParsedTransaction> prepared) {
 		var copy = new HashSet<>(data.keySet());
 		prepared.stream()
-			.map(data::get)
-			.filter(Objects::nonNull)
-			.map(MempoolAtom::getAtom)
-			.flatMap(Atom::uniqueInstructions)
-			.distinct()
-			.flatMap(i -> particleIndex.getOrDefault(i, Set.of()).stream())
+			.flatMap(t -> t.instructions().stream())
+			.filter(i -> i.getSpin() == Spin.DOWN)
+			.flatMap(i -> particleIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
 
@@ -168,7 +189,6 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
 		return ev -> {
-			System.out.println("Mempool relay trigger!");
 			final var now = System.currentTimeMillis();
 			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
 			final var commandsToRelay = this.data
@@ -191,8 +211,8 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 	}
 
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
+		this.counters.set(CounterType.MEMPOOL_COUNT, this.data.size());
+		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
 	}
 
 	@Override

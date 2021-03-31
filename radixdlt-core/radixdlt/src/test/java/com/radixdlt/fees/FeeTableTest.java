@@ -21,16 +21,12 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -55,45 +51,12 @@ public class FeeTableTest {
 	}
 
 	@Test
-	public void testFeeForAtomNotMinimum() {
-		FeeTable ft = get();
-		var atom = Atom.newBuilder()
-			.spinUp(makeParticle("test message 1"))
-			.particleGroup()
-			.spinUp(makeParticle("test message 2"))
-			.particleGroup()
-			.buildWithoutSignature();
-
-		UInt256 fee = ft.feeFor(atom, atom.upParticles().collect(ImmutableSet.toImmutableSet()), 0);
-		assertEquals(UInt256.SIX, fee);
-	}
-
-	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		AtomBuilder a = Atom.newBuilder();
-		Atom ca = a.buildWithoutSignature();
-		UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
+		Atom a = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
+		UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
-
-	@Test
-	public void testFeeOverflow() {
-		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			PerParticleFeeEntry.of(UniqueParticle.class, 0, UInt256.MAX_VALUE),
-			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
-		);
-		FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
-		Atom atom = Atom.newBuilder()
-			.spinUp(makeParticle("test message 3"))
-			.particleGroup()
-			.buildWithoutSignature();
-		ImmutableSet<Particle> outputs = atom.upParticles().collect(ImmutableSet.toImmutableSet());
-		assertThatThrownBy(() -> ft.feeFor(atom, outputs, 1))
-			.isInstanceOf(ArithmeticException.class)
-			.hasMessageStartingWith("Fee overflow");
-	}
-
 
 	@Test
 	public void testToString() {
@@ -103,11 +66,5 @@ public class FeeTableTest {
 
 	private static FeeTable get() {
 		return FeeTable.from(MINIMUM_FEE, FEE_ENTRIES);
-	}
-
-	private static UniqueParticle makeParticle(String message) {
-		final var kp = ECKeyPair.generateNew();
-		final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-		return new UniqueParticle(message, address, 0);
 	}
 }

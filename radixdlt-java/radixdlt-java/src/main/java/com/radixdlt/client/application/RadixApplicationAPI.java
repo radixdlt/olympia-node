@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
@@ -43,18 +44,10 @@ import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.TokenFeeProcessor;
-import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.DelegatedTokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.MintTokensAction;
-import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
-import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
 import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceReducer;
-import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
@@ -63,32 +56,25 @@ import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
-import com.radixdlt.client.application.translate.tokens.UnstakeTokensMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
@@ -103,9 +89,6 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
-
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.RadixConstants;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -150,13 +133,7 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
 			.defaultFeeProcessor()
-			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
-			.addStatefulParticlesMapper(MintTokensAction.class, new MintTokensActionMapper())
-			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
-			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
-			.addStatefulParticlesMapper(StakeTokensAction.class, new StakeTokensMapper())
-			.addStatefulParticlesMapper(UnstakeTokensAction.class, new UnstakeTokensMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -170,7 +147,7 @@ public class RadixApplicationAPI {
 	private final Map<Class<?>, AtomToExecutedActionsMapper<?>> actionStores;
 	private final Map<Class<? extends ApplicationState>, ParticleReducer<?>> applicationStores;
 	private final ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers;
-	private final ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers;
+	private final ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers;
 	/**
 	 * Mapper of atom submission errors to application level errors
 	 */
@@ -183,7 +160,7 @@ public class RadixApplicationAPI {
 		RadixUniverse universe,
 		FeeProcessor feeProcessor,
 		ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers,
-		ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers,
+		ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
 		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers,
 		List<AtomErrorToExceptionReasonMapper> atomErrorMappers
@@ -353,6 +330,7 @@ public class RadixApplicationAPI {
 		return universe.getAtomStore().onSync(address)
 			.map(a ->
 				universe.getAtomStore().getUpParticles(address, null)
+					.map(Substate::getParticle)
 					.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
 			);
 	}
@@ -390,20 +368,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Retrieve the token state of the given rri
-	 *
-	 * @param tokenRRI The symbol of the token
-	 * @return the token state of the rri
-	 */
-	public TokenState getTokenDef(RRI tokenRRI) {
-		final ParticleReducer<TokenDefinitionsState> reducer = this.getStateReducer(TokenDefinitionsState.class);
-		return universe.getAtomStore().getUpParticles(getAddress(), null)
-			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
-			.getState()
-			.get(tokenRRI);
-	}
-
-	/**
 	 * Returns a never ending stream of messages stored at the current address.
 	 * pull() must be called to continually retrieve the latest messages.
 	 *
@@ -426,16 +390,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a never ending stream of token transfers stored at the current address.
-	 * pull() must be called to continually retrieve the latest transfers.
-	 *
-	 * @return a cold observable of the token transfers at the current address
-	 */
-	public Observable<TokenTransfer> observeTokenTransfers() {
-		return observeTokenTransfers(getAddress());
-	}
-
-	/**
 	 * Returns a never ending stream of token transfers stored at a given address.
 	 * pull() must be called to continually retrieve the latest transfers.
 	 *
@@ -445,18 +399,6 @@ public class RadixApplicationAPI {
 	public Observable<TokenTransfer> observeTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return observeActions(TokenTransfer.class, address);
-	}
-
-	/**
-	 * Retrieve the balances of the current address from the current atom store.
-	 *
-	 * @return map of balances
-	 */
-	public Map<RRI, BigDecimal> getBalances() {
-		final ParticleReducer<TokenBalanceState> reducer = this.getStateReducer(TokenBalanceState.class);
-		return universe.getAtomStore().getUpParticles(getAddress(), null)
-			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
-			.getBalance();
 	}
 
 	/**
@@ -496,48 +438,6 @@ public class RadixApplicationAPI {
 
 		return observeBalances(address)
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
-	}
-
-	/**
-	 * Returns a stream of the latest staked balances for the staker at the specified address.
-	 * pull() must have previously been called to ensure balances are retrieved and updated.
-	 *
-	 * @param address the staker's address
-	 * @return a cold observable of the latest staked amounts by validator and token RRI
-	 */
-	public Observable<Map<Pair<RadixAddress, RRI>, BigDecimal>> observeStakedBalances(RadixAddress address) {
-		Objects.requireNonNull(address);
-		return observeState(StakedTokenBalanceState.class, address)
-			.map(StakedTokenBalanceState::getBalance);
-	}
-
-	private DelegatedTokenBalanceState accumulateTokens(
-		DelegatedTokenBalanceState previous,
-		RadixAddress validator,
-		SpunParticle spunParticle
-	) {
-		final var particle = spunParticle.getParticle();
-		if (particle instanceof StakedTokensParticle) {
-			final var stp = (StakedTokensParticle) particle;
-			if (validator.equals(stp.getDelegateAddress())) {
-				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
-				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
-				return DelegatedTokenBalanceState.merge(previous, stp.getTokDefRef(), amount);
-			}
-		}
-		return previous;
-	}
-
-	/**
-	 * Creates a multi-issuance token registered into the user's account with
-	 * zero initial supply, 10^-18 granularity and no description.
-	 *
-	 * @param tokenRRI The symbol of the token to create
-	 * @param name     The name of the token to create
-	 * @return result of the transaction
-	 */
-	public Result createMultiIssuanceToken(RRI tokenRRI, String name) {
-		return createMultiIssuanceToken(tokenRRI, name, null);
 	}
 
 	/**
@@ -699,30 +599,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Mints an amount of new tokens into the user's account
-	 *
-	 * @param token  The symbol of the token to mint
-	 * @param amount The amount to mint
-	 * @return result of the transaction
-	 */
-	public Result mintTokens(RRI token, BigDecimal amount) {
-		MintTokensAction mintTokensAction = MintTokensAction.create(token, getAddress(), amount);
-		return execute(mintTokensAction);
-	}
-
-	/**
-	 * Burns an amount of tokens in the user's account
-	 *
-	 * @param token  The symbol of the token to mint
-	 * @param amount The amount to mint
-	 * @return result of the transaction
-	 */
-	public Result burnTokens(RRI token, BigDecimal amount) {
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(token, getAddress(), amount);
-		return execute(burnTokensAction);
-	}
-
-	/**
 	 * Transfers an amount of a token to an address
 	 *
 	 * @param token  the symbol of the token
@@ -732,44 +608,6 @@ public class RadixApplicationAPI {
 	 */
 	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, getAddress(), to, amount);
-	}
-
-	/**
-	 * Transfers an amount of a token with a message attachment to an address
-	 *
-	 * @param token  the symbol of the token
-	 * @param to      the address to transfer tokens to
-	 * @param amount  the amount and token type
-	 * @param message message to be encrypted and attached to transfer
-	 * @return result of the transaction
-	 */
-	public Result sendTokens(
-		RRI token,
-		RadixAddress to,
-		BigDecimal amount,
-		@Nullable String message
-	) {
-		final byte[] attachment;
-		if (message != null) {
-			attachment = message.getBytes(RadixConstants.STANDARD_CHARSET);
-		} else {
-			attachment = null;
-		}
-
-		return sendTokens(token, getAddress(), to, amount, attachment);
-	}
-
-	/**
-	 * Transfers an amount of tokens with an attachment to an address
-	 *
-	 * @param token  the symbol of the token
-	 * @param to         the address to send tokens to
-	 * @param amount     the amount and token type
-	 * @param attachment the data attached to the transaction
-	 * @return result of the transaction
-	 */
-	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
-		return sendTokens(token, getAddress(), to, amount, attachment);
 	}
 
 	/**
@@ -966,19 +804,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns an unsigned atom with the appropriate fees given a list of
-	 * particle groups to compose the atom.
-	 *
-	 * @param particleGroups particle groups to include in atom
-	 * @return unsigned atom with appropriate fees
-	 */
-	public AtomBuilder buildAtomWithFee(List<ParticleGroup> particleGroups) {
-		Transaction t = createTransaction();
-		particleGroups.forEach(t::stage);
-		return t.buildAtom();
-	}
-
-	/**
 	 * Create a new transaction which is based off of the
 	 * current data in the atom store.
 	 *
@@ -1074,17 +899,7 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getNetwork();
 	}
 
-	/**
-	 * Low level call to retrieve the actions occurring at the network
-	 * level.
-	 *
-	 * @return a hot observable of network actions as they occur
-	 */
-	public Observable<RadixNodeAction> getNetworkActions() {
-		return this.universe.getNetworkController().getActions();
-	}
-
-	public BigDecimal getMinimumRequiredFee(AtomBuilder atomWithoutFees) {
+	public BigDecimal getMinimumRequiredFee(TxLowLevelBuilder atomWithoutFees) {
 		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
 	}
 
@@ -1172,7 +987,7 @@ public class RadixApplicationAPI {
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private ImmutableMap.Builder<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers
 			= new ImmutableMap.Builder<>();
-		private ImmutableMap.Builder<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers
+		private ImmutableMap.Builder<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers
 			= new ImmutableMap.Builder<>();
 		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
 		private List<AtomErrorToExceptionReasonMapper> atomErrorMappers = new ArrayList<>();
@@ -1208,11 +1023,6 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder addAtomErrorMapper(AtomErrorToExceptionReasonMapper atomErrorMapper) {
-			this.atomErrorMappers.add(atomErrorMapper);
-			return this;
-		}
-
 		public RadixApplicationAPIBuilder feeProcessor(FeeProcessor feeProcessor) {
 			this.feeProcessorBuilder = radixUniverse -> feeProcessor;
 			return this;
@@ -1220,11 +1030,6 @@ public class RadixApplicationAPI {
 
 		public RadixApplicationAPIBuilder defaultFeeProcessor() {
 			this.feeProcessorBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder tokenFeeProcessor(RRI tokenRri) {
-			this.feeProcessorBuilder = radixUniverse -> new TokenFeeProcessor(tokenRri, radixUniverse.feeTable());
 			return this;
 		}
 
@@ -1270,7 +1075,6 @@ public class RadixApplicationAPI {
 	 */
 	public final class Transaction {
 		private final String uuid;
-		private List<Action> workingArea = new ArrayList<>();
 		private String message = null;
 
 		private Transaction() {
@@ -1287,45 +1091,13 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Add an action to the working area
-		 *
-		 * @param action action to add to the working area
-		 */
-		public void addToWorkingArea(Action action) {
-			workingArea.add(action);
-		}
-
-		/**
-		 * Retrieves the shards and particle types required to execute the
-		 * actions in the current working area.
-		 *
-		 * @return set of shard + particle types
-		 */
-		public Set<ShardedParticleStateId> getWorkingAreaRequirements() {
-			return workingArea.stream()
-				.filter(a -> requiredStateMappers.containsKey(a.getClass()))
-				.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
-				.collect(Collectors.toSet());
-		}
-
-		/**
-		 * Move all actions in the current working area to staging
-		 */
-		public void stageWorkingArea() throws StageActionException {
-			for (Action action : workingArea) {
-				stage(action);
-			}
-			workingArea.clear();
-		}
-
-		/**
 		 * Add an action to staging area in preparation for commitAndPush.
 		 * Collects the necessary particles to make the action happen.
 		 *
 		 * @param action action to add to staging area.
 		 */
 		public void stage(Action action) throws StageActionException {
-			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
+			BiFunction<Action, Stream<Substate>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
 				throw new IllegalArgumentException(
 						String.format("Unknown action class: %s. Available: %s", action.getClass(), actionMappers.keySet())
@@ -1334,22 +1106,15 @@ public class RadixApplicationAPI {
 
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
 			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
-			Stream<Particle> particles = required.stream()
-				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid).filter(ctx.particleClass()::isInstance));
+			Stream<Substate> particles = required.stream()
+				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid)
+					.filter(ctx.particleClass()::isInstance)
+				);
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
-		}
-
-		/**
-		 * Add a particle group to staging area in preparation for commitAndPush.
-		 *
-		 * @param particleGroup Particle group to add to staging area.
-		 */
-		public void stage(ParticleGroup particleGroup) {
-			universe.getAtomStore().stageParticleGroup(uuid, particleGroup);
 		}
 
 		/**
@@ -1360,7 +1125,7 @@ public class RadixApplicationAPI {
 		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
 		 * @return an unsigned atom
 		 */
-		public AtomBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
+		public TxLowLevelBuilder buildAtomWithFee(@Nullable BigDecimal fee) {
 			var feelessBuilder = universe.getAtomStore().getStaged(this.uuid);
 			feelessBuilder.message(this.message);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessBuilder, Optional.ofNullable(fee));
@@ -1373,15 +1138,6 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Creates an atom composed of all of the currently staged particles.
-		 *
-		 * @return an unsigned atom
-		 */
-		public AtomBuilder buildAtom() {
-			return buildAtomWithFee(null);
-		}
-
-		/**
 		 * Commit the transaction onto the ledger.
 		 * If the specified fee is non-null, a fee of that amount will be included in
 		 * the built atom, otherwise the fee will be computed based on the atom properties.
@@ -1390,7 +1146,7 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
-			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final TxLowLevelBuilder unsignedAtom = buildAtomWithFee(fee);
 			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
@@ -1405,15 +1161,6 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Commit the transaction onto the ledger. No fee particles will be added.
-		 *
-		 * @return the results of committing
-		 */
-		public Result commitAndPushWithoutFee() {
-			return commitAndPushWithFee(BigDecimal.ZERO);
-		}
-
-		/**
 		 * Commit the transaction onto the ledger via the specified node.
 		 * If the specified fee is non-null, a fee of that amount will be included in
 		 * the built atom, otherwise the fee will be computed based on the atom properties.
@@ -1423,7 +1170,7 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
-			final AtomBuilder unsignedAtom = buildAtomWithFee(fee);
+			final TxLowLevelBuilder unsignedAtom = buildAtomWithFee(fee);
 			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}

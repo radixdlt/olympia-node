@@ -40,7 +40,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.RadixLocalSystem;
@@ -68,7 +67,6 @@ public final class Serialize {
 				AtomEvent.class,
 				Particle.class,
 				RRIParticle.class,
-				SpunParticle.class,
 				MutableSupplyTokenDefinitionParticle.class,
 				FixedSupplyTokenDefinitionParticle.class,
 				UnallocatedTokensParticle.class,
@@ -78,7 +76,6 @@ public final class Serialize {
 				RegisteredValidatorParticle.class,
 				UnregisteredValidatorParticle.class,
 				SystemParticle.class,
-
 				ECDSASignature.class,
 				NodeRunnerData.class,
 				RadixLocalSystem.class,

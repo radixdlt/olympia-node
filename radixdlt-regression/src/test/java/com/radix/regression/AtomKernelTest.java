@@ -18,8 +18,7 @@
 package com.radix.regression;
 
 import com.google.common.base.Strings;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -87,9 +86,9 @@ public class AtomKernelTest {
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
-			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+			TxLowLevelBuilder.newBuilder()
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress()))
 				.particleGroup()
 		);
 
@@ -104,9 +103,9 @@ public class AtomKernelTest {
 		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
 			10,
 			false,
-			Atom.newBuilder()
-				.virtualSpinDown(new RRIParticle(rri))
-				.spinUp(new UniqueParticle(rri.getName(), rri.getAddress(), System.nanoTime()))
+			TxLowLevelBuilder.newBuilder()
+				.virtualDown(new RRIParticle(rri))
+				.up(new UniqueParticle(rri.getName(), rri.getAddress()))
 				.particleGroup()
 		);
 		observer.awaitCount(1);
@@ -116,7 +115,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomEmpty() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(0, false, Atom.newBuilder());
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(0, false, TxLowLevelBuilder.newBuilder());
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
@@ -125,7 +124,7 @@ public class AtomKernelTest {
 	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 		String message = Strings.repeat("X", messageSize);
 		if (addFee) {
@@ -157,7 +156,7 @@ public class AtomKernelTest {
 	private TestObserver<?> submitAtom(
 		int messageSize,
 		boolean addFee,
-		AtomBuilder atomBuilder
+		TxLowLevelBuilder atomBuilder
 	) {
 
 		String message = Strings.repeat("X", messageSize);

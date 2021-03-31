@@ -102,8 +102,8 @@ public final class JsonRpcUtil {
 		return commonFields(id).put("error", jsonObject().put("code", code.code()).put("message", message));
 	}
 
-	public static JSONObject errorResponse(Object id, RpcError code, String message, JSONObject data) {
-		return errorResponse(id, code, message).put("data", data);
+	public static JSONObject errorResponse(JSONObject request, RpcError code, String message, JSONObject data) {
+		return errorResponse(request, code, message).put("data", data);
 	}
 
 	public static JSONObject errorResponse(JSONObject request, RpcError code, String message) {

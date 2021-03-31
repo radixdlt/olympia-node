@@ -49,8 +49,7 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 			.map(i -> nodes.get(random.nextInt(nodes.size())))
 			.map(node -> network.getDispatcher(ValidatorRegistration.class, node))
 			.subscribe(d -> {
-				ValidatorRegistration registration = random.nextBoolean()
-					? ValidatorRegistration.register() : ValidatorRegistration.unregister();
+				ValidatorRegistration registration = ValidatorRegistration.create(random.nextBoolean());
 				d.dispatch(registration);
 			});
 	}

@@ -17,17 +17,15 @@
 
 package com.radixdlt.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -48,15 +46,12 @@ public class SystemTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			store
-		);
+		this.engine = new RadixEngine<>(cm, store);
 	}
 
 	@Test
@@ -64,9 +59,9 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -83,26 +78,24 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
 		// Act
-		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
-
 		// Assert
-		assertThat(this.store.getSpin(null, nextSystemParticle)).isEqualTo(Spin.UP);
+		this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER);
 	}
 
 	@Test
 	public void executing_system_update_with_bad_epoch_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(-1, 1, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -116,9 +109,9 @@ public class SystemTest {
 	public void executing_system_update_with_bad_view_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, -1, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -132,9 +125,9 @@ public class SystemTest {
 	public void executing_system_update_with_bad_timestamp_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -165,9 +158,9 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 
@@ -182,9 +175,9 @@ public class SystemTest {
 	private void preconditionFailure(long epoch, long view) {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
-		var atom = Atom.newBuilder()
-			.virtualSpinDown(systemParticle)
-			.spinUp(nextSystemParticle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(systemParticle)
+			.up(nextSystemParticle)
 			.particleGroup()
 			.buildWithoutSignature();
 

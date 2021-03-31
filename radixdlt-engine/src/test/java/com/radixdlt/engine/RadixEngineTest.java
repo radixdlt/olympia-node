@@ -18,7 +18,7 @@
 package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -82,10 +82,8 @@ public class RadixEngineTest {
 	public void setup() {
 		this.constraintMachine = mock(ConstraintMachine.class);
 		this.engineStore = TypedMocks.rmock(EngineStore.class);
-		this.virtualStore = TypedMocks.rmock(Predicate.class);
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
-			virtualStore,
 			engineStore
 		);
 	}
@@ -96,18 +94,15 @@ public class RadixEngineTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<Void> engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			new InMemoryEngineStore<>()
-		);
+		RadixEngine<Void> engine = new RadixEngine<>(cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert
-		var atom = Atom.newBuilder()
+		var atom = TxLowLevelBuilder.newBuilder()
 			.particleGroup()
 			.buildWithoutSignature();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))

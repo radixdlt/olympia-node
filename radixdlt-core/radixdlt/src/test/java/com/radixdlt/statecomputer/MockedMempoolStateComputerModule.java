@@ -39,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Simple Mempool state computer
@@ -72,7 +71,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 			@Override
 			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
-				final List<Command> commands = mempool.getCommands(1, Set.of());
+				final List<Command> commands = mempool.getCommands(1, List.of());
 				return !commands.isEmpty() ? commands.get(0) : null;
 			}
 

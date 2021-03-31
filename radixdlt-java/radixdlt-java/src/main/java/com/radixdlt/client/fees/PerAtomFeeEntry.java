@@ -21,7 +21,7 @@ package com.radixdlt.client.fees;
 import java.util.Objects;
 import java.util.Set;
 
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 
@@ -40,7 +40,7 @@ public final class PerAtomFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(AtomBuilder a, int feeSize, Set<Particle> outputs) {
+	public UInt256 feeFor(TxLowLevelBuilder a, int feeSize, Set<Particle> outputs) {
 		return this.fee;
 	}
 

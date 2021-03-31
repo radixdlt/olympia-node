@@ -103,6 +103,6 @@ public class PerParticleFeeEntryTest {
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
     	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-    	return new UniqueParticle(message, address, 0L);
+    	return new UniqueParticle(message, address);
     }
 }

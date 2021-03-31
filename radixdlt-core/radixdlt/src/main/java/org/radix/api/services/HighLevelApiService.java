@@ -18,15 +18,17 @@
 package org.radix.api.services;
 
 import com.google.inject.Inject;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
@@ -42,11 +44,11 @@ public class HighLevelApiService {
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis Atom genesisAtom
+		@Genesis List<Atom> genesisAtoms
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
-		this.nativeTokenDefinition = nativeToken(genesisAtom);
+		this.nativeTokenDefinition = nativeToken(genesisAtoms);
 	}
 
 	public int getUniverseMagic() {
@@ -73,13 +75,19 @@ public class HighLevelApiService {
 			   : Result.ok(definition);
 	}
 
-	private static MutableSupplyTokenDefinitionParticle nativeToken(Atom genesisAtom) {
-		return genesisAtom.upParticles()
-			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
+	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Atom> genesisAtoms) {
+		return genesisAtoms.stream().flatMap(Atom::bootUpInstructions)
+			.map(i -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException("Cannot deserialize genesis");
+				}
+			})
+			.filter(MutableSupplyTokenDefinitionParticle.class::isInstance)
 			.map(MutableSupplyTokenDefinitionParticle.class::cast)
 			.filter(particle -> particle.getRRI().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
 	}
-
 }

@@ -16,6 +16,7 @@
  */
 package org.radix.api.services;
 
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Pair;
@@ -29,7 +30,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -73,7 +73,9 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = Atom.newBuilder().message("Simple test message").buildWithoutSignature();
+		var atom = TxLowLevelBuilder.newBuilder()
+			.message("Simple test message")
+			.buildWithoutSignature();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -105,10 +107,10 @@ public class AtomsServiceTest {
 
 	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var particle = new UniqueParticle("particle message", address, 0);
+		var particle = new UniqueParticle("particle message", address);
 
-		var atom = Atom.newBuilder()
-			.spinUp(particle)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.up(particle)
 			.particleGroup()
 			.message("Test message")
 			.buildWithoutSignature();

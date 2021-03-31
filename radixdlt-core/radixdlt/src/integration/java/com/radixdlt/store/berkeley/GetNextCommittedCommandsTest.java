@@ -23,6 +23,7 @@ import javax.inject.Inject;
 
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -228,9 +229,9 @@ public class GetNextCommittedCommandsTest {
 
 	private Pair<Atom, LedgerProof> generateCommittedAtom(long epoch, View view, long stateVersion, boolean endOfEpoch) {
 		var rri = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "Hi");
-		final var atom = Atom.newBuilder()
+		final var atom = TxLowLevelBuilder.newBuilder()
 			.message("Atom for " + stateVersion)
-			.spinUp(new RRIParticle(rri))
+			.up(new RRIParticle(rri))
 			.particleGroup()
 			.buildWithoutSignature();
 

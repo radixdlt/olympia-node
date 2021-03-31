@@ -38,7 +38,7 @@ public final class RadixEngineException extends Exception {
 	}
 
 	public RadixEngineException(Atom atom, RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
-		super(message + " " + atom + " " + dp + " " + (cmError == null ? "" : "\n" + cmError));
+		super(message + " " + dp + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + atom.toInstructionsString());
 		this.atom = atom;
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;

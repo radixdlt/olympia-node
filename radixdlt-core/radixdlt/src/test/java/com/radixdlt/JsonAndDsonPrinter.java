@@ -76,17 +76,15 @@ public class JsonAndDsonPrinter {
     }
 
     private void logUnregisteredValidatorParticle() {
-        final var particle = new UnregisteredValidatorParticle(
-                ADDRESS,
-                1L);
+        final var particle = new UnregisteredValidatorParticle(ADDRESS);
         logParticle(particle);
     }
 
     private void logRegisteredValidatorParticle() {
         final var particle = new RegisteredValidatorParticle(
                 ADDRESS,
-                ImmutableSet.of(ADDRESS2, ADDRESS3),
-                1L);
+                ImmutableSet.of(ADDRESS2, ADDRESS3)
+                );
         logParticle(particle);
     }
 

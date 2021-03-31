@@ -57,7 +57,6 @@ public class RRIParticleSerializationTest extends SerializeObjectEngine<RRIParti
     public void testGetters() {
     	RRIParticle p = get();
     	assertEquals(rri, p.getRri());
-    	assertEquals(0L, p.getNonce());
     }
 
     @Test

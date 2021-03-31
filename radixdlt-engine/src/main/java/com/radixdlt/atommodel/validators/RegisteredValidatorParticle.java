@@ -43,45 +43,37 @@ public final class RegisteredValidatorParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String url;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final long nonce;
-
 	RegisteredValidatorParticle() {
 		// Serializer only
 		this.address = null;
 		this.allowedDelegators = null;
 		this.url = null;
-		this.nonce = 0;
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, long nonce) {
-		this(address, allowedDelegators, null, nonce);
+	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators) {
+		this(address, allowedDelegators, null);
 	}
 
 	@JsonCreator
 	public RegisteredValidatorParticle(
 		@JsonProperty("address") RadixAddress address,
 		@JsonProperty("allowedDelegators") ImmutableSet<RadixAddress> allowedDelegators,
-		@JsonProperty("url") String url,
-		@JsonProperty("nonce") long nonce
+		@JsonProperty("url") String url
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.allowedDelegators = allowedDelegators == null ? ImmutableSet.of() : allowedDelegators;
 		this.url = url;
-		this.nonce = nonce;
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
-		this(address, ImmutableSet.of(), null, nonce);
+	public RegisteredValidatorParticle(RadixAddress address) {
+		this(address, ImmutableSet.of(), null);
 	}
 
-	public RegisteredValidatorParticle copyWithNonce(long nonce) {
+	public RegisteredValidatorParticle copy() {
 		return new RegisteredValidatorParticle(
 			this.address,
 			this.allowedDelegators,
-			this.url,
-			nonce
+			this.url
 		);
 	}
 
@@ -112,13 +104,9 @@ public final class RegisteredValidatorParticle extends Particle {
 		return url;
 	}
 
-	public long getNonce() {
-		return nonce;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.allowedDelegators, this.url, this.nonce);
+		return Objects.hash(this.address, this.allowedDelegators, this.url);
 	}
 
 	@Override
@@ -130,8 +118,7 @@ public final class RegisteredValidatorParticle extends Particle {
 			return false;
 		}
 		final var that = (RegisteredValidatorParticle) obj;
-		return this.nonce == that.nonce
-			&& Objects.equals(this.address, that.address)
+		return Objects.equals(this.address, that.address)
 			&& Objects.equals(this.allowedDelegators, that.allowedDelegators)
 			&& Objects.equals(this.url, that.url);
 	}

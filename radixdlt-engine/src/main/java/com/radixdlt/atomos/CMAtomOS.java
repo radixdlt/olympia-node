@@ -52,7 +52,7 @@ public final class CMAtomOS {
 		.singleAddressMapper(rri -> rri.getRri().getAddress())
 		.staticValidation(rri -> Result.success())
 		.rriMapper(RRIParticle::getRri)
-		.virtualizeUp(v -> v.getNonce() == 0)
+		.virtualizeUp(v -> true)
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 

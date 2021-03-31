@@ -25,7 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
@@ -100,36 +100,30 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static Atom createAtom(ECKeyPair keyPair, int nonce, int numParticles) {
+	private static Atom createAtom(ECKeyPair keyPair, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
-		AtomBuilder atomBuilder = Atom.newBuilder();
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			RRI rri = RRI.of(address, "test" + i);
-			RRIParticle rriParticle = new RRIParticle(rri, nonce);
-			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address, nonce + 1);
+			RRIParticle rriParticle = new RRIParticle(rri);
+			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address);
 			atomBuilder
-				.virtualSpinDown(rriParticle)
-				.spinUp(uniqueParticle);
+				.virtualDown(rriParticle)
+				.up(uniqueParticle);
 		}
 		atomBuilder.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
-	private static Command createCommand(ECKeyPair keyPair, int nonce, int numParticles) {
-		Atom atom = createAtom(keyPair, nonce, numParticles);
+	private static Command createCommand(ECKeyPair keyPair, int numParticles) {
+		Atom atom = createAtom(keyPair, numParticles);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
 
 	private static Command createCommand(ECKeyPair keyPair) {
-		Atom atom = createAtom(keyPair, 0, 1);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return new Command(payload);
-	}
-
-	private static Command createCommand(ECKeyPair keyPair, int nonce) {
-		Atom atom = createAtom(keyPair, nonce, 1);
+		Atom atom = createAtom(keyPair, 1);
 		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
 		return new Command(payload);
 	}
@@ -147,7 +141,7 @@ public class MempoolTest {
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 		assertThat(network.allMessages())
-				.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
 	}
 
 	@Test
@@ -219,12 +213,12 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 0, 2);
+		Command command = createCommand(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, 0, 1);
+		Command command2 = createCommand(keyPair, 1);
 		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(command2);
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
@@ -237,21 +231,6 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		final Command command = new Command(new byte[0]);
-
-		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
-		processor.handleMessage(getFirstPeer(), mempoolAdd);
-
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
-	}
-
-	@Test
-	public void missing_dependency_to_mempool() {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 1);
 
 		// Act
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
@@ -286,12 +265,12 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 0, 2);
+		Command command = createCommand(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, 0, 1);
+		Command command2 = createCommand(keyPair, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
@@ -307,14 +286,14 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 0, 2);
+		Command command = createCommand(keyPair, 2);
 		MempoolAdd mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
-		Command command2 = createCommand(keyPair, 0, 3);
+		Command command2 = createCommand(keyPair, 3);
 		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command2));
 
 		// Act
-		Command command3 = createCommand(keyPair, 0, 1);
+		Command command3 = createCommand(keyPair, 1);
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());

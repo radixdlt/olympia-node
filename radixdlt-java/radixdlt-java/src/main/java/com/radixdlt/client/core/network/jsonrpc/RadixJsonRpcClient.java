@@ -53,7 +53,7 @@ import com.radixdlt.serialization.JsonJavaType;
 import com.radixdlt.serialization.Serialization;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.ledger.AtomObservation;
 
 import io.reactivex.Completable;
@@ -351,14 +351,14 @@ public class RadixJsonRpcClient {
 	 * @param hid the hash id of the atom being queried
 	 * @return the atom if found, if not, return an empty Maybe
 	 */
-	public Maybe<AtomBuilder> getAtom(EUID hid) {
+	public Maybe<TxLowLevelBuilder> getAtom(EUID hid) {
 		JsonObject params = new JsonObject();
 		params.addProperty("hid", hid.toString());
 
-		JsonJavaType listOfAtom = Serialize.getInstance().jsonCollectionType(List.class, AtomBuilder.class);
+		JsonJavaType listOfAtom = Serialize.getInstance().jsonCollectionType(List.class, TxLowLevelBuilder.class);
 		return this.jsonRpcCall("Ledger.getAtoms", params)
 			.map(JsonRpcResponse::getResult)
-			.<List<AtomBuilder>>map(result -> Serialize.getInstance().fromJson(result.toString(), listOfAtom))
+			.<List<TxLowLevelBuilder>>map(result -> Serialize.getInstance().fromJson(result.toString(), listOfAtom))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
 	}
 

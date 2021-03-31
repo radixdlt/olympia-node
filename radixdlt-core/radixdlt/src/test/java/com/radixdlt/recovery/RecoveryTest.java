@@ -41,7 +41,6 @@ import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
@@ -218,15 +217,15 @@ public class RecoveryTest {
 		// Arrange
 		processForCount(100);
 		var radixEngine = getRadixEngine();
-		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
+		var epochView = radixEngine.getComputedState(EpochView.class);
 
 		// Act
 		restartNode();
 
 		// Assert
 		var restartedRadixEngine = getRadixEngine();
-		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
-		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
+		var restartedEpochView = restartedRadixEngine.getComputedState(EpochView.class);
+		assertThat(restartedEpochView).isEqualTo(epochView);
 	}
 
 	@Test

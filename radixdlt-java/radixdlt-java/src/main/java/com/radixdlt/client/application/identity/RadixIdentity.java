@@ -23,12 +23,12 @@
 package com.radixdlt.client.application.identity;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.Single;
 
 public interface RadixIdentity {
-	Single<Atom> addSignature(AtomBuilder atom);
+	Single<Atom> addSignature(TxLowLevelBuilder atom);
 
 	/**
 	 * Transforms a possibly encrypted bytes object into an unencrypted one.

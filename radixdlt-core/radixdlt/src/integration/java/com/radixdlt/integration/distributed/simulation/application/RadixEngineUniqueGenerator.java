@@ -18,12 +18,10 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 
@@ -36,16 +34,14 @@ public class RadixEngineUniqueGenerator implements CommandGenerator {
 	public Command nextCommand() {
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-
-		var rri = RRI.of(address, "test");
-		var rriParticle = new RRIParticle(rri, 0);
-		var uniqueParticle = new UniqueParticle("test", address, 1);
-		var atomBuilder = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
-			.particleGroup();
-		var clientAtom = atomBuilder.signAndBuild(keyPair::sign);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
-		return new Command(payload);
+		try {
+			var atom = TxBuilder.newBuilder(address)
+				.mutex("test")
+				.signAndBuild(keyPair::sign);
+			final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+			return new Command(payload);
+		} catch (TxBuilderException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

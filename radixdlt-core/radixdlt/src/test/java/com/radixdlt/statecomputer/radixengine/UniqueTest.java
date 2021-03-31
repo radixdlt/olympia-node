@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.radixengine;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
@@ -44,12 +45,10 @@ import com.radixdlt.identifiers.RRI;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
-import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public final class UniqueTest {
-	private Random random = new Random();
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -74,11 +73,11 @@ public final class UniqueTest {
 	private Atom uniqueAtom(ECKeyPair keyPair) {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var rri = RRI.of(address, "test");
-		var rriParticle = new RRIParticle(rri, 0);
-		var uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		var atomBuilder = Atom.newBuilder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
+		var rriParticle = new RRIParticle(rri);
+		var uniqueParticle = new UniqueParticle("test", address);
+		var atomBuilder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(rriParticle)
+			.up(uniqueParticle)
 			.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);
 	}

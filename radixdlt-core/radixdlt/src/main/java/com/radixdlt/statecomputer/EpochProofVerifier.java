@@ -19,7 +19,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.ledger.ByzantineQuorumException;
 
@@ -40,11 +40,11 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 	}
 
 	private final class PerEpochVerifier implements PerStateChangeVerifier<LedgerAndBFTProof> {
-		private final long epoch;
+		private final EpochView epochView;
 		private boolean epochChangeFlag = false;
 
 		private PerEpochVerifier(ComputedState initState) {
-			this.epoch = initState.get(SystemParticle.class).getEpoch();
+			this.epochView = initState.get(EpochView.class);
 		}
 
 		@Override
@@ -53,9 +53,8 @@ public final class EpochProofVerifier implements BatchVerifier<LedgerAndBFTProof
 				throw new ByzantineQuorumException("Additional commands added to end of epoch.");
 			}
 
-			var systemParticle = computedState.get(SystemParticle.class);
-			long nextEpoch = systemParticle.getEpoch();
-			if (nextEpoch > epoch) {
+			var nextEpochView = computedState.get(EpochView.class);
+			if (nextEpochView.getEpoch() > epochView.getEpoch()) {
 				epochChangeFlag = true;
 			}
 		}

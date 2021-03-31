@@ -23,9 +23,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
@@ -34,6 +38,7 @@ import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Generates a genesis atom
@@ -44,13 +49,13 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
-	private final TokenDefinition tokenDefinition;
+	private final MutableTokenDefinition tokenDefinition;
 
 	@Inject
 	public GenesisAtomsProvider(
 		@Named("magic") int magic,
 		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
-		@NativeToken TokenDefinition tokenDefinition,
+		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
@@ -83,51 +88,45 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 		});
 
 		var genesisAtoms = new ArrayList<Atom>();
+		var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
+		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
+		try {
+			// Network token
+			var tokenBuilder = TxBuilder.newBuilder(universeAddress)
+				.createMutableToken(tokenDefinition);
 
-		final var tokenBuilder = Atom.newBuilder();
-		CheckpointUtils.createTokenDefinition(
-			tokenBuilder,
-			magic,
-			universeKey.getPublicKey(),
-			tokenDefinition,
-			tokenIssuances
-		);
-		var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign);
-		genesisAtoms.add(tokenAtom);
+			for (var e : issuances.entrySet()) {
+				var to = new RadixAddress(magic, e.getKey());
+				tokenBuilder.mint(rri, to, e.getValue());
+			}
+			var upSubstate = new AtomicReference<Iterable<Substate>>();
+			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
+			genesisAtoms.add(tokenAtom);
 
-		var upParticles = new ArrayList<Particle>();
-		tokenBuilder.allUpParticles().forEach(upParticles::add);
+			// Initial validator registration
+			for (var validatorKey : validatorKeys) {
+				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
+				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upSubstate.get());
+				var validatorAtom = validatorBuilder
+					.registerAsValidator()
+					.signAndBuild(validatorKey::sign, upSubstate::set);
+				genesisAtoms.add(validatorAtom);
+			}
 
-		for (var validatorKey : validatorKeys) {
-			var validatorBuilder = Atom.newBuilder();
-			CheckpointUtils.createValidator(
-				validatorBuilder,
-				magic,
-				validatorKey
-			);
+			for (var stakeDelegation : stakeDelegations) {
+				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
+				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
+				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
+					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
+				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
+				genesisAtoms.add(stakeAtom);
+			}
 
-			var validatorAtom = validatorBuilder.signAndBuild(validatorKey::sign);
-			genesisAtoms.add(validatorAtom);
-
-			validatorBuilder.allUpParticles().forEach(upParticles::add);
+			var epochUpdateBuilder = TxBuilder.newSystemBuilder().systemNextEpoch(0, 0);
+			genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
+		} catch (TxBuilderException e) {
+			throw new IllegalStateException(e);
 		}
-
-		for (var stakeDelegation : stakeDelegations) {
-			var stakesBuilder = Atom.newBuilder(upParticles);
-			CheckpointUtils.createStake(
-				stakesBuilder,
-				magic,
-				stakeDelegation
-			);
-			var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign);
-			genesisAtoms.add(stakeAtom);
-			upParticles.clear();
-			stakesBuilder.allUpParticles().forEach(upParticles::add);
-		}
-
-		var epochUpdateBuilder = Atom.newBuilder();
-		CheckpointUtils.createEpochUpdate(epochUpdateBuilder);
-		genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
 
 		return genesisAtoms;
 	}

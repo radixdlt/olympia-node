@@ -53,8 +53,7 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 			argsExtractor.asUInt256("amount"),
 			argsExtractor.asUInt256("granularity"),
 			argsExtractor.asRRI("tokenDefinitionReference"),
-			argsExtractor.extractTokenPermissions("tokenPermissions"),
-			argsExtractor.asLong("nonce")
+			argsExtractor.extractTokenPermissions("tokenPermissions")
 		);
 
 		assertTrue(argsExtractor.isFinished());

@@ -2,15 +2,12 @@ package com.radixdlt.client.core.fungible;
 
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atom.SpunParticle;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
@@ -58,17 +55,6 @@ public class FungibleTransitionMapperTest {
 			TestParticle::new
 		);
 	}
-
-	@Test
-	public void when_creating_a_transition_from_one_to_one__then_should_be_two_particles() throws NotEnoughFungiblesException {
-		List<SpunParticle> spunParticles = this.mapper.mapToParticles(
-			ImmutableList.of(new TestParticle(UInt256.TWO)),
-			UInt256.TWO
-		);
-
-		assertThat(spunParticles).hasSize(2);
-	}
-
 
 	@Test
 	public void when_creating_a_transition_with_not_enough_input__an_exception_should_be_thrown() {
