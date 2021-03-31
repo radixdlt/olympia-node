@@ -35,8 +35,7 @@ import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProces
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -70,8 +69,7 @@ public class PacemakerTest {
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

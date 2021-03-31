@@ -83,8 +83,11 @@ public final class DeterministicNetwork {
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
 	public ControlledSender createSender(BFTNode node) {
-		int nodeIndex = this.lookup(node);
-		return new ControlledSender(this, node, nodeIndex);
+		return new ControlledSender(this, node, this.lookup(node));
+	}
+
+	public ControlledSender createSender(int nodeIndex) {
+		return new ControlledSender(this, this.lookup(nodeIndex), nodeIndex);
 	}
 
 	// TODO: use better method than Timed to store time
@@ -130,6 +133,10 @@ public final class DeterministicNetwork {
 
 	public int lookup(BFTNode node) {
 		return this.nodeLookup.get(node);
+	}
+
+	public BFTNode lookup(int nodeIndex) {
+		return this.nodeLookup.inverse().get(nodeIndex);
 	}
 
 	long delayForChannel(ChannelId channelId) {

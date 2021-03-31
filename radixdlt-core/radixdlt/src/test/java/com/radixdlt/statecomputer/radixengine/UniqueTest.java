@@ -25,9 +25,8 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
@@ -64,8 +63,7 @@ public final class UniqueTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}

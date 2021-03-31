@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -36,10 +37,12 @@ import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
@@ -58,6 +61,17 @@ public class RadixEngineModule extends AbstractModule {
 		bind(new TypeLiteral<Mempool<Atom>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> mempoolRelayTriggerEventProcessor(
+		RadixEngineMempool mempool
+	) {
+		return new EventProcessorOnRunner<>(
+			"mempool",
+			MempoolRelayTrigger.class,
+			mempool.mempoolRelayTriggerEventProcessor()
+		);
 	}
 
 	@Provides

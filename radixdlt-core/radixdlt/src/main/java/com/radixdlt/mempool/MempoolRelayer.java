@@ -17,32 +17,64 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.addressbook.PeersView;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 
 /**
- * Relays messages successfully added to the mempool to node neighbors.
+ * Relays commands from the local mempool to node neighbors.
  */
+@Singleton
 public final class MempoolRelayer {
 	private final PeersView peersView;
 	private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+	private final MempoolConfig mempoolConfig;
+	private final SystemCounters counters;
 
 	@Inject
 	public MempoolRelayer(
 		RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
-		PeersView peersView
+		PeersView peersView,
+		MempoolConfig mempoolConfig,
+		SystemCounters counters
 	) {
 		this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
 		this.peersView = Objects.requireNonNull(peersView);
+		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
-	public EventProcessor<MempoolAddSuccess> mempoolAddedCommandEventProcessor() {
-		return mempoolAddSuccess -> this.peersView.peers()
-			.stream().filter(p -> mempoolAddSuccess.getOrigin().map(o -> !p.equals(o)).orElse(true))
-			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, MempoolAdd.create(mempoolAddSuccess.getCommand())));
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return mempoolAddSuccess -> {
+			final var ignorePeers = mempoolAddSuccess.getOrigin()
+				.map(ImmutableList::of)
+				.orElse(ImmutableList.of());
+			relayCommands(ImmutableList.of(mempoolAddSuccess.getCommand()), ignorePeers);
+		};
+	}
+
+	public EventProcessor<MempoolRelayCommands> mempoolRelayCommandsEventProcessor() {
+		return mempoolRelayCommands -> relayCommands(mempoolRelayCommands.getCommands(), ImmutableList.of());
+	}
+
+	private void relayCommands(ImmutableList<Command> commands, ImmutableList<BFTNode> ignorePeers) {
+		counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, commands.size());
+		final var peers = new ArrayList<>(this.peersView.peers());
+		peers.removeAll(ignorePeers);
+		Collections.shuffle(peers);
+		peers.stream()
+			.limit(mempoolConfig.relayMaxPeers())
+			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, MempoolAdd.create(commands)));
 	}
 }

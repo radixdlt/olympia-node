@@ -34,8 +34,7 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -63,8 +62,7 @@ public class MempoolFillTest {
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(200L);
-				bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+				bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 200L));
 				install(new MempoolFillerModule());
 				install(new NodeWalletModule());
 			}
@@ -110,7 +108,7 @@ public class MempoolFillTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(0L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 0L));
 				}
 			})
 			.build();

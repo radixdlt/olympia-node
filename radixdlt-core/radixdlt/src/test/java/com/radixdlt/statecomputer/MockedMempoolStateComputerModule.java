@@ -30,9 +30,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,11 +50,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private Mempool<Command> mempool(
-		@MempoolMaxSize int maxSize,
+		MempoolConfig mempoolConfig,
 		SystemCounters systemCounters,
 		Random random
 	) {
-		return new SimpleMempool(maxSize, systemCounters, random);
+		return new SimpleMempool(mempoolConfig, systemCounters, random);
 	}
 
 	@Provides

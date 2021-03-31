@@ -75,7 +75,7 @@ public final class NetworkModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
-		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.commandRemoteEventDispatcher());
+		return RxRemoteDispatcher.create(MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
 	}
 
 	@ProvidesIntoSet

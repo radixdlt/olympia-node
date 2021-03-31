@@ -27,6 +27,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
@@ -50,6 +51,8 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolRelayCommands;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -84,6 +87,8 @@ public class RxEnvironmentModule extends AbstractModule {
 		bind(ScheduledExecutorService.class).toInstance(ses);
 
 		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
+		bind(new TypeLiteral<Observable<MempoolRelayTrigger>>() { }).toProvider(new ObservableProvider<>(MempoolRelayTrigger.class));
+		bind(new TypeLiteral<Observable<MempoolRelayCommands>>() { }).toProvider(new ObservableProvider<>(MempoolRelayCommands.class));
 		bind(new TypeLiteral<Observable<ScheduledLocalTimeout>>() { }).toProvider(new ObservableProvider<>(ScheduledLocalTimeout.class));
 		bind(new TypeLiteral<Observable<BFTInsertUpdate>>() { }).toProvider(new ObservableProvider<>(BFTInsertUpdate.class));
 		bind(new TypeLiteral<Observable<BFTRebuildUpdate>>() { }).toProvider(new ObservableProvider<>(BFTRebuildUpdate.class));
@@ -199,7 +204,8 @@ public class RxEnvironmentModule extends AbstractModule {
 		Set<EventProcessorOnRunner<?>> processors,
 		RxEnvironment rxEnvironment,
 		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
-		RxRemoteEnvironment rxRemoteEnvironment
+		RxRemoteEnvironment rxRemoteEnvironment,
+		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
 	) {
 		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
 
@@ -219,7 +225,14 @@ public class RxEnvironmentModule extends AbstractModule {
 			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
 		}
 
-		return builder.build("MempoolRunner " + self);
+		return builder
+			.onStart(executor -> executor.scheduleWithFixedDelay(
+				() -> mempoolRelayTriggerEventDispatcher.dispatch(MempoolRelayTrigger.create()),
+				10000L,
+				10000L,
+				TimeUnit.MILLISECONDS
+			))
+			.build("MempoolRunner " + self);
 	}
 
 	@ProvidesIntoMap

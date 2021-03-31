@@ -20,6 +20,7 @@ package com.radixdlt.mempool.messages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.HashUtils;
@@ -36,12 +37,12 @@ public class MempoolAtomAddMessageTest {
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
-		this.message = new MempoolAtomAddMessage(12345, command);
+		this.message = new MempoolAtomAddMessage(12345, ImmutableList.of(command));
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(message.command()).isEqualTo(command);
+		assertThat(message.commands().get(0)).isEqualTo(command);
 	}
 
 	@Test

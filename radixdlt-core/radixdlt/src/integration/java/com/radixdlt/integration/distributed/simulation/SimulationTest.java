@@ -37,6 +37,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.MockedCryptoModule;
@@ -45,8 +46,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
@@ -397,8 +396,7 @@ public class SimulationTest {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
 			this.modules.add(new AbstractModule() {
 				public void configure() {
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 				}
 			});
 			return this;
@@ -413,8 +411,7 @@ public class SimulationTest {
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(100);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);

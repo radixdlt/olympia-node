@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import java.util.Objects;
 
@@ -27,30 +28,30 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.mempool.atomadd")
+@SerializerId2("message.mempool.add")
 public final class MempoolAtomAddMessage extends Message {
-	@JsonProperty("command")
+	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final Command command;
+	private final ImmutableList<Command> commands;
 
 	MempoolAtomAddMessage() {
 		// Serializer only
 		super(0);
-		this.command = null;
+		this.commands = null;
 	}
 
-	public MempoolAtomAddMessage(int magic, Command command) {
+	public MempoolAtomAddMessage(int magic, ImmutableList<Command> commands) {
 		super(magic);
-		this.command = Objects.requireNonNull(command);
+		this.commands = Objects.requireNonNull(commands);
 	}
 
-	public Command command() {
-		return this.command;
+	public ImmutableList<Command> commands() {
+		return this.commands;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{command=%s}", getClass().getSimpleName(), command);
+		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
 	}
 
 	@Override
@@ -62,13 +63,13 @@ public final class MempoolAtomAddMessage extends Message {
 			return false;
 		}
 		MempoolAtomAddMessage that = (MempoolAtomAddMessage) o;
-		return Objects.equals(command, that.command)
+		return Objects.equals(commands, that.commands)
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, getTimestamp(), getMagic());
+		return Objects.hash(commands, getTimestamp(), getMagic());
 	}
 }

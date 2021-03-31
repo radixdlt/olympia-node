@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
 
@@ -27,6 +28,6 @@ public class MempoolAtomAddMessageSerializeTest extends SerializeMessageObject<M
 
 	private static MempoolAtomAddMessage get() {
 		final Command command = new Command(new byte[] {0, 1});
-		return new MempoolAtomAddMessage(1, command);
+		return new MempoolAtomAddMessage(1, ImmutableList.of(command));
 	}
 }
