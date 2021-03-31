@@ -156,12 +156,12 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 				}
 
 				for (var cmd : cmds) {
-					var toRemove = data.remove(cmd).getAtom();
+					var toRemove = data.remove(cmd);
 					// TODO: Cleanup
-					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove))) {
+					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove.getAtom()))) {
 						removed.add(Pair.of(cmd, new RadixEngineMempoolException(
 							new RadixEngineException(
-								toRemove,
+								toRemove.getAtom(),
 								RadixEngineErrorCode.CM_ERROR,
 								"Mempool evicted",
 								DataPointer.ofAtom()
