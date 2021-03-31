@@ -30,7 +30,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -59,7 +59,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool) {
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(Txn txn, BFTNode origin) {
@@ -71,14 +71,14 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
+			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedTxn> prepared) {
 				final List<Txn> txns = mempool.getTxns(1, List.of());
 				return !txns.isEmpty() ? new Command(txns.get(0).getPayload()) : null;
 			}
 
 			@Override
 			public StateComputerLedger.StateComputerResult prepare(
-				ImmutableList<StateComputerLedger.PreparedCommand> previous,
+				List<StateComputerLedger.PreparedTxn> previous,
 				Command next,
 				long epoch,
 				View view,
@@ -87,14 +87,14 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 				return new StateComputerLedger.StateComputerResult(
 					next == null
 						? ImmutableList.of()
-						: ImmutableList.of(new MockPrepared(next)),
+						: ImmutableList.of(new MockPrepared(Txn.create(next.getPayload()))),
 					ImmutableMap.of()
 				);
 			}
 
 			@Override
-			public void commit(VerifiedCommandsAndProof commands, VerifiedVertexStoreState vertexStoreState) {
-				mempool.committed(commands.getCommands());
+			public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+				mempool.committed(txnsAndProof.getTxns());
 			}
 		};
 	}

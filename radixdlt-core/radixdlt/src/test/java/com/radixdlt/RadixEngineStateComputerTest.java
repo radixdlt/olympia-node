@@ -60,7 +60,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -199,17 +199,15 @@ public class RadixEngineStateComputerTest {
 		return builder.buildWithoutSignature();
 	}
 
-	private Command systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
-		var txn = systemUpdateTxn(nextView, nextEpoch);
-		return new Command(txn.getPayload());
+	private Txn systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
+		return systemUpdateTxn(nextView, nextEpoch);
 	}
 
-	private static Command registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+	private static Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var txn = TxBuilder.newBuilder(address)
+		return TxBuilder.newBuilder(address)
 			.registerAsValidator()
 			.signAndBuild(keyPair::sign);
-		return new Command(txn.getPayload());
 	}
 
 	@Test
@@ -243,11 +241,11 @@ public class RadixEngineStateComputerTest {
 	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() throws Exception {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var cmd = registerCommand(keyPair);
+		var txn = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), new Command(txn.getPayload()), 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -300,7 +298,7 @@ public class RadixEngineStateComputerTest {
 			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
 			ImmutableList.of(cmd0),
 			ledgerProof
 		);
@@ -326,7 +324,7 @@ public class RadixEngineStateComputerTest {
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
 			ImmutableList.of(cmd0, cmd1),
 			ledgerProof
 		);
@@ -354,7 +352,7 @@ public class RadixEngineStateComputerTest {
 			),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
 			ImmutableList.of(cmd1, cmd0),
 			ledgerProof
 		);
@@ -380,7 +378,7 @@ public class RadixEngineStateComputerTest {
 			),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
 			ImmutableList.of(cmd0),
 			ledgerProof
 		);

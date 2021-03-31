@@ -31,9 +31,9 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
@@ -82,23 +82,23 @@ public class SyncServiceModule extends AbstractModule {
 
 	@Provides
 	private VerifiedSyncResponseSender verifiedSyncResponseSender(
-		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
+		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return resp -> {
-			DtoCommandsAndProof commandsAndProof = resp.getCommandsAndProof();
+			DtoTxnsAndProof txnsAndProof = resp.getTxnsAndProof();
 			// TODO: Stateful ledger header verification:
 			// TODO: -verify rootHash matches
 			LedgerProof nextHeader = new LedgerProof(
-				commandsAndProof.getTail().getOpaque0(),
-				commandsAndProof.getTail().getOpaque1(),
-				commandsAndProof.getTail().getOpaque2(),
-				commandsAndProof.getTail().getOpaque3(),
-				commandsAndProof.getTail().getLedgerHeader(),
-				commandsAndProof.getTail().getSignatures()
+				txnsAndProof.getTail().getOpaque0(),
+				txnsAndProof.getTail().getOpaque1(),
+				txnsAndProof.getTail().getOpaque2(),
+				txnsAndProof.getTail().getOpaque3(),
+				txnsAndProof.getTail().getLedgerHeader(),
+				txnsAndProof.getTail().getSignatures()
 			);
 
-			VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
-				commandsAndProof.getCommands(),
+			VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(
+				txnsAndProof.getTxns(),
 				nextHeader
 			);
 

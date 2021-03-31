@@ -17,7 +17,6 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -28,7 +27,6 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -41,7 +39,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -231,7 +229,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(new Command(txn.getPayload())), proof);
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Act
@@ -256,7 +254,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(new Command(txn2.getPayload())), proof);
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
@@ -279,7 +277,7 @@ public class MempoolTest {
 		var proof = mock(LedgerProof.class);
 		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
 		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(new Command(txn3.getPayload())), proof);
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert

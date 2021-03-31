@@ -19,14 +19,13 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.concurrent.Immutable;
@@ -45,22 +44,13 @@ public final class Command {
 	@DsonOutput(Output.ALL)
 	private final byte[] payload;
 
-	private final AID id;
-
 	@JsonCreator
 	public Command(@JsonProperty("payload") byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
-		var firstHash = HashUtils.sha256(payload);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		this.id = AID.from(secondHash.asBytes());
 	}
 
 	public <T> T map(Function<byte[], T> mapper) {
 		return mapper.apply(payload);
-	}
-
-	public AID getId() {
-		return id;
 	}
 
 	public byte[] getPayload() {
@@ -69,7 +59,7 @@ public final class Command {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id);
+		return Arrays.hashCode(payload);
 	}
 
 	@Override
@@ -79,11 +69,11 @@ public final class Command {
 		}
 
 		Command other = (Command) o;
-		return Objects.equals(this.id, other.id);
+		return Arrays.equals(this.payload, other.payload);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+		return String.format("%s", this.getClass().getSimpleName());
 	}
 }

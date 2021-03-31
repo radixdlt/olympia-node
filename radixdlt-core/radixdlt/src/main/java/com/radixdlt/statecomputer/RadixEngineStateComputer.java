@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -38,14 +37,13 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +61,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Mempool<ParsedTransaction> mempool;
-	private final Serialization serialization;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
@@ -77,7 +74,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Inject
 	public RadixEngineStateComputer(
-		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Mempool<ParsedTransaction> mempool,
 		@EpochCeilingView View epochCeilingView,
@@ -93,7 +89,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochCeilingView = epochCeilingView;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
@@ -106,29 +101,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
-	public static class RadixEngineCommand implements PreparedCommand {
-		private final Command command;
+	public static class RadixEngineTxn implements PreparedTxn {
+		private final Txn txn;
 		private final ParsedTransaction transaction;
 		private final PermissionLevel permissionLevel;
 
-		public RadixEngineCommand(
-			Command command,
+		public RadixEngineTxn(
+			Txn txn,
 			ParsedTransaction transaction,
 			PermissionLevel permissionLevel
 		) {
-			this.command = command;
+			this.txn = txn;
 			this.transaction = transaction;
 			this.permissionLevel = permissionLevel;
 		}
 
 		@Override
-		public Command command() {
-			return command;
-		}
-
-		@Override
-		public HashCode hash() {
-			return command.getId().asHashCode();
+		public Txn txn() {
+			return txn;
 		}
 	}
 
@@ -149,9 +139,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
+	public Command getNextCommandFromMempool(ImmutableList<PreparedTxn> prepared) {
 		List<ParsedTransaction> cmds = prepared.stream()
-			.map(p -> (RadixEngineCommand) p)
+			.map(p -> (RadixEngineTxn) p)
 			.map(c -> c.transaction)
 			.collect(Collectors.toList());
 
@@ -170,7 +160,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long epoch,
 		View view,
 		long timestamp,
-		ImmutableList.Builder<PreparedCommand> successBuilder
+		ImmutableList.Builder<PreparedTxn> successBuilder
 	) {
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
@@ -206,8 +196,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate),	e
 			);
 		}
-		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
-			new Command(systemUpdate.getPayload()),
+		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(
+			systemUpdate,
 			txs.get(0),
 			PermissionLevel.SUPER_USER
 		);
@@ -219,34 +209,35 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private void executeUserCommand(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		Command next,
-		ImmutableList.Builder<PreparedCommand> successBuilder,
-		ImmutableMap.Builder<Command, Exception> errorBuilder
+		ImmutableList.Builder<PreparedTxn> successBuilder,
+		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		if (next != null) {
-			final List<ParsedTransaction> txs;
+			final List<ParsedTransaction> parsed;
+			var txn = Txn.create(next.getPayload());
 			try {
-				txs = branch.execute(List.of(Txn.create(next.getPayload())));
+				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
-				errorBuilder.put(next, e);
+				errorBuilder.put(txn, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
 				return;
 			}
 
-			var radixEngineCommand = new RadixEngineCommand(next, txs.get(0), PermissionLevel.USER);
+			var radixEngineCommand = new RadixEngineTxn(txn, parsed.get(0), PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}
 
 
 	@Override
-	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
+	public StateComputerResult prepare(List<PreparedTxn> previous, Command next, long epoch, View view, long timestamp) {
 		var transientBranch = this.radixEngine.transientBranch();
-		for (PreparedCommand command : previous) {
+		for (PreparedTxn command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
-			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
+			final RadixEngineTxn radixEngineCommand = (RadixEngineTxn) command;
 			try {
 				transientBranch.execute(
-					List.of(Txn.create(radixEngineCommand.command.getPayload())),
+					List.of(radixEngineCommand.txn),
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
@@ -255,8 +246,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		}
 
-		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
-		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
+		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
+		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
 		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, epoch, view, timestamp, successBuilder);
 		// Don't execute command if changing epochs
 		if (validatorSet == null) {
@@ -268,13 +259,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private List<ParsedTransaction> commitInternal(
-		VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState
+		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
-		final var atomsToCommit = verifiedCommandsAndProof.getCommands().stream()
-			.map(c -> Txn.create(c.getPayload()))
+		final var atomsToCommit = verifiedTxnsAndProof.getTxns().stream()
 			.collect(Collectors.toList());
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(
-			verifiedCommandsAndProof.getProof(),
+			verifiedTxnsAndProof.getProof(),
 			vertexStoreState
 		);
 
@@ -301,8 +291,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var txCommitted = commitInternal(verifiedCommandsAndProof, vertexStoreState);
+	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		var txCommitted = commitInternal(verifiedTxnsAndProof, vertexStoreState);
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -314,9 +304,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// Don't send event on genesis
 		// TODO: this is a bit hacky
-		if (verifiedCommandsAndProof.getProof().getStateVersion() > 0) {
-			var cmds = verifiedCommandsAndProof.getCommands();
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(cmds, txCommitted));
+		if (verifiedTxnsAndProof.getProof().getStateVersion() > 0) {
+			var txns = verifiedTxnsAndProof.getTxns();
+			committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, txCommitted));
 		}
 	}
 }

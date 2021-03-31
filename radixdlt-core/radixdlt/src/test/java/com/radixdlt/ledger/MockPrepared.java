@@ -17,25 +17,19 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 
-public class MockPrepared implements PreparedCommand {
+public class MockPrepared implements PreparedTxn {
 
-	private final Command command;
+	private final Txn txn;
 
-	public MockPrepared(Command command) {
-		this.command = command;
+	public MockPrepared(Txn txn) {
+		this.txn = txn;
 	}
 
 	@Override
-	public Command command() {
-		return command;
-	}
-
-	@Override
-	public HashCode hash() {
-		return command.getId().asHashCode();
+	public Txn txn() {
+		return txn;
 	}
 }

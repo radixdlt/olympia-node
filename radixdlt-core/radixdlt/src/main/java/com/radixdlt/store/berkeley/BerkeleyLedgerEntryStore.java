@@ -20,7 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -28,7 +28,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationUtils;
@@ -626,10 +626,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		ParsedTransaction parsedTransaction,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var atomData = serialize(parsedTransaction.getAtom());
-		var cmd = new Command(atomData);
-		var aid = cmd.getId();
-
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {
 			var key = entry();
@@ -642,8 +638,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
+			var aid = parsedTransaction.getTxn().getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(atomData);
+			var offset = atomLog.write(parsedTransaction.getTxn().getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -719,17 +716,18 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+	public VerifiedTxnsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		var atoms = this.getNextCommittedAtomsInternal(stateVersion);
 		if (atoms == null) {
 			return null;
 		}
-		final var commands = atoms.getFirst().stream()
-			.map(a -> new Command(serialization.toDson(a, DsonOutput.Output.PERSIST)))
+		// TODO: Remove serialization
+		final var txns = atoms.getFirst().stream()
+			.map(a -> Txn.create(serialization.toDson(a, DsonOutput.Output.PERSIST)))
 			.collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(commands, atoms.getSecond());
+		return new VerifiedTxnsAndProof(txns, atoms.getSecond());
 	}
 
 	@Override

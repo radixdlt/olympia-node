@@ -19,9 +19,10 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -53,7 +54,7 @@ public class MockedLedgerModule extends AbstractModule {
 					.withHeader(ledgerHeader, timeSupplier.currentTime())
 					.andCommands(
 						vertex.getCommand()
-							.<PreparedCommand>map(MockPrepared::new)
+							.<PreparedTxn>map(c -> new MockPrepared(Txn.create(c.getPayload())))
 							.map(ImmutableList::of)
 							.orElse(ImmutableList.of()),
 						ImmutableMap.of()

@@ -17,56 +17,57 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
+
+import java.util.List;
 import java.util.Objects;
 
 /**
  * Commands along with proof that they have been committed on ledger.
  */
-public final class VerifiedCommandsAndProof {
-	private final ImmutableList<Command> commands;
-	private final LedgerProof headerAndProof;
+public final class VerifiedTxnsAndProof {
+	private final List<Txn> txns;
+	private final LedgerProof proof;
 
-	public VerifiedCommandsAndProof(
-		ImmutableList<Command> commands,
-		LedgerProof headerAndProof
+	public VerifiedTxnsAndProof(
+		List<Txn> txns,
+		LedgerProof proof
 	) {
-		this.commands = Objects.requireNonNull(commands);
-		this.headerAndProof = Objects.requireNonNull(headerAndProof);
+		this.txns = Objects.requireNonNull(txns);
+		this.proof = Objects.requireNonNull(proof);
 	}
 
-	public ImmutableList<Command> getCommands() {
-		return commands;
+	public List<Txn> getTxns() {
+		return txns;
 	}
 
-	public boolean contains(Command command) {
-		return commands.contains(command);
+	public boolean contains(Txn txn) {
+		return txns.contains(txn);
 	}
 
 	public LedgerProof getProof() {
-		return headerAndProof;
+		return proof;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, headerAndProof);
+		return Objects.hash(txns, proof);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedCommandsAndProof)) {
+		if (!(o instanceof VerifiedTxnsAndProof)) {
 			return false;
 		}
 
-		VerifiedCommandsAndProof other = (VerifiedCommandsAndProof) o;
-		return Objects.equals(this.commands, other.commands)
-			&& Objects.equals(this.headerAndProof, other.headerAndProof);
+		VerifiedTxnsAndProof other = (VerifiedTxnsAndProof) o;
+		return Objects.equals(this.txns, other.txns)
+			&& Objects.equals(this.proof, other.proof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s stateAndProof=%s}", this.getClass().getSimpleName(), commands, headerAndProof);
+		return String.format("%s{txns=%s proof=%s}", this.getClass().getSimpleName(), txns, proof);
 	}
 }

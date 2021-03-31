@@ -57,7 +57,7 @@ public class CommittedChecker implements TestInvariant {
 
 					.serialize()
 					.filter(e -> e.getCommitted().stream()
-						.flatMap(PreparedVertex::getCommands)
+						.flatMap(PreparedVertex::getTxns)
 						.anyMatch(c -> Arrays.equals(c.getPayload(), txn.getPayload())))
 					.timeout(10, TimeUnit.SECONDS)
 					.firstOrError()

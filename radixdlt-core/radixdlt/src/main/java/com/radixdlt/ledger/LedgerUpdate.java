@@ -17,40 +17,41 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class LedgerUpdate {
-	private final VerifiedCommandsAndProof verifiedCommandsAndProof;
+	private final VerifiedTxnsAndProof verifiedTxnsAndProof;
 
-	public LedgerUpdate(VerifiedCommandsAndProof verifiedCommandsAndProof) {
-		this.verifiedCommandsAndProof = Objects.requireNonNull(verifiedCommandsAndProof);
+	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof) {
+		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
 	}
 
-	public ImmutableList<Command> getNewCommands() {
-		return verifiedCommandsAndProof.getCommands();
+	public List<Txn> getNewTxns() {
+		return verifiedTxnsAndProof.getTxns();
 	}
 
 	public LedgerProof getTail() {
-		return verifiedCommandsAndProof.getProof();
+		return verifiedTxnsAndProof.getProof();
 	}
 
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return verifiedCommandsAndProof.getProof().getNextValidatorSet();
+		return verifiedTxnsAndProof.getProof().getNextValidatorSet();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedCommandsAndProof);
+		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedTxnsAndProof);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(verifiedCommandsAndProof);
+		return Objects.hash(verifiedTxnsAndProof);
 	}
 
 	@Override
@@ -60,6 +61,6 @@ public final class LedgerUpdate {
 		}
 
 		LedgerUpdate other = (LedgerUpdate) o;
-		return Objects.equals(other.verifiedCommandsAndProof, this.verifiedCommandsAndProof);
+		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof);
 	}
 }

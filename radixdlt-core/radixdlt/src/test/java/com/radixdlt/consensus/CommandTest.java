@@ -39,7 +39,6 @@ public class CommandTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Command.class)
-			.withIgnoredFields("payload")
 			.verify();
 	}
 }

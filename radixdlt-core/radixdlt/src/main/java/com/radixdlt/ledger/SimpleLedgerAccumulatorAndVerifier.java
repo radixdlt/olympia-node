@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.crypto.Hasher;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -60,9 +62,9 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public <T> Optional<ImmutableList<T>> verifyAndGetExtension(
+	public <T> Optional<List<T>> verifyAndGetExtension(
 		AccumulatorState current,
-		ImmutableList<T> commands,
+		List<T> commands,
 		Function<T, HashCode> hashCodeMapper,
 		AccumulatorState tail
 	) {
@@ -81,7 +83,7 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 		}
 
 		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-		final ImmutableList<T> extension = commands.subList(startIndex, commands.size());
+		final List<T> extension = commands.subList(startIndex, commands.size());
 		final ImmutableList<HashCode> hashes = extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
 		if (!verify(current, hashes, tail)) {
 			// Does not extend

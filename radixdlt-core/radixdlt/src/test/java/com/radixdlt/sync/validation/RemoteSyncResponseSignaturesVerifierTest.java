@@ -33,7 +33,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.junit.Before;
@@ -54,8 +54,8 @@ public class RemoteSyncResponseSignaturesVerifierTest {
 		this.verifier = new RemoteSyncResponseSignaturesVerifier(hasher, hashVerifier);
 
 		this.response = mock(SyncResponse.class);
-		DtoCommandsAndProof commandsAndProof = mock(DtoCommandsAndProof.class);
-		when(response.getCommandsAndProof()).thenReturn(commandsAndProof);
+		DtoTxnsAndProof commandsAndProof = mock(DtoTxnsAndProof.class);
+		when(response.getTxnsAndProof()).thenReturn(commandsAndProof);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
 		VoteData voteData = mock(VoteData.class);
 		when(tail.toVoteData()).thenReturn(voteData);

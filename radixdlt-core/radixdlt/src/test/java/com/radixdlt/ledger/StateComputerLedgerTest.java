@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -45,7 +46,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -57,6 +58,7 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -81,15 +83,10 @@ public class StateComputerLedgerTest {
 
 	private final Command nextCommand = new Command(new byte[] {0});
 	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
-	private final PreparedCommand successfulNextCommand = new PreparedCommand() {
+	private final PreparedTxn successfulNextCommand = new PreparedTxn() {
 		@Override
-		public Command command() {
-			return nextCommand;
-		}
-
-		@Override
-		public HashCode hash() {
-			return hasher.hash(nextCommand);
+		public Txn txn() {
+			return Txn.create(nextCommand.getPayload());
 		}
 	};
 
@@ -209,11 +206,11 @@ public class StateComputerLedgerTest {
 		assertThat(nextPrepared.flatMap(x ->
 			accumulatorVerifier.verifyAndGetExtension(
 				ledgerHeader.getAccumulatorState(),
-				ImmutableList.of(nextCommand),
-				hasher::hash,
+				List.of(Txn.create(nextCommand.getPayload())),
+				txn -> txn.getId().asHashCode(),
 				x.getLedgerHeader().getAccumulatorState()
 			))
-		).contains(ImmutableList.of(nextCommand));
+		).contains(List.of(Txn.create(nextCommand.getPayload())));
 	}
 
 	@Test
@@ -237,7 +234,7 @@ public class StateComputerLedgerTest {
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(ImmutableList.of(nextCommand), header);
+		VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(List.of(Txn.create(nextCommand.getPayload())), header);
 
 		// Act
 		sut.syncEventProcessor().process(verified);

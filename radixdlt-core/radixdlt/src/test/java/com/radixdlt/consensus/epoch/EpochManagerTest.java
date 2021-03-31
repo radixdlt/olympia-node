@@ -87,10 +87,10 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
@@ -100,6 +100,7 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -129,17 +130,17 @@ public class EpochManagerTest {
 		}
 
 		@Override
-		public Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared) {
+		public Command getNextCommandFromMempool(ImmutableList<PreparedTxn> prepared) {
 			return null;
 		}
 
 		@Override
-		public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
+		public StateComputerResult prepare(List<PreparedTxn> previous, Command next, long epoch, View view, long timestamp) {
 			return new StateComputerResult(ImmutableList.of(), ImmutableMap.of());
 		}
 
 		@Override
-		public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 			// No-op
 		}
 	};
