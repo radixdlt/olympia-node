@@ -81,7 +81,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Full (non-validator) node should handle mempool changes correctly.
+ * Mempool should periodically relay its unprocessed messages to other nodes.
  */
 @RunWith(Parameterized.class)
 public class MempoolRelayTest {

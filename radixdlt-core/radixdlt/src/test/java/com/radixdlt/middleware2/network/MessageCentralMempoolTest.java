@@ -60,8 +60,8 @@ public class MessageCentralMempoolTest {
         final var command2 = mock(Command.class);
 
         TestSubscriber<RemoteEvent<MempoolAdd>> testObserver = messageCentralMempool.mempoolComands().test();
-        messageCentral.send(peer, new MempoolAtomAddMessage(0, ImmutableList.of(command1)));
-        messageCentral.send(peer, new MempoolAtomAddMessage(0, ImmutableList.of(command2)));
+        messageCentral.send(peer, new MempoolAddMessage(0, ImmutableList.of(command1)));
+        messageCentral.send(peer, new MempoolAddMessage(0, ImmutableList.of(command2)));
 
         testObserver.awaitCount(2);
         testObserver.assertValueAt(0, v -> v.getEvent().getCommands().get(0).equals(command1));

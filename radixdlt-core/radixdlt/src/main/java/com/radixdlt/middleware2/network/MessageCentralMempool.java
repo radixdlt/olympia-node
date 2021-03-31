@@ -58,7 +58,7 @@ public final class MessageCentralMempool {
 
 	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
 		return (receiver, msg) -> {
-			MempoolAtomAddMessage message = new MempoolAtomAddMessage(this.magic, msg.getCommands());
+			MempoolAddMessage message = new MempoolAddMessage(this.magic, msg.getCommands());
 			this.send(message, receiver);
 		};
 	}
@@ -77,7 +77,7 @@ public final class MessageCentralMempool {
 
 	public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
 		return messageCentral
-			.messagesOf(MempoolAtomAddMessage.class)
+			.messagesOf(MempoolAddMessage.class)
 			.map(msg -> {
 				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
 				return RemoteEvent.create(

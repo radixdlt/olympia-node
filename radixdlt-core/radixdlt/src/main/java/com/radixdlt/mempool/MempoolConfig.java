@@ -33,7 +33,6 @@ public interface MempoolConfig {
 		int relayMaxPeers
 	) {
 		return new MempoolConfig() {
-
 			@Override
 			public long maxSize() {
 				return maxSize;

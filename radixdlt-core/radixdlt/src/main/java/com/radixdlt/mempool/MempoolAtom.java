@@ -27,9 +27,9 @@ import java.util.Optional;
  */
 public final class MempoolAtom {
 
-	private Atom atom;
-	private long inserted;
-	private Optional<Long> lastRelayed;
+	private final Atom atom;
+	private final long inserted;
+	private final Optional<Long> lastRelayed;
 
 	private MempoolAtom(Atom atom, long inserted, Optional<Long> lastRelayed) {
 		this.atom = Objects.requireNonNull(atom);
@@ -67,7 +67,7 @@ public final class MempoolAtom {
 		}
 		final var that = (MempoolAtom) o;
 		return inserted == that.inserted
-			&& lastRelayed == that.lastRelayed
+			&& Objects.equals(lastRelayed, that.lastRelayed)
 			&& Objects.equals(atom, that.atom);
 	}
 

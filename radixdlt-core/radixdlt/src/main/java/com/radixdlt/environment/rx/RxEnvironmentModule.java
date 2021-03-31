@@ -228,9 +228,9 @@ public class RxEnvironmentModule extends AbstractModule {
 		return builder
 			.onStart(executor -> executor.scheduleWithFixedDelay(
 				() -> mempoolRelayTriggerEventDispatcher.dispatch(MempoolRelayTrigger.create()),
-				10000L,
-				10000L,
-				TimeUnit.MILLISECONDS
+				10,
+				10,
+				TimeUnit.SECONDS
 			))
 			.build("MempoolRunner " + self);
 	}
