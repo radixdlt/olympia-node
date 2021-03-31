@@ -47,6 +47,9 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
+	private static final int DATA_MAX_SIZE = 256;
+	private static final int MAX_NUM_MESSAGES = 1;
+
 	private static final boolean[] truefalse = new boolean[] {
 		true, false
 	};
@@ -390,6 +393,7 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
+
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
@@ -404,9 +408,16 @@ public final class ConstraintMachine {
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 		int instructionIndex = 0;
+		int numMessages = 0;
 
 		for (REInstruction inst : atom.getInstructions()) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			if (inst.getData().length > DATA_MAX_SIZE)	 {
+				return Optional.of(new CMError(
+					dp, CMErrorCode.DATA_TOO_LARGE, validationState, "Length is " + inst.getData().length
+				));
+			}
+
 			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
@@ -418,12 +429,8 @@ public final class ConstraintMachine {
 
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
-					return Optional.of(new CMError(
-						dp,
-						CMErrorCode.INVALID_PARTICLE,
-						validationState,
-						staticCheckResult.getErrorMessage()
-					));
+					var errMsg = staticCheckResult.getErrorMessage();
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 				}
 				var substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				validationState.bootUp(instructionIndex, substate);
@@ -441,16 +448,12 @@ public final class ConstraintMachine {
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
-
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
-					return Optional.of(new CMError(
-						dp,
-						CMErrorCode.INVALID_PARTICLE,
-						validationState,
-						staticCheckResult.getErrorMessage()
-					));
+					var errMsg = staticCheckResult.getErrorMessage();
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 				}
+
 				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(inst.getData()));
 				var stateError = validationState.virtualShutdown(substate);
 				if (stateError.isPresent()) {
@@ -497,26 +500,22 @@ public final class ConstraintMachine {
 				var substate = Substate.create(particle, substateId);
 				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
+			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
+				numMessages++;
+				if (numMessages > MAX_NUM_MESSAGES) {
+					return Optional.of(
+						new CMError(dp, CMErrorCode.TOO_MANY_MESSAGES, validationState)
+					);
+				}
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
 					return Optional.of(
-						new CMError(
-							DataPointer.ofParticleGroup(particleGroupIndex),
-							CMErrorCode.EMPTY_PARTICLE_GROUP,
-							validationState
-						)
+						new CMError(dp, CMErrorCode.EMPTY_PARTICLE_GROUP, validationState)
 					);
 				}
 
 				if (!validationState.isEmpty()) {
-					return Optional.of(
-						new CMError(
-							DataPointer.ofParticleGroup(particleGroupIndex),
-							CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-							validationState,
-							validationState.toString()
-						)
-					);
+					return Optional.of(new CMError(dp, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 				}
 				particleGroupIndex++;
 				particleIndex = 0;

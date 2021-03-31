@@ -32,25 +32,25 @@ import java.util.Set;
 /**
  * Particle representing a mutable supply token definition
  */
-@SerializerId2("radix.particles.mutable_supply_token_definition")
+@SerializerId2("mut")
 public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionParticle {
 	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
 	private RRI rri;
 
-	@JsonProperty("name")
+	@JsonProperty("n")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String name;
 
-	@JsonProperty("description")
+	@JsonProperty("d")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String	description;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("iconUrl")
+	@JsonProperty("i")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String iconUrl;
 

@@ -35,25 +35,25 @@ import java.util.Set;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-@SerializerId2("radix.particles.staked_tokens")
+@SerializerId2("s_t")
 public final class StakedTokensParticle extends Particle {
-	@JsonProperty("delegateAddress")
+	@JsonProperty("d")
 	@DsonOutput(Output.ALL)
 	private RadixAddress delegateAddress;
 
-	@JsonProperty("address")
+	@JsonProperty("o")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenDefinitionReference")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("amount")
+	@JsonProperty("a")
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
 

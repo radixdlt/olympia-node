@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.utils.Ints;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +38,6 @@ import java.util.function.Function;
  * Low level builder class for transactions
  */
 public final class TxLowLevelBuilder {
-	private String message;
 	private final List<REInstruction> instructions = new ArrayList<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
@@ -50,7 +50,13 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder message(String message) {
-		this.message = message;
+		var bytes = message.getBytes(StandardCharsets.UTF_8);
+		this.instructions.add(
+			REInstruction.create(
+				REInstruction.REOp.MSG.opCode(),
+				bytes
+			)
+		);
 		return this;
 	}
 
@@ -117,8 +123,7 @@ public final class TxLowLevelBuilder {
 	public Atom buildWithoutSignature() {
 		return Atom.create(
 			instructions,
-			null,
-			this.message
+			null
 		);
 	}
 
@@ -127,8 +132,7 @@ public final class TxLowLevelBuilder {
 		var signature = signatureProvider.apply(hashToSign);
 		return Atom.create(
 			instructions,
-			signature,
-			this.message
+			signature
 		);
 	}
 }

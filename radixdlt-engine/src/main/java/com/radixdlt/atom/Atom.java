@@ -50,10 +50,6 @@ public final class Atom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("m")
-	@DsonOutput({Output.ALL})
-	private final String message;
-
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
 	private final ECDSASignature signature;
@@ -63,14 +59,12 @@ public final class Atom {
 
 	@JsonCreator
 	private Atom(
-		@JsonProperty("m") String message,
 		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
 		@JsonProperty("s") ECDSASignature signature
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
 			signature,
-			message,
 			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
 		);
 	}
@@ -78,10 +72,8 @@ public final class Atom {
 	private Atom(
 		List<REInstruction> instructions,
 		ECDSASignature signature,
-		String message,
 		HashCode witness
 	) {
-		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
 		this.signature = signature;
 		this.witness = witness;
@@ -89,10 +81,9 @@ public final class Atom {
 
 	static Atom create(
 		List<REInstruction> instructions,
-		ECDSASignature signature,
-		String message
+		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature, message, computeHashToSign(instructions));
+		return new Atom(instructions, signature, computeHashToSign(instructions));
 	}
 
 	// FIXME: need to include message
@@ -147,10 +138,6 @@ public final class Atom {
 
 	public HashCode getWitness() {
 		return witness;
-	}
-
-	public String getMessage() {
-		return this.message;
 	}
 
 	@Override

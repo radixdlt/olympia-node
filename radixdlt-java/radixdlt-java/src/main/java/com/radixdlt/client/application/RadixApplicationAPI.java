@@ -31,7 +31,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
-import com.radixdlt.client.application.translate.data.AtomToPlaintextMessageMapper;
 import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.ApplicationState;
@@ -132,8 +131,7 @@ public class RadixApplicationAPI {
 			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addReducer(new TokenBalanceReducer())
-			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToPlaintextMessageMapper());
+			.addReducer(new StakedTokenBalanceReducer());
 	}
 
 	private final RadixIdentity identity;

@@ -61,9 +61,9 @@ public class TokenFeeChecker implements PostParsedChecker {
 
 	@Override
 	public Result check(Atom atom, PermissionLevel permissionLevel, ParsedTransaction parsedTransaction) {
-		// FIXME: Magic should be removed at some point
-		if (isMagic(atom)) {
-			return Result.success();
+		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
+		if (totalSize > MAX_ATOM_SIZE) {
+			return Result.error("atom too big: " + totalSize);
 		}
 
 		if (permissionLevel.equals(PermissionLevel.SYSTEM)) {
@@ -74,11 +74,6 @@ public class TokenFeeChecker implements PostParsedChecker {
 		// TODO: update should also have no message
 		if (!parsedTransaction.isUserCommand()) {
 			return Result.success();
-		}
-
-		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
-		if (totalSize > MAX_ATOM_SIZE) {
-			return Result.error("atom too big: " + totalSize);
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
@@ -96,11 +91,6 @@ public class TokenFeeChecker implements PostParsedChecker {
 		}
 
 		return Result.success();
-	}
-
-	private boolean isMagic(Atom atom) {
-		final var message = atom.getMessage();
-		return message != null && message.startsWith("magic:0xdeadbeef");
 	}
 
 	// TODO: Need to make sure that these unallocated particles are never DOWNED.
