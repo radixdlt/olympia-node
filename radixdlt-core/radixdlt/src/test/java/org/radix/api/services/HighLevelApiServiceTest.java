@@ -67,7 +67,7 @@ public class HighLevelApiServiceTest {
 			.up(nativeTokenParticle)
 			.buildWithoutSignature();
 
-		highLevelApiService = new HighLevelApiService(universe, clientApiStore, genesisAtom);
+		highLevelApiService = new HighLevelApiService(universe, clientApiStore, List.of(genesisAtom));
 	}
 
 	@Test
