@@ -93,13 +93,12 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static MutableSupplyTokenDefinitionParticle makeMutableSupplyTokenDefinitionParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var ttp = new MutableSupplyTokenDefinitionParticle(
-                argsExtractor.asRRI("rri"),
-                argsExtractor.asString("name"),
-                argsExtractor.asString("description"),
-                argsExtractor.asUInt256("granularity"),
-                argsExtractor.asString("iconUrl"),
-                argsExtractor.asString("url"),
-                argsExtractor.extractTokenPermissions("permissions")
+            argsExtractor.asRRI("rri"),
+            argsExtractor.asString("name"),
+            argsExtractor.asString("description"),
+            argsExtractor.asUInt256("granularity"),
+            argsExtractor.asString("iconUrl"),
+            argsExtractor.asString("url")
         );
         assertTrue(argsExtractor.isFinished());
         return ttp;
@@ -108,12 +107,12 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static StakedTokensParticle makeStakedTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var ttp = new StakedTokensParticle(
-                argsExtractor.asRadixAddress("delegateAddress"),
-                argsExtractor.asRadixAddress("address"),
-                argsExtractor.asUInt256("amount"),
-                argsExtractor.asUInt256("granularity"),
-                argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("permissions")
+            argsExtractor.asRadixAddress("delegateAddress"),
+            argsExtractor.asRadixAddress("address"),
+            argsExtractor.asUInt256("amount"),
+            argsExtractor.asUInt256("granularity"),
+            argsExtractor.asRRI("tokenDefinitionReference"),
+            true
         );
 
         assertTrue(argsExtractor.isFinished());
@@ -123,11 +122,11 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var ttp = new TransferrableTokensParticle(
-                argsExtractor.asRadixAddress("address"),
-                argsExtractor.asUInt256("amount"),
-                argsExtractor.asUInt256("granularity"),
-                argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("tokenPermissions")
+            argsExtractor.asRadixAddress("address"),
+            argsExtractor.asUInt256("amount"),
+            argsExtractor.asUInt256("granularity"),
+            argsExtractor.asRRI("tokenDefinitionReference"),
+    true
         );
         assertTrue(argsExtractor.isFinished());
         return ttp;
@@ -138,8 +137,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         var utp = new UnallocatedTokensParticle(
                 argsExtractor.asUInt256("amount"),
                 argsExtractor.asUInt256("granularity"),
-                argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("permissions")
+                argsExtractor.asRRI("tokenDefinitionReference")
         );
         assertTrue(argsExtractor.isFinished());
         return utp;

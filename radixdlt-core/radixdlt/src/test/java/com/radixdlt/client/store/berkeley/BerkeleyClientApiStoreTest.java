@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -47,7 +46,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -59,8 +57,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 
 public class BerkeleyClientApiStoreTest {
 	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
@@ -205,15 +201,15 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private StakedTokensParticle stake(UInt256 amount) {
-		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, Map.of());
+		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, true);
 	}
 
 	private UnallocatedTokensParticle emission(UInt256 amount) {
-		return new UnallocatedTokensParticle(amount, GRANULARITY, TOKEN, Map.of());
+		return new UnallocatedTokensParticle(amount, GRANULARITY, TOKEN);
 	}
 
 	private TransferrableTokensParticle transfer(UInt256 amount) {
-		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, Map.of());
+		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, true);
 	}
 
 	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {
@@ -223,11 +219,7 @@ public class BerkeleyClientApiStoreTest {
 			description(symbol),
 			UInt256.ONE,
 			iconUrl(symbol),
-			homeUrl(symbol),
-			Map.of(
-				TokenTransition.MINT, TokenPermission.ALL,
-				TokenTransition.BURN, TokenPermission.ALL
-			)
+			homeUrl(symbol)
 		);
 	}
 

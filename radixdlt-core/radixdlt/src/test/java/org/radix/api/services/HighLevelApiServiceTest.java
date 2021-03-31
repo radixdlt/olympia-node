@@ -22,8 +22,6 @@ import org.junit.Test;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -35,7 +33,6 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -54,13 +51,8 @@ public class HighLevelApiServiceTest {
 
 	@Before
 	public void setup() {
-		var permissions = Map.of(
-			TokenTransition.MINT, TokenPermission.ALL,
-			TokenTransition.BURN, TokenPermission.ALL
-		);
-
 		var nativeTokenParticle = new MutableSupplyTokenDefinitionParticle(
-			TOKEN, "XRD", "XRD XRD", UInt256.ONE, "", "", permissions
+			TOKEN, "XRD", "XRD XRD", UInt256.ONE, "", ""
 		);
 
 		genesisAtom = TxLowLevelBuilder.newBuilder()
@@ -131,11 +123,7 @@ public class HighLevelApiServiceTest {
 			description(symbol),
 			UInt256.ONE,
 			iconUrl(symbol),
-			homeUrl(symbol),
-			Map.of(
-				TokenTransition.MINT, TokenPermission.ALL,
-				TokenTransition.BURN, TokenPermission.ALL
-			)
+			homeUrl(symbol)
 		);
 	}
 

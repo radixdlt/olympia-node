@@ -18,8 +18,6 @@
 package com.radixdlt.sanitytestsuite.utility;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
@@ -106,14 +104,6 @@ public final class ArgumentsExtractor {
 
 	public RadixAddress asRadixAddress(String named) {
 		return extractAndMap(named, RadixAddress::from);
-	}
-
-	public Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> extractTokenPermissions(String named) {
-		return extractAsMapAndConvert(
-			named,
-			k -> MutableSupplyTokenDefinitionParticle.TokenTransition.valueOf(k.toUpperCase()),
-			v -> TokenPermission.valueOf(v.toUpperCase())
-		);
 	}
 
 	public Set<RadixAddress> asAddressSet(String named) {

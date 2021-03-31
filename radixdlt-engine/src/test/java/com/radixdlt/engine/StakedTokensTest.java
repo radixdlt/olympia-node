@@ -18,15 +18,11 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -38,7 +34,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,7 +46,6 @@ public class StakedTokensTest {
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 	private RadixAddress validatorAddress = new RadixAddress(MAGIC, this.validatorKeyPair.getPublicKey());
-	private List<Substate> upParticles = new ArrayList<>();
 
 	@Before
 	public void setup() throws Exception {
@@ -72,11 +66,7 @@ public class StakedTokensTest {
 			"Test",
 			"description",
 			null,
-			null,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			)
+			null
 		);
 		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
 			.createMutableToken(tokDef)

@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
@@ -28,7 +27,6 @@ import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -430,7 +428,7 @@ public final class TxBuilder {
 			tokenDefinition.getSupply(),
 			tokenDefinition.getGranularity(),
 			tokenRRI,
-			ImmutableMap.of())
+			false)
 		);
 
 		up(new FixedSupplyTokenDefinitionParticle(
@@ -459,7 +457,7 @@ public final class TxBuilder {
 			"RRI not available"
 		);
 		final var factory = TokDefParticleFactory.create(
-			tokenRRI, tokenDefinition.getTokenPermissions(), UInt256.ONE
+			tokenRRI, true, UInt256.ONE
 		);
 		up(factory.createUnallocated(UInt256.MAX_VALUE));
 		up(new MutableSupplyTokenDefinitionParticle(
@@ -468,8 +466,7 @@ public final class TxBuilder {
 			tokenDefinition.getDescription(),
 			tokenDefinition.getGranularity(),
 			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenUrl()
 		));
 		particleGroup();
 
@@ -484,7 +481,7 @@ public final class TxBuilder {
 		);
 
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 
 		swapFungible(
@@ -508,10 +505,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -539,10 +533,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -561,14 +552,14 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		// TODO: Need to include mutable supply
+		// TODO: Need to include fixed supply
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
 			"Could not find token rri " + rri
 		);
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 		swapFungible(
 			TransferrableTokensParticle.class,
@@ -591,7 +582,7 @@ public final class TxBuilder {
 			"Could not find token rri " + rri
 		);
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 		swapFungible(
 			TransferrableTokensParticle.class,
@@ -612,10 +603,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -644,10 +632,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -671,10 +656,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -696,10 +678,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 		swapFungible(

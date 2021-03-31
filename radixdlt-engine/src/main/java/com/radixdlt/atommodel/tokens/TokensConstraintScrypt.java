@@ -19,7 +19,6 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -36,7 +35,6 @@ import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UIntUtils;
@@ -129,10 +127,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkEquals(
 				UnallocatedTokensParticle::getGranularity,
 				UnallocatedTokensParticle::getGranularity,
-				"Granularities not equal.",
-				UnallocatedTokensParticle::getTokenPermissions,
-				UnallocatedTokensParticle::getTokenPermissions,
-				"Permissions not equal."
+				"Granularities not equal."
 			),
 			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
@@ -146,15 +141,20 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle.class,
 			UnallocatedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
-			checkEquals(
-				UnallocatedTokensParticle::getGranularity,
-				TransferrableTokensParticle::getGranularity,
-				"Granularities not equal.",
-				UnallocatedTokensParticle::getTokenPermissions,
-				TransferrableTokensParticle::getTokenPermissions,
-				"Permissions not equal."
-			),
-			(in, meta) -> checkTokenActionAllowed(meta, in.getTokenPermission(TokenTransition.MINT), in.getTokDefRef())
+			(i, o) -> {
+				if (!i.getGranularity().equals(o.getGranularity())) {
+					return Result.error("Granularities not equal.");
+				}
+
+				if (!o.isMutable()) {
+					return Result.error("Output is not mutable");
+				}
+
+				return Result.success();
+			},
+			(in, meta) ->
+				meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
+					? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
 
 		// Transfers
@@ -167,8 +167,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
 				"Granularities not equal.",
-				TransferrableTokensParticle::getTokenPermissions,
-				TransferrableTokensParticle::getTokenPermissions,
+				TransferrableTokensParticle::isMutable,
+				TransferrableTokensParticle::isMutable,
 				"Permissions not equal."
 			),
 			(in, meta) -> checkSignedBy(meta, in.getAddress())
@@ -180,15 +180,24 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			TransferrableTokensParticle::getAmount,
 			UnallocatedTokensParticle::getAmount,
-			checkEquals(
-				TransferrableTokensParticle::getGranularity,
-				UnallocatedTokensParticle::getGranularity,
-				"Granularities not equal.",
-				TransferrableTokensParticle::getTokenPermissions,
-				UnallocatedTokensParticle::getTokenPermissions,
-				"Permissions not equal."
-			),
-			(in, meta) -> checkTokenActionAllowed(meta, in.getTokenPermission(TokenTransition.BURN), in.getTokDefRef())
+			(i, o) -> {
+				if (!i.getGranularity().equals(o.getGranularity())) {
+					return Result.error("Granularities not equal.");
+				}
+
+				if (!i.isMutable()) {
+					return Result.error("Input is not mutable");
+				}
+
+				return Result.success();
+			},
+			(in, meta) -> {
+				if (in.isMutable()) {
+					return WitnessValidatorResult.success();
+				} else {
+					return WitnessValidatorResult.error("Not allowed to burn fixed supply tokens.");
+				}
+			}
 		));
 	}
 
@@ -476,9 +485,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::getGranularity,
 				StakedTokensParticle::getGranularity,
 				"Granularities not equal.",
-				TransferrableTokensParticle::getTokenPermissions,
-				StakedTokensParticle::getTokenPermissions,
-				"Permissions not equal."
+				TransferrableTokensParticle::isMutable,
+				StakedTokensParticle::isMutable,
+				"Mutability not equal."
 			),
 			(in, meta) -> checkSignedBy(meta, in.getAddress()),
 			(out, meta) -> checkSignedBy(meta, out.getAddress())
@@ -494,9 +503,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
 				"Granularities not equal.",
-				StakedTokensParticle::getTokenPermissions,
-				TransferrableTokensParticle::getTokenPermissions,
-				"Permissions not equal."
+				StakedTokensParticle::isMutable,
+				TransferrableTokensParticle::isMutable,
+				"Mutability not equal."
 			),
 			(in, meta) -> checkSignedBy(meta, in.getAddress())
 		));
@@ -511,9 +520,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getGranularity,
 				StakedTokensParticle::getGranularity,
 				"Granularities not equal.",
-				StakedTokensParticle::getTokenPermissions,
-				StakedTokensParticle::getTokenPermissions,
-				"Permissions not equal.",
+				StakedTokensParticle::isMutable,
+				StakedTokensParticle::isMutable,
+				"Mutability not equal.",
 				StakedTokensParticle::getAddress,
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
@@ -530,8 +539,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
 			return Result.error("Supply and amount are not equal.");
 		}
-		if (!transferrable.getTokenPermissions().isEmpty()) {
-			return Result.error("Transferrable tokens of a fixed supply token must be empty.");
+
+		if (transferrable.isMutable()) {
+			return Result.error("Tokens must be non-mutable.");
 		}
 
 		return Result.success();
@@ -542,9 +552,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		if (!Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())) {
 			return Result.error("Granularities not equal.");
 		}
-		if (!Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())) {
-			return Result.error("Permissions not equal.");
-		}
 		if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
 			return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
 		}
@@ -553,17 +560,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@VisibleForTesting
-	static WitnessValidatorResult checkTokenActionAllowed(WitnessData meta, TokenPermission tokenPermission, RRI tokDefRef) {
-		return tokenPermission.check(tokDefRef, meta).isSuccess()
-			? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.");
-	}
-
-	@VisibleForTesting
 	static WitnessValidatorResult checkSignedBy(WitnessData meta, RadixAddress address) {
 		return meta.isSignedBy(address.getPublicKey())
 			? WitnessValidatorResult.success()
 			: WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
+
+	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
+		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
+	) {
+		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
+	}
+
 
 	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
 		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0,
