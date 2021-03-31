@@ -411,7 +411,7 @@ public final class RadixEngine<M> {
 			// TODO: combine verification and storage
 			var parsedTransaction = this.verify(txn, atom, permissionLevel);
 			try {
-				this.engineStore.storeAtom(txn, atom);
+				this.engineStore.storeAtom(txn, parsedTransaction);
 			} catch (Exception e) {
 				logger.error("Store of atom {} failed. parsed: {}", atom, parsedTransaction);
 				throw e;

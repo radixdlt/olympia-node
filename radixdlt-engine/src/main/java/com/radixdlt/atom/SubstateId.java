@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
@@ -66,6 +67,10 @@ public final class SubstateId {
 
 	public static SubstateId fromBytes(byte[] bytes) {
 		return new SubstateId(bytes);
+	}
+
+	public boolean isVirtual() {
+		return idBytes.length == 32;
 	}
 
 	public byte[] asBytes() {

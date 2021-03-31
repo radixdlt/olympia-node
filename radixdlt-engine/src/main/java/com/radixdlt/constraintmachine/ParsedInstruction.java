@@ -26,27 +26,26 @@ import java.util.Objects;
  * Instruction which has been parsed and state checked by Radix Engine
  */
 public final class ParsedInstruction {
+	private final REInstruction instruction;
 	private final Substate substate;
 	private final Spin spin;
 
-	private ParsedInstruction(Substate substate, Spin spin) {
+	private ParsedInstruction(REInstruction instruction, Substate substate, Spin spin) {
+		Objects.requireNonNull(instruction);
 		Objects.requireNonNull(substate);
 		Objects.requireNonNull(spin);
 
+		this.instruction = instruction;
 		this.substate = substate;
 		this.spin = spin;
 	}
 
-	public static ParsedInstruction up(Substate substate) {
-		return new ParsedInstruction(substate, Spin.UP);
+	public static ParsedInstruction of(REInstruction instruction, Substate substate, Spin spin) {
+		return new ParsedInstruction(instruction, substate, spin);
 	}
 
-	public static ParsedInstruction down(Substate substate) {
-		return new ParsedInstruction(substate, Spin.DOWN);
-	}
-
-	public static ParsedInstruction of(Substate substate, Spin spin) {
-		return new ParsedInstruction(substate, spin);
+	public REInstruction getInstruction() {
+		return instruction;
 	}
 
 	public Substate getSubstate() {

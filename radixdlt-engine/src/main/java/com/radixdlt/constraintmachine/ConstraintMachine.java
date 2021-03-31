@@ -432,7 +432,7 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				parsedInstructions.add(ParsedInstruction.up(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
 				final Particle nextParticle;
@@ -462,7 +462,7 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 				var substateId = SubstateId.fromBytes(inst.getData());
@@ -478,7 +478,7 @@ public final class ConstraintMachine {
 				}
 
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 				int index = Ints.fromByteArray(inst.getData());
@@ -495,7 +495,7 @@ public final class ConstraintMachine {
 
 				var substateId = SubstateId.ofSubstate(atom, index);
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
