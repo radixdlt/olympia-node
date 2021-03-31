@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -48,7 +49,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Mempool<Command> mempool(
+	private Mempool<Txn> mempool(
 		@MempoolMaxSize int maxSize,
 		SystemCounters systemCounters,
 		Random random
@@ -61,9 +62,9 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private StateComputerLedger.StateComputer stateComputer(Mempool<Command> mempool) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
-			public void addToMempool(Command command, BFTNode origin) {
+			public void addToMempool(Txn txn, BFTNode origin) {
 				try {
-					mempool.add(command);
+					mempool.add(txn);
 				} catch (MempoolRejectedException e) {
 					log.error(e);
 				}
@@ -71,8 +72,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 			@Override
 			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
-				final List<Command> commands = mempool.getCommands(1, List.of());
-				return !commands.isEmpty() ? commands.get(0) : null;
+				final List<Txn> txns = mempool.getTxns(1, List.of());
+				return !txns.isEmpty() ? new Command(txns.get(0).getPayload()) : null;
 			}
 
 			@Override

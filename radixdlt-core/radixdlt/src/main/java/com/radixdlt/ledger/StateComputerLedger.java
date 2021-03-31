@@ -20,6 +20,7 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -91,7 +92,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface StateComputer {
-		void addToMempool(Command command, BFTNode origin);
+		void addToMempool(Txn txn, BFTNode origin);
 		Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared);
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -132,7 +133,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), node);
+				stateComputer.addToMempool(mempoolAdd.getTxn(), node);
 			}
 		};
 	}
@@ -140,7 +141,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), null);
+				stateComputer.addToMempool(mempoolAdd.getTxn(), null);
 			}
 		};
 	}

@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
 
@@ -26,7 +27,7 @@ public class MempoolAtomAddMessageSerializeTest extends SerializeMessageObject<M
 	}
 
 	private static MempoolAtomAddMessage get() {
-		final Command command = new Command(new byte[] {0, 1});
-		return new MempoolAtomAddMessage(1, command);
+		final var txn = Txn.create(new byte[]{0, 1});
+		return new MempoolAtomAddMessage(1, txn);
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 
 import java.util.Objects;
 
@@ -25,24 +25,24 @@ import java.util.Objects;
  * Message to attempt to add a command to the mempool
  */
 public final class MempoolAdd {
-	private final Command command;
+	private final Txn txn;
 
-	private MempoolAdd(Command command) {
-		this.command = command;
+	private MempoolAdd(Txn txn) {
+		this.txn = txn;
 	}
 
-	public Command getCommand() {
-		return command;
+	public Txn getTxn() {
+		return txn;
 	}
 
-	public static MempoolAdd create(Command command) {
-		Objects.requireNonNull(command);
-		return new MempoolAdd(command);
+	public static MempoolAdd create(Txn txn) {
+		Objects.requireNonNull(txn);
+		return new MempoolAdd(txn);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(command);
+		return Objects.hashCode(txn);
 	}
 
 	@Override
@@ -52,11 +52,11 @@ public final class MempoolAdd {
 		}
 
 		MempoolAdd other = (MempoolAdd) o;
-		return Objects.equals(this.command, other.command);
+		return Objects.equals(this.txn, other.txn);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.command);
+		return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.txn);
 	}
 }

@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -27,16 +27,15 @@ import com.radixdlt.identifiers.RadixAddress;
  * Generates a new unique rri consumer command. Because new addresses are used
  * on every call, the command should never fail when executed on a radix engine.
  */
-public class RadixEngineUniqueGenerator implements CommandGenerator {
+public class RadixEngineUniqueGenerator implements TxnGenerator {
 	@Override
-	public Command nextCommand() {
+	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		try {
-			var txn = TxBuilder.newBuilder(address)
+			return TxBuilder.newBuilder(address)
 				.mutex("test")
 				.signAndBuild(keyPair::sign);
-			return new Command(txn.getPayload());
 		} catch (TxBuilderException e) {
 			throw new RuntimeException(e);
 		}

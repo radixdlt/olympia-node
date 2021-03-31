@@ -17,7 +17,7 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
@@ -33,8 +33,8 @@ import java.util.Set;
 /**
  * Simple mempool which performs no validation and removes on commit.
  */
-public final class SimpleMempool implements Mempool<Command> {
-	private final Set<Command> data = new HashSet<>();
+public final class SimpleMempool implements Mempool<Txn> {
+	private final Set<Txn> data = new HashSet<>();
 
 	private final int maxSize;
 
@@ -56,37 +56,37 @@ public final class SimpleMempool implements Mempool<Command> {
 	}
 
 	@Override
-	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
+	public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 		if (this.data.size() >= this.maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
 			);
 		}
-		if (!this.data.add(command)) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command));
+		if (!this.data.add(txn)) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));
 		}
 
 		updateCounts();
 	}
 
 	@Override
-	public List<Pair<Command, Exception>> committed(List<Command> commands) {
+	public List<Pair<Txn, Exception>> committed(List<Txn> commands) {
 		commands.forEach(this.data::remove);
 		updateCounts();
 		return List.of();
 	}
 
 	@Override
-	public List<Command> getCommands(int count, List<Command> seen) {
+	public List<Txn> getTxns(int count, List<Txn> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
-			List<Command> commands = Lists.newArrayList();
+			List<Txn> commands = Lists.newArrayList();
 			var values = new ArrayList<>(this.data);
 			Collections.shuffle(values, random);
 
-			Iterator<Command> i = values.iterator();
+			Iterator<Txn> i = values.iterator();
 			while (commands.size() < size && i.hasNext()) {
-				Command a = i.next();
+				var a = i.next();
 				if (!seen.contains(a)) {
 					commands.add(a);
 				}

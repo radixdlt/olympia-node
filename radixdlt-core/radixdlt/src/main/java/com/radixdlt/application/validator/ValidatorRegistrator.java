@@ -23,7 +23,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
@@ -109,9 +108,8 @@ public final class ValidatorRegistrator {
 		logger.info("Validator submitting {}.", registration.isRegister() ? "register" : "unregister");
 		txBuilderMaybe.ifPresent(txBuilder -> {
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
-			var command = new Command(txn.getPayload());
-			registration.onSuccess(command.getId());
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
+			registration.onSuccess(txn.getId());
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		});
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
@@ -33,17 +33,17 @@ public class Mempools {
 	public static <T> Mempool<T> empty() {
 		return new Mempool<>() {
 			@Override
-			public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
+			public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 				// No-op
 			}
 
 			@Override
-			public List<Pair<Command, Exception>> committed(List<T> committed) {
+			public List<Pair<Txn, Exception>> committed(List<T> committed) {
 				return List.of();
 			}
 
 			@Override
-			public List<Command> getCommands(int count, List<T> seen) {
+			public List<Txn> getTxns(int count, List<T> seen) {
 				return List.of();
 			}
 		};

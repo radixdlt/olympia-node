@@ -58,7 +58,7 @@ public final class MessageCentralMempool {
 
 	public RemoteEventDispatcher<MempoolAdd> commandRemoteEventDispatcher() {
 		return (receiver, msg) -> {
-			MempoolAtomAddMessage message = new MempoolAtomAddMessage(this.magic, msg.getCommand());
+			MempoolAtomAddMessage message = new MempoolAtomAddMessage(this.magic, msg.getTxn());
 			this.send(message, receiver);
 		};
 	}
@@ -82,7 +82,7 @@ public final class MessageCentralMempool {
 				final BFTNode node = BFTNode.create(msg.getPeer().getSystem().getKey());
 				return RemoteEvent.create(
 					node,
-					MempoolAdd.create(msg.getMessage().command()),
+					MempoolAdd.create(msg.getMessage().getTxn()),
 					MempoolAdd.class
 				);
 			})

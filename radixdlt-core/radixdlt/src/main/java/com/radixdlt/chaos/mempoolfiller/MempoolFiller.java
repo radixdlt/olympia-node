@@ -24,7 +24,6 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -174,7 +173,7 @@ public final class MempoolFiller {
 			List<BFTNode> peers = peersView.peers();
 			txns.forEach(txn -> {
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
-				var mempoolAdd = MempoolAdd.create(new Command(txn.getPayload()));
+				var mempoolAdd = MempoolAdd.create(txn);
 				if (index == peers.size()) {
 					this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
 				} else {

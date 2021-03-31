@@ -43,6 +43,6 @@ public final class MempoolRelayer {
 	public EventProcessor<MempoolAddSuccess> mempoolAddedCommandEventProcessor() {
 		return mempoolAddSuccess -> this.peersView.peers()
 			.stream().filter(p -> mempoolAddSuccess.getOrigin().map(o -> !p.equals(o)).orElse(true))
-			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, MempoolAdd.create(mempoolAddSuccess.getCommand())));
+			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, MempoolAdd.create(mempoolAddSuccess.getTxn())));
 	}
 }

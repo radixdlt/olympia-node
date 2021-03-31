@@ -38,6 +38,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
@@ -123,7 +124,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public void addToMempool(Command command, BFTNode origin) {
+		public void addToMempool(Txn txn, BFTNode origin) {
 			// No-op
 		}
 

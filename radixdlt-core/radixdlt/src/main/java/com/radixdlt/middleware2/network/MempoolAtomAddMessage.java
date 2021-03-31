@@ -17,7 +17,9 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
+
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.radix.network.messaging.Message;
@@ -29,28 +31,28 @@ import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("message.mempool.atomadd")
 public final class MempoolAtomAddMessage extends Message {
-	@JsonProperty("command")
+	@JsonProperty("txn")
 	@DsonOutput(Output.ALL)
-	private final Command command;
+	private final byte[] txn;
 
 	MempoolAtomAddMessage() {
 		// Serializer only
 		super(0);
-		this.command = null;
+		this.txn = new byte[0];
 	}
 
-	public MempoolAtomAddMessage(int magic, Command command) {
+	public MempoolAtomAddMessage(int magic, Txn txn) {
 		super(magic);
-		this.command = Objects.requireNonNull(command);
+		this.txn = txn.getPayload();
 	}
 
-	public Command command() {
-		return this.command;
+	public Txn getTxn() {
+		return Txn.create(txn == null ? new byte[0] : txn);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{command=%s}", getClass().getSimpleName(), command);
+		return String.format("%s{txn=%s}", getClass().getSimpleName(), getTxn().getId());
 	}
 
 	@Override
@@ -62,13 +64,13 @@ public final class MempoolAtomAddMessage extends Message {
 			return false;
 		}
 		MempoolAtomAddMessage that = (MempoolAtomAddMessage) o;
-		return Objects.equals(command, that.command)
+		return Arrays.equals(txn, that.txn)
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, getTimestamp(), getMagic());
+		return Objects.hash(Arrays.hashCode(txn), getTimestamp(), getMagic());
 	}
 }

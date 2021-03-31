@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 
 import java.util.Objects;
 
@@ -25,30 +25,30 @@ import java.util.Objects;
  * Message indicating that a command failed to be added to the mempool
  */
 public final class MempoolAddFailure {
-	private final Command command;
+	private final Txn txn;
 	private final Exception exception;
 
-	private MempoolAddFailure(Command command, Exception exception) {
-		this.command = command;
+	private MempoolAddFailure(Txn txn, Exception exception) {
+		this.txn = txn;
 		this.exception = exception;
 	}
 
-	public Command getCommand() {
-		return command;
+	public Txn getTxn() {
+		return txn;
 	}
 
 	public Exception getException() {
 		return exception;
 	}
 
-	public static MempoolAddFailure create(Command command, Exception exception) {
-		Objects.requireNonNull(command);
-		return new MempoolAddFailure(command, exception);
+	public static MempoolAddFailure create(Txn txn, Exception exception) {
+		Objects.requireNonNull(txn);
+		return new MempoolAddFailure(txn, exception);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, exception);
+		return Objects.hash(txn, exception);
 	}
 
 	@Override
@@ -58,12 +58,12 @@ public final class MempoolAddFailure {
 		}
 
 		MempoolAddFailure other = (MempoolAddFailure) o;
-		return Objects.equals(this.command, other.command)
+		return Objects.equals(this.txn, other.txn)
 			&& Objects.equals(this.exception, other.exception);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s ex=%s}", this.getClass().getSimpleName(), this.command, this.exception);
+		return String.format("%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn, this.exception);
 	}
 }

@@ -133,19 +133,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Command command, @Nullable BFTNode origin) {
+	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
 		try {
-			mempool.add(command);
+			mempool.add(txn);
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
-			log.trace("Mempool duplicate command: {} origin: {}", command, origin);
+			log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
 			return;
 		} catch (MempoolRejectedException e) {
-			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(txn, e));
 			return;
 		}
 
-		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(command, origin));
+		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(txn, origin));
 	}
 
 	@Override
@@ -156,12 +156,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Command> commands = mempool.getCommands(1, cmds);
-		if (commands.isEmpty()) {
+		final List<Txn> txns = mempool.getTxns(1, cmds);
+		if (txns.isEmpty()) {
 			return null;
 		} else {
 			systemCounters.increment(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION);
-			return commands.get(0);
+			return new Command(txns.get(0).getPayload());
 		}
 	}
 
@@ -306,7 +306,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
-		List<Pair<Command, Exception>> removed = this.mempool.committed(txCommitted);
+		List<Pair<Txn, Exception>> removed = this.mempool.committed(txCommitted);
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);

@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
@@ -34,24 +34,24 @@ import java.util.concurrent.TimeUnit;
  */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-	private final PublishSubject<Pair<Command, BFTNode>> commands;
-	private final CommandGenerator commandGenerator;
+	private final PublishSubject<Pair<Txn, BFTNode>> txns;
+	private final TxnGenerator txnGenerator;
 	private final NodeSelector nodeSelector;
 
 	private Disposable commandsDisposable;
 
-	public LocalMempoolPeriodicSubmitter(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
-		this.commands = PublishSubject.create();
-		this.commandGenerator = commandGenerator;
+	public LocalMempoolPeriodicSubmitter(TxnGenerator txnGenerator, NodeSelector nodeSelector) {
+		this.txns = PublishSubject.create();
+		this.txnGenerator = txnGenerator;
 		this.nodeSelector = nodeSelector;
 	}
 
-	private void act(RunningNetwork network, Command command, BFTNode node) {
-		network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(command));
+	private void act(RunningNetwork network, Txn txn, BFTNode node) {
+		network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(txn));
 	}
 
-	public Observable<Pair<Command, BFTNode>> issuedCommands() {
-		return commands.observeOn(Schedulers.io());
+	public Observable<Pair<Txn, BFTNode>> issuedTxns() {
+		return txns.observeOn(Schedulers.io());
 	}
 
 	@Override
@@ -61,15 +61,15 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 		}
 
 		commandsDisposable = Observable.interval(1, 10, TimeUnit.SECONDS)
-			.map(i -> commandGenerator.nextCommand())
+			.map(i -> txnGenerator.nextTxn())
 			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
 			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
-			.subscribe(commands::onNext);
+			.subscribe(txns::onNext);
 	}
 
 	@Override
 	public void stop() {
 		commandsDisposable.dispose();
-		commands.onComplete();
+		txns.onComplete();
 	}
 }

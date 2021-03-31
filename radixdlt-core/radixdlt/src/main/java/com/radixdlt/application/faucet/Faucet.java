@@ -23,7 +23,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
@@ -95,9 +94,8 @@ public final class Faucet {
 
 		builderMaybe.ifPresent(builder -> {
 			var txn = builder.signAndBuild(hashSigner::sign);
-			var command = new Command(txn.getPayload());
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-			request.onSuccess(command.getId());
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
+			request.onSuccess(txn.getId());
 		});
 	}
 

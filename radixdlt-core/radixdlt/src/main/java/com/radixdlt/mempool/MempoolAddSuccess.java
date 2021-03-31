@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import java.util.Objects;
@@ -27,35 +27,35 @@ import java.util.Optional;
  * Message indicating that a command was successfully added to the mempool
  */
 public final class MempoolAddSuccess {
-	private final Command command;
+	private final Txn txn;
 	private final BFTNode origin;
 
-	private MempoolAddSuccess(Command command, BFTNode origin) {
-		this.command = command;
+	private MempoolAddSuccess(Txn txn, BFTNode origin) {
+		this.txn = txn;
 		this.origin = origin;
 	}
 
-	public Command getCommand() {
-		return command;
+	public Txn getTxn() {
+		return txn;
 	}
 
 	public Optional<BFTNode> getOrigin() {
 		return Optional.ofNullable(origin);
 	}
 
-	public static MempoolAddSuccess create(Command command) {
-		Objects.requireNonNull(command);
-		return new MempoolAddSuccess(command, null);
+	public static MempoolAddSuccess create(Txn txn) {
+		Objects.requireNonNull(txn);
+		return new MempoolAddSuccess(txn, null);
 	}
 
-	public static MempoolAddSuccess create(Command command, BFTNode origin) {
-		Objects.requireNonNull(command);
-		return new MempoolAddSuccess(command, origin);
+	public static MempoolAddSuccess create(Txn txn, BFTNode origin) {
+		Objects.requireNonNull(txn);
+		return new MempoolAddSuccess(txn, origin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, origin);
+		return Objects.hash(txn, origin);
 	}
 
 	@Override
@@ -65,12 +65,12 @@ public final class MempoolAddSuccess {
 		}
 
 		MempoolAddSuccess other = (MempoolAddSuccess) o;
-		return Objects.equals(this.command, other.command)
+		return Objects.equals(this.txn, other.txn)
 			&& Objects.equals(this.origin, other.origin);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.command);
+		return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.txn);
 	}
 }

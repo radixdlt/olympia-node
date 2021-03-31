@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.atom.Txn;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -132,9 +133,9 @@ public class AtomsService {
 	public AID submitAtom(JSONObject jsonAtom) {
 		// TODO: remove all of the conversion mess here
 		final var atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
-		var command = new Command(serialization.toDson(atom, Output.ALL));
-		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-		return command.getId();
+		var txn = Txn.create(serialization.toDson(atom, Output.ALL));
+		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
+		return txn.getId();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
@@ -174,7 +175,7 @@ public class AtomsService {
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
-		var atomId = failure.getCommand().getId();
+		var atomId = failure.getTxn().getId();
 		var listeners = getAtomStatusListeners(atomId);
 		listeners.forEach(listener -> listener.onError(failure.getException()));
 	}
