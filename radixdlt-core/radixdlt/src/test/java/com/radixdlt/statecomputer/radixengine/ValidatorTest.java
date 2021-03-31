@@ -18,42 +18,40 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.name.Names;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RRI;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public final class UniqueTest {
+public class ValidatorTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<LedgerAndBFTProof> sut;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -72,28 +70,19 @@ public final class UniqueTest {
 		);
 	}
 
-	private Atom uniqueAtom(ECKeyPair keyPair) {
-		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var rri = RRI.of(address, "test");
-		var rriParticle = new RRIParticle(rri);
-		var uniqueParticle = new UniqueParticle("test", address);
-		var atomBuilder = TxLowLevelBuilder.newBuilder()
-			.virtualDown(rriParticle)
-			.up(uniqueParticle)
-			.particleGroup();
-		return atomBuilder.signAndBuild(keyPair::sign);
-	}
-
 	@Test
-	public void conflicting_atoms_should_not_be_committed() throws RadixEngineException {
+	public void cannot_register_twice() {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var committedAtom0 = uniqueAtom(keyPair);
-		sut.execute(List.of(committedAtom0));
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var atom = TxLowLevelBuilder.newBuilder()
+			.virtualDown(new UnregisteredValidatorParticle(address))
+			.up(new RegisteredValidatorParticle(address))
+			.up(new RegisteredValidatorParticle(address))
+			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		var committedAtom1 = uniqueAtom(keyPair);
-		assertThatThrownBy(() -> sut.execute(List.of(committedAtom1))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 }

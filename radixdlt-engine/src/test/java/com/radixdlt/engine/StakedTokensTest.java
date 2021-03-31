@@ -18,10 +18,10 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.constraintmachine.Particle;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,7 +50,7 @@ public class StakedTokensTest {
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 	private RadixAddress validatorAddress = new RadixAddress(MAGIC, this.validatorKeyPair.getPublicKey());
-	private List<Particle> upParticles = new ArrayList<>();
+	private List<Substate> upParticles = new ArrayList<>();
 
 	@Before
 	public void setup() throws Exception {
@@ -58,15 +58,12 @@ public class StakedTokensTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
 		final var cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			this.store
-		);
+		this.engine = new RadixEngine<>(cm, this.store);
 
 		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
 		var tokDef = new MutableTokenDefinition(
@@ -102,7 +99,7 @@ public class StakedTokensTest {
 
 	@Test
 	public void unstake_tokens() throws Exception {
-		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var upSubstate = new AtomicReference<Iterable<Substate>>();
 		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
 			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
@@ -117,7 +114,7 @@ public class StakedTokensTest {
 
 	@Test
 	public void unstake_partial_tokens() throws Exception {
-		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var upSubstate = new AtomicReference<Iterable<Substate>>();
 		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
 			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
@@ -133,7 +130,7 @@ public class StakedTokensTest {
 	@Test
 	public void move_staked_tokens() throws Exception {
 
-		var upSubstate = new AtomicReference<Iterable<Particle>>();
+		var upSubstate = new AtomicReference<Iterable<Substate>>();
 		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, upParticles)
 			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);

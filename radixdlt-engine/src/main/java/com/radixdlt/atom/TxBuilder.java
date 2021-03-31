@@ -40,12 +40,12 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -57,35 +57,34 @@ import java.util.stream.StreamSupport;
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
-	private final Iterable<Particle> upParticles;
-
-	// TODO: remove
-	private final Random random = new SecureRandom();
+	private final Iterable<Substate> remoteUpSubstate;
 
 	private TxBuilder(
 		RadixAddress address,
 		Set<SubstateId> downVirtualParticles,
-		Iterable<Particle> upParticles
+		Iterable<Substate> remoteUpSubstate
 	) {
 		this.address = address;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.downParticles = new HashSet<>(downVirtualParticles);
-		this.upParticles = upParticles;
+		this.remoteUpSubstate = remoteUpSubstate;
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address, Iterable<Particle> upParticles) {
-		return new TxBuilder(address, Set.of(), upParticles);
+	public static TxBuilder newBuilder(RadixAddress address, Iterable<Substate> remoteUpSubstate) {
+		return new TxBuilder(address, Set.of(), remoteUpSubstate);
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
 		return new TxBuilder(address, Set.of(), List.of());
 	}
 
-	public static TxBuilder newSystemBuilder(Iterable<Particle> upParticleList) {
-		return new TxBuilder(null, Set.of(), upParticleList);
+	public static TxBuilder newSystemBuilder(Iterable<Substate> remoteUpSubstate) {
+		return new TxBuilder(null, Set.of(), remoteUpSubstate);
 	}
 
 	public static TxBuilder newSystemBuilder() {
@@ -119,23 +118,24 @@ public final class TxBuilder {
 	}
 
 
-	private Iterable<Particle> remoteUpSubstates() {
-		return Iterables.filter(upParticles, p -> !downParticles.contains(SubstateId.ofSubstate(p)));
+	private Iterable<Substate> remoteUpSubstates() {
+		return Iterables.filter(remoteUpSubstate, s -> !downParticles.contains(s.getId()));
 	}
 
-	private <T extends Particle> T find(
+	private <T extends Particle> Substate findSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		int index,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = Streams.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
-		)
-			.filter(particleClass::isInstance)
-			.map(particleClass::cast)
-			.filter(particlePredicate)
+		var substateRead = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
 			.skip(index)
 			.findFirst();
 		if (substateRead.isEmpty()) {
@@ -152,7 +152,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
 			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
 		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -204,12 +204,17 @@ public final class TxBuilder {
 			return localDown.get();
 		}
 
-
 		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
-			.filter(particleClass::isInstance)
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.down(s.getId()))
+			.map(Substate::getParticle)
 			.map(particleClass::cast)
-			.filter(particlePredicate)
-			.peek(p -> this.down(SubstateId.ofSubstate(p)))
 			.findFirst()
 			.or(() -> {
 				if (virtualParticle.isPresent()) {
@@ -377,10 +382,10 @@ public final class TxBuilder {
 		swap(
 			UnregisteredValidatorParticle.class,
 			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address, 0L)),
+			Optional.of(new UnregisteredValidatorParticle(address)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of(), substateDown.getNonce() + 1)
+			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
 		);
 
 		particleGroup();
@@ -395,7 +400,7 @@ public final class TxBuilder {
 			p -> p.getAddress().equals(address),
 			"Already unregistered."
 		).with(
-			substateDown -> new UnregisteredValidatorParticle(address, substateDown.getNonce() + 1)
+			substateDown -> new UnregisteredValidatorParticle(address)
 		);
 		particleGroup();
 
@@ -411,7 +416,7 @@ public final class TxBuilder {
 			p -> p.getRri().equals(tokenRRI),
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
-		).with(rri -> new UniqueParticle(id, address, 1));
+		).with(rri -> new UniqueParticle(id, address));
 
 		particleGroup();
 
@@ -499,7 +504,7 @@ public final class TxBuilder {
 			factory::createUnallocated,
 			amount,
 			"Not enough balance to for minting."
-		).with(amt -> factory.createTransferrable(to, amt, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amt));
 
 		particleGroup();
 
@@ -508,6 +513,8 @@ public final class TxBuilder {
 
 	// For mempool filler
 	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
+		assertHasAddress("Must have address");
+
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
@@ -518,7 +525,7 @@ public final class TxBuilder {
 			UInt256.ONE
 		);
 
-		var particle = find(
+		var substate = findSubstate(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri)
 				&& p.getAddress().equals(address)
@@ -527,11 +534,12 @@ public final class TxBuilder {
 			"Could not find large particle greater than " + minSize
 		);
 
-		down(SubstateId.ofSubstate(particle));
+		down(substate.getId());
+		var particle = (TransferrableTokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
-		up(factory.createTransferrable(address, amt1, random.nextLong()));
-		up(factory.createTransferrable(address, amt2, random.nextLong()));
+		up(factory.createTransferrable(address, amt1));
+		up(factory.createTransferrable(address, amt2));
 		particleGroup();
 
 		return this;
@@ -552,10 +560,10 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amount));
 
 		particleGroup();
 
@@ -576,10 +584,10 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount, random.nextLong()));
+		).with(amt -> factory.createTransferrable(to, amount));
 
 		particleGroup();
 
@@ -599,7 +607,7 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for burn."
 		).with(amt -> factory.createUnallocated(amount));
@@ -625,16 +633,16 @@ public final class TxBuilder {
 			RegisteredValidatorParticle.class,
 			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
 			"Cannot delegate to " + delegateAddress
-		).with(substateDown -> substateDown.copyWithNonce(substateDown.getNonce() + 1));
+		).with(RegisteredValidatorParticle::copy);
 
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()));
+		).with(amt -> factory.createStaked(delegateAddress, address, amt));
 
 		particleGroup();
 
@@ -657,10 +665,10 @@ public final class TxBuilder {
 			StakedTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(delegateAddress, address, amt, random.nextLong()),
+			amt -> factory.createStaked(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createTransferrable(address, amt, random.nextLong()));
+		).with(amt -> factory.createTransferrable(address, amt));
 
 		particleGroup();
 
@@ -684,10 +692,10 @@ public final class TxBuilder {
 			StakedTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(from, address, amt, random.nextLong()),
+			amt -> factory.createStaked(from, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createStaked(to, address, amt, random.nextLong()));
+		).with(amt -> factory.createStaked(to, address, amt));
 
 		particleGroup();
 
@@ -708,7 +716,7 @@ public final class TxBuilder {
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt, random.nextLong()),
+			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance to for fee burn."
 		).with(factory::createUnallocated);
@@ -717,16 +725,24 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public Atom signAndBuildRemoteSubstateOnly(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+	public Atom signAndBuildRemoteSubstateOnly(
+		Function<HashCode, ECDSASignature> signer,
+		Consumer<Iterable<Substate>> upSubstateConsumer
+	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
 		upSubstateConsumer.accept(remoteUpSubstates());
 		return atom;
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer, Consumer<Iterable<Particle>> upSubstateConsumer) {
+	public Atom signAndBuild(
+		Function<HashCode, ECDSASignature> signer,
+		Consumer<Iterable<Substate>> upSubstateConsumer
+	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
 		var upSubstate = Iterables.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle).collect(Collectors.toList()),
+			lowLevelBuilder.localUpSubstate().stream()
+				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
+				.collect(Collectors.toList()),
 			remoteUpSubstates()
 		);
 		upSubstateConsumer.accept(upSubstate);

@@ -34,10 +34,12 @@ import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class IconUrlTest {
 	@Test
+	@Ignore
 	public void when_creating_multi_issuance_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api);
@@ -69,6 +71,7 @@ public class IconUrlTest {
 	}
 
 	@Test
+	@Ignore
 	public void when_creating_fixed_supply_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api);
@@ -102,6 +105,7 @@ public class IconUrlTest {
 	}
 
 	@Test
+	@Ignore
 	public void when_creating_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TokenUtilities.requestTokensFor(api);

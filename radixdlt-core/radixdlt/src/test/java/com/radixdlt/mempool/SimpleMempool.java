@@ -77,7 +77,7 @@ public final class SimpleMempool implements Mempool<Command> {
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<Command> seen) {
+	public List<Command> getCommands(int count, List<Command> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
 			List<Command> commands = Lists.newArrayList();

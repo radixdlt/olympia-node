@@ -141,6 +141,10 @@ public final class Atom {
 		return instructions;
 	}
 
+	public Stream<REInstruction> bootUpInstructions() {
+		return instructions.stream().filter(i -> i.getMicroOp() == REInstruction.REOp.UP);
+	}
+
 	public Stream<REInstruction> uniqueInstructions() {
 		return instructions.stream().filter(REInstruction::isUnique);
 	}

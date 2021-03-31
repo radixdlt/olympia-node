@@ -16,6 +16,9 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +40,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -80,11 +82,11 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() {
 		var particles = List.of(
-			ParsedInstruction.up(stake(UInt256.TWO)),
-			ParsedInstruction.up(stake(UInt256.FIVE)),
-			ParsedInstruction.up(transfer(UInt256.NINE)),
-			ParsedInstruction.up(transfer(UInt256.ONE)),
-			ParsedInstruction.down(transfer(UInt256.ONE))
+			ParsedInstruction.up(Substate.create(stake(UInt256.TWO), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(stake(UInt256.FIVE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(transfer(UInt256.NINE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(transfer(UInt256.ONE), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(transfer(UInt256.ONE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -100,7 +102,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() {
 		var particles = List.of(
-			ParsedInstruction.up(emission(UInt256.MAX_VALUE))
+			ParsedInstruction.up(Substate.create(emission(UInt256.MAX_VALUE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -112,10 +114,10 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() {
 		var particles = List.of(
-			ParsedInstruction.up(emission(UInt256.MAX_VALUE)),
-			ParsedInstruction.down(emission(UInt256.TWO)),
-			ParsedInstruction.down(emission(UInt256.FIVE)),
-			ParsedInstruction.up(emission(UInt256.ONE))
+			ParsedInstruction.up(Substate.create(emission(UInt256.MAX_VALUE), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(emission(UInt256.TWO), mock(SubstateId.class))),
+			ParsedInstruction.down(Substate.create(emission(UInt256.FIVE), mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(emission(UInt256.ONE), mock(SubstateId.class)))
 		);
 		var clientApiStore = prepareApiStore(particles);
 
@@ -128,7 +130,10 @@ public class BerkeleyClientApiStoreTest {
 	public void mutableTokenDefinitionIsStoredAndAccessible() {
 		var fooToken = mutableTokenDef("FOO");
 		var barToken = mutableTokenDef("BAR");
-		var particles = List.of(ParsedInstruction.up(fooToken), ParsedInstruction.up(barToken));
+		var particles = List.of(
+			ParsedInstruction.up(Substate.create(fooToken, mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(barToken, mock(SubstateId.class)))
+		);
 		var clientApiStore = prepareApiStore(particles);
 
 		var fooDef = TokenDefinitionRecord.from(fooToken, UInt256.ZERO);
@@ -146,7 +151,10 @@ public class BerkeleyClientApiStoreTest {
 	public void fixedTokenDefinitionIsStoredAndAccessible() {
 		var fooToken = fixedTokenDef("FOO");
 		var barToken = fixedTokenDef("BAR");
-		var particles = List.of(ParsedInstruction.up(fooToken), ParsedInstruction.up(barToken));
+		var particles = List.of(
+			ParsedInstruction.up(Substate.create(fooToken, mock(SubstateId.class))),
+			ParsedInstruction.up(Substate.create(barToken, mock(SubstateId.class)))
+		);
 		var clientApiStore = prepareApiStore(particles);
 
 		var fooDef = TokenDefinitionRecord.from(fooToken);
@@ -186,7 +194,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private StakedTokensParticle stake(UInt256 amount) {
-		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, Map.of(), 1L);
+		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, Map.of());
 	}
 
 	private UnallocatedTokensParticle emission(UInt256 amount) {
@@ -194,7 +202,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private TransferrableTokensParticle transfer(UInt256 amount) {
-		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, Map.of(), 1L);
+		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, Map.of());
 	}
 
 	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {

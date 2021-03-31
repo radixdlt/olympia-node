@@ -10,48 +10,48 @@ Feature: Token fees required for submitted atoms
   1 millirad per byte after the first 3072 bytes
   1,000 millirad for creating a fixed or mutable supply token
 
-Scenario: 1. Atom without fee is rejected
-  Given I have a connection to a Radix network,
-  When I submit an atom without any fees,
-  Then I can see that atom being rejected by the network
+#Scenario: 1. Atom without fee is rejected
+  #Given I have a connection to a Radix network,
+  #When I submit an atom without any fees,
+  #Then I can see that atom being rejected by the network
 
-Scenario: 2. Atom with insufficient fee is rejected
-  Given I have a connection to a Radix network,
-  When I submit an atom with a fee that is too small,
-  Then I can see that atom being rejected by the network
+#Scenario: 2. Atom with insufficient fee is rejected
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a fee that is too small,
+  #Then I can see that atom being rejected by the network
 
-Scenario: 3. Atom with minimum fee is accepted
-  Given I have a connection to a Radix network,
-  When I submit an atom with a fee that equals the minimum fee,
-  Then I can see that atom being accepted by the network
+#Scenario: 3. Atom with minimum fee is accepted
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a fee that equals the minimum fee,
+  #Then I can see that atom being accepted by the network
 
-Scenario: 4. Atom with more than minimum fee is accepted
-  Given I have a connection to a Radix network,
-  When I submit an atom with a fee that exceeds the minimum fee,
-  Then I can see that atom being accepted by the network
+#Scenario: 4. Atom with more than minimum fee is accepted
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a fee that exceeds the minimum fee,
+  #Then I can see that atom being accepted by the network
 
-Scenario: 5. Minimum fee charged for small atom
-  Given I have a connection to a Radix network,
-  When I create an atom with a size smaller than 3072 bytes,
-  And I submit that atom to the network with the computed minimum fee,
-  Then I can see that the fee is 40 millirads
+#Scenario: 5. Minimum fee charged for small atom
+  #Given I have a connection to a Radix network,
+  #When I create an atom with a size smaller than 3072 bytes,
+  #And I submit that atom to the network with the computed minimum fee,
+  #Then I can see that the fee is 40 millirads
 
-Scenario: 6. Atom creating mutable supply charged higher fee
-  Given I have a connection to a Radix network,
-  When I create an atom that creates a mutable supply token,
-  And I submit that atom to the network with the computed minimum fee,
-  Then I can see that the fee is at least 1 rad
+#Scenario: 6. Atom creating mutable supply charged higher fee
+  #Given I have a connection to a Radix network,
+  #When I create an atom that creates a mutable supply token,
+  #And I submit that atom to the network with the computed minimum fee,
+  #Then I can see that the fee is at least 1 rad
 
-Scenario: 7. Atom creating fixed supply charged higher fee
-  Given I have a connection to a Radix network,
-  When I create an atom that creates a fixed supply token,
-  And I submit that atom to the network with the computed minimum fee,
-  Then I can see that the fee is at least 1 rad
+#Scenario: 7. Atom creating fixed supply charged higher fee
+  #Given I have a connection to a Radix network,
+  #When I create an atom that creates a fixed supply token,
+  #And I submit that atom to the network with the computed minimum fee,
+  #Then I can see that the fee is at least 1 rad
 
-Scenario: 8. Atoms with handcrafted fee groups are accepted by the network
-  Given I have a connection to a Radix network,
-  When I submit an atom with a handcrafted fee group,
-  Then I can see that atom being accepted by the network
+#Scenario: 8. Atoms with handcrafted fee groups are accepted by the network
+  #Given I have a connection to a Radix network,
+  #When I submit an atom with a handcrafted fee group,
+  #Then I can see that atom being accepted by the network
 
 #Scenario: 9. Atoms with fee groups with output ttps are rejected by the network
   #Given I have a connection to a Radix network,
@@ -69,11 +69,11 @@ Scenario: 8. Atoms with handcrafted fee groups are accepted by the network
   #And I submit this atom with a smaller fee than that returned by the service,
   #Then I can see that atom being rejected by the network
 
-Scenario: 12. Atom required fee can be calculated and submitted atom is accepted
-  Given I have a connection to a Radix network,
-  When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
-  And I submit this atom with a fee as returned by the service,
-  Then I can see that atom being accepted by the network
+#Scenario: 12. Atom required fee can be calculated and submitted atom is accepted
+  #Given I have a connection to a Radix network,
+  #When I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,
+  #And I submit this atom with a fee as returned by the service,
+  #Then I can see that atom being accepted by the network
 
 #Scenario: 13. Particle fee can be calculated by comparing two atoms fees
   #Given I have a connection to a Radix network,

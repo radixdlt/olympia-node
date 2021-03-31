@@ -47,15 +47,12 @@ public class UniqueTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new UniqueParticleConstraintScrypt());
 		var cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			store
-		);
+		this.engine = new RadixEngine<>(cm, store);
 	}
 
 	@Test
@@ -72,7 +69,7 @@ public class UniqueTest {
 		var atom = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(RRI.of(otherRadixAddress, "thisisauniquestring")))
-			.up(new UniqueParticle("thisisauniquestring", otherRadixAddress, 1))
+			.up(new UniqueParticle("thisisauniquestring", otherRadixAddress))
 			.particleGroup()
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))

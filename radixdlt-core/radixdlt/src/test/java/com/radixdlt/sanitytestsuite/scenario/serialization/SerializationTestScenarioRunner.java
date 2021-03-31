@@ -113,8 +113,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
                 argsExtractor.asUInt256("amount"),
                 argsExtractor.asUInt256("granularity"),
                 argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("permissions"),
-                argsExtractor.asLong("nonce")
+                argsExtractor.extractTokenPermissions("permissions")
         );
 
         assertTrue(argsExtractor.isFinished());
@@ -128,8 +127,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
                 argsExtractor.asUInt256("amount"),
                 argsExtractor.asUInt256("granularity"),
                 argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("tokenPermissions"),
-                argsExtractor.asLong("nonce")
+                argsExtractor.extractTokenPermissions("tokenPermissions")
         );
         assertTrue(argsExtractor.isFinished());
         return ttp;
@@ -141,8 +139,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
                 argsExtractor.asUInt256("amount"),
                 argsExtractor.asUInt256("granularity"),
                 argsExtractor.asRRI("tokenDefinitionReference"),
-                argsExtractor.extractTokenPermissions("permissions"),
-                argsExtractor.asLong("nonce")
+                argsExtractor.extractTokenPermissions("permissions")
         );
         assertTrue(argsExtractor.isFinished());
         return utp;
@@ -150,10 +147,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
 
     private static RRIParticle makeRRIParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var rrip = new RRIParticle(
-                argsExtractor.asRRI("rri"),
-                argsExtractor.asLong("nonce")
-        );
+        var rrip = new RRIParticle(argsExtractor.asRRI("rri"));
         assertTrue(argsExtractor.isFinished());
         return rrip;
     }
@@ -161,9 +155,8 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static RegisteredValidatorParticle makeRegisteredValidatorParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var rvp = new RegisteredValidatorParticle(
-                argsExtractor.asRadixAddress("address"),
-                ImmutableSet.copyOf(argsExtractor.asAddressSet("allowedDelegators")),
-                argsExtractor.asLong("nonce")
+            argsExtractor.asRadixAddress("address"),
+            ImmutableSet.copyOf(argsExtractor.asAddressSet("allowedDelegators"))
         );
         assertTrue(argsExtractor.isFinished());
         return rvp;
@@ -171,10 +164,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
 
     private static UnregisteredValidatorParticle makeUnregisteredValidatorParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var uvp = new UnregisteredValidatorParticle(
-                argsExtractor.asRadixAddress("address"),
-                argsExtractor.asLong("nonce")
-        );
+        var uvp = new UnregisteredValidatorParticle(argsExtractor.asRadixAddress("address"));
         assertTrue(argsExtractor.isFinished());
         return uvp;
     }

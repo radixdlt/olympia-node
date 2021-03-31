@@ -25,18 +25,16 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -45,13 +43,13 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
@@ -61,7 +59,6 @@ import org.junit.rules.TemporaryFolder;
 import org.radix.TokenIssuance;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -94,7 +91,10 @@ public class TokenFeeTest {
 	@LastStoredProof
 	private LedgerProof ledgerProof;
 
-	private List<Particle> particles;
+	@Inject
+	private EngineStore<LedgerAndBFTProof> engineStore;
+
+	private Iterable<Substate> substates;
 
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
@@ -125,23 +125,12 @@ public class TokenFeeTest {
 	public void setup() {
 		createInjector().injectMembers(this);
 		this.address = new RadixAddress((byte) magic, ecKeyPair.getPublicKey());
-		particles = genesis.stream()
-			.flatMap(Atom::uniqueInstructions)
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(REInstruction::getData)
-			.map(d -> {
-				try {
-					return DefaultSerialization.getInstance().fromDson(d, Particle.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.collect(Collectors.toList());
+		this.substates = engineStore.upSubstates(TransferrableTokensParticle.class, p -> true);
 	}
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, particles)
+		var atom = TxBuilder.newBuilder(address, substates)
 			.mutex("test")
 			.burnForFee(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
@@ -159,7 +148,7 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, particles)
+		var atom = TxBuilder.newBuilder(address, substates)
 			.burnForFee(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
 

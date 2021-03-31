@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atom.Substate;
 
 import java.util.List;
 import java.util.Set;
@@ -53,5 +53,5 @@ public interface StatefulActionToParticleGroupsMapper<T extends Action> {
 	 * @param store particles as requested by requiredState()
 	 * @return Particle groups created given an action
 	 */
-	List<ParticleGroup> mapToParticleGroups(T action, Stream<Particle> store) throws StageActionException;
+	List<ParticleGroup> mapToParticleGroups(T action, Stream<Substate> store) throws StageActionException;
 }

@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
@@ -39,7 +40,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +105,7 @@ public final class RadixEngine<M> {
 
 	private static final class SubstateCache<T extends Particle> {
 		private final Predicate<T> particleCheck;
-		private final HashMap<SubstateId, T> cache = new HashMap<>();
+		private final HashMap<SubstateId, Substate> cache = new HashMap<>();
 		private final boolean includeInBranches;
 
 		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
@@ -123,9 +123,9 @@ public final class RadixEngine<M> {
 			return particleCheck.test((T) particle);
 		}
 
-		public SubstateCache<T> bringUp(Particle upSubstate) {
-			if (particleCheck.test((T) upSubstate)) {
-				this.cache.put(SubstateId.ofSubstate(upSubstate), (T) upSubstate);
+		public SubstateCache<T> bringUp(Substate upSubstate) {
+			if (particleCheck.test((T) upSubstate.getParticle())) {
+				this.cache.put(upSubstate.getId(), upSubstate);
 			}
 			return this;
 		}
@@ -137,8 +137,6 @@ public final class RadixEngine<M> {
 	}
 
 	private final ConstraintMachine constraintMachine;
-	private final CMStore virtualizedCMStore;
-	private final Predicate<Particle> virtualStoreLayer;
 	private final EngineStore<M> engineStore;
 	private final PostParsedChecker checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -149,72 +147,48 @@ public final class RadixEngine<M> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Predicate<Particle> virtualStoreLayer,
 		EngineStore<M> engineStore
 	) {
-		this(constraintMachine, virtualStoreLayer, engineStore, null, BatchVerifier.empty());
+		this(constraintMachine, engineStore, null, BatchVerifier.empty());
 	}
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Predicate<Particle> virtualStoreLayer,
 		EngineStore<M> engineStore,
 		PostParsedChecker checker,
 		BatchVerifier<M> batchVerifier
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
-		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
-		this.virtualizedCMStore = new CMStore() {
-			@Override
-			public Transaction createTransaction() {
-				return engineStore.createTransaction();
-			}
-
-			@Override
-			public Spin getSpin(Transaction txn, Particle particle) {
-				var curSpin = engineStore.getSpin(txn, particle);
-				if (curSpin == Spin.DOWN) {
-					return curSpin;
-				}
-
-				if (virtualStoreLayer.test(particle)) {
-					return Spin.UP;
-				}
-
-				return curSpin;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
-				return engineStore.loadUpParticle(txn, substateId);
-			}
-		};
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 		this.batchVerifier = batchVerifier;
 	}
 
-	public void addSubstateCache(SubstateCacheRegister<?> substateCacheRegister, boolean includeInBranches) {
+	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
 				throw new IllegalStateException();
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			engineStore.reduceUpParticles(substateCacheRegister.getParticleClass(), cache, SubstateCache::bringUp);
+			var substateIterable = engineStore.upSubstates(
+				substateCacheRegister.getParticleClass(),
+				substateCacheRegister.getParticlePredicate()
+			);
+			substateIterable.forEach(cache::bringUp);
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}
 
 	public <T> T getSubstateCache(
 		List<Class<? extends Particle>> particleClasses,
-		Function<Iterable<Particle>, T> func
+		Function<Iterable<Substate>, T> func
 	) {
 		synchronized (stateUpdateEngineLock) {
 			var substates = Iterables.concat(
 				particleClasses.stream()
 					.map(substateCache::get)
-					.map(s -> (Collection<Particle>) s.cache.values())
+					.map(s -> s.cache.values())
 					.collect(Collectors.toList())
 			);
 
@@ -282,7 +256,6 @@ public final class RadixEngine<M> {
 
 		private RadixEngineBranch(
 			ConstraintMachine constraintMachine,
-			Predicate<Particle> virtualStoreLayer,
 			EngineStore<M> parentStore,
 			PostParsedChecker checker,
 			Map<Pair<Class<?>, String>, ApplicationStateComputer<?, ?, M>> stateComputers,
@@ -292,7 +265,6 @@ public final class RadixEngine<M> {
 
 			this.engine = new RadixEngine<>(
 				constraintMachine,
-				virtualStoreLayer,
 				transientEngineStore,
 				checker,
 				BatchVerifier.empty()
@@ -302,17 +274,17 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public void execute(List<Atom> atoms) throws RadixEngineException {
-			engine.execute(atoms);
+		public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
+			return engine.execute(atoms);
 		}
 
-		public void execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
-			engine.execute(atoms, null, permissionLevel);
+		public List<ParsedTransaction> execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
+			return engine.execute(atoms, null, permissionLevel);
 		}
 
 		public <T> T getSubstateCache(
 			List<Class<? extends Particle>> particleClasses,
-			Function<Iterable<Particle>, T> func
+			Function<Iterable<Substate>, T> func
 		) {
 			return engine.getSubstateCache(particleClasses, func);
 		}
@@ -344,7 +316,6 @@ public final class RadixEngine<M> {
 			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.constraintMachine,
-				this.virtualStoreLayer,
 				this.engineStore,
 				this.checker,
 				branchedStateComputers,
@@ -357,12 +328,13 @@ public final class RadixEngine<M> {
 		}
 	}
 
+
 	private ParsedTransaction verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 		var parsedInstructions = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
 			txn,
-			virtualizedCMStore,
+			engineStore,
 			atom,
 			permissionLevel,
 			parsedInstructions
@@ -373,7 +345,7 @@ public final class RadixEngine<M> {
 			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
-		var parsedTransaction = new ParsedTransaction(parsedInstructions);
+		var parsedTransaction = new ParsedTransaction(atom, parsedInstructions);
 
 		if (checker != null) {
 			Result hookResult = checker.check(atom, permissionLevel, parsedTransaction);
@@ -397,8 +369,8 @@ public final class RadixEngine<M> {
 	 * @param atoms atom to store
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public void execute(List<Atom> atoms) throws RadixEngineException {
-		execute(atoms, null, PermissionLevel.USER);
+	public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
+		return execute(atoms, null, PermissionLevel.USER);
 	}
 
 	/**
@@ -452,16 +424,16 @@ public final class RadixEngine<M> {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
 			for (ParsedInstruction parsedInstruction : parsedTransaction.instructions()) {
-				final var particle = parsedInstruction.getParticle();
+				final var particle = parsedInstruction.getSubstate().getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
 				var cache = substateCache.get(particle.getClass());
 				if (cache != null && cache.test(particle)) {
 					if (parsedInstruction.getSpin() == Spin.UP) {
-						cache.bringUp(particle);
+						cache.bringUp(parsedInstruction.getSubstate());
 					} else {
-						cache.shutDown(SubstateId.ofSubstate(particle));
+						cache.shutDown(parsedInstruction.getSubstate().getId());
 					}
 				}
 

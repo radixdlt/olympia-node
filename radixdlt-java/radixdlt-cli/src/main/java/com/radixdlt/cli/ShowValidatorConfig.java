@@ -68,13 +68,13 @@ public class ShowValidatorConfig implements Runnable {
 		api.pullOnce(api.getAddress()).blockingAwait();
 
 		api.getAtomStore()
-				.getUpParticles(api.getAddress(), null)
-				.filter(particle -> particle instanceof RegisteredValidatorParticle)
-				.map(particle -> (RegisteredValidatorParticle) particle)
-				.findFirst()
-				.ifPresentOrElse(validator -> printDetails(validator, address),
-						() -> printfln("No active validator configuration at %s", address)
-				);
+			.getUpParticles(api.getAddress(), null)
+			.filter(substate -> substate.getParticle() instanceof RegisteredValidatorParticle)
+			.map(substate -> (RegisteredValidatorParticle) substate.getParticle())
+			.findFirst()
+			.ifPresentOrElse(validator -> printDetails(validator, address),
+					() -> printfln("No active validator configuration at %s", address)
+			);
 
 		println("Done");
 	}

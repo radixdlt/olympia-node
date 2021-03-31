@@ -35,7 +35,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.ToLongFunction;
 import java.util.regex.Pattern;
 
 /**
@@ -53,7 +52,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
 			.singleAddressMapper(UnregisteredValidatorParticle::getAddress)
 			.staticValidation(checkAddress(UnregisteredValidatorParticle::getAddress))
-			.virtualizeUp(p -> p.getNonce() == 0) // virtualize first instance as UP
+			.virtualizeUp(p -> true) // virtualize first instance as UP
 			.build()
 		);
 
@@ -69,33 +68,29 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		createTransition(os,
 			UnregisteredValidatorParticle.class,
 			UnregisteredValidatorParticle::getAddress,
-			UnregisteredValidatorParticle::getNonce,
 			RegisteredValidatorParticle.class,
-			RegisteredValidatorParticle::getAddress,
-			RegisteredValidatorParticle::getNonce);
+			RegisteredValidatorParticle::getAddress
+		);
 
 		// transition from registered => unregistered
 		createTransition(os,
 			RegisteredValidatorParticle.class,
 			RegisteredValidatorParticle::getAddress,
-			RegisteredValidatorParticle::getNonce,
 			UnregisteredValidatorParticle.class,
-			UnregisteredValidatorParticle::getAddress,
-			UnregisteredValidatorParticle::getNonce);
+			UnregisteredValidatorParticle::getAddress
+		);
 	}
 
 	private <I extends Particle, O extends Particle> void createTransition(
 		SysCalls os,
 		Class<I> inputParticle,
 		Function<I, RadixAddress> inputAddressMapper,
-		ToLongFunction<I> inputNonceMapper,
 		Class<O> outputParticle,
-		Function<O, RadixAddress> outputAddressMapper,
-		ToLongFunction<O> outputNonceMapper
+		Function<O, RadixAddress> outputAddressMapper
 	) {
 		os.createTransition(
 			new TransitionToken<>(inputParticle, TypeToken.of(VoidUsedData.class), outputParticle, TypeToken.of(VoidUsedData.class)),
-			new ValidatorTransitionProcedure<>(inputAddressMapper, inputNonceMapper, outputAddressMapper, outputNonceMapper)
+			new ValidatorTransitionProcedure<>(inputAddressMapper, outputAddressMapper)
 		);
 	}
 
@@ -137,20 +132,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
 		implements TransitionProcedure<I, VoidUsedData, O, VoidUsedData> {
 		private final Function<I, RadixAddress> inputAddressMapper;
-		private final ToLongFunction<I> inputNonceMapper;
 		private final Function<O, RadixAddress> outputAddressMapper;
-		private final ToLongFunction<O> outputNonceMapper;
 
 		ValidatorTransitionProcedure(
 			Function<I, RadixAddress> inputAddressMapper,
-			ToLongFunction<I> inputNonceMapper,
-			Function<O, RadixAddress> outputAddressMapper,
-			ToLongFunction<O> outputNonceMapper
+			Function<O, RadixAddress> outputAddressMapper
 		) {
 			this.inputAddressMapper = inputAddressMapper;
-			this.inputNonceMapper = inputNonceMapper;
 			this.outputAddressMapper = outputAddressMapper;
-			this.outputNonceMapper = outputNonceMapper;
 		}
 
 		@Override
@@ -162,16 +151,6 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 				return Result.error(String.format(
 					"validator addresses do not match: %s != %s",
 					inputAddress, outputAddress
-				));
-			}
-
-			// ensure nonce is increased when transitioning between the two states
-			long inputNonce = inputNonceMapper.applyAsLong(inputParticle);
-			long outputNonce = outputNonceMapper.applyAsLong(outputParticle);
-			if (inputNonce + 1 != outputNonce) {
-				return Result.error(String.format(
-					"output nonce must be input nonce + 1, but %s != %s + 1",
-					outputNonce, inputNonce
 				));
 			}
 

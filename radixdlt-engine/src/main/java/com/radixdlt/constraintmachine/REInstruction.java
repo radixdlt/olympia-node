@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public final class REInstruction {
 	public enum REOp {
-		UP((byte) 1, Spin.NEUTRAL, Spin.UP, true),
+		UP((byte) 1, Spin.NEUTRAL, Spin.UP, false),
 		VDOWN((byte) 2, Spin.UP, Spin.DOWN, true),
 		DOWN((byte) 3, Spin.UP, Spin.DOWN, true),
 		LDOWN((byte) 4, Spin.UP, Spin.DOWN, false),

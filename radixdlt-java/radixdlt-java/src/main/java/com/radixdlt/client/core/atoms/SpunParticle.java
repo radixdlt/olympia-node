@@ -16,49 +16,46 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atom.Substate;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 
 import java.util.Objects;
 
 /**
  * Instruction which has been parsed and state checked by Radix Engine
  */
-public final class ParsedInstruction {
-	private final Substate substate;
+public final class SpunParticle {
+	private final Particle particle;
 	private final Spin spin;
 
-	private ParsedInstruction(Substate substate, Spin spin) {
-		Objects.requireNonNull(substate);
+	private SpunParticle(Particle particle, Spin spin) {
+		Objects.requireNonNull(particle);
 		Objects.requireNonNull(spin);
 
-		this.substate = substate;
+		this.particle = particle;
 		this.spin = spin;
 	}
 
-	public static ParsedInstruction up(Substate substate) {
-		return new ParsedInstruction(substate, Spin.UP);
+	public static SpunParticle up(Particle particle) {
+		return new SpunParticle(particle, Spin.UP);
 	}
 
-	public static ParsedInstruction down(Substate substate) {
-		return new ParsedInstruction(substate, Spin.DOWN);
+	public static SpunParticle down(Particle particle) {
+		return new SpunParticle(particle, Spin.DOWN);
 	}
 
-	public static ParsedInstruction of(Substate substate, Spin spin) {
-		return new ParsedInstruction(substate, spin);
-	}
-
-	public Substate getSubstate() {
-		return substate;
+	public static SpunParticle of(Particle particle, Spin spin) {
+		return new SpunParticle(particle, spin);
 	}
 
 	public Particle getParticle() {
-		return substate.getParticle();
+		return particle;
 	}
 
 	public <T extends Particle> T getParticle(Class<T> cls) {
-		return cls.cast(substate.getParticle());
+		return cls.cast(particle);
 	}
 
 	public Spin getSpin() {
@@ -75,22 +72,22 @@ public final class ParsedInstruction {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof ParsedInstruction)) {
+		if (!(obj instanceof SpunParticle)) {
 			return false;
 		}
 
-		ParsedInstruction parsedInstruction = (ParsedInstruction) obj;
+		SpunParticle spunParticle = (SpunParticle) obj;
 
-		return Objects.equals(this.substate, parsedInstruction.substate) && Objects.equals(this.spin, parsedInstruction.spin);
+		return Objects.equals(this.particle, spunParticle.particle) && Objects.equals(this.spin, spunParticle.spin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(substate, spin);
+		return Objects.hash(particle, spin);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), spin, substate);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), spin, particle);
 	}
 }

@@ -24,14 +24,13 @@ package com.radixdlt.client.application.translate.validators;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
 
 import java.util.List;
 import java.util.Set;
@@ -50,16 +49,12 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(RegisterValidatorAction action, Stream<Particle> store) throws StageActionException {
+	public List<ParticleGroup> mapToParticleGroups(RegisterValidatorAction action, Stream<Substate> store) throws StageActionException {
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
-		var particle = currentState.asParticle();
-		var isVirtual = particle instanceof UnregisteredValidatorParticle && ((UnregisteredValidatorParticle) particle).getNonce() == 0;
+		var substate = currentState.asSubstate();
+		var particle = substate.getParticle();
 		var builder = ParticleGroup.builder();
-		if (isVirtual) {
-			builder.virtualSpinDown(particle);
-		} else {
-			builder.spinDown(SubstateId.ofSubstate(particle));
-		}
+		builder.spinDown(substate.getId());
 		builder.spinUp(currentState.register(action.getUrl(), action.getAllowedDelegators()));
 
 		return ImmutableList.of(builder.build());

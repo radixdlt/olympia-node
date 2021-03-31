@@ -34,21 +34,12 @@ public final class RRIParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI rri;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
-
 	RRIParticle() {
 		// Serializer only
 	}
 
 	public RRIParticle(RRI rri) {
-		this(rri, 0);
-	}
-
-	public RRIParticle(RRI rri, long nonce) {
 		this.rri = rri;
-		this.nonce = nonce;
 	}
 
 	@Override
@@ -60,13 +51,9 @@ public final class RRIParticle extends Particle {
 		return rri;
 	}
 
-	public long getNonce() {
-		return nonce;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.rri, this.nonce);
+		return Objects.hash(this.rri);
 	}
 
 	@Override
@@ -75,13 +62,12 @@ public final class RRIParticle extends Particle {
 			return false;
 		}
 		final var that = (RRIParticle) obj;
-		return this.nonce == that.nonce
-			&& Objects.equals(this.rri, that.rri);
+		return Objects.equals(this.rri, that.rri);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s)]",
-			getClass().getSimpleName(), rri, nonce);
+		return String.format("%s[(%s)]",
+			getClass().getSimpleName(), rri);
 	}
 }

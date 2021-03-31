@@ -1,6 +1,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -8,6 +9,7 @@ import com.radixdlt.constraintmachine.Spin;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;
@@ -33,18 +35,19 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
+	public <U extends Particle> Iterable<Substate> upSubstates(Class<U> substateClass, Predicate<U> substatePredicate) {
+		throw new UnsupportedOperationException("Transient store should not require up substates.");
+	}
+
+	@Override
 	public Transaction createTransaction() {
 		return new Transaction() { };
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Particle particle) {
-		Spin transientSpin = transientStore.getSpin(txn, particle);
-		if (transientSpin != Spin.NEUTRAL) {
-			return transientSpin;
-		}
-
-		return base.getSpin(txn, particle);
+	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
+		return transientStore.isVirtualDown(txn, substateId)
+			|| base.isVirtualDown(txn, substateId);
 	}
 
 	@Override

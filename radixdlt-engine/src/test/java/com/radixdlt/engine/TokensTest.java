@@ -1,7 +1,5 @@
 package com.radixdlt.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -11,7 +9,6 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -33,13 +30,13 @@ public class TokensTest {
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			cm,
-			cmAtomOS.virtualizedUpParticles(),
 			store
 		);
 	}
@@ -75,11 +72,7 @@ public class TokensTest {
 		var atom = builder.signAndBuild(keyPair::sign);
 
 		// Act
-		this.engine.execute(List.of(atom));
-
 		// Assert
-		assertThat(this.store.getSpin(null, rriParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(null, tokenDefinitionParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(null, transferrableTokensParticle)).isEqualTo(Spin.UP);
+		this.engine.execute(List.of(atom));
 	}
 }

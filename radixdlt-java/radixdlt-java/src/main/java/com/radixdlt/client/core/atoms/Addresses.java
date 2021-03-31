@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 
@@ -48,8 +47,7 @@ public final class Addresses {
 	}
 
 	public static Stream<RadixAddress> ofAtom(Atom atom) {
-		return atom.uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
+		return atom.bootUpInstructions()
 			.map(i -> {
 				try {
 					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
