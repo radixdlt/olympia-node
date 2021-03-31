@@ -52,7 +52,6 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -160,8 +159,6 @@ public class MempoolTest {
 			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
 	}
 
-	// TODO(lukasz): fixme
-	@Ignore
 	@Test
 	public void relay_successful_local_add() {
 		// Arrange
@@ -176,8 +173,6 @@ public class MempoolTest {
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
 	}
 
-	// TODO(lukasz): fixme
-	@Ignore
 	@Test
 	public void relay_successful_remote_add() {
 		// Arrange
@@ -304,10 +299,8 @@ public class MempoolTest {
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
-	// TODO(lukasz): fixme
-	@Ignore
 	@Test
-	public void mempool_should_relay_old_commands_on_trigger() throws Exception {
+	public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		final var keyPair = ECKeyPair.generateNew();
@@ -315,24 +308,30 @@ public class MempoolTest {
 		final var mempoolAdd = MempoolAdd.create(command);
 		processor.handleMessage(self, mempoolAdd);
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(1);
+
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+		network.dropMessages(msg -> msg.message() instanceof MempoolAddSuccess);
 
 		// should not relay immediately
 		processor.handleMessage(self, MempoolRelayTrigger.create());
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(1);
+		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after initial delay
 		Thread.sleep(mempoolConfig.commandRelayInitialDelay());
 		processor.handleMessage(self, MempoolRelayTrigger.create());
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(2);
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
+		network.dropMessages(msg -> msg.message() instanceof MempoolRelayCommands);
 
 		// should not relay again immediately
 		processor.handleMessage(self, MempoolRelayTrigger.create());
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(2);
+		assertThat(network.allMessages()).isEmpty();
 
 		// should relay after repeat delay
 		Thread.sleep(mempoolConfig.commandRelayRepeatDelay());
 		processor.handleMessage(self, MempoolRelayTrigger.create());
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(3);
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
 	}
 }

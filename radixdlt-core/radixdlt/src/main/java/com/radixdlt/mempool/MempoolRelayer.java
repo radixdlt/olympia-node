@@ -69,13 +69,15 @@ public final class MempoolRelayer {
 	}
 
 	private void relayCommands(ImmutableList<Command> commands, ImmutableList<BFTNode> ignorePeers) {
-		counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, commands.size());
 		final var mempoolAddMsg = MempoolAdd.create(commands);
 		final var peers = new ArrayList<>(this.peersView.peers());
 		peers.removeAll(ignorePeers);
 		Collections.shuffle(peers);
 		peers.stream()
 			.limit(mempoolConfig.relayMaxPeers())
-			.forEach(peer -> this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg));
+			.forEach(peer -> {
+				counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, commands.size());
+				this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
+			});
 	}
 }

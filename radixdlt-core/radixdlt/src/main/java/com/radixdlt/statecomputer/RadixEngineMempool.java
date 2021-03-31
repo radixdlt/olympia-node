@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
@@ -62,6 +63,7 @@ import java.util.stream.Collectors;
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
+@Singleton
 public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 	private final ConcurrentHashMap<Command, MempoolAtom> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<Command>> particleIndex = new HashMap<>();
