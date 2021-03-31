@@ -20,8 +20,6 @@ package com.radixdlt.atom;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -35,7 +33,7 @@ import com.radixdlt.serialization.SerializerId2;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,28 +51,20 @@ public final class Atom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("i")
+	@DsonOutput({Output.ALL})
+	private final List<byte[]> instructions;
+
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
 	private final ECDSASignature signature;
 
-	private final List<REInstruction> instructions;
-
 	@JsonCreator
 	private Atom(
-		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
+		@JsonProperty("i") List<byte[]> byteInstructions,
 		@JsonProperty("s") ECDSASignature signature
 	) {
-		this(
-			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signature
-		);
-	}
-
-	private Atom(
-		List<REInstruction> instructions,
-		ECDSASignature signature
-	) {
-		this.instructions = Objects.requireNonNull(instructions);
+		this.instructions = byteInstructions;
 		this.signature = signature;
 	}
 
@@ -82,11 +72,11 @@ public final class Atom {
 		List<REInstruction> instructions,
 		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature);
+		return new Atom(serializedInstructions(instructions).collect(Collectors.toList()), signature);
 	}
 
 	public HashCode computeHashToSign() {
-		return computeHashToSign(this.instructions);
+		return computeHashToSignFromBytes(this.instructions.stream());
 	}
 
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
@@ -100,12 +90,6 @@ public final class Atom {
 		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
-	@JsonProperty("i")
-	@DsonOutput(Output.ALL)
-	private ImmutableList<byte[]> getSerializerInstructions() {
-		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
-	}
-
 	public Optional<ECDSASignature> getSignature() {
 		return Optional.ofNullable(this.signature);
 	}
@@ -115,27 +99,8 @@ public final class Atom {
 			.flatMap(i -> Stream.of(new byte[] {i.getMicroOp().opCode()}, i.getData()));
 	}
 
-	private static ImmutableList<REInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
-		Objects.requireNonNull(bytesList);
-		Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
-
-		Iterator<byte[]> bytesIterator = bytesList.iterator();
-		while (bytesIterator.hasNext()) {
-			byte[] bytes = bytesIterator.next();
-			byte[] dataBytes = bytesIterator.next();
-			var instruction = REInstruction.create(bytes[0], dataBytes);
-			instructionsBuilder.add(instruction);
-		}
-
-		return instructionsBuilder.build();
-	}
-
-	public List<REInstruction> getInstructions() {
-		return instructions;
-	}
-
-	public Stream<REInstruction> bootUpInstructions() {
-		return instructions.stream().filter(i -> i.getMicroOp() == REInstruction.REOp.UP);
+	public List<byte[]> getInstructions() {
+		return this.instructions == null ? List.of() : this.instructions;
 	}
 
 	@Override
@@ -150,8 +115,9 @@ public final class Atom {
 		}
 
 		Atom other = (Atom) o;
-		return Objects.equals(this.signature, other.signature)
-			&& Objects.equals(this.instructions, other.instructions);
+		var thisDson = DefaultSerialization.getInstance().toDson(this, Output.ALL);
+		var otherDson = DefaultSerialization.getInstance().toDson(other, Output.ALL);
+		return Arrays.equals(thisDson, otherDson);
 	}
 
 	@Override
@@ -162,6 +128,6 @@ public final class Atom {
 	}
 
 	public String toInstructionsString() {
-		return this.instructions.stream().map(i -> i + "\n").collect(Collectors.joining());
+		return this.instructions.stream().map(i -> Hex.toHexString(i) + "\n").collect(Collectors.joining());
 	}
 }

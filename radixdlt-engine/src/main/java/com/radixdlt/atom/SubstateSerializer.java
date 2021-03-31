@@ -32,6 +32,10 @@ public final class SubstateSerializer {
 		return DefaultSerialization.getInstance().fromDson(bytes, Particle.class);
 	}
 
+	public static Particle deserialize(byte[] bytes, int offset) throws DeserializeException {
+		return DefaultSerialization.getInstance().fromDson(bytes, offset, bytes.length - offset, Particle.class);
+	}
+
 	public static byte[] serialize(Particle p) {
 		return DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
 	}

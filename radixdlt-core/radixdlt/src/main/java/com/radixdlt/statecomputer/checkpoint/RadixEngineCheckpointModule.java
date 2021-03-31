@@ -25,6 +25,8 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
@@ -46,7 +48,9 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@NativeToken
 	private RRI nativeToken(@Genesis List<Atom> atoms) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::bootUpInstructions)
+		ImmutableList<RRI> rris = atoms.stream()
+			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {
 					return SubstateSerializer.deserialize(i.getData());

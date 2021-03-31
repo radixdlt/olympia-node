@@ -17,11 +17,6 @@
 
 package org.radix.api.services;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -42,7 +37,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -177,28 +171,6 @@ public class AtomsService {
 	}
 
 	private void processExecutedCommand(AtomsCommittedToLedger atomsCommittedToLedger) {
-		atomsCommittedToLedger.getAtoms().forEach(cmd -> {
-			// TODO: Temporary, remove at some point
-			final Atom atom;
-			try {
-				atom = DefaultSerialization.getInstance().fromDson(cmd.getPayload(), Atom.class);
-			} catch (DeserializeException e) {
-				throw new IllegalStateException();
-			}
-			var indicies = atom.bootUpInstructions()
-				.map(i -> {
-					try {
-						return SubstateSerializer.deserialize(i.getData());
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
-				})
-				.flatMap(p -> p.getDestinations().stream())
-				.collect(ImmutableSet.toImmutableSet());
-
-			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, cmd.getId(), indicies));
-			getAtomStatusListeners(cmd.getId()).forEach(listener -> listener.onStored(cmd.getId()));
-		});
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
@@ -212,14 +184,6 @@ public class AtomsService {
 			final AID aid = cmd.getId();
 			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
 		});
-	}
-
-	private Optional<Atom> toClientAtom(final byte[] payload) {
-		try {
-			return of(serialization.fromDson(payload, Atom.class));
-		} catch (DeserializeException e) {
-			return empty();
-		}
 	}
 
 	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {

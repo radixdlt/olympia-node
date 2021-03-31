@@ -17,6 +17,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
@@ -34,8 +35,10 @@ import com.radixdlt.utils.Ints;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -393,6 +396,20 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
+	public static List<REInstruction> toInstructions(List<byte[]> bytesList) {
+		Objects.requireNonNull(bytesList);
+		ImmutableList.Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
+
+		Iterator<byte[]> bytesIterator = bytesList.iterator();
+		while (bytesIterator.hasNext()) {
+			byte[] bytes = bytesIterator.next();
+			byte[] dataBytes = bytesIterator.next();
+			var instruction = REInstruction.create(bytes[0], dataBytes);
+			instructionsBuilder.add(instruction);
+		}
+
+		return instructionsBuilder.build();
+	}
 
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
@@ -405,12 +422,14 @@ public final class ConstraintMachine {
 		Atom atom,
 		List<ParsedInstruction> parsedInstructions
 	) {
+		var rawInstructions = toInstructions(atom.getInstructions());
+
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 		int instructionIndex = 0;
 		int numMessages = 0;
 
-		for (REInstruction inst : atom.getInstructions()) {
+		for (var inst : rawInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 			if (inst.getData().length > DATA_MAX_SIZE)	 {
 				return Optional.of(new CMError(

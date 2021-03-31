@@ -42,7 +42,6 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.TokenFeeProcessor;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
@@ -128,7 +127,6 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addReducer(new TokenBalanceReducer())
 			.addReducer(new StakedTokenBalanceReducer());
@@ -891,10 +889,6 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getNetwork();
 	}
 
-	public BigDecimal getMinimumRequiredFee(TxLowLevelBuilder atomWithoutFees) {
-		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
-	}
-
 	public static class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
@@ -1012,16 +1006,6 @@ public class RadixApplicationAPI {
 
 		public <T extends ApplicationState> RadixApplicationAPIBuilder addReducer(ParticleReducer<T> reducer) {
 			this.reducers.add(reducer);
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder feeProcessor(FeeProcessor feeProcessor) {
-			this.feeProcessorBuilder = radixUniverse -> feeProcessor;
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder defaultFeeProcessor() {
-			this.feeProcessorBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
 			return this;
 		}
 

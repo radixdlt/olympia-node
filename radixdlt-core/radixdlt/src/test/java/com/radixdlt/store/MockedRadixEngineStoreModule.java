@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.Particle;
@@ -55,9 +56,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	private ParsedTransaction toParsed(Atom atom, InMemoryEngineStore<LedgerAndBFTProof> store) {
+		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
+
 		var instructions = new ArrayList<ParsedInstruction>();
-		for (int i = 0; i < atom.getInstructions().size(); i++) {
-			var instruction = atom.getInstructions().get(i);
+		for (int i = 0; i < rawInstructions.size(); i++) {
+			var instruction = rawInstructions.get(i);
 
 			if (!instruction.isPush()) {
 				continue;
@@ -80,7 +83,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 					particle = storedParticle.orElseThrow();
 				} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
 					int index = Ints.fromByteArray(instruction.getData());
-					var dson = atom.getInstructions().get(index).getData();
+					var dson = rawInstructions.get(index).getData();
 					particle = SubstateSerializer.deserialize(dson);
 					substateId = SubstateId.ofSubstate(atom, index);
 				} else {
