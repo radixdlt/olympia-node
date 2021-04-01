@@ -78,7 +78,7 @@ public final class MempoolRunnerTest {
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
 				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+				bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				install(new MockedCryptoModule());
 				install(new RxEnvironmentModule());
@@ -97,6 +97,6 @@ public final class MempoolRunnerTest {
 		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
 		verify(stateComputer, timeout(1000).times(1))
-			.addToMempool(eq(mempoolAdd.getTxn()), isNull());
+			.addToMempool(eq(mempoolAdd.getTxns().get(0)), isNull());
 	}
 }

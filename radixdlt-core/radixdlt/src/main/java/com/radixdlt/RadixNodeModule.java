@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.radixdlt.api.ApiModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
+import com.radixdlt.mempool.MempoolConfig;
 import org.radix.universe.system.LocalSystem;
 
 import com.google.inject.AbstractModule;
@@ -39,10 +40,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -78,9 +77,7 @@ public final class RadixNodeModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(RuntimeProperties.class).toInstance(properties);
-
-		bindConstant().annotatedWith(MempoolThrottleMs.class).to(5L);
-		bindConstant().annotatedWith(MempoolMaxSize.class).to(properties.get("mempool.maxSize", 1000));
+		bind(MempoolConfig.class).toInstance(MempoolConfig.of(properties.get("mempool.maxSize", 1000), 5L));
 		final long syncPatience = properties.get("sync.patience", 2000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));

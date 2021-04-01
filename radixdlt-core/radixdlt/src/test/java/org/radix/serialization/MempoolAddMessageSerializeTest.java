@@ -18,15 +18,17 @@
 package org.radix.serialization;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
+import com.radixdlt.middleware2.network.MempoolAddMessage;
 
-public class MempoolAtomAddMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddMessage> {
-	public MempoolAtomAddMessageSerializeTest() {
-		super(MempoolAtomAddMessage.class, MempoolAtomAddMessageSerializeTest::get);
+import java.util.List;
+
+public class MempoolAddMessageSerializeTest extends SerializeMessageObject<MempoolAddMessage> {
+	public MempoolAddMessageSerializeTest() {
+		super(MempoolAddMessage.class, MempoolAddMessageSerializeTest::get);
 	}
 
-	private static MempoolAtomAddMessage get() {
+	private static MempoolAddMessage get() {
 		final var txn = Txn.create(new byte[]{0, 1});
-		return new MempoolAtomAddMessage(1, txn);
+		return new MempoolAddMessage(1, List.of(txn));
 	}
 }

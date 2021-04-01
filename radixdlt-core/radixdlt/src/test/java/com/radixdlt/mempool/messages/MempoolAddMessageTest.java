@@ -17,20 +17,38 @@
 
 package com.radixdlt.mempool.messages;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
+import com.radixdlt.middleware2.network.MempoolAddMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
+import org.junit.Before;
 import org.junit.Test;
 
-public class MempoolAtomAddMessageTest {
+import java.util.List;
+
+public class MempoolAddMessageTest {
+	private MempoolAddMessage message;
+
+	@Before
+	public void setUp() {
+		this.message = new MempoolAddMessage(12345, List.of(Txn.create(new byte[0])));
+	}
+
+	@Test
+	public void sensibleToString() {
+		assertThat(message.toString()).contains(MempoolAddMessage.class.getSimpleName());
+	}
+
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(MempoolAtomAddMessage.class)
-			.withIgnoredFields("instance")
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+		EqualsVerifier.forClass(MempoolAddMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

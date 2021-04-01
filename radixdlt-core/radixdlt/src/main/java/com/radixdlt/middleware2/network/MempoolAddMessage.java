@@ -19,8 +19,9 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.atom.Txn;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.radix.network.messaging.Message;
 
@@ -29,30 +30,30 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.mempool.atomadd")
-public final class MempoolAtomAddMessage extends Message {
-	@JsonProperty("txn")
+@SerializerId2("message.mempool.add")
+public final class MempoolAddMessage extends Message {
+	@JsonProperty("txns")
 	@DsonOutput(Output.ALL)
-	private final byte[] txn;
+	private final List<byte[]> txns;
 
-	MempoolAtomAddMessage() {
+	MempoolAddMessage() {
 		// Serializer only
 		super(0);
-		this.txn = new byte[0];
+		this.txns = null;
 	}
 
-	public MempoolAtomAddMessage(int magic, Txn txn) {
+	public MempoolAddMessage(int magic, List<Txn> txns) {
 		super(magic);
-		this.txn = txn.getPayload();
+		this.txns = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
 	}
 
-	public Txn getTxn() {
-		return Txn.create(txn == null ? new byte[0] : txn);
+	public List<Txn> getTxns() {
+		return txns == null ? List.of() : txns.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{txn=%s}", getClass().getSimpleName(), getTxn().getId());
+		return String.format("%s{txns=%s}", getClass().getSimpleName(), getTxns());
 	}
 
 	@Override
@@ -63,14 +64,14 @@ public final class MempoolAtomAddMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		MempoolAtomAddMessage that = (MempoolAtomAddMessage) o;
-		return Arrays.equals(txn, that.txn)
+		MempoolAddMessage that = (MempoolAddMessage) o;
+		return Objects.equals(getTxns(), that.getTxns())
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(txn), getTimestamp(), getMagic());
+		return Objects.hash(getTxns(), getTimestamp(), getMagic());
 	}
 }

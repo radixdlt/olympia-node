@@ -17,16 +17,30 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+public final class MempoolRelayTrigger {
 
-public class MempoolAddTest {
-	@Test
-	public void equalsVerifier() {
-		EqualsVerifier.forClass(MempoolAdd.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+	private MempoolRelayTrigger() {
+	}
+
+	public static MempoolRelayTrigger create() {
+		return new MempoolRelayTrigger();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		return o != null && getClass() == o.getClass();
+	}
+
+	@Override
+	public int hashCode() {
+		return 1;
 	}
 }

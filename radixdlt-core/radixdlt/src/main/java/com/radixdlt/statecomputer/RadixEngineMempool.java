@@ -17,23 +17,31 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolTxn;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.MempoolRelayCommands;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -41,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,32 +58,36 @@ import java.util.stream.Collectors;
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
+@Singleton
 public final class RadixEngineMempool implements Mempool<RETxn> {
-	private final ConcurrentHashMap<AID, RETxn> data = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<AID, MempoolTxn> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
-	private final int maxSize;
+	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
 
 	@Inject
 	public RadixEngineMempool(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@MempoolMaxSize int maxSize,
-		SystemCounters counters
+		MempoolConfig mempoolConfig,
+		SystemCounters counters,
+		EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher
 	) {
-		if (maxSize <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+		if (mempoolConfig.maxSize() <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
 		}
 		this.radixEngine = radixEngine;
-		this.maxSize = maxSize;
+		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
+		this.mempoolRelayCommandsEventDispatcher = Objects.requireNonNull(mempoolRelayCommandsEventDispatcher);
 	}
 
 	@Override
 	public void add(Txn txn) throws MempoolRejectedException {
-		if (this.data.size() >= this.maxSize) {
+		if (this.data.size() >= this.mempoolConfig.maxSize()) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
 			);
 		}
 
@@ -93,7 +106,8 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(txn.getId(), radixEngineTxns.get(0));
+		var mempoolTxn = MempoolTxn.create(radixEngineTxns.get(0), System.currentTimeMillis(), Optional.empty());
+		this.data.put(txn.getId(), mempoolTxn);
 		for (var instruction : radixEngineTxns.get(0).instructions()) {
 			if (instruction.getSpin() == Spin.DOWN) {
 				var substateId = instruction.getSubstate().getId();
@@ -124,15 +138,17 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				for (var txnId : txnIds) {
 					var toRemove = data.remove(txnId);
 					// TODO: Cleanup
-					if (toRemove != null && !committedIds.contains(toRemove.getTxn().getId())) {
-						removed.add(Pair.of(toRemove.getTxn(), new RadixEngineMempoolException(
-							new RadixEngineException(
-								toRemove.getTxn(),
-								RadixEngineErrorCode.CM_ERROR,
-								"Mempool evicted",
-								DataPointer.ofAtom()
+					if (toRemove != null && !committedIds.contains(toRemove.getRETxn().getTxn().getId())) {
+						removed.add(Pair.of(toRemove.getRETxn().getTxn(),
+							new RadixEngineMempoolException(
+								new RadixEngineException(
+									toRemove.getRETxn().getTxn(),
+									RadixEngineErrorCode.CM_ERROR,
+									"Mempool evicted",
+									DataPointer.ofAtom()
+								)
 							)
-						)));
+						));
 					}
 				}
 			});
@@ -157,26 +173,49 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		for (int i = 0; i < count && !copy.isEmpty(); i++) {
 			var txId = copy.first();
 			copy.remove(txId);
-			var reTxn = data.get(txId);
-			reTxn.instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
+			var mempoolTxn = data.get(txId);
+			mempoolTxn.getRETxn().instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
 				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);
 
-			txns.add(reTxn.getTxn());
+			txns.add(mempoolTxn.getRETxn().getTxn());
 		}
 
 		return txns;
 	}
 
+	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
+		return ev -> {
+			final var now = System.currentTimeMillis();
+			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
+			final var commandsToRelay = this.data
+				.entrySet().stream()
+				.filter(e ->
+					e.getValue().getInserted() <= maxAddTime
+						&& now >= e.getValue().getLastRelayed().orElse(0L) + this.mempoolConfig.commandRelayRepeatDelay()
+				)
+				.map(e -> {
+					final var updated = e.getValue().withLastRelayed(now);
+					this.data.put(e.getKey(), updated);
+					return e.getValue().getRETxn().getTxn();
+				})
+				.collect(ImmutableList.toImmutableList());
+
+			if (!commandsToRelay.isEmpty()) {
+				mempoolRelayCommandsEventDispatcher.dispatch(MempoolRelayCommands.create(commandsToRelay));
+			}
+		};
+	}
+
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
+		this.counters.set(CounterType.MEMPOOL_COUNT, this.data.size());
+		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
 	}
 }

@@ -130,7 +130,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getTxn(), node);
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, node));
 			}
 		};
 	}
@@ -138,7 +138,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getTxn(), null);
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, null));
 			}
 		};
 	}

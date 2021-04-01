@@ -38,8 +38,7 @@ import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProces
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -77,8 +76,7 @@ public final class MempoolFillAndEmptyTest {
                 @Override
                 protected void configure() {
                     bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-                    bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-                    bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+                    bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
                     bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
                     bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
                 }
