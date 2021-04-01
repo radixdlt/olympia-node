@@ -38,7 +38,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +55,6 @@ import java.util.function.Consumer;
  */
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
-	private final Serialization serialization;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
@@ -79,7 +77,6 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@NativeToken RRI nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
-		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
@@ -91,7 +88,6 @@ public final class MempoolFiller {
 		this.selfAddress = selfAddress;
 		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
-		this.serialization = serialization;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;

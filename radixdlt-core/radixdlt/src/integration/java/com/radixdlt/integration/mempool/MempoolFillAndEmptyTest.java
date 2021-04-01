@@ -116,7 +116,7 @@ public final class MempoolFillAndEmptyTest {
         createInjector().injectMembers(this);
         processor.start();
 
-        mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
+        mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
 
         for (int i = 0; i < 10; i++) {
             fillAndEmptyMempool();
