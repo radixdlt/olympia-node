@@ -25,43 +25,43 @@ import java.util.function.Supplier;
  * An event producer registered to run on a runner.
  */
 public final class ScheduledEventProducerOnRunner<T> {
-    private final String runnerName;
-    private final EventDispatcher<T> eventDispatcher;
-    private final Supplier<T> eventSupplier;
-    private final Duration initialDelay;
-    private final Duration interval;
+	private final String runnerName;
+	private final EventDispatcher<T> eventDispatcher;
+	private final Supplier<T> eventSupplier;
+	private final Duration initialDelay;
+	private final Duration interval;
 
-    public ScheduledEventProducerOnRunner(
-        String runnerName,
-        EventDispatcher<T> eventDispatcher,
-        Supplier<T> eventSupplier,
-        Duration initialDelay,
-        Duration interval
-    ) {
-        this.runnerName = Objects.requireNonNull(runnerName);
-        this.eventDispatcher = Objects.requireNonNull(eventDispatcher);
-        this.eventSupplier = Objects.requireNonNull(eventSupplier);
-        this.initialDelay = initialDelay;
-        this.interval = interval;
-    }
+	public ScheduledEventProducerOnRunner(
+		String runnerName,
+		EventDispatcher<T> eventDispatcher,
+		Supplier<T> eventSupplier,
+		Duration initialDelay,
+		Duration interval
+	) {
+		this.runnerName = Objects.requireNonNull(runnerName);
+		this.eventDispatcher = Objects.requireNonNull(eventDispatcher);
+		this.eventSupplier = Objects.requireNonNull(eventSupplier);
+		this.initialDelay = initialDelay;
+		this.interval = interval;
+	}
 
-    public String getRunnerName() {
-        return runnerName;
-    }
+	public String getRunnerName() {
+		return runnerName;
+	}
 
-    public EventDispatcher<T> getEventDispatcher() {
-        return eventDispatcher;
-    }
+	public EventDispatcher<T> getEventDispatcher() {
+		return eventDispatcher;
+	}
 
-    public Supplier<T> getEventSupplier() {
-        return eventSupplier;
-    }
+	public Supplier<T> getEventSupplier() {
+		return eventSupplier;
+	}
 
-    public Duration getInitialDelay() {
-        return initialDelay;
-    }
+	public Duration getInitialDelay() {
+		return initialDelay;
+	}
 
-    public Duration getInterval() {
-        return interval;
-    }
+	public Duration getInterval() {
+		return interval;
+	}
 }
