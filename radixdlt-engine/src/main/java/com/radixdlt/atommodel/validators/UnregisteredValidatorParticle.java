@@ -34,19 +34,13 @@ public final class UnregisteredValidatorParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RadixAddress address;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final long nonce;
-
 	UnregisteredValidatorParticle() {
 		// Serializer only
 		this.address = null;
-		this.nonce = 0;
 	}
 
-	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {
+	public UnregisteredValidatorParticle(RadixAddress address) {
 		this.address = Objects.requireNonNull(address, "address");
-		this.nonce = nonce;
 	}
 
 	@Override
@@ -58,13 +52,9 @@ public final class UnregisteredValidatorParticle extends Particle {
 		return address;
 	}
 
-	public long getNonce() {
-		return nonce;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.nonce);
+		return Objects.hash(this.address);
 	}
 
 	@Override
@@ -76,8 +66,7 @@ public final class UnregisteredValidatorParticle extends Particle {
 			return false;
 		}
 		final var that = (UnregisteredValidatorParticle) obj;
-		return this.nonce == that.nonce
-			&& Objects.equals(this.address, that.address);
+		return Objects.equals(this.address, that.address);
 	}
 
 	@Override

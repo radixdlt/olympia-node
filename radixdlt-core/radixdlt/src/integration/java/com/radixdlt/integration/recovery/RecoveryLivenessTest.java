@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.mempool.MempoolConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -58,8 +59,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -103,7 +102,7 @@ public class RecoveryLivenessTest {
 
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -178,14 +177,13 @@ public class RecoveryLivenessTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
 				}

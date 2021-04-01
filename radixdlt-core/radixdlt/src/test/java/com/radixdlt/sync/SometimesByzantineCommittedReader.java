@@ -105,7 +105,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 			if (accumulator != null) {
 				accumulatorState = request.getLedgerHeader().getAccumulatorState();
 				for (Command command : commands) {
-					accumulatorState = accumulator.accumulate(accumulatorState, hasher.hash(command));
+					accumulatorState = accumulator.accumulate(accumulatorState, command.getId().asHashCode());
 				}
 			} else {
 				accumulatorState = base.getProof().getAccumulatorState();

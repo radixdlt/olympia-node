@@ -16,6 +16,10 @@
  */
 package org.radix.api.services;
 
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.Pair;
 import org.junit.Test;
 
 import com.radixdlt.DefaultSerialization;
@@ -26,7 +30,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -70,7 +73,9 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeSubmitted() {
-		var atom = Atom.newBuilder().message("Simple test message").buildAtom();
+		var atom = TxLowLevelBuilder.newBuilder()
+			.message("Simple test message")
+			.buildWithoutSignature();
 		var jsonAtom = serialization.toJsonObject(atom, Output.API);
 
 		var result = atomsService.submitAtom(jsonAtom);
@@ -81,11 +86,11 @@ public class AtomsServiceTest {
 
 	@Test
 	public void atomCanBeRetrieved() {
-		var atom = createAtom();
-		var optionalClientAtom = Optional.of(atom);
-		var aid = atom.getAID();
+		var atomAndId = createCommand();
+		var optionalAtom = Optional.of(atomAndId.getFirst());
+		var aid = atomAndId.getSecond();
 
-		when(store.get(aid)).thenReturn(optionalClientAtom);
+		when(store.get(aid)).thenReturn(optionalAtom);
 
 		var result = atomsService.getAtomByAtomId(aid);
 
@@ -100,14 +105,17 @@ public class AtomsServiceTest {
 		);
 	}
 
-	private Atom createAtom() {
+	private Pair<Atom, AID> createCommand() {
 		var address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var particle = new UniqueParticle("particle message", address, 0);
-		var group1 = ParticleGroup.builder().spinUp(particle).build();
+		var particle = new UniqueParticle("particle message", address);
 
-		return Atom.newBuilder()
-			.addParticleGroup(group1)
+		var atom = TxLowLevelBuilder.newBuilder()
+			.up(particle)
+			.particleGroup()
 			.message("Test message")
-			.buildAtom();
+			.buildWithoutSignature();
+
+		var dson = DefaultSerialization.getInstance().toDson(atom, Output.ALL);
+		return Pair.of(atom, new Command(dson).getId());
 	}
 }

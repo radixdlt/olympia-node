@@ -18,6 +18,9 @@
 package org.radix.api.services;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -136,7 +139,7 @@ public class AtomsService {
 		final var atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 		var command = new Command(serialization.toDson(atom, Output.ALL));
 		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-		return atom.getAID();
+		return command.getId();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
@@ -173,27 +176,39 @@ public class AtomsService {
 	}
 
 	private void processExecutedCommand(AtomsCommittedToLedger atomsCommittedToLedger) {
-		atomsCommittedToLedger.getAtoms().forEach(atom -> {
-			var indicies = atom.upParticles()
+		atomsCommittedToLedger.getAtoms().forEach(cmd -> {
+			// TODO: Temporary, remove at some point
+			final Atom atom;
+			try {
+				atom = DefaultSerialization.getInstance().fromDson(cmd.getPayload(), Atom.class);
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+			var indicies = atom.bootUpInstructions()
+				.map(i -> {
+					try {
+						return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
+				})
 				.flatMap(p -> p.getDestinations().stream())
 				.collect(ImmutableSet.toImmutableSet());
 
-			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, indicies));
-			getAtomStatusListeners(atom.getAID()).forEach(listener -> listener.onStored(atom));
+			this.atomEventObservers.forEach(observer -> observer.tryNext(atom, cmd.getId(), indicies));
+			getAtomStatusListeners(cmd.getId()).forEach(listener -> listener.onStored(cmd.getId()));
 		});
 	}
 
 	private void processSubmissionFailure(MempoolAddFailure failure) {
-		failure.getCommand()
-			.map(this::toClientAtom)
-			.map(Atom::getAID)
-			.map(this::getAtomStatusListeners)
-			.ifPresent(list -> list.forEach(listener -> listener.onError(failure.getException())));
+		var atomId = failure.getCommand().getId();
+		var listeners = getAtomStatusListeners(atomId);
+		listeners.forEach(listener -> listener.onError(failure.getException()));
 	}
 
 	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
-		atomsRemovedFromMempool.forEach((atom, e) -> {
-			final AID aid = atom.getAID();
+		atomsRemovedFromMempool.forEach((cmd, e) -> {
+			final AID aid = cmd.getId();
 			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
 		});
 	}

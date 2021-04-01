@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.atom.Atom;
@@ -30,6 +31,7 @@ import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -42,7 +44,7 @@ public final class MockedGenesisAtomModule extends AbstractModule {
 	    install(new RadixNativeTokenModule());
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
-		bind(Atom.class).annotatedWith(Genesis.class).toProvider(GenesisAtomProvider.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

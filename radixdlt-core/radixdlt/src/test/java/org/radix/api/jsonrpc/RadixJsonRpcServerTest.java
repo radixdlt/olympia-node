@@ -19,14 +19,16 @@ package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
 import org.junit.Test;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
 import org.radix.time.Time;
 
 import com.radixdlt.serialization.Serialization;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +45,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class)
+			Map.of()
 		);
 
 		var response = new JSONObject(server.handleRpc(jsonObject().toString()));
@@ -53,7 +55,7 @@ public class RadixJsonRpcServerTest {
 		assertThat(response.has("id")).isTrue();
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.INVALID_PARAMS);
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(RpcError.INVALID_PARAMS.code());
 		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
 	}
 
@@ -76,7 +78,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class)
+			Map.of()
 		);
 
 		var response = new JSONObject(server.handleRpc(request.toString()));
@@ -95,7 +97,7 @@ public class RadixJsonRpcServerTest {
 			mock(NetworkHandler.class),
 			mock(AtomHandler.class),
 			mock(LedgerHandler.class),
-			mock(HighLevelApiHandler.class),
+			Map.of(),
 			5
 		);
 
@@ -105,7 +107,7 @@ public class RadixJsonRpcServerTest {
 		assertThat(response.has("id")).isTrue();
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(JsonRpcUtil.REQUEST_TOO_LONG);
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(RpcError.REQUEST_TOO_LONG.code());
 		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
 	}
 }

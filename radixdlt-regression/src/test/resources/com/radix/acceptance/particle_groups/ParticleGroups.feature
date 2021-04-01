@@ -6,15 +6,15 @@ Feature: Particle Groups
   So that I can confidently know what the the intentions were of an atom
   We need a way to explicitly group particles in an atom specifically for things like fungible tokens which need to be implemented with multiple particles per atom.
 
-  Scenario: 1: Conflicting mints across particle groups
-    Given I have access to a suitable Radix network
-    When I submit two fixed-supply token-creation requests with symbol "RLAU" and in separate particle groups
-    Then I can observe atom 1 being rejected with a validation error
+  #Scenario: 1: Conflicting mints across particle groups
+    #Given I have access to a suitable Radix network
+    #When I submit two fixed-supply token-creation requests with symbol "RLAU" and in separate particle groups
+    #Then I can observe atom 1 being rejected with a validation error
 
-  Scenario: 2: Agreeable mints across particle groups
-    Given I have access to a suitable Radix network
-    When I submit two fixed-supply token-creation requests with symbol "RLAU1" and "RLAU2" and in separate particle groups
-    Then I can observe atom 1 being accepted
+  #Scenario: 2: Agreeable mints across particle groups
+    #Given I have access to a suitable Radix network
+    #When I submit two fixed-supply token-creation requests with symbol "RLAU1" and "RLAU2" and in separate particle groups
+    #Then I can observe atom 1 being accepted
 
   #Scenario: 3: Double-spend transfer across particle groups
     #Given I have access to a suitable Radix network
@@ -32,7 +32,7 @@ Feature: Particle Groups
 #    And I submit one token transfer requests of 100 for "RLAU1" and of 100 for "RLAU2" in one particle group
 #    Then I can observe atom 3 being rejected with a validation error
 
-  Scenario: 5: Empty particle group
-    Given I have access to a suitable Radix network
-    When I submit an arbitrary atom with an empty particle group
-    Then I can observe atom 1 being rejected with a failure
+  #Scenario: 5: Empty particle group
+    #Given I have access to a suitable Radix network
+    #When I submit an arbitrary atom with an empty particle group
+    #Then I can observe atom 1 being rejected with a failure

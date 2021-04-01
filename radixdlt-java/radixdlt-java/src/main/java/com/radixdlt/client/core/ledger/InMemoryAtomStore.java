@@ -23,14 +23,19 @@
 package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.DeserializeException;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.annotations.Nullable;
@@ -56,7 +61,7 @@ import com.radixdlt.identifiers.RadixAddress;
  */
 public class InMemoryAtomStore implements AtomStore {
 	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
-	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Map<Substate, Map<Spin, Set<Atom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
 
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
@@ -64,29 +69,8 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Object lock = new Object();
 	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
 
-	private final Map<String, AtomBuilder> stagedAtoms = new ConcurrentHashMap<>();
-	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
-
-	private void softDeleteDependentsOf(Atom atom) {
-		atom.upParticles()
-			.forEach(p -> {
-				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
-				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
-					.forEach(a -> {
-						AtomObservation observation = atoms.get(a);
-						if (observation.getAtom().equals(atom)) {
-							return;
-						}
-
-						if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
-							// This first so that leaves get deleted first
-							softDeleteDependentsOf(observation.getAtom());
-
-							atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
-						}
-					});
-			});
-	}
+	private final Map<String, TxLowLevelBuilder> stagedAtoms = new ConcurrentHashMap<>();
+	private final Map<String, Map<Substate, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	@Override
 	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
@@ -96,22 +80,43 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			var stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = Atom.newBuilder().addParticleGroup(particleGroup);
+				stagedAtom = TxLowLevelBuilder.newBuilder();
 				stagedAtoms.put(uuid, stagedAtom);
-			} else {
-				stagedAtom.addParticleGroup(particleGroup);
 			}
 
-			particleGroup.upParticles().forEach(p -> {
-				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
-				index.put(p, Spin.UP);
+			for (REInstruction i : particleGroup.getInstructions()) {
+				if (i.getMicroOp() == REInstruction.REOp.UP) {
+					try {
+						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						stagedAtom.up(particle);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				} else if (i.getMicroOp() == REInstruction.REOp.VDOWN) {
+					try {
+						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+						stagedAtom.virtualDown(particle);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				} else if (i.getMicroOp() == REInstruction.REOp.DOWN) {
+					stagedAtom.down(SubstateId.fromBytes(i.getData()));
+				}
+			}
+			stagedAtom.particleGroup();
+
+			/*
+			stagedAtom.localUpSubstate().forEach(p -> {
+				Map<Substate, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
+				index.put(p.getParticle(), Spin.UP);
 				stagedParticleIndex.put(uuid, index);
 			});
+			 */
 		}
 	}
 
 	@Override
-	public AtomBuilder getStaged(String uuid) {
+	public TxLowLevelBuilder getStaged(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
@@ -120,11 +125,11 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
-	public AtomBuilder getStagedAndClear(String uuid) {
+	public TxLowLevelBuilder getStagedAndClear(String uuid) {
 		Objects.requireNonNull(uuid);
 
 		synchronized (lock) {
-			final AtomBuilder builder = stagedAtoms.remove(uuid);
+			final TxLowLevelBuilder builder = stagedAtoms.remove(uuid);
 			stagedParticleIndex.get(uuid).clear();
 			return builder;
 		}
@@ -148,49 +153,38 @@ public class InMemoryAtomStore implements AtomStore {
 				final AtomObservationUpdateType nextUpdate = atomObservation.getUpdateType();
 				final AtomObservationUpdateType lastUpdate = curObservation != null ? curObservation.getUpdateType() : null;
 
-				// If a new hard observed atoms conflicts with a previously stored atom,
-				// stored atom must be deleted
-				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
-					atom.uniqueInstructions().forEach(i -> {
-						var spinParticleIndex = particleIndex.getOrDefault(i.getParticle(), Map.of());
-						spinParticleIndex.getOrDefault(i.getNextSpin(), Set.of())
-							.forEach(a -> {
-								if (a.equals(atom)) {
-									return;
-								}
-								AtomObservation oldObservation = atoms.get(a);
-								if (oldObservation.isStore()) {
-									softDeleteDependentsOf(a);
-									atoms.put(a, AtomObservation.softDeleted(a));
-								}
-							});
-					});
-				}
-
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
-					atom.uniqueInstructions().forEach(i -> {
-						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(i.getParticle());
+					for (int i = 0; i < atom.getInstructions().size(); i++) {
+						var instruction = atom.getInstructions().get(i);
+						if (instruction.getMicroOp() == REInstruction.REOp.END) {
+							continue;
+						}
+
+						Particle particle;
+						try {
+							particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
+						} catch (DeserializeException e) {
+							particle = null;
+						}
+						var substate = Substate.create(particle, SubstateId.ofSubstate(atom, i));
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(substate);
 						if (spinParticleIndex == null) {
 							spinParticleIndex = new EnumMap<>(Spin.class);
-							particleIndex.put(i.getParticle(), spinParticleIndex);
+							particleIndex.put(substate, spinParticleIndex);
 						}
 						spinParticleIndex.merge(
-							i.getNextSpin(),
+							instruction.getNextSpin(),
 							Collections.singleton(atom),
 							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
 						);
-					});
+					}
 				} else {
 					// Soft observation should not be able to update a hard state
 					// Only update if type changes
 					include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
 						&& nextUpdate.getType() != lastUpdate.getType();
-				}
-
-				if (nextUpdate.getType() == Type.DELETE && include) {
-					softDeleteDependentsOf(atom);
 				}
 
 				final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
@@ -255,10 +249,10 @@ public class InMemoryAtomStore implements AtomStore {
 
 
 	@Override
-	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
+	public Stream<Substate> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
-			List<Particle> upParticles = particleIndex.entrySet().stream()
-				.filter(e -> Addresses.getShardables(e.getKey()).contains(address))
+			List<Substate> upParticles = particleIndex.entrySet().stream()
+				.filter(e -> Addresses.getShardables(e.getKey().getParticle()).contains(address))
 				.filter(e -> {
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Set.of())
@@ -282,7 +276,7 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedParticleIndex.getOrDefault(stagedUuid, Map.of()).entrySet().stream()
 					.filter(e -> e.getValue() == Spin.UP)
 					.map(Entry::getKey)
-					.filter(p -> Addresses.getShardables(p).contains(address))
+					.filter(s -> Addresses.getShardables(s.getParticle()).contains(address))
 					.forEach(upParticles::add);
 			}
 

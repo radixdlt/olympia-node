@@ -82,7 +82,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					.forEach(this::processViewCachedEvent);
 			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
 
-			syncingEvents.removeIf(e -> e.getView().lt(viewUpdate.getCurrentView()));
+			syncingEvents.stream()
+				.filter(e -> e.getView().equals(viewUpdate.getCurrentView()))
+				.forEach(this::processQueuedConsensusEvent);
+
+			syncingEvents.removeIf(e -> e.getView().lte(viewUpdate.getCurrentView()));
 		}
 	}
 

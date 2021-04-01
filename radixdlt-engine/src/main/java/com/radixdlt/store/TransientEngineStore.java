@@ -1,34 +1,31 @@
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.engine.RadixEngineAtom;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class TransientEngineStore<T extends RadixEngineAtom, M> implements EngineStore<T, M> {
-	private final EngineStore<T, M> base;
-	private InMemoryEngineStore<T, M> transientStore = new InMemoryEngineStore<>();
+public class TransientEngineStore<M> implements EngineStore<M> {
+	private final EngineStore<M> base;
+	private InMemoryEngineStore<M> transientStore = new InMemoryEngineStore<>();
 
-	public TransientEngineStore(EngineStore<T, M> base) {
+	public TransientEngineStore(EngineStore<M> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
 	@Override
-	public void storeAtom(Transaction txn, T atom) {
+	public void storeAtom(Transaction txn, Atom atom) {
 		transientStore.storeAtom(txn, atom);
 	}
 
 	@Override
 	public void storeMetadata(Transaction txn, M metadata) {
 		// No-op
-	}
-
-	@Override
-	public boolean containsAtom(T atom) {
-		return transientStore.containsAtom(atom) || base.containsAtom(atom);
 	}
 
 	@Override
@@ -42,21 +39,22 @@ public class TransientEngineStore<T extends RadixEngineAtom, M> implements Engin
 	}
 
 	@Override
-	public Spin getSpin(Transaction txn, Particle particle) {
-		Spin transientSpin = transientStore.getSpin(txn, particle);
-		if (transientSpin != Spin.NEUTRAL) {
-			return transientSpin;
-		}
-
-		return base.getSpin(txn, particle);
+	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
+		return transientStore.isVirtualDown(txn, substateId)
+			|| base.isVirtualDown(txn, substateId);
 	}
 
 	@Override
-	public Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash) {
-		if (transientStore.getSpin(particleHash) == Spin.NEUTRAL) {
-			return base.loadUpParticle(txn, particleHash);
+	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
+		if (transientStore.getSpin(substateId) == Spin.NEUTRAL) {
+			return base.loadUpParticle(txn, substateId);
 		}
 
-		return transientStore.loadUpParticle(txn, particleHash);
+		return transientStore.loadUpParticle(txn, substateId);
+	}
+
+	@Override
+	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+		throw new UnsupportedOperationException("Transient store should not require up substates.");
 	}
 }

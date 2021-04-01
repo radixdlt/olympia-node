@@ -20,16 +20,13 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A group of particles representing one action, e.g. a transfer.
@@ -38,26 +35,16 @@ public final class ParticleGroup {
 	/**
 	 * The particles and their spin contained within this {@link ParticleGroup}.
 	 */
-	private ImmutableList<CMMicroInstruction> instructions;
+	private ImmutableList<REInstruction> instructions;
 
-	private ParticleGroup(Iterable<CMMicroInstruction> instructions) {
+	private ParticleGroup(Iterable<REInstruction> instructions) {
 		Objects.requireNonNull(instructions, "particles is required");
 
 		this.instructions = ImmutableList.copyOf(instructions);
 	}
 
-	public List<CMMicroInstruction> getInstructions() {
+	public List<REInstruction> getInstructions() {
 		return instructions;
-	}
-
-	/**
-	 * Get a stream of particles of a certain spin in this group
-	 * @return The particles in this group with that spin
-	 */
-	public Stream<Particle> upParticles() {
-		return this.instructions.stream()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(CMMicroInstruction::getParticle);
 	}
 
 	public static ParticleGroupBuilder builder() {
@@ -85,28 +72,35 @@ public final class ParticleGroup {
 	 * A builder for immutable {@link ParticleGroup}s
 	 */
 	public static class ParticleGroupBuilder {
-		private List<CMMicroInstruction> instructions = new ArrayList<>();
+		private List<REInstruction> instructions = new ArrayList<>();
 
 		private ParticleGroupBuilder() {
 		}
 
 		public final ParticleGroupBuilder spinUp(Particle particle) {
-			Objects.requireNonNull(particle, "particle is required");
-			this.instructions.add(CMMicroInstruction.spinUp(particle));
+			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+			this.instructions.add(
+				REInstruction.create(
+					REInstruction.REOp.UP.opCode(),
+					particleDson
+				)
+			);
 			return this;
 		}
 
 		public final ParticleGroupBuilder virtualSpinDown(Particle particle) {
-			Objects.requireNonNull(particle, "particle is required");
-			this.instructions.add(CMMicroInstruction.virtualSpinDown(particle));
+			var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+			this.instructions.add(
+				REInstruction.create(
+					REInstruction.REOp.VDOWN.opCode(),
+					particleDson
+				)
+			);
 			return this;
 		}
 
-		public final ParticleGroupBuilder spinDown(Particle particle) {
-			Objects.requireNonNull(particle, "particle is required");
-			var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-			var particleHash = HashUtils.sha256(dson);
-			this.instructions.add(CMMicroInstruction.spinDown(particleHash));
+		public final ParticleGroupBuilder spinDown(SubstateId substateId) {
+			this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
 			return this;
 		}
 

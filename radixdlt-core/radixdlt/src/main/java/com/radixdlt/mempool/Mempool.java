@@ -20,7 +20,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Basic mempool functionality.
@@ -46,7 +45,7 @@ public interface Mempool<T> {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<Command> getCommands(int count, Set<T> seen);
+	List<Command> getCommands(int count, List<T> seen);
 
-	List<Pair<T, Exception>> committed(List<T> committed);
+	List<Pair<Command, Exception>> committed(List<T> committed);
 }

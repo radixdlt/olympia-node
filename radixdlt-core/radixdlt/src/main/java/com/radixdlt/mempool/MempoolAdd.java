@@ -17,32 +17,38 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 
 import java.util.Objects;
 
 /**
- * Message to attempt to add a command to the mempool
+ * Message to attempt to add commands to the mempool
  */
 public final class MempoolAdd {
-	private final Command command;
+	private final ImmutableList<Command> commands;
 
-	private MempoolAdd(Command command) {
-		this.command = command;
+	private MempoolAdd(ImmutableList<Command> commands) {
+		this.commands = commands;
 	}
 
-	public Command getCommand() {
-		return command;
+	public ImmutableList<Command> getCommands() {
+		return commands;
+	}
+
+	public static MempoolAdd create(ImmutableList<Command> commands) {
+		Objects.requireNonNull(commands);
+		return new MempoolAdd(commands);
 	}
 
 	public static MempoolAdd create(Command command) {
 		Objects.requireNonNull(command);
-		return new MempoolAdd(command);
+		return new MempoolAdd(ImmutableList.of(command));
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(command);
+		return Objects.hashCode(commands);
 	}
 
 	@Override
@@ -52,11 +58,11 @@ public final class MempoolAdd {
 		}
 
 		MempoolAdd other = (MempoolAdd) o;
-		return Objects.equals(this.command, other.command);
+		return Objects.equals(this.commands, other.commands);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s}", this.getClass().getSimpleName(), this.command);
+		return String.format("%s{cmds=%s}", this.getClass().getSimpleName(), this.commands);
 	}
 }

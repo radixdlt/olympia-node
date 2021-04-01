@@ -17,60 +17,53 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Function;
 
 /**
  * Simple mempool which performs no validation and removes on commit.
  */
 public final class SimpleMempool implements Mempool<Command> {
-	private final LinkedHashMap<HashCode, Command> data = Maps.newLinkedHashMap();
+	private final Set<Command> data = new HashSet<>();
 
-	private final int maxSize;
-
-	private final Function<Command, HashCode> functionToKey;
+	private final MempoolConfig mempoolConfig;
 
 	private final SystemCounters counters;
 
 	private final Random random;
 
 	public SimpleMempool(
-		@MempoolMaxSize int maxSize,
-		Function<Command, HashCode> functionToKey,
+		MempoolConfig mempoolConfig,
 		SystemCounters counters,
 		Random random
 	) {
-		if (maxSize <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+		if (mempoolConfig.maxSize() <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
 		}
-		this.maxSize = maxSize;
-		this.functionToKey = functionToKey;
+		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
 		this.random = Objects.requireNonNull(random);
 	}
 
 	@Override
 	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-		if (this.data.size() >= this.maxSize) {
+		if (this.data.size() >= this.mempoolConfig.maxSize()) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
 			);
 		}
-		if (null != this.data.put(functionToKey.apply(command), command)) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", functionToKey.apply(command)));
+		if (!this.data.add(command)) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command));
 		}
 
 		updateCounts();
@@ -78,17 +71,17 @@ public final class SimpleMempool implements Mempool<Command> {
 
 	@Override
 	public List<Pair<Command, Exception>> committed(List<Command> commands) {
-		commands.forEach(cmd -> this.data.remove(functionToKey.apply(cmd)));
+		commands.forEach(this.data::remove);
 		updateCounts();
 		return List.of();
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<Command> seen) {
+	public List<Command> getCommands(int count, List<Command> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
 			List<Command> commands = Lists.newArrayList();
-			var values = new ArrayList<>(this.data.values());
+			var values = new ArrayList<>(this.data);
 			Collections.shuffle(values, random);
 
 			Iterator<Command> i = values.iterator();
@@ -106,12 +99,12 @@ public final class SimpleMempool implements Mempool<Command> {
 
 	private void updateCounts() {
 		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
 	}
 }

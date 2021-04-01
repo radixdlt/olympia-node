@@ -36,8 +36,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -76,8 +75,7 @@ public class MempoolFillerTest {
 				    install(new NodeWalletModule());
 
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath());

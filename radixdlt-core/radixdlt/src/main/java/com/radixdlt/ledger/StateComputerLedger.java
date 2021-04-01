@@ -35,7 +35,6 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -104,7 +103,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
-	private final Hasher hasher;
 	private final Object lock = new Object();
 	private final TimeSupplier timeSupplier;
 
@@ -119,8 +117,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
-		SystemCounters counters,
-		Hasher hasher
+		SystemCounters counters
 	) {
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
@@ -130,13 +127,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
-		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), node);
+				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, node));
 			}
 		};
 	}
@@ -144,7 +140,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), null);
+				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, null));
 			}
 		};
 	}
@@ -263,7 +259,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				verifiedCommandsAndProof.getCommands(),
-				hasher::hash,
+				cmd -> cmd.getId().asHashCode(),
 				verifiedCommandsAndProof.getProof().getAccumulatorState()
 			);
 

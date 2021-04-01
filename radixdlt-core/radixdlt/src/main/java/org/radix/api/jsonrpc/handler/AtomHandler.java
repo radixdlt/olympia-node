@@ -19,17 +19,17 @@ package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.AtomStatus;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.AtomsService;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withParameters;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
 
 public class AtomHandler {
 	private final AtomsService atomsService;
@@ -53,7 +53,7 @@ public class AtomHandler {
 			"aid",
 			(params, aid) -> AID.fromString(aid)
 				.flatMap(atomsService::getAtomByAtomId)
-				.orElseGet(() -> errorResponse(request, INVALID_PARAMS, "Atom with AID '" + aid + "' not found"))
+				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Atom with AID '" + aid + "' not found"))
 		);
 	}
 

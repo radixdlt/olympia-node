@@ -29,13 +29,14 @@ import com.radixdlt.universe.UniverseConfiguration;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Pair;
 
+import java.util.List;
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
 	private final Hasher hasher;
 	private final long universeTimestamp;
 	private final ECKeyPair universeKey;
-	private final Provider<Atom> genesisAtomProvider;
+	private final Provider<List<Atom>> genesisAtomProvider;
 	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
@@ -43,7 +44,7 @@ public final class RadixUniverseBuilder {
 		@Named("universeKey") ECKeyPair universeKey,
 		@UniverseConfig long universeTimestamp,
 		UniverseConfiguration universeConfiguration,
-		Provider<Atom> genesisAtomProvider,
+		Provider<List<Atom>> genesisAtomProvider,
 		Hasher hasher
 	) {
 		this.universeKey = Objects.requireNonNull(universeKey);
@@ -66,7 +67,7 @@ public final class RadixUniverseBuilder {
 			.type(this.universeConfiguration.getUniverseType())
 			.timestamp(this.universeTimestamp)
 			.creator(this.universeKey.getPublicKey())
-			.setAtom(universeAtom)
+			.setAtoms(universeAtom)
 			.build();
 
 		Universe.sign(universe, this.universeKey, this.hasher);

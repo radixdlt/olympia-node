@@ -64,7 +64,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-	private Mempool<Command> mempool;
+	private Mempool mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private EventDispatcher<LedgerUpdate> ledgerUpdateSender;
@@ -108,7 +108,8 @@ public class StateComputerLedgerTest {
 		this.accumulator = new SimpleLedgerAccumulatorAndVerifier(hasher);
 		this.accumulatorVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
 
-		this.ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
@@ -123,8 +124,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 
@@ -150,8 +150,7 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters,
-			hasher
+			counters
 		);
 	}
 

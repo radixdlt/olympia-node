@@ -22,6 +22,9 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 import static org.junit.Assert.assertEquals;
 
 public class BalanceEntryTest {
@@ -47,5 +50,13 @@ public class BalanceEntryTest {
 		var difference = entry1.subtract(entry2);
 		assertEquals(expectedAmount, difference.getAmount());
 		assertEquals(expectedNegative, difference.isNegative());
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(BalanceEntry.class)
+			.suppress(Warning.NONFINAL_FIELDS)
+			.withNonnullFields("owner", "rri", "granularity", "amount")
+			.verify();
 	}
 }

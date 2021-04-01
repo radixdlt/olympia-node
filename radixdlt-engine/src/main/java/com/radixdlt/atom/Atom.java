@@ -22,25 +22,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DeserializeException;
 import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
 import java.util.List;
@@ -55,7 +45,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("radix.atom")
-public final class Atom implements RadixEngineAtom {
+public final class Atom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -66,56 +56,43 @@ public final class Atom implements RadixEngineAtom {
 
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
-	private final ImmutableMap<EUID, ECDSASignature> signatures;
+	private final ECDSASignature signature;
 
-	private final ImmutableList<CMMicroInstruction> instructions;
+	private final List<REInstruction> instructions;
 	private final HashCode witness;
-
-	public static AtomBuilder newBuilder() {
-		return new AtomBuilder();
-	}
 
 	@JsonCreator
 	private Atom(
 		@JsonProperty("m") String message,
 		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
-		@JsonProperty("s") ImmutableMap<EUID, ECDSASignature> signatures
+		@JsonProperty("s") ECDSASignature signature
 	) {
 		this(
 			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signatures == null ? ImmutableMap.of() : signatures,
+			signature,
 			message,
 			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
 		);
 	}
 
 	private Atom(
-		ImmutableList<CMMicroInstruction> instructions,
-		ImmutableMap<EUID, ECDSASignature> signatures,
+		List<REInstruction> instructions,
+		ECDSASignature signature,
 		String message,
 		HashCode witness
 	) {
 		this.message = message;
 		this.instructions = Objects.requireNonNull(instructions);
-		this.signatures = Objects.requireNonNull(signatures);
+		this.signature = signature;
 		this.witness = witness;
 	}
 
 	static Atom create(
-		ImmutableList<CMMicroInstruction> instructions,
-		ImmutableMap<EUID, ECDSASignature> signatures,
+		List<REInstruction> instructions,
+		ECDSASignature signature,
 		String message
 	) {
-		return new Atom(instructions, signatures, message, computeHashToSign(instructions));
-	}
-
-	public static Atom create(ImmutableList<CMMicroInstruction> instructions) {
-		return new Atom(
-			instructions,
-			ImmutableMap.of(),
-			null,
-			computeHashToSign(instructions)
-		);
+		return new Atom(instructions, signature, message, computeHashToSign(instructions));
 	}
 
 	// FIXME: need to include message
@@ -126,7 +103,7 @@ public final class Atom implements RadixEngineAtom {
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static HashCode computeHashToSign(List<CMMicroInstruction> instructions) {
+	public static HashCode computeHashToSign(List<REInstruction> instructions) {
 		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
@@ -136,97 +113,40 @@ public final class Atom implements RadixEngineAtom {
 		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
 	}
 
-	public Optional<ECDSASignature> getSignature(EUID euid) {
-		return Optional.ofNullable(this.signatures.get(euid));
+	public Optional<ECDSASignature> getSignature() {
+		return Optional.ofNullable(this.signature);
 	}
 
-	private static Stream<byte[]> serializedInstructions(List<CMMicroInstruction> instructions) {
-		return instructions.stream().flatMap(i -> {
-
-			final Stream<byte[]> additional;
-			if (i.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				additional = Stream.empty();
-			} else {
-				if (i.getMicroOp() == CMMicroOp.SPIN_UP) {
-					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
-					additional = Stream.of(particleDson);
-				} else if (i.getMicroOp() == CMMicroOp.VIRTUAL_SPIN_DOWN) {
-					byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
-					additional = Stream.of(particleDson);
-				} else if (i.getMicroOp() == CMMicroOp.SPIN_DOWN) {
-					byte[] particleHash = i.getParticleHash().asBytes();
-					additional = Stream.of(particleHash);
-				} else {
-					throw new IllegalStateException();
-				}
-			}
-
-			return Stream.concat(Stream.of(new byte[] {i.getMicroOp().opCode()}), additional);
-		});
+	private static Stream<byte[]> serializedInstructions(List<REInstruction> instructions) {
+		return instructions.stream()
+			.flatMap(i -> Stream.of(new byte[] {i.getMicroOp().opCode()}, i.getData()));
 	}
 
-	private static ImmutableList<CMMicroInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
+	private static ImmutableList<REInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
 		Objects.requireNonNull(bytesList);
-		Builder<CMMicroInstruction> instructionsBuilder = ImmutableList.builder();
+		Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
 
 		Iterator<byte[]> bytesIterator = bytesList.iterator();
 		while (bytesIterator.hasNext()) {
 			byte[] bytes = bytesIterator.next();
-			if (bytes[0] == CMMicroOp.PARTICLE_GROUP.opCode()) {
-				instructionsBuilder.add(CMMicroInstruction.particleGroup());
-			} else if (bytes[0] == CMMicroOp.SPIN_UP.opCode()) {
-				byte[] particleBytes = bytesIterator.next();
-				final Particle particle;
-				try {
-					particle = DefaultSerialization.getInstance().fromDson(particleBytes, Particle.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException("Could not deserialize particle: " + e);
-				}
-
-				instructionsBuilder.add(CMMicroInstruction.spinUp(particle));
-			} else if (bytes[0] == CMMicroOp.VIRTUAL_SPIN_DOWN.opCode()) {
-				byte[] particleBytes = bytesIterator.next();
-				final Particle particle;
-				try {
-					particle = DefaultSerialization.getInstance().fromDson(particleBytes, Particle.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException("Could not deserialize particle: " + e);
-				}
-
-				instructionsBuilder.add(CMMicroInstruction.virtualSpinDown(particle));
-			} else if (bytes[0] == CMMicroOp.SPIN_DOWN.opCode()) {
-				var particleHash = HashCode.fromBytes(bytesIterator.next());
-				instructionsBuilder.add(CMMicroInstruction.spinDown(particleHash));
-			} else {
-				throw new IllegalStateException();
-			}
+			byte[] dataBytes = bytesIterator.next();
+			var instruction = REInstruction.create(bytes[0], dataBytes);
+			instructionsBuilder.add(instruction);
 		}
 
 		return instructionsBuilder.build();
 	}
 
-	@Override
-	public CMInstruction getCMInstruction() {
-		return new CMInstruction(instructions, signatures);
+	public List<REInstruction> getInstructions() {
+		return instructions;
 	}
 
-	public Stream<CMMicroInstruction> uniqueInstructions() {
-		return instructions.stream().filter(CMMicroInstruction::isPush);
+	public Stream<REInstruction> bootUpInstructions() {
+		return instructions.stream().filter(i -> i.getMicroOp() == REInstruction.REOp.UP);
 	}
 
-	public Stream<Particle> upParticles() {
-		return uniqueInstructions()
-			.filter(i -> i.getNextSpin() == Spin.UP)
-			.map(CMMicroInstruction::getParticle);
-	}
-
-	@Override
 	public HashCode getWitness() {
 		return witness;
-	}
-
-	public AID getAID() {
-		return AID.from(witness.asBytes());
 	}
 
 	public String getMessage() {

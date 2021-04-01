@@ -20,13 +20,18 @@ package org.radix.api.observable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -104,7 +109,7 @@ public class AtomEventObserver {
 		}
 	}
 
-	public void tryNext(Atom atom, ImmutableSet<EUID> indicies) {
+	public void tryNext(Atom atom, AID atomId, ImmutableSet<EUID> indicies) {
 		if (atom == null) {
 			return;
 		}
@@ -113,7 +118,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, atom);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, atom, atomId);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -138,23 +143,29 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<Atom> atoms = new ArrayList<>();
+				List<Pair<Atom, AID>> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAtomIds.add(aid);
-					Atom ledgerEntry = store.get(aid).orElseThrow();
-					if (ledgerEntry
-						.upParticles()
+					Atom atom = store.get(aid).orElseThrow();
+					if (atom.bootUpInstructions()
+						.map(i -> {
+							try {
+								return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+							} catch (DeserializeException e) {
+								throw new IllegalStateException();
+							}
+						})
 						.flatMap(p -> p.getDestinations().stream())
 						.anyMatch(destination::equals)
 					) {
-						atoms.add(ledgerEntry);
+						atoms.add(Pair.of(atom, aid));
 					}
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(a -> new AtomEventDto(AtomEventType.STORE, a));
+						.map(a -> new AtomEventDto(AtomEventType.STORE, a.getFirst(), a.getSecond()));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}
@@ -167,7 +178,7 @@ public class AtomEventObserver {
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
 					.filter(aed -> {
-							var aid = aed.getAtom().getAID();
+							var aid = aed.getAtomId();
 							return !processedAtomIds.contains(aid)
 								|| aed.getType() == AtomEventType.DELETE;
 						}

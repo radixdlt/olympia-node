@@ -17,13 +17,13 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.identifiers.AID;
 
 /**
  * Interface for listening to the status of an Atom.
  * TODO: cleanup method signatures
  */
 public interface AtomStatusListener {
-	void onStored(Atom committedAtom);
+	void onStored(AID atomId);
 	void onError(Throwable e);
 }

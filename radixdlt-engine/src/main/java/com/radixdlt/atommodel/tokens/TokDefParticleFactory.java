@@ -51,26 +51,24 @@ public final class TokDefParticleFactory {
 		);
 	}
 
-	public TransferrableTokensParticle createTransferrable(RadixAddress address, UInt256 amount, long nonce) {
+	public TransferrableTokensParticle createTransferrable(RadixAddress address, UInt256 amount) {
 		return new TransferrableTokensParticle(
 			address,
 			amount,
 			granularity,
 			tokDefRef,
-			tokenPermissions,
-			nonce
+			tokenPermissions
 		);
 	}
 
-	public StakedTokensParticle createStaked(RadixAddress delegate, RadixAddress address, UInt256 amount, long nonce) {
+	public StakedTokensParticle createStaked(RadixAddress delegate, RadixAddress address, UInt256 amount) {
 		return new StakedTokensParticle(
 			delegate,
 			address,
 			amount,
 			granularity,
 			tokDefRef,
-			tokenPermissions,
-			nonce
+			tokenPermissions
 		);
 	}
 

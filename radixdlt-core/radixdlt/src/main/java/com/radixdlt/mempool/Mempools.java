@@ -21,7 +21,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Mempool which is always empty
@@ -35,16 +34,16 @@ public class Mempools {
 		return new Mempool<>() {
 			@Override
 			public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-			    // No-op
+				// No-op
 			}
 
 			@Override
-			public List<Pair<T, Exception>> committed(List<T> committed) {
+			public List<Pair<Command, Exception>> committed(List<T> committed) {
 				return List.of();
 			}
 
 			@Override
-			public List<Command> getCommands(int count, Set<T> seen) {
+			public List<Command> getCommands(int count, List<T> seen) {
 				return List.of();
 			}
 		};

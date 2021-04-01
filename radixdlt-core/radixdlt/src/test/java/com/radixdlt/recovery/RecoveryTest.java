@@ -17,6 +17,7 @@
 
 package com.radixdlt.recovery;
 
+import com.radixdlt.mempool.MempoolConfig;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +41,6 @@ import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
@@ -66,8 +66,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -111,7 +109,7 @@ public class RecoveryTest {
 
 	@Inject
 	@Genesis
-	private Atom genesisAtom;
+	private List<Atom> genesisAtoms;
 
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
@@ -162,15 +160,14 @@ public class RecoveryTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(Atom.class).annotatedWith(Genesis.class).toInstance(genesisAtom);
+					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
@@ -182,8 +179,8 @@ public class RecoveryTest {
 		);
 	}
 
-	private RadixEngine<Atom, LedgerAndBFTProof> getRadixEngine() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<Atom, LedgerAndBFTProof>>() { }));
+	private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
 	}
 
 	private CommittedReader getCommittedReader() {
@@ -220,15 +217,15 @@ public class RecoveryTest {
 		// Arrange
 		processForCount(100);
 		var radixEngine = getRadixEngine();
-		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
+		var epochView = radixEngine.getComputedState(EpochView.class);
 
 		// Act
 		restartNode();
 
 		// Assert
 		var restartedRadixEngine = getRadixEngine();
-		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
-		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
+		var restartedEpochView = restartedRadixEngine.getComputedState(EpochView.class);
+		assertThat(restartedEpochView).isEqualTo(epochView);
 	}
 
 	@Test

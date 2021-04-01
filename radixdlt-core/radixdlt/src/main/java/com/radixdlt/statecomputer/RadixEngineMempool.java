@@ -17,24 +17,36 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAtom;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.mempool.MempoolRelayCommands;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -43,33 +55,37 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A mempool which uses internal radix engine to be more efficient.
  */
-public final class RadixEngineMempool implements Mempool<Atom> {
-	private final ConcurrentHashMap<AID, Command> data = new ConcurrentHashMap<>();
-	private final Map<CMMicroInstruction, Set<AID>> particleIndex = new HashMap<>();
-	private final int maxSize;
+@Singleton
+public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
+	private final ConcurrentHashMap<Command, MempoolAtom> data = new ConcurrentHashMap<>();
+	private final Map<SubstateId, Set<Command>> particleIndex = new HashMap<>();
+	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
-	private final RadixEngine<Atom, LedgerAndBFTProof> radixEngine;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
 
 	@Inject
 	public RadixEngineMempool(
-		RadixEngine<Atom, LedgerAndBFTProof> radixEngine,
-		@MempoolMaxSize int maxSize,
-		SystemCounters counters
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		MempoolConfig mempoolConfig,
+		SystemCounters counters,
+		EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher
 	) {
-		if (maxSize <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+		if (mempoolConfig.maxSize() <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
 		}
 		this.radixEngine = radixEngine;
-		this.maxSize = maxSize;
+		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
+		this.mempoolRelayCommandsEventDispatcher = Objects.requireNonNull(mempoolRelayCommandsEventDispatcher);
 	}
 
 	@Override
@@ -81,19 +97,20 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			throw new MempoolRejectedException("Deserialize failure.");
 		}
 
-		if (this.data.size() >= this.maxSize) {
+		if (this.data.size() >= this.mempoolConfig.maxSize()) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
 			);
 		}
 
-		if (this.data.containsKey(atom.getAID())) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", atom.getAID()));
+		if (this.data.containsKey(command)) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getId()));
 		}
 
+		final List<ParsedTransaction> parsedTransactions;
 		try {
-			RadixEngine.RadixEngineBranch<Atom, LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			checker.execute(List.of(atom));
+			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
+			parsedTransactions = checker.execute(List.of(atom));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);
@@ -101,43 +118,56 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(atom.getAID(), command);
+		this.data.put(command, MempoolAtom.create(atom, System.currentTimeMillis(), Optional.empty()));
 
-		atom.uniqueInstructions()
-			.forEach(i -> particleIndex.merge(i, Set.of(atom.getAID()), Sets::union));
+		for (var instruction : parsedTransactions.get(0).instructions()) {
+			if (instruction.getSpin() == Spin.DOWN) {
+				var substateId = instruction.getSubstate().getId();
+				particleIndex.merge(substateId, Set.of(command), Sets::union);
+			}
+		}
 
 		updateCounts();
 	}
 
-	@Override
-	public List<Pair<Atom, Exception>> committed(List<Atom> commands) {
-		commands.forEach(a -> data.remove(a.getAID()));
-		final List<Pair<Atom, Exception>> removed = new ArrayList<>();
-		commands.stream()
-			.flatMap(Atom::uniqueInstructions)
-			.flatMap(p -> {
-				Set<AID> aids = particleIndex.remove(p);
-				return aids != null ? aids.stream() : Stream.empty();
-			})
-			.forEach(aid -> {
-				var command = data.remove(aid);
-				// TODO: Cleanup
-				if (command != null) {
-					Atom atom;
-					try {
-						atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
+	// Hack, remove later
+	private static AID atomIdOf(Atom atom) {
+		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		var firstHash = HashUtils.sha256(dson);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return AID.from(secondHash.asBytes());
+	}
 
-					removed.add(Pair.of(atom, new RadixEngineMempoolException(
-						new RadixEngineException(
-							atom,
-							RadixEngineErrorCode.CM_ERROR,
-							"State conflict",
-							DataPointer.ofAtom()
-						)
-					)));
+	@Override
+	public List<Pair<Command, Exception>> committed(List<ParsedTransaction> transactions) {
+		final var removed = new ArrayList<Pair<Command, Exception>>();
+		final var atomIds = transactions.stream()
+			.map(ParsedTransaction::getAtomId)
+			.collect(Collectors.toSet());
+
+		transactions.stream()
+			.flatMap(t -> t.instructions().stream())
+			.filter(i -> i.getSpin() == Spin.DOWN)
+			.forEach(instruction -> {
+				var substateId = instruction.getSubstate().getId();
+				Set<Command> cmds = particleIndex.remove(substateId);
+				if (cmds == null) {
+					return;
+				}
+
+				for (var cmd : cmds) {
+					var toRemove = data.remove(cmd);
+					// TODO: Cleanup
+					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove.getAtom()))) {
+						removed.add(Pair.of(cmd, new RadixEngineMempoolException(
+							new RadixEngineException(
+								toRemove.getAtom(),
+								RadixEngineErrorCode.CM_ERROR,
+								"Mempool evicted",
+								DataPointer.ofAtom()
+							)
+						)));
+					}
 				}
 			});
 
@@ -147,26 +177,49 @@ public final class RadixEngineMempool implements Mempool<Atom> {
 
 	// TODO: Order by highest fees paid
 	@Override
-	public List<Command> getCommands(int count, Set<Atom> prepared) {
+	public List<Command> getCommands(int count, List<ParsedTransaction> prepared) {
 		var copy = new HashSet<>(data.keySet());
 		prepared.stream()
-			.flatMap(Atom::uniqueInstructions)
-			.distinct()
-			.flatMap(i -> particleIndex.getOrDefault(i, Set.of()).stream())
+			.flatMap(t -> t.instructions().stream())
+			.filter(i -> i.getSpin() == Spin.DOWN)
+			.flatMap(i -> particleIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
 
-		return copy.stream().map(data::get).limit(count).collect(Collectors.toList());
+		return copy.stream().limit(count).collect(Collectors.toList());
+	}
+
+	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
+		return ev -> {
+			final var now = System.currentTimeMillis();
+			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
+			final var commandsToRelay = this.data
+				.entrySet().stream()
+				.filter(e ->
+					e.getValue().getInserted() <= maxAddTime
+						&& now >= e.getValue().getLastRelayed().orElse(0L) + this.mempoolConfig.commandRelayRepeatDelay()
+				)
+				.map(e -> {
+					final var updated = e.getValue().withLastRelayed(now);
+					this.data.put(e.getKey(), updated);
+					return e.getKey();
+				})
+				.collect(ImmutableList.toImmutableList());
+
+			if (!commandsToRelay.isEmpty()) {
+				mempoolRelayCommandsEventDispatcher.dispatch(MempoolRelayCommands.create(commandsToRelay));
+			}
+		};
 	}
 
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
+		this.counters.set(CounterType.MEMPOOL_COUNT, this.data.size());
+		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-				getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
 	}
 }

@@ -17,237 +17,131 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
-	private RadixEngine<RadixEngineAtom, Void> engine;
-	private EngineStore<RadixEngineAtom, Void> store;
+	private RadixEngine<Void> engine;
+	private EngineStore<Void> store;
 	private RRI tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 	private RadixAddress validatorAddress = new RadixAddress(MAGIC, this.validatorKeyPair.getPublicKey());
-
-	private TransferrableTokensParticle transferrableTokensParticle;
+	private List<Substate> upParticles = new ArrayList<>();
 
 	@Before
-	public void setup() throws RadixEngineException {
+	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
 		final var cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
 		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			this.store
-		);
+		this.engine = new RadixEngine<>(cm, this.store);
 
 		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
-		final var rriParticle = new RRIParticle(this.tokenRri);
-		final var tokenDefinitionParticle = new FixedSupplyTokenDefinitionParticle(
-			this.tokenRri,
+		var tokDef = new MutableTokenDefinition(
 			"TEST",
+			"Test",
 			"description",
-			UInt256.TEN,
-			UInt256.ONE,
 			null,
-			null
-		);
-		this.transferrableTokensParticle = transferrableTokens(UInt256.TEN);
-		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.virtualSpinDown(rriParticle),
-			CMMicroInstruction.spinUp(tokenDefinitionParticle),
-			CMMicroInstruction.spinUp(this.transferrableTokensParticle),
-			CMMicroInstruction.particleGroup(),
-			CMMicroInstruction.virtualSpinDown(unregisterValidator(0)),
-			CMMicroInstruction.spinUp(registerValidator(1)),
-			CMMicroInstruction.particleGroup()
-		);
-		final var instruction = new CMInstruction(
-			instructions,
+			null,
 			ImmutableMap.of(
-				this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(HashUtils.zero256()),
-				this.validatorKeyPair.euid(), this.validatorKeyPair.sign(HashUtils.zero256())
+				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
 			)
 		);
-		this.engine.execute(List.of(new BaseAtom(instruction, HashUtils.zero256())));
+		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
+			.createMutableToken(tokDef)
+			.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN);
+		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
+
+		var validatorBuilder = TxBuilder.newBuilder(this.validatorAddress)
+			.registerAsValidator();
+		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
+
+		this.engine.execute(List.of(atom0, atom1));
 	}
 
 	@Test
-	public void stake_tokens() throws RadixEngineException {
-		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-
-		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
-
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-
-		this.engine.execute(List.of(builder.buildAtom()));
-
-		assertThat(this.store.getSpin(null, this.transferrableTokensParticle)).isEqualTo(Spin.DOWN);
-		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.UP);
+	public void stake_tokens() throws Exception {
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign);
+		this.engine.execute(List.of(atom));
 	}
 
 	@Test
-	public void unstake_tokens() throws RadixEngineException {
-		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
+	public void unstake_tokens() throws Exception {
+		var upSubstate = new AtomicReference<SubstateStore>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
+		this.engine.execute(List.of(atom));
 
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(List.of(builder.buildAtom()));
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
+			.unstakeFrom(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		final var tranferrableParticle = transferrableTokens(UInt256.TEN);
-		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(tranferrableParticle)
-					.build()
-			);
-		var hashToSign2 = builder2.computeHashToSign();
-		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
-		this.engine.execute(List.of(builder2.buildAtom()));
-
-		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
+		this.engine.execute(List.of(atom2));
 	}
 
 	@Test
-	public void unstake_partial_tokens() throws RadixEngineException {
-		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(List.of(builder.buildAtom()));
+	public void unstake_partial_tokens() throws Exception {
+		var upSubstate = new AtomicReference<SubstateStore>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
+		this.engine.execute(List.of(atom));
 
-		final var tranferrableParticle = transferrableTokens(UInt256.THREE);
-		final var partialStakeParticle = stakedTokens(UInt256.SEVEN, this.tokenOwnerAddress);
-		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(partialStakeParticle)
-					.spinUp(tranferrableParticle)
-					.build()
-			);
-		var hashToSign2 = builder2.computeHashToSign();
-		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
-		this.engine.execute(List.of(builder2.buildAtom()));
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
+			.unstakeFrom(this.tokenRri, this.validatorAddress, UInt256.SEVEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		assertThat(this.store.getSpin(null, tranferrableParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(null, partialStakeParticle)).isEqualTo(Spin.UP);
-		assertThat(this.store.getSpin(null, stakeParticle)).isEqualTo(Spin.DOWN);
+		this.engine.execute(List.of(atom2));
 	}
 
 	@Test
-	public void move_staked_tokens() throws RadixEngineException {
-		final var stakeParticle = stakedTokens(this.transferrableTokensParticle.getAmount(), this.tokenOwnerAddress);
-		var builder = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(registerValidator(1))
-					.spinUp(registerValidator(2))
-					.spinUp(stakeParticle)
-					.spinDown(this.transferrableTokensParticle)
-					.build()
-			);
-		var hashToSign = builder.computeHashToSign();
-		builder.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign));
-		this.engine.execute(List.of(builder.buildAtom()));
+	public void move_staked_tokens() throws Exception {
 
+		var upSubstate = new AtomicReference<SubstateStore>();
+		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
+			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
+		this.engine.execute(List.of(atom));
 
-		final var restakeParticle = stakedTokens(UInt256.TEN, newAddress());
-		var builder2 = Atom.newBuilder()
-			.addParticleGroup(
-				ParticleGroup.builder()
-					.spinDown(stakeParticle)
-					.spinUp(restakeParticle)
-					.build()
-			);
-		var hashToSign2 = builder2.computeHashToSign();
-		builder2.setSignature(this.tokenOwnerKeyPair.euid(), this.tokenOwnerKeyPair.sign(hashToSign2));
+		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
+			.moveStake(this.tokenRri, this.validatorAddress, newAddress(), UInt256.SEVEN)
+			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		assertThatThrownBy(() -> this.engine.execute(List.of(builder2.buildAtom())))
-			.isInstanceOf(RadixEngineException.class)
-			.hasMessageContaining("Can't send staked tokens");
-	}
-
-	private UnregisteredValidatorParticle unregisterValidator(long nonce) {
-		return new UnregisteredValidatorParticle(this.validatorAddress, nonce);
-	}
-
-	private RegisteredValidatorParticle registerValidator(long nonce) {
-		return new RegisteredValidatorParticle(this.validatorAddress, ImmutableSet.of(), nonce);
-	}
-
-	private TransferrableTokensParticle transferrableTokens(UInt256 amount) {
-		return new TransferrableTokensParticle(this.tokenOwnerAddress, amount, UInt256.ONE, this.tokenRri, ImmutableMap.of());
-	}
-
-	private StakedTokensParticle stakedTokens(UInt256 amount, RadixAddress ownerAddress) {
-		return new StakedTokensParticle(this.validatorAddress, ownerAddress, amount, UInt256.ONE, this.tokenRri, ImmutableMap.of());
+		this.engine.execute(List.of(atom2));
 	}
 
 	private RadixAddress newAddress() {

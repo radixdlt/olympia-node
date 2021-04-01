@@ -39,19 +39,15 @@ import java.util.stream.Collectors;
  */
 @SerializerId2("radix.particles.unallocated_tokens")
 public final class UnallocatedTokensParticle extends Particle {
-	@JsonProperty("tokenDefinitionReference")
+	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
-
-	@JsonProperty("amount")
+	@JsonProperty("a")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
@@ -70,24 +66,8 @@ public final class UnallocatedTokensParticle extends Particle {
 	) {
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-	}
-
-	public UnallocatedTokensParticle(
-		UInt256 amount,
-		UInt256 granularity,
-		RRI tokenDefinitionReference,
-		Map<TokenTransition, TokenPermission> tokenPermissions,
-		long nonce
-	) {
-		this.granularity = Objects.requireNonNull(granularity);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.nonce = System.nanoTime();
-		this.amount = Objects.requireNonNull(amount);
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-		this.nonce = nonce;
 	}
 
 	@Override
@@ -144,20 +124,16 @@ public final class UnallocatedTokensParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
 			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
-			String.valueOf(granularity),
-			nonce);
+			String.valueOf(granularity)
+		);
 	}
 
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	public long getNonce() {
-		return this.nonce;
 	}
 
 	@Override
@@ -169,15 +145,14 @@ public final class UnallocatedTokensParticle extends Particle {
 			return false;
 		}
 		UnallocatedTokensParticle that = (UnallocatedTokensParticle) o;
-		return nonce == that.nonce
-				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-				&& Objects.equals(granularity, that.granularity)
-				&& Objects.equals(amount, that.amount)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions);
+		return Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(granularity, that.granularity)
+			&& Objects.equals(amount, that.amount)
+			&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(tokenDefinitionReference, granularity, nonce, amount, tokenPermissions);
+		return Objects.hash(tokenDefinitionReference, granularity, amount, tokenPermissions);
 	}
 }

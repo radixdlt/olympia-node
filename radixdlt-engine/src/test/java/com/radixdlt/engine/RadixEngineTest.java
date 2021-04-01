@@ -17,16 +17,12 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.EngineStore;
@@ -78,18 +74,16 @@ public class RadixEngineTest {
 	}
 
 	private ConstraintMachine constraintMachine;
-	private EngineStore<RadixEngineAtom, Void> engineStore;
+	private EngineStore<Void> engineStore;
 	private Predicate<Particle> virtualStore;
-	private RadixEngine<RadixEngineAtom, Void> radixEngine;
+	private RadixEngine<Void> radixEngine;
 
 	@Before
 	public void setup() {
 		this.constraintMachine = mock(ConstraintMachine.class);
 		this.engineStore = TypedMocks.rmock(EngineStore.class);
-		this.virtualStore = TypedMocks.rmock(Predicate.class);
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
-			virtualStore,
 			engineStore
 		);
 	}
@@ -100,22 +94,17 @@ public class RadixEngineTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		RadixEngine<RadixEngineAtom, Void> engine = new RadixEngine<>(
-			cm,
-			cmAtomOS.virtualizedUpParticles(),
-			new InMemoryEngineStore<>()
-		);
+		RadixEngine<Void> engine = new RadixEngine<>(cm, new InMemoryEngineStore<>());
 
 		// Act
 		// Assert
-		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(CMMicroInstruction.particleGroup()),
-			ImmutableMap.of()
-		);
-		var atom = new BaseAtom(cmInstruction, HashUtils.zero256());
+		var atom = TxLowLevelBuilder.newBuilder()
+			.particleGroup()
+			.buildWithoutSignature();
 		assertThatThrownBy(() -> engine.execute(List.of(atom)))
 			.isInstanceOf(RadixEngineException.class);
 	}

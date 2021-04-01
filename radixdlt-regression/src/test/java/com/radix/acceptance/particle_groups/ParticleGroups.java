@@ -26,21 +26,17 @@ import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.atom.ParticleGroup;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -51,14 +47,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.reactivex.observers.TestObserver;
-import java.util.Set;
-import java.util.stream.Stream;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -112,39 +105,13 @@ public class ParticleGroups {
 		}
 	}
 
-	private class MergeStatefulActionToParticleGroupsMapper<T extends Action> implements StatefulActionToParticleGroupsMapper<MergeAction> {
-		private final StatefulActionToParticleGroupsMapper<T>[] mappers;
-		private MergeStatefulActionToParticleGroupsMapper(StatefulActionToParticleGroupsMapper<T>... mappers) {
-			this.mappers = mappers;
-		}
-
-		@Override
-		public Set<ShardedParticleStateId> requiredState(MergeAction action) {
-			return Arrays.stream(mappers).flatMap(mapper ->
-				Arrays.stream(action.actions).flatMap(a -> mapper.requiredState((T) a).stream())
-			).collect(Collectors.toSet());
-		}
-
-		@Override
-		public List<ParticleGroup> mapToParticleGroups(MergeAction mergeAction, Stream<Particle> store) {
-			List<Particle> particles = store.collect(Collectors.toList());
-
-			return Arrays.stream(mergeAction.actions)
-				.flatMap(a -> Arrays.stream(this.mappers)
-					 .flatMap(mapper -> mapper.mapToParticleGroups((T) a, particles.stream()).stream()))
-				.collect(Collectors.toList());
-		}
-	}
-
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		StatefulActionToParticleGroupsMapper<TransferTokensAction> mapper = new TransferTokensToParticleGroupsMapper();
 		this.api = RadixApplicationAPI.defaultBuilder()
 			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.addStatelessParticlesMapper(CreateEmptyGroupAction.class, new CreateEmptyGroupActionToParticleGroupsMapper())
-			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper<>(mapper))
 			.build();
 
 		TokenUtilities.requestTokensFor(this.api);

@@ -18,19 +18,16 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.AtomBuilder;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
@@ -48,16 +45,14 @@ import com.radixdlt.identifiers.RRI;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
-import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public final class UniqueTest {
-	private Random random = new Random();
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject private RadixEngine<Atom, LedgerAndBFTProof> sut;
+	@Inject private RadixEngine<LedgerAndBFTProof> sut;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -67,8 +62,7 @@ public final class UniqueTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
@@ -77,19 +71,15 @@ public final class UniqueTest {
 	}
 
 	private Atom uniqueAtom(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RRI rri = RRI.of(address, "test");
-		RRIParticle rriParticle = new RRIParticle(rri, 0);
-		UniqueParticle uniqueParticle = new UniqueParticle("test", address, random.nextLong());
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.virtualSpinDown(rriParticle)
-			.spinUp(uniqueParticle)
-			.build();
-		AtomBuilder atom = Atom.newBuilder();
-		atom.addParticleGroup(particleGroup);
-		HashCode hashToSign = atom.computeHashToSign();
-		atom.setSignature(keyPair.euid(), keyPair.sign(hashToSign));
-		return atom.buildAtom();
+		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		var rri = RRI.of(address, "test");
+		var rriParticle = new RRIParticle(rri);
+		var uniqueParticle = new UniqueParticle("test", address);
+		var atomBuilder = TxLowLevelBuilder.newBuilder()
+			.virtualDown(rriParticle)
+			.up(uniqueParticle)
+			.particleGroup();
+		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
 	@Test

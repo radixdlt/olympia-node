@@ -17,9 +17,8 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
 
 import java.util.Optional;
 
@@ -45,13 +44,7 @@ public interface CMStore {
 
 	Transaction createTransaction();
 
-	/**
-	 * Get the current spin of a particle.
-	 *
-	 * @param particle the particle to get the spin of
-	 * @return the current spin of a particle
-	 */
-	Spin getSpin(Transaction txn, Particle particle);
+	boolean isVirtualDown(Transaction txn, SubstateId substateId);
 
-	Optional<Particle> loadUpParticle(Transaction txn, HashCode particleHash);
+	Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId);
 }

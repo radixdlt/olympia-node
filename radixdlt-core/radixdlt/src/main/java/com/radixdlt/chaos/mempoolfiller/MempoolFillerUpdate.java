@@ -20,6 +20,7 @@ package com.radixdlt.chaos.mempoolfiller;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Consumer;
 
 /**
  * An update event to the mempool filler
@@ -27,21 +28,61 @@ import java.util.OptionalInt;
 public final class MempoolFillerUpdate {
     private final int parallelTransactions;
     private final boolean sendToSelf;
+    private final Runnable onSuccess;
+    private final Consumer<String> onError;
 
-    private MempoolFillerUpdate(int parallelTransactions, boolean sendToSelf) {
+    private MempoolFillerUpdate(
+        int parallelTransactions,
+        boolean sendToSelf,
+        Runnable onSuccess,
+        Consumer<String> onError
+    ) {
         this.parallelTransactions = parallelTransactions;
         this.sendToSelf = sendToSelf;
+        this.onSuccess = onSuccess;
+        this.onError = onError;
     }
 
-    public static MempoolFillerUpdate enable(int parallelTransactions, boolean sendToSelf) {
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf
+    ) {
+    	return enable(parallelTransactions, sendToSelf, () -> { }, s -> { });
+    }
+
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf,
+        Runnable onSuccess,
+        Consumer<String> onError
+    ) {
     	if (parallelTransactions < 0) {
     	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
         }
-        return new MempoolFillerUpdate(parallelTransactions, sendToSelf);
+    	Objects.requireNonNull(onSuccess);
+        Objects.requireNonNull(onError);
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, onSuccess, onError);
     }
 
     public static MempoolFillerUpdate disable() {
-        return new MempoolFillerUpdate(-1, false);
+    	return disable(() -> { }, s -> { });
+	}
+
+    public static MempoolFillerUpdate disable(
+        Runnable onSuccess,
+        Consumer<String> onError
+    ) {
+        Objects.requireNonNull(onSuccess);
+        Objects.requireNonNull(onError);
+        return new MempoolFillerUpdate(-1, false, onSuccess, onError);
+    }
+
+    public void onSuccess() {
+        this.onSuccess.run();
+    }
+
+    public void onError(String error) {
+        this.onError.accept(error);
     }
 
     public boolean enabled() {

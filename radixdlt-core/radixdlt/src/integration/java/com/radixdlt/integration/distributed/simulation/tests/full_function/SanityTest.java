@@ -28,8 +28,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -49,8 +48,7 @@ public class SanityTest {
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-				bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+				bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 10L));
 			}
 		})
 		.addTestModules(

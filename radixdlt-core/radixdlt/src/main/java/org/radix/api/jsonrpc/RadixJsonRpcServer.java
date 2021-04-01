@@ -18,8 +18,8 @@
 package org.radix.api.jsonrpc;
 
 import org.json.JSONObject;
+import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.jsonrpc.handler.LedgerHandler;
 import org.radix.api.jsonrpc.handler.NetworkHandler;
 import org.radix.api.jsonrpc.handler.SystemHandler;
@@ -33,17 +33,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.undertow.server.HttpServerExchange;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.INVALID_PARAMS;
-import static org.radix.api.jsonrpc.JsonRpcUtil.PARSE_ERROR;
-import static org.radix.api.jsonrpc.JsonRpcUtil.REQUEST_TOO_LONG;
-import static org.radix.api.jsonrpc.JsonRpcUtil.SERVER_ERROR;
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.jsonrpc.JsonRpcUtil.methodNotFoundResponse;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -59,12 +53,11 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-	private final Map<String, Function<JSONObject, JSONObject>> handlers = new HashMap<>();
+	private final Map<String, JsonRpcHandler> handlers = new HashMap<>();
 	private final SystemHandler systemHandler;
 	private final NetworkHandler networkHandler;
 	private final AtomHandler atomHandler;
 	private final LedgerHandler ledgerHandler;
-	private final HighLevelApiHandler highLevelApiHandler;
 
 	@Inject
 	public RadixJsonRpcServer(
@@ -72,9 +65,9 @@ public final class RadixJsonRpcServer {
 		NetworkHandler networkHandler,
 		AtomHandler atomHandler,
 		LedgerHandler ledgerHandler,
-		HighLevelApiHandler highLevelApiHandler
+		Map<String, JsonRpcHandler> additionalHandlers
 	) {
-		this(systemHandler, networkHandler, atomHandler, ledgerHandler, highLevelApiHandler, DEFAULT_MAX_REQUEST_SIZE);
+		this(systemHandler, networkHandler, atomHandler, ledgerHandler, additionalHandlers, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
@@ -82,20 +75,19 @@ public final class RadixJsonRpcServer {
 		NetworkHandler networkHandler,
 		AtomHandler atomHandler,
 		LedgerHandler ledgerHandler,
-		HighLevelApiHandler highLevelApiHandler,
+		Map<String, JsonRpcHandler> additionalHandlers,
 		long maxRequestSizeBytes
 	) {
 		this.systemHandler = systemHandler;
 		this.networkHandler = networkHandler;
 		this.atomHandler = atomHandler;
 		this.ledgerHandler = ledgerHandler;
-		this.highLevelApiHandler = highLevelApiHandler;
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 
-		fillHandlers();
+		fillHandlers(additionalHandlers);
 	}
 
-	private void fillHandlers() {
+	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {
 		//BFT
 		handlers.put("BFT.start", systemHandler::handleBftStart);
 		handlers.put("BFT.stop", systemHandler::handleBftStop);
@@ -118,12 +110,7 @@ public final class RadixJsonRpcServer {
 		//TODO: check and fix method naming?
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 
-		//High level API's
-		handlers.put("radix.universeMagic", highLevelApiHandler::handleUniverseMagic);
-		handlers.put("radix.nativeToken", highLevelApiHandler::handleNativeToken);
-		handlers.put("radix.tokenBalances", highLevelApiHandler::handleTokenBalances);
-		handlers.put("radix.executedTransactions", highLevelApiHandler::handleExecutedTransactions);
-		handlers.put("radix.transactionStatus", highLevelApiHandler::handleTransactionStatus);
+		handlers.putAll(additionalHandlers);
 	}
 
 	/**
@@ -157,35 +144,34 @@ public final class RadixJsonRpcServer {
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
 		if (length > maxRequestSizeBytes) {
-			return errorResponse(REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
+			return errorResponse(RpcError.REQUEST_TOO_LONG, "request too big: " + length + " > " + maxRequestSizeBytes).toString();
 		}
 
 		return jsonObject(requestString)
 			.map(this::handle)
 			.map(Object::toString)
-			.orElseGet(() -> errorResponse(PARSE_ERROR, "unable to parse input").toString());
+			.orElseGet(() -> errorResponse(RpcError.PARSE_ERROR, "unable to parse input").toString());
 	}
 
 	private JSONObject handle(JSONObject request) {
 		if (!request.has("id")) {
-			return errorResponse(INVALID_PARAMS, "id missing");
+			return errorResponse(RpcError.INVALID_PARAMS, "id missing");
 		}
 
 		if (!request.has("method")) {
-			return errorResponse(INVALID_PARAMS, "method missing");
+			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
 		}
 
 		try {
 			return Optional.ofNullable(handlers.get(request.getString("method")))
-				.map(handler -> handler.apply(request))
-				.orElseGet(() -> methodNotFoundResponse(request.get("id")));
+				.map(handler -> handler.execute(request))
+				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
 
 		} catch (Exception e) {
-			var id = request.get("id");
 			if (request.has("params") && request.get("params") instanceof JSONObject) {
-				return errorResponse(id, SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
+				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage(), request.getJSONObject("params"));
 			} else {
-				return errorResponse(id, SERVER_ERROR, e.getMessage());
+				return errorResponse(request, RpcError.SERVER_ERROR, e.getMessage());
 			}
 		}
 	}

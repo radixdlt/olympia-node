@@ -134,7 +134,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
         assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
 
         assertTrue(argsExtractor.isFinished());
@@ -179,7 +178,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
         assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
         assertEquals(expected.getDelegateAddress(), argsExtractor.asRadixAddress("delegateAddress"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
 
         assertTrue(argsExtractor.isFinished());
@@ -192,7 +190,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
         assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
 
         assertTrue(argsExtractor.isFinished());
@@ -203,7 +200,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getRri(), argsExtractor.asRRI("rri"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
 
         assertTrue(argsExtractor.isFinished());
     }
@@ -214,7 +210,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
 
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
         assertEquals(expected.getAllowedDelegators(), argsExtractor.asAddressSet("allowedDelegators"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
 
         assertTrue(argsExtractor.isFinished());
     }
@@ -224,7 +219,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
-        assertEquals(expected.getNonce(), argsExtractor.asLong("nonce"));
 
         assertTrue(argsExtractor.isFinished());
     }

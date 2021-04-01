@@ -46,7 +46,7 @@ public class FProposalDropperResponsiveTest {
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
-			.build()
+			.buildWithoutEpochs()
 			.runForCount(30_000);
 	}
 
