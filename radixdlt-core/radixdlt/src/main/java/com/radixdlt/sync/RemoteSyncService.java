@@ -29,7 +29,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoTxnsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
@@ -120,9 +120,9 @@ public final class RemoteSyncService {
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}
 
-	private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerHeaderAndProof startHeader) {
+	private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerProof startHeader) {
 		final var start = System.currentTimeMillis();
-		final var result = committedReader.getNextCommittedCommands(startHeader);
+		final var result = committedReader.getNextCommittedTxns(startHeader);
 		final var finish = System.currentTimeMillis();
 		systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
 		return result;

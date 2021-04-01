@@ -31,7 +31,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -107,7 +107,7 @@ public class MessageCentralLedgerSyncTest {
 			this.messageCentralLedgerSync.syncRequests().test();
 		final var peer = createPeer();
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
+		DtoLedgerProof header = mock(DtoLedgerProof.class);
 		when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
 		messageCentral.send(peer, syncRequestMessage);
 		testObserver.awaitCount(1);

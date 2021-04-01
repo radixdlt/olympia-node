@@ -27,7 +27,7 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -635,7 +635,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public VerifiedTxnsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
 
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		final var startTime = System.nanoTime();

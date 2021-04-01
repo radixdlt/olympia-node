@@ -99,7 +99,6 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private EngineStore<LedgerAndBFTProof> engineStore(
 		@Genesis List<Txn> genesisTxns,
-		Serialization serialization,
 		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
 	) {
 		var inMemoryEngineStore = new InMemoryEngineStore<LedgerAndBFTProof>();

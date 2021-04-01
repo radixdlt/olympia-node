@@ -23,7 +23,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
@@ -76,7 +76,7 @@ class InMemoryCommittedReader implements CommittedReader {
 	}
 
 	@Override
-	public VerifiedTxnsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
 		synchronized (lock) {
 			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 			Entry<Long, VerifiedTxnsAndProof> entry = commandsAndProof.higherEntry(stateVersion);

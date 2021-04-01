@@ -37,8 +37,8 @@ import javax.annotation.concurrent.Immutable;
  * A ledger header and proof which has not been verified
  */
 @Immutable
-@SerializerId2("ledger.ledger_header_and_proof")
-public final class DtoLedgerHeaderAndProof {
+@SerializerId2("ledger.dto_proof")
+public final class DtoLedgerProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -73,7 +73,7 @@ public final class DtoLedgerHeaderAndProof {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public DtoLedgerHeaderAndProof(
+	public DtoLedgerProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,
@@ -138,7 +138,7 @@ public final class DtoLedgerHeaderAndProof {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		DtoLedgerHeaderAndProof that = (DtoLedgerHeaderAndProof) o;
+		DtoLedgerProof that = (DtoLedgerProof) o;
 		return opaque2 == that.opaque2
 				&& Objects.equals(opaque0, that.opaque0)
 				&& Objects.equals(opaque1, that.opaque1)

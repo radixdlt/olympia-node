@@ -27,7 +27,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
@@ -59,7 +59,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	private static class ByzantineVerifiedCommandsAndProofBuilder {
-		private DtoLedgerHeaderAndProof request;
+		private DtoLedgerProof request;
 		private UnaryOperator<Txn> commandMapper;
 		private VerifiedTxnsAndProof base;
 		private TimestampedECDSASignatures overwriteSignatures;
@@ -71,7 +71,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 			return this;
 		}
 
-		public ByzantineVerifiedCommandsAndProofBuilder accumulator(DtoLedgerHeaderAndProof request, LedgerAccumulator accumulator) {
+		public ByzantineVerifiedCommandsAndProofBuilder accumulator(DtoLedgerProof request, LedgerAccumulator accumulator) {
 			this.request = request;
 			this.accumulator = accumulator;
 			return this;
@@ -137,7 +137,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		GOOD {
 			@Override
 			VerifiedTxnsAndProof transform(
-				DtoLedgerHeaderAndProof request,
+				DtoLedgerProof request,
 				VerifiedTxnsAndProof correctCommands,
 				LedgerAccumulator ledgerAccumulator,
 				Hasher hasher
@@ -148,7 +148,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		BAD_COMMANDS {
 			@Override
 			VerifiedTxnsAndProof transform(
-				DtoLedgerHeaderAndProof request,
+				DtoLedgerProof request,
 				VerifiedTxnsAndProof correctCommands,
 				LedgerAccumulator ledgerAccumulator,
 				Hasher hasher
@@ -163,7 +163,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		NO_SIGNATURES {
 			@Override
 			VerifiedTxnsAndProof transform(
-				DtoLedgerHeaderAndProof request,
+				DtoLedgerProof request,
 				VerifiedTxnsAndProof correctCommands,
 				LedgerAccumulator accumulator,
 				Hasher hasher
@@ -180,7 +180,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		BAD_SIGNATURES {
 			@Override
 			VerifiedTxnsAndProof transform(
-				DtoLedgerHeaderAndProof request,
+				DtoLedgerProof request,
 				VerifiedTxnsAndProof correctCommands,
 				LedgerAccumulator accumulator,
 				Hasher hasher
@@ -195,7 +195,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		};
 
 		abstract VerifiedTxnsAndProof transform(
-			DtoLedgerHeaderAndProof request,
+			DtoLedgerProof request,
 			VerifiedTxnsAndProof correctCommands,
 			LedgerAccumulator ledgerAccumulator,
 			Hasher hasher
@@ -203,8 +203,8 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 	}
 
 	@Override
-	public VerifiedTxnsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
-		VerifiedTxnsAndProof correctResult = correctReader.getNextCommittedCommands(start);
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+		VerifiedTxnsAndProof correctResult = correctReader.getNextCommittedTxns(start);
 		// TODO: Make epoch sync byzantine as well
 		if (start.getLedgerHeader().isEndOfEpoch()) {
 			return correctResult;

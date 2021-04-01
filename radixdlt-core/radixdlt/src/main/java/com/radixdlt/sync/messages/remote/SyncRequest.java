@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 
 import java.util.Objects;
 
@@ -27,17 +27,17 @@ import java.util.Objects;
  */
 public final class SyncRequest {
 
-	private final DtoLedgerHeaderAndProof header;
+	private final DtoLedgerProof header;
 
-	public static SyncRequest create(DtoLedgerHeaderAndProof header) {
+	public static SyncRequest create(DtoLedgerProof header) {
 		return new SyncRequest(header);
 	}
 
-	private SyncRequest(DtoLedgerHeaderAndProof header) {
+	private SyncRequest(DtoLedgerProof header) {
 		this.header = header;
 	}
 
-	public DtoLedgerHeaderAndProof getHeader() {
+	public DtoLedgerProof getHeader() {
 		return header;
 	}
 
