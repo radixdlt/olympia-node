@@ -17,20 +17,30 @@
 
 package com.radixdlt.mempool;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public final class MempoolRelayTrigger {
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+	private MempoolRelayTrigger() {
+	}
 
-/**
- * Specifies the max size of the mempool
- */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface MempoolMaxSize {
+	public static MempoolRelayTrigger create() {
+		return new MempoolRelayTrigger();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		return o != null && getClass() == o.getClass();
+	}
+
+	@Override
+	public int hashCode() {
+		return 1;
+	}
 }

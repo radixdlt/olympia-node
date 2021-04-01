@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -17,47 +17,41 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.atom.Txn;
-
-import java.util.List;
 import java.util.Objects;
 
 /**
- * Message to attempt to add commands to the mempool
+ * Message indicating that a list of commands should be relayed to peers.
  */
-public final class MempoolAdd {
-	private final List<Txn> txns;
+public final class MempoolRelayCommands {
+	private final ImmutableList<Txn> txns;
 
-	private MempoolAdd(List<Txn> txns) {
+	private MempoolRelayCommands(ImmutableList<Txn> txns) {
 		this.txns = txns;
 	}
 
-	public List<Txn> getTxns() {
-		return txns;
-	}
-
-	public static MempoolAdd create(Txn txn) {
-		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn));
-	}
-
-	public static MempoolAdd create(List<Txn> txns) {
+	public static MempoolRelayCommands create(ImmutableList<Txn> txns) {
 		Objects.requireNonNull(txns);
-		return new MempoolAdd(txns);
+		return new MempoolRelayCommands(txns);
+	}
+
+	public ImmutableList<Txn> getTxns() {
+		return txns;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(txns);
+		return Objects.hash(txns);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof MempoolAdd)) {
+		if (!(o instanceof MempoolRelayCommands)) {
 			return false;
 		}
 
-		MempoolAdd other = (MempoolAdd) o;
+		MempoolRelayCommands other = (MempoolRelayCommands) o;
 		return Objects.equals(this.txns, other.txns);
 	}
 

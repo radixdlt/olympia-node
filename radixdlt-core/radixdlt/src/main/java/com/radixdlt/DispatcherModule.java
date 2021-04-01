@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import com.radixdlt.mempool.MempoolRelayCommands;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,7 +132,11 @@ public class DispatcherModule extends AbstractModule {
 			))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
-				.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<MempoolRelayCommands>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayCommands.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
@@ -172,12 +178,8 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledParticleFlush>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledParticleFlush.class)).in(Scopes.SINGLETON);
-
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
-			.toProvider(Dispatchers.remoteDispatcherProvider(
-				MempoolAdd.class,
-				CounterType.MEMPOOL_RELAYER_SENT_COUNT
-			)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 
 		// Sync
 		bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() { })
