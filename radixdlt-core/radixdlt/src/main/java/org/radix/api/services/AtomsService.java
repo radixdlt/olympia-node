@@ -21,24 +21,17 @@ import com.radixdlt.atom.Txn;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.radix.api.AtomQuery;
-import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
-import org.radix.api.observable.ObservedAtomEvents;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -49,31 +42,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 public class AtomsService {
-	private static final int NUMBER_OF_THREADS = 8;
-	/**
-	 * Some of these may block for a short while so keep a few.
-	 * TODO: remove the blocking
-	 */
-	private static final ExecutorService executorService = Executors.newFixedThreadPool(
-		NUMBER_OF_THREADS,
-		new ThreadFactoryBuilder().setNameFormat("AtomsService-%d").build()
-	);
-
-	private final Set<AtomEventObserver> atomEventObservers = Sets.newConcurrentHashSet();
 	private final Object singleAtomObserversLock = new Object();
 	private final Map<AID, List<AtomStatusListener>> singleAtomObservers = Maps.newHashMap();
 
@@ -85,7 +61,6 @@ public class AtomsService {
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 
-	private final Hasher hasher;
 	private final Serialization serialization;
 
 	@Inject
@@ -95,7 +70,6 @@ public class AtomsService {
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
 		AtomIndex store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		Hasher hasher,
 		Serialization serialization
 	) {
 		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
@@ -104,7 +78,6 @@ public class AtomsService {
 		this.store = Objects.requireNonNull(store);
 		this.disposable = new CompositeDisposable();
 		this.ledgerCommitted = ledgerCommitted;
-		this.hasher = hasher;
 		this.serialization = serialization;
 	}
 
@@ -143,32 +116,9 @@ public class AtomsService {
 		return () -> removeAtomStatusListener(aid, subscriber);
 	}
 
-	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
-		return observer -> {
-			final var atomEventObserver = createAtomObserver(atomQuery, observer);
-			atomEventObserver.start();
-			this.atomEventObservers.add(atomEventObserver);
-
-			return () -> {
-				this.atomEventObservers.remove(atomEventObserver);
-				atomEventObserver.cancel();
-			};
-		};
-	}
-
-	public long getWaitingCount() {
-		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
-	}
-
 	public Optional<JSONObject> getAtomByAtomId(AID txnId) throws JSONException {
 		return store.get(txnId)
 			.map(txn -> new JSONObject().put("tx", Hex.toHexString(txn.getPayload())));
-	}
-
-	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
-		return new AtomEventObserver(
-			atomQuery, observer, executorService, store, serialization, hasher
-		);
 	}
 
 	private void processExecutedCommand(AtomsCommittedToLedger atomsCommittedToLedger) {

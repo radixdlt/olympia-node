@@ -17,18 +17,14 @@
 
 package com.radixdlt.atomos;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
 import com.radixdlt.constraintmachine.Particle;
@@ -40,11 +36,6 @@ import static org.mockito.Mockito.mock;
 public class CMAtomOSTest {
 	private static final class TestParticle extends Particle {
 		@Override
-		public Set<EUID> getDestinations() {
-			return ImmutableSet.of();
-		}
-
-		@Override
 		public String toString() {
 			return "Test";
 		}
@@ -54,13 +45,12 @@ public class CMAtomOSTest {
 			if (!(o instanceof TestParticle)) {
 				return false;
 			}
-			final var that = (TestParticle) o;
-			return Objects.equals(this.getDestinations(), that.getDestinations());
+			return true;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.getDestinations());
+			return Objects.hash(0);
 		}
 	}
 
@@ -87,7 +77,6 @@ public class CMAtomOSTest {
 			mock(TransitionProcedureTestParticle00.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
-				.singleAddressMapper(x -> mock(RadixAddress.class))
 				.build());
 			syscalls.createTransition(
 				new TransitionToken<>(
@@ -104,7 +93,6 @@ public class CMAtomOSTest {
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, ParticleDefinition.<TestParticle>builder()
-					.singleAddressMapper(x -> mock(RadixAddress.class))
 					.build());
 				syscalls.createTransition(
 					new TransitionToken<>(
@@ -127,19 +115,5 @@ public class CMAtomOSTest {
 		TestParticle testParticle = new TestParticle();
 		assertThat(staticCheck.apply(testParticle).getErrorMessage())
 			.contains("Unknown particle type");
-	}
-
-	@Test
-	public void when_a_particle_with_a_bad_address_is_validated__it_should_cause_errors() {
-		CMAtomOS os = new CMAtomOS(addr -> Result.error("Bad address"));
-		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle.class, ParticleDefinition.<TestParticle>builder()
-				.singleAddressMapper(x -> mock(RadixAddress.class))
-				.build());
-		});
-		Function<Particle, Result> staticCheck = os.buildParticleStaticCheck();
-		TestParticle testParticle = new TestParticle();
-		assertThat(staticCheck.apply(testParticle).getErrorMessage())
-			.contains("Bad address");
 	}
 }

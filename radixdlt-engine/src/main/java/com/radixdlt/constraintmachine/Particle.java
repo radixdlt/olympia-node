@@ -18,15 +18,12 @@
 package com.radixdlt.constraintmachine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.SerializerDummy;
-
-import java.util.Set;
 
 /**
  * A content-identifiable, sub-state of the ledger.
@@ -44,6 +41,4 @@ public abstract class Particle {
 	public Particle() {
 		// Nothing for now
 	}
-
-	public abstract Set<EUID> getDestinations();
 }

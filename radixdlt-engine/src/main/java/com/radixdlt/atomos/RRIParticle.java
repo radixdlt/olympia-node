@@ -18,12 +18,9 @@
 package com.radixdlt.atomos;
 
 import java.util.Objects;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -40,11 +37,6 @@ public final class RRIParticle extends Particle {
 
 	public RRIParticle(RRI rri) {
 		this.rri = rri;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRri() {

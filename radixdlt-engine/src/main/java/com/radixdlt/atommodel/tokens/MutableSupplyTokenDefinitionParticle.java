@@ -18,8 +18,6 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
@@ -27,12 +25,11 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Particle representing a mutable supply token definition
  */
-@SerializerId2("mut")
+@SerializerId2("m_tkn")
 public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionParticle {
 	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
@@ -77,11 +74,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRRI() {

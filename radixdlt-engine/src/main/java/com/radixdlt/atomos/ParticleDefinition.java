@@ -19,10 +19,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,28 +30,21 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
-	private final Function<T, Set<RadixAddress>> addressMapper; // must be set (since we need to route the particle)
 	private final Function<T, Result> staticValidation; // may be null
 	private final Function<T, RRI> rriMapper; // may be null
 	private final Predicate<T> virtualizeSpin; // may be null
 	private final boolean allowsTransitionsFromOutsideScrypts;
 
 	private ParticleDefinition(
-		Function<T, Set<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
 		Function<T, RRI> rriMapper,
 		Predicate<T> virtualizeSpin,
 		boolean allowsTransitionsFromOutsideScrypts
 	) {
 		this.staticValidation = staticValidation;
-		this.addressMapper = addressMapper;
 		this.rriMapper = rriMapper;
 		this.virtualizeSpin = virtualizeSpin;
 		this.allowsTransitionsFromOutsideScrypts = allowsTransitionsFromOutsideScrypts;
-	}
-
-	Function<T, Set<RadixAddress>> getAddressMapper() {
-		return addressMapper;
 	}
 
 	Function<T, Result> getStaticValidation() {
@@ -87,23 +77,12 @@ public class ParticleDefinition<T extends Particle> {
 	 * @param <T> The type of the particle to be defined
 	 */
 	public static class Builder<T extends Particle> {
-		private Function<T, Set<RadixAddress>> addressMapper;
 		private Function<T, Result> staticValidation = x -> Result.success();
 		private Function<T, RRI> rriMapper;
 		private Predicate<T> virtualizedParticles = x -> false;
 		private boolean allowsTransitionsFromOutsideScrypts = false;
 
 		private Builder() {
-		}
-
-		public Builder<T> singleAddressMapper(Function<T, RadixAddress> addressMapper) {
-			this.addressMapper = p -> Collections.singleton(addressMapper.apply(p));
-			return this;
-		}
-
-		public Builder<T> addressMapper(Function<T, Set<RadixAddress>> addressMapper) {
-			this.addressMapper = addressMapper;
-			return this;
 		}
 
 		public Builder<T> staticValidation(Function<T, Result> staticValidation) {
@@ -135,13 +114,8 @@ public class ParticleDefinition<T extends Particle> {
 		 * @return The built {@link ParticleDefinition}
 		 */
 		public <U extends Particle> ParticleDefinition<U> build() {
-			if (addressMapper == null) {
-				throw new IllegalStateException("addressMapper is required");
-			}
-
 			// cast as necessary
 			return new ParticleDefinition<>(
-				p -> addressMapper.apply((T) p),
 				staticValidation == null ? null : p -> staticValidation.apply((T) p),
 				rriMapper == null ? null : p -> rriMapper.apply((T) p),
 				p -> virtualizedParticles.test((T) p),

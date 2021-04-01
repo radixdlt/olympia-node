@@ -50,14 +50,12 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
-			.singleAddressMapper(UnregisteredValidatorParticle::getAddress)
 			.staticValidation(checkAddress(UnregisteredValidatorParticle::getAddress))
 			.virtualizeUp(p -> true) // virtualize first instance as UP
 			.build()
 		);
 
 		os.registerParticle(RegisteredValidatorParticle.class, ParticleDefinition.<RegisteredValidatorParticle>builder()
-			.singleAddressMapper(RegisteredValidatorParticle::getAddress)
 			.staticValidation(checkAddressAndUrl(RegisteredValidatorParticle::getAddress,
 				RegisteredValidatorParticle::getUrl))
 			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt

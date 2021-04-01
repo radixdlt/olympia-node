@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -75,11 +74,6 @@ public final class RegisteredValidatorParticle extends Particle {
 			this.allowedDelegators,
 			this.url
 		);
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.address.euid());
 	}
 
 	public boolean allowsDelegator(RadixAddress delegator) {

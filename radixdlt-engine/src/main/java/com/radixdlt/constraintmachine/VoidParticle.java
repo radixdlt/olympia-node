@@ -17,17 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.util.Set;
-
-import com.radixdlt.identifiers.EUID;
-
 public final class VoidParticle extends Particle {
 	private VoidParticle() {
 		throw new IllegalStateException("Cannot instantiate.");
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		throw new IllegalStateException("No destinations for VoidParticle");
 	}
 }

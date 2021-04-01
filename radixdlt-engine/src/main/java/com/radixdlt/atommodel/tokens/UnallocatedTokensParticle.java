@@ -18,8 +18,6 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
@@ -27,12 +25,11 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  *  A particle which represents an amount of unallocated tokens which can be minted.
  */
-@SerializerId2("radix.particles.unallocated_tokens")
+@SerializerId2("u_t")
 public final class UnallocatedTokensParticle extends Particle {
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -59,11 +56,6 @@ public final class UnallocatedTokensParticle extends Particle {
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.tokenDefinitionReference.getAddress().euid());
 	}
 
 	public RadixAddress getAddress() {

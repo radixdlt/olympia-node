@@ -27,7 +27,6 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UniqueParticle.class,
 			ParticleDefinition.<UniqueParticle>builder()
-				.singleAddressMapper(UniqueParticle::getAddress)
 				.rriMapper(UniqueParticle::getRRI)
 				.build()
 		);

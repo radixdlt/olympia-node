@@ -17,21 +17,16 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -45,34 +40,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RadixEngineTest {
-
-	@SerializerId2("test.indexed_particle_2")
-	private final class IndexedParticle extends Particle {
-		@Override
-		public Set<EUID> getDestinations() {
-			return ImmutableSet.of();
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s", getClass().getSimpleName());
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(this.getDestinations());
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (!(o instanceof IndexedParticle)) {
-				return false;
-			}
-			final var that = (IndexedParticle) o;
-			return Objects.equals(this.getDestinations(), that.getDestinations());
-		}
-	}
-
 	private ConstraintMachine constraintMachine;
 	private EngineStore<Void> engineStore;
 	private Predicate<Particle> virtualStore;

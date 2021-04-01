@@ -20,7 +20,6 @@ package com.radixdlt.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -79,11 +78,6 @@ public final class StakedTokensParticle extends Particle {
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.isMutable = isMutable;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.address.euid(), this.delegateAddress.euid());
 	}
 
 	public RadixAddress getDelegateAddress() {

@@ -18,9 +18,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -28,7 +26,6 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Particle representing a fixed supply token definition
@@ -84,11 +81,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRRI() {
