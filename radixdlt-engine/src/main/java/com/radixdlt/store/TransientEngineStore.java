@@ -9,7 +9,6 @@ import com.radixdlt.constraintmachine.Spin;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;
@@ -35,11 +34,6 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public <U extends Particle> Iterable<Substate> upSubstates(Class<U> substateClass, Predicate<U> substatePredicate) {
-		throw new UnsupportedOperationException("Transient store should not require up substates.");
-	}
-
-	@Override
 	public Transaction createTransaction() {
 		return new Transaction() { };
 	}
@@ -57,5 +51,10 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 		}
 
 		return transientStore.loadUpParticle(txn, substateId);
+	}
+
+	@Override
+	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+		throw new UnsupportedOperationException("Transient store should not require up substates.");
 	}
 }

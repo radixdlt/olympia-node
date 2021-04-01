@@ -23,7 +23,6 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -187,9 +186,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		var systemUpdateBuilder = branch.getSubstateCache(
-			List.of(SystemParticle.class),
-			substates -> {
-				var builder = TxBuilder.newSystemBuilder(substates);
+			substateStore -> {
+				var builder = TxBuilder.newSystemBuilder(substateStore);
 				try {
 					if (validatorSet == null) {
 						builder.systemNextView(view.number(), timestamp, epoch);

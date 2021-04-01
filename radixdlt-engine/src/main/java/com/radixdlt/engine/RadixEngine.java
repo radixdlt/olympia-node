@@ -17,9 +17,9 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.Iterables;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
@@ -48,7 +48,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -171,28 +170,28 @@ public final class RadixEngine<M> {
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			var substateIterable = engineStore.upSubstates(
-				substateCacheRegister.getParticleClass(),
-				substateCacheRegister.getParticlePredicate()
-			);
-			substateIterable.forEach(cache::bringUp);
+			engineStore.index(substateCacheRegister.getParticleClass())
+				.forEach(substate -> {
+					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
+					if (substateCacheRegister.getParticlePredicate().test(p)) {
+						cache.bringUp(substate);
+					}
+				});
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}
 
-	public <T> T getSubstateCache(
-		List<Class<? extends Particle>> particleClasses,
-		Function<Iterable<Substate>, T> func
-	) {
+	// TODO: access engine store index
+	public <T> T accessSubstateStoreCache(Function<SubstateStore, T> func) {
 		synchronized (stateUpdateEngineLock) {
-			var substates = Iterables.concat(
-				particleClasses.stream()
-					.map(substateCache::get)
-					.map(s -> s.cache.values())
-					.collect(Collectors.toList())
-			);
-
-			return func.apply(substates);
+			SubstateStore substateStore = c -> {
+				var cache = substateCache.get(c);
+				if (cache == null) {
+					throw new IllegalStateException("Cache for substate type " + c + " does not exist.");
+				}
+				return substateCache.get(c).cache.values();
+			};
+			return func.apply(substateStore);
 		}
 	}
 
@@ -282,11 +281,8 @@ public final class RadixEngine<M> {
 			return engine.execute(atoms, null, permissionLevel);
 		}
 
-		public <T> T getSubstateCache(
-			List<Class<? extends Particle>> particleClasses,
-			Function<Iterable<Substate>, T> func
-		) {
-			return engine.getSubstateCache(particleClasses, func);
+		public <T> T getSubstateCache(Function<SubstateStore, T> func) {
+			return engine.accessSubstateStoreCache(func);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {

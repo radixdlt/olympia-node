@@ -98,10 +98,9 @@ public final class ValidatorRegistrator {
 			particleClasses.add(TransferrableTokensParticle.class);
 		}
 
-		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>getSubstateCache(
-			particleClasses,
-			substate -> {
-				var builder = TxBuilder.newBuilder(self, substate);
+		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStoreCache(
+			substateStore -> {
+				var builder = TxBuilder.newBuilder(self, substateStore);
 				try {
 					if (registration.isRegister()) {
 						builder.registerAsValidator();

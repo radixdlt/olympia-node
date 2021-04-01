@@ -28,11 +28,9 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
@@ -94,8 +92,6 @@ public class TokenFeeTest {
 	@Inject
 	private EngineStore<LedgerAndBFTProof> engineStore;
 
-	private Iterable<Substate> substates;
-
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private Injector createInjector() {
@@ -125,12 +121,11 @@ public class TokenFeeTest {
 	public void setup() {
 		createInjector().injectMembers(this);
 		this.address = new RadixAddress((byte) magic, ecKeyPair.getPublicKey());
-		this.substates = engineStore.upSubstates(TransferrableTokensParticle.class, p -> true);
 	}
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, substates)
+		var atom = TxBuilder.newBuilder(address, engineStore)
 			.mutex("test")
 			.burnForFee(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
@@ -148,7 +143,7 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, substates)
+		var atom = TxBuilder.newBuilder(address, engineStore)
 			.burnForFee(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
 

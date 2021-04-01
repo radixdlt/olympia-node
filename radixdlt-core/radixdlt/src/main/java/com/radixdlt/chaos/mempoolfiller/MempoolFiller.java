@@ -20,11 +20,10 @@ package com.radixdlt.chaos.mempoolfiller;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -111,10 +110,12 @@ public final class MempoolFiller {
 			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
 			if (u.enabled() == enabled) {
+				u.onError("Already " + ((enabled) ? "enabled." : "disabled."));
 				return;
 			}
 
 			logger.info("Mempool Filler: Updating " + u.enabled());
+			u.onSuccess();
 
 			if (u.enabled()) {
 				enabled = true;
@@ -125,9 +126,9 @@ public final class MempoolFiller {
 		};
 	}
 
-	private Optional<Atom> createAtom(Iterable<Substate> substate, int index, Consumer<Iterable<Substate>> nextSubstate) {
+	private Optional<Atom> createAtom(SubstateStore substateStore, int index, Consumer<SubstateStore> nextSubstate) {
 		try {
-			var atom = TxBuilder.newBuilder(selfAddress, substate)
+			var atom = TxBuilder.newBuilder(selfAddress, substateStore)
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
 				.burnForFee(nativeToken, fee)
 				.signAndBuildRemoteSubstateOnly(hashSigner::sign, nextSubstate);
@@ -144,11 +145,10 @@ public final class MempoolFiller {
 			}
 
 			var particleCount = radixEngine.getComputedState(Integer.class);
-			final List<Atom> atoms = radixEngine.getSubstateCache(
-				List.of(TransferrableTokensParticle.class),
-				substate -> {
+			final List<Atom> atoms = radixEngine.accessSubstateStoreCache(
+				substateStore -> {
 					var list = new ArrayList<Atom>();
-					var substateHolder = new AtomicReference<>(substate);
+					var substateHolder = new AtomicReference<>(substateStore);
 					for (int i = 0; i < numTransactions; i++) {
 						var index = random.nextInt(Math.min(particleCount, 500));
 						var maybeAtom = createAtom(substateHolder.get(), index, substateHolder::set);

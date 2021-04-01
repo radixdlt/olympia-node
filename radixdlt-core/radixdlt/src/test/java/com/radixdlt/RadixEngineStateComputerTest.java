@@ -113,7 +113,7 @@ public class RadixEngineStateComputerTest {
 
 
 	private Serialization serialization = DefaultSerialization.getInstance();
-	private EngineStore<LedgerAndBFTProof> engineStore;
+	private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
 	private ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
 		ECKeyPair.generateNew(),
 		ECKeyPair.generateNew()
@@ -193,8 +193,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private Atom systemUpdateAtom(long nextView, long nextEpoch) throws TxBuilderException {
-		var substates = this.engineStore.upSubstates(SystemParticle.class, p -> true);
-		var builder = TxBuilder.newSystemBuilder(substates);
+		var builder = TxBuilder.newSystemBuilder(this.engineStore);
 		if (nextEpoch >= 2) {
 			builder.systemNextEpoch(0, nextEpoch - 1);
 		} else {
