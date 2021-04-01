@@ -40,27 +40,19 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.notification;
 public class RadixJsonRpcPeer {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	private static final Set<String> STATUS_METHODS =
-		Set.of("Atoms.getAtomStatusNotifications", "Atoms.closeAtomStatusNotifications");
-
 	private final BiConsumer<RadixJsonRpcPeer, String> callback;
 
 	/**
 	 * Epic for managing atom subscriptions
 	 */
-	private final AtomStatusEpic atomStatusEpic;
 	private final RadixJsonRpcServer server;
 
 	public RadixJsonRpcPeer(
 		RadixJsonRpcServer server,
-		AtomsService atomsService,
-		Serialization serialization,
 		BiConsumer<RadixJsonRpcPeer, String> callback
 	) {
 		this.server = server;
 		this.callback = callback;
-
-		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
 
 		callback.accept(
 			this,
@@ -88,29 +80,17 @@ public class RadixJsonRpcPeer {
 			return;
 		}
 
-		final var jsonRpcMethod = jsonRpcRequest.getString("method");
-
-		if (STATUS_METHODS.contains(jsonRpcMethod)) {
-			if (!jsonRpcRequest.getJSONObject("params").has("subscriberId")) {
-				callback.accept(this, errorResponse(RpcError.INVALID_PARAMS, "JSON-RPC: No subscriberId").toString());
-				return;
-			}
-
-			atomStatusEpic.action(jsonRpcRequest);
-		} else {
-			CompletableFuture.supplyAsync(() -> server.handleRpc(message))
-				.whenComplete((result, exception) -> {
-					if (exception == null) {
-						callback.accept(RadixJsonRpcPeer.this, result);
-					} else {
-						callback.accept(
-							RadixJsonRpcPeer.this,
-							errorResponse(RpcError.SERVER_ERROR, "unable to process request: " + message).toString()
-						);
-					}
-				});
-
-		}
+		CompletableFuture.supplyAsync(() -> server.handleRpc(message))
+			.whenComplete((result, exception) -> {
+				if (exception == null) {
+					callback.accept(RadixJsonRpcPeer.this, result);
+				} else {
+					callback.accept(
+						RadixJsonRpcPeer.this,
+						errorResponse(RpcError.SERVER_ERROR, "unable to process request: " + message).toString()
+					);
+				}
+			});
 	}
 
 	private boolean ensureRequestHas(final JSONObject jsonRpcRequest, final String... names) {
@@ -126,7 +106,5 @@ public class RadixJsonRpcPeer {
 	// TODO: need to synchronize this with the whole peer
 	public void close() {
 		LOGGER.info("Closing peer");
-
-		atomStatusEpic.dispose();
 	}
 }

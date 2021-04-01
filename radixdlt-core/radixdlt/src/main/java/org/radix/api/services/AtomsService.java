@@ -21,86 +21,34 @@ import com.radixdlt.atom.Txn;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.radix.api.observable.Disposable;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.store.AtomIndex;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-
-import static java.util.Optional.ofNullable;
-
 public class AtomsService {
-	private final Object singleAtomObserversLock = new Object();
-	private final Map<AID, List<AtomStatusListener>> singleAtomObservers = Maps.newHashMap();
-
 	private final AtomIndex store;
-	private final CompositeDisposable disposable;
 
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved;
-	private final Observable<MempoolAddFailure> mempoolAddFailures;
-	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
-
 	private final Serialization serialization;
 
 	@Inject
 	public AtomsService(
-		Observable<AtomsRemovedFromMempool> mempoolAtomsRemoved,
-		Observable<MempoolAddFailure> mempoolAddFailures,
-		Observable<AtomsCommittedToLedger> ledgerCommitted,
 		AtomIndex store,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		Serialization serialization
 	) {
-		this.mempoolAtomsRemoved = Objects.requireNonNull(mempoolAtomsRemoved);
-		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
-		this.disposable = new CompositeDisposable();
-		this.ledgerCommitted = ledgerCommitted;
 		this.serialization = serialization;
-	}
-
-	public void start() {
-		var lastStoredAtomDisposable = ledgerCommitted
-			.observeOn(Schedulers.io())
-			.subscribe(this::processExecutedCommand);
-		this.disposable.add(lastStoredAtomDisposable);
-
-		var submissionFailuresDisposable = mempoolAddFailures
-			.observeOn(Schedulers.io())
-			.subscribe(this::processSubmissionFailure);
-		this.disposable.add(submissionFailuresDisposable);
-
-		var mempoolAtomsRemovedDisposable = mempoolAtomsRemoved
-			.observeOn(Schedulers.io())
-			.subscribe(this::processSubmissionFailure);
-		this.disposable.add(mempoolAtomsRemovedDisposable);
-
-	}
-
-	public void stop() {
-		this.disposable.dispose();
 	}
 
 	public AID submitAtom(JSONObject jsonAtom) {
@@ -111,64 +59,8 @@ public class AtomsService {
 		return txn.getId();
 	}
 
-	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
-		addAtomStatusListener(aid, subscriber);
-		return () -> removeAtomStatusListener(aid, subscriber);
-	}
-
 	public Optional<JSONObject> getAtomByAtomId(AID txnId) throws JSONException {
 		return store.get(txnId)
 			.map(txn -> new JSONObject().put("tx", Hex.toHexString(txn.getPayload())));
-	}
-
-	private void processExecutedCommand(AtomsCommittedToLedger atomsCommittedToLedger) {
-	}
-
-	private void processSubmissionFailure(MempoolAddFailure failure) {
-		var atomId = failure.getTxn().getId();
-		var listeners = getAtomStatusListeners(atomId);
-		listeners.forEach(listener -> listener.onError(failure.getException()));
-	}
-
-	private void processSubmissionFailure(AtomsRemovedFromMempool atomsRemovedFromMempool) {
-		atomsRemovedFromMempool.forEach((cmd, e) -> {
-			final AID aid = cmd.getId();
-			getAtomStatusListeners(aid).forEach(listener -> listener.onError(e));
-		});
-	}
-
-	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {
-		synchronized (this.singleAtomObserversLock) {
-			return getListeners(this.singleAtomObservers, aid);
-		}
-	}
-
-	private void addAtomStatusListener(AID aid, AtomStatusListener listener) {
-		synchronized (this.singleAtomObserversLock) {
-			addListener(this.singleAtomObservers, aid, listener);
-		}
-	}
-
-	private void removeAtomStatusListener(AID aid, AtomStatusListener listener) {
-		synchronized (this.singleAtomObserversLock) {
-			removeListener(this.singleAtomObservers, aid, listener);
-		}
-	}
-
-	private static <T> ImmutableList<T> getListeners(Map<AID, List<T>> listenersMap, AID aid) {
-		List<T> listeners = listenersMap.get(aid);
-		return (listeners == null) ? ImmutableList.of() : ImmutableList.copyOf(listeners);
-	}
-
-	private static <T> void addListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
-		List<T> listeners = listenersMap.computeIfAbsent(aid, id -> Lists.newArrayList());
-		listeners.add(listener);
-	}
-
-	private static <T> void removeListener(Map<AID, List<T>> listenersMap, AID aid, T listener) {
-		ofNullable(listenersMap.get(aid)).stream()
-			.peek(listeners -> listeners.remove(listener))
-			.filter(List::isEmpty)
-			.findFirst().ifPresent(__ -> listenersMap.remove(aid));
 	}
 }
