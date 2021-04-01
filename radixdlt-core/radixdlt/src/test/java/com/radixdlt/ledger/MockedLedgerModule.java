@@ -17,9 +17,6 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -28,16 +25,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.network.TimeSupplier;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
+		bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
 	}
 
 	@Provides
@@ -52,13 +52,13 @@ public class MockedLedgerModule extends AbstractModule {
 
 				return Optional.of(vertex
 					.withHeader(ledgerHeader, timeSupplier.currentTime())
-					.andCommands(
-						vertex.getCommand()
-							.<PreparedTxn>map(c -> new MockPrepared(Txn.create(c.getPayload())))
-							.map(ImmutableList::of)
-							.orElse(ImmutableList.of()),
-						ImmutableMap.of()
-				));
+					.andTxns(
+						vertex.getTxns().stream()
+							.<PreparedTxn>map(MockPrepared::new)
+							.collect(Collectors.toList()),
+						Map.of()
+					)
+				);
 			}
 		};
 	}

@@ -24,6 +24,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -31,7 +33,6 @@ public class UnverifiedVertexTest {
 
 	private UnverifiedVertex testObject;
 	private QuorumCertificate qc;
-	private Command command;
 
 	@Before
 	public void setUp() {
@@ -43,8 +44,7 @@ public class UnverifiedVertexTest {
 		VoteData voteData = new VoteData(header, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		this.command = mock(Command.class);
-		this.testObject = UnverifiedVertex.createVertex(this.qc, baseView.next().next(), this.command);
+		this.testObject = UnverifiedVertex.createVertex(this.qc, baseView.next().next(), List.of());
 	}
 
 	@Test
@@ -56,7 +56,6 @@ public class UnverifiedVertexTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.command, this.testObject.getCommand());
 		assertEquals(this.qc, this.testObject.getQC());
 		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}

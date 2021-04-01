@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -26,11 +27,11 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest.DeterministicManualExecutor;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
@@ -39,7 +40,6 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -172,11 +172,11 @@ public class DifferentTimestampsCauseTimeoutTest {
 	}
 
 	private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {
-		QuorumCertificate qc = v.getQC();
-		View view = v.getView();
-		Command command = v.getCommand();
+		var qc = v.getQC();
+		var view = v.getView();
+		var txns = v.getTxns();
 
-		return new UnverifiedVertex(mutateQC(qc,  destination), view, command);
+		return new UnverifiedVertex(mutateQC(qc,  destination), view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
 	}
 
 	private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

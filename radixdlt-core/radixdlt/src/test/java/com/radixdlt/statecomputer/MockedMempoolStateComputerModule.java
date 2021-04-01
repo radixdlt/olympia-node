@@ -17,13 +17,10 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -39,7 +36,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * Simple Mempool state computer
@@ -71,24 +70,21 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedTxn> prepared) {
-				final List<Txn> txns = mempool.getTxns(1, List.of());
-				return !txns.isEmpty() ? new Command(txns.get(0).getPayload()) : null;
+			public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+				return mempool.getTxns(1, List.of());
 			}
 
 			@Override
 			public StateComputerLedger.StateComputerResult prepare(
 				List<StateComputerLedger.PreparedTxn> previous,
-				Command next,
+				List<Txn> next,
 				long epoch,
 				View view,
 				long timestamp
 			) {
 				return new StateComputerLedger.StateComputerResult(
-					next == null
-						? ImmutableList.of()
-						: ImmutableList.of(new MockPrepared(Txn.create(next.getPayload()))),
-					ImmutableMap.of()
+					next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+					Map.of()
 				);
 			}
 

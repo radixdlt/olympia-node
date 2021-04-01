@@ -36,7 +36,6 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
@@ -213,7 +212,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_non_epoch_high_view_should_return_no_validator_set() {
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(9), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(), 1, View.of(9), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -224,7 +223,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(), 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -245,7 +244,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), new Command(txn.getPayload()), 1, View.of(10), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(txn), 1, View.of(10), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -264,10 +263,8 @@ public class RadixEngineStateComputerTest {
 			.up(new SystemParticle(1, 2, 0))
 			.buildWithoutSignature();
 
-		var cmd = new Command(illegalTxn.getPayload());
-
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, 1, View.of(1), 0);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(illegalTxn), 1, View.of(1), 0);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);

@@ -18,7 +18,6 @@
 package org.radix.serialization;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
 
 public class MempoolAtomAddMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddMessage> {

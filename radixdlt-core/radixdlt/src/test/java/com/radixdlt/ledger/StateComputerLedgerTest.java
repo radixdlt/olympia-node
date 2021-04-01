@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -81,12 +80,12 @@ public class StateComputerLedgerTest {
 	private VerifiedVertex genesisVertex;
 	private QuorumCertificate genesisQC;
 
-	private final Command nextCommand = new Command(new byte[] {0});
+	private final Txn nextTxn = Txn.create(new byte[] {0});
 	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 	private final PreparedTxn successfulNextCommand = new PreparedTxn() {
 		@Override
 		public Txn txn() {
-			return Txn.create(nextCommand.getPayload());
+			return nextTxn;
 		}
 	};
 
@@ -176,7 +175,7 @@ public class StateComputerLedgerTest {
 		genesisIsEndOfEpoch(true);
 		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
+		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()));
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
@@ -197,7 +196,7 @@ public class StateComputerLedgerTest {
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
+		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()));
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
@@ -206,11 +205,11 @@ public class StateComputerLedgerTest {
 		assertThat(nextPrepared.flatMap(x ->
 			accumulatorVerifier.verifyAndGetExtension(
 				ledgerHeader.getAccumulatorState(),
-				List.of(Txn.create(nextCommand.getPayload())),
+				List.of(nextTxn),
 				txn -> txn.getId().asHashCode(),
 				x.getLedgerHeader().getAccumulatorState()
 			))
-		).contains(List.of(Txn.create(nextCommand.getPayload())));
+		).contains(List.of(nextTxn));
 	}
 
 	@Test
@@ -234,7 +233,7 @@ public class StateComputerLedgerTest {
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(List.of(Txn.create(nextCommand.getPayload())), header);
+		VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(List.of(nextTxn), header);
 
 		// Act
 		sut.syncEventProcessor().process(verified);

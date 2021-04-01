@@ -15,25 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.crypto.HashUtils;
 
 import java.util.List;
 
 /**
- * Generates a new proposed command for a given view
+ * Generates new random hash commands
  */
-public interface NextCommandGenerator {
-
-	/**
-	 * Generates a valid command for the given view
-	 * TODO: Update interface to return an error if already generated a command for a given view
-	 * @param view the view to create the vertex for
-	 * @param prepared vertices with commands which have already been prepared
-	 * @return new command to execute next
-	 */
-	Command generateNextCommand(View view, List<PreparedVertex> prepared);
+public final class RandomHashTxnsGenerator implements NextTxnsGenerator {
+	@Override
+	public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+		return List.of(Txn.create(HashUtils.random256().asBytes()));
+	}
 }

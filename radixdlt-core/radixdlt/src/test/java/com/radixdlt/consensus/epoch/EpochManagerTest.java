@@ -40,7 +40,6 @@ import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -64,7 +63,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -116,7 +115,7 @@ public class EpochManagerTest {
 
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
+	private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
@@ -130,12 +129,12 @@ public class EpochManagerTest {
 		}
 
 		@Override
-		public Command getNextCommandFromMempool(ImmutableList<PreparedTxn> prepared) {
-			return null;
+		public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+			return List.of();
 		}
 
 		@Override
-		public StateComputerResult prepare(List<PreparedTxn> previous, Command next, long epoch, View view, long timestamp) {
+		public StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp) {
 			return new StateComputerResult(ImmutableList.of(), ImmutableMap.of());
 		}
 
@@ -179,7 +178,7 @@ public class EpochManagerTest {
 					.toInstance(rmock(RemoteEventDispatcher.class));
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
+				bind(NextTxnsGenerator.class).toInstance(nextTxnsGenerator);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(SyncVerticesResponseSender.class).toInstance(syncVerticesResponseSender);

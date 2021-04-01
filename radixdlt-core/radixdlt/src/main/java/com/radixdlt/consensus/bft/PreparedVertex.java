@@ -17,13 +17,14 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.utils.Pair;
+
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -36,14 +37,14 @@ public final class PreparedVertex {
 
 	private final LedgerHeader ledgerHeader;
 
-	private final ImmutableList<PreparedTxn> preparedTxns;
-	private final ImmutableMap<Txn, Exception> commandExceptions;
+	private final List<PreparedTxn> preparedTxns;
+	private final Map<Txn, Exception> commandExceptions;
 
 	PreparedVertex(
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
-		ImmutableList<PreparedTxn> preparedTxns,
-		ImmutableMap<Txn, Exception> commandExceptions,
+		List<PreparedTxn> preparedTxns,
+		Map<Txn, Exception> commandExceptions,
 		long timeOfExecution
 	) {
 		this.vertex = Objects.requireNonNull(vertex);

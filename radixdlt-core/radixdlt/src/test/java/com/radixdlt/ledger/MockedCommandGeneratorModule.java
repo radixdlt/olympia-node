@@ -18,8 +18,8 @@
 package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.statecomputer.RandomHashCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.statecomputer.RandomHashTxnsGenerator;
 
 /**
  * Module which provides a random hash command generator
@@ -27,6 +27,6 @@ import com.radixdlt.statecomputer.RandomHashCommandGenerator;
 public class MockedCommandGeneratorModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(NextCommandGenerator.class).to(RandomHashCommandGenerator.class);
+		bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
 	}
 }

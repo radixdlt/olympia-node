@@ -22,7 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
@@ -31,7 +31,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 public class MempoolReceiverModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
+		bind(NextTxnsGenerator.class).to(StateComputerLedger.class);
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(MempoolAdd.class);

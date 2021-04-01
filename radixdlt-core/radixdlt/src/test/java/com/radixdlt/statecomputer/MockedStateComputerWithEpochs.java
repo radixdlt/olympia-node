@@ -17,10 +17,8 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -34,6 +32,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
@@ -55,21 +54,21 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(ImmutableList<PreparedTxn> prepared) {
-		return null;
+	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+		return List.of();
 	}
 
 	@Override
 	public StateComputerResult prepare(
 		List<PreparedTxn> previous,
-		Command next,
+		List<Txn> next,
 		long epoch,
 		View view,
 		long timestamp
 	) {
 		if (view.compareTo(epochHighView) >= 0) {
 			return new StateComputerResult(
-				next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(Txn.create(next.getPayload()))),
+				next.stream().map(MockPrepared::new).collect(Collectors.toList()),
 				ImmutableMap.of(),
 				validatorSetMapping.apply(epoch + 1)
 			);
