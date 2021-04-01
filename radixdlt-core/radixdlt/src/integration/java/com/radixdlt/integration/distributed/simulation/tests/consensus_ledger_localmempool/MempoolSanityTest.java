@@ -21,7 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -68,7 +68,7 @@ public class MempoolSanityTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<Mempool<Command>>() { }).toInstance(Mempools.empty());
+					bind(new TypeLiteral<Mempool<Txn>>() { }).toInstance(Mempools.empty());
 				}
 			})
 			.build();
