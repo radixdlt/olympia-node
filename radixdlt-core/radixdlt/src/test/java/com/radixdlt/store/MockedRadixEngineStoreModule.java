@@ -28,7 +28,7 @@ import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Spin;
@@ -49,7 +49,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 	}
 
-	private ParsedTransaction toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
+	private RETxn toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
 		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
 
@@ -92,7 +92,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			instructions.add(parsed);
 		}
 
-		return new ParsedTransaction(txn, atom, instructions);
+		return new RETxn(txn, instructions);
 	}
 
 	@Provides

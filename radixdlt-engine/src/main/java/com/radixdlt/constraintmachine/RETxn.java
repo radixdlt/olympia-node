@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -30,23 +29,17 @@ import java.util.stream.Stream;
 /**
  * Transaction which has been successfully parsed and state checked by radix engine
  */
-public final class ParsedTransaction {
+public final class RETxn {
 	private final Txn txn;
-	private final Atom atom;
 	private final List<ParsedInstruction> instructions;
 
-	public ParsedTransaction(Txn txn, Atom atom, List<ParsedInstruction> instructions) {
+	public RETxn(Txn txn, List<ParsedInstruction> instructions) {
 		this.txn = txn;
-		this.atom = atom;
 		this.instructions = instructions;
 	}
 
 	public Txn getTxn() {
 		return txn;
-	}
-
-	public Atom getAtom() {
-		return atom;
 	}
 
 	public boolean isUserCommand() {
@@ -66,17 +59,17 @@ public final class ParsedTransaction {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(atom, instructions);
+		return Objects.hash(txn, instructions);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ParsedTransaction)) {
+		if (!(o instanceof RETxn)) {
 			return false;
 		}
 
-		var other = (ParsedTransaction) o;
-		return Objects.equals(this.atom, other.atom)
+		var other = (RETxn) o;
+		return Objects.equals(this.txn, other.txn)
 			&& Objects.equals(this.instructions, other.instructions);
 	}
 }

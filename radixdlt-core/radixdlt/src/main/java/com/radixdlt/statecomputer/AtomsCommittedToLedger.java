@@ -18,7 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 
 import java.util.List;
 import java.util.Objects;
@@ -28,9 +28,9 @@ import java.util.Objects;
  */
 public final class AtomsCommittedToLedger {
     private final List<Txn> txns;
-    private final List<ParsedTransaction> parsedTxs;
+    private final List<RETxn> parsedTxs;
 
-    private AtomsCommittedToLedger(List<Txn> txns, List<ParsedTransaction> parsedTxs) {
+    private AtomsCommittedToLedger(List<Txn> txns, List<RETxn> parsedTxs) {
         this.txns = txns;
         this.parsedTxs = parsedTxs;
     }
@@ -39,11 +39,11 @@ public final class AtomsCommittedToLedger {
         return txns;
     }
 
-    public List<ParsedTransaction> getParsedTxs() {
+    public List<RETxn> getParsedTxs() {
         return parsedTxs;
     }
 
-    public static AtomsCommittedToLedger create(List<Txn> txns, List<ParsedTransaction> parsedTxs) {
+    public static AtomsCommittedToLedger create(List<Txn> txns, List<RETxn> parsedTxs) {
         Objects.requireNonNull(txns);
         Objects.requireNonNull(parsedTxs);
         return new AtomsCommittedToLedger(txns, parsedTxs);

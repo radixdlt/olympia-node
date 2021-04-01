@@ -27,8 +27,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ParsedTransaction;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<ParsedTransaction> mempool;
+	private final Mempool<RETxn> mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
@@ -74,7 +74,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Mempool<ParsedTransaction> mempool,
+		Mempool<RETxn> mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
@@ -102,12 +102,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
-		private final ParsedTransaction transaction;
+		private final RETxn transaction;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineTxn(
 			Txn txn,
-			ParsedTransaction transaction,
+			RETxn transaction,
 			PermissionLevel permissionLevel
 		) {
 			this.txn = txn;
@@ -139,13 +139,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		List<ParsedTransaction> cmds = prepared.stream()
+		List<RETxn> cmds = prepared.stream()
 			.map(p -> (RadixEngineTxn) p)
 			.map(c -> c.transaction)
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(1, cmds);
+		final List<Txn> txns = mempool.getTxns(10, cmds);
 		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
@@ -183,7 +183,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			});
 
 		final var systemUpdate = systemUpdateBuilder.buildWithoutSignature();
-		final List<ParsedTransaction> txs;
+		final List<RETxn> txs;
 		try {
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
@@ -208,7 +208,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableMap.Builder<Txn, Exception> errorBuilder
 	) {
 		nextTxns.forEach(txn -> {
-			final List<ParsedTransaction> parsed;
+			final List<RETxn> parsed;
 			try {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
@@ -252,7 +252,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
-	private List<ParsedTransaction> commitInternal(
+	private List<RETxn> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		final var atomsToCommit = verifiedTxnsAndProof.getTxns().stream()
@@ -262,9 +262,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			vertexStoreState
 		);
 
-		final List<ParsedTransaction> parsedTransactions;
+		final List<RETxn> radixEngineTxns;
 		try {
-			parsedTransactions = this.radixEngine.execute(
+			radixEngineTxns = this.radixEngine.execute(
 				atomsToCommit,
 				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER
@@ -273,7 +273,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException(String.format("Trying to commit bad atoms:\n%s", atomsToCommit), e);
 		}
 
-		parsedTransactions.forEach(t -> {
+		radixEngineTxns.forEach(t -> {
 			if (t.isUserCommand()) {
 				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
 			} else {
@@ -281,7 +281,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return parsedTransactions;
+		return radixEngineTxns;
 	}
 
 	@Override
