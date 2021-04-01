@@ -17,7 +17,6 @@
 
 package com.radixdlt.test.chaos;
 
-import com.radixdlt.test.Cluster;
 import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
