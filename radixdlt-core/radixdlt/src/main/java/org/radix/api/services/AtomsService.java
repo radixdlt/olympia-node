@@ -18,6 +18,7 @@
 package org.radix.api.services;
 
 import com.radixdlt.atom.Txn;
+import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -159,9 +160,9 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	public Optional<JSONObject> getAtomByAtomId(AID atomId) throws JSONException {
-		return store.get(atomId)
-			.map(atom -> serialization.toJsonObject(atom, DsonOutput.Output.API));
+	public Optional<JSONObject> getAtomByAtomId(AID txnId) throws JSONException {
+		return store.get(txnId)
+			.map(txn -> new JSONObject().put("tx", Hex.toHexString(txn.getPayload())));
 	}
 
 	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
