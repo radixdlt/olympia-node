@@ -81,12 +81,12 @@ import java.util.stream.Collectors;
  */
 public final class RxEnvironmentModule extends AbstractModule {
 
-	public interface Runners {
-		String SYNC = "sync";
-		String MEMPOOL = "mempool";
-		String APPLICATION = "application";
-		String CHAOS = "chaos";
-		String CONSENSUS = "consensus";
+	public static final class Runners {
+		public static final String SYNC = "sync";
+		public static final String MEMPOOL = "mempool";
+		public static final String APPLICATION = "application";
+		public static final String CHAOS = "chaos";
+		public static final String CONSENSUS = "consensus";
 	}
 
 	private static final Logger logger = LogManager.getLogger();
