@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 
 public final class FaucetModule extends AbstractModule {
 	@Override
@@ -38,7 +39,7 @@ public final class FaucetModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> faucet(Faucet faucet) {
 		return new EventProcessorOnRunner<>(
-			"application",
+			Runners.APPLICATION,
 			FaucetRequest.class,
 			faucet.requestEventProcessor()
 		);

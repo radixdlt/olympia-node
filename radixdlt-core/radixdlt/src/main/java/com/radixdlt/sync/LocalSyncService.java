@@ -480,9 +480,7 @@ public final class LocalSyncService {
 	}
 
 	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
-		return (event) -> {
-			this.processEvent(SyncRequestTimeout.class, event);
-		};
+		return (event) -> this.processEvent(SyncRequestTimeout.class, event);
 	}
 
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {

@@ -36,6 +36,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -91,7 +92,7 @@ public final class MempoolRunnerTest {
 	@Test
 	public void dispatched_mempool_add_arrives_at_state_computer() {
 		Guice.createInjector(createModule()).injectMembers(this);
-		moduleRunners.get("mempool").start();
+		moduleRunners.get(Runners.MEMPOOL).start();
 
 		MempoolAdd mempoolAdd = MempoolAdd.create(new Command(new byte[0]));
 		mempoolAddEventDispatcher.dispatch(mempoolAdd);

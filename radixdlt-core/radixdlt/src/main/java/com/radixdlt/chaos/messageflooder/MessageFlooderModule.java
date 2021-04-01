@@ -24,6 +24,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 
 /**
  * Module which manages message flooding
@@ -40,11 +41,11 @@ public final class MessageFlooderModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> messageFloodUpdateEventProcessor(MessageFlooder messageFlooder) {
-		return new EventProcessorOnRunner<>("chaos", MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
+		return new EventProcessorOnRunner<>(Runners.CHAOS, MessageFlooderUpdate.class, messageFlooder.messageFloodUpdateProcessor());
 	}
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MessageFlooder messageFlooder) {
-		return new EventProcessorOnRunner<>("chaos", ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
+		return new EventProcessorOnRunner<>(Runners.CHAOS, ScheduledMessageFlood.class, messageFlooder.scheduledMessageFloodProcessor());
 	}
 }

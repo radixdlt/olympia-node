@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -150,16 +151,16 @@ public final class Radix {
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 
-		final ModuleRunner syncRunner = moduleRunners.get("sync");
+		final ModuleRunner syncRunner = moduleRunners.get(Runners.SYNC);
 		syncRunner.start();
 
-		final ModuleRunner mempoolReceiverRunner = moduleRunners.get("mempool");
+		final ModuleRunner mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
 		mempoolReceiverRunner.start();
 
-		final ModuleRunner applicationRunner = moduleRunners.get("application");
+		final ModuleRunner applicationRunner = moduleRunners.get(Runners.APPLICATION);
 		applicationRunner.start();
 
-		final ModuleRunner chaosRunner = moduleRunners.get("chaos");
+		final ModuleRunner chaosRunner = moduleRunners.get(Runners.CHAOS);
 		if (chaosRunner != null) {
 			chaosRunner.start();
 		}
@@ -175,7 +176,7 @@ public final class Radix {
 		log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
 
 		if (properties.get("consensus.start_on_boot", true)) {
-			final ModuleRunner consensusRunner = moduleRunners.get("consensus");
+			final ModuleRunner consensusRunner = moduleRunners.get(Runners.CONSENSUS);
 			consensusRunner.start();
 			log.info("Consensus '{}' started successfully", self);
 		} else {

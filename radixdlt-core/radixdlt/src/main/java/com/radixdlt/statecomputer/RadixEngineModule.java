@@ -40,6 +40,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.fees.NativeToken;
@@ -77,7 +78,7 @@ public class RadixEngineModule extends AbstractModule {
 		RadixEngineMempool mempool
 	) {
 		return new EventProcessorOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			MempoolRelayTrigger.class,
 			mempool.mempoolRelayTriggerEventProcessor()
 		);
@@ -88,7 +89,7 @@ public class RadixEngineModule extends AbstractModule {
 		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
 	) {
 		return new ScheduledEventProducerOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			mempoolRelayTriggerEventDispatcher,
 			MempoolRelayTrigger::create,
 			Duration.ofSeconds(10),

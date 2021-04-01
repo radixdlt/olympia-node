@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import org.json.JSONObject;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -49,7 +50,7 @@ public class SystemService {
 		this.serialization = serialization;
 		this.universe = universe;
 		this.localSystem = localSystem;
-		this.consensusRunner = requireNonNull(moduleRunners.get("consensus"));
+		this.consensusRunner = requireNonNull(moduleRunners.get(Runners.CONSENSUS));
 	}
 
 	public JSONObject getUniverse() {

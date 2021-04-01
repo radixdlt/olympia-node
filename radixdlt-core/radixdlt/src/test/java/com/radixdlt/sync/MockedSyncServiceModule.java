@@ -31,6 +31,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -136,7 +137,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LedgerStatusUpdate.class,
 			(sender, ev) -> localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender)))
 		);
@@ -193,10 +194,10 @@ public class MockedSyncServiceModule extends AbstractModule {
 	}
 
 	private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
-		return new EventProcessorOnRunner<>("sync", clazz, ev -> { });
+		return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> { });
 	}
 
 	private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
-		return new RemoteEventProcessorOnRunner<>("sync", clazz, (sender, ev) -> { });
+		return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> { });
 	}
 }

@@ -29,6 +29,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;
@@ -78,7 +79,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			EpochsLedgerUpdate.class,
 			epochsLocalSyncService.epochsLedgerUpdateEventProcessor()
 		);
@@ -89,7 +90,7 @@ public class EpochsSyncModule extends AbstractModule {
 		RemoteSyncService remoteSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			EpochsLedgerUpdate.class,
 			update -> remoteSyncService.ledgerUpdateEventProcessor().process(update.getBase())
 		);
@@ -100,7 +101,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncCheckTrigger.class,
 			epochsLocalSyncService.syncCheckTriggerEventProcessor()
 		);
@@ -111,7 +112,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncCheckReceiveStatusTimeout.class,
 			epochsLocalSyncService.syncCheckReceiveStatusTimeoutEventProcessor()
 		);
@@ -122,7 +123,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncRequestTimeout.class,
 			epochsLocalSyncService.syncRequestTimeoutEventProcessor()
 		);
@@ -133,7 +134,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncLedgerUpdateTimeout.class,
 			epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor()
 		);
@@ -144,7 +145,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LocalSyncRequest.class,
 			epochsLocalSyncService.localSyncRequestEventProcessor()
 		);
@@ -155,7 +156,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			StatusResponse.class,
 			epochsLocalSyncService.statusResponseEventProcessor()
 		);
@@ -166,7 +167,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncResponse.class,
 			epochsLocalSyncService.syncResponseEventProcessor()
 		);
@@ -177,7 +178,7 @@ public class EpochsSyncModule extends AbstractModule {
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LedgerStatusUpdate.class,
 			epochsLocalSyncService.ledgerStatusUpdateEventProcessor()
 		);

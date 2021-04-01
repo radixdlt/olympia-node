@@ -28,6 +28,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
@@ -70,7 +71,7 @@ public class SyncServiceModule extends AbstractModule {
 		RemoteSyncService remoteSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncRequest.class,
 			remoteSyncService.syncRequestEventProcessor()
 		);
@@ -81,7 +82,7 @@ public class SyncServiceModule extends AbstractModule {
 		RemoteSyncService remoteSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			StatusRequest.class,
 			remoteSyncService.statusRequestEventProcessor()
 		);
@@ -92,7 +93,7 @@ public class SyncServiceModule extends AbstractModule {
 		RemoteSyncService remoteSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LedgerUpdate.class,
 			remoteSyncService.ledgerUpdateEventProcessor()
 		);
@@ -145,7 +146,7 @@ public class SyncServiceModule extends AbstractModule {
 		SyncConfig syncConfig
 	) {
 		return new ScheduledEventProducerOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			syncCheckTriggerEventDispatcher,
 			SyncCheckTrigger::create,
 			Duration.ofMillis(syncConfig.syncCheckInterval()),

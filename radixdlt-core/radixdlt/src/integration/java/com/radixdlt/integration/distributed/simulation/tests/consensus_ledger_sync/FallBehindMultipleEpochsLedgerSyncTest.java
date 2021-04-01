@@ -24,6 +24,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -84,11 +85,11 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 
 		final var runningTest = simulationTest.run(
 			Duration.ofSeconds(15),
-			ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of("sync"))
+			ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of(Runners.SYNC))
 		);
 
 		Executors.newSingleThreadScheduledExecutor()
-			.schedule(() -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, "sync"), SYNC_DELAY, TimeUnit.MILLISECONDS);
+			.schedule(() -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, Runners.SYNC), SYNC_DELAY, TimeUnit.MILLISECONDS);
 
 		final var results = runningTest.awaitCompletion();
 

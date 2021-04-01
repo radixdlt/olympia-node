@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -24,6 +24,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncService;
@@ -56,7 +57,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LedgerUpdate.class,
 			localSyncService.ledgerUpdateEventProcessor()
 		);
@@ -67,7 +68,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LocalSyncRequest.class,
 			localSyncService.localSyncRequestEventProcessor()
 		);
@@ -78,7 +79,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncCheckTrigger.class,
 			localSyncService.syncCheckTriggerEventProcessor()
 		);
@@ -89,7 +90,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncRequestTimeout.class,
 			localSyncService.syncRequestTimeoutEventProcessor()
 		);
@@ -100,7 +101,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncLedgerUpdateTimeout.class,
 			localSyncService.syncLedgerUpdateTimeoutProcessor()
 		);
@@ -111,7 +112,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new EventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncCheckReceiveStatusTimeout.class,
 			localSyncService.syncCheckReceiveStatusTimeoutEventProcessor()
 		);
@@ -122,7 +123,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			StatusResponse.class,
 			localSyncService.statusResponseEventProcessor()
 		);
@@ -133,7 +134,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			SyncResponse.class,
 			localSyncService.syncResponseEventProcessor()
 		);
@@ -144,7 +145,7 @@ public class NoEpochsSyncModule extends AbstractModule {
 		LocalSyncService localSyncService
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"sync",
+			Runners.SYNC,
 			LedgerStatusUpdate.class,
 			localSyncService.ledgerStatusUpdateEventProcessor()
 		);
