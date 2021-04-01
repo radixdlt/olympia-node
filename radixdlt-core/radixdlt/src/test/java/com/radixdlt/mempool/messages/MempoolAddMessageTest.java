@@ -20,38 +20,39 @@ package com.radixdlt.mempool.messages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.middleware2.network.MempoolAtomAddMessage;
+import com.radixdlt.middleware2.network.MempoolAddMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MempoolAtomAddMessageTest {
+public class MempoolAddMessageTest {
 	private Command command;
-	private MempoolAtomAddMessage message;
+	private MempoolAddMessage message;
 
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
-		this.message = new MempoolAtomAddMessage(12345, command);
+		this.message = new MempoolAddMessage(12345, ImmutableList.of(command));
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(message.command()).isEqualTo(command);
+		assertThat(message.commands().get(0)).isEqualTo(command);
 	}
 
 	@Test
 	public void sensibleToString() {
-		assertThat(message.toString()).contains(MempoolAtomAddMessage.class.getSimpleName());
+		assertThat(message.toString()).contains(MempoolAddMessage.class.getSimpleName());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(MempoolAtomAddMessage.class)
+		EqualsVerifier.forClass(MempoolAddMessage.class)
 				.withIgnoredFields("instance")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())

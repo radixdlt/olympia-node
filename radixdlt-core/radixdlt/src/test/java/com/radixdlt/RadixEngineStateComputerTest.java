@@ -62,9 +62,9 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -137,8 +137,7 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
-				bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
@@ -150,6 +149,8 @@ public class RadixEngineStateComputerTest {
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 						.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayCommands>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(SystemCounters.class).to(SystemCountersImpl.class);

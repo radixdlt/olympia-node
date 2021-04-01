@@ -36,30 +36,30 @@ import java.util.Set;
 public final class SimpleMempool implements Mempool<Command> {
 	private final Set<Command> data = new HashSet<>();
 
-	private final int maxSize;
+	private final MempoolConfig mempoolConfig;
 
 	private final SystemCounters counters;
 
 	private final Random random;
 
 	public SimpleMempool(
-		@MempoolMaxSize int maxSize,
+		MempoolConfig mempoolConfig,
 		SystemCounters counters,
 		Random random
 	) {
-		if (maxSize <= 0) {
-			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+		if (mempoolConfig.maxSize() <= 0) {
+			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
 		}
-		this.maxSize = maxSize;
+		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
 		this.random = Objects.requireNonNull(random);
 	}
 
 	@Override
 	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
-		if (this.data.size() >= this.maxSize) {
+		if (this.data.size() >= this.mempoolConfig.maxSize()) {
 			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
 			);
 		}
 		if (!this.data.add(command)) {
@@ -99,12 +99,12 @@ public final class SimpleMempool implements Mempool<Command> {
 
 	private void updateCounts() {
 		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.maxSize);
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), this.mempoolConfig.maxSize());
 	}
 }

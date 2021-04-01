@@ -34,6 +34,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -75,6 +76,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
+	@Inject private MempoolConfig mempoolConfig;
 
 	private Injector getInjector() {
 		return Guice.createInjector(
@@ -84,8 +86,7 @@ public class MempoolTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(NUM_PEERS);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(10);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L, 200L, 500L, 10));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath());
@@ -137,9 +138,9 @@ public class MempoolTest {
 		processor.handleMessage(self, MempoolAdd.create(command));
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 		assertThat(network.allMessages())
-				.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
 	}
 
 	@Test
@@ -153,7 +154,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command));
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 		assertThat(network.allMessages())
 			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
 	}
@@ -169,7 +170,7 @@ public class MempoolTest {
 		processor.handleMessage(self, MempoolAddSuccess.create(command));
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
 	}
 
 	@Test
@@ -183,7 +184,7 @@ public class MempoolTest {
 		processor.handleMessage(self, MempoolAddSuccess.create(command, getFirstPeer()));
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
 	}
 
 	@Test
@@ -199,7 +200,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 	}
 
 	@Test
@@ -217,7 +218,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(2);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(2);
 	}
 
 	@Test
@@ -231,7 +232,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
@@ -251,7 +252,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
@@ -272,7 +273,7 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
 	}
 
 	@Test
@@ -295,6 +296,42 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+	}
+
+	@Test
+	public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
+		// Arrange
+		getInjector().injectMembers(this);
+		final var keyPair = ECKeyPair.generateNew();
+		final var command = createCommand(keyPair);
+		final var mempoolAdd = MempoolAdd.create(command);
+		processor.handleMessage(self, mempoolAdd);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+		network.dropMessages(msg -> msg.message() instanceof MempoolAddSuccess);
+
+		// should not relay immediately
+		processor.handleMessage(self, MempoolRelayTrigger.create());
+		assertThat(network.allMessages()).isEmpty();
+
+		// should relay after initial delay
+		Thread.sleep(mempoolConfig.commandRelayInitialDelay());
+		processor.handleMessage(self, MempoolRelayTrigger.create());
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
+		network.dropMessages(msg -> msg.message() instanceof MempoolRelayCommands);
+
+		// should not relay again immediately
+		processor.handleMessage(self, MempoolRelayTrigger.create());
+		assertThat(network.allMessages()).isEmpty();
+
+		// should relay after repeat delay
+		Thread.sleep(mempoolConfig.commandRelayRepeatDelay());
+		processor.handleMessage(self, MempoolRelayTrigger.create());
+		assertThat(network.allMessages())
+			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
 	}
 }
