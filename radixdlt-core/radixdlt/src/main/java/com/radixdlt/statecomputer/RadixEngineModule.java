@@ -39,7 +39,9 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
@@ -50,6 +52,7 @@ import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.Set;
 
 /**
@@ -77,6 +80,19 @@ public class RadixEngineModule extends AbstractModule {
 			"mempool",
 			MempoolRelayTrigger.class,
 			mempool.mempoolRelayTriggerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public ScheduledEventProducerOnRunner<?> mempoolRelayTriggerEventProducer(
+		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
+	) {
+		return new ScheduledEventProducerOnRunner<>(
+			"mempool",
+			mempoolRelayTriggerEventDispatcher,
+			MempoolRelayTrigger::create,
+			Duration.ofSeconds(10),
+			Duration.ofSeconds(10)
 		);
 	}
 

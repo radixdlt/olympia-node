@@ -134,7 +134,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<GetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final RemoteEventDispatcher<GetVerticesRequest> requestSender;
-	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
 	private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
@@ -151,7 +151,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		RemoteEventDispatcher<GetVerticesRequest> requestSender,
-		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
+		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		LedgerProof currentLedgerHeader,
 		Random random,
@@ -164,7 +164,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
-		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
+		this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
@@ -400,7 +400,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer {
 				syncState.committedProof,
 				signers
 			);
-			localSyncRequestProcessor.dispatch(localSyncRequest);
+
+			localSyncRequestEventDispatcher.dispatch(localSyncRequest);
 		}
 	}
 

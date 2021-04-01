@@ -27,23 +27,27 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncState;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.LocalSyncService;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+
+import java.time.Duration;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -61,18 +65,37 @@ public class SyncServiceModule extends AbstractModule {
 		return SyncState.IdleState.init(currentHeader);
 	}
 
-	@Provides
-	private RemoteEventProcessor<SyncRequest> syncRequestEventProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor(
 		RemoteSyncService remoteSyncService
 	) {
-		return remoteSyncService.syncRequestEventProcessor();
+		return new RemoteEventProcessorOnRunner<>(
+			"sync",
+			SyncRequest.class,
+			remoteSyncService.syncRequestEventProcessor()
+		);
 	}
 
-	@Provides
-	private RemoteEventProcessor<StatusRequest> statusRequestEventProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor(
 		RemoteSyncService remoteSyncService
 	) {
-		return remoteSyncService.statusRequestEventProcessor();
+		return new RemoteEventProcessorOnRunner<>(
+			"sync",
+			StatusRequest.class,
+			remoteSyncService.statusRequestEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> ledgerUpdateEventProcessor(
+		RemoteSyncService remoteSyncService
+	) {
+		return new EventProcessorOnRunner<>(
+			"sync",
+			LedgerUpdate.class,
+			remoteSyncService.ledgerUpdateEventProcessor()
+		);
 	}
 
 	@Provides
@@ -106,14 +129,6 @@ public class SyncServiceModule extends AbstractModule {
 		};
 	}
 
-	@ProvidesIntoSet
-	@ProcessWithSyncRunner
-	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor(
-		RemoteSyncService remoteSyncService
-	) {
-		return remoteSyncService.ledgerUpdateEventProcessor();
-	}
-
 	@Provides
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(BFTConfiguration initialConfiguration) {
 		return new RemoteSyncResponseValidatorSetVerifier(initialConfiguration.getValidatorSet());
@@ -122,5 +137,19 @@ public class SyncServiceModule extends AbstractModule {
 	@Provides
 	private RemoteSyncResponseSignaturesVerifier signaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
 		return new RemoteSyncResponseSignaturesVerifier(hasher, hashVerifier);
+	}
+
+	@ProvidesIntoSet
+	public ScheduledEventProducerOnRunner<?> syncCheckTriggerEventProducer(
+		EventDispatcher<SyncCheckTrigger> syncCheckTriggerEventDispatcher,
+		SyncConfig syncConfig
+	) {
+		return new ScheduledEventProducerOnRunner<>(
+			"sync",
+			syncCheckTriggerEventDispatcher,
+			SyncCheckTrigger::create,
+			Duration.ofMillis(syncConfig.syncCheckInterval()),
+			Duration.ofMillis(syncConfig.syncCheckInterval())
+		);
 	}
 }

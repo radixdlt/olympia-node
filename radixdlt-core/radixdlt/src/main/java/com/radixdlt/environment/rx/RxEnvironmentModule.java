@@ -47,6 +47,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
@@ -72,6 +73,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -122,6 +124,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<ScheduledEventProducerOnRunner<?>>() { });
 	}
 
 	@Provides
@@ -137,6 +140,72 @@ public class RxEnvironmentModule extends AbstractModule {
 			ses,
 			dispatchers
 		);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("chaos")
+	@Singleton
+	public ModuleRunner chaosRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment
+	) {
+		final var runnerName = "chaos";
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		return builder.build("ChaosRunner " + self);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("mempool")
+	@Singleton
+	public ModuleRunner mempoolRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+		RxRemoteEnvironment rxRemoteEnvironment,
+		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers
+	) {
+		final var runnerName = "mempool";
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
+		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+		return builder.build("MempoolRunner " + self);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("application")
+	@Singleton
+	public ModuleRunner applicationRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment
+	) {
+		final var runnerName = "application";
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		return builder.build("ApplicationRunner " + self);
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("sync")
+	@Singleton
+	public ModuleRunner syncRunner(
+		@Self BFTNode self,
+		Set<EventProcessorOnRunner<?>> processors,
+		RxEnvironment rxEnvironment,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+		RxRemoteEnvironment rxRemoteEnvironment,
+		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers
+	) {
+		final var runnerName = "sync";
+		final var builder = ModuleRunnerImpl.builder();
+		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
+		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
+		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+		return builder.build("SyncRunner " + self);
 	}
 
 	private static <T> void addToBuilder(
@@ -175,84 +244,52 @@ public class RxEnvironmentModule extends AbstractModule {
 		}
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("chaos")
-	@Singleton
-	public ModuleRunner chaosRunner(
-		@Self BFTNode self,
-		Set<EventProcessorOnRunner<?>> processors,
-		RxEnvironment rxEnvironment
+	@SuppressWarnings("unchecked")
+	private void addScheduledEventProducersOnRunner(
+			Set<ScheduledEventProducerOnRunner<?>> allScheduledEventProducers,
+			String runnerName,
+			ModuleRunnerImpl.Builder builder
 	) {
-		Set<Class<?>> eventClasses = processors.stream()
-				.filter(p -> p.getRunnerName().equals("chaos"))
-				.map(EventProcessorOnRunner::getEventClass)
-				.collect(Collectors.toSet());
-
-		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
-		for (Class<?> eventClass : eventClasses) {
-			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
-		}
-
-		return builder.build("ChaosRunner " + self);
+		allScheduledEventProducers.stream()
+			.filter(p -> p.getRunnerName().equals(runnerName))
+			.forEach(scheduledEventProducer ->
+				builder.scheduleWithFixedDelay(
+					(EventDispatcher<Object>) scheduledEventProducer.getEventDispatcher(),
+					(Supplier<Object>) scheduledEventProducer.getEventSupplier(),
+					scheduledEventProducer.getInitialDelay(),
+					scheduledEventProducer.getInterval()
+				)
+			);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("mempool")
-	@Singleton
-	public ModuleRunner mempoolRunner(
-		@Self BFTNode self,
-		Set<EventProcessorOnRunner<?>> processors,
-		RxEnvironment rxEnvironment,
-		Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+	private void addRemoteProcessorsOnRunner(
+		Set<RemoteEventProcessorOnRunner<?>> allRemoteProcessors,
 		RxRemoteEnvironment rxRemoteEnvironment,
-		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
+		String runnerName,
+		ModuleRunnerImpl.Builder builder
 	) {
-		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
-
-		Set<Class<?>> remoteEventClasses = remoteProcessors.stream()
-			.filter(p -> p.getRunnerName().equals("mempool"))
+		final var remoteEventClasses = allRemoteProcessors.stream()
+			.filter(p -> p.getRunnerName().equals(runnerName))
 			.map(RemoteEventProcessorOnRunner::getEventClass)
 			.collect(Collectors.toSet());
-		for (Class<?> eventClass : remoteEventClasses) {
-			remoteProcessors.forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder));
-		}
-
-		Set<Class<?>> eventClasses = processors.stream()
-				.filter(p -> p.getRunnerName().equals("mempool"))
-				.map(EventProcessorOnRunner::getEventClass)
-				.collect(Collectors.toSet());
-		for (Class<?> eventClass : eventClasses) {
-			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
-		}
-
-		return builder
-			.onStart(executor -> executor.scheduleWithFixedDelay(
-				() -> mempoolRelayTriggerEventDispatcher.dispatch(MempoolRelayTrigger.create()),
-				10,
-				10,
-				TimeUnit.SECONDS
-			))
-			.build("MempoolRunner " + self);
+		remoteEventClasses.forEach(eventClass ->
+			allRemoteProcessors.forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder))
+		);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("application")
-	@Singleton
-	public ModuleRunner applicationRunner(
-		@Self BFTNode self,
-		Set<EventProcessorOnRunner<?>> processors,
-		RxEnvironment rxEnvironment
+	private void addProcessorsOnRunner(
+		Set<EventProcessorOnRunner<?>> allProcessors,
+		RxEnvironment rxEnvironment,
+		String runnerName,
+		ModuleRunnerImpl.Builder builder
 	) {
-		ModuleRunnerImpl.Builder builder = ModuleRunnerImpl.builder();
-
-		Set<Class<?>> eventClasses = processors.stream()
-			.filter(p -> p.getRunnerName().equals("application"))
+		final var eventClasses = allProcessors.stream()
+			.filter(p -> p.getRunnerName().equals(runnerName))
 			.map(EventProcessorOnRunner::getEventClass)
 			.collect(Collectors.toSet());
-		for (Class<?> eventClass : eventClasses) {
-			processors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder));
-		}
-
-		return builder.build("ApplicationRunner " + self);
+		eventClasses.forEach(eventClass ->
+			allProcessors.forEach(p -> addToBuilder(eventClass, rxEnvironment, p, builder))
+		);
 	}
+
 }

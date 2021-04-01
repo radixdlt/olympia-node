@@ -35,6 +35,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
@@ -62,6 +63,7 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() { });
 	}
 
 	@Provides

@@ -47,7 +47,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 	private static final ImmutableList<Integer> VALIDATORS = ImmutableList.of(0, 1);
 	private static final int NON_VALIDATOR_SYNC_NODE = 2;
 	private static final int NODE_UNDER_TEST = 3;
-	private static final int MAX_LEDGER_SYNC_LAG = 300;
+	private static final int MAX_LEDGER_SYNC_LAG = 400;
 
 	private final Builder testBuilder;
 
@@ -75,7 +75,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 			.ledgerAndEpochsAndSync(
 				View.of(100),
 				(unused) -> VALIDATORS.stream().mapToInt(i -> i),
-				SyncConfig.of(200L, 10, 1000L)
+				SyncConfig.of(500L, 10, 500L, 10, Long.MAX_VALUE)
 			)
 			.addTestModules(
 				ConsensusMonitors.safety(),
