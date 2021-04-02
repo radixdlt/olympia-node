@@ -29,9 +29,7 @@ public final class Txn {
 
 	private Txn(byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
-		var firstHash = HashUtils.sha256(payload);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		this.id = AID.from(secondHash.asBytes());
+		this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
 	}
 
 	public static Txn create(byte[] payload) {

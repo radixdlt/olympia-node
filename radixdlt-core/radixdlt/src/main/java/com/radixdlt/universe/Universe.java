@@ -20,22 +20,26 @@ package com.radixdlt.universe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.utils.Bytes;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.requireNonNull;
+
+//TODO: cleanup and refactor this
 @SerializerId2("radix.universe")
 @SerializeWithHid
 public class Universe {
@@ -60,6 +64,7 @@ public class Universe {
 		 * Sets the TCP/UDP port for the universe.
 		 *
 		 * @param port The TCP/UDP port for the universe to use, {@code 0 <= port <= 65,535}.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder port(int port) {
@@ -75,10 +80,11 @@ public class Universe {
 		 * Ideally the universe name is a short identifier for the universe.
 		 *
 		 * @param name The name of the universe.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder name(String name) {
-			this.name = Objects.requireNonNull(name);
+			this.name = requireNonNull(name);
 			return this;
 		}
 
@@ -87,10 +93,11 @@ public class Universe {
 		 * The universe description is a longer description of the universe.
 		 *
 		 * @param description The description of the universe.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder description(String description) {
-			this.description = Objects.requireNonNull(description);
+			this.description = requireNonNull(description);
 			return this;
 		}
 
@@ -98,10 +105,11 @@ public class Universe {
 		 * Sets the type of the universe, one of {@link UniverseType}.
 		 *
 		 * @param type The type of the universe.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder type(UniverseType type) {
-			this.type = Objects.requireNonNull(type);
+			this.type = requireNonNull(type);
 			return this;
 		}
 
@@ -109,6 +117,7 @@ public class Universe {
 		 * Sets the creation timestamp of the universe.
 		 *
 		 * @param timestamp The creation timestamp of the universe.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder timestamp(long timestamp) {
@@ -123,10 +132,11 @@ public class Universe {
 		 * Sets the universe creators public key.
 		 *
 		 * @param creator The universe creators public key.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder creator(ECPublicKey creator) {
-			this.creator = Objects.requireNonNull(creator);
+			this.creator = requireNonNull(creator);
 			return this;
 		}
 
@@ -134,10 +144,11 @@ public class Universe {
 		 * Adds an atom to the genesis atom list.
 		 *
 		 * @param genesisTxns The atoms to add to the genesis atom list.
+		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
 		public Builder setAtoms(List<Txn> genesisTxns) {
-			Objects.requireNonNull(genesisTxns);
+			requireNonNull(genesisTxns);
 			this.txns = genesisTxns;
 			return this;
 		}
@@ -180,6 +191,7 @@ public class Universe {
 	 * @param timestamp universe timestamp to use when calculating universe magic
 	 * @param port universe port to use when calculating universe magic
 	 * @param type universe type to use when calculating universe magic
+	 *
 	 * @return The universe magic
 	 */
 	public static int computeMagic(ECPublicKey creator, long timestamp, int port, UniverseType type) {
@@ -199,19 +211,19 @@ public class Universe {
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
-	private String 		name;
+	private String name;
 
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
-	private String 		description;
+	private String description;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
-	private long 		timestamp;
+	private long timestamp;
 
 	@JsonProperty("port")
 	@DsonOutput(Output.ALL)
-	private int			port;
+	private int port;
 
 	private UniverseType type;
 
@@ -224,19 +236,18 @@ public class Universe {
 	private ECDSASignature signature;
 	private BigInteger sigR;
 	private BigInteger sigS;
+	private Byte sigV;
 
 	Universe() {
 		// No-arg constructor for serializer
 	}
 
 	private Universe(Builder builder) {
-		super();
-
-		this.port = builder.port.intValue();
+		this.port = builder.port;
 		this.name = builder.name;
 		this.description = builder.description;
 		this.type = builder.type;
-		this.timestamp = builder.timestamp.longValue();
+		this.timestamp = builder.timestamp;
 		this.creator = builder.creator;
 		this.genesis = builder.txns == null
 			? List.of()
@@ -245,8 +256,6 @@ public class Universe {
 
 	/**
 	 * Magic identifier for Universe.
-	 *
-	 * @return
 	 */
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
@@ -256,8 +265,6 @@ public class Universe {
 
 	/**
 	 * The name of Universe.
-	 *
-	 * @return
 	 */
 	public String getName() {
 		return name;
@@ -265,8 +272,6 @@ public class Universe {
 
 	/**
 	 * The Universe description.
-	 *
-	 * @return
 	 */
 	public String getDescription() {
 		return description;
@@ -274,8 +279,6 @@ public class Universe {
 
 	/**
 	 * The default TCP/UDP port for the Universe.
-	 *
-	 * @return
 	 */
 	public int getPort() {
 		return port;
@@ -283,8 +286,6 @@ public class Universe {
 
 	/**
 	 * The UTC 'BigBang' timestamp for the Universe.
-	 *
-	 * @return
 	 */
 	public long getTimestamp() {
 		return timestamp;
@@ -292,8 +293,6 @@ public class Universe {
 
 	/**
 	 * Whether this is a production Universe.
-	 *
-	 * @return
 	 */
 	public boolean isProduction() {
 		return type.equals(UniverseType.PRODUCTION);
@@ -301,8 +300,6 @@ public class Universe {
 
 	/**
 	 * Whether this is a test Universe.
-	 *
-	 * @return
 	 */
 	public boolean isTest() {
 		return type.equals(UniverseType.TEST);
@@ -310,8 +307,6 @@ public class Universe {
 
 	/**
 	 * Whether this is a development Universe.
-	 *
-	 * @return
 	 */
 	public boolean isDevelopment() {
 		return type.equals(UniverseType.DEVELOPMENT);
@@ -319,8 +314,6 @@ public class Universe {
 
 	/**
 	 * Gets this Universe's immutable Genesis collection.
-	 *
-	 * @return
 	 */
 	public List<Txn> getGenesis() {
 		return genesis.stream().map(Txn::create).collect(Collectors.toList());
@@ -328,8 +321,6 @@ public class Universe {
 
 	/**
 	 * Get creator key.
-	 *
-	 * @return
 	 */
 	public ECPublicKey getCreator() {
 		return creator;
@@ -375,7 +366,7 @@ public class Universe {
 		this.creator = ECPublicKey.fromBytes(bytes);
 	}
 
-	// Signature - 2 getters, 2 setters.
+	// Signature - 3 getters, 3 setters.
 	@JsonProperty("signature.r")
 	@DsonOutput(value = Output.HASH, include = false)
 	private byte[] getJsonSignatureR() {
@@ -388,25 +379,38 @@ public class Universe {
 		return Bytes.trimLeadingZeros(signature.getS().toByteArray());
 	}
 
+	@JsonProperty("signature.v")
+	@DsonOutput(value = Output.HASH, include = false)
+	private byte getJsonSignatureV() {
+		return signature.getV();
+	}
+
 	@JsonProperty("signature.r")
 	private void setJsonSignatureR(byte[] r) {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.sigR = new BigInteger(1, r);
-		if (this.sigS != null) {
-			signature = new ECDSASignature(this.sigR, this.sigS);
-			this.sigS = null;
-			this.sigR = null;
-		}
+		restoreSignature();
 	}
 
 	@JsonProperty("signature.s")
 	private void setJsonSignatureS(byte[] s) {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.sigS = new BigInteger(1, s);
-		if (this.sigR != null) {
-			signature = new ECDSASignature(this.sigR, this.sigS);
+		restoreSignature();
+	}
+
+	@JsonProperty("signature.v")
+	private void setJsonSignatureV(byte v) {
+		this.sigV = v;
+		restoreSignature();
+	}
+
+	private void restoreSignature() {
+		if (this.sigR != null && this.sigS != null && this.sigV != null) {
+			signature = ECDSASignature.create(this.sigR, this.sigS, this.sigV);
 			this.sigS = null;
 			this.sigR = null;
+			this.sigV = null;
 		}
 	}
 }

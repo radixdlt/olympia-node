@@ -34,7 +34,7 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
+import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -170,8 +170,9 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledParticleFlush>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledParticleFlush.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledQueueFlush>>() { })
+			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
+
 		bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 

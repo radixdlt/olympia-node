@@ -79,7 +79,7 @@ public final class MessageFlooder {
 		QuorumCertificate qc = new QuorumCertificate(voteData, signatures);
 		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, View.of(3), List.of(Txn.create(new byte[commandSize])));
 
-		return new Proposal(vertex, qc, self, new ECDSASignature(), Optional.empty());
+		return new Proposal(vertex, qc, self, ECDSASignature.zeroSignature(), Optional.empty());
 	}
 
 	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor() {

@@ -66,4 +66,8 @@ public class TxHistoryEntry {
 			.put("actions", actions);
 	}
 
+	@Override
+	public String toString() {
+		return asJson().toString(2);
+	}
 }

@@ -210,10 +210,7 @@ public final class TxBuilder {
 				.map(particleClass::cast)
 				.findFirst()
 				.or(() -> {
-					if (virtualParticle.isPresent()) {
-						var p = virtualParticle.get();
-						this.virtualDown(p);
-					}
+					virtualParticle.ifPresent(this::virtualDown);
 					return virtualParticle;
 				});
 

@@ -17,11 +17,13 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -77,6 +79,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.radixdlt.crypto.HashUtils.transactionIdHash;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -275,6 +278,41 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			while (status == SUCCESS) {
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
+					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					particleConsumer.accept(ParsedInstruction.up(particle));
+				}
+
+				status = cursor.getNext(key, value, DEFAULT);
+			}
+		}
+	}
+	//-------------- my
+
+	public void forEach(Consumer<FullTransaction> particleConsumer) {
+		atomLog.forEach((bytes, offset) -> {
+			var cmd = new Command(bytes);
+			try {
+				var tx = serialization.fromDson(bytes, Atom.class);
+				var txId = AID.from(transactionIdHash(bytes).asBytes());
+
+				particleConsumer.accept(FullTransaction.create(txId, tx));
+			} catch (DeserializeException e) {
+				log.error("Incompatible or corrupted data in transaction log at {}", offset);
+			}
+		});
+	}
+	
+	//-------------- other
+// TODO: Hack for Client Api store, remove at some point
+	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
+		try (var cursor = particleDatabase.openCursor(null, null)) {
+			var key = entry();
+			var value = entry();
+			var status = cursor.getFirst(key, value, DEFAULT);
+
+			while (status == SUCCESS) {
+				if (value.getData().length > 0) {
+					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
 					var particle = SubstateSerializer.deserialize(particleBytes);
 					var substateId = SubstateId.fromBytes(key.getData());
 					var substate = Substate.create(particle, substateId);
@@ -288,6 +326,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Unable to deserialize substate");
 		}
 	}
+	
+	//-------------- end
 
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {

@@ -15,29 +15,34 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store;
+package com.radixdlt.store.berkeley;
 
-public enum ActionType {
-	TOKEN_TRANSFER("tokenTransfer"),
-	STAKE("stake"),
-	UNSTAKE("unstake"),
-	CREATE_MUTABLE_TOKEN("createMutableToken"),
-	CREATE_FIXED_TOKEN("createFixedToken"),
-	MINT("mint"),
-	BURN("burn"),
-	;
-	private String text;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.identifiers.AID;
 
-	ActionType(String text) {
-		this.text = text;
+import static java.util.Objects.requireNonNull;
+
+public class FullTransaction {
+	private final AID txId;
+	private final Atom tx;
+
+	private FullTransaction(AID txId, Atom tx) {
+		this.tx = tx;
+		this.txId = txId;
 	}
 
-	public String text() {
-		return text;
+	public static FullTransaction create(AID txId, Atom tx) {
+		requireNonNull(txId);
+		requireNonNull(tx);
+
+		return new FullTransaction(txId, tx);
 	}
 
-	@Override
-	public String toString() {
-		return text;
+	public AID getTxId() {
+		return txId;
+	}
+
+	public Atom getTx() {
+		return tx;
 	}
 }

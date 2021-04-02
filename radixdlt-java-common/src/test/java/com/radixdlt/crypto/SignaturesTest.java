@@ -37,7 +37,7 @@ public class SignaturesTest {
 
     @Test
     public void verify_that_ecdsasignature_specifies_correct_scheme() {
-        ECDSASignature signature = new ECDSASignature();
+        ECDSASignature signature = ECDSASignature.zeroSignature();
         assertEquals(SignatureScheme.ECDSA, signature.signatureScheme());
     }
 
@@ -175,7 +175,8 @@ public class SignaturesTest {
 
     private ECDSASignature randomInvalidSignature() {
         Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
-        return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
+
+        return ECDSASignature.create(randomBigInt.get(), randomBigInt.get(), randomBigInt.get().signum());
     }
 
     private HashCode hashOfMessage(String message) {

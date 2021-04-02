@@ -86,7 +86,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 				@Override
 				protected void configure() {
 					bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
-					bind(HashSigner.class).toInstance(h -> new ECDSASignature());
+					bind(HashSigner.class).toInstance(h -> ECDSASignature.zeroSignature());
 				}
 			})
 			.numNodes(numNodes)

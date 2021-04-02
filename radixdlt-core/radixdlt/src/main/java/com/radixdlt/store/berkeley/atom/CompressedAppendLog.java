@@ -87,7 +87,6 @@ public class CompressedAppendLog implements AppendLog {
 					chunkConsumer.accept(chunk.getFirst(), offset);
 					offset += chunk.getSecond() + Integer.BYTES;
 				} catch (IOException exception) {
-					chunkConsumer.accept(new byte[0], -1L);
 					end = true;
 				}
 			}

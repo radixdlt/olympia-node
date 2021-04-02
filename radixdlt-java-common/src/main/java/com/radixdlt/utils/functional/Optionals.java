@@ -17,6 +17,15 @@
 
 package com.radixdlt.utils.functional;
 
+import com.radixdlt.utils.functional.Functions.FN1;
+import com.radixdlt.utils.functional.Functions.FN2;
+import com.radixdlt.utils.functional.Functions.FN3;
+import com.radixdlt.utils.functional.Functions.FN4;
+import com.radixdlt.utils.functional.Functions.FN5;
+import com.radixdlt.utils.functional.Functions.FN6;
+import com.radixdlt.utils.functional.Functions.FN7;
+import com.radixdlt.utils.functional.Functions.FN8;
+import com.radixdlt.utils.functional.Functions.FN9;
 import com.radixdlt.utils.functional.Tuple.Tuple1;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 import com.radixdlt.utils.functional.Tuple.Tuple3;
@@ -32,7 +41,7 @@ import java.util.Optional;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
- * Useful utility methods for {@link Optional}.
+ * Group methods for {@link Optional}.
  */
 public final class Optionals {
 	private Optionals() { }
@@ -128,110 +137,110 @@ public final class Optionals {
 											v9 -> Optional.of(tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)))))))))));
 	}
 
-	interface Mapper1<T1> {
+	public interface Mapper1<T1> {
 		Optional<Tuple1<T1>> id();
 
-		default <R> Optional<R> map(final Functions.FN1<R, T1> mapper) {
+		default <R> Optional<R> map(FN1<R, T1> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN1<Optional<R>, T1> mapper) {
+		default <R> Optional<R> flatMap(FN1<Optional<R>, T1> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper2<T1, T2> {
+	public interface Mapper2<T1, T2> {
 		Optional<Tuple2<T1, T2>> id();
 
-		default <R> Optional<R> map(final Functions.FN2<R, T1, T2> mapper) {
+		default <R> Optional<R> map(FN2<R, T1, T2> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN2<Optional<R>, T1, T2> mapper) {
+		default <R> Optional<R> flatMap(FN2<Optional<R>, T1, T2> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper3<T1, T2, T3> {
+	public interface Mapper3<T1, T2, T3> {
 		Optional<Tuple3<T1, T2, T3>> id();
 
-		default <R> Optional<R> map(final Functions.FN3<R, T1, T2, T3> mapper) {
+		default <R> Optional<R> map(FN3<R, T1, T2, T3> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN3<Optional<R>, T1, T2, T3> mapper) {
+		default <R> Optional<R> flatMap(FN3<Optional<R>, T1, T2, T3> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper4<T1, T2, T3, T4> {
+	public interface Mapper4<T1, T2, T3, T4> {
 		Optional<Tuple4<T1, T2, T3, T4>> id();
 
-		default <R> Optional<R> map(final Functions.FN4<R, T1, T2, T3, T4> mapper) {
+		default <R> Optional<R> map(FN4<R, T1, T2, T3, T4> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN4<Optional<R>, T1, T2, T3, T4> mapper) {
+		default <R> Optional<R> flatMap(FN4<Optional<R>, T1, T2, T3, T4> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper5<T1, T2, T3, T4, T5> {
+	public interface Mapper5<T1, T2, T3, T4, T5> {
 		Optional<Tuple5<T1, T2, T3, T4, T5>> id();
 
-		default <R> Optional<R> map(final Functions.FN5<R, T1, T2, T3, T4, T5> mapper) {
+		default <R> Optional<R> map(FN5<R, T1, T2, T3, T4, T5> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN5<Optional<R>, T1, T2, T3, T4, T5> mapper) {
+		default <R> Optional<R> flatMap(FN5<Optional<R>, T1, T2, T3, T4, T5> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper6<T1, T2, T3, T4, T5, T6> {
+	public interface Mapper6<T1, T2, T3, T4, T5, T6> {
 		Optional<Tuple6<T1, T2, T3, T4, T5, T6>> id();
 
-		default <R> Optional<R> map(final Functions.FN6<R, T1, T2, T3, T4, T5, T6> mapper) {
+		default <R> Optional<R> map(FN6<R, T1, T2, T3, T4, T5, T6> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN6<Optional<R>, T1, T2, T3, T4, T5, T6> mapper) {
+		default <R> Optional<R> flatMap(FN6<Optional<R>, T1, T2, T3, T4, T5, T6> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper7<T1, T2, T3, T4, T5, T6, T7> {
+	public interface Mapper7<T1, T2, T3, T4, T5, T6, T7> {
 		Optional<Tuple7<T1, T2, T3, T4, T5, T6, T7>> id();
 
-		default <R> Optional<R> map(final Functions.FN7<R, T1, T2, T3, T4, T5, T6, T7> mapper) {
+		default <R> Optional<R> map(FN7<R, T1, T2, T3, T4, T5, T6, T7> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN7<Optional<R>, T1, T2, T3, T4, T5, T6, T7> mapper) {
+		default <R> Optional<R> flatMap(FN7<Optional<R>, T1, T2, T3, T4, T5, T6, T7> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> {
+	public interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> {
 		Optional<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> id();
 
-		default <R> Optional<R> map(final Functions.FN8<R, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+		default <R> Optional<R> map(FN8<R, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN8<Optional<R>, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+		default <R> Optional<R> flatMap(FN8<Optional<R>, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 
-	interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+	public interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
 		Optional<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> id();
 
-		default <R> Optional<R> map(final Functions.FN9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+		default <R> Optional<R> map(FN9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
 			return id().map(tuple -> tuple.map(mapper));
 		}
 
-		default <R> Optional<R> flatMap(final Functions.FN9<Optional<R>, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+		default <R> Optional<R> flatMap(FN9<Optional<R>, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
 			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}

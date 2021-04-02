@@ -17,28 +17,29 @@
 
 package com.radixdlt.consensus;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-import java.util.Collection;
-import java.util.function.LongFunction;
-import java.util.function.LongUnaryOperator;
-import java.util.stream.IntStream;
-
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
-import static org.assertj.core.api.Assertions.*;
+import java.util.Collection;
+import java.util.function.LongFunction;
+import java.util.function.LongUnaryOperator;
+import java.util.stream.IntStream;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
-public class TimestampedECDSASignaturesTest extends  SerializeObject<TimestampedECDSASignatures> {
+import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
+
+public class TimestampedECDSASignaturesTest extends SerializeObject<TimestampedECDSASignatures> {
 	public TimestampedECDSASignaturesTest() {
 		super(TimestampedECDSASignatures.class, TimestampedECDSASignaturesTest::create);
 	}
@@ -117,7 +118,7 @@ public class TimestampedECDSASignaturesTest extends  SerializeObject<Timestamped
 			builder.put(pk, TimestampedECDSASignature.from(
 				timeFunction.applyAsLong(index),
 				weightFunction.apply(index),
-				new ECDSASignature()
+				zeroSignature()
 			));
 			index += 1;
 		}
@@ -128,8 +129,8 @@ public class TimestampedECDSASignaturesTest extends  SerializeObject<Timestamped
 		ECPublicKey k1 = ECKeyPair.generateNew().getPublicKey();
 		ECPublicKey k2 = ECKeyPair.generateNew().getPublicKey();
 		ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature = ImmutableMap.of(
-			BFTNode.create(k1), TimestampedECDSASignature.from(1L, UInt256.ONE, new ECDSASignature()),
-			BFTNode.create(k2), TimestampedECDSASignature.from(1L, UInt256.ONE, new ECDSASignature())
+			BFTNode.create(k1), TimestampedECDSASignature.from(1L, UInt256.ONE, zeroSignature()),
+			BFTNode.create(k2), TimestampedECDSASignature.from(1L, UInt256.ONE, zeroSignature())
 		);
 		return new TimestampedECDSASignatures(nodeToTimestampAndSignature);
 	}

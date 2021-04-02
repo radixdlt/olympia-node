@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
@@ -128,14 +130,14 @@ public class TokenDefinitionRecord {
 		return create(name, rri, description, granularity, UInt256.ZERO, iconUrl, url, mutable);
 	}
 
-	public static Result<TokenDefinitionRecord> from(Particle particle) {
-		if (particle instanceof MutableSupplyTokenDefinitionParticle) {
-			return Result.ok(from((MutableSupplyTokenDefinitionParticle) particle, UInt256.ZERO));
-		} else if (particle instanceof FixedSupplyTokenDefinitionParticle) {
-			return Result.ok(from((FixedSupplyTokenDefinitionParticle) particle));
+	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
+		if (substate instanceof MutableSupplyTokenDefinitionParticle) {
+			return Result.ok(from((MutableSupplyTokenDefinitionParticle) substate, UInt256.ZERO));
+		} else if (substate instanceof FixedSupplyTokenDefinitionParticle) {
+			return Result.ok(from((FixedSupplyTokenDefinitionParticle) substate));
 		}
 
-		return Result.fail("Unknown token definition particle: {}", particle);
+		return Result.fail("Unknown token definition substate: {}", substate);
 	}
 
 	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt256 supply) {

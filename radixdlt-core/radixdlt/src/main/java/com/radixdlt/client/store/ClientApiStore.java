@@ -17,7 +17,7 @@
 
 package com.radixdlt.client.store;
 
-import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
+import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -45,7 +45,7 @@ public interface ClientApiStore {
 	/**
 	 * Flush intermediate storage and save particles into persistent DB.
 	 */
-	void storeCollectedParticles();
+	void storeCollected();
 
 	/**
 	 * Get current supply of the specified token.
@@ -77,5 +77,5 @@ public interface ClientApiStore {
 	 */
 	Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor);
 
-	EventProcessor<ScheduledParticleFlush> particleFlushProcessor();
+	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }

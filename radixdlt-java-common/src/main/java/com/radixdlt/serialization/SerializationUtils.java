@@ -21,6 +21,8 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.utils.functional.Result;
+
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -36,5 +38,13 @@ public class SerializationUtils {
 	public static EUID stringToNumericID(String id) {
 		HashCode h = murmur3_128.hashBytes(id.getBytes(StandardCharsets.UTF_8));
 		return new EUID(h.asBytes());
+	}
+
+	public static <T> Result<T> restore(Serialization serialization, byte[] data, Class<T> clazz) {
+		try {
+			return Result.ok(serialization.fromDson(data, clazz));
+		} catch (DeserializeException e) {
+			return Result.fail("Unable to deserialize {}", clazz.getSimpleName());
+		}
 	}
 }

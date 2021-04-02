@@ -19,9 +19,9 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -31,8 +31,8 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -56,35 +56,38 @@ public final class TimestampedECDSASignatures {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+	private Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
 
 	@JsonCreator
 	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures) {
-		ImmutableMap<BFTNode, TimestampedECDSASignature> sigs = signatures == null
-			? ImmutableMap.of()
-			: signatures.entrySet().stream()
-				.collect(ImmutableMap.toImmutableMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
-		return new TimestampedECDSASignatures(sigs);
+		var signaturesByNode =
+			signatures == null
+			? Map.<BFTNode, TimestampedECDSASignature>of()
+			: signatures.entrySet().stream().collect(Collectors.toMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
+
+		return new TimestampedECDSASignatures(signaturesByNode);
 	}
 
 	/**
 	 * Returns a new empty instance.
 	 */
 	public TimestampedECDSASignatures() {
-		this.nodeToTimestampedSignature = ImmutableMap.of();
+		this.nodeToTimestampedSignature = Map.of();
 	}
 
 	/**
 	 * Returns a new instance containing {@code nodeToTimestampAndSignature}.
+	 *
 	 * @param nodeToTimestampAndSignature The map of {@link ECDSASignature}s and their corresponding
-	 * 		timestamps and {@link ECPublicKey}
+	 * 	timestamps and {@link ECPublicKey}
 	 */
-	public TimestampedECDSASignatures(ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
+	public TimestampedECDSASignatures(Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
 		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;
 	}
 
 	/**
 	 * Returns signatures and timestamps for each public key
+	 *
 	 * @return Signatures and timestamps for each public key
 	 */
 	public Map<BFTNode, TimestampedECDSASignature> getSignatures() {
@@ -93,6 +96,7 @@ public final class TimestampedECDSASignatures {
 
 	/**
 	 * Returns the count of signatures.
+	 *
 	 * @return The count of signatures
 	 */
 	public int count() {
@@ -101,27 +105,35 @@ public final class TimestampedECDSASignatures {
 
 	/**
 	 * Returns the weighted timestamp for this set of timestamped signatures.
+	 *
 	 * @return The weighted timestamp, or {@code Long.MIN_VALUE} if a timestamp cannot be computed
 	 */
 	public long weightedTimestamp() {
-		UInt256 totalPower = UInt256.ZERO;
-		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
-		for (TimestampedECDSASignature ts : this.nodeToTimestampedSignature.values()) {
-			UInt256 weight = ts.weight();
+		var totalPower = UInt256.ZERO;
+		var weightedTimes = new ArrayList<Pair<Long, UInt256>>();
+
+		for (var ts : this.nodeToTimestampedSignature.values()) {
+			var weight = ts.weight();
 			totalPower = totalPower.add(weight);
 			weightedTimes.add(Pair.of(ts.timestamp(), weight));
 		}
+
 		if (totalPower.isZero()) {
 			return Long.MIN_VALUE; // Invalid timestamp
 		}
-		UInt256 median = totalPower.shiftRight(); // Divide by 2
+
+		var median = totalPower.shiftRight(); // Divide by 2
+
 		// Sort ascending by timestamp
 		weightedTimes.sort(Comparator.comparing(Pair::getFirst));
-		for (Pair<Long, UInt256> w : weightedTimes) {
-			UInt256 weight = w.getSecond();
+
+		for (var w : weightedTimes) {
+			var weight = w.getSecond();
+
 			if (median.compareTo(weight) < 0) {
 				return w.getFirst();
 			}
+
 			median = median.subtract(weight);
 		}
 		throw new IllegalStateException("Logic error in weightedTimestamp");

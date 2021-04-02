@@ -17,11 +17,14 @@
 
 package com.radixdlt.consensus;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewVotingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
@@ -36,16 +39,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class PendingVotesTest {
 	private PendingVotes pendingVotes;
@@ -79,7 +80,8 @@ public class PendingVotesTest {
 
 		assertEquals(
 			VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR),
-			this.pendingVotes.insertVote(vote2, validatorSet));
+			this.pendingVotes.insertVote(vote2, validatorSet)
+		);
 	}
 
 	@Test
@@ -118,7 +120,8 @@ public class PendingVotesTest {
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Arrays.asList(
 				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-				BFTValidator.from(vote2.getAuthor(), UInt256.ONE))
+				BFTValidator.from(vote2.getAuthor(), UInt256.ONE)
+			)
 		);
 
 		assertTrue(
@@ -129,7 +132,7 @@ public class PendingVotesTest {
 		assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
 		assertTrue(((VoteProcessingResult.QuorumReached) result2).getViewVotingResult()
-				instanceof ViewVotingResult.FormedTC);
+					   instanceof ViewVotingResult.FormedTC);
 	}
 
 	@Test
@@ -152,7 +155,8 @@ public class PendingVotesTest {
 		// Preconditions
 		assertEquals(
 			VoteProcessingResult.accepted(),
-			this.pendingVotes.insertVote(vote, validatorSet));
+			this.pendingVotes.insertVote(vote, validatorSet)
+		);
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 
@@ -160,7 +164,8 @@ public class PendingVotesTest {
 		// Need a different hash for this (different) vote
 		assertEquals(
 			VoteProcessingResult.accepted(),
-			this.pendingVotes.insertVote(vote2, validatorSet));
+			this.pendingVotes.insertVote(vote2, validatorSet)
+		);
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}
@@ -179,7 +184,8 @@ public class PendingVotesTest {
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Arrays.asList(
 				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-				BFTValidator.from(vote2.getAuthor(), UInt256.ONE))
+				BFTValidator.from(vote2.getAuthor(), UInt256.ONE)
+			)
 		);
 
 		assertTrue(
@@ -208,12 +214,12 @@ public class PendingVotesTest {
 		assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
 		assertTrue(((VoteProcessingResult.QuorumReached) result2).getViewVotingResult()
-			instanceof ViewVotingResult.FormedTC);
+					   instanceof ViewVotingResult.FormedTC);
 	}
 
 	private Vote makeSignedVoteFor(BFTNode author, View parentView, HashCode vertexId) {
 		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
-		when(vote.getSignature()).thenReturn(new ECDSASignature());
+		when(vote.getSignature()).thenReturn(ECDSASignature.zeroSignature());
 		return vote;
 	}
 

@@ -15,12 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store.berkeley;
+package org.radix.api.jsonrpc;
 
-public enum ScheduledParticleFlush {
-	INSTANCE;
+import org.json.JSONObject;
 
-	public static ScheduledParticleFlush create() {
-		return INSTANCE;
+import com.radixdlt.client.store.ActionEntry;
+
+public enum ActionType {
+	TRANSFER("TokenTransfer"),
+	STAKE("StakeTokens"),
+	UNSTAKE("UnstakeTokens"),
+	BURN("BurnTokens"),
+	MINT("MintTokens"),
+	REGISTER_VALIDATOR("RegisterValidator"),
+	UNREGISTER_VALIDATOR("UnregisterValidator"),
+	CREATE_FIXED("CreateFixedSupplyToken"),
+	CREATE_MUTABLE("CreateMutableSupplyToken")
+	;
+	private final String text;
+
+	//TODO: add deserialization
+
+	ActionType(String text) {
+		this.text = text;
+	}
+
+	@Override
+	public String toString() {
+		return text;
 	}
 }

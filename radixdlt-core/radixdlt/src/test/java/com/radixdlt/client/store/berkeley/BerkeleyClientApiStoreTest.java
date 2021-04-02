@@ -28,6 +28,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -35,20 +40,52 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.FixedTokenDefinition;
+import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.TransactionParser;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.berkeley.FullTransaction;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -61,11 +98,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BerkeleyClientApiStoreTest {
-	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
-	private static final RadixAddress DELEGATE = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-	private static final RadixAddress TOKEN_ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS, "COOKIE");
-	private static final UInt256 GRANULARITY = UInt256.ONE;
+	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress OWNER = new RadixAddress((byte) 0, OWNER_KEYPAIR.getPublicKey());
+	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
+
+	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS, "COFFEE");
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);
@@ -75,121 +113,144 @@ public class BerkeleyClientApiStoreTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> engine;
+
+	private Injector createInjector() {
+		return Guice.createInjector(
+			new SingleNodeAndPeersDeterministicNetworkModule(),
+			new MockedGenesisAtomModule(),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
+					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
+					bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
+				}
+			}
+		);
+	}
+
 	@Before
 	public void setUp() {
 		environment = new DatabaseEnvironment(folder.getRoot().getAbsolutePath(), 0);
-	}
-
-	private ParsedInstruction up(Particle p) {
-		return ParsedInstruction.of(mock(REInstruction.class), Substate.create(p, mock(SubstateId.class)), Spin.UP);
-	}
-
-	private ParsedInstruction down(Particle p) {
-		return ParsedInstruction.of(mock(REInstruction.class), Substate.create(p, mock(SubstateId.class)), Spin.DOWN);
+		var injector = createInjector();
+		injector.injectMembers(this);
 	}
 
 	@Test
-	public void tokenBalancesAreReturned() {
-		var particles = List.of(
-			up(stake(UInt256.TWO)),
-			up(stake(UInt256.FIVE)),
-			up(transfer(UInt256.NINE)),
-			up(transfer(UInt256.ONE)),
-			down(transfer(UInt256.ONE))
-		);
-		var clientApiStore = prepareApiStore(particles);
+	public void tokenBalancesAreReturned() throws TxBuilderException, RadixEngineException {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+			.createMutableToken(tokenDef)
+			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
+			.burn(TOKEN, UInt256.ONE)
+			.burnForFee(TOKEN, UInt256.ONE)
+			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+
+		clientApiStore.getTokenBalances(TOKEN.getAddress())
+			.onSuccess(list -> {
+				assertEquals(1, list.size());
+				assertEquals(UInt256.TWO, list.get(0).getAmount());
+				assertEquals(TOKEN, list.get(0).getRri());
+			})
+			.onFailureDo(() -> fail("Failure is not expected here"));
 
 		clientApiStore.getTokenBalances(OWNER)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.NINE, list.get(0).getAmount());
+				assertEquals(UInt256.FOUR, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
 	}
 
 	@Test
-	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() {
-		var particles = List.of(
-			up(emission(UInt256.MAX_VALUE))
-		);
-		var clientApiStore = prepareApiStore(particles);
+	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws TxBuilderException, RadixEngineException {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+			.createMutableToken(tokenDef)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onFailureDo(Assert::fail)
-			.onSuccess(amount -> assertEquals(UInt256.ZERO, amount));
+			.onSuccess(amount -> assertEquals(UInt256.ZERO, amount))
+			.onFailure(this::failWithMessage);
 	}
 
 	@Test
-	public void tokenSupplyIsCalculateProperlyAfterBurnMint() {
-		var particles = List.of(
-			up(emission(UInt256.MAX_VALUE)),
-			down(emission(UInt256.TWO)),
-			down(emission(UInt256.FIVE)),
-			up(emission(UInt256.ONE))
-		);
-		var clientApiStore = prepareApiStore(particles);
+	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws TxBuilderException, RadixEngineException {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+			.createMutableToken(tokenDef)
+			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
+			.burn(TOKEN, UInt256.ONE)
+			.burnForFee(TOKEN, UInt256.ONE)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onFailureDo(Assert::fail)
-			.onSuccess(amount -> assertEquals(UInt256.SIX, amount));
+			.onSuccess(amount -> assertEquals(UInt256.EIGHT, amount))
+			.onFailure(this::failWithMessage);
 	}
 
 	@Test
-	public void mutableTokenDefinitionIsStoredAndAccessible() {
-		var fooToken = mutableTokenDef("FOO");
-		var barToken = mutableTokenDef("BAR");
-		var particles = List.of(
-			up(fooToken),
-			up(barToken)
-		);
-		var clientApiStore = prepareApiStore(particles);
+	public void mutableTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
+		var fooDef = new AtomicReference<TokenDefinitionRecord>();
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+			.createMutableToken(tokenDef)
+			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
 
-		var fooDef = TokenDefinitionRecord.from(fooToken, UInt256.ZERO);
-		var barDef = TokenDefinitionRecord.from(barToken, UInt256.ZERO);
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
-		clientApiStore.getTokenDefinition(fooToken.getRRI())
-			.onSuccess(tokenDef -> assertEquals(fooDef, tokenDef))
-			.onFailureDo(Assert::fail);
-		clientApiStore.getTokenDefinition(barToken.getRRI())
-			.onSuccess(tokenDef -> assertEquals(barDef, tokenDef))
-			.onFailureDo(Assert::fail);
+		clientApiStore.getTokenDefinition(TOKEN)
+			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef))
+			.onFailure(this::failWithMessage);
 	}
 
 	@Test
-	public void fixedTokenDefinitionIsStoredAndAccessible() {
-		var fooToken = fixedTokenDef("FOO");
-		var barToken = fixedTokenDef("BAR");
-		var particles = List.of(
-			up(fooToken),
-			up(barToken)
-		);
-		var clientApiStore = prepareApiStore(particles);
+	public void fixedTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
+		var fooDef = new AtomicReference<TokenDefinitionRecord>();
+		var tokenDef = prepareFixedTokenDef();
+		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+			.createFixedToken(tokenDef)
+			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
 
-		var fooDef = TokenDefinitionRecord.from(fooToken);
-		var barDef = TokenDefinitionRecord.from(barToken);
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
-		clientApiStore.getTokenDefinition(fooToken.getRRI())
-			.onSuccess(tokenDef -> assertEquals(fooDef, tokenDef))
-			.onFailureDo(Assert::fail);
-		clientApiStore.getTokenDefinition(barToken.getRRI())
-			.onSuccess(tokenDef -> assertEquals(barDef, tokenDef))
-			.onFailureDo(Assert::fail);
+		clientApiStore.getTokenDefinition(TOKEN)
+			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef))
+			.onFailure(this::failWithMessage);
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(List<ParsedInstruction> particles) {
+	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Atom... tx) throws RadixEngineException {
+		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
+			.stream()
+			.map(parsedTransaction -> parsedToFull(keyPair, parsedTransaction))
+			.collect(Collectors.toList());
+
 		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
-			particles.forEach(invocation.<Consumer<ParsedInstruction>>getArgument(0));
+			transactions.forEach(invocation.<Consumer<FullTransaction>>getArgument(0));
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 
 		var ledgerCommitted = mock(Observable.class);
 		when(ledgerCommitted.observeOn(any())).thenReturn(ledgerCommitted);
 
-		var mock = mock(Disposable.class);
-		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer) any())).thenReturn(mock);
+		var disposable = mock(Disposable.class);
+		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer<?>) any())).thenReturn(disposable);
+
+		var transactionParser = mock(TransactionParser.class);
 
 		return new BerkeleyClientApiStore(
 			environment,
@@ -197,42 +258,66 @@ public class BerkeleyClientApiStoreTest {
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
-			ledgerCommitted
+			ledgerCommitted,
+			0,
+			transactionParser
 		);
 	}
 
-	private StakedTokensParticle stake(UInt256 amount) {
-		return new StakedTokensParticle(DELEGATE, OWNER, amount, GRANULARITY, TOKEN, true);
+	private FullTransaction parsedToFull(ECKeyPair keyPair, ParsedTransaction parsedTransaction) {
+		var builder = TxLowLevelBuilder.newBuilder();
+
+		parsedTransaction.instructions().forEach(i -> {
+			switch (i.getSpin()) {
+				case NEUTRAL:
+					break;
+				case UP:
+					builder.up(i.getParticle());
+					break;
+				case DOWN:
+					builder.virtualDown(i.getParticle());
+					break;
+			}
+		});
+
+		return toFullTransaction(builder.signAndBuild(keyPair::sign));
 	}
 
-	private UnallocatedTokensParticle emission(UInt256 amount) {
-		return new UnallocatedTokensParticle(amount, GRANULARITY, TOKEN);
+	private FullTransaction toFullTransaction(Atom tx) {
+		var payload = serialization.toDson(tx, DsonOutput.Output.ALL);
+		var txId = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+
+		return FullTransaction.create(txId, tx);
 	}
 
-	private TransferrableTokensParticle transfer(UInt256 amount) {
-		return new TransferrableTokensParticle(OWNER, amount, GRANULARITY, TOKEN, true);
+	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {
+		Assert.fail(failure.message());
 	}
 
-	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {
-		return new MutableSupplyTokenDefinitionParticle(
-			RRI.of(TOKEN_ADDRESS, symbol),
-			symbol,
-			description(symbol),
-			UInt256.ONE,
-			iconUrl(symbol),
-			homeUrl(symbol)
+	private Optional<TokenDefinitionRecord> extractTokenDefinition(Iterable<Particle> iterable) {
+		return StreamSupport.stream(iterable.spliterator(), false)
+			.filter(TokenDefinitionSubstate.class::isInstance)
+			.map(TokenDefinitionSubstate.class::cast)
+			.map(TokenDefinitionRecord::from)
+			.findFirst()
+			.flatMap(Result::toOptional);
+	}
+
+	private MutableTokenDefinition prepareMutableTokenDef(String symbol) {
+		return new MutableTokenDefinition(
+			symbol, symbol, description(symbol), iconUrl(symbol), homeUrl(symbol), UInt256.ONE,
+			Map.of(
+				TokenTransition.BURN, TokenPermission.ALL,
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+			)
 		);
 	}
 
-	private FixedSupplyTokenDefinitionParticle fixedTokenDef(String symbol) {
-		return new FixedSupplyTokenDefinitionParticle(
-			RRI.of(TOKEN_ADDRESS, symbol),
-			symbol,
-			description(symbol),
-			UInt256.TEN,
-			UInt256.ONE,
-			iconUrl(symbol),
-			homeUrl(symbol)
+	private FixedTokenDefinition prepareFixedTokenDef() {
+		var symbol = TOKEN.getName();
+
+		return new FixedTokenDefinition(
+			symbol, symbol, description(symbol), iconUrl(symbol), homeUrl(symbol), UInt256.ONE
 		);
 	}
 

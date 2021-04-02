@@ -18,6 +18,7 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -59,17 +60,43 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean negative;
 
-	private BalanceEntry(RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount, boolean negative) {
+	//Not persisted
+	@JsonIgnore
+	private final boolean supply;
+
+	private BalanceEntry(
+		RadixAddress owner, RadixAddress delegate, RRI rri,
+		UInt256 granularity, UInt256 amount, boolean negative,
+		boolean supply
+	) {
 		this.owner = owner;
 		this.delegate = delegate;
 		this.rri = rri;
 		this.granularity = granularity;
 		this.amount = amount;
 		this.negative = negative;
+		this.supply = supply;
+	}
+
+	public static BalanceEntry createFull(
+		RadixAddress owner,
+		RadixAddress delegate,
+		RRI rri,
+		UInt256 granularity,
+		UInt256 amount,
+		boolean negative,
+		boolean supply
+	) {
+		Objects.requireNonNull(owner);
+		Objects.requireNonNull(rri);
+		Objects.requireNonNull(granularity);
+		Objects.requireNonNull(amount);
+
+		return new BalanceEntry(owner, delegate, rri, granularity, amount, negative, supply);
 	}
 
 	@JsonCreator
-	public static BalanceEntry createFull(
+	public static BalanceEntry create(
 		@JsonProperty("owner") RadixAddress owner,
 		@JsonProperty("delegate") RadixAddress delegate,
 		@JsonProperty("rri") RRI rri,
@@ -77,16 +104,19 @@ public class BalanceEntry {
 		@JsonProperty("amount") UInt256 amount,
 		@JsonProperty("negative") boolean negative
 	) {
-		Objects.requireNonNull(owner);
-		Objects.requireNonNull(rri);
-		Objects.requireNonNull(granularity);
-		Objects.requireNonNull(amount);
-
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, false);
+		return createFull(owner, delegate, rri, granularity, amount, negative, false);
 	}
 
-	public static BalanceEntry create(RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount) {
-		return createFull(owner, delegate, rri, granularity, amount, false);
+	public static BalanceEntry createBalance(
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount
+	) {
+		return createFull(owner, delegate, rri, granularity, amount, false, false);
+	}
+
+	public static BalanceEntry createSupply(
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount
+	) {
+		return createFull(owner, delegate, rri, granularity, amount, false, true);
 	}
 
 	public RadixAddress getOwner() {
@@ -110,7 +140,7 @@ public class BalanceEntry {
 	}
 
 	public boolean isSupply() {
-		return owner.equals(rri.getAddress());
+		return supply;
 	}
 
 	public boolean isStake() {
@@ -122,17 +152,17 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, !negative);
+		return new BalanceEntry(owner, delegate, rri, granularity, amount, !negative, supply);
 	}
 
-	public BalanceEntry subtract(BalanceEntry balanceEntry) {
+	public BalanceEntry add(BalanceEntry balanceEntry) {
 		assert this.owner.equals(balanceEntry.owner);
 		assert this.rri.equals(balanceEntry.rri);
 
 		if (negative) {
-			return balanceEntry.negative ? diff(balanceEntry, true) : sum(balanceEntry, true);
+			return balanceEntry.negative ? sum(balanceEntry, true) : diff(balanceEntry, true);
 		} else {
-			return balanceEntry.negative ? sum(balanceEntry, false) : diff(balanceEntry, false);
+			return balanceEntry.negative ? diff(balanceEntry, false) : sum(balanceEntry, false);
 		}
 	}
 
@@ -172,10 +202,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, negate == isBigger);
+		return new BalanceEntry(owner, delegate, rri, granularity, amount, negate == isBigger, supply);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, granularity, amount.add(balanceEntry.amount), negative);
+		return new BalanceEntry(owner, delegate, rri, granularity, amount.add(balanceEntry.amount), negative, supply);
 	}
 }

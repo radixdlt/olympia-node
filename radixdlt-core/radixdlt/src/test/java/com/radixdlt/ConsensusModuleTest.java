@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -96,6 +97,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -218,7 +220,7 @@ public class ConsensusModuleTest {
 		);
 		QuorumCertificate unsyncedQC = new QuorumCertificate(
 			voteData,
-			new TimestampedECDSASignatures(ImmutableMap.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, new ECDSASignature())))
+			new TimestampedECDSASignatures(Map.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, zeroSignature())))
 		);
 
 		return Pair.of(unsyncedQC, verifiedVertex);

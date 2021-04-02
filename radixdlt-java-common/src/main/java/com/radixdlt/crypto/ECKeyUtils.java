@@ -23,17 +23,25 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.RuntimeUtils;
+
 import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
+import org.bouncycastle.math.ec.ECAlgorithms;
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointUtil;
 
+import java.math.BigInteger;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.
@@ -99,7 +107,7 @@ public class ECKeyUtils {
 
 	private static boolean isOfRequiredVersion(Provider currentBouncyCastleProvider, Provider requiredBouncyCastleProvider) {
 		return currentBouncyCastleProvider == null
-				|| !currentBouncyCastleProvider.getVersionStr().equals(requiredBouncyCastleProvider.getVersionStr());
+			|| !currentBouncyCastleProvider.getVersionStr().equals(requiredBouncyCastleProvider.getVersionStr());
 	}
 
 	// Must be after secureRandom init
@@ -150,6 +158,63 @@ public class ECKeyUtils {
 		}
 	}
 
+	private static final X9IntegerConverter CONVERTER = new X9IntegerConverter();
+
+	private static ECCurve ecCurve() {
+		return curve.getCurve();
+	}
+
+	private static ECPoint decompressKey(BigInteger xBN, boolean yBit) {
+		byte[] compEnc = CONVERTER.integerToBytes(xBN, 1 + CONVERTER.getByteLength(ecCurve()));
+
+		compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
+
+		try {
+			return ecCurve().decodePoint(compEnc);
+		} catch (IllegalArgumentException e) {
+			// the compressed key was invalid
+			return null;
+		}
+	}
+
+	static int calculateV(BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
+		return tryV(0, r, s, publicKey, hash)
+			.or(() -> tryV(1, r, s, publicKey, hash))
+			.orElseThrow(() -> new IllegalStateException("Unable to calculate V byte for public key"));
+	}
+
+	private static Optional<Integer> tryV(int v, BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
+		return ECKeyUtils.recoverFromSignature(v, r, s, hash)
+			.filter(q -> Arrays.equals(q.getEncoded(false), publicKey))
+			.map(__ -> v);
+	}
+
+	static Optional<ECPoint> recoverFromSignature(ECDSASignature signature, byte[] hash) {
+		return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
+	}
+
+	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
+		var curveN = curve.getN();
+		var decompressedPoint = decompressKey(r, (v & 1) == 1);
+
+		if (decompressedPoint == null || !decompressedPoint.multiply(curveN).isInfinity()) {
+			return Optional.empty();
+		}
+
+		var inverse = r.modInverse(curveN);
+		var candidate = new BigInteger(1, hash);
+		var negModCandidate = BigInteger.ZERO.subtract(candidate).mod(curveN);
+
+		return Optional.of(
+			ECAlgorithms.sumOfTwoMultiplies(
+				curve.getG(),
+				inverse.multiply(negModCandidate).mod(curveN),
+				decompressedPoint,
+				inverse.multiply(s).mod(curveN)
+			))
+			.filter(Predicate.not(ECPoint::isInfinity));
+	}
+
 	/**
 	 * Adjusts the specified array so that is is equal to the specified length.
 	 * <ul>
@@ -171,12 +236,15 @@ public class ECKeyUtils {
 	 *     truncated to the specified length.
 	 *   </li>
 	 * </ul>
+	 *
 	 * @param array The specified array
 	 * @param length The specified length
+	 *
 	 * @return An array of the specified length as described above
+	 *
 	 * @throws IllegalArgumentException if the specified array is longer than
-	 * 		the specified length, and does not have sufficient leading zeros
-	 * 		to allow truncation to the specified length.
+	 * 	the specified length, and does not have sufficient leading zeros
+	 * 	to allow truncation to the specified length.
 	 * @throws NullPointerException if the specified array is {@code null}
 	 */
 	static byte[] adjustArray(byte[] array, int length) {

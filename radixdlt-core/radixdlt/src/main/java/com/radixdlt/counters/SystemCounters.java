@@ -85,8 +85,8 @@ public interface SystemCounters {
 		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
 
 		// API DB metrics
-		COUNT_APIDB_PARTICLE_QUEUE_SIZE("count.apidb.particle.queue.size"),
-		COUNT_APIDB_PARTICLE_FLUSH_COUNT("count.apidb.particle.flush.count"),
+		COUNT_APIDB_QUEUE_SIZE("count.apidb.queue.size"),
+		COUNT_APIDB_FLUSH_COUNT("count.apidb.flush.count"),
 
 		COUNT_APIDB_BALANCE_TOTAL("count.apidb.balance.total"),
 		COUNT_APIDB_BALANCE_READ("count.apidb.balance.read"),
@@ -116,7 +116,7 @@ public interface SystemCounters {
 		ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.transaction.read"),
 		ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.transaction.write"),
 
-		ELAPSED_APIDB_PARTICLE_FLUSH_TIME("elapsed.apidb.particle.flush.time"),
+		ELAPSED_APIDB_FLUSH_TIME("elapsed.apidb.particle.flush.time"),
 
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
 

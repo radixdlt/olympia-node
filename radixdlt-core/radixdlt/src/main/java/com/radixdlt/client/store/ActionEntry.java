@@ -18,7 +18,10 @@
 package com.radixdlt.client.store;
 
 import org.json.JSONObject;
+import org.radix.api.jsonrpc.ActionType;
 
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -51,12 +54,61 @@ public class ActionEntry {
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 
+	public static ActionEntry fromStake(StakedTokensParticle stake) {
+		return create(
+			ActionType.STAKE,
+			stake.getAddress(),
+			stake.getDelegateAddress(),
+			stake.getAmount(), stake.getTokDefRef()
+		);
+	}
+
+	public static ActionEntry fromUnstake(StakedTokensParticle unstake) {
+		return create(
+			ActionType.UNSTAKE,
+			unstake.getAddress(),
+			unstake.getDelegateAddress(),
+			unstake.getAmount(),
+			unstake.getTokDefRef()
+		);
+	}
+
+	public static ActionEntry transfer(TransferrableTokensParticle transfer, RadixAddress owner) {
+		return create(
+			ActionType.TRANSFER,
+			owner,
+			transfer.getAddress(),
+			transfer.getAmount(),
+			transfer.getTokDefRef()
+		);
+	}
+
 	public JSONObject asJson() {
-		return jsonObject()
-			.put("type", type)
+		//TODO: return different JSON depending on the type!!!
+		var json = jsonObject()
+			.put("type", type.toString())
 			.put("from", from)
-			.put("to", to)
-			.put("amount", amount)
-			.put("rri", rri);
+			.put("amount", amount);
+
+		switch (type) {
+			case TRANSFER:
+				json.put("to", to).put("rri", rri);
+				break;
+			case UNSTAKE:
+			case STAKE:
+				json.put("validator", to);
+				json.put("validator", to);
+				break;
+
+			case BURN:
+			case MINT:
+			case REGISTER_VALIDATOR:
+			case UNREGISTER_VALIDATOR:
+			case CREATE_FIXED:
+			case CREATE_MUTABLE:
+				return json.put("type", "Other");
+		}
+
+		return json;
 	}
 }
