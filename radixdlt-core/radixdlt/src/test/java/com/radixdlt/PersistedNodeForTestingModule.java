@@ -43,7 +43,7 @@ import com.radixdlt.sync.SyncConfig;
 public final class PersistedNodeForTestingModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(SyncConfig.class).toInstance(SyncConfig.of(200, 10, 3000, 10, Long.MAX_VALUE));
+		bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 		bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 		bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
