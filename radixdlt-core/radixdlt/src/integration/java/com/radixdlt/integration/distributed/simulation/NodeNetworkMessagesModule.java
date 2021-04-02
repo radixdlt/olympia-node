@@ -107,29 +107,4 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesRequest.class);
 	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncRequest>> syncRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncResponse>> syncResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(SyncResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusRequest>> statusRequests(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusRequest.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusResponse>> statusResponses(SimulatedNetworkImpl network) {
-		return network.remoteEvents(StatusResponse.class);
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(SimulatedNetworkImpl network) {
-		return network.remoteEvents(LedgerStatusUpdate.class);
-	}
 }

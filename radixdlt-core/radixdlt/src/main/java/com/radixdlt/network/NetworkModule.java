@@ -114,31 +114,6 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Flowable<RemoteEvent<StatusRequest>> statusRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.statusRequests();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<StatusResponse>> statusResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.statusResponses();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncRequest>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.syncRequests();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<SyncResponse>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.syncResponses();
-	}
-
-	@Provides
-	private Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates(MessageCentralLedgerSync messageCentralLedgerSync) {
-		return messageCentralLedgerSync.ledgerStatusUpdates();
-	}
-
-	@Provides
 	private Flowable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
 		return validatorSync.requests();
 	}
@@ -146,14 +121,28 @@ public final class NetworkModule extends AbstractModule {
 	// TODO: Clean this up, convert the rest of remote events into this
 	@Provides
 	@Singleton
-	RxRemoteEnvironment rxRemoteEnvironment(MessageCentralMempool messageCentralMempool) {
+	@SuppressWarnings("unchecked")
+	RxRemoteEnvironment rxRemoteEnvironment(
+		MessageCentralMempool messageCentralMempool,
+		MessageCentralLedgerSync messageCentralLedgerSync
+	) {
 	    return new RxRemoteEnvironment() {
 			@Override
 			public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
-				if (remoteEventClass != MempoolAdd.class) {
-					throw new IllegalStateException();
-				} else {
+				if (remoteEventClass == MempoolAdd.class) {
 					return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == SyncRequest.class) {
+					return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == SyncResponse.class) {
+					return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == StatusRequest.class) {
+					return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == StatusResponse.class) {
+					return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == LedgerStatusUpdate.class) {
+					return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<T>) m);
+				} else {
+					throw new IllegalStateException();
 				}
 			}
 		};
