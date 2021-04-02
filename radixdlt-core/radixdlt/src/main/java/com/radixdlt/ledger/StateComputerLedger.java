@@ -132,7 +132,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), node);
+				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, node));
 			}
 		};
 	}
@@ -140,7 +140,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				stateComputer.addToMempool(mempoolAdd.getCommand(), null);
+				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, null));
 			}
 		};
 	}

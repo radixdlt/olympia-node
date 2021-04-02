@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -28,10 +29,11 @@ import com.radixdlt.environment.EventDispatcher;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
-
 import static com.radixdlt.crypto.ECPublicKey.fromBytes;
 import static com.radixdlt.utils.Base58.fromBase58;
+import static org.radix.api.http.RestUtils.*;
+import static org.radix.api.http.RestUtils.respond;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
@@ -79,11 +81,23 @@ public final class ChaosController implements Controller {
 
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
-		withBodyAsyncAndDefaultResponse(exchange, values -> {
-			var fillerUpdate = values.getBoolean("enabled")
-							   ? MempoolFillerUpdate.enable(100, true)
-							   : MempoolFillerUpdate.disable();
-			mempoolDispatcher.dispatch(fillerUpdate);
+		// TODO: implement JSON-RPC 2.0 specification
+		withBodyAsync(exchange, values -> {
+			MempoolFillerUpdate update;
+			if (values.getBoolean("enabled")) {
+				update = MempoolFillerUpdate.enable(
+					100,
+					true,
+					()-> respond(exchange, jsonObject().put("result", "enabled")),
+					error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
+				);
+			} else {
+				update = MempoolFillerUpdate.disable(
+					()-> respond(exchange, jsonObject().put("result", "disabled")),
+					error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
+				);
+			}
+			mempoolDispatcher.dispatch(update);
 		});
 	}
 

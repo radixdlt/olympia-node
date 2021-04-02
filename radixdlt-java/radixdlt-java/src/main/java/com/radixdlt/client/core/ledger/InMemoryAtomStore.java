@@ -156,8 +156,8 @@ public class InMemoryAtomStore implements AtomStore {
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
-					for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
-						var instruction = atom.getMicroInstructions().get(i);
+					for (int i = 0; i < atom.getInstructions().size(); i++) {
+						var instruction = atom.getInstructions().get(i);
 						if (instruction.getMicroOp() == REInstruction.REOp.END) {
 							continue;
 						}

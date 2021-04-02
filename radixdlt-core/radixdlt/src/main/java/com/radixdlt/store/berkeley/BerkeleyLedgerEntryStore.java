@@ -451,6 +451,35 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
+	@Override
+	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+		final String idForClass = serialization.getIdForClass(particleClass);
+		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+		final byte[] indexableBytes = numericClassId.toByteArray();
+
+		// In memory for now
+		// TODO: iterate using cursors
+		final List<Substate> substates = new ArrayList<>();
+
+		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
+			var index = entry(indexableBytes);
+			var value = entry();
+			var substateIdBytes = entry();
+			var status = particleCursor.getSearchKey(index, substateIdBytes, value, null);
+			while (status == SUCCESS) {
+				// TODO: Remove memcpy
+				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
+				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+				var rawSubstate = deserializeOrElseFail(serializedParticle, Particle.class);
+				substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
+				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
+			}
+		}
+
+		return substates;
+	}
+
+
 	public <U extends Particle> Iterable<Substate> upSubstates(
 		Class<U> substateClass,
 		Predicate<U> substatePredicate
@@ -578,7 +607,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, int instIndex) {
-		final var instruction = tx.getMicroInstructions().get(instIndex);
+		final var instruction = tx.getInstructions().get(instIndex);
 
 		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
 			upParticle(txn, instruction.getData(), tx, instIndex);
@@ -631,7 +660,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
+			for (int i = 0; i < atom.getInstructions().size(); i++) {
 				this.updateParticle(transaction, atom, i);
 			}
 

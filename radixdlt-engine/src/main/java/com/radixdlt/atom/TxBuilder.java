@@ -40,8 +40,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.List;
@@ -51,44 +49,43 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
-	private static final Logger logger = LogManager.getLogger();
-
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
-	private final Iterable<Substate> remoteUpSubstate;
+	private final SubstateStore remoteSubstate;
 
 	private TxBuilder(
 		RadixAddress address,
 		Set<SubstateId> downVirtualParticles,
-		Iterable<Substate> remoteUpSubstate
+		SubstateStore remoteSubstate
 	) {
 		this.address = address;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
 		this.downParticles = new HashSet<>(downVirtualParticles);
-		this.remoteUpSubstate = remoteUpSubstate;
+		this.remoteSubstate = remoteSubstate;
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address, Iterable<Substate> remoteUpSubstate) {
-		return new TxBuilder(address, Set.of(), remoteUpSubstate);
+	public static TxBuilder newBuilder(RadixAddress address, SubstateStore remoteSubstate) {
+		return new TxBuilder(address, Set.of(), remoteSubstate);
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
-		return new TxBuilder(address, Set.of(), List.of());
+		return new TxBuilder(address, Set.of(), c -> List.of());
 	}
 
-	public static TxBuilder newSystemBuilder(Iterable<Substate> remoteUpSubstate) {
-		return new TxBuilder(null, Set.of(), remoteUpSubstate);
+	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
+		return new TxBuilder(null, Set.of(), remoteSubstate);
 	}
 
 	public static TxBuilder newSystemBuilder() {
-		return new TxBuilder(null, Set.of(), List.of());
+		return new TxBuilder(null, Set.of(), c -> List.of());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -117,9 +114,15 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
+	private Iterable<Substate> remoteSubstates(Class<? extends Particle> particleClass) {
+		return Iterables.filter(
+			remoteSubstate.index(particleClass),
+			s -> !downParticles.contains(s.getId())
+		);
+	}
 
-	private Iterable<Substate> remoteUpSubstates() {
-		return Iterables.filter(remoteUpSubstate, s -> !downParticles.contains(s.getId()));
+	private Stream<Substate> remoteSubstatesStream(Class<? extends Particle> particleClass) {
+		return StreamSupport.stream(remoteSubstates(particleClass).spliterator(), false);
 	}
 
 	private <T extends Particle> Substate findSubstate(
@@ -128,7 +131,7 @@ public final class TxBuilder {
 		int index,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		var substateRead = remoteSubstatesStream(particleClass)
 			.filter(s -> {
 				if (!particleClass.isInstance(s.getParticle())) {
 					return false;
@@ -152,7 +155,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
 			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
+			remoteSubstatesStream(particleClass).map(Substate::getParticle)
 		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -204,14 +207,8 @@ public final class TxBuilder {
 			return localDown.get();
 		}
 
-		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
+		var substateDown = remoteSubstatesStream(particleClass)
+			.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 			.peek(s -> this.down(s.getId()))
 			.map(Substate::getParticle)
 			.map(particleClass::cast)
@@ -727,23 +724,24 @@ public final class TxBuilder {
 
 	public Atom signAndBuildRemoteSubstateOnly(
 		Function<HashCode, ECDSASignature> signer,
-		Consumer<Iterable<Substate>> upSubstateConsumer
+		Consumer<SubstateStore> upSubstateConsumer
 	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
-		upSubstateConsumer.accept(remoteUpSubstates());
+		upSubstateConsumer.accept(this::remoteSubstates);
 		return atom;
 	}
 
 	public Atom signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
-		Consumer<Iterable<Substate>> upSubstateConsumer
+		Consumer<SubstateStore> upSubstateConsumer
 	) {
 		var atom = lowLevelBuilder.signAndBuild(signer);
-		var upSubstate = Iterables.concat(
+		SubstateStore upSubstate = c -> Iterables.concat(
 			lowLevelBuilder.localUpSubstate().stream()
+				.filter(l -> c.isInstance(l.getParticle()))
 				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
 				.collect(Collectors.toList()),
-			remoteUpSubstates()
+			remoteSubstates(c)
 		);
 		upSubstateConsumer.accept(upSubstate);
 		return atom;

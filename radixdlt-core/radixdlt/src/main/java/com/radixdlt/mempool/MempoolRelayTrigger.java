@@ -13,25 +13,34 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
- *
  */
 
 package com.radixdlt.mempool;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public final class MempoolRelayTrigger {
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+	private MempoolRelayTrigger() {
+	}
 
-/**
- * The amount of time in milliseconds to throttle mempool additions
- */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface MempoolThrottleMs {
+	public static MempoolRelayTrigger create() {
+		return new MempoolRelayTrigger();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{}", this.getClass().getSimpleName());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		return o != null && getClass() == o.getClass();
+	}
+
+	@Override
+	public int hashCode() {
+		return 1;
+	}
 }
