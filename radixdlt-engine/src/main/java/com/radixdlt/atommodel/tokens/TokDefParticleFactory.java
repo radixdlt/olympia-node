@@ -21,7 +21,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -29,16 +28,16 @@ import java.util.Objects;
  */
 public final class TokDefParticleFactory {
 	private final RRI tokDefRef;
-	private final Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions;
 	private final UInt256 granularity;
+	private final boolean isMutable;
 
 	private TokDefParticleFactory(
 		RRI tokDefRef,
-		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions,
+		boolean isMutable,
 		UInt256 granularity
 	) {
 		this.tokDefRef = tokDefRef;
-		this.tokenPermissions = tokenPermissions;
+		this.isMutable = isMutable;
 		this.granularity = granularity;
 	}
 
@@ -46,8 +45,7 @@ public final class TokDefParticleFactory {
 		return new UnallocatedTokensParticle(
 			amount,
 			granularity,
-			tokDefRef,
-			tokenPermissions
+			tokDefRef
 		);
 	}
 
@@ -57,7 +55,7 @@ public final class TokDefParticleFactory {
 			amount,
 			granularity,
 			tokDefRef,
-			tokenPermissions
+			isMutable
 		);
 	}
 
@@ -68,23 +66,22 @@ public final class TokDefParticleFactory {
 			amount,
 			granularity,
 			tokDefRef,
-			tokenPermissions
+			isMutable
 		);
 	}
 
 	public static TokDefParticleFactory create(
 		RRI tokDefRef,
-		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions,
+		boolean isMutable,
 		UInt256 granularity
 	) {
 		Objects.requireNonNull(tokDefRef);
-		Objects.requireNonNull(tokenPermissions);
 		Objects.requireNonNull(granularity);
 
-		return new TokDefParticleFactory(tokDefRef, tokenPermissions, granularity);
+		return new TokDefParticleFactory(tokDefRef, isMutable, granularity);
 	}
 
 	public static TokDefParticleFactory createFrom(TransferrableTokensParticle particle) {
-		return new TokDefParticleFactory(particle.getTokDefRef(), particle.getTokenPermissions(), particle.getGranularity());
+		return new TokDefParticleFactory(particle.getTokDefRef(), particle.isMutable(), particle.getGranularity());
 	}
 }

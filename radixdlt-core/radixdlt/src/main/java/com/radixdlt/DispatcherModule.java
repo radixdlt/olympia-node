@@ -69,7 +69,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -223,7 +223,7 @@ public class DispatcherModule extends AbstractModule {
 		final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { };
 		Multibinder.newSetBinder(binder(), committedUpdateKey);
 		Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
-		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedCommandsAndProof>>() { };
+		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedTxnsAndProof>>() { };
 		Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
 		final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() { };
@@ -351,12 +351,12 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<VerifiedCommandsAndProof> syncUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<VerifiedCommandsAndProof>> processors,
+	private EventDispatcher<VerifiedTxnsAndProof> syncUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<VerifiedTxnsAndProof>> processors,
 		SystemCounters systemCounters
 	) {
 		return commit -> {
-			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getCommands().size());
+			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getTxns().size());
 			processors.forEach(e -> e.process(commit));
 		};
 	}

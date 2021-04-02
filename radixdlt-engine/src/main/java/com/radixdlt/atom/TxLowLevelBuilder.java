@@ -26,20 +26,23 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
  * Low level builder class for transactions
  */
 public final class TxLowLevelBuilder {
-	private String message;
 	private final List<REInstruction> instructions = new ArrayList<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
+	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 
 	TxLowLevelBuilder() {
 	}
@@ -49,8 +52,18 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder message(String message) {
-		this.message = message;
+		var bytes = message.getBytes(StandardCharsets.UTF_8);
+		this.instructions.add(
+			REInstruction.create(
+				REInstruction.REOp.MSG.opCode(),
+				bytes
+			)
+		);
 		return this;
+	}
+
+	public Set<SubstateId> remoteDownSubstate() {
+		return remoteDownSubstate;
 	}
 
 	public List<LocalSubstate> localUpSubstate() {
@@ -59,7 +72,7 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		var particleDson = SubstateSerializer.serialize(particle);
 		var nextIndex = this.instructions.size();
 		this.instructions.add(
 			REInstruction.create(
@@ -73,13 +86,14 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
+		var particleBytes = SubstateSerializer.serialize(particle);
 		this.instructions.add(
 			REInstruction.create(
 				REInstruction.REOp.VDOWN.opCode(),
-				particleDson
+				particleBytes
 			)
 		);
+		remoteDownSubstate.add(SubstateId.ofVirtualSubstate(particleBytes));
 		return this;
 	}
 
@@ -95,6 +109,7 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
 		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
+		remoteDownSubstate.add(substateId);
 		return this;
 	}
 
@@ -107,21 +122,35 @@ public final class TxLowLevelBuilder {
 		return Atom.computeHashToSign(instructions);
 	}
 
-	public Atom buildWithoutSignature() {
+	private static Txn atomToTxn(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return Txn.create(payload);
+	}
+
+	public Atom buildAtomWithoutSignature() {
 		return Atom.create(
 			instructions,
-			null,
-			this.message
+			null
 		);
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
+	public Txn buildWithoutSignature() {
+		var atom = Atom.create(
+			instructions,
+			null
+		);
+
+		return atomToTxn(atom);
+	}
+
+	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
 		var hashToSign = computeHashToSign();
 		var signature = signatureProvider.apply(hashToSign);
-		return Atom.create(
+		var atom = Atom.create(
 			instructions,
-			signature,
-			this.message
+			signature
 		);
+
+		return atomToTxn(atom);
 	}
 }

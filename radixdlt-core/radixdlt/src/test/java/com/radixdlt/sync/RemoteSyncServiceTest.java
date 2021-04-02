@@ -41,7 +41,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -104,11 +104,11 @@ public class RemoteSyncServiceTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getHeader()).thenReturn(header);
 		BFTNode node = mock(BFTNode.class);
-		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
+		VerifiedTxnsAndProof verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
 		LedgerProof verifiedHeader = mock(LedgerProof.class);
 		when(verifiedHeader.toDto()).thenReturn(header);
-		when(verifiedCommandsAndProof.getProof()).thenReturn(verifiedHeader);
-		when(reader.getNextCommittedCommands(any())).thenReturn(verifiedCommandsAndProof);
+		when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
+		when(reader.getNextCommittedCommands(any())).thenReturn(verifiedTxnsAndProof);
 		processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
 		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
 	}

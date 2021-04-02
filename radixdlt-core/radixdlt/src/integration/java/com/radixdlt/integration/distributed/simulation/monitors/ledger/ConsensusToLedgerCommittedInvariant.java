@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.monitors.ledger;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
@@ -43,22 +43,22 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		BehaviorSubject<Set<Command>> committedCommands = BehaviorSubject.create();
-		Disposable d = network.ledgerUpdates().<Set<Command>>scan(
+		BehaviorSubject<Set<Txn>> committedTxns = BehaviorSubject.create();
+		Disposable d = network.ledgerUpdates().<Set<Txn>>scan(
 			new HashSet<>(),
 			(set, next) -> {
-				set.addAll(next.getSecond().getNewCommands());
+				set.addAll(next.getSecond().getNewTxns());
 				return set;
 			}
-		).subscribe(committedCommands::onNext);
+		).subscribe(committedTxns::onNext);
 
 		return Observable.<BFTCommittedUpdate>create(emitter ->
 			commits.addListener((node, event) -> emitter.onNext(event), BFTCommittedUpdate.class)
 		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)))
-			.flatMapMaybe(cmd -> committedCommands
-				.filter(cmdSet -> cmdSet.contains(cmd.command()))
+			.flatMapMaybe(txn -> committedTxns
+				.filter(cmdSet -> cmdSet.contains(txn.txn()))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()

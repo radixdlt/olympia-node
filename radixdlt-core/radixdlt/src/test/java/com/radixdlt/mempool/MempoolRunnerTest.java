@@ -26,7 +26,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -93,10 +93,10 @@ public final class MempoolRunnerTest {
 		Guice.createInjector(createModule()).injectMembers(this);
 		moduleRunners.get("mempool").start();
 
-		MempoolAdd mempoolAdd = MempoolAdd.create(new Command(new byte[0]));
+		MempoolAdd mempoolAdd = MempoolAdd.create(Txn.create(new byte[0]));
 		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
 		verify(stateComputer, timeout(1000).times(1))
-			.addToMempool(eq(mempoolAdd.getCommands().get(0)), isNull());
+			.addToMempool(eq(mempoolAdd.getTxns().get(0)), isNull());
 	}
 }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -131,68 +132,6 @@ public class AtomEventObserver {
 	}
 
 	private void partialSync(EUID destination, SearchCursor cursor, final Set<AID> processedAtomIds) {
-		long count = 0;
-		try {
-			while (cursor != null) {
-				if (cancelled.get()) {
-					return;
-				}
-
-				if (count >= 10000) {
-					delaySync(destination, cursor, processedAtomIds);
-					return;
-				}
-
-				List<Pair<Atom, AID>> atoms = new ArrayList<>();
-				while (cursor != null && atoms.size() < BATCH_SIZE) {
-					AID aid = cursor.get();
-					processedAtomIds.add(aid);
-					Atom atom = store.get(aid).orElseThrow();
-					if (atom.bootUpInstructions()
-						.map(i -> {
-							try {
-								return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-							} catch (DeserializeException e) {
-								throw new IllegalStateException();
-							}
-						})
-						.flatMap(p -> p.getDestinations().stream())
-						.anyMatch(destination::equals)
-					) {
-						atoms.add(Pair.of(atom, aid));
-					}
-					cursor = cursor.next();
-				}
-				if (!atoms.isEmpty()) {
-					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(a -> new AtomEventDto(AtomEventType.STORE, a.getFirst(), a.getSecond()));
-					onNext.accept(new ObservedAtomEvents(false, atomEvents));
-					count += atoms.size();
-				}
-			}
-
-			// Send received and queued events
-			final List<AtomEventDto> atomEvents;
-			synchronized (syncLock) {
-				this.synced = true;
-				// Note that we filter here so that the filter executes with lock held
-				atomEvents = this.waitingQueue.stream()
-					.filter(aed -> {
-							var aid = aed.getAtomId();
-							return !processedAtomIds.contains(aid)
-								|| aed.getType() == AtomEventType.DELETE;
-						}
-					)
-					.collect(Collectors.toList());
-				this.waitingQueue.clear();
-			}
-			this.onNext.accept(new ObservedAtomEvents(false, atomEvents.stream()));
-
-			// Send HEAD flag once we've read through all atoms
-			onNext.accept(new ObservedAtomEvents(true, Stream.empty()));
-		} catch (Exception e) {
-			log.error("While handling atom event update", e);
-		}
 	}
 
 	private void delaySync(EUID destination, SearchCursor cursor, Set<AID> processedAtomIds) {

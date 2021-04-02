@@ -18,9 +18,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -30,42 +28,41 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-@SerializerId2("radix.particles.staked_tokens")
+@SerializerId2("s_t")
 public final class StakedTokensParticle extends Particle {
-	@JsonProperty("delegateAddress")
+	@JsonProperty("d")
 	@DsonOutput(Output.ALL)
 	private RadixAddress delegateAddress;
 
-	@JsonProperty("address")
+	@JsonProperty("o")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenDefinitionReference")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("amount")
+	@JsonProperty("a")
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
 
-	private Map<TokenTransition, TokenPermission> tokenPermissions;
+	@JsonProperty("m")
+	@DsonOutput(Output.ALL)
+	private boolean isMutable;
 
 	public StakedTokensParticle() {
 		super();
-		this.tokenPermissions = ImmutableMap.of();
 	}
 
 	public StakedTokensParticle(
@@ -74,14 +71,14 @@ public final class StakedTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
-		Map<TokenTransition, TokenPermission> tokenPermissions
+		boolean isMutable
 	) {
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+		this.isMutable = isMutable;
 	}
 
 	@Override
@@ -109,34 +106,8 @@ public final class StakedTokensParticle extends Particle {
 		return this.granularity;
 	}
 
-	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
-		return tokenPermissions;
-	}
-
-	public TokenPermission getTokenPermission(TokenTransition transition) {
-		return tokenPermissions.get(transition);
-	}
-
-	@JsonProperty("permissions")
-	@DsonOutput(Output.ALL)
-	private Map<String, String> getJsonPermissions() {
-		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
-	}
-
-	@JsonProperty("permissions")
-	private void setJsonPermissions(Map<String, String> permissions) {
-		if (permissions != null) {
-			this.tokenPermissions = permissions.entrySet().stream()
-				.collect(
-					Collectors.toMap(
-						e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
-						e -> TokenPermission.valueOf(e.getValue().toUpperCase())
-					)
-				);
-		} else {
-			throw new IllegalArgumentException("Permissions cannot be null.");
-		}
+	public boolean isMutable() {
+		return isMutable;
 	}
 
 	@Override
@@ -169,7 +140,7 @@ public final class StakedTokensParticle extends Particle {
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 			&& Objects.equals(granularity, that.granularity)
 			&& Objects.equals(amount, that.amount)
-			&& Objects.equals(tokenPermissions, that.tokenPermissions);
+			&& isMutable == that.isMutable;
 	}
 
 	@Override
@@ -180,7 +151,7 @@ public final class StakedTokensParticle extends Particle {
 			tokenDefinitionReference,
 			granularity,
 			amount,
-			tokenPermissions
+			isMutable
 		);
 	}
 }

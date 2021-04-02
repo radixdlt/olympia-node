@@ -18,12 +18,9 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
-import java.util.Arrays;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Utility values and methods for tokens.
@@ -195,19 +192,6 @@ public final class TokenDefinitionUtils {
 		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
 		if (descriptionResult.isError()) {
 			return descriptionResult;
-		}
-
-		if (tokenDefParticle.getTokenPermissions() == null
-			|| tokenDefParticle.getTokenPermissions().size() != TokenTransition.values().length) {
-			return Result.error(
-				String.format(
-					"Permissions: must be set for all token transitions (%s)",
-					Arrays.stream(TokenTransition.values())
-						.map(TokenTransition::name)
-						.map(String::toLowerCase)
-						.collect(Collectors.joining(", "))
-				)
-			);
 		}
 
 		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());

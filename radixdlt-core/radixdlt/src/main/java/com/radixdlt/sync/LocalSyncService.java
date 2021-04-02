@@ -354,7 +354,7 @@ public final class LocalSyncService {
 		}
 
 		// TODO: check validity of response
-		if (syncResponse.getCommandsAndProof().getCommands().isEmpty()) {
+		if (syncResponse.getTxnsAndProof().getTxns().isEmpty()) {
 			log.warn("LocalSync: Received empty sync response from {}", sender);
 			// didn't receive any commands, remove from candidate peers and processSync
 			return this.processSync(
@@ -383,11 +383,11 @@ public final class LocalSyncService {
 	}
 
 	private boolean verifyResponse(SyncResponse syncResponse) {
-		final var commandsAndProof = syncResponse.getCommandsAndProof();
+		final var commandsAndProof = syncResponse.getTxnsAndProof();
 		final var start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
 		final var end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
-		final var hashes = commandsAndProof.getCommands().stream()
-			.map(cmd -> cmd.getId().asHashCode())
+		final var hashes = commandsAndProof.getTxns().stream()
+			.map(txn -> txn.getId().asHashCode())
 			.collect(ImmutableList.toImmutableList());
 
 		return this.validatorSetVerifier.verifyValidatorSet(syncResponse)

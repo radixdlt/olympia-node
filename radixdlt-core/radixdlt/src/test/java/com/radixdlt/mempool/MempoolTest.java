@@ -17,18 +17,16 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -37,16 +35,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -69,8 +64,7 @@ public class MempoolTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject @Self private BFTNode self;
-	@Inject @Genesis private List<Atom> genesisAtoms;
-	@Inject private Hasher hasher;
+	@Inject @Genesis private List<Txn> genesisTxns;
 	@Inject private DeterministicProcessor processor;
 	@Inject private DeterministicNetwork network;
 	@Inject private RadixEngineStateComputer stateComputer;
@@ -99,7 +93,7 @@ public class MempoolTest {
 		return peersView.peers().get(0);
 	}
 
-	private static Atom createAtom(ECKeyPair keyPair, int numParticles) {
+	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
@@ -115,16 +109,8 @@ public class MempoolTest {
 		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 
-	private static Command createCommand(ECKeyPair keyPair, int numParticles) {
-		Atom atom = createAtom(keyPair, numParticles);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return new Command(payload);
-	}
-
-	private static Command createCommand(ECKeyPair keyPair) {
-		Atom atom = createAtom(keyPair, 1);
-		final byte[] payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return new Command(payload);
+	private static Txn createTxn(ECKeyPair keyPair) {
+		return createTxn(keyPair, 1);
 	}
 
 	@Test
@@ -132,10 +118,10 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
+		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAdd.create(command));
+		processor.handleMessage(self, MempoolAdd.create(txn));
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -148,10 +134,10 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
+		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command));
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn));
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
@@ -164,10 +150,10 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
+		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(command));
+		processor.handleMessage(self, MempoolAddSuccess.create(txn));
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
@@ -178,10 +164,10 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
+		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(command, getFirstPeer()));
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, getFirstPeer()));
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
@@ -192,8 +178,8 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		var txn = createTxn(keyPair);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
@@ -208,13 +194,13 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		var txn = createTxn(keyPair, 2);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, 1);
-		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(command2);
+		var txn2 = createTxn(keyPair, 1);
+		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(txn2);
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2);
 
 		// Assert
@@ -225,10 +211,10 @@ public class MempoolTest {
 	public void add_bad_command_to_mempool() {
 		// Arrange
 		getInjector().injectMembers(this);
-		final Command command = new Command(new byte[0]);
+		final var txn = Txn.create(new byte[0]);
 
 		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
@@ -240,15 +226,15 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair);
+		var txn = createTxn(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Assert
@@ -260,16 +246,16 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		var txn = createTxn(keyPair, 2);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
 
 		// Act
-		Command command2 = createCommand(keyPair, 1);
+		var txn2 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command2), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
@@ -281,18 +267,18 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command command = createCommand(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(command);
+		var txn = createTxn(keyPair, 2);
+		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(getFirstPeer(), mempoolAdd);
-		Command command2 = createCommand(keyPair, 3);
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(command2));
+		var txn2 = createTxn(keyPair, 3);
+		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn2));
 
 		// Act
-		Command command3 = createCommand(keyPair, 1);
+		var txn3 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisAtoms.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisAtoms.size());
-		var commandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command3), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
+		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
@@ -304,8 +290,8 @@ public class MempoolTest {
 		// Arrange
 		getInjector().injectMembers(this);
 		final var keyPair = ECKeyPair.generateNew();
-		final var command = createCommand(keyPair);
-		final var mempoolAdd = MempoolAdd.create(command);
+		final var txn = createTxn(keyPair);
+		final var mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(self, mempoolAdd);
 		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 

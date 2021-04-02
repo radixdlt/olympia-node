@@ -33,7 +33,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import java.util.Comparator;
 
 /**
@@ -56,7 +56,7 @@ public class LedgerModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
-	private EventProcessor<VerifiedCommandsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
+	private EventProcessor<VerifiedTxnsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
 		return stateComputerLedger.syncEventProcessor();
 	}
 

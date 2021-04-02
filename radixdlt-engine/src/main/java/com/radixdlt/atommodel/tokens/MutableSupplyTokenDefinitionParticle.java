@@ -18,7 +18,6 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -27,47 +26,37 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Particle representing a mutable supply token definition
  */
-@SerializerId2("radix.particles.mutable_supply_token_definition")
+@SerializerId2("mut")
 public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionParticle {
-
-	public enum TokenTransition {
-		MINT,
-		BURN
-	}
-
 	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
 	private RRI rri;
 
-	@JsonProperty("name")
+	@JsonProperty("n")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String name;
 
-	@JsonProperty("description")
+	@JsonProperty("d")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String	description;
 
-	@JsonProperty("granularity")
+	@JsonProperty("g")
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("iconUrl")
+	@JsonProperty("i")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String iconUrl;
 
 	@JsonProperty("url")
 	@DsonOutput(Output.ALL)
 	private String url;
-
-	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	MutableSupplyTokenDefinitionParticle() {
 		// Serializer only
@@ -80,8 +69,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		String description,
 		UInt256 granularity,
 		String iconUrl,
-		String url,
-		Map<TokenTransition, TokenPermission> tokenPermissions
+		String url
 	) {
 		this.rri = rri;
 		this.name = name;
@@ -89,11 +77,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-
-		if (this.tokenPermissions.keySet().size() != TokenTransition.values().length) {
-		    throw new IllegalArgumentException("tokenPermissions must be set for all token instance types.");
-		}
 	}
 
 	@Override
@@ -103,19 +86,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 
 	public RRI getRRI() {
 		return this.rri;
-	}
-
-	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
-		return tokenPermissions;
-	}
-
-	public TokenPermission getTokenPermission(TokenTransition transition) {
-		TokenPermission tokenPermission = tokenPermissions.get(transition);
-		if (tokenPermission != null) {
-			return tokenPermission;
-		}
-
-		throw new IllegalArgumentException("No token permission set for " + transition + " in " + tokenPermissions);
 	}
 
 	public String getName() {
@@ -138,38 +108,12 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		return url;
 	}
 
-	@JsonProperty("permissions")
-	@DsonOutput(value = {Output.ALL})
-	private Map<String, String> getJsonPermissions() {
-		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
-	}
-
-	@JsonProperty("permissions")
-	private void setJsonPermissions(Map<String, String> permissions) {
-		if (permissions != null) {
-			this.tokenPermissions = permissions.entrySet().stream()
-				.collect(
-					Collectors.toMap(
-						e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
-						e -> TokenPermission.valueOf(e.getValue().toUpperCase())
-					)
-				);
-		} else {
-			throw new IllegalArgumentException("Permissions cannot be null.");
-		}
-	}
 
 	@Override
 	public String toString() {
-		String tokenPermissionsStr = (tokenPermissions == null)
-			? "null"
-			: tokenPermissions.entrySet().stream()
-				.map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(), e.getValue().toString().toLowerCase()))
-				.collect(Collectors.joining(","));
-		return String.format("%s[(%s:%s:%s), (am%s), (%s)]", getClass().getSimpleName(),
+		return String.format("%s[(%s:%s:%s), (am%s)]", getClass().getSimpleName(),
 			String.valueOf(name), String.valueOf(rri), String.valueOf(granularity),
-			String.valueOf(description), tokenPermissionsStr);
+			String.valueOf(description));
 	}
 
 	@Override
@@ -186,12 +130,11 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(iconUrl, that.iconUrl)
-				&& Objects.equals(url, that.url)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions);
+				&& Objects.equals(url, that.url);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, granularity, iconUrl, url, tokenPermissions);
+		return Objects.hash(rri, name, description, granularity, iconUrl, url);
 	}
 }

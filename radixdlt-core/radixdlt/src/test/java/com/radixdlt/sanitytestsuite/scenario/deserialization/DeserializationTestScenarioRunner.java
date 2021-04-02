@@ -134,7 +134,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
-        assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
 
         assertTrue(argsExtractor.isFinished());
     }
@@ -159,7 +158,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
-        assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
         assertEquals(expected.getRRI(), argsExtractor.asRRI("rri"));
         assertEquals(expected.getName(), argsExtractor.asString("name"));
         assertEquals(expected.getDescription(), argsExtractor.asString("description"));
@@ -176,7 +174,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
-        assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
         assertEquals(expected.getDelegateAddress(), argsExtractor.asRadixAddress("delegateAddress"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
 
@@ -190,7 +187,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getGranularity(), argsExtractor.asUInt256("granularity"));
         assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
-        assertEquals(expected.getTokenPermissions(), argsExtractor.extractTokenPermissions("permissions"));
 
         assertTrue(argsExtractor.isFinished());
     }

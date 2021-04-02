@@ -19,7 +19,6 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
@@ -46,16 +45,18 @@ public final class SubstateId {
 		return AID.from(secondHash.asBytes());
 	}
 
+	public static SubstateId ofSubstate(AID txId, int index) {
+		byte[] id = new byte[AID.BYTES + Integer.BYTES];
+		txId.copyTo(id, 0);
+		Ints.copyTo(index, id, AID.BYTES);
+		return new SubstateId(id);
+	}
+
 	public static SubstateId ofSubstate(Atom atom, int index) {
 		byte[] id = new byte[AID.BYTES + Integer.BYTES];
 		atomIdOf(atom).copyTo(id, 0);
 		Ints.copyTo(index, id, AID.BYTES);
 		return new SubstateId(id);
-	}
-
-	public static SubstateId ofVirtualSubstate(Particle particle) {
-		var dson = DefaultSerialization.getInstance().toDson(particle, DsonOutput.Output.ALL);
-		return ofVirtualSubstate(dson);
 	}
 
 	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
@@ -66,6 +67,10 @@ public final class SubstateId {
 
 	public static SubstateId fromBytes(byte[] bytes) {
 		return new SubstateId(bytes);
+	}
+
+	public boolean isVirtual() {
+		return idBytes.length == 32;
 	}
 
 	public byte[] asBytes() {

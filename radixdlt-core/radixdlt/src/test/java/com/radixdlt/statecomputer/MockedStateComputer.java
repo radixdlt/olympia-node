@@ -19,6 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -26,25 +27,27 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+
+import java.util.List;
 
 public final class MockedStateComputer implements StateComputer {
 	public MockedStateComputer() {
 	}
 
 	@Override
-	public void addToMempool(Command command, BFTNode origin) {
+	public void addToMempool(Txn txn, BFTNode origin) {
 		// No-op
 	}
 
 	@Override
-	public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedCommand> prepared) {
+	public Command getNextCommandFromMempool(ImmutableList<StateComputerLedger.PreparedTxn> prepared) {
 		return null;
 	}
 
 	@Override
 	public StateComputerLedger.StateComputerResult prepare(
-		ImmutableList<StateComputerLedger.PreparedCommand> previous,
+		List<StateComputerLedger.PreparedTxn> previous,
 		Command next,
 		long epoch,
 		View view,
@@ -53,13 +56,13 @@ public final class MockedStateComputer implements StateComputer {
 		return new StateComputerLedger.StateComputerResult(
 			next == null
 				? ImmutableList.of()
-				: ImmutableList.of(new MockPrepared(next)),
+				: ImmutableList.of(new MockPrepared(Txn.create(next.getPayload()))),
 			ImmutableMap.of()
 		);
 	}
 
 	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		// No-op
 	}
 }

@@ -20,12 +20,16 @@ package org.radix.api.services;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
@@ -44,7 +48,7 @@ public class HighLevelApiService {
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis List<Atom> genesisAtoms
+		@Genesis List<Txn> genesisAtoms
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
@@ -75,11 +79,20 @@ public class HighLevelApiService {
 			   : Result.ok(definition);
 	}
 
-	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Atom> genesisAtoms) {
-		return genesisAtoms.stream().flatMap(Atom::bootUpInstructions)
+	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Txn> genesisAtoms) {
+		return genesisAtoms.stream()
+			.map(txn -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Cannot deserialize genesis");
 				}

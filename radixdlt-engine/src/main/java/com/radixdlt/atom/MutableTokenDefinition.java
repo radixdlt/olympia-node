@@ -18,11 +18,8 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,7 +32,6 @@ public final class MutableTokenDefinition {
 	private final String iconUrl;
 	private final String tokenUrl;
 	private final UInt256 granularity;
-	private final Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions;
 
 	public MutableTokenDefinition(
 		String symbol,
@@ -43,8 +39,7 @@ public final class MutableTokenDefinition {
 		String description,
 		String iconUrl,
 		String tokenUrl,
-		UInt256 granularity,
-		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
+		UInt256 granularity
 	) {
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
@@ -52,7 +47,6 @@ public final class MutableTokenDefinition {
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
 		this.granularity = granularity;
-		this.tokenPermissions = Objects.requireNonNull(tokenPermissions);
 	}
 
 	public MutableTokenDefinition(
@@ -60,10 +54,9 @@ public final class MutableTokenDefinition {
 		String name,
 		String description,
 		String iconUrl,
-		String tokenUrl,
-		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
+		String tokenUrl
 	) {
-		this(symbol, name, description, iconUrl, tokenUrl, UInt256.ONE, tokenPermissions);
+		this(symbol, name, description, iconUrl, tokenUrl, UInt256.ONE);
 	}
 
 	public String getSymbol() {
@@ -88,9 +81,5 @@ public final class MutableTokenDefinition {
 
 	public String getTokenUrl() {
 		return tokenUrl;
-	}
-
-	public Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> getTokenPermissions() {
-		return tokenPermissions;
 	}
 }

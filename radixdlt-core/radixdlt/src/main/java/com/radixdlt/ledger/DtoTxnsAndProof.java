@@ -20,13 +20,16 @@ package com.radixdlt.ledger;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -35,14 +38,14 @@ import javax.annotation.concurrent.Immutable;
 // TODO: Add signature and sender
 @Immutable
 @SerializerId2("ledger.commands_and_proof")
-public final class DtoCommandsAndProof {
+public final class DtoTxnsAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("commands")
+	@JsonProperty("txns")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<Command> commands;
+	private final List<byte[]> txns;
 
 	@JsonProperty("head")
 	@DsonOutput(Output.ALL)
@@ -53,18 +56,18 @@ public final class DtoCommandsAndProof {
 	private final DtoLedgerHeaderAndProof tail;
 
 	@JsonCreator
-	public DtoCommandsAndProof(
-		@JsonProperty("commands") ImmutableList<Command> commands,
+	public DtoTxnsAndProof(
+		@JsonProperty("txns") List<byte[]> txns,
 		@JsonProperty("head") DtoLedgerHeaderAndProof head,
 		@JsonProperty("tail") DtoLedgerHeaderAndProof tail
 	) {
-		this.commands = commands == null ? ImmutableList.of() : commands;
+		this.txns = txns == null ? ImmutableList.of() : txns;
 		this.head = Objects.requireNonNull(head);
 		this.tail = Objects.requireNonNull(tail);
 	}
 
-	public ImmutableList<Command> getCommands() {
-		return commands;
+	public List<Txn> getTxns() {
+		return txns.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	public DtoLedgerHeaderAndProof getHead() {
@@ -77,7 +80,7 @@ public final class DtoCommandsAndProof {
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s head=%s tail=%s}", this.getClass().getSimpleName(), commands, head, tail);
+		return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
 	}
 
 	@Override
@@ -88,14 +91,14 @@ public final class DtoCommandsAndProof {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		DtoCommandsAndProof that = (DtoCommandsAndProof) o;
-		return Objects.equals(commands, that.commands)
+		DtoTxnsAndProof that = (DtoTxnsAndProof) o;
+		return Objects.equals(txns, that.txns)
 				&& Objects.equals(head, that.head)
 				&& Objects.equals(tail, that.tail);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, head, tail);
+		return Objects.hash(txns, head, tail);
 	}
 }

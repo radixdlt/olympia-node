@@ -32,5 +32,5 @@ public final class SerializerConstants {
 	public static final Class<SerializerRoot> SERIALIZER_ROOT_ANNOTATION = SerializerRoot.class;
 
 	// The serialized type field name
-	public static final String SERIALIZER_NAME = "serializer";
+	public static final String SERIALIZER_NAME = "sz";
 }

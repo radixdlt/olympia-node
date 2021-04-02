@@ -82,17 +82,17 @@ public class Serializer2Test extends RadixTest {
 	@Test
 	public void checkJsonSerializerInclusion() {
 		String json = serialization.toJson(testObject, Output.HASH);
-		assertTrue(json.contains("serializer"));
+		assertTrue(json.contains("sz"));
 		json = serialization.toJson(testObject, Output.WIRE);
-		assertTrue(json.contains("serializer"));
+		assertTrue(json.contains("sz"));
 	}
 
 	@Test
 	public void checkDsonSerializerInclusion() {
 		byte[] dson = serialization.toDson(testObject, Output.HASH);
-		assertTrue(contains(dson, "serializer".getBytes(StandardCharsets.UTF_8)));
+		assertTrue(contains(dson, "sz".getBytes(StandardCharsets.UTF_8)));
 		dson = serialization.toDson(testObject, Output.WIRE);
-		assertTrue(contains(dson, "serializer".getBytes(StandardCharsets.UTF_8)));
+		assertTrue(contains(dson, "sz".getBytes(StandardCharsets.UTF_8)));
 	}
 
 	private static boolean contains(byte[] haystack, byte[] needle) {

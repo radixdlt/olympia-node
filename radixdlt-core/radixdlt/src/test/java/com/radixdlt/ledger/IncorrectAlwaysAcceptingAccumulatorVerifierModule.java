@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -38,9 +40,9 @@ public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractM
 			}
 
 			@Override
-			public <T> Optional<ImmutableList<T>> verifyAndGetExtension(
+			public <T> Optional<List<T>> verifyAndGetExtension(
 				AccumulatorState current,
-				ImmutableList<T> commands,
+				List<T> commands,
 				Function<T, HashCode> hashCodeMapper,
 				AccumulatorState tail
 			) {

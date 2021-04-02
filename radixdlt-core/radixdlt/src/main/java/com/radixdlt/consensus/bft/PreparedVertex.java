@@ -20,9 +20,9 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -36,19 +36,19 @@ public final class PreparedVertex {
 
 	private final LedgerHeader ledgerHeader;
 
-	private final ImmutableList<PreparedCommand> preparedCommands;
-	private final ImmutableMap<Command, Exception> commandExceptions;
+	private final ImmutableList<PreparedTxn> preparedTxns;
+	private final ImmutableMap<Txn, Exception> commandExceptions;
 
 	PreparedVertex(
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
-		ImmutableList<PreparedCommand> preparedCommands,
-		ImmutableMap<Command, Exception> commandExceptions,
+		ImmutableList<PreparedTxn> preparedTxns,
+		ImmutableMap<Txn, Exception> commandExceptions,
 		long timeOfExecution
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-		this.preparedCommands = Objects.requireNonNull(preparedCommands);
+		this.preparedTxns = Objects.requireNonNull(preparedTxns);
 		this.commandExceptions = Objects.requireNonNull(commandExceptions);
 		this.timeOfExecution = timeOfExecution;
 	}
@@ -69,16 +69,16 @@ public final class PreparedVertex {
 		return vertex.getView();
 	}
 
-	public Stream<PreparedCommand> successfulCommands() {
-		return preparedCommands.stream();
+	public Stream<PreparedTxn> successfulCommands() {
+		return preparedTxns.stream();
 	}
 
-	public Stream<Pair<Command, Exception>> errorCommands() {
+	public Stream<Pair<Txn, Exception>> errorCommands() {
 		return commandExceptions.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
 	}
 
-	public Stream<Command> getCommands() {
-		return Stream.concat(successfulCommands().map(PreparedCommand::command), errorCommands().map(Pair::getFirst));
+	public Stream<Txn> getTxns() {
+		return Stream.concat(successfulCommands().map(PreparedTxn::txn), errorCommands().map(Pair::getFirst));
 	}
 
 	/**

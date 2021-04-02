@@ -41,10 +41,7 @@ public class LocalRadixIdentity implements RadixIdentity {
 
 	@Override
 	public Single<Atom> addSignature(TxLowLevelBuilder builder) {
-		return Single.create(emitter -> {
-			final Atom signedAtom = builder.signAndBuild(this.myKey::sign);
-			emitter.onSuccess(signedAtom);
-		});
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

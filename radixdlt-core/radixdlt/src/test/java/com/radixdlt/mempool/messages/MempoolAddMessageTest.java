@@ -18,11 +18,9 @@
 package com.radixdlt.mempool.messages;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.middleware2.network.MempoolAddMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -30,19 +28,14 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 public class MempoolAddMessageTest {
-	private Command command;
 	private MempoolAddMessage message;
 
 	@Before
 	public void setUp() {
-		this.command = mock(Command.class);
-		this.message = new MempoolAddMessage(12345, ImmutableList.of(command));
-	}
-
-	@Test
-	public void testGetters() {
-		assertThat(message.commands().get(0)).isEqualTo(command);
+		this.message = new MempoolAddMessage(12345, List.of(Txn.create(new byte[0])));
 	}
 
 	@Test

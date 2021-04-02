@@ -31,7 +31,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
-import com.radixdlt.client.application.translate.data.AtomToPlaintextMessageMapper;
 import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.ApplicationState;
@@ -43,14 +42,12 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.TokenFeeProcessor;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
@@ -61,8 +58,6 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
-import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
-import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -132,14 +127,9 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
-			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
-			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
-			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
-			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToPlaintextMessageMapper());
+			.addReducer(new StakedTokenBalanceReducer());
 	}
 
 	private final RadixIdentity identity;
@@ -985,10 +975,6 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getNetwork();
 	}
 
-	public BigDecimal getMinimumRequiredFee(TxLowLevelBuilder atomWithoutFees) {
-		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
-	}
-
 	/**
 	 * @deprecated The Java client access library has been deprecated
 	 */
@@ -1114,16 +1100,6 @@ public class RadixApplicationAPI {
 
 		public <T extends ApplicationState> RadixApplicationAPIBuilder addReducer(ParticleReducer<T> reducer) {
 			this.reducers.add(reducer);
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder feeProcessor(FeeProcessor feeProcessor) {
-			this.feeProcessorBuilder = radixUniverse -> feeProcessor;
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder defaultFeeProcessor() {
-			this.feeProcessorBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
 			return this;
 		}
 

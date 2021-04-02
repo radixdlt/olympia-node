@@ -15,18 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.integration.distributed.simulation.application;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.atom.Txn;
 
-public class DtoCommandsAndProofTest {
-    @Test
-    public void equalsContract() {
-        EqualsVerifier.forClass(DtoCommandsAndProof.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
-    }
+/**
+ * Generator of commands for consensus processing
+ */
+public interface TxnGenerator {
+	Txn nextTxn();
 }

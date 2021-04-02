@@ -18,9 +18,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -29,22 +27,20 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-@SerializerId2("radix.particles.transferrable_tokens")
+@SerializerId2("t")
 public final class TransferrableTokensParticle extends Particle {
 	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("rri")
+	@JsonProperty("r")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
 
@@ -56,11 +52,12 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
-	private Map<TokenTransition, TokenPermission> tokenPermissions;
+	@JsonProperty("m")
+	@DsonOutput(Output.ALL)
+	private boolean isMutable;
 
 	private TransferrableTokensParticle() {
 		super();
-		this.tokenPermissions = ImmutableMap.of();
 	}
 
 	public TransferrableTokensParticle(
@@ -68,18 +65,22 @@ public final class TransferrableTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
-		Map<TokenTransition, TokenPermission> tokenPermissions
+		boolean isMutable
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
-		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+		this.isMutable = isMutable;
 	}
 
 	@Override
 	public Set<EUID> getDestinations() {
 		return ImmutableSet.of(this.address.euid());
+	}
+
+	public boolean isMutable() {
+		return isMutable;
 	}
 
 	public RadixAddress getAddress() {
@@ -94,44 +95,15 @@ public final class TransferrableTokensParticle extends Particle {
 		return this.granularity;
 	}
 
-	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
-		return tokenPermissions;
-	}
-
-	public TokenPermission getTokenPermission(TokenTransition transition) {
-		return tokenPermissions.get(transition);
-	}
-
-	@JsonProperty("p")
-	@DsonOutput(Output.ALL)
-	private Map<String, String> getJsonPermissions() {
-		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
-	}
-
-	@JsonProperty("p")
-	private void setJsonPermissions(Map<String, String> permissions) {
-		if (permissions != null) {
-			this.tokenPermissions = permissions.entrySet().stream()
-				.collect(
-					Collectors.toMap(
-						e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
-						e -> TokenPermission.valueOf(e.getValue().toUpperCase())
-					)
-				);
-		} else {
-			throw new IllegalArgumentException("Permissions cannot be null.");
-		}
-	}
-
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
-			String.valueOf(tokenDefinitionReference),
-			String.valueOf(amount),
-			String.valueOf(granularity),
-			String.valueOf(address)
+			tokenDefinitionReference,
+			amount,
+			granularity,
+			address,
+			isMutable
 		);
 	}
 
@@ -152,11 +124,11 @@ public final class TransferrableTokensParticle extends Particle {
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 			&& Objects.equals(granularity, that.granularity)
 			&& Objects.equals(amount, that.amount)
-			&& Objects.equals(tokenPermissions, that.tokenPermissions);
+			&& isMutable == that.isMutable;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenDefinitionReference, granularity, amount, tokenPermissions);
+		return Objects.hash(address, tokenDefinitionReference, granularity, amount, isMutable);
 	}
 }

@@ -23,21 +23,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
@@ -79,10 +74,6 @@ public class TokenDefinitionRecord {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean mutable;
 
-	@JsonProperty("permissions")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final Map<String, TokenPermission> tokenPermissions;
-
 	private TokenDefinitionRecord(
 		String name,
 		RRI rri,
@@ -91,8 +82,7 @@ public class TokenDefinitionRecord {
 		UInt256 currentSupply,
 		String iconUrl,
 		String url,
-		boolean mutable,
-		Map<String, TokenPermission> tokenPermissions
+		boolean mutable
 	) {
 		this.name = name;
 		this.rri = rri;
@@ -102,7 +92,6 @@ public class TokenDefinitionRecord {
 		this.iconUrl = iconUrl;
 		this.url = url;
 		this.mutable = mutable;
-		this.tokenPermissions = tokenPermissions;
 	}
 
 	@JsonCreator
@@ -114,8 +103,7 @@ public class TokenDefinitionRecord {
 		@JsonProperty("currentSupply") UInt256 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
 		@JsonProperty("url") String url,
-		@JsonProperty("mutable") boolean mutable,
-		@JsonProperty("permissions") Map<String, TokenPermission> tokenPermissions
+		@JsonProperty("mutable") boolean mutable
 	) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(rri);
@@ -124,8 +112,7 @@ public class TokenDefinitionRecord {
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			name, rri, description, granularity, currentSupply, iconUrl, url, mutable,
-			Optional.ofNullable(tokenPermissions).orElse(Map.of())
+			name, rri, description, granularity, currentSupply, iconUrl, url, mutable
 		);
 	}
 
@@ -136,10 +123,9 @@ public class TokenDefinitionRecord {
 		UInt256 granularity,
 		String iconUrl,
 		String url,
-		boolean mutable,
-		Map<String, TokenPermission> tokenPermissions
+		boolean mutable
 	) {
-		return create(name, rri, description, granularity, UInt256.ZERO, iconUrl, url, mutable, tokenPermissions);
+		return create(name, rri, description, granularity, UInt256.ZERO, iconUrl, url, mutable);
 	}
 
 	public static Result<TokenDefinitionRecord> from(Particle particle) {
@@ -161,8 +147,7 @@ public class TokenDefinitionRecord {
 			supply,
 			definition.getIconUrl(),
 			definition.getUrl(),
-			true,
-			convertPermissions(definition.getTokenPermissions())
+			true
 		);
 	}
 
@@ -175,8 +160,7 @@ public class TokenDefinitionRecord {
 			definition.getSupply(),
 			definition.getIconUrl(),
 			definition.getUrl(),
-			false,
-			Map.of()
+			false
 		);
 	}
 
@@ -189,8 +173,7 @@ public class TokenDefinitionRecord {
 			.put("currentSupply", currentSupply)
 			.put("iconUrl", iconUrl)
 			.put("url", url)
-			.put("mutable", mutable)
-			.put("tokenPermissions", tokenPermissions);
+			.put("mutable", mutable);
 	}
 
 	public String toKey() {
@@ -214,7 +197,7 @@ public class TokenDefinitionRecord {
 			return this;
 		}
 
-		return create(name, rri, description, granularity, supply, iconUrl, url, true, tokenPermissions);
+		return create(name, rri, description, granularity, supply, iconUrl, url, true);
 	}
 
 	@Override
@@ -233,8 +216,7 @@ public class TokenDefinitionRecord {
 				&& granularity.equals(that.granularity)
 				&& currentSupply.equals(that.currentSupply)
 				&& iconUrl.equals(that.iconUrl)
-				&& url.equals(that.url)
-				&& tokenPermissions.equals(that.tokenPermissions);
+				&& url.equals(that.url);
 		}
 
 		return false;
@@ -242,16 +224,6 @@ public class TokenDefinitionRecord {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(name, rri, description, granularity, currentSupply, iconUrl, url, mutable, tokenPermissions);
-	}
-
-	private static Map<String, TokenPermission> convertPermissions(
-		Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> tokenPermissions
-	) {
-		return tokenPermissions
-			.entrySet()
-			.stream()
-			.map(e -> Pair.of(e.getKey().name(), e.getValue()))
-			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		return Objects.hash(name, rri, description, granularity, currentSupply, iconUrl, url, mutable);
 	}
 }

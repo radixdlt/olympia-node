@@ -22,6 +22,8 @@ package com.radixdlt.constraintmachine;
  * TODO: add numeric codes
  */
 public enum CMErrorCode {
+	TOO_MANY_MESSAGES("Too many messages"),
+	DATA_TOO_LARGE("Data is too large"),
 	HOOK_ERROR("Hook error"),
 	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),

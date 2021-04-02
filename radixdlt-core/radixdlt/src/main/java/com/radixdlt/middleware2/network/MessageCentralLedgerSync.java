@@ -126,7 +126,7 @@ public final class MessageCentralLedgerSync {
 	private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
-				final var msg = new SyncResponseMessage(this.magic, syncResponse.getCommandsAndProof());
+				final var msg = new SyncResponseMessage(this.magic, syncResponse.getTxnsAndProof());
 				this.messageCentral.send(peer, msg);
 			}
 		});

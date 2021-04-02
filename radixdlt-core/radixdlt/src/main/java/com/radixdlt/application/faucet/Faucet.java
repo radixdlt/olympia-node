@@ -23,7 +23,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
@@ -33,7 +32,6 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
@@ -95,11 +93,9 @@ public final class Faucet {
 		);
 
 		builderMaybe.ifPresent(builder -> {
-			var atom = builder.signAndBuild(hashSigner::sign);
-			var payload = serialization.toDson(atom, DsonOutput.Output.ALL);
-			var command = new Command(payload);
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
-			request.onSuccess(command.getId());
+			var txn = builder.signAndBuild(hashSigner::sign);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
+			request.onSuccess(txn.getId());
 		});
 	}
 

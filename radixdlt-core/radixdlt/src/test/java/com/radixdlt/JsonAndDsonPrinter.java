@@ -17,7 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -25,7 +24,6 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -49,10 +47,6 @@ public class JsonAndDsonPrinter {
     private static final RadixAddress ADDRESS2 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
     private static final RadixAddress ADDRESS3 = RadixAddress.from("JHJTc1vUVA3JbjKCDtNu3x7tPaeB8fFcfnYp26s3hzos3s351To");
     private static final RRI TOKEN_RRI = RRI.of(ADDRESS, "COOKIE");
-    private static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> TOKEN_PERMISSIONS = ImmutableMap.of(
-            MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-            MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-    );
 
     private Serialization instance = DefaultSerialization.getInstance();
 
@@ -97,44 +91,42 @@ public class JsonAndDsonPrinter {
         final var particle = new UnallocatedTokensParticle(
                 UInt256.TEN,
                 UInt256.ONE,
-                TOKEN_RRI,
-                TOKEN_PERMISSIONS
+                TOKEN_RRI
         );
         logParticle(particle);
     }
 
     private void logTransferableTokensParticle() {
         final var particle = new TransferrableTokensParticle(
-                ADDRESS,
-                UInt256.EIGHT,
-                UInt256.ONE,
-                TOKEN_RRI,
-                TOKEN_PERMISSIONS
+            ADDRESS,
+            UInt256.EIGHT,
+            UInt256.ONE,
+            TOKEN_RRI,
+            true
         );
         logParticle(particle);
     }
 
     private void logStakedTokensParticle() {
         final var particle = new StakedTokensParticle(
-                ADDRESS,
-                ADDRESS,
-                UInt256.EIGHT,
-                UInt256.ONE,
-                TOKEN_RRI,
-                TOKEN_PERMISSIONS
+            ADDRESS,
+            ADDRESS,
+            UInt256.EIGHT,
+            UInt256.ONE,
+            TOKEN_RRI,
+            true
         );
         logParticle(particle);
     }
 
     private void logMutableSupplyTokenDefinitionParticle() {
         final var particle = new MutableSupplyTokenDefinitionParticle(
-                TOKEN_RRI,
-                "TEST",
-                "description",
-                UInt256.ONE,
-                "http://somewhere.com/icon.jpg",
-                "http://somewhere.com",
-                TOKEN_PERMISSIONS
+            TOKEN_RRI,
+            "TEST",
+            "description",
+            UInt256.ONE,
+            "http://somewhere.com/icon.jpg",
+            "http://somewhere.com"
         );
         logParticle(particle);
     }

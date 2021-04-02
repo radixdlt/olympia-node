@@ -24,7 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -34,7 +34,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -55,7 +55,7 @@ import java.util.stream.LongStream;
 public class MockedSyncServiceModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
+	private final ConcurrentMap<Long, Txn> sharedCommittedCommands;
 	private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
 	public MockedSyncServiceModule() {
@@ -91,9 +91,9 @@ public class MockedSyncServiceModule extends AbstractModule {
 		return update -> {
 			final LedgerProof headerAndProof = update.getTail();
 			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
-			long firstVersion = stateVersion - update.getNewCommands().size() + 1;
-			for (int i = 0; i < update.getNewCommands().size(); i++) {
-				sharedCommittedCommands.put(firstVersion + i, update.getNewCommands().get(i));
+			long firstVersion = stateVersion - update.getNewTxns().size() + 1;
+			for (int i = 0; i < update.getNewTxns().size(); i++) {
+				sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
 			}
 
 			if (update.getTail().isEndOfEpoch()) {
@@ -107,17 +107,18 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Singleton
 	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
+		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return new EventProcessor<>() {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
+
 			private void syncTo(LedgerProof proof) {
 				var commands = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, proof));
+				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, proof));
 				currentVersion = proof.getStateVersion();
 				if (proof.isEndOfEpoch()) {
 					currentEpoch = proof.getEpoch() + 1;
@@ -138,11 +139,11 @@ public class MockedSyncServiceModule extends AbstractModule {
 				syncTo(request.getTarget());
 
 				final long targetVersion = request.getTarget().getStateVersion();
-				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
+				ImmutableList<Txn> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 
-				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, request.getTarget()));
+				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, request.getTarget()));
 				currentVersion = targetVersion;
 				currentEpoch = request.getTarget().getEpoch();
 			}

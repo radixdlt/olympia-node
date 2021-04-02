@@ -20,9 +20,8 @@ package com.radixdlt.atom;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -31,8 +30,10 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.io.ByteArrayOutputStream;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,58 +45,40 @@ import javax.annotation.concurrent.Immutable;
  * An atom to be processed by radix engine
  */
 @Immutable
-@SerializerId2("radix.atom")
+@SerializerId2("atom")
 public final class Atom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("m")
+	@JsonProperty("i")
 	@DsonOutput({Output.ALL})
-	private final String message;
+	private final List<byte[]> instructions;
 
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
 	private final ECDSASignature signature;
 
-	private final List<REInstruction> instructions;
-	private final HashCode witness;
-
 	@JsonCreator
 	private Atom(
-		@JsonProperty("m") String message,
-		@JsonProperty("i") ImmutableList<byte[]> byteInstructions,
+		@JsonProperty("i") List<byte[]> byteInstructions,
 		@JsonProperty("s") ECDSASignature signature
 	) {
-		this(
-			byteInstructions == null ? ImmutableList.of() : toInstructions(byteInstructions),
-			signature,
-			message,
-			computeHashToSignFromBytes(byteInstructions == null ? Stream.empty() : byteInstructions.stream())
-		);
-	}
-
-	private Atom(
-		List<REInstruction> instructions,
-		ECDSASignature signature,
-		String message,
-		HashCode witness
-	) {
-		this.message = message;
-		this.instructions = Objects.requireNonNull(instructions);
+		this.instructions = byteInstructions;
 		this.signature = signature;
-		this.witness = witness;
 	}
 
 	static Atom create(
 		List<REInstruction> instructions,
-		ECDSASignature signature,
-		String message
+		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature, message, computeHashToSign(instructions));
+		return new Atom(serializedInstructions(instructions).collect(Collectors.toList()), signature);
 	}
 
-	// FIXME: need to include message
+	public HashCode computeHashToSign() {
+		return computeHashToSignFromBytes(getInstructions().stream());
+	}
+
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
 		instructions.forEach(outputStream::writeBytes);
@@ -107,12 +90,6 @@ public final class Atom {
 		return computeHashToSignFromBytes(serializedInstructions(instructions));
 	}
 
-	@JsonProperty("i")
-	@DsonOutput(Output.ALL)
-	private ImmutableList<byte[]> getSerializerInstructions() {
-		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
-	}
-
 	public Optional<ECDSASignature> getSignature() {
 		return Optional.ofNullable(this.signature);
 	}
@@ -122,40 +99,13 @@ public final class Atom {
 			.flatMap(i -> Stream.of(new byte[] {i.getMicroOp().opCode()}, i.getData()));
 	}
 
-	private static ImmutableList<REInstruction> toInstructions(ImmutableList<byte[]> bytesList) {
-		Objects.requireNonNull(bytesList);
-		Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
-
-		Iterator<byte[]> bytesIterator = bytesList.iterator();
-		while (bytesIterator.hasNext()) {
-			byte[] bytes = bytesIterator.next();
-			byte[] dataBytes = bytesIterator.next();
-			var instruction = REInstruction.create(bytes[0], dataBytes);
-			instructionsBuilder.add(instruction);
-		}
-
-		return instructionsBuilder.build();
-	}
-
-	public List<REInstruction> getInstructions() {
-		return instructions;
-	}
-
-	public Stream<REInstruction> bootUpInstructions() {
-		return instructions.stream().filter(i -> i.getMicroOp() == REInstruction.REOp.UP);
-	}
-
-	public HashCode getWitness() {
-		return witness;
-	}
-
-	public String getMessage() {
-		return this.message;
+	public List<byte[]> getInstructions() {
+		return this.instructions == null ? List.of() : this.instructions;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(witness);
+		return Objects.hash(signature, instructions);
 	}
 
 	@Override
@@ -165,15 +115,19 @@ public final class Atom {
 		}
 
 		Atom other = (Atom) o;
-		return Objects.equals(this.witness, other.witness);
+		var thisDson = DefaultSerialization.getInstance().toDson(this, Output.ALL);
+		var otherDson = DefaultSerialization.getInstance().toDson(other, Output.ALL);
+		return Arrays.equals(thisDson, otherDson);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s {witness=%s}", this.getClass().getSimpleName(), this.witness);
+		return String.format("%s {id=%s}", this.getClass().getSimpleName(),
+			Hex.toHexString(DefaultSerialization.getInstance().toDson(this, Output.ALL))
+		);
 	}
 
 	public String toInstructionsString() {
-		return this.instructions.stream().map(i -> i + "\n").collect(Collectors.joining());
+		return this.instructions.stream().map(i -> Hex.toHexString(i) + "\n").collect(Collectors.joining());
 	}
 }

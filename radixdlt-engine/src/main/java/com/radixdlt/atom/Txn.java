@@ -13,50 +13,56 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.atom;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
+
 import java.util.Objects;
 
-/**
- * Message indicating that a list of commands should be relayed to peers.
- */
-public final class MempoolRelayCommands {
-	private final ImmutableList<Txn> txns;
+public final class Txn {
+	private final byte[] payload;
+	private final AID id;
 
-	private MempoolRelayCommands(ImmutableList<Txn> txns) {
-		this.txns = txns;
+	private Txn(byte[] payload) {
+		this.payload = Objects.requireNonNull(payload);
+		var firstHash = HashUtils.sha256(payload);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		this.id = AID.from(secondHash.asBytes());
 	}
 
-	public static MempoolRelayCommands create(ImmutableList<Txn> txns) {
-		Objects.requireNonNull(txns);
-		return new MempoolRelayCommands(txns);
+	public static Txn create(byte[] payload) {
+		return new Txn(payload);
 	}
 
-	public ImmutableList<Txn> getTxns() {
-		return txns;
+	public AID getId() {
+		return id;
+	}
+
+	public byte[] getPayload() {
+		return payload;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txns);
+		return Objects.hash(id);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof MempoolRelayCommands)) {
+		if (!(o instanceof Txn)) {
 			return false;
 		}
 
-		MempoolRelayCommands other = (MempoolRelayCommands) o;
-		return Objects.equals(this.txns, other.txns);
+		Txn other = (Txn) o;
+		return Objects.equals(this.id, other.id);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{txns=%s}", this.getClass().getSimpleName(), this.txns);
+		return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
 	}
 }

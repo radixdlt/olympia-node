@@ -19,13 +19,14 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.google.common.hash.HashCode;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -90,8 +91,8 @@ public final class VerifiedVertex {
 
 	public interface PreparedVertexBuilder {
 		PreparedVertex andCommands(
-			ImmutableList<PreparedCommand> preparedCommands,
-			ImmutableMap<Command, Exception> commandExceptions
+			ImmutableList<PreparedTxn> preparedTxns,
+			ImmutableMap<Txn, Exception> txnExceptions
 		);
 	}
 

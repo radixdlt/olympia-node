@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 
 import java.util.Objects;
 
@@ -26,17 +26,17 @@ import java.util.Objects;
  */
 public final class SyncResponse {
 
-	private final DtoCommandsAndProof commandsAndProof;
+	private final DtoTxnsAndProof commandsAndProof;
 
-	public static SyncResponse create(DtoCommandsAndProof commandsAndProof) {
+	public static SyncResponse create(DtoTxnsAndProof commandsAndProof) {
 		return new SyncResponse(commandsAndProof);
 	}
 
-	private SyncResponse(DtoCommandsAndProof commandsAndProof) {
+	private SyncResponse(DtoTxnsAndProof commandsAndProof) {
 		this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
 	}
 
-	public DtoCommandsAndProof getCommandsAndProof() {
+	public DtoTxnsAndProof getTxnsAndProof() {
 		return commandsAndProof;
 	}
 

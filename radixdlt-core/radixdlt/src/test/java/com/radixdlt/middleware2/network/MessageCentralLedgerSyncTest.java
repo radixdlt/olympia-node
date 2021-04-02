@@ -36,7 +36,7 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
@@ -122,11 +122,11 @@ public class MessageCentralLedgerSyncTest {
 		TestSubscriber<RemoteEvent<SyncResponse>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		final var peer = createPeer();
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		DtoCommandsAndProof commands = mock(DtoCommandsAndProof.class);
+		DtoTxnsAndProof commands = mock(DtoTxnsAndProof.class);
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageCentral.send(peer, syncResponseMessage);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(resp -> resp.getEvent().getCommandsAndProof().equals(commands));
+		testObserver.assertValue(resp -> resp.getEvent().getTxnsAndProof().equals(commands));
 	}
 
 	@Test
