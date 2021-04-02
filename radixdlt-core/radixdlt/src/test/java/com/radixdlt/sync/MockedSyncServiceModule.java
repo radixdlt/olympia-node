@@ -45,11 +45,16 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
 
 public class MockedSyncServiceModule extends AbstractModule {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
 	private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
@@ -92,6 +97,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			}
 
 			if (update.getTail().isEndOfEpoch()) {
+				logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
 				sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
 			}
 		};
@@ -107,22 +113,25 @@ public class MockedSyncServiceModule extends AbstractModule {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
-			private void syncTo(LedgerProof headerAndProof) {
-				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, headerAndProof.getStateVersion() + 1)
+			private void syncTo(LedgerProof proof) {
+				var commands = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, headerAndProof));
-				currentVersion = headerAndProof.getStateVersion();
-				if (headerAndProof.isEndOfEpoch()) {
-					currentEpoch = headerAndProof.getEpoch() + 1;
+				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, proof));
+				currentVersion = proof.getStateVersion();
+				if (proof.isEndOfEpoch()) {
+					currentEpoch = proof.getEpoch() + 1;
 				} else {
-					currentEpoch = headerAndProof.getEpoch();
+					currentEpoch = proof.getEpoch();
 				}
 			}
 
 			@Override
 			public void process(LocalSyncRequest request) {
-				while (currentEpoch != request.getTarget().getEpoch()) {
+				while (currentEpoch < request.getTarget().getEpoch()) {
+					if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
+						throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
+					}
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}
 
