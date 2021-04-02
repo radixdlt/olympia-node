@@ -54,7 +54,12 @@ public class TCPTransportControlImplTest {
 	public void setUp() {
 		config = new TCPConfiguration() {
 			@Override
-			public int networkPort(int defaultValue) {
+			public int listenPort(int defaultValue) {
+				return 0;
+			}
+
+			@Override
+			public int broadcastPort(int defaultValue) {
 				return 0;
 			}
 

@@ -157,7 +157,7 @@ public class NettyTCPTransportTest {
 	private NettyTCPTransport createTransport(String host, int port) {
 		TCPConfiguration config = new TCPConfiguration() {
 			@Override
-			public int networkPort(int defaultValue) {
+			public int listenPort(int defaultValue) {
 				return port;
 			}
 

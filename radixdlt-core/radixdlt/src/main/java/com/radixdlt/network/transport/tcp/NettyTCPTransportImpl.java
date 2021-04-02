@@ -114,7 +114,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		String portString = localMetadata.get(TCPConstants.METADATA_PORT);
 		final int port;
 		if (portString == null) {
-			port = config.networkPort(DEFAULT_PORT);
+			port = config.listenPort(DEFAULT_PORT);
 		} else {
 			port = Integer.parseInt(portString);
 		}
