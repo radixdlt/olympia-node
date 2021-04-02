@@ -161,6 +161,11 @@ public class NettyTCPTransportRTTTest {
 			}
 
 			@Override
+			public int broadcastPort(int defaultValue) {
+				return port;
+			}
+
+			@Override
 			public String networkAddress(String defaultValue) {
 				return host;
 			}
