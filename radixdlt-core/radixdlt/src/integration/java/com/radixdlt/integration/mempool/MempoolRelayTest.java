@@ -240,7 +240,7 @@ public class MempoolRelayTest {
 	@Test
 	public void full_node_should_relay_mempool_messages_so_they_can_be_processed_by_validator() {
 		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
-		processForCount(40000);
+		processForCount(60000);
 		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
 		processForCount(10000);
 
