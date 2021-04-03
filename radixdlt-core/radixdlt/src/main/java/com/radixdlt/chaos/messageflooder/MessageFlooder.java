@@ -18,8 +18,8 @@
 package com.radixdlt.chaos.messageflooder;
 
 import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -36,6 +36,8 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import com.radixdlt.ledger.AccumulatorState;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -75,8 +77,7 @@ public final class MessageFlooder {
 		VoteData voteData = new VoteData(header, header, header);
 		TimestampedECDSASignatures signatures = new TimestampedECDSASignatures();
 		QuorumCertificate qc = new QuorumCertificate(voteData, signatures);
-		Command command = new Command(new byte[commandSize]);
-		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, View.of(3), command);
+		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, View.of(3), List.of(Txn.create(new byte[commandSize])));
 
 		return new Proposal(vertex, qc, self, new ECDSASignature(), Optional.empty());
 	}

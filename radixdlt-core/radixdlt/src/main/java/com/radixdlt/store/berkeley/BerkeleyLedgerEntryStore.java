@@ -22,12 +22,12 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -186,8 +186,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeAtom(Transaction tx, ParsedTransaction parsedTransaction) {
-		withTime(() -> doStore(parsedTransaction, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public void storeAtom(Transaction tx, RETxn radixEngineTxn) {
+		withTime(() -> doStore(radixEngineTxn, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -585,7 +585,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void doStore(
-		ParsedTransaction parsedTransaction,
+		RETxn radixEngineTxn,
 		com.sleepycat.je.Transaction transaction
 	) {
 		final long stateVersion;
@@ -600,9 +600,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
-			var aid = parsedTransaction.getTxn().getId();
+			var aid = radixEngineTxn.getTxn().getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(parsedTransaction.getTxn().getPayload());
+			var offset = atomLog.write(radixEngineTxn.getTxn().getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -613,12 +613,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			parsedTransaction.instructions().forEach(i -> this.updateParticle(transaction, i));
+			radixEngineTxn.instructions().forEach(i -> this.updateParticle(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom:\n" + parsedTransaction.getAtom().toInstructionsString(), e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + radixEngineTxn, e);
 		}
 	}
 
@@ -635,7 +635,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public VerifiedTxnsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
 
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		final var startTime = System.nanoTime();

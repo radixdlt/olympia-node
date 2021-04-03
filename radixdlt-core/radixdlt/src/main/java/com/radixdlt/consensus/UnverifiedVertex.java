@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -26,7 +27,9 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -46,23 +49,23 @@ public final class UnverifiedVertex {
 
 	private final View view;
 
-	@JsonProperty("command")
+	@JsonProperty("txns")
 	@DsonOutput(Output.ALL)
-	private final Command command;
+	private final List<byte[]> txns;
 
 	@JsonCreator
 	UnverifiedVertex(
 		@JsonProperty("qc") QuorumCertificate qc,
 		@JsonProperty("view") Long viewId,
-		@JsonProperty("command") Command command
+		@JsonProperty("txns") List<byte[]> txns
 	) {
-		this(qc, viewId != null ? View.of(viewId) : null, command);
+		this(qc, viewId != null ? View.of(viewId) : null, txns);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, Command command) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
-		this.command = command;
+		this.txns = txns;
 	}
 
 	public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
@@ -72,14 +75,14 @@ public final class UnverifiedVertex {
 		return new UnverifiedVertex(qc, View.genesis(), null);
 	}
 
-	public static UnverifiedVertex createVertex(QuorumCertificate qc, View view, Command command) {
+	public static UnverifiedVertex createVertex(QuorumCertificate qc, View view, List<Txn> txns) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new UnverifiedVertex(qc, view, command);
+		return new UnverifiedVertex(qc, view, txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
 	}
 
 	public QuorumCertificate getQC() {
@@ -90,8 +93,8 @@ public final class UnverifiedVertex {
 		return view;
 	}
 
-	public Command getCommand() {
-		return command;
+	public List<Txn> getTxns() {
+		return txns == null ? List.of() : txns.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	@JsonProperty("view")
@@ -102,12 +105,12 @@ public final class UnverifiedVertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, cmd=%s}", view, qc, command);
+		return String.format("Vertex{view=%s, qc=%s, txns=%s}", view, qc, txns);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, command);
+		return Objects.hash(qc, view, txns);
 	}
 
 	@Override
@@ -118,7 +121,7 @@ public final class UnverifiedVertex {
 
 		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
-			&& Objects.equals(v.command, this.command)
+			&& Objects.equals(v.getTxns(), this.getTxns())
 			&& Objects.equals(v.qc, this.qc);
 	}
 }

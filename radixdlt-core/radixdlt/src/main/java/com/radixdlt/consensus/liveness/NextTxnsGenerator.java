@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Generates a new proposed command for a given view
  */
-public interface NextCommandGenerator {
+public interface NextTxnsGenerator {
 
 	/**
 	 * Generates a valid command for the given view
@@ -35,5 +35,5 @@ public interface NextCommandGenerator {
 	 * @param prepared vertices with commands which have already been prepared
 	 * @return new command to execute next
 	 */
-	Command generateNextCommand(View view, List<PreparedVertex> prepared);
+	List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared);
 }

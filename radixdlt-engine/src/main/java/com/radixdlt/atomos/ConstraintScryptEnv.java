@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -103,7 +102,6 @@ final class ConstraintScryptEnv implements SysCalls {
 		// TODO Cleanup: This redefinition illustrates that there's some abstraction issues here, but
 		// TODO Cleanup: will leave for now since it's not critical and we anticipate a bigger refactor.
 		ParticleDefinition.Builder<T> particleRedefinition = ParticleDefinition.<T>builder()
-			.addressMapper(particleDefinition.getAddressMapper())
 			.rriMapper(particleDefinition.getRriMapper())
 			.virtualizeUp(particleDefinition.getVirtualizeSpin())
 			.staticValidation(p -> {
@@ -116,21 +114,6 @@ final class ConstraintScryptEnv implements SysCalls {
 					final Result rriAddressResult = addressChecker.apply(rri.getAddress());
 					if (rriAddressResult.isError()) {
 						return rriAddressResult;
-					}
-				}
-
-				final Set<RadixAddress> addresses = particleDefinition.getAddressMapper().apply(p);
-				// FIXME: Removed this check for the system particle. Reinstate once paths implemented.
-				/*
-				if (addresses.isEmpty()) {
-					return Result.error("address required");
-				}
-				*/
-
-				for (RadixAddress address : addresses) {
-					Result addressResult = addressChecker.apply(address);
-					if (addressResult.isError()) {
-						return addressResult;
 					}
 				}
 

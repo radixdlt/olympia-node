@@ -18,15 +18,12 @@
 package com.radixdlt.atommodel.unique;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.Set;
 
 @SerializerId2("radix.particles.unique")
 public final class UniqueParticle extends Particle {
@@ -46,11 +43,6 @@ public final class UniqueParticle extends Particle {
 	public UniqueParticle(String name, RadixAddress address) {
 		this.name = Objects.requireNonNull(name);
 		this.address = address;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.address.euid());
 	}
 
 	public RRI getRRI() {

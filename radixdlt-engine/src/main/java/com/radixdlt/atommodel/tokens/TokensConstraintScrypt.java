@@ -61,7 +61,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			MutableSupplyTokenDefinitionParticle.class,
 			ParticleDefinition.<MutableSupplyTokenDefinitionParticle>builder()
-				.singleAddressMapper(p -> p.getRRI().getAddress())
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(MutableSupplyTokenDefinitionParticle::getRRI)
 				.build()
@@ -70,7 +69,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			FixedSupplyTokenDefinitionParticle.class,
 			ParticleDefinition.<FixedSupplyTokenDefinitionParticle>builder()
-				.singleAddressMapper(p -> p.getRRI().getAddress())
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(FixedSupplyTokenDefinitionParticle::getRRI)
 				.build()
@@ -79,7 +77,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			ParticleDefinition.<UnallocatedTokensParticle>builder()
-				.singleAddressMapper(UnallocatedTokensParticle::getAddress)
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(UnallocatedTokensParticle::getTokDefRef)
 				.build()
@@ -88,7 +85,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TransferrableTokensParticle.class,
 			ParticleDefinition.<TransferrableTokensParticle>builder()
-				.singleAddressMapper(TransferrableTokensParticle::getAddress)
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(TransferrableTokensParticle::getTokDefRef)
 				.build()
@@ -97,7 +93,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
-				.addressMapper(StakedTokensParticle::getAddresses)
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(StakedTokensParticle::getTokDefRef)
 				.build()

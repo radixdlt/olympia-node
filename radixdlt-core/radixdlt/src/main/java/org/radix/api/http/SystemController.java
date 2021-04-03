@@ -35,23 +35,19 @@ import io.undertow.server.RoutingHandler;
 
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBodyAsyncAndDefaultResponse;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class SystemController implements Controller {
-	private final AtomsService atomsService;
 	private final SystemService systemService;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final boolean enableTestRoutes;
 
 	@Inject
 	public SystemController(
-		AtomsService atomsService,
 		SystemService systemService,
 		InMemorySystemInfo inMemorySystemInfo,
 		Universe universe
 	) {
-		this.atomsService = atomsService;
 		this.systemService = systemService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.enableTestRoutes = universe.isDevelopment() || universe.isTest();
@@ -61,7 +57,6 @@ public final class SystemController implements Controller {
 	public void configureRoutes(final RoutingHandler handler) {
 		// System routes
 		handler.get("/api/system", this::respondWithLocalSystem);
-		handler.get("/api/system/modules/api/tasks-waiting", this::respondWaitingTaskCount);
 		// keep-alive route
 		handler.get("/api/ping", this::respondWithPong);
 		// BFT routes
@@ -70,7 +65,6 @@ public final class SystemController implements Controller {
 		handler.get("/api/universe", this::respondWithUniverse);
 		// if we are in a development universe, add the dev only routes
 		if (enableTestRoutes) {
-			handler.get("/api/vertices/committed", this::respondWithCommittedVertices);
 			handler.get("/api/vertices/highestqc", this::respondWithHighestQC);
 		}
 	}
@@ -78,11 +72,6 @@ public final class SystemController implements Controller {
 	@VisibleForTesting
 	void respondWithLocalSystem(final HttpServerExchange exchange) {
 		respond(exchange, systemService.getLocalSystem());
-	}
-
-	@VisibleForTesting
-	void respondWaitingTaskCount(final HttpServerExchange exchange) {
-		respond(exchange, jsonObject().put("count", atomsService.getWaitingCount()));
 	}
 
 	@VisibleForTesting
@@ -104,17 +93,6 @@ public final class SystemController implements Controller {
 	@VisibleForTesting
 	void respondWithUniverse(final HttpServerExchange exchange) {
 		respond(exchange, systemService.getUniverse());
-	}
-
-	@VisibleForTesting
-	void respondWithCommittedVertices(final HttpServerExchange exchange) {
-		var array = jsonArray();
-
-		inMemorySystemInfo.getCommittedVertices()
-			.stream()
-			.map(this::mapSingleVertex)
-			.forEachOrdered(array::put);
-		respond(exchange, array);
 	}
 
 	@VisibleForTesting

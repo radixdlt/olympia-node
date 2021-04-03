@@ -239,9 +239,9 @@ public class MempoolRelayTest {
 
 	@Test
 	public void full_node_should_relay_mempool_messages_so_they_can_be_processed_by_validator() {
-		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
-		processForCount(40000);
-		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
+		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
+		processForCount(100000);
+		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
 		processForCount(10000);
 
 		// assert that validators have an empty mempool, but not the full nodes

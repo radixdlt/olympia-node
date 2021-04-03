@@ -49,17 +49,17 @@ public final class DtoTxnsAndProof {
 
 	@JsonProperty("head")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof head;
+	private final DtoLedgerProof head;
 
 	@JsonProperty("tail")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof tail;
+	private final DtoLedgerProof tail;
 
 	@JsonCreator
 	public DtoTxnsAndProof(
 		@JsonProperty("txns") List<byte[]> txns,
-		@JsonProperty("head") DtoLedgerHeaderAndProof head,
-		@JsonProperty("tail") DtoLedgerHeaderAndProof tail
+		@JsonProperty("head") DtoLedgerProof head,
+		@JsonProperty("tail") DtoLedgerProof tail
 	) {
 		this.txns = txns == null ? ImmutableList.of() : txns;
 		this.head = Objects.requireNonNull(head);
@@ -70,11 +70,11 @@ public final class DtoTxnsAndProof {
 		return txns.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
-	public DtoLedgerHeaderAndProof getHead() {
+	public DtoLedgerProof getHead() {
 		return head;
 	}
 
-	public DtoLedgerHeaderAndProof getTail() {
+	public DtoLedgerProof getTail() {
 		return tail;
 	}
 

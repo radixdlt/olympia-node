@@ -156,31 +156,26 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 		// call. During this process we also define where each of these states will "live". In our case we want
 		// the game to be stored in both player's addresses.
 		os.registerParticle(XToMoveParticle.class, ParticleDefinition.<XToMoveParticle>builder()
-			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.IN_PROGRESS))
 			.build()
 		);
 
 		os.registerParticle(OToMoveParticle.class, ParticleDefinition.<OToMoveParticle>builder()
-			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.IN_PROGRESS))
 			.build()
 		);
 
 		os.registerParticle(XWinsParticle.class, ParticleDefinition.<XWinsParticle>builder()
-			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.X_WINS))
 			.build()
 		);
 
 		os.registerParticle(OWinsParticle.class, ParticleDefinition.<OWinsParticle>builder()
-			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.O_WINS))
 			.build()
 		);
 
 		os.registerParticle(DrawParticle.class, ParticleDefinition.<DrawParticle>builder()
-			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.DRAW))
 			.build()
 		);

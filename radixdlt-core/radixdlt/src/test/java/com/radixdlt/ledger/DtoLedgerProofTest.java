@@ -30,8 +30,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DtoLedgerHeaderAndProofTest {
-	private DtoLedgerHeaderAndProof ledgerHeaderAndProof;
+public class DtoLedgerProofTest {
+	private DtoLedgerProof ledgerHeaderAndProof;
 	private BFTHeader opaque0;
 	private BFTHeader opaque1;
 	private long opaque2 = 12345;
@@ -46,7 +46,7 @@ public class DtoLedgerHeaderAndProofTest {
 		this.opaque3 = mock(HashCode.class);
 		this.ledgerHeader = mock(LedgerHeader.class);
 		this.signatures = mock(TimestampedECDSASignatures.class);
-		this.ledgerHeaderAndProof = new DtoLedgerHeaderAndProof(
+		this.ledgerHeaderAndProof = new DtoLedgerProof(
 			opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures
 		);
 	}
@@ -59,7 +59,7 @@ public class DtoLedgerHeaderAndProofTest {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(DtoLedgerHeaderAndProof.class)
+		EqualsVerifier.forClass(DtoLedgerProof.class)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}

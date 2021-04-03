@@ -19,8 +19,8 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -68,7 +68,7 @@ public final class Pacemaker {
 	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
-	private final NextCommandGenerator nextCommandGenerator;
+	private final NextTxnsGenerator nextTxnsGenerator;
 	private final Hasher hasher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
@@ -88,7 +88,7 @@ public final class Pacemaker {
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		NextCommandGenerator nextCommandGenerator,
+		NextTxnsGenerator nextTxnsGenerator,
 		ProposalBroadcaster proposalBroadcaster,
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
@@ -104,7 +104,7 @@ public final class Pacemaker {
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
-		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
+		this.nextTxnsGenerator = Objects.requireNonNull(nextTxnsGenerator);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
@@ -168,18 +168,18 @@ public final class Pacemaker {
 		final HighQC highQC = this.latestViewUpdate.getHighQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
 
-		final Command nextCommand;
+		final List<Txn> nextTxns;
 
 		// Propose null atom in the case that we are at the end of the epoch
 		// TODO: Remove isEndOfEpoch knowledge from consensus
 		if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
-			nextCommand = null;
+			nextTxns = List.of();
 		} else {
 			final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-			nextCommand = nextCommandGenerator.generateNextCommand(view, preparedVertices);
+			nextTxns = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
 		}
 
-		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
+		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextTxns);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		return safetyRules.signProposal(
 			verifiedVertex,
@@ -229,7 +229,7 @@ public final class Pacemaker {
 		}
 
 		final HighQC highQC = this.latestViewUpdate.getHighQC();
-		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, null);
+		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, List.of());
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
 

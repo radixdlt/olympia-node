@@ -19,6 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableSet;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.google.common.hash.HashCode;
@@ -69,7 +70,7 @@ public class PacemakerTest {
 	private VertexStore vertexStore = mock(VertexStore.class);
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
-	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
+	private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
 	private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
@@ -97,7 +98,7 @@ public class PacemakerTest {
 			this.timeoutDispatcher,
 			this.timeoutSender,
 			this.timeoutCalculator,
-			this.nextCommandGenerator,
+			this.nextTxnsGenerator,
 			this.proposalBroadcaster,
 			hasher,
 			voteDispatcher,
@@ -155,7 +156,7 @@ public class PacemakerTest {
 		when(vertexStoreState.getHighQC()).thenReturn(highQC);
 		when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);
 		when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
-		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.createVertex(highestQc, view, null)));
+		when(preparedVertex.getId()).thenReturn(hasher.hash(UnverifiedVertex.createVertex(highestQc, view, List.of())));
 
 		when(this.safetyRules.getLastVote(view)).thenReturn(Optional.empty());
 		when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);

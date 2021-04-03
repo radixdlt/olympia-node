@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.function.BiFunction;
 
@@ -29,7 +29,7 @@ public interface EngineStore<M> extends SubstateStore, CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(Transaction txn, ParsedTransaction parsedTransaction);
+	void storeAtom(Transaction txn, RETxn radixEngineTxn);
 
 	void storeMetadata(Transaction txn, M metadata);
 

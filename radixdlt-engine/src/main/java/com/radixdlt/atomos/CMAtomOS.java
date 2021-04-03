@@ -25,11 +25,9 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.identifiers.RadixAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import java.util.stream.Collectors;
 
 /**
@@ -39,9 +37,6 @@ import java.util.stream.Collectors;
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
 	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
-		.addressMapper(v -> {
-			throw new UnsupportedOperationException("Should not ever call here");
-		})
 		.staticValidation(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
 		})
@@ -49,7 +44,6 @@ public final class CMAtomOS {
 		.build();
 
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
-		.singleAddressMapper(rri -> rri.getRri().getAddress())
 		.staticValidation(rri -> Result.success())
 		.rriMapper(RRIParticle::getRri)
 		.virtualizeUp(v -> true)
@@ -100,17 +94,6 @@ public final class CMAtomOS {
 			final Result staticCheckResult = staticValidation.apply(p);
 			if (staticCheckResult.isError()) {
 				return staticCheckResult;
-			}
-
-			final Function<Particle, Set<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-			final Set<EUID> destinations = mapper.apply(p).stream().map(RadixAddress::euid).collect(Collectors.toSet());
-
-			if (!destinations.containsAll(p.getDestinations())) {
-				return Result.error("Address destinations does not contain all destinations");
-			}
-
-			if (!p.getDestinations().containsAll(destinations)) {
-				return Result.error("Destinations does not contain all Address destinations");
 			}
 
 			return Result.success();

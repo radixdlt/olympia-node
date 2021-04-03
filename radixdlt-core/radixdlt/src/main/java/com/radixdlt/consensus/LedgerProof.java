@@ -26,7 +26,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -124,8 +124,8 @@ public final class LedgerProof {
 		}
 	}
 
-	public DtoLedgerHeaderAndProof toDto() {
-		return new DtoLedgerHeaderAndProof(
+	public DtoLedgerProof toDto() {
+		return new DtoLedgerProof(
 			opaque0,
 			opaque1,
 			opaque2,

@@ -4,11 +4,8 @@ package com.radixdlt.client.core.fungible;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -19,11 +16,6 @@ public class FungibleTransitionMapperTest {
 
 		TestParticle(UInt256 amt) {
 			this.amt = amt;
-		}
-
-		@Override
-		public Set<EUID> getDestinations() {
-			return ImmutableSet.of();
 		}
 
 		UInt256 getAmt() {

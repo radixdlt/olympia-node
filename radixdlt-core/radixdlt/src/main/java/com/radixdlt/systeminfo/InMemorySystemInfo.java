@@ -17,27 +17,19 @@
 
 package com.radixdlt.systeminfo;
 
-import com.google.common.collect.EvictingQueue;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.environment.EventProcessor;
-import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages system information to be consumed by clients such as the api.
  */
 public final class InMemorySystemInfo {
-	private final Queue<VerifiedVertex> vertexRingBuffer;
 	private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
 	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 	private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
@@ -46,7 +38,6 @@ public final class InMemorySystemInfo {
 		if (vertexBufferSize < 0) {
 			throw new IllegalArgumentException("vertexBufferSize must be >= 0 but was " + vertexBufferSize);
 		}
-		this.vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(vertexBufferSize));
 	}
 
 	public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
@@ -63,7 +54,6 @@ public final class InMemorySystemInfo {
 
 	public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
 		return update -> {
-			update.getCommitted().stream().map(PreparedVertex::getVertex).forEach(this.vertexRingBuffer::add);
 			this.highQC.set(update.getVertexStoreState().getHighQC().highestQC());
 		};
 	}
@@ -78,12 +68,5 @@ public final class InMemorySystemInfo {
 
 	public QuorumCertificate getHighestQC() {
 		return this.highQC.get();
-	}
-
-	public List<VerifiedVertex> getCommittedVertices() {
-		List<VerifiedVertex> vertices = Lists.newArrayList();
-		// Use internal iteration for thread safety
-		vertexRingBuffer.forEach(vertices::add);
-		return vertices;
 	}
 }

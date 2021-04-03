@@ -19,7 +19,6 @@ package org.radix.api.http;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import org.radix.api.services.AtomsService;
 import org.radix.api.services.SystemService;
 import org.radix.time.Time;
 
@@ -51,7 +50,6 @@ import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class SystemControllerTest {
-	private final AtomsService atomsService = mock(AtomsService.class);
 	private final SystemService systemService = mock(SystemService.class);
 	private final InMemorySystemInfo inMemorySystemInfo = mock(InMemorySystemInfo.class);
 	private final Universe universe =
@@ -64,7 +62,7 @@ public class SystemControllerTest {
 			.creator(ECKeyPair.generateNew().getPublicKey())
 			.build();
 	private final SystemController systemController =
-		new SystemController(atomsService, systemService, inMemorySystemInfo, universe);
+		new SystemController(systemService, inMemorySystemInfo, universe);
 
 	@Test
 	public void routesAreConfigured() {
@@ -72,11 +70,9 @@ public class SystemControllerTest {
 		systemController.configureRoutes(handler);
 
 		verify(handler).get(eq("/api/system"), any());
-		verify(handler).get(eq("/api/system/modules/api/tasks-waiting"), any());
 		verify(handler).get(eq("/api/ping"), any());
 		verify(handler).put(eq("/api/bft/0"), any());
 		verify(handler).get(eq("/api/universe"), any());
-		verify(handler).get(eq("/api/vertices/committed"), any());
 		verify(handler).get(eq("/api/vertices/highestqc"), any());
 	}
 

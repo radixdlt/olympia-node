@@ -2,7 +2,7 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
@@ -19,7 +19,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public void storeAtom(Transaction txn, ParsedTransaction userTransaction) {
+	public void storeAtom(Transaction txn, RETxn userTransaction) {
 		transientStore.storeAtom(txn, userTransaction);
 	}
 

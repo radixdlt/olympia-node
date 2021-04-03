@@ -21,7 +21,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
@@ -42,7 +42,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
-	public void storeAtom(Transaction txn, ParsedTransaction parsed) {
+	public void storeAtom(Transaction txn, RETxn parsed) {
 		synchronized (lock) {
 			for (var instruction : parsed.instructions()) {
 				storedParticles.put(instruction.getSubstate().getId(), instruction);

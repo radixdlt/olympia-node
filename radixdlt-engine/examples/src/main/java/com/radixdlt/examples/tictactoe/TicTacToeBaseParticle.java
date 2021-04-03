@@ -58,11 +58,6 @@ abstract class TicTacToeBaseParticle extends Particle {
 		this.board = board;
 	}
 
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.xPlayer.euid(), this.oPlayer.euid());
-	}
-
 	public final ImmutableList<TicTacToeSquareValue> getBoard() {
 		return board;
 	}
