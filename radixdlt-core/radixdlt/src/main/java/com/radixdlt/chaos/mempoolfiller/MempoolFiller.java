@@ -138,6 +138,10 @@ public final class MempoolFiller {
 			}
 
 			var particleCount = radixEngine.getComputedState(Integer.class);
+			if (particleCount == 0) {
+				logger.info("Mempool Filler empty balance");
+				return;
+			}
 			final List<Txn> txns = radixEngine.accessSubstateStoreCache(
 				substateStore -> {
 					var list = new ArrayList<Txn>();
