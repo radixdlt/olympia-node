@@ -17,40 +17,47 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.atom.Txn;
+
 import java.util.Objects;
 
 /**
  * An event which signifies that a command has been proposed but which
  * does not pass verification.
  */
-public final class InvalidProposedCommand {
+public final class InvalidProposedTxn {
+    private final Txn txn;
     private final Exception e;
 
-    private InvalidProposedCommand(Exception e) {
+    private InvalidProposedTxn(Txn txn, Exception e) {
+        this.txn = txn;
         this.e = e;
     }
 
-    public static InvalidProposedCommand create(Exception e) {
-        return new InvalidProposedCommand(e);
+    public static InvalidProposedTxn create(Txn txn, Exception e) {
+        Objects.requireNonNull(txn);
+        Objects.requireNonNull(e);
+        return new InvalidProposedTxn(txn, e);
     }
 
     @Override
     public String toString() {
-        return String.format("%s{ex=%s}", this.getClass().getSimpleName(), this.e.toString());
+        return String.format("%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn.getId(), this.e.toString());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(e);
+        return Objects.hash(txn, e);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof InvalidProposedCommand)) {
+        if (!(o instanceof InvalidProposedTxn)) {
             return false;
         }
 
-        InvalidProposedCommand other = (InvalidProposedCommand) o;
-        return Objects.equals(this.e, other.e);
+        InvalidProposedTxn other = (InvalidProposedTxn) o;
+        return Objects.equals(this.e, other.e)
+            && Objects.equals(this.txn, other.txn);
     }
 }

@@ -67,7 +67,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
-	private final EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher;
+	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final EventDispatcher<AtomsCommittedToLedger> committedDispatcher;
 	private final SystemCounters systemCounters;
 
@@ -79,7 +79,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
 		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
-		EventDispatcher<InvalidProposedCommand> invalidProposedCommandEventDispatcher,
+		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
 		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<AtomsCommittedToLedger> committedDispatcher,
 		SystemCounters systemCounters
@@ -213,7 +213,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				parsed = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
 				errorBuilder.put(txn, e);
-				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedCommand.create(e));
+				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(txn, e));
 				return;
 			}
 
@@ -221,7 +221,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			successBuilder.add(radixEngineCommand);
 		});
 	}
-
 
 	@Override
 	public StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp) {

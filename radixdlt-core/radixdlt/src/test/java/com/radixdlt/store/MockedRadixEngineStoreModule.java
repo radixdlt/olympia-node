@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -32,7 +31,6 @@ import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -98,8 +96,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAndBFTProof> engineStore(
-		@Genesis List<Txn> genesisTxns,
-		@Genesis ImmutableList<ECKeyPair> genesisValidatorKeys
+		@Genesis List<Txn> genesisTxns
 	) {
 		var inMemoryEngineStore = new InMemoryEngineStore<LedgerAndBFTProof>();
 		for (var genesisTxn : genesisTxns) {

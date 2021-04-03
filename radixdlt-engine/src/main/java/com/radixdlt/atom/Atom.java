@@ -122,8 +122,8 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return String.format("%s {id=%s}", this.getClass().getSimpleName(),
-			Hex.toHexString(DefaultSerialization.getInstance().toDson(this, Output.ALL))
+		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
+			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
 		);
 	}
 

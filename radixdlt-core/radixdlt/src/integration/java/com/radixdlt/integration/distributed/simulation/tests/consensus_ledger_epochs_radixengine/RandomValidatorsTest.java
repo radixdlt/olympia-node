@@ -29,6 +29,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -49,7 +50,8 @@ public class RandomValidatorsTest {
 			ConsensusMonitors.noTimeouts(),
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands()
 		)
 		.addActor(NodeValidatorRandomRegistrator.class);
 

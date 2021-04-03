@@ -157,7 +157,7 @@ public final class Pacemaker {
 		if (this.self.equals(currentViewProposer)) {
 			Optional<Proposal> proposalMaybe = generateProposal(latestViewUpdate.getCurrentView());
 			proposalMaybe.ifPresent(proposal -> {
-				log.trace("Broadcasting proposal: {}", proposal);
+				log.info("Broadcasting proposal: {}", proposal);
 				this.proposalBroadcaster.broadcastProposal(proposal, this.validatorSet.nodes());
 				this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 			});

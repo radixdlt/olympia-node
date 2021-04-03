@@ -105,7 +105,7 @@ public final class UnverifiedVertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, txns=%s}", view, qc, txns);
+		return String.format("Vertex{view=%s, qc=%s, txns=%s}", view, qc, getTxns());
 	}
 
 	@Override

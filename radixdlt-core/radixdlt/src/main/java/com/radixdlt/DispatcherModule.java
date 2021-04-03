@@ -74,7 +74,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
-import com.radixdlt.statecomputer.InvalidProposedCommand;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.RadixEngineMempoolException;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -152,9 +152,9 @@ public class DispatcherModule extends AbstractModule {
 				true
 			))
 			.in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<InvalidProposedCommand>>() { })
+		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
-				InvalidProposedCommand.class,
+				InvalidProposedTxn.class,
 				v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS,
 				true
 			)).in(Scopes.SINGLETON);
