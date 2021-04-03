@@ -28,6 +28,7 @@ import com.radixdlt.identifiers.AID;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,7 +79,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public Iterable<Substate> index(Class<? extends Particle> substateClass) {
+	public Iterator<Substate> index(Class<? extends Particle> substateClass) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
@@ -89,7 +90,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			}
 		}
 
-		return substates;
+		return substates.iterator();
 	}
 
 	@Override

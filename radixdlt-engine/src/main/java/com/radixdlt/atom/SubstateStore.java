@@ -20,6 +20,8 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
 
+import java.util.Iterator;
+
 public interface SubstateStore {
-	Iterable<Substate> index(Class<? extends Particle> particleClass);
+	Iterator<Substate> index(Class<? extends Particle> particleClass);
 }

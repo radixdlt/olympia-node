@@ -174,7 +174,7 @@ public final class RadixEngine<M> {
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
 			engineStore.index(substateCacheRegister.getParticleClass())
-				.forEach(substate -> {
+				.forEachRemaining(substate -> {
 					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
 					if (substateCacheRegister.getParticlePredicate().test(p)) {
 						cache.bringUp(substate);
@@ -192,7 +192,7 @@ public final class RadixEngine<M> {
 				if (cache == null) {
 					throw new IllegalStateException("Cache for substate type " + c + " does not exist.");
 				}
-				return substateCache.get(c).cache.values();
+				return substateCache.get(c).cache.values().iterator();
 			};
 			return func.apply(substateStore);
 		}

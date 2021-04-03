@@ -67,6 +67,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -450,7 +451,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+	public Iterator<Substate> index(Class<? extends Particle> particleClass) {
 		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
@@ -476,7 +477,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Unable to deserialize substate");
 		}
 
-		return substates;
+		return substates.iterator();
 	}
 
 	public <U extends Particle, V> V reduceUpParticles(

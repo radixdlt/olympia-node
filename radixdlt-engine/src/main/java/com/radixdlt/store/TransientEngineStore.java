@@ -6,6 +6,7 @@ import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -54,7 +55,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+	public Iterator<Substate> index(Class<? extends Particle> particleClass) {
 		throw new UnsupportedOperationException("Transient store should not require up substates.");
 	}
 }

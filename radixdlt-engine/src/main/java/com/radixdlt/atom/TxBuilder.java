@@ -20,6 +20,7 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -39,8 +40,12 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -70,7 +75,7 @@ public final class TxBuilder {
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
-		return new TxBuilder(address, c -> List.of());
+		return new TxBuilder(address, c -> Collections.emptyIterator());
 	}
 
 	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
@@ -78,7 +83,7 @@ public final class TxBuilder {
 	}
 
 	public static TxBuilder newSystemBuilder() {
-		return new TxBuilder(null, c -> List.of());
+		return new TxBuilder(null, c -> Collections.emptyIterator());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -105,15 +110,21 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
-	private Iterable<Substate> remoteSubstates(Class<? extends Particle> particleClass) {
-		return Iterables.filter(
+	private Iterator<Substate> remoteSubstates(Class<? extends Particle> particleClass) {
+		return Iterators.filter(
 			remoteSubstate.index(particleClass),
 			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		);
 	}
 
 	private Stream<Substate> remoteSubstatesStream(Class<? extends Particle> particleClass) {
-		return StreamSupport.stream(remoteSubstates(particleClass).spliterator(), false);
+		return StreamSupport.stream(
+			Spliterators.spliteratorUnknownSize(
+				remoteSubstates(particleClass),
+				Spliterator.ORDERED
+			),
+			 false
+		);
 	}
 
 	private <T extends Particle> Substate findSubstate(
@@ -708,11 +719,11 @@ public final class TxBuilder {
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
 		var txn = lowLevelBuilder.signAndBuild(signer);
-		SubstateStore upSubstate = c -> Iterables.concat(
+		SubstateStore upSubstate = c -> Iterators.concat(
 			lowLevelBuilder.localUpSubstate().stream()
 				.filter(l -> c.isInstance(l.getParticle()))
 				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
-				.collect(Collectors.toList()),
+				.iterator(),
 			remoteSubstates(c)
 		);
 		upSubstateConsumer.accept(upSubstate);
