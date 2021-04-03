@@ -68,7 +68,7 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
                 return prev;
             }
 
-            return prev.add(p.getDelegateAddress().getPublicKey(), p.getAmount());
+            return prev.remove(p.getDelegateAddress().getPublicKey(), p.getAmount());
         };
     }
 }
