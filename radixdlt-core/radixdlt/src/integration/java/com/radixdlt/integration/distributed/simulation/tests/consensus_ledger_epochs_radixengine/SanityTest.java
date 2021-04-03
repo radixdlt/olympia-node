@@ -30,6 +30,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -48,6 +49,7 @@ public class SanityTest {
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands(),
 			ApplicationMonitors.mempoolCommitted()
 		)
 		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());

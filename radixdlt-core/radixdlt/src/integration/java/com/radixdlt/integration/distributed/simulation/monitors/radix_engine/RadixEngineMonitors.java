@@ -26,7 +26,7 @@ import com.radixdlt.integration.distributed.simulation.MonitorKey;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.monitors.EventNeverOccursInvariant;
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
-import com.radixdlt.statecomputer.InvalidProposedCommand;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
 
 /**
  * Monitors which check for radix engine related functionality
@@ -41,7 +41,7 @@ public final class RadixEngineMonitors {
 			@ProvidesIntoMap
 			@MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
 			TestInvariant registeredValidator(NodeEvents nodeEvents) {
-				return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedCommand.class);
+				return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class);
 			}
 		};
 	}

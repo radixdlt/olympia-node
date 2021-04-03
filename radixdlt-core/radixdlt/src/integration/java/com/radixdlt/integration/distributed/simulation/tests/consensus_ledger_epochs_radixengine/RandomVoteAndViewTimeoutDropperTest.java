@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -52,7 +53,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
 			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
+			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands()
 		)
 		.addActor(NodeValidatorRandomRegistrator.class);
 
