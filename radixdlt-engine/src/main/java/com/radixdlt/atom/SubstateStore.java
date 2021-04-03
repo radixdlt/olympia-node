@@ -23,5 +23,36 @@ import com.radixdlt.constraintmachine.Particle;
 import java.util.Iterator;
 
 public interface SubstateStore {
-	Iterator<Substate> index(Class<? extends Particle> particleClass);
+	interface SubstateCursor extends Iterator<Substate> {
+	}
+
+	SubstateCursor index(Class<? extends Particle> particleClass);
+
+	static SubstateStore empty() {
+		return c -> new SubstateCursor() {
+			@Override
+			public boolean hasNext() {
+				return false;
+			}
+
+			@Override
+			public Substate next() {
+				return null;
+			}
+		};
+	}
+
+	static SubstateCursor wrapCursor(Iterator<Substate> i) {
+		return new SubstateCursor() {
+			@Override
+			public boolean hasNext() {
+				return i.hasNext();
+			}
+
+			@Override
+			public Substate next() {
+				return i.next();
+			}
+		};
+	}
 }

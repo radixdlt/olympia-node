@@ -192,7 +192,7 @@ public final class RadixEngine<M> {
 				if (cache == null) {
 					throw new IllegalStateException("Cache for substate type " + c + " does not exist.");
 				}
-				return substateCache.get(c).cache.values().iterator();
+				return SubstateStore.wrapCursor(substateCache.get(c).cache.values().iterator());
 			};
 			return func.apply(substateStore);
 		}
