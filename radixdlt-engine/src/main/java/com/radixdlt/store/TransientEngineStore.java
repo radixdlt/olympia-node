@@ -53,7 +53,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public SubstateCursor index(Class<? extends Particle> particleClass) {
+	public SubstateCursor indexCursor(Class<? extends Particle> particleClass) {
 		throw new UnsupportedOperationException("Transient store should not require up substates.");
 	}
 }

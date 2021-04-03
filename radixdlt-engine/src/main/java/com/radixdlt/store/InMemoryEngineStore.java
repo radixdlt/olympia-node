@@ -78,7 +78,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	}
 
 	@Override
-	public SubstateCursor index(Class<? extends Particle> substateClass) {
+	public SubstateCursor indexCursor(Class<? extends Particle> substateClass) {
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {

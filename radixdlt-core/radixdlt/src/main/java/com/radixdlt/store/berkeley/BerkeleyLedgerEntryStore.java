@@ -451,7 +451,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public SubstateCursor index(Class<? extends Particle> particleClass) {
+	public SubstateCursor indexCursor(Class<? extends Particle> particleClass) {
 		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
@@ -473,6 +473,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
 			}
+			particleCursor.close();
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Unable to deserialize substate");
 		}

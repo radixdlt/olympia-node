@@ -108,7 +108,7 @@ public final class TxBuilder {
 
 	private SubstateStore.SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
 		return SubstateStore.wrapCursor(Iterators.filter(
-			remoteSubstate.index(particleClass),
+			remoteSubstate.indexCursor(particleClass),
 			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		));
 	}
@@ -130,16 +130,18 @@ public final class TxBuilder {
 		int index,
 		String errorMessage
 	) throws TxBuilderException {
-		var cursor = createRemoteSubstateCursor(particleClass);
-		var substateRead = iteratorToStream(cursor)
-			.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-			.skip(index)
-			.findFirst();
-		if (substateRead.isEmpty()) {
-			throw new TxBuilderException(errorMessage);
-		}
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			var substateRead = iteratorToStream(cursor)
+				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+				.skip(index)
+				.findFirst();
 
-		return substateRead.get();
+			if (substateRead.isEmpty()) {
+				throw new TxBuilderException(errorMessage);
+			}
+
+			return substateRead.get();
+		}
 	}
 
 	private <T extends Particle> T find(
@@ -147,20 +149,21 @@ public final class TxBuilder {
 		Predicate<T> particlePredicate,
 		String errorMessage
 	) throws TxBuilderException {
-		var cursor = createRemoteSubstateCursor(particleClass);
-		var substateRead = Streams.concat(
-			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			iteratorToStream(cursor)
-		)
-			.filter(particleClass::isInstance)
-			.map(particleClass::cast)
-			.filter(particlePredicate)
-			.findFirst();
-		if (substateRead.isEmpty()) {
-			throw new TxBuilderException(errorMessage);
-		}
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			var substateRead = Streams.concat(
+				lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
+				iteratorToStream(cursor)
+			)
+				.filter(particleClass::isInstance)
+				.map(particleClass::cast)
+				.filter(particlePredicate)
+				.findFirst();
+			if (substateRead.isEmpty()) {
+				throw new TxBuilderException(errorMessage);
+			}
 
-		return substateRead.get();
+			return substateRead.get();
+		}
 	}
 
 	private <T extends Particle> T down(
@@ -202,26 +205,27 @@ public final class TxBuilder {
 			return localDown.get();
 		}
 
-		var cursor = createRemoteSubstateCursor(particleClass);
-		var substateDown = iteratorToStream(cursor)
-			.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-			.peek(s -> this.down(s.getId()))
-			.map(Substate::getParticle)
-			.map(particleClass::cast)
-			.findFirst()
-			.or(() -> {
-				if (virtualParticle.isPresent()) {
-					var p = virtualParticle.get();
-					this.virtualDown(p);
-				}
-				return virtualParticle;
-			});
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			var substateDown = iteratorToStream(cursor)
+				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+				.peek(s -> this.down(s.getId()))
+				.map(Substate::getParticle)
+				.map(particleClass::cast)
+				.findFirst()
+				.or(() -> {
+					if (virtualParticle.isPresent()) {
+						var p = virtualParticle.get();
+						this.virtualDown(p);
+					}
+					return virtualParticle;
+				});
 
-		if (substateDown.isEmpty()) {
-			throw new TxBuilderException(errorMessage);
+			if (substateDown.isEmpty()) {
+				throw new TxBuilderException(errorMessage);
+			}
+
+			return substateDown.get();
 		}
-
-		return substateDown.get();
 	}
 
 	private interface Mapper<T extends Particle, U extends Particle> {
@@ -714,13 +718,19 @@ public final class TxBuilder {
 	) {
 		var txn = lowLevelBuilder.signAndBuild(signer);
 		SubstateStore upSubstate = c -> new SubstateStore.SubstateCursor() {
+			private SubstateStore.SubstateCursor cursor = createRemoteSubstateCursor(c);
 			private Iterator<Substate> iterator = Iterators.concat(
 				lowLevelBuilder.localUpSubstate().stream()
 					.filter(l -> c.isInstance(l.getParticle()))
 					.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
 					.iterator(),
-				createRemoteSubstateCursor(c)
+				cursor
 			);
+
+			@Override
+			public void close() {
+				cursor.close();
+			}
 
 			@Override
 			public boolean hasNext() {

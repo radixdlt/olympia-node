@@ -173,7 +173,7 @@ public final class RadixEngine<M> {
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			engineStore.index(substateCacheRegister.getParticleClass())
+			engineStore.indexCursor(substateCacheRegister.getParticleClass())
 				.forEachRemaining(substate -> {
 					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
 					if (substateCacheRegister.getParticlePredicate().test(p)) {

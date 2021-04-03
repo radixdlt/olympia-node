@@ -20,16 +20,22 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
 
+import java.io.Closeable;
 import java.util.Iterator;
 
 public interface SubstateStore {
-	interface SubstateCursor extends Iterator<Substate> {
+	interface SubstateCursor extends Iterator<Substate>, Closeable {
+		void close();
 	}
 
-	SubstateCursor index(Class<? extends Particle> particleClass);
+	SubstateCursor indexCursor(Class<? extends Particle> particleClass);
 
 	static SubstateStore empty() {
 		return c -> new SubstateCursor() {
+			@Override
+			public void close() {
+			}
+
 			@Override
 			public boolean hasNext() {
 				return false;
@@ -44,6 +50,10 @@ public interface SubstateStore {
 
 	static SubstateCursor wrapCursor(Iterator<Substate> i) {
 		return new SubstateCursor() {
+			@Override
+			public void close() {
+			}
+
 			@Override
 			public boolean hasNext() {
 				return i.hasNext();
