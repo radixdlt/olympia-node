@@ -53,7 +53,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public SubstateCursor indexCursor(Class<? extends Particle> particleClass) {
-		throw new UnsupportedOperationException("Transient store should not require up substates.");
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+		return SubstateCursor.concat(
+			transientStore.openIndexedCursor(particleClass),
+			() -> SubstateCursor.filter(
+				base.openIndexedCursor(particleClass),
+				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+			)
+		);
 	}
 }

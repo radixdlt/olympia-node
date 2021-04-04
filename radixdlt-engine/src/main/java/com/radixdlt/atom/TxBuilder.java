@@ -19,7 +19,6 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -107,28 +106,10 @@ public final class TxBuilder {
 	}
 
 	private SubstateStore.SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
-		return new SubstateStore.SubstateCursor() {
-			private SubstateStore.SubstateCursor cursor = remoteSubstate.indexCursor(particleClass);
-			private Iterator<Substate> iterator = Iterators.filter(
-				cursor,
-				s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
-			);
-
-			@Override
-			public void close() {
-				cursor.close();
-			}
-
-			@Override
-			public boolean hasNext() {
-				return iterator.hasNext();
-			}
-
-			@Override
-			public Substate next() {
-				return iterator.next();
-			}
-		};
+		return SubstateStore.SubstateCursor.filter(
+			remoteSubstate.openIndexedCursor(particleClass),
+			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
+		);
 	}
 
 	private static <T> Stream<T> iteratorToStream(Iterator<T> iterator) {
@@ -737,27 +718,31 @@ public final class TxBuilder {
 		var txn = lowLevelBuilder.signAndBuild(signer);
 		SubstateStore upSubstate = c -> new SubstateStore.SubstateCursor() {
 			private SubstateStore.SubstateCursor cursor = createRemoteSubstateCursor(c);
-			private Iterator<Substate> iterator = Iterators.concat(
+			private Iterator<Substate> iterator =
 				lowLevelBuilder.localUpSubstate().stream()
 					.filter(l -> c.isInstance(l.getParticle()))
 					.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
-					.iterator(),
-				cursor
-			);
+					.iterator();
 
 			@Override
 			public void close() {
-				cursor.close();
+				if (cursor != null) {
+					cursor.close();
+				}
 			}
 
 			@Override
 			public boolean hasNext() {
-				return iterator.hasNext();
+				return iterator.hasNext() || (cursor.hasNext());
 			}
 
 			@Override
 			public Substate next() {
-				return iterator.next();
+				if (!iterator.hasNext()) {
+					return cursor.next();
+				} else {
+					return iterator.next();
+				}
 			}
 		};
 		upSubstateConsumer.accept(upSubstate);
