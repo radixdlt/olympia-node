@@ -25,7 +25,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
@@ -345,33 +344,33 @@ public final class RadixEngine<M> {
 		try {
 			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		} catch (DeserializeException e) {
-			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize atom", DataPointer.ofAtom());
+			throw new RadixEngineException(txn, List.of(), RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
 		}
 
-		var parsedInstructions = new ArrayList<ParsedInstruction>();
+		var parsedInsts = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
 			dbTransaction,
 			engineStore,
 			atom,
 			permissionLevel,
-			parsedInstructions
+			parsedInsts
 		);
 
 		if (error.isPresent()) {
 			CMError e = error.get();
-			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
+			throw new RadixEngineException(txn, parsedInsts, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e);
 		}
 
-		var parsedTransaction = new RETxn(txn, parsedInstructions);
+		var parsedTransaction = new RETxn(txn, parsedInsts);
 
 		if (checker != null) {
 			Result hookResult = checker.check(txn, permissionLevel, parsedTransaction);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
+					parsedInsts,
 					RadixEngineErrorCode.HOOK_ERROR,
-					"Checker failed: " + hookResult.getErrorMessage(),
-					DataPointer.ofAtom()
+					"Checker failed: " + hookResult.getErrorMessage()
 				);
 			}
 		}

@@ -477,8 +477,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
 				try {
 					var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
+					var substate = Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
 					status = particleCursor.getNextDup(index, substateIdBytes, value, null);
-					return Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
+					return substate;
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Unable to deserialize substate");
 				}

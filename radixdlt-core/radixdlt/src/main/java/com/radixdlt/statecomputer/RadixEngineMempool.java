@@ -24,7 +24,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.RETxn;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
@@ -144,9 +143,9 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 							new RadixEngineMempoolException(
 								new RadixEngineException(
 									toRemove.getRETxn().getTxn(),
+									toRemove.getRETxn().instructions(),
 									RadixEngineErrorCode.CM_ERROR,
-									"Mempool evicted",
-									DataPointer.ofAtom()
+									"Mempool evictedRadixEngineMempool.java"
 								)
 							)
 						));

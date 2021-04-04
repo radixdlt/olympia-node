@@ -19,7 +19,9 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.ParsedInstruction;
+
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -29,27 +31,20 @@ import javax.annotation.Nullable;
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
-	private final DataPointer dp;
+	private final List<ParsedInstruction> parsedInstructions;
 	private final CMError cmError;
 
-	public RadixEngineException(Txn txn, RadixEngineErrorCode errorCode, String message, DataPointer dp) {
-		this(txn, errorCode, message, dp, null);
+	public RadixEngineException(
+		Txn txn, List<ParsedInstruction> parsedInstructions, RadixEngineErrorCode errorCode, String message
+	) {
+		this(txn, parsedInstructions, errorCode, message, null);
 	}
 
-	public RadixEngineException(Txn txn, RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
-		super(message + " " + dp + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
+	public RadixEngineException(Txn txn, List<ParsedInstruction> parsedInstructions, RadixEngineErrorCode errorCode, String message, CMError cmError) {
+		super(message + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
+		this.parsedInstructions = parsedInstructions;
 		this.errorCode = Objects.requireNonNull(errorCode);
-		this.dp = dp;
 		this.cmError = cmError;
-	}
-
-	/**
-	 * Retrieve the data pointer signifying where in the atom
-	 * the exception occurred
-	 * @return the data pointer
-	 */
-	public DataPointer getDataPointer() {
-		return this.dp;
 	}
 
 	/**
