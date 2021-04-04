@@ -40,7 +40,13 @@ public final class RadixEngineException extends Exception {
 		this(txn, parsedInstructions, errorCode, message, null);
 	}
 
-	public RadixEngineException(Txn txn, List<ParsedInstruction> parsedInstructions, RadixEngineErrorCode errorCode, String message, CMError cmError) {
+	public RadixEngineException(
+		Txn txn,
+		List<ParsedInstruction> parsedInstructions,
+		RadixEngineErrorCode errorCode,
+		String message,
+		CMError cmError
+	) {
 		super(message + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
 		this.parsedInstructions = parsedInstructions;
 		this.errorCode = Objects.requireNonNull(errorCode);

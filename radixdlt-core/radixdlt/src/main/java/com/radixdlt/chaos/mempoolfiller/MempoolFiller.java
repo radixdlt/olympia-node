@@ -142,7 +142,7 @@ public final class MempoolFiller {
 				logger.info("Mempool Filler empty balance");
 				return;
 			}
-			final List<Txn> txns = radixEngine.accessSubstateStoreCache(
+			final List<Txn> txns = radixEngine.accessSubstateStore(
 				substateStore -> {
 					var list = new ArrayList<Txn>();
 					var substateHolder = new AtomicReference<>(substateStore);
