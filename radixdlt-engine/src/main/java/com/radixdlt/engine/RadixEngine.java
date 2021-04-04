@@ -17,6 +17,8 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
@@ -106,7 +108,10 @@ public final class RadixEngine<M> {
 
 	private static final class SubstateCache<T extends Particle> {
 		private final Predicate<T> particleCheck;
-		private final HashMap<SubstateId, Substate> cache = new HashMap<>();
+		private final Cache<SubstateId, Substate> cache = CacheBuilder.newBuilder()
+			.maximumSize(1000)
+			.build();
+
 		private final boolean includeInBranches;
 
 		SubstateCache(Predicate<T> particleCheck, boolean includeInBranches) {
@@ -116,7 +121,7 @@ public final class RadixEngine<M> {
 
 		public SubstateCache<T> copy() {
 			var copy = new SubstateCache<>(particleCheck, includeInBranches);
-			copy.cache.putAll(cache);
+			copy.cache.putAll(cache.asMap());
 			return copy;
 		}
 
@@ -132,7 +137,7 @@ public final class RadixEngine<M> {
 		}
 
 		public SubstateCache<T> shutDown(SubstateId substateId) {
-			this.cache.remove(substateId);
+			this.cache.invalidate(substateId);
 			return this;
 		}
 	}
@@ -192,13 +197,13 @@ public final class RadixEngine<M> {
 					return engineStore.openIndexedCursor(c);
 				}
 
-				var cacheIterator = cache.cache.values().iterator();
+				var cacheIterator = cache.cache.asMap().values().iterator();
 
 				return SubstateStore.SubstateCursor.concat(
 					SubstateStore.wrapCursor(cacheIterator),
 					() -> SubstateStore.SubstateCursor.filter(
 						engineStore.openIndexedCursor(c),
-						next -> !cache.cache.containsKey(next.getId())
+						next -> !cache.cache.asMap().containsKey(next.getId())
 					)
 				);
 			};
