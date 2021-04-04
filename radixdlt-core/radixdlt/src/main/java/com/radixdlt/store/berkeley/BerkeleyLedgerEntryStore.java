@@ -456,29 +456,37 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
 
-		// In memory for now
-		// TODO: iterate using cursors
-		final List<Substate> substates = new ArrayList<>();
+		var particleCursor = upParticleDatabase.openCursor(null, null);
+		var index = entry(indexableBytes);
+		var value = entry();
+		var substateIdBytes = entry();
 
-		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
-			var index = entry(indexableBytes);
-			var value = entry();
-			var substateIdBytes = entry();
-			var status = particleCursor.getSearchKey(index, substateIdBytes, value, null);
-			while (status == SUCCESS) {
-				// TODO: Remove memcpy
+		return new SubstateCursor() {
+			private OperationStatus status = particleCursor.getSearchKey(index, substateIdBytes, value, null);
+
+			@Override
+			public void close() {
+				particleCursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public Substate next() {
 				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
-				substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
-				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
+				try {
+					var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
+					status = particleCursor.getNextDup(index, substateIdBytes, value, null);
+					return Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
+				} catch (DeserializeException e) {
+					throw new IllegalStateException("Unable to deserialize substate");
+				}
 			}
-			particleCursor.close();
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Unable to deserialize substate");
-		}
-
-		return SubstateStore.wrapCursor(substates.iterator());
+		};
 	}
 
 	public <U extends Particle, V> V reduceUpParticles(

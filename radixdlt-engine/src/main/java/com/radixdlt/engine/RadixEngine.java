@@ -173,13 +173,14 @@ public final class RadixEngine<M> {
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			engineStore.indexCursor(substateCacheRegister.getParticleClass())
-				.forEachRemaining(substate -> {
+			try (var cursor = engineStore.indexCursor(substateCacheRegister.getParticleClass())) {
+				cursor.forEachRemaining(substate -> {
 					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
 					if (substateCacheRegister.getParticlePredicate().test(p)) {
 						cache.bringUp(substate);
 					}
 				});
+			}
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}

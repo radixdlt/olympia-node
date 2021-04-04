@@ -107,10 +107,28 @@ public final class TxBuilder {
 	}
 
 	private SubstateStore.SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
-		return SubstateStore.wrapCursor(Iterators.filter(
-			remoteSubstate.indexCursor(particleClass),
-			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
-		));
+		return new SubstateStore.SubstateCursor() {
+			private SubstateStore.SubstateCursor cursor = remoteSubstate.indexCursor(particleClass);
+			private Iterator<Substate> iterator = Iterators.filter(
+				cursor,
+				s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
+			);
+
+			@Override
+			public void close() {
+				cursor.close();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return iterator.hasNext();
+			}
+
+			@Override
+			public Substate next() {
+				return iterator.next();
+			}
+		};
 	}
 
 	private static <T> Stream<T> iteratorToStream(Iterator<T> iterator) {
