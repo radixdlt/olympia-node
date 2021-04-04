@@ -18,6 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;

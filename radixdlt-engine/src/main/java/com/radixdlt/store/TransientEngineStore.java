@@ -1,5 +1,6 @@
 package com.radixdlt.store;
 
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;

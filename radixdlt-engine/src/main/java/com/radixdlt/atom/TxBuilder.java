@@ -105,8 +105,8 @@ public final class TxBuilder {
 		lowLevelBuilder.localDown(index);
 	}
 
-	private SubstateStore.SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
-		return SubstateStore.SubstateCursor.filter(
+	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
+		return SubstateCursor.filter(
 			remoteSubstate.openIndexedCursor(particleClass),
 			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
 		);
@@ -716,8 +716,8 @@ public final class TxBuilder {
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
 		var txn = lowLevelBuilder.signAndBuild(signer);
-		SubstateStore upSubstate = c -> new SubstateStore.SubstateCursor() {
-			private SubstateStore.SubstateCursor cursor = createRemoteSubstateCursor(c);
+		SubstateStore upSubstate = c -> new SubstateCursor() {
+			private SubstateCursor cursor = createRemoteSubstateCursor(c);
 			private Iterator<Substate> iterator =
 				lowLevelBuilder.localUpSubstate().stream()
 					.filter(l -> c.isInstance(l.getParticle()))

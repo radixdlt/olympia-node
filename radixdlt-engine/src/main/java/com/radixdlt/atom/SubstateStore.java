@@ -18,70 +18,12 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
 import com.radixdlt.constraintmachine.Particle;
 
-import java.io.Closeable;
-import java.util.Iterator;
-import java.util.function.Supplier;
-
+/**
+ * Store which contains an index into up substates
+ */
 public interface SubstateStore {
-	interface SubstateCursor extends Iterator<Substate>, Closeable {
-		void close();
-
-		static SubstateCursor filter(SubstateCursor cursor, Predicate<Substate> substatePredicate) {
-			var iterator = Iterators.filter(cursor, substatePredicate);
-			return new SubstateCursor() {
-				@Override
-				public void close() {
-					cursor.close();
-				}
-
-				@Override
-				public boolean hasNext() {
-					return iterator.hasNext();
-				}
-
-				@Override
-				public Substate next() {
-					return iterator.next();
-				}
-			};
-		}
-
-		static SubstateCursor concat(SubstateCursor cursor0, Supplier<SubstateCursor> supplier1) {
-			return new SubstateCursor() {
-				private SubstateStore.SubstateCursor cursor1;
-
-				@Override
-				public void close() {
-					cursor0.close();
-					if (cursor1 != null) {
-						cursor1.close();
-					}
-				}
-
-				@Override
-				public boolean hasNext() {
-					return cursor0.hasNext() || (cursor1 != null && cursor1.hasNext());
-				}
-
-				@Override
-				public Substate next() {
-					if (cursor1 != null) {
-						return cursor1.next();
-					} else {
-						var s = cursor0.next();
-						if (!cursor0.hasNext()) {
-							cursor1 = supplier1.get();
-						}
-						return s;
-					}
-				}
-			};
-		}
-	}
 
 	SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass);
 
@@ -99,24 +41,6 @@ public interface SubstateStore {
 			@Override
 			public Substate next() {
 				throw new IllegalStateException();
-			}
-		};
-	}
-
-	static SubstateCursor wrapCursor(Iterator<Substate> i) {
-		return new SubstateCursor() {
-			@Override
-			public void close() {
-			}
-
-			@Override
-			public boolean hasNext() {
-				return i.hasNext();
-			}
-
-			@Override
-			public Substate next() {
-				return i.next();
 			}
 		};
 	}
