@@ -36,6 +36,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.sync.CommittedReader;
 import com.sleepycat.je.Cursor;
+import com.sleepycat.je.SecondaryCursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +68,7 @@ import com.sleepycat.je.SecondaryDatabase;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -448,44 +450,62 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
+	private static class BerkeleySubstateCursor implements SubstateCursor {
+		private final SecondaryDatabase db;
+		private SecondaryCursor cursor;
+		private OperationStatus status;
+
+		private DatabaseEntry index;
+		private DatabaseEntry value = entry();
+		private DatabaseEntry substateIdBytes = entry();
+
+		BerkeleySubstateCursor(SecondaryDatabase db, byte[] indexableBytes) {
+			this.db = db;
+			this.index = entry(indexableBytes);
+		}
+
+		private void open() {
+			this.cursor = db.openCursor(null, null);
+			this.status = cursor.getSearchKey(index, substateIdBytes, value, null);
+		}
+
+		@Override
+		public void close() {
+			cursor.close();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return status == SUCCESS;
+		}
+
+		@Override
+		public Substate next() {
+			if (status != SUCCESS) {
+				throw new NoSuchElementException();
+			}
+
+			byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
+			System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
+			try {
+				var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
+				var substate = Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
+				status = cursor.getNextDup(index, substateIdBytes, value, null);
+				return substate;
+			} catch (DeserializeException e) {
+				throw new IllegalStateException("Unable to deserialize substate");
+			}
+		}
+	}
+
 	@Override
 	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
 		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
-
-		var particleCursor = upParticleDatabase.openCursor(null, null);
-		var index = entry(indexableBytes);
-		var value = entry();
-		var substateIdBytes = entry();
-
-		return new SubstateCursor() {
-			private OperationStatus status = particleCursor.getSearchKey(index, substateIdBytes, value, null);
-
-			@Override
-			public void close() {
-				particleCursor.close();
-			}
-
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public Substate next() {
-				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
-				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				try {
-					var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
-					var substate = Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
-					status = particleCursor.getNextDup(index, substateIdBytes, value, null);
-					return substate;
-				} catch (DeserializeException e) {
-					throw new IllegalStateException("Unable to deserialize substate");
-				}
-			}
-		};
+		var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
+		cursor.open();
+		return cursor;
 	}
 
 	public <U extends Particle, V> V reduceUpParticles(

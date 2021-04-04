@@ -20,6 +20,8 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
 
+import java.util.NoSuchElementException;
+
 /**
  * Store which contains an index into up substates
  */
@@ -40,7 +42,7 @@ public interface SubstateStore {
 
 			@Override
 			public Substate next() {
-				throw new IllegalStateException();
+				throw new NoSuchElementException();
 			}
 		};
 	}
