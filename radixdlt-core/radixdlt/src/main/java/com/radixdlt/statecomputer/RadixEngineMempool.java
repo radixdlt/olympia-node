@@ -34,7 +34,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolTxn;
+import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -59,12 +59,12 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public final class RadixEngineMempool implements Mempool<RETxn> {
-	private final ConcurrentHashMap<AID, MempoolTxn> data = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<AID, Pair<RETxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
 	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
+	private final EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
 
 	@Inject
 	public RadixEngineMempool(
@@ -105,8 +105,9 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			radixEngine.deleteBranches();
 		}
 
-		var mempoolTxn = MempoolTxn.create(radixEngineTxns.get(0), System.currentTimeMillis(), Optional.empty());
-		this.data.put(txn.getId(), mempoolTxn);
+		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis(), Optional.empty());
+		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
+		this.data.put(txn.getId(), data);
 		for (var instruction : radixEngineTxns.get(0).instructions()) {
 			if (instruction.getSpin() == Spin.DOWN) {
 				var substateId = instruction.getSubstate().getId();
@@ -137,12 +138,12 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				for (var txnId : txnIds) {
 					var toRemove = data.remove(txnId);
 					// TODO: Cleanup
-					if (toRemove != null && !committedIds.contains(toRemove.getRETxn().getTxn().getId())) {
-						removed.add(Pair.of(toRemove.getRETxn().getTxn(),
+					if (toRemove != null && !committedIds.contains(toRemove.getFirst().getTxn().getId())) {
+						removed.add(Pair.of(toRemove.getFirst().getTxn(),
 							new RadixEngineMempoolException(
 								new RadixEngineException(
-									toRemove.getRETxn().getTxn(),
-									toRemove.getRETxn().instructions(),
+									toRemove.getFirst().getTxn(),
+									toRemove.getFirst().instructions(),
 									RadixEngineErrorCode.CM_ERROR,
 									"Mempool evicted"
 								)
@@ -172,13 +173,13 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		for (int i = 0; i < count && !copy.isEmpty(); i++) {
 			var txId = copy.first();
 			copy.remove(txId);
-			var mempoolTxn = data.get(txId);
-			mempoolTxn.getRETxn().instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
+			var txnData = data.get(txId);
+			txnData.getFirst().instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
 				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);
 
-			txns.add(mempoolTxn.getRETxn().getTxn());
+			txns.add(txnData.getFirst().getTxn());
 		}
 
 		return txns;
@@ -191,13 +192,14 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			final var commandsToRelay = this.data
 				.entrySet().stream()
 				.filter(e ->
-					e.getValue().getInserted() <= maxAddTime
-						&& now >= e.getValue().getLastRelayed().orElse(0L) + this.mempoolConfig.commandRelayRepeatDelay()
+					e.getValue().getSecond().getInserted() <= maxAddTime
+						&& now >= e.getValue().getSecond().getLastRelayed().orElse(0L)
+						+ this.mempoolConfig.commandRelayRepeatDelay()
 				)
 				.map(e -> {
-					final var updated = e.getValue().withLastRelayed(now);
-					this.data.put(e.getKey(), updated);
-					return e.getValue().getRETxn().getTxn();
+					final var updated = e.getValue().getSecond().withLastRelayed(now);
+					this.data.put(e.getKey(), Pair.of(e.getValue().getFirst(), updated));
+					return e.getValue().getFirst().getTxn();
 				})
 				.collect(ImmutableList.toImmutableList());
 

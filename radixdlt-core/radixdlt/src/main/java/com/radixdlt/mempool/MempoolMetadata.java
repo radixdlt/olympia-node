@@ -17,32 +17,24 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.constraintmachine.RETxn;
-
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * An atom with additional information stored in a mempool.
  */
-public final class MempoolTxn {
+public final class MempoolMetadata {
 
-	private final RETxn reTxn;
 	private final long inserted;
 	private final Optional<Long> lastRelayed;
 
-	private MempoolTxn(RETxn reTxn, long inserted, Optional<Long> lastRelayed) {
-		this.reTxn = Objects.requireNonNull(reTxn);
+	private MempoolMetadata(long inserted, Optional<Long> lastRelayed) {
 		this.inserted = Objects.requireNonNull(inserted);
 		this.lastRelayed = Objects.requireNonNull(lastRelayed);
 	}
 
-	public static MempoolTxn create(RETxn reTxn, long inserted, Optional<Long> lastRelayed) {
-		return new MempoolTxn(reTxn, inserted, lastRelayed);
-	}
-
-	public RETxn getRETxn() {
-		return reTxn;
+	public static MempoolMetadata create(long inserted, Optional<Long> lastRelayed) {
+		return new MempoolMetadata(inserted, lastRelayed);
 	}
 
 	public long getInserted() {
@@ -53,8 +45,8 @@ public final class MempoolTxn {
 		return lastRelayed;
 	}
 
-	public MempoolTxn withLastRelayed(long lastRelayed) {
-		return new MempoolTxn(reTxn, inserted, Optional.of(lastRelayed));
+	public MempoolMetadata withLastRelayed(long lastRelayed) {
+		return new MempoolMetadata(inserted, Optional.of(lastRelayed));
 	}
 
 	@Override
@@ -65,20 +57,19 @@ public final class MempoolTxn {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		final var that = (MempoolTxn) o;
+		final var that = (MempoolMetadata) o;
 		return inserted == that.inserted
-			&& Objects.equals(lastRelayed, that.lastRelayed)
-			&& Objects.equals(reTxn, that.reTxn);
+			&& Objects.equals(lastRelayed, that.lastRelayed);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(reTxn, inserted, lastRelayed);
+		return Objects.hash(inserted, lastRelayed);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{txn=%s inserted=%s lastRelayed=%s}",
-			getClass().getSimpleName(), this.reTxn, this.inserted, this.lastRelayed);
+		return String.format("%s{inserted=%s lastRelayed=%s}",
+			getClass().getSimpleName(), this.inserted, this.lastRelayed);
 	}
 }

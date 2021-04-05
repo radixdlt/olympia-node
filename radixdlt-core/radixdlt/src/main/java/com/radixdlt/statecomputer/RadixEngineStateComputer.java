@@ -175,7 +175,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final Txn systemUpdate;
 		final List<RETxn> txs;
 		try {
-			// TODO: combine
+			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
