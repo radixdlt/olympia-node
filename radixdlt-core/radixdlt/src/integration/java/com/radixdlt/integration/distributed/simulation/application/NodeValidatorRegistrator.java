@@ -18,7 +18,8 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.application.validator.ValidatorRegistration;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.actions.RegisterAsValidator;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -43,8 +44,8 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
         this.disposable = Observable.fromIterable(nodes)
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
-            .map(node -> network.getDispatcher(ValidatorRegistration.class, node))
-            .subscribe(d -> d.dispatch(ValidatorRegistration.create(true)));
+            .map(node -> network.getDispatcher(NodeApplicationRequest.class, node))
+            .subscribe(d -> d.dispatch(NodeApplicationRequest.create(new RegisterAsValidator())));
     }
 
     @Override

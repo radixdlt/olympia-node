@@ -19,7 +19,9 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.RegisterAsValidator;
 import com.radixdlt.atom.actions.TransferNativeToken;
+import com.radixdlt.atom.actions.UnregisterAsValidator;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -35,6 +37,18 @@ public class TxActionListBuilder {
 
 	public static TxActionListBuilder create() {
 		return new TxActionListBuilder();
+	}
+
+	public TxActionListBuilder registerAsValidator() {
+		var action = new RegisterAsValidator();
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder unregisterAsValidator() {
+		var action = new UnregisterAsValidator();
+		actions.add(action);
+		return this;
 	}
 
 	public TxActionListBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) {

@@ -21,39 +21,21 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 
-public class BurnNativeToken implements TxAction {
-	private final RRI rri;
-	private final UInt256 amount;
-
-	public BurnNativeToken(RRI rri, UInt256 amount) {
-		this.rri = rri;
-		this.amount = amount;
-	}
-
+public final class UnregisterAsValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
+		var address = txBuilder.getAddressOrFail("Must have address");
 
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
+		txBuilder.swap(
+			RegisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			"Already unregistered."
+		).with(
+			substateDown -> new UnregisteredValidatorParticle(address)
 		);
-		txBuilder.swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(user, amt),
-			amount,
-			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
 		txBuilder.particleGroup();
 	}
 }
-

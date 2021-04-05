@@ -159,12 +159,12 @@ public final class MempoolFiller {
 			);
 
 			if (txns.size() == 1) {
-				logger.info("Mempool Filler mempool: {} Adding atom {} to mempool...",
+				logger.info("Mempool Filler mempool: {} Adding txn {} to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 					txns.get(0).getId()
 				);
 			} else {
-				logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
+				logger.info("Mempool Filler mempool: {} Adding {} txns to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 					txns.size()
 				);

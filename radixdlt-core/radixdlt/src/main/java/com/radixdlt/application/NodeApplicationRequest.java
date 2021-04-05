@@ -22,6 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.identifiers.AID;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class NodeApplicationRequest {
@@ -39,11 +40,22 @@ public final class NodeApplicationRequest {
 		this.onError = onError;
 	}
 
+	public static NodeApplicationRequest create(TxAction action) {
+		return create(List.of(action));
+	}
+
+	public static NodeApplicationRequest create(List<TxAction> actions) {
+		return create(actions, aid -> { }, error -> { });
+	}
+
 	public static NodeApplicationRequest create(
 		List<TxAction> actions,
 		Consumer<AID> onSuccess,
 		Consumer<String> onError
 	) {
+		Objects.requireNonNull(actions);
+		Objects.requireNonNull(onSuccess);
+		Objects.requireNonNull(onError);
 		return new NodeApplicationRequest(actions, onSuccess, onError);
 	}
 

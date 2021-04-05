@@ -19,11 +19,15 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.application.validator.ValidatorRegistration;
+import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -35,19 +39,23 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private final RRI nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
+	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 
 	@Inject
 	public NodeController(
+		@NativeToken RRI nativeToken,
 		@Self RadixAddress selfAddress,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
+		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
+		this.nativeToken = nativeToken;
 		this.selfAddress = selfAddress;
 		this.radixEngine = radixEngine;
-		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
+		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
 	}
 
 	@Override
@@ -71,13 +79,19 @@ public final class NodeController implements Controller {
 		// TODO: implement JSON-RPC 2.0 specification
 		withBodyAsync(exchange, values -> {
 			boolean enabled = values.getBoolean("enabled");
-			var registration = ValidatorRegistration.create(
-				enabled,
+
+			var actions = TxActionListBuilder.create()
+				.registerAsValidator()
+				.burnNative(nativeToken, FEE)
+				.build();
+
+			var request = NodeApplicationRequest.create(
+				actions,
 				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
 				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
 			);
 
-			validatorRegistrationEventDispatcher.dispatch(registration);
+			nodeApplicationRequestEventDispatcher.dispatch(request);
 		});
 	}
 }

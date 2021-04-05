@@ -179,7 +179,7 @@ public final class RadixEngine<M> {
 	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Already added " + substateCacheRegister.getParticleClass());
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);

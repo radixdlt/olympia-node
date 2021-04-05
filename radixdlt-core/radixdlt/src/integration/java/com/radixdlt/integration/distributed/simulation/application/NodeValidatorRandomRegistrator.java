@@ -19,7 +19,8 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.validator.ValidatorRegistration;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -47,10 +48,17 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 		List<BFTNode> nodes = network.getNodes();
 		this.disposable = Observable.interval(1, 1, TimeUnit.SECONDS)
 			.map(i -> nodes.get(random.nextInt(nodes.size())))
-			.map(node -> network.getDispatcher(ValidatorRegistration.class, node))
+			.map(node -> network.getDispatcher(NodeApplicationRequest.class, node))
 			.subscribe(d -> {
-				ValidatorRegistration registration = ValidatorRegistration.create(random.nextBoolean());
-				d.dispatch(registration);
+				var builder = TxActionListBuilder.create();
+				if (random.nextBoolean()) {
+					builder.registerAsValidator();
+				} else {
+					builder.unregisterAsValidator();
+				}
+
+				var request = NodeApplicationRequest.create(builder.build());
+				d.dispatch(request);
 			});
 	}
 

@@ -18,42 +18,29 @@
 
 package com.radixdlt.atom.actions;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 
-public class BurnNativeToken implements TxAction {
-	private final RRI rri;
-	private final UInt256 amount;
+import java.util.Optional;
 
-	public BurnNativeToken(RRI rri, UInt256 amount) {
-		this.rri = rri;
-		this.amount = amount;
-	}
-
+public class RegisterAsValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
+		var address = txBuilder.getAddressOrFail("Must have an address to register.");
 
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
+		txBuilder.swap(
+			UnregisteredValidatorParticle.class,
+			p -> p.getAddress().equals(address),
+			Optional.of(new UnregisteredValidatorParticle(address)),
+			"Already a validator"
+		).with(
+			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
 		);
-		txBuilder.swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(user, amt),
-			amount,
-			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
+
 		txBuilder.particleGroup();
 	}
 }
-

@@ -81,10 +81,6 @@ public final class TxBuilder {
 		return new TxBuilder(null, SubstateStore.empty());
 	}
 
-	public RadixAddress getAddress() {
-		return address;
-	}
-
 	public TxLowLevelBuilder toLowLevelBuilder() {
 		return lowLevelBuilder;
 	}
@@ -231,15 +227,15 @@ public final class TxBuilder {
 		}
 	}
 
-	private interface Mapper<T extends Particle, U extends Particle> {
+	public interface Mapper<T extends Particle, U extends Particle> {
 		U map(T t) throws TxBuilderException;
 	}
 
-	private interface Replacer<T extends Particle, U extends Particle> {
+	public interface Replacer<T extends Particle, U extends Particle> {
 		void with(Mapper<T, U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -263,7 +259,7 @@ public final class TxBuilder {
 		};
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
@@ -329,8 +325,15 @@ public final class TxBuilder {
 		};
 	}
 
+	public RadixAddress getAddressOrFail(String errorMessage) throws TxBuilderException {
+		if (address == null) {
+			throw new TxBuilderException(errorMessage);
+		}
+		return address;
+	}
 
-	private void assertHasAddress(String message) throws TxBuilderException {
+
+	public void assertHasAddress(String message) throws TxBuilderException {
 		if (address == null) {
 			throw new TxBuilderException(message);
 		}

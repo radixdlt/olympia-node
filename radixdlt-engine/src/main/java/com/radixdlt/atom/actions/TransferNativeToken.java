@@ -40,7 +40,7 @@ public class TransferNativeToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddress();
+		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
 
 		// HACK
 		var factory = TokDefParticleFactory.create(
