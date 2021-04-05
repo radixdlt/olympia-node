@@ -1,6 +1,6 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
@@ -54,7 +54,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
-		throw new UnsupportedOperationException("Transient store should not require up substates.");
+	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
+		return SubstateCursor.concat(
+			transientStore.openIndexedCursor(particleClass),
+			() -> SubstateCursor.filter(
+				base.openIndexedCursor(particleClass),
+				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
+			)
+		);
 	}
 }

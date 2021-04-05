@@ -84,7 +84,7 @@ public final class ValidatorRegistrator {
 	}
 
 	private void process(ValidatorRegistration registration) {
-		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStoreCache(
+		var txBuilderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStore(
 			substateStore -> {
 				var builder = TxBuilder.newBuilder(self, substateStore);
 				try {

@@ -20,6 +20,30 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
 
+import java.util.NoSuchElementException;
+
+/**
+ * Store which contains an index into up substates
+ */
 public interface SubstateStore {
-	Iterable<Substate> index(Class<? extends Particle> particleClass);
+
+	SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass);
+
+	static SubstateStore empty() {
+		return c -> new SubstateCursor() {
+			@Override
+			public void close() {
+			}
+
+			@Override
+			public boolean hasNext() {
+				return false;
+			}
+
+			@Override
+			public Substate next() {
+				throw new NoSuchElementException();
+			}
+		};
+	}
 }
