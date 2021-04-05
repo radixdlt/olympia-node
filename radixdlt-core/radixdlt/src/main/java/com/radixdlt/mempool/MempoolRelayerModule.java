@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
 
 /**
  * Module responsible for sending mempool messages to other nodes.
@@ -42,7 +43,7 @@ public final class MempoolRelayerModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> mempoolAddEventProcessor(MempoolRelayer mempoolRelayer) {
-		return new EventProcessorOnRunner<>("mempool", MempoolAddSuccess.class, mempoolRelayer.mempoolAddSuccessEventProcessor());
+		return new EventProcessorOnRunner<>(Runners.MEMPOOL, MempoolAddSuccess.class, mempoolRelayer.mempoolAddSuccessEventProcessor());
 	}
 
 	@ProvidesIntoSet
@@ -50,7 +51,7 @@ public final class MempoolRelayerModule extends AbstractModule {
 		MempoolRelayer mempoolRelayer
 	) {
 		return new EventProcessorOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			MempoolRelayCommands.class,
 			mempoolRelayer.mempoolRelayCommandsEventProcessor()
 		);

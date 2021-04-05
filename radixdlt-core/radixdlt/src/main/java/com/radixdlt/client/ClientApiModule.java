@@ -29,6 +29,7 @@ import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import org.radix.api.jsonrpc.JsonRpcHandler;
 import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 
@@ -79,7 +80,7 @@ public class ClientApiModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>("application",
+		return new EventProcessorOnRunner<>(Runners.APPLICATION,
 			ScheduledParticleFlush.class,
 			clientApiStore.particleFlushProcessor()
 		);

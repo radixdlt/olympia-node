@@ -33,29 +33,18 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -69,80 +58,39 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
+	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		EpochManager epochManager,
-		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
-		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
-		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
-		EventProcessor<SyncCheckTrigger> syncCheckTriggerProcessor,
-		EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutProcessor,
-		EventProcessor<SyncRequestTimeout> syncRequestTimeoutProcessor,
-		EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor,
-		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
-		RemoteEventProcessor<StatusRequest> statusRequestProcessor,
-		RemoteEventProcessor<StatusResponse> statusResponseProcessor,
-		RemoteEventProcessor<SyncRequest> syncRequestProcessor,
-		RemoteEventProcessor<SyncResponse> syncResponseProcessor,
-		RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateProcessor,
-		Set<EventProcessorOnRunner<?>> processorOnRunners
+		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor,
+		Set<EventProcessorOnRunner<?>> processorOnRunners,
+		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
 		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
+		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
 
 		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		// TODO: allow randomization in processing order for a given message
-		processorsBuilder.put(EpochsLedgerUpdate.class, e -> {
-			epochsLedgerUpdateEventProcessor.process((EpochsLedgerUpdate) e);
-			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
-		});
-		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
-		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
-		processorsBuilder.put(SyncCheckTrigger.class, e -> syncCheckTriggerProcessor.process((SyncCheckTrigger) e));
-		processorsBuilder.put(
-			SyncCheckReceiveStatusTimeout.class,
-			e -> syncCheckReceiveStatusTimeoutProcessor.process((SyncCheckReceiveStatusTimeout) e)
-		);
-		processorsBuilder.put(SyncRequestTimeout.class, e -> syncRequestTimeoutProcessor.process((SyncRequestTimeout) e));
-		processorsBuilder.put(SyncLedgerUpdateTimeout.class, e ->
-			syncLedgerUpdateTimeoutProcessor.process((SyncLedgerUpdateTimeout) e)
-		);
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
+		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateEventProcessor.process((EpochViewUpdate)  e));
+		processorsBuilder.put(EpochsLedgerUpdate.class, e -> epochsLedgerUpdateEventProcessor.process((EpochsLedgerUpdate)  e));
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
 		remoteProcessorsBuilder.put(
 			GetVerticesRequest.class,
 			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
-		);
-		remoteProcessorsBuilder.put(
-			StatusRequest.class,
-			(node, event) -> statusRequestProcessor.process(node, (StatusRequest) event)
-		);
-		remoteProcessorsBuilder.put(
-			StatusResponse.class,
-			(node, event) -> statusResponseProcessor.process(node, (StatusResponse) event)
-		);
-		remoteProcessorsBuilder.put(
-			SyncRequest.class,
-			(node, event) -> syncRequestProcessor.process(node, (SyncRequest) event)
-		);
-		remoteProcessorsBuilder.put(
-			SyncResponse.class,
-			(node, event) -> syncResponseProcessor.process(node, (SyncResponse) event)
-		);
-		remoteProcessorsBuilder.put(
-			LedgerStatusUpdate.class,
-			(node, event) -> ledgerStatusUpdateProcessor.process(node, (LedgerStatusUpdate) event)
 		);
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
@@ -152,14 +100,20 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		epochManager.start();
 	}
 
-	private static <T> boolean execute(
-		T event,
-		EventProcessorOnRunner<?> processor
-	) {
-		Class<T> eventClass = (Class<T>) event.getClass();
-		Optional<EventProcessor<T>> ep = processor.getProcessor(eventClass);
-		ep.ifPresent(p -> p.process(event));
-		return ep.isPresent();
+	@SuppressWarnings("unchecked")
+	private static <T> boolean tryExecute(T event, EventProcessorOnRunner<?> processor) {
+		final var eventClass = (Class<T>) event.getClass();
+		final var maybeProcessor = processor.getProcessor(eventClass);
+		maybeProcessor.ifPresent(p -> p.process(event));
+		return maybeProcessor.isPresent();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> boolean tryExecute(BFTNode origin, T event, RemoteEventProcessorOnRunner<?> processor) {
+		final var eventClass = (Class<T>) event.getClass();
+		final var maybeProcessor = processor.getProcessor(eventClass);
+		maybeProcessor.ifPresent(p -> p.process(origin, event));
+		return maybeProcessor.isPresent();
 	}
 
 	@Override
@@ -195,27 +149,31 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		} else if (message instanceof InvalidProposedTxn) {
 			// Don't need to process
 		} else {
-			boolean found = false;
+			boolean messageHandled = false;
+
 			for (EventProcessorOnRunner<?> p : processorOnRunners) {
-				found = execute(message, p) || found;
+				messageHandled = tryExecute(message, p) || messageHandled;
 			}
-			if (found) {
-				return;
+
+			for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
+				messageHandled = tryExecute(origin, message, p) || messageHandled;
 			}
 
 			EventProcessor<Object> processor = eventProcessors.get(message.getClass());
 			if (processor != null) {
 				processor.process(message);
-				return;
+				messageHandled = true;
 			}
 
 			RemoteEventProcessor<Object> remoteEventProcessor = remoteEventProcessors.get(message.getClass());
 			if (remoteEventProcessor != null) {
 				remoteEventProcessor.process(origin, message);
-				return;
+				messageHandled = true;
 			}
 
-			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
+			if (!messageHandled) {
+				throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
+			}
 		}
 	}
 }

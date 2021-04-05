@@ -26,6 +26,7 @@ import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.StateComputerLedger;
 
 public class MempoolReceiverModule extends AbstractModule {
@@ -43,7 +44,7 @@ public class MempoolReceiverModule extends AbstractModule {
 		MempoolConfig mempoolConfig
 	) {
 		return new EventProcessorOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			MempoolAdd.class,
 			stateComputerLedger.mempoolAddEventProcessor(),
 			mempoolConfig.throttleMs()
@@ -56,7 +57,7 @@ public class MempoolReceiverModule extends AbstractModule {
 		MempoolConfig mempoolConfig
 	) {
 		return new RemoteEventProcessorOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			MempoolAdd.class,
 			stateComputerLedger.mempoolAddRemoteEventProcessor(),
 			mempoolConfig.throttleMs()

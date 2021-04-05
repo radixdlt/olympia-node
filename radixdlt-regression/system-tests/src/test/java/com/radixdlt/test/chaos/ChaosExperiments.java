@@ -17,7 +17,6 @@
 
 package com.radixdlt.test.chaos;
 
-import com.radixdlt.test.Cluster;
 import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
@@ -29,11 +28,9 @@ import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.util.Set;
 
-@Category(Cluster.class)
 public class ChaosExperiments {
 
     private static final Logger logger = LogManager.getLogger();
