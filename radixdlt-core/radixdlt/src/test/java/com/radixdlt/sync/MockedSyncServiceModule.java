@@ -31,7 +31,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;

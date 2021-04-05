@@ -47,6 +47,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -80,14 +81,6 @@ import java.util.stream.Collectors;
  * Environment utilizing RxJava
  */
 public final class RxEnvironmentModule extends AbstractModule {
-
-	public static final class Runners {
-		public static final String SYNC = "sync";
-		public static final String MEMPOOL = "mempool";
-		public static final String APPLICATION = "application";
-		public static final String CHAOS = "chaos";
-		public static final String CONSENSUS = "consensus";
-	}
 
 	private static final Logger logger = LogManager.getLogger();
 

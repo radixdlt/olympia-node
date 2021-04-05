@@ -28,7 +28,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;

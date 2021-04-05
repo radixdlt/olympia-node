@@ -17,7 +17,7 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 

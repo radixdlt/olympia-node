@@ -25,7 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;

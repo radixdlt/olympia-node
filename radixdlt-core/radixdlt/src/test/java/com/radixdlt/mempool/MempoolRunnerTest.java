@@ -36,7 +36,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;

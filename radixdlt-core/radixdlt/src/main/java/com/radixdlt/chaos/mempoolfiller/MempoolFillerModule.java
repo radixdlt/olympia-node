@@ -25,7 +25,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;

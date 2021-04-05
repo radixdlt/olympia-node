@@ -29,7 +29,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;

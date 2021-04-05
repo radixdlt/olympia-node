@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 
 public class ConsensusRunnerModule extends AbstractModule {
 	@Override

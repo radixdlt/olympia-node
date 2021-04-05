@@ -32,7 +32,7 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.rx.RxEnvironmentModule.Runners;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.integration.distributed.BFTRunner;
 import com.radixdlt.ledger.LedgerUpdate;
 
