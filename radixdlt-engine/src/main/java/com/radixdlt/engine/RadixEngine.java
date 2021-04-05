@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -195,7 +196,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public <T> T accessSubstateStore(Function<SubstateStore, T> func) {
+	private <T> T accessSubstateStore(Function<SubstateStore, T> func) {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -482,13 +483,18 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
+		return construct(address, actions, Set.of());
+	}
+
+	public TxBuilder construct(RadixAddress address, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
 		// FIXME: a little hacky but good enough
 		var exception = new AtomicReference<TxBuilderException>();
 		var builder = accessSubstateStore(s -> {
+			SubstateStore filteredStore = c -> SubstateCursor.filter(s.openIndexedCursor(c), i -> !avoid.contains(i.getId()));
 			try {
 				var txBuilder = address != null
-					? TxBuilder.newBuilder(address, s)
-					: TxBuilder.newSystemBuilder(s);
+					? TxBuilder.newBuilder(address, filteredStore)
+					: TxBuilder.newSystemBuilder(filteredStore);
 				for (var action : actions) {
 					action.execute(txBuilder);
 				}

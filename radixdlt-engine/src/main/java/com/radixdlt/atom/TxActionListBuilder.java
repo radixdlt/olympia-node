@@ -20,6 +20,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.atom.actions.BurnNativeToken;
 import com.radixdlt.atom.actions.RegisterAsValidator;
+import com.radixdlt.atom.actions.SplitNativeToken;
 import com.radixdlt.atom.actions.TransferNativeToken;
 import com.radixdlt.atom.actions.UnregisterAsValidator;
 import com.radixdlt.identifiers.RRI;
@@ -47,6 +48,12 @@ public class TxActionListBuilder {
 
 	public TxActionListBuilder unregisterAsValidator() {
 		var action = new UnregisterAsValidator();
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder splitNative(RRI rri, UInt256 minSize) {
+		var action = new SplitNativeToken(rri, minSize);
 		actions.add(action);
 		return this;
 	}

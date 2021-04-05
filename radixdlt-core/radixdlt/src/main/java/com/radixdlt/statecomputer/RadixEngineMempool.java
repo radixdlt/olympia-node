@@ -35,9 +35,12 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +56,8 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public final class RadixEngineMempool implements Mempool<RETxn> {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final ConcurrentHashMap<AID, Pair<RETxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
 	private final MempoolConfig mempoolConfig;
@@ -139,6 +144,10 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				}
 			});
 
+		if (!removed.isEmpty()) {
+			logger.info("Evicting {} txns from mempool", removed.size());
+		}
+
 		return removed;
 	}
 
@@ -168,6 +177,10 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		}
 
 		return txns;
+	}
+
+	public Set<SubstateId> getShuttingDownSubstates() {
+		return new HashSet<>(substateIndex.keySet());
 	}
 
 	@Override

@@ -89,7 +89,7 @@ public final class TxBuilder {
 		lowLevelBuilder.particleGroup();
 	}
 
-	private void up(Particle particle) {
+	public void up(Particle particle) {
 		lowLevelBuilder.up(particle);
 	}
 
@@ -97,7 +97,7 @@ public final class TxBuilder {
 		lowLevelBuilder.virtualDown(particle);
 	}
 
-	private void down(SubstateId substateId) {
+	public void down(SubstateId substateId) {
 		lowLevelBuilder.down(substateId);
 	}
 
@@ -123,16 +123,14 @@ public final class TxBuilder {
 	}
 
 	// For mempool filler
-	private <T extends Particle> Substate findSubstate(
+	public <T extends Particle> Substate findSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		int index,
 		String errorMessage
 	) throws TxBuilderException {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.skip(index)
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
@@ -143,7 +141,7 @@ public final class TxBuilder {
 		}
 	}
 
-	private <T extends Particle> T find(
+	public <T extends Particle> T find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -395,21 +393,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder unregisterAsValidator() throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			"Already unregistered."
-		).with(
-			substateDown -> new UnregisteredValidatorParticle(address)
-		);
-		particleGroup();
-
-		return this;
-	}
-
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
@@ -507,59 +490,6 @@ public final class TxBuilder {
 			amount,
 			"Not enough balance to for minting."
 		).with(amt -> factory.createTransferrable(to, amt));
-
-		particleGroup();
-
-		return this;
-	}
-
-	// For mempool filler
-	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		var substate = findSubstate(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri)
-				&& p.getAddress().equals(address)
-				&& p.getAmount().compareTo(minSize) > 0,
-			index,
-			"Could not find large particle greater than " + minSize
-		);
-
-		down(substate.getId());
-		var particle = (TransferrableTokensParticle) substate.getParticle();
-		var amt1 = particle.getAmount().divide(UInt256.TWO);
-		var amt2 = particle.getAmount().subtract(amt1);
-		up(factory.createTransferrable(address, amt1));
-		up(factory.createTransferrable(address, amt2));
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
-			amount,
-			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount));
 
 		particleGroup();
 
@@ -707,15 +637,6 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
-	}
-
-	public Txn signAndBuildRemoteSubstateOnly(
-		Function<HashCode, ECDSASignature> signer,
-		Consumer<SubstateStore> upSubstateConsumer
-	) {
-		var txn = lowLevelBuilder.signAndBuild(signer);
-		upSubstateConsumer.accept(this::createRemoteSubstateCursor);
-		return txn;
 	}
 
 	public Txn signAndBuild(
