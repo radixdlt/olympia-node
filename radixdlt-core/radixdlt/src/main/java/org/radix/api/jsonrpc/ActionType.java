@@ -30,7 +30,8 @@ public enum ActionType {
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
-	CREATE_MUTABLE("CreateMutableSupplyToken")
+	CREATE_MUTABLE("CreateMutableSupplyToken"),
+	UNKNOWN("Other")
 	;
 	private final String text;
 

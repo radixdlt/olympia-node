@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +28,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.MutableTokenDefinition;
@@ -35,6 +35,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ParsedTransaction;
@@ -64,6 +65,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.BURN;
@@ -123,29 +126,30 @@ public class TransactionParserTest {
 			.registerAsValidator();
 		var atom1 = validatorBuilder.signAndBuild(validatorKeyPair::sign, u -> u.forEach(upParticles::add));
 
-		executeAndDecode(List.of(), "preparations", atom0, atom1);
+		executeAndDecode(List.of(), UInt256.ZERO, atom0, atom1);
 
 		var upSubstate = new AtomicReference<Iterable<Particle>>();
 		var atom2 = TxBuilder.newBuilder(tokenOwnerAddress, upParticles)
 			.stakeTo(tokenRri, validatorAddress, UInt256.FIVE)
 			.signAndBuild(tokenOwnerKeyPair::sign, upSubstate::set);
 
-		executeAndDecode(List.of(), "stake", atom2);
+		executeAndDecode(List.of(ActionType.STAKE), UInt256.ZERO, atom2);
 
 		var atom3 = TxBuilder.newBuilder(tokenOwnerAddress, upSubstate.get())
 			.unstakeFrom(tokenRri, validatorAddress, UInt256.ONE)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(), "unstake", atom3);
+		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.ZERO, atom3);
 
 		var atom4 = TxBuilder.newBuilder(tokenOwnerAddress, upSubstate.get())
-			.burnForFee(tokenRri, UInt256.ONE)
+			.transfer(tokenRri, validatorAddress, UInt256.TWO)
+			.burnForFee(tokenRri, UInt256.THREE)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(), "fee", atom4);
+		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.THREE, atom4);
 	}
 
-	private void executeAndDecode(List<ActionType> expectedActions, String message, Atom... atoms) throws RadixEngineException {
+	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Atom... atoms) throws RadixEngineException {
 		var list = engine.execute(List.of(atoms), null, PermissionLevel.USER);
 
 		if (atoms.length != 1) {
@@ -157,14 +161,20 @@ public class TransactionParserTest {
 		list.stream()
 			.map(parsedTransaction -> parsedToFull(tokenOwnerKeyPair, parsedTransaction))
 			.map(txWithId -> parser.parse(tokenOwnerAddress, txWithId, Instant.now()))
-			.forEach(entry -> System.out.println(entry));
-//TODO: missing actions
-//			.forEach(action -> {
-//				System.out.println();
-//				System.out.println("--------------- transaction boundary ---------------");
-//				System.out.println(message);
-//				action.instructions().forEach(i -> System.out.printf("%s: %s\n", i.getSpin(), i.getParticle().getClass().getSimpleName()));
-//			});
+			.forEach(entry -> {
+				entry
+					.onFailureDo(Assert::fail)
+					.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
+					.map(this::toActionTypes)
+					.onSuccess(types -> assertEquals(expectedActions, types));
+			});
+	}
+
+	private List<ActionType> toActionTypes(com.radixdlt.client.store.TxHistoryEntry txEntry) {
+		return txEntry.getActions()
+			.stream()
+			.map(ActionEntry::getType)
+			.collect(Collectors.toList());
 	}
 
 	private FullTransaction parsedToFull(ECKeyPair keyPair, ParsedTransaction parsedTransaction) {

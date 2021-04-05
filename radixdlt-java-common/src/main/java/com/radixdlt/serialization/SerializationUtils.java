@@ -36,7 +36,7 @@ public class SerializationUtils {
 	}
 
 	public static EUID stringToNumericID(String id) {
-		HashCode h = murmur3_128.hashBytes(id.getBytes(StandardCharsets.UTF_8));
+		var h = murmur3_128.hashBytes(id.getBytes(StandardCharsets.UTF_8));
 		return new EUID(h.asBytes());
 	}
 
@@ -44,7 +44,7 @@ public class SerializationUtils {
 		try {
 			return Result.ok(serialization.fromDson(data, clazz));
 		} catch (DeserializeException e) {
-			return Result.fail("Unable to deserialize {}", clazz.getSimpleName());
+			return Result.fail("Unable to deserialize {0}", clazz.getSimpleName());
 		}
 	}
 }

@@ -137,7 +137,7 @@ public class TokenDefinitionRecord {
 			return Result.ok(from((FixedSupplyTokenDefinitionParticle) substate));
 		}
 
-		return Result.fail("Unknown token definition substate: {}", substate);
+		return Result.fail("Unknown token definition substate: {0}", substate);
 	}
 
 	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt256 supply) {

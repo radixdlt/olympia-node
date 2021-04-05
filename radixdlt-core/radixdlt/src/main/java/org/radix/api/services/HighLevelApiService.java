@@ -84,7 +84,6 @@ public class HighLevelApiService {
 	) {
 		return clientApiStore.getTransactionHistory(address, size, cursor)
 			.map(response -> tuple(calculateNewCursor(response), response));
-
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

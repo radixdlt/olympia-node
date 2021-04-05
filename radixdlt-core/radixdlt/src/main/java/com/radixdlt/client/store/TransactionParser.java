@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 
 import static com.radixdlt.serialization.SerializationUtils.restore;
 
-//TODO: error handling!!!!
 public class TransactionParser {
 	private static final Logger log = LogManager.getLogger();
 
@@ -73,6 +72,8 @@ public class TransactionParser {
 	}
 
 	private static class ParsingContext {
+		private static final ActionEntry UNKNOWN_ACTION = ActionEntry.unknown();
+
 		private final List<ParsedInstruction> input;
 		private final String message;
 		private final AID txId;
@@ -106,106 +107,34 @@ public class TransactionParser {
 
 		private void parseActions() {
 			while (pos < input.size()) {
-				if (parseStake()) {
-					continue;
-				}
-				if (parseUnStake()) {
-					continue;
-				}
-				if (parseTransfer()) {
-					continue;
-				}
+				var savedPos = pos;
 
-				if (parseTokenDefinition()) {
-					continue;
-				}
-				if (parseRegisterValidator()) {
-					continue;
-				}
-				if (parseUnregisterValidator()) {
-					continue;
-				}
-				if (parseMint()) {
-					continue;
-				}
-				if (parseFeeBurn()) {
-					continue;
-				}
-			}
-		}
+				parseTokenDefinition();
+				parseRegisterValidator();
+				parseUnregisterValidator();
+				parseMint();
+				parseStake();
+				parseUnStake();
+				parseTransfer();
+				parseFeeBurn();
 
-		private boolean parseStake() {
-			if (current() instanceof StakedTokensParticle && isUp()) {
-				var stake = (StakedTokensParticle) current();
-				pos++;
-
-				if (current() instanceof TransferrableTokensParticle && isDown()) {
-					pos++;
-				}
-
-				if (current() instanceof TransferrableTokensParticle && isUp()) {
-					// remainder transfer, optional
-					pos++;
-				}
-
-				actions.add(ActionEntry.fromStake(stake));
-
-				return true;
-			}
-			return false;
-		}
-
-		private boolean parseUnStake() {
-			if (current() instanceof TransferrableTokensParticle) {
-				pos++;
-
-				if (!(current() instanceof StakedTokensParticle)) {
-					pos--;
-					return false;
-				}
-
-				var unstake = (StakedTokensParticle) current();
-				pos++;
-
-				if (current() instanceof StakedTokensParticle && isUp()) {
-					// remainder transfer, optional
-					pos++;
-				}
-
-				actions.add(ActionEntry.fromUnstake(unstake));
-
-				return true;
-			}
-			return false;
-		}
-
-		private boolean parseTransfer() {
-			if (current() instanceof TransferrableTokensParticle && isUp()) {
-				var transfer = (TransferrableTokensParticle) current();
-				pos++;
-
-				if (current() instanceof TransferrableTokensParticle && isDown()) {
-					pos++;
-				}
-
-				if (current() instanceof TransferrableTokensParticle && isUp()) {
-					//This can be remainder or beginning if the next transfer/unstake
-					var remainder = (TransferrableTokensParticle) current();
-
-					// Transfer to self is the beginning of unstake
-					if (!remainder.getAddress().equals(owner)) {
-						pos++;
+				if (savedPos == pos) {
+					// Unable to decode actions, abort parsing
+					if (actions.isEmpty()) {
+						actions.add(UNKNOWN_ACTION);
 					}
+					break;
 				}
-
-				actions.add(ActionEntry.transfer(transfer, owner));
 			}
-			return false;
 		}
 
-		private boolean parseTokenDefinition() {
+		private void parseTokenDefinition() {
+			if (pos >= input.size()) {
+				return;
+			}
+
 			if (!(current() instanceof RRIParticle)) {
-				return false;
+				return;
 			}
 
 			pos++;
@@ -218,40 +147,47 @@ public class TransactionParser {
 				current() instanceof FixedSupplyTokenDefinitionParticle) {
 				pos++;
 			}
-			return true;
 		}
 
-		private boolean parseRegisterValidator() {
+		private void parseRegisterValidator() {
+			if (pos >= input.size()) {
+				return;
+			}
+
 			if (current() instanceof UnregisteredValidatorParticle && isUp()) {
 				pos++;
 
 				if(current() instanceof RegisteredValidatorParticle && isDown()) {
 					pos++;
 				}
-				return true;
 			}
-			return false;
 		}
 
-		private boolean parseUnregisterValidator() {
+		private void parseUnregisterValidator() {
+			if (pos >= input.size()) {
+				return;
+			}
+
 			if (current() instanceof RegisteredValidatorParticle && isDown()) {
 				pos++;
 
 				if(current() instanceof RegisteredValidatorParticle && isUp()) {
 					pos++;
 				}
-				return true;
 			}
-			return false;
 		}
 
-		private boolean parseMint() {
+		private void parseMint() {
+			if (pos >= input.size()) {
+				return;
+			}
+
 			if (current() instanceof TransferrableTokensParticle) {
 				pos++;
 
 				if (!(current() instanceof UnallocatedTokensParticle)) {
 					pos--;
-					return false;
+					return;
 				}
 
 				pos++;
@@ -261,10 +197,76 @@ public class TransactionParser {
 					pos++;
 				}
 			}
-			return false;
 		}
 
-		private boolean parseFeeBurn() {
+		private void parseStake() {
+			if (pos >= input.size()) {
+				return;
+			}
+
+			if (current() instanceof StakedTokensParticle && isUp()) {
+				var stake = (StakedTokensParticle) current();
+				pos++;
+
+				if (current() instanceof TransferrableTokensParticle && isDown()) {
+					pos++;
+				}
+
+				parseRemainder();
+
+				actions.add(ActionEntry.fromStake(stake));
+			}
+		}
+
+		private void parseUnStake() {
+			if (pos >= input.size()) {
+				return;
+			}
+
+			if (current() instanceof TransferrableTokensParticle && isUp()) {
+				pos++;
+
+				if (!(current() instanceof StakedTokensParticle)) {
+					pos--;
+					return;
+				}
+
+				var unstake = (StakedTokensParticle) current();
+				pos++;
+
+				if (current() instanceof StakedTokensParticle && isUp()) {
+					// remainder transfer, optional
+					pos++;
+				}
+
+				actions.add(ActionEntry.fromUnstake(unstake));
+			}
+		}
+
+		private void parseTransfer() {
+			if (pos >= input.size()) {
+				return;
+			}
+
+			if (current() instanceof TransferrableTokensParticle && isUp()) {
+				var transfer = (TransferrableTokensParticle) current();
+				pos++;
+
+				if (current() instanceof TransferrableTokensParticle && isDown()) {
+					pos++;
+				}
+
+				parseRemainder();
+
+				actions.add(ActionEntry.transfer(transfer, owner));
+			}
+		}
+
+		private void parseFeeBurn() {
+			if (pos >= input.size()) {
+				return;
+			}
+
 			if (current() instanceof UnallocatedTokensParticle) {
 				var feeParticle = (UnallocatedTokensParticle) current();
 				pos++;
@@ -273,21 +275,30 @@ public class TransactionParser {
 					pos++;
 				}
 
-				if (current() instanceof TransferrableTokensParticle && isUp()) {
-					//This can be remainder or beginning if the next transfer/unstake
-					var remainder = (TransferrableTokensParticle) current();
-
-					// Transfer to self is the transfer of remainder
-					if (remainder.getAddress().equals(owner)) {
-						pos++;
-					}
-				}
+				parseRemainder();
 
 				fee = fee.add(feeParticle.getAmount());
-
-				return true;
 			}
-			return false;
+		}
+
+		private void parseRemainder() {
+			if (pos >= input.size()) {
+				return;
+			}
+
+			if (current() instanceof TransferrableTokensParticle && isUp()) {
+				//This can be remainder or beginning if the next transfer/unstake
+				var remainder = (TransferrableTokensParticle) current();
+
+				// Transfer to self is the beginning of unstake, make sure this is not the case
+				if (remainder.getAddress().equals(owner)) {
+					pos++;
+
+					if (pos < input.size() && current() instanceof StakedTokensParticle) {
+						pos--;
+					}
+				}
+			}
 		}
 
 		private Particle current() {

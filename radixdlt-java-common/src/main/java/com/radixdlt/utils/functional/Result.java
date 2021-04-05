@@ -205,7 +205,8 @@ public interface Result<T> {
 	/**
 	 * Create an instance of simple failure operation result.
 	 *
-	 * @param message Error message
+	 * @param format Error message format string
+	 * @param values Error message values
 	 *
 	 * @return created instance
 	 */

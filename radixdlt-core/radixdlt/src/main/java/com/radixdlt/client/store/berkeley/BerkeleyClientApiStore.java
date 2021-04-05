@@ -244,7 +244,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	@Override
 	public Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> ptr) {
-		var key = asKey(address, ptr.orElse(Instant.EPOCH));
+		if (size <= 0) {
+			return Result.fail("Invalid size specified: {0}", size);
+		}
+
+		Instant instant = ptr.orElse(Instant.EPOCH);
+		var key = asKey(address, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
@@ -254,11 +259,20 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return Result.ok(List.of());
 			}
 
+			// skip first entry if it's the same as the cursor
+			if (instantFromKey(key).equals(instant)) {
+				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+
+				if (status != OperationStatus.SUCCESS) {
+					return Result.ok(List.of());
+				}
+			}
+
 			var list = new ArrayList<TxHistoryEntry>();
 			var count = new AtomicInteger(0);
 
 			do {
-				restore(serialization, data.getData(), AID.class)
+				AID.fromBytes(data.getData())
 					.flatMap(this::retrieveTx)
 					.onFailureDo(
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
@@ -296,14 +310,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
-		var buf = Unpooled.wrappedBuffer(key.getData(), key.getSize() - TIMESTAMP_SIZE, key.getSize());
+		var buf = Unpooled.wrappedBuffer(key.getData(), key.getSize() - TIMESTAMP_SIZE, TIMESTAMP_SIZE);
 		return Instant.ofEpochSecond(buf.readLong(), buf.readInt());
 	}
 
 	private Result<FullTransaction> retrieveTx(AID id) {
 		return store.get(id)
 			.map(tx -> Result.ok(FullTransaction.create(id, tx)))
-			.orElseGet(() -> Result.fail("Unable to retrieve transaction by ID {} ", id));
+			.orElseGet(() -> Result.fail("Unable to retrieve transaction by ID {0} ", id));
 	}
 
 	private <T> T readBalance(Supplier<T> supplier, DatabaseEntry data) {
@@ -612,7 +626,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private static DatabaseEntry entry(ByteBuf buf) {
-		return new DatabaseEntry(buf.array());
+		return new DatabaseEntry(buf.array(), 0, buf.readableBytes());
 	}
 
 	private static DatabaseEntry entry() {

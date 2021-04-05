@@ -31,7 +31,10 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static java.util.Objects.requireNonNull;
 
 public class ActionEntry {
+	private static final JSONObject JSON_TYPE_OTHER = jsonObject().put("type", "Other");
+
 	private final ActionType type;
+
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final UInt256 amount;
@@ -83,8 +86,31 @@ public class ActionEntry {
 		);
 	}
 
+	public static ActionEntry unknown() {
+		return new ActionEntry(ActionType.UNKNOWN, null, null, null, null);
+	}
+
+	public ActionType getType() {
+		return type;
+	}
+
+	public UInt256 getAmount() {
+		return amount;
+	}
+
+	public RadixAddress getFrom() {
+		return from;
+	}
+
+	public RadixAddress getTo() {
+		return to;
+	}
+
+	public String toString() {
+		return asJson().toString(2);
+	}
+
 	public JSONObject asJson() {
-		//TODO: return different JSON depending on the type!!!
 		var json = jsonObject()
 			.put("type", type.toString())
 			.put("from", from)
@@ -92,23 +118,14 @@ public class ActionEntry {
 
 		switch (type) {
 			case TRANSFER:
-				json.put("to", to).put("rri", rri);
-				break;
+				return json.put("to", to).put("rri", rri);
+
 			case UNSTAKE:
 			case STAKE:
-				json.put("validator", to);
-				json.put("validator", to);
-				break;
+				return json.put("validator", to);
 
-			case BURN:
-			case MINT:
-			case REGISTER_VALIDATOR:
-			case UNREGISTER_VALIDATOR:
-			case CREATE_FIXED:
-			case CREATE_MUTABLE:
-				return json.put("type", "Other");
+			default:
+				return JSON_TYPE_OTHER;
 		}
-
-		return json;
 	}
 }

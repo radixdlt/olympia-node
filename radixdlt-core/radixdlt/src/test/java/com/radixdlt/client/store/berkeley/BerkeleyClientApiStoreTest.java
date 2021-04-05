@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.radix.api.jsonrpc.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -78,6 +79,7 @@ import com.radixdlt.store.berkeley.FullTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -91,6 +93,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -143,7 +146,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenBalancesAreReturned() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
 			.burn(TOKEN, UInt256.ONE)
@@ -153,7 +156,7 @@ public class BerkeleyClientApiStoreTest {
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
-		clientApiStore.getTokenBalances(TOKEN.getAddress())
+		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
 				assertEquals(UInt256.TWO, list.get(0).getAmount());
@@ -173,7 +176,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -187,7 +190,7 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.burn(TOKEN, UInt256.ONE)
@@ -205,7 +208,7 @@ public class BerkeleyClientApiStoreTest {
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
-		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
 
@@ -220,7 +223,7 @@ public class BerkeleyClientApiStoreTest {
 	public void fixedTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 		var tokenDef = prepareFixedTokenDef();
-		var tx = TxBuilder.newBuilder(TOKEN.getAddress())
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createFixedToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
 
@@ -231,12 +234,72 @@ public class BerkeleyClientApiStoreTest {
 			.onFailure(this::failWithMessage);
 	}
 
+	@Test
+	public void transactionHistoryIsReturnedInPages() throws TxBuilderException, RadixEngineException {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
+			.createMutableToken(tokenDef)
+			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
+			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.burnForFee(TOKEN, UInt256.ONE)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var newCursor = new AtomicReference<Instant>();
+
+		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 1, Optional.empty())
+			.onFailure(this::failWithMessage)
+			.onSuccess(list -> {
+				assertEquals(1, list.size());
+
+				var entry = list.get(0);
+
+				assertEquals(UInt256.ONE, entry.getFee());
+				assertEquals(1, entry.getActions().size());
+
+				var action = entry.getActions().get(0);
+
+				assertEquals(ActionType.TRANSFER, action.getType());
+				assertEquals(UInt256.FOUR, action.getAmount());
+				assertEquals(TOKEN_ADDRESS, action.getFrom());
+				assertEquals(OWNER, action.getTo());
+
+				newCursor.set(entry.timestamp());
+			});
+
+		assertNotNull(newCursor.get());
+
+		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 1, Optional.of(newCursor.get()))
+			.onFailure(this::failWithMessage)
+			.onSuccess(list -> assertEquals(0, list.size()));
+	}
+
+	@Test
+	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
+			.createMutableToken(tokenDef)
+			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
+			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.burnForFee(TOKEN, UInt256.ONE)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 0, Optional.empty())
+			.onSuccess(list -> fail("Request must be rejected"));
+	}
+
 	@SuppressWarnings("unchecked")
 	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Atom... tx) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
 			.map(parsedTransaction -> parsedToFull(keyPair, parsedTransaction))
 			.collect(Collectors.toList());
+
+		var txMap = transactions.stream().collect(Collectors.toMap(FullTransaction::getTxId, FullTransaction::getTx));
+
+		when(ledgerStore.get(any(AID.class)))
+			.thenAnswer(invocation -> Optional.ofNullable(txMap.get(invocation.getArgument(0, AID.class))));
 
 		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
@@ -250,8 +313,6 @@ public class BerkeleyClientApiStoreTest {
 		var disposable = mock(Disposable.class);
 		when(ledgerCommitted.subscribe((io.reactivex.rxjava3.functions.Consumer<?>) any())).thenReturn(disposable);
 
-		var transactionParser = mock(TransactionParser.class);
-
 		return new BerkeleyClientApiStore(
 			environment,
 			ledgerStore,
@@ -260,7 +321,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
 			0,
-			transactionParser
+			new TransactionParser(serialization)
 		);
 	}
 
