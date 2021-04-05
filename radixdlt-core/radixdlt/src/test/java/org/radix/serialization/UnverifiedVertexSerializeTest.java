@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -27,6 +27,8 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+
+import java.util.List;
 
 public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVertex> {
 	public UnverifiedVertexSerializeTest() {
@@ -43,8 +45,8 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-		final Command command = new Command(new byte[] {0, 1, 2, 3});
+		var txn = Txn.create(new byte[]{0, 1, 2, 3});
 
-		return UnverifiedVertex.createVertex(qc, view, command);
+		return UnverifiedVertex.createVertex(qc, view, List.of(txn));
 	}
 }

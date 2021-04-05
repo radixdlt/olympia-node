@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.system;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -65,7 +64,6 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
-			.addressMapper(p -> ImmutableSet.of())
 			.staticValidation(this::staticCheck)
 			.virtualizeUp(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0)
 			.build()

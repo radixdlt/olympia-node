@@ -23,15 +23,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomsProvider implements Provider<List<Atom>> {
+public final class GenesisAtomsProvider implements Provider<List<Txn>> {
 	private final byte magic;
 	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
@@ -69,7 +69,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 	}
 
 	@Override
-	public List<Atom> get() {
+	public List<Txn> get() {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
@@ -87,7 +87,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 			}
 		});
 
-		var genesisAtoms = new ArrayList<Atom>();
+		var genesisTxns = new ArrayList<Txn>();
 		var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
 		try {
@@ -99,9 +99,9 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var to = new RadixAddress(magic, e.getKey());
 				tokenBuilder.mint(rri, to, e.getValue());
 			}
-			var upSubstate = new AtomicReference<Iterable<Substate>>();
+			var upSubstate = new AtomicReference<SubstateStore>();
 			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
-			genesisAtoms.add(tokenAtom);
+			genesisTxns.add(tokenAtom);
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
@@ -110,7 +110,7 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var validatorAtom = validatorBuilder
 					.registerAsValidator()
 					.signAndBuild(validatorKey::sign, upSubstate::set);
-				genesisAtoms.add(validatorAtom);
+				genesisTxns.add(validatorAtom);
 			}
 
 			for (var stakeDelegation : stakeDelegations) {
@@ -119,15 +119,15 @@ public final class GenesisAtomsProvider implements Provider<List<Atom>> {
 				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
 					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
 				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
-				genesisAtoms.add(stakeAtom);
+				genesisTxns.add(stakeAtom);
 			}
 
 			var epochUpdateBuilder = TxBuilder.newSystemBuilder().systemNextEpoch(0, 0);
-			genesisAtoms.add(epochUpdateBuilder.buildWithoutSignature());
+			genesisTxns.add(epochUpdateBuilder.buildWithoutSignature());
 		} catch (TxBuilderException e) {
 			throw new IllegalStateException(e);
 		}
 
-		return genesisAtoms;
+		return genesisTxns;
 	}
 }

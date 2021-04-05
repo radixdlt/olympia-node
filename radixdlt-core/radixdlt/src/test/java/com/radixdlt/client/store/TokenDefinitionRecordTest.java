@@ -33,8 +33,7 @@ public class TokenDefinitionRecordTest {
 				"granularity",
 				"currentSupply",
 				"iconUrl",
-				"url",
-				"tokenPermissions"
+				"url"
 			)
 			.verify();
 	}

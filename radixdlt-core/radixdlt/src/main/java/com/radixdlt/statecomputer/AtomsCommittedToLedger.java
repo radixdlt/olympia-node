@@ -17,8 +17,8 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.RETxn;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,31 +27,31 @@ import java.util.Objects;
  * Event signifying that an atom was committed to ledger successfully
  */
 public final class AtomsCommittedToLedger {
-    private final List<Command> atoms;
-    private final List<ParsedTransaction> parsedTxs;
+    private final List<Txn> txns;
+    private final List<RETxn> parsedTxs;
 
-    private AtomsCommittedToLedger(List<Command> atoms, List<ParsedTransaction> parsedTxs) {
-        this.atoms = atoms;
+    private AtomsCommittedToLedger(List<Txn> txns, List<RETxn> parsedTxs) {
+        this.txns = txns;
         this.parsedTxs = parsedTxs;
     }
 
-    public List<Command> getAtoms() {
-        return atoms;
+    public List<Txn> getTxns() {
+        return txns;
     }
 
-    public List<ParsedTransaction> getParsedTxs() {
+    public List<RETxn> getParsedTxs() {
         return parsedTxs;
     }
 
-    public static AtomsCommittedToLedger create(List<Command> atoms, List<ParsedTransaction> parsedTxs) {
-        Objects.requireNonNull(atoms);
+    public static AtomsCommittedToLedger create(List<Txn> txns, List<RETxn> parsedTxs) {
+        Objects.requireNonNull(txns);
         Objects.requireNonNull(parsedTxs);
-        return new AtomsCommittedToLedger(atoms, parsedTxs);
+        return new AtomsCommittedToLedger(txns, parsedTxs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(atoms, parsedTxs);
+        return Objects.hash(txns, parsedTxs);
     }
 
     @Override
@@ -61,7 +61,7 @@ public final class AtomsCommittedToLedger {
         }
 
         AtomsCommittedToLedger other = (AtomsCommittedToLedger) o;
-        return Objects.equals(this.atoms, other.atoms)
+        return Objects.equals(this.txns, other.txns)
             && Objects.equals(this.parsedTxs, other.parsedTxs);
     }
 }

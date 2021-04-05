@@ -36,6 +36,7 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -46,6 +47,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
+import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -59,7 +61,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
-import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
+import com.radixdlt.integration.distributed.simulation.application.TxnGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
@@ -84,6 +86,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +185,7 @@ public class SimulationTest {
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
 		private ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes;
+		private final List<Module> genesisModules = new ArrayList<>();
 
 		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
@@ -336,24 +340,15 @@ public class SimulationTest {
 			View epochHighView,
 			SyncConfig syncConfig
 		) {
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
 			this.ledgerType = LedgerType.FULL_FUNCTION;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-					install(new MockedGenesisAtomModule());
-				}
-
-				@Provides
-				@Genesis
-				ImmutableList<ECKeyPair> validators() {
-					return nodes;
 				}
 
 				@Provides
@@ -362,6 +357,17 @@ public class SimulationTest {
 					return new RadixAddress((byte) magic, self.getKey());
 				}
 			});
+
+			final ECKeyPair universeKey = ECKeyPair.generateNew();
+			this.genesisModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodes);
+				}
+			});
+
 			return this;
 		}
 
@@ -401,25 +407,15 @@ public class SimulationTest {
 		}
 
 		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
-
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-					install(new MockedGenesisAtomModule());
-				}
-
-				@Provides
-				@Genesis
-				ImmutableList<ECKeyPair> validators() {
-					return nodes;
 				}
 
 				@Provides
@@ -429,6 +425,21 @@ public class SimulationTest {
 				}
 			});
 
+			final ECKeyPair universeKey = ECKeyPair.generateNew();
+			this.genesisModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodes);
+				}
+			});
+
+			return this;
+		}
+
+		public Builder addGenesisModule(Module module) {
+			genesisModules.add(module);
 			return this;
 		}
 
@@ -442,7 +453,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addMempoolSubmissionsSteadyState(CommandGenerator commandGenerator) {
+		public Builder addMempoolSubmissionsSteadyState(TxnGenerator txnGenerator) {
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
@@ -455,7 +466,7 @@ public class SimulationTest {
 				@Singleton
 				LocalMempoolPeriodicSubmitter mempoolSubmittor() {
 					return new LocalMempoolPeriodicSubmitter(
-						commandGenerator,
+						txnGenerator,
 						nodeSelector
 					);
 				}
@@ -508,7 +519,20 @@ public class SimulationTest {
 			// Persistence
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
+				// Hack to get nodes to have the same genesis atom
+				genesisModules.add(new MockedGenesisAtomModule());
+				var genesis = Guice.createInjector(genesisModules)
+					.getInstance(Key.get(new TypeLiteral<List<Txn>>() { }, Genesis.class));
+				modules.add(new AbstractModule() {
+					@Override
+					protected void configure() {
+						install(new RadixNativeTokenModule());
+						bindConstant().annotatedWith(Names.named("magic")).to(0);
+						bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesis);
+					}
+				});
 			}
+
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
 

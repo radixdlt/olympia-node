@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,24 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.constraintmachine.DataPointer;
-import java.util.Objects;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Exception thrown when converting from the raw api Atom to
- * a RadixEngine atom
- */
-public final class AtomConversionException extends Exception {
-	private final DataPointer dataPointer;
-
-	public AtomConversionException(DataPointer dataPointer, Exception cause) {
-		super(cause);
-		this.dataPointer = Objects.requireNonNull(dataPointer);
-	}
-
-	public String getPointerToIssue() {
-		return dataPointer.toString();
+public class InvalidProposedTxnTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(InvalidProposedTxn.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

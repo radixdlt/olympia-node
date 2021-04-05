@@ -55,7 +55,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -202,7 +202,7 @@ public final class ConsensusModule extends AbstractModule {
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		NextCommandGenerator nextCommandGenerator,
+		NextTxnsGenerator nextTxnsGenerator,
 		ProposalBroadcaster proposalBroadcaster,
 		Hasher hasher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
@@ -220,7 +220,7 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutDispatcher,
 			timeoutSender,
 			timeoutCalculator,
-			nextCommandGenerator,
+			nextTxnsGenerator,
 			proposalBroadcaster,
 			hasher,
 			voteDispatcher,

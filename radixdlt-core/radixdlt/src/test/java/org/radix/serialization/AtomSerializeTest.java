@@ -37,6 +37,6 @@ public class AtomSerializeTest extends SerializeObject<Atom> {
 		return TxLowLevelBuilder.newBuilder()
 			.virtualDown(new RRIParticle(rri))
 			.particleGroup()
-			.buildWithoutSignature();
+			.buildAtomWithoutSignature();
 	}
 }

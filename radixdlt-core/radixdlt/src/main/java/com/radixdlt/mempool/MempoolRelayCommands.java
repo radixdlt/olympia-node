@@ -18,31 +18,31 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import java.util.Objects;
 
 /**
  * Message indicating that a list of commands should be relayed to peers.
  */
 public final class MempoolRelayCommands {
-	private final ImmutableList<Command> commands;
+	private final ImmutableList<Txn> txns;
 
-	private MempoolRelayCommands(ImmutableList<Command> commands) {
-		this.commands = commands;
+	private MempoolRelayCommands(ImmutableList<Txn> txns) {
+		this.txns = txns;
 	}
 
-	public static MempoolRelayCommands create(ImmutableList<Command> commands) {
-		Objects.requireNonNull(commands);
-		return new MempoolRelayCommands(commands);
+	public static MempoolRelayCommands create(ImmutableList<Txn> txns) {
+		Objects.requireNonNull(txns);
+		return new MempoolRelayCommands(txns);
 	}
 
-	public ImmutableList<Command> getCommands() {
-		return commands;
+	public ImmutableList<Txn> getTxns() {
+		return txns;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands);
+		return Objects.hash(txns);
 	}
 
 	@Override
@@ -52,11 +52,11 @@ public final class MempoolRelayCommands {
 		}
 
 		MempoolRelayCommands other = (MempoolRelayCommands) o;
-		return Objects.equals(this.commands, other.commands);
+		return Objects.equals(this.txns, other.txns);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s}", this.getClass().getSimpleName(), this.commands);
+		return String.format("%s{txns=%s}", this.getClass().getSimpleName(), this.txns);
 	}
 }

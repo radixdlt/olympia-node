@@ -31,7 +31,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
-import com.radixdlt.client.application.translate.data.AtomToPlaintextMessageMapper;
 import com.radixdlt.client.application.translate.data.PlaintextMessage;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.ApplicationState;
@@ -43,14 +42,12 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.TokenFeeProcessor;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
@@ -61,8 +58,6 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
-import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
-import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -132,14 +127,9 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
-			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
-			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
-			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
-			.addReducer(new StakedTokenBalanceReducer())
-			.addAtomMapper(new AtomToPlaintextMessageMapper());
+			.addReducer(new StakedTokenBalanceReducer());
 	}
 
 	private final RadixIdentity identity;
@@ -210,7 +200,9 @@ public class RadixApplicationAPI {
 	 * Retrieve the user's public key
 	 *
 	 * @return the user's public key
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public ECPublicKey getPublicKey() {
 		return identity.getPublicKey();
 	}
@@ -219,7 +211,9 @@ public class RadixApplicationAPI {
 	 * Retrieve the user's key identity
 	 *
 	 * @return the user's identity
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public RadixIdentity getIdentity() {
 		return identity;
 	}
@@ -228,7 +222,9 @@ public class RadixApplicationAPI {
 	 * Retrieve the user's address
 	 *
 	 * @return the current user's address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public RadixAddress getAddress() {
 		return universe.getAddressFrom(identity.getPublicKey());
 	}
@@ -238,7 +234,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param publicKey public key
 	 * @return an address based on the current universe and a given public key
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public RadixAddress getAddress(ECPublicKey publicKey) {
 		return universe.getAddressFrom(publicKey);
 	}
@@ -248,7 +246,9 @@ public class RadixApplicationAPI {
 	 * TODO: what to do when no puller available
 	 *
 	 * @return Disposable to dispose to stop pulling
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Disposable pull() {
 		return pull(getAddress());
 	}
@@ -259,7 +259,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param address the address to pull atoms from
 	 * @return Disposable to dispose to stop pulling
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Disposable pull(RadixAddress address) {
 		Objects.requireNonNull(address);
 
@@ -275,7 +277,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param address the address to pull atoms for
 	 * @return a cold completable which on subscribe pulls atoms from a source
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Completable pullOnce(RadixAddress address) {
 		return Completable.create(emitter -> {
 			Disposable d = universe.getAtomPuller()
@@ -293,7 +297,9 @@ public class RadixApplicationAPI {
 	 * Returns the native Token Reference found in the genesis atom
 	 *
 	 * @return the native token reference
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public RRI getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
@@ -306,7 +312,9 @@ public class RadixApplicationAPI {
 	 * @param address     the address to retrieve the state of
 	 * @param <T>         the Action class
 	 * @return a cold observable of the actions at the given address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public <T> Observable<T> observeActions(Class<T> actionClass, RadixAddress address) {
 		final AtomToExecutedActionsMapper<T> mapper = this.getActionMapper(actionClass);
 		return universe.getAtomStore()
@@ -324,7 +332,9 @@ public class RadixApplicationAPI {
 	 * @param address    the address to retrieve the state of
 	 * @param <T>        the ApplicationState class
 	 * @return a hot observable of a state of the given address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public <T extends ApplicationState> Observable<T> observeState(Class<T> stateClass, RadixAddress address) {
 		final ParticleReducer<T> reducer = this.getStateReducer(stateClass);
 		return universe.getAtomStore().onSync(address)
@@ -341,7 +351,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param address the address of the account to check
 	 * @return a cold observable of the latest state of token definitions
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<TokenDefinitionsState> observeTokenDefs(RadixAddress address) {
 		return observeState(TokenDefinitionsState.class, address);
 	}
@@ -351,7 +363,9 @@ public class RadixApplicationAPI {
 	 * address
 	 *
 	 * @return a cold observable of the latest state of token definitions
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<TokenDefinitionsState> observeTokenDefs() {
 		return observeTokenDefs(getAddress());
 	}
@@ -361,7 +375,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param tokenRRI The symbol of the token
 	 * @return a cold observable of the latest state of the token
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<TokenState> observeTokenDef(RRI tokenRRI) {
 		return this.observeTokenDefs(tokenRRI.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
@@ -372,7 +388,9 @@ public class RadixApplicationAPI {
 	 * pull() must be called to continually retrieve the latest messages.
 	 *
 	 * @return a cold observable of the messages at the current address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<PlaintextMessage> observeMessages() {
 		return observeMessages(this.getAddress());
 	}
@@ -383,7 +401,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param address the address to retrieve the messages from
 	 * @return a cold observable of the messages at the given address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<PlaintextMessage> observeMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return observeActions(PlaintextMessage.class, address);
@@ -395,7 +415,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param address The address to retrieve the token transfers from
 	 * @return a cold observable of the token transfers at the given address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<TokenTransfer> observeTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return observeActions(TokenTransfer.class, address);
@@ -420,7 +442,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param tokenRRI The symbol of the token
 	 * @return a cold observable of the latest balances at the current address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<BigDecimal> observeBalance(RRI tokenRRI) {
 		return observeBalance(getAddress(), tokenRRI);
 	}
@@ -432,7 +456,9 @@ public class RadixApplicationAPI {
 	 * @param address The address to observe balances of
 	 * @param token The symbol of the token
 	 * @return a cold observable of the latest balance of a token at a given address
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<BigDecimal> observeBalance(RadixAddress address, RRI token) {
 		Objects.requireNonNull(token);
 
@@ -448,7 +474,9 @@ public class RadixApplicationAPI {
 	 * @param name        The name of the token to create
 	 * @param description A description of the token
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
 		RRI tokenRRI,
 		String name,
@@ -467,7 +495,9 @@ public class RadixApplicationAPI {
 	 * @param iconUrl     The URL for the token's icon
 	 * @param url         The URL for the token
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
 		RRI tokenRRI,
 		String name,
@@ -497,7 +527,9 @@ public class RadixApplicationAPI {
 	 * @param description A description of the token
 	 * @param supply      The supply of the created token
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
 		RRI tokenRRI,
 		String name,
@@ -518,7 +550,9 @@ public class RadixApplicationAPI {
 	 * @param url         The URL for the token
 	 * @param supply      The supply of the created token
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
 		RRI tokenRRI,
 		String name,
@@ -550,7 +584,9 @@ public class RadixApplicationAPI {
 	 * @param granularity     The least multiple of subunits per transaction for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createToken(
 		RRI tokenRRI,
 		String name,
@@ -574,7 +610,9 @@ public class RadixApplicationAPI {
 	 * @param granularity     The least multiple of subunits per transaction for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result createToken(
 		RRI tokenRRI,
 		String name,
@@ -605,7 +643,9 @@ public class RadixApplicationAPI {
 	 * @param to     the address to transfer tokens to
 	 * @param amount the amount and token type
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, getAddress(), to, amount);
 	}
@@ -618,7 +658,9 @@ public class RadixApplicationAPI {
 	 * @param to     the address to send tokens to
 	 * @param amount the amount and token type
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result sendTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, from, to, amount, null);
 	}
@@ -633,7 +675,9 @@ public class RadixApplicationAPI {
 	 * @param amount     the amount and token type
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result sendTokens(
 		RRI token,
 		RadixAddress from,
@@ -659,7 +703,9 @@ public class RadixApplicationAPI {
 	 * @param token      the token type
 	 * @param delegate   the address to delegate the staked tokens to
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
 		RRI token,
@@ -676,7 +722,9 @@ public class RadixApplicationAPI {
 	 * @param from       the address to stake tokens from
 	 * @param delegate   the address to delegate the staked tokens to
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
 		RRI token,
@@ -698,7 +746,9 @@ public class RadixApplicationAPI {
 	 * @param token      the token type
 	 * @param delegate   the address to delegate the staked tokens to
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
 		RRI token,
@@ -715,7 +765,9 @@ public class RadixApplicationAPI {
 	 * @param amount     the amount of the token type
 	 * @param token      the token type
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
 		RRI token,
@@ -736,7 +788,9 @@ public class RadixApplicationAPI {
 	 * @param validator the validator address to be registered
      * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result registerValidator(
 		RadixAddress validator,
 		Set<RadixAddress> allowedDelegators
@@ -751,7 +805,9 @@ public class RadixApplicationAPI {
 	 * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @param url the optional URL for extra information about the validator
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result registerValidator(
 		RadixAddress validator,
 		Set<RadixAddress> allowedDelegators,
@@ -767,7 +823,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param validator the validator address to be unregistered
 	 * @return result of the transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result unregisterValidator(
 		RadixAddress validator
 	) {
@@ -782,7 +840,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param action action to execute
 	 * @return results of the execution
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result execute(Action action) {
 		Transaction transaction = this.createTransaction();
 		transaction.stage(action);
@@ -796,7 +856,9 @@ public class RadixApplicationAPI {
 	 * @param action     action to execute
 	 * @param originNode node to submit action to
 	 * @return results of the execution
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result execute(Action action, RadixNode originNode) {
 		Transaction transaction = this.createTransaction();
 		transaction.stage(action);
@@ -808,7 +870,9 @@ public class RadixApplicationAPI {
 	 * current data in the atom store.
 	 *
 	 * @return a new transaction
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Transaction createTransaction() {
 		return new Transaction();
 	}
@@ -820,7 +884,9 @@ public class RadixApplicationAPI {
 	 * @param completeOnStoreOnly if true, result will only complete on a store event
 	 * @param originNode          the origin node
 	 * @return the result of the submission
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result submitAtom(Atom atom, boolean completeOnStoreOnly, RadixNode originNode) {
 		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, originNode).connect();
 	}
@@ -831,7 +897,9 @@ public class RadixApplicationAPI {
 	 * @param atom                atom to submit
 	 * @param completeOnStoreOnly if true, result will only complete on a store event
 	 * @return the result of the submission
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
 		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, null).connect();
 	}
@@ -842,7 +910,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @param atom atom to submit
 	 * @return the result of the submission
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Result submitAtom(Atom atom) {
 		return createAtomSubmission(Single.just(atom), false, null).connect();
 	}
@@ -877,7 +947,9 @@ public class RadixApplicationAPI {
 	 * Retrieve the atom store used by the API
 	 *
 	 * @return the atom store
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public AtomStore getAtomStore() {
 		return this.universe.getAtomStore();
 	}
@@ -885,7 +957,9 @@ public class RadixApplicationAPI {
 	/**
 	 * Dispatches a discovery request, the result of which would
 	 * be viewable via getNetworkState()
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public void discoverNodes() {
 		this.universe.getNetworkController().dispatch(DiscoverMoreNodesAction.instance());
 	}
@@ -894,15 +968,17 @@ public class RadixApplicationAPI {
 	 * Get a stream of updated network states as they occur.
 	 *
 	 * @return a hot observable of the current network state
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public Observable<RadixNetworkState> getNetworkState() {
 		return this.universe.getNetworkController().getNetwork();
 	}
 
-	public BigDecimal getMinimumRequiredFee(TxLowLevelBuilder atomWithoutFees) {
-		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
-	}
-
+	/**
+	 * @deprecated The Java client access library has been deprecated
+	 */
+	@Deprecated(since = "beta.27")
 	public static class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
@@ -980,6 +1056,10 @@ public class RadixApplicationAPI {
 		}
 	}
 
+	/**
+	 * @deprecated The Java client access library has been deprecated
+	 */
+	@Deprecated(since = "beta.27")
 	public static class RadixApplicationAPIBuilder {
 		private RadixIdentity identity;
 		private RadixUniverse universe;
@@ -1023,16 +1103,6 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder feeProcessor(FeeProcessor feeProcessor) {
-			this.feeProcessorBuilder = radixUniverse -> feeProcessor;
-			return this;
-		}
-
-		public RadixApplicationAPIBuilder defaultFeeProcessor() {
-			this.feeProcessorBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
-			return this;
-		}
-
 		public RadixApplicationAPIBuilder identity(RadixIdentity identity) {
 			this.identity = identity;
 			return this;
@@ -1072,7 +1142,9 @@ public class RadixApplicationAPI {
 
 	/**
 	 * Represents an atomic transaction to be committed to the ledger
+	 * @deprecated The Java client access library has been deprecated
 	 */
+	@Deprecated(since = "beta.27")
 	public final class Transaction {
 		private final String uuid;
 		private String message = null;

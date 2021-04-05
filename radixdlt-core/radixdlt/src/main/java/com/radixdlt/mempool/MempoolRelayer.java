@@ -19,7 +19,7 @@ package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -30,6 +30,7 @@ import com.radixdlt.network.addressbook.PeersView;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -55,28 +56,29 @@ public final class MempoolRelayer {
 		this.counters = Objects.requireNonNull(counters);
 	}
 
+
 	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
 		return mempoolAddSuccess -> {
 			final var ignorePeers = mempoolAddSuccess.getOrigin()
 				.map(ImmutableList::of)
 				.orElse(ImmutableList.of());
-			relayCommands(ImmutableList.of(mempoolAddSuccess.getCommand()), ignorePeers);
+			relayCommands(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
 		};
 	}
 
 	public EventProcessor<MempoolRelayCommands> mempoolRelayCommandsEventProcessor() {
-		return mempoolRelayCommands -> relayCommands(mempoolRelayCommands.getCommands(), ImmutableList.of());
+		return mempoolRelayCommands -> relayCommands(mempoolRelayCommands.getTxns(), ImmutableList.of());
 	}
 
-	private void relayCommands(ImmutableList<Command> commands, ImmutableList<BFTNode> ignorePeers) {
-		final var mempoolAddMsg = MempoolAdd.create(commands);
+	private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
+		final var mempoolAddMsg = MempoolAdd.create(txns);
 		final var peers = new ArrayList<>(this.peersView.peers());
 		peers.removeAll(ignorePeers);
 		Collections.shuffle(peers);
 		peers.stream()
 			.limit(mempoolConfig.relayMaxPeers())
 			.forEach(peer -> {
-				counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, commands.size());
+				counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, txns.size());
 				this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
 			});
 	}

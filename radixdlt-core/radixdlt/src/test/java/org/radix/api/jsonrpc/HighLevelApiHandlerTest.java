@@ -116,7 +116,7 @@ public class HighLevelApiHandlerTest {
 			TokenDefinitionRecord.create(
 				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt256.ONE, UInt256.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
-				false, Map.of()
+				false
 			));
 	}
 

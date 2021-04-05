@@ -17,9 +17,10 @@
 
 package org.radix.serialization;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.middleware2.network.MempoolAddMessage;
+
+import java.util.List;
 
 public class MempoolAddMessageSerializeTest extends SerializeMessageObject<MempoolAddMessage> {
 	public MempoolAddMessageSerializeTest() {
@@ -27,7 +28,7 @@ public class MempoolAddMessageSerializeTest extends SerializeMessageObject<Mempo
 	}
 
 	private static MempoolAddMessage get() {
-		final Command command = new Command(new byte[] {0, 1});
-		return new MempoolAddMessage(1, ImmutableList.of(command));
+		final var txn = Txn.create(new byte[]{0, 1});
+		return new MempoolAddMessage(1, List.of(txn));
 	}
 }

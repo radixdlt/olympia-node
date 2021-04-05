@@ -18,16 +18,16 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.common.primitives.Longs;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 
 /**
  * Submits unique bytes (incrementally) to a network
  */
-public class IncrementalBytes implements CommandGenerator {
+public class IncrementalBytes implements TxnGenerator {
 	private long commandId = 0;
 
 	@Override
-	public Command nextCommand() {
-		return new Command(Longs.toByteArray(commandId++));
+	public Txn nextTxn() {
+		return Txn.create(Longs.toByteArray(commandId++));
 	}
 }

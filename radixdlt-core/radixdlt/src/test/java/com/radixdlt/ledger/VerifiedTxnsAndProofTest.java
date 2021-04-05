@@ -30,9 +30,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VerifiedCommandsAndProofTest {
+public class VerifiedTxnsAndProofTest {
 	private LedgerProof stateAndProof;
-	private VerifiedCommandsAndProof emptyCommandsAndProof;
+	private VerifiedTxnsAndProof emptyCommandsAndProof;
 	private final long stateVersion = 232L;
 
 	@Before
@@ -40,7 +40,7 @@ public class VerifiedCommandsAndProofTest {
 		this.stateAndProof = mock(LedgerProof.class);
 		when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
 
-		this.emptyCommandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(), stateAndProof);
+		this.emptyCommandsAndProof = new VerifiedTxnsAndProof(ImmutableList.of(), stateAndProof);
 	}
 
 	@Test
@@ -50,7 +50,7 @@ public class VerifiedCommandsAndProofTest {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(VerifiedCommandsAndProof.class)
+		EqualsVerifier.forClass(VerifiedTxnsAndProof.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}

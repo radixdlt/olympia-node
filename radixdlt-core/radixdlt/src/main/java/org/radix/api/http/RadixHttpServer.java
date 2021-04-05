@@ -76,8 +76,6 @@ public final class RadixHttpServer {
 	}
 
 	public void start() {
-		this.atomsService.start();
-
 		server = Undertow.builder()
 			.addHttpListener(port, "0.0.0.0")
 			.setHandler(configureRoutes())
@@ -108,7 +106,6 @@ public final class RadixHttpServer {
 	}
 
 	public void stop() {
-		this.atomsService.stop();
 		this.server.stop();
 	}
 }

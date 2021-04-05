@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -34,11 +34,8 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
@@ -61,13 +58,12 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	// TODO: Refactor genesis store method
 	private static void storeGenesis(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		List<Atom> genesisAtoms,
+		List<Txn> genesisTxns,
 		ValidatorSetBuilder validatorSetBuilder,
-		Serialization serialization,
 		LedgerAccumulator ledgerAccumulator
 	) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisAtoms, PermissionLevel.SYSTEM);
+		branch.execute(genesisTxns, PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -76,13 +72,11 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
 		AccumulatorState accumulatorState = null;
 
-		for (var genesisAtom : genesisAtoms) {
-			var payload = serialization.toDson(genesisAtom, DsonOutput.Output.ALL);
-			var command = new Command(payload);
+		for (var txn : genesisTxns) {
 			if (accumulatorState == null) {
-				accumulatorState = new AccumulatorState(0, command.getId().asHashCode());
+				accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
 			} else {
-				accumulatorState = ledgerAccumulator.accumulate(accumulatorState, command.getId().asHashCode());
+				accumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getId().asHashCode());
 			}
 		}
 
@@ -94,7 +88,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
 
-		radixEngine.execute(genesisAtoms, LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
+		radixEngine.execute(genesisTxns, LedgerAndBFTProof.create(genesisProof), PermissionLevel.SYSTEM);
 	}
 
 	@Provides
@@ -104,14 +98,12 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		AtomIndex atomIndex,
 		CommittedReader committedReader,
-		@Genesis List<Atom> genesisAtoms,
-		Serialization serialization,
+		@Genesis List<Txn> genesisTxns,
 		ValidatorSetBuilder validatorSetBuilder,
 		LedgerAccumulator ledgerAccumulator
 	) throws RadixEngineException {
-		Command cmd = new Command(DefaultSerialization.getInstance().toDson(genesisAtoms.get(0), DsonOutput.Output.ALL));
-		if (!atomIndex.contains(cmd.getId())) {
-			storeGenesis(radixEngine, genesisAtoms, validatorSetBuilder, serialization, ledgerAccumulator);
+		if (!atomIndex.contains(genesisTxns.get(0).getId())) {
+			storeGenesis(radixEngine, genesisTxns, validatorSetBuilder, ledgerAccumulator);
 		}
 
 		return committedReader.getLastProof().orElseThrow();

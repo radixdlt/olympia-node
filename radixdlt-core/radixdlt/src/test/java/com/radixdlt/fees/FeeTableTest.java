@@ -17,13 +17,13 @@
 
 package com.radixdlt.fees;
 
+import com.radixdlt.atom.Txn;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +53,8 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		Atom a = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
-		UInt256 fee = ft.feeFor(a, ImmutableSet.of(), 0);
+		Txn txn = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
+		UInt256 fee = ft.feeFor(txn, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}
 

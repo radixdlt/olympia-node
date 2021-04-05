@@ -19,6 +19,8 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -31,9 +33,9 @@ public interface LedgerAccumulatorVerifier {
 	// TODO: use stream instead of list
 	boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail);
 
-	<T> Optional<ImmutableList<T>> verifyAndGetExtension(
+	<T> Optional<List<T>> verifyAndGetExtension(
 		AccumulatorState current,
-		ImmutableList<T> commands,
+		List<T> commands,
 		Function<T, HashCode> hashCodeMapper,
 		AccumulatorState tail
 	);

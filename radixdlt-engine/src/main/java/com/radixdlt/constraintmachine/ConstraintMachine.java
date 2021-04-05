@@ -17,13 +17,14 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
@@ -34,8 +35,10 @@ import com.radixdlt.utils.Ints;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -47,6 +50,9 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
+	private static final int DATA_MAX_SIZE = 255;
+	private static final int MAX_NUM_MESSAGES = 1;
+
 	private static final boolean[] truefalse = new boolean[] {
 		true, false
 	};
@@ -390,6 +396,21 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
+	public static List<REInstruction> toInstructions(List<byte[]> bytesList) {
+		Objects.requireNonNull(bytesList);
+		ImmutableList.Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
+
+		Iterator<byte[]> bytesIterator = bytesList.iterator();
+		while (bytesIterator.hasNext()) {
+			byte[] bytes = bytesIterator.next();
+			byte[] dataBytes = bytesIterator.next();
+			var instruction = REInstruction.create(bytes[0], dataBytes);
+			instructionsBuilder.add(instruction);
+		}
+
+		return instructionsBuilder.build();
+	}
+
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
@@ -401,29 +422,34 @@ public final class ConstraintMachine {
 		Atom atom,
 		List<ParsedInstruction> parsedInstructions
 	) {
+		var rawInstructions = toInstructions(atom.getInstructions());
+
 		long particleGroupIndex = 0;
 		long particleIndex = 0;
 		int instructionIndex = 0;
+		int numMessages = 0;
 
-		for (REInstruction inst : atom.getMicroInstructions()) {
+		for (var inst : rawInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			if (inst.getData().length > DATA_MAX_SIZE)	 {
+				return Optional.of(new CMError(
+					dp, CMErrorCode.DATA_TOO_LARGE, validationState, "Length is " + inst.getData().length
+				));
+			}
+
 			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+					nextParticle = SubstateSerializer.deserialize(inst.getData());
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
 
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
-					return Optional.of(new CMError(
-						dp,
-						CMErrorCode.INVALID_PARTICLE,
-						validationState,
-						staticCheckResult.getErrorMessage()
-					));
+					var errMsg = staticCheckResult.getErrorMessage();
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 				}
 				var substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				validationState.bootUp(instructionIndex, substate);
@@ -432,26 +458,22 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				parsedInstructions.add(ParsedInstruction.up(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
 				final Particle nextParticle;
 				try {
-					nextParticle = DefaultSerialization.getInstance().fromDson(inst.getData(), Particle.class);
+					nextParticle = SubstateSerializer.deserialize(inst.getData());
 				} catch (DeserializeException e) {
 					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState));
 				}
-
 				final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 				if (staticCheckResult.isError()) {
-					return Optional.of(new CMError(
-						dp,
-						CMErrorCode.INVALID_PARTICLE,
-						validationState,
-						staticCheckResult.getErrorMessage()
-					));
+					var errMsg = staticCheckResult.getErrorMessage();
+					return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 				}
-				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(nextParticle));
+
+				var substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(inst.getData()));
 				var stateError = validationState.virtualShutdown(substate);
 				if (stateError.isPresent()) {
 					return Optional.of(new CMError(dp, stateError.get(), validationState));
@@ -462,7 +484,7 @@ public final class ConstraintMachine {
 					return error;
 				}
 
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 				var substateId = SubstateId.fromBytes(inst.getData());
@@ -478,7 +500,7 @@ public final class ConstraintMachine {
 				}
 
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 				int index = Ints.fromByteArray(inst.getData());
@@ -495,28 +517,24 @@ public final class ConstraintMachine {
 
 				var substateId = SubstateId.ofSubstate(atom, index);
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.down(substate));
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
+			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
+				numMessages++;
+				if (numMessages > MAX_NUM_MESSAGES) {
+					return Optional.of(
+						new CMError(dp, CMErrorCode.TOO_MANY_MESSAGES, validationState)
+					);
+				}
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
 					return Optional.of(
-						new CMError(
-							DataPointer.ofParticleGroup(particleGroupIndex),
-							CMErrorCode.EMPTY_PARTICLE_GROUP,
-							validationState
-						)
+						new CMError(dp, CMErrorCode.EMPTY_PARTICLE_GROUP, validationState)
 					);
 				}
 
 				if (!validationState.isEmpty()) {
-					return Optional.of(
-						new CMError(
-							DataPointer.ofParticleGroup(particleGroupIndex),
-							CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-							validationState,
-							validationState.toString()
-						)
-					);
+					return Optional.of(new CMError(dp, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 				}
 				particleGroupIndex++;
 				particleIndex = 0;
@@ -556,7 +574,7 @@ public final class ConstraintMachine {
 			txn,
 			cmStore,
 			permissionLevel,
-			atom.getWitness(),
+			atom.computeHashToSign(),
 			atom.getSignature()
 		);
 

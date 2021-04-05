@@ -20,6 +20,7 @@ package com.radixdlt.integration.mempool;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
@@ -40,7 +41,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -100,7 +100,7 @@ public class MempoolRelayTest {
 
 	@Inject
 	@Genesis
-	private List<Atom> genesisAtoms;
+	private List<Txn> genesisTxns;
 
 	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final ImmutableList<Integer> validators;
@@ -178,7 +178,7 @@ public class MempoolRelayTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toInstance(genesisAtoms);
+					bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);
@@ -239,9 +239,9 @@ public class MempoolRelayTest {
 
 	@Test
 	public void full_node_should_relay_mempool_messages_so_they_can_be_processed_by_validator() {
-		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
-		processForCount(60000);
-		dispatch(0, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
+		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(100, true));
+		processForCount(100000);
+		dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
 		processForCount(10000);
 
 		// assert that validators have an empty mempool, but not the full nodes

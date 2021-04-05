@@ -17,16 +17,17 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,7 +38,7 @@ import java.util.TreeMap;
  */
 class InMemoryCommittedReader implements CommittedReader {
 	private final Object lock = new Object();
-	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
+	private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
 	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
@@ -54,13 +55,13 @@ class InMemoryCommittedReader implements CommittedReader {
 	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
 			synchronized (lock) {
-				var commands = update.getNewCommands();
+				var commands = update.getNewTxns();
 				long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
 				for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
 					int index = (int) (version - firstVersion);
 					commandsAndProof.put(
 						version,
-						new VerifiedCommandsAndProof(
+						new VerifiedTxnsAndProof(
 							commands.subList(index, commands.size()),
 							update.getTail()
 						)
@@ -75,21 +76,21 @@ class InMemoryCommittedReader implements CommittedReader {
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
 		synchronized (lock) {
 			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+			Entry<Long, VerifiedTxnsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 
 			if (entry != null) {
-				ImmutableList<Command> cmds = accumulatorVerifier
+				List<Txn> txns = accumulatorVerifier
 					.verifyAndGetExtension(
 						start.getLedgerHeader().getAccumulatorState(),
-						entry.getValue().getCommands(),
-						cmd -> cmd.getId().asHashCode(),
+						entry.getValue().getTxns(),
+						txn -> txn.getId().asHashCode(),
 						entry.getValue().getProof().getAccumulatorState()
 					).orElseThrow(() -> new RuntimeException());
 
-				return new VerifiedCommandsAndProof(cmds, entry.getValue().getProof());
+				return new VerifiedTxnsAndProof(txns, entry.getValue().getProof());
 			}
 
 			return null;

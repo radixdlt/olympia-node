@@ -17,9 +17,11 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
+
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.radix.network.messaging.Message;
 
@@ -30,28 +32,28 @@ import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {
-	@JsonProperty("commands")
+	@JsonProperty("txns")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<Command> commands;
+	private final List<byte[]> txns;
 
 	MempoolAddMessage() {
 		// Serializer only
 		super(0);
-		this.commands = null;
+		this.txns = null;
 	}
 
-	public MempoolAddMessage(int magic, ImmutableList<Command> commands) {
+	public MempoolAddMessage(int magic, List<Txn> txns) {
 		super(magic);
-		this.commands = Objects.requireNonNull(commands);
+		this.txns = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
 	}
 
-	public ImmutableList<Command> commands() {
-		return this.commands;
+	public List<Txn> getTxns() {
+		return txns == null ? List.of() : txns.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
+		return String.format("%s{txns=%s}", getClass().getSimpleName(), getTxns());
 	}
 
 	@Override
@@ -63,13 +65,13 @@ public final class MempoolAddMessage extends Message {
 			return false;
 		}
 		MempoolAddMessage that = (MempoolAddMessage) o;
-		return Objects.equals(commands, that.commands)
+		return Objects.equals(getTxns(), that.getTxns())
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, getTimestamp(), getMagic());
+		return Objects.hash(getTxns(), getTimestamp(), getMagic());
 	}
 }

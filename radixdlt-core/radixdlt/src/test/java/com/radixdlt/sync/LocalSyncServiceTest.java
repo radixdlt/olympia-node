@@ -30,7 +30,7 @@ import static org.mockito.Mockito.anyLong;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -40,10 +40,10 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
 import java.util.Comparator;
 import java.util.List;
@@ -330,14 +330,14 @@ public class LocalSyncServiceTest {
 		when(respHeadLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
 		final var respTailLedgerHeader = mock(LedgerHeader.class);
 		when(respTailLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
-		final var respHead = mock(DtoLedgerHeaderAndProof.class);
+		final var respHead = mock(DtoLedgerProof.class);
 		when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
-		final var respTail = mock(DtoLedgerHeaderAndProof.class);
+		final var respTail = mock(DtoLedgerProof.class);
 		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
-		final var response = mock(DtoCommandsAndProof.class);
-		final var cmd = mock(Command.class);
-		when(cmd.getId()).thenReturn(AID.ZERO);
-		when(response.getCommands()).thenReturn(ImmutableList.of(cmd));
+		final var response = mock(DtoTxnsAndProof.class);
+		final var txn = mock(Txn.class);
+		when(txn.getId()).thenReturn(AID.ZERO);
+		when(response.getTxns()).thenReturn(ImmutableList.of(txn));
 		when(response.getHead()).thenReturn(respHead);
 		when(response.getTail()).thenReturn(respTail);
 
@@ -367,7 +367,7 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerUpdateEventProcessor().process(
-			new LedgerUpdate(new VerifiedCommandsAndProof(ImmutableList.of(), targetHeader))
+			new LedgerUpdate(new VerifiedTxnsAndProof(ImmutableList.of(), targetHeader))
 		);
 
 		verifyNoMoreInteractions(syncRequestDispatcher);

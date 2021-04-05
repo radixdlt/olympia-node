@@ -17,7 +17,7 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import java.util.Objects;
@@ -28,18 +28,16 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
-	private final Atom atom;
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;
 	private final CMError cmError;
 
-	public RadixEngineException(Atom atom, RadixEngineErrorCode errorCode, String message, DataPointer dp) {
-		this(atom, errorCode, message, dp, null);
+	public RadixEngineException(Txn txn, RadixEngineErrorCode errorCode, String message, DataPointer dp) {
+		this(txn, errorCode, message, dp, null);
 	}
 
-	public RadixEngineException(Atom atom, RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
-		super(message + " " + dp + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + atom.toInstructionsString());
-		this.atom = atom;
+	public RadixEngineException(Txn txn, RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
+		super(message + " " + dp + " " + (cmError == null ? "" : "\n" + cmError) + "\n" + txn);
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;
 		this.cmError = cmError;

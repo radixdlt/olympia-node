@@ -35,7 +35,7 @@ public class RemoteSyncResponseValidatorSetVerifier {
 	}
 
 	public boolean verifyValidatorSet(SyncResponse syncResponse) {
-		final var dtoCommandsAndProof = syncResponse.getCommandsAndProof();
+		final var dtoCommandsAndProof = syncResponse.getTxnsAndProof();
 		final var validationState = validatorSet.newValidationState();
 
 		dtoCommandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->

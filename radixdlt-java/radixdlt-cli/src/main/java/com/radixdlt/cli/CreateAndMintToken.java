@@ -22,13 +22,10 @@
 
 package com.radixdlt.cli;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.identifiers.RRI;
@@ -104,11 +101,7 @@ public class CreateAndMintToken implements Runnable {
 						tokenName,
 						tokenDescription,
 						null,
-						null,
-						ImmutableMap.of(
-							MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-							MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-						)
+						null
 					)
 				);
 			} else {

@@ -19,23 +19,21 @@ package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.Ints;
-import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Cursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +62,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +73,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -161,17 +157,16 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Atom> get(AID aid) {
+	public Optional<Txn> get(AID aid) {
 		return withTime(() -> {
 			try {
 				var key = entry(aid.getBytes());
 				var value = entry();
 
 				if (atomIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-					value.setData(atomLog.read(fromByteArray(value.getData())));
-
+					var txnBytes = atomLog.read(fromByteArray(value.getData()));
 					addBytesRead(value, key);
-					return Optional.of(deserializeOrElseFail(value.getData(), Atom.class));
+					return Optional.of(Txn.create(txnBytes));
 				}
 			} catch (Exception e) {
 				fail("Get of atom '" + aid + "' failed", e);
@@ -191,8 +186,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeAtom(Transaction tx, Atom atom) {
-		withTime(() -> doStore(atom, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public void storeAtom(Transaction tx, RETxn radixEngineTxn) {
+		withTime(() -> doStore(radixEngineTxn, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -279,14 +274,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			while (status == SUCCESS) {
 				if (value.getData().length > 0) {
 					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
-					var particle = deserializeOrElseFail(particleBytes, Particle.class);
+					var particle = SubstateSerializer.deserialize(particleBytes);
 					var substateId = SubstateId.fromBytes(key.getData());
 					var substate = Substate.create(particle, substateId);
-					particleConsumer.accept(ParsedInstruction.up(substate));
+					var instruction = REInstruction.create(REInstruction.REOp.UP.opCode(), particleBytes);
+					particleConsumer.accept(ParsedInstruction.of(instruction, substate, Spin.UP));
 				}
 
 				status = cursor.getNext(key, value, DEFAULT);
 			}
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Unable to deserialize substate");
 		}
 	}
 
@@ -451,11 +449,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return OptionalLong.of(Longs.fromByteArray(entry.getData(), Long.BYTES));
 	}
 
-	public <U extends Particle> Iterable<Substate> upSubstates(
-		Class<U> substateClass,
-		Predicate<U> substatePredicate
-	) {
-		final String idForClass = serialization.getIdForClass(substateClass);
+	@Override
+	public Iterable<Substate> index(Class<? extends Particle> particleClass) {
+		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
 
@@ -472,12 +468,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				// TODO: Remove memcpy
 				byte[] serializedParticle = new byte[value.getData().length - EUID.BYTES];
 				System.arraycopy(value.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
-				U rawSubstate = deserializeOrElseFail(serializedParticle, substateClass);
-				if (substatePredicate.test(rawSubstate)) {
-					substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
-				}
+				var rawSubstate = SubstateSerializer.deserialize(serializedParticle);
+				substates.add(Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData())));
 				status = particleCursor.getNextDup(index, substateIdBytes, value, null);
 			}
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Unable to deserialize substate");
 		}
 
 		return substates;
@@ -510,18 +506,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return v;
 	}
 
-	private void upParticle(com.sleepycat.je.Transaction txn, byte[] substateBytes, Atom atom, int index) {
-		// TODO: Cleanup indexing of substate class
-		final Particle particle;
-		try {
-			particle = serialization.fromDson(substateBytes, Particle.class);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException();
-		}
+	private void upParticle(
+		com.sleepycat.je.Transaction txn,
+		Class<? extends Particle> particleClass,
+		byte[] substateBytes,
+		SubstateId substateId
+	) {
+		byte[] particleKey = substateId.asBytes();
 
-		byte[] particleKey = SubstateId.ofSubstate(atom, index).asBytes();
-
-		final String idForClass = serialization.getIdForClass(particle.getClass());
+		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = numericClassId.toByteArray();
 
@@ -539,19 +532,19 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		particleDatabase.put(txn, entry(particleKey), downEntry());
 	}
 
-	private void downSubstate(com.sleepycat.je.Transaction txn, byte[] substateId) {
+	private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		// TODO: check for up Particle state
 		final var downedParticle = entry();
-		var status = particleDatabase.get(txn, entry(substateId), downedParticle, DEFAULT);
+		var status = particleDatabase.get(txn, entry(substateId.asBytes()), downedParticle, DEFAULT);
 		if (status != SUCCESS) {
-			throw new IllegalStateException("Downing particle does not exist " + Hex.toHexString(substateId));
+			throw new IllegalStateException("Downing particle does not exist " + substateId);
 		}
 
 		if (downedParticle.getData().length == 0) {
-			throw new IllegalStateException("Particle was already spun down: " + Hex.toHexString(substateId));
+			throw new IllegalStateException("Particle was already spun down: " + substateId);
 		}
 
-		particleDatabase.delete(txn, entry(substateId));
+		particleDatabase.delete(txn, entry(substateId.asBytes()));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -571,42 +564,30 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		System.arraycopy(e.getData(), EUID.BYTES, serializedParticle, 0, serializedParticle.length);
 
 		try {
-			return Optional.of(serialization.fromDson(serializedParticle, Particle.class));
+			return Optional.of(SubstateSerializer.deserialize(serializedParticle));
 		} catch (DeserializeException ex) {
 			throw new IllegalStateException("Unable to deserialize particle");
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, Atom tx, int instIndex) {
-		final var instruction = tx.getMicroInstructions().get(instIndex);
-
-		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
-			upParticle(txn, instruction.getData(), tx, instIndex);
-		} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
-			downVirtualSubstate(txn, SubstateId.ofVirtualSubstate(instruction.getData()));
-		} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
-			downSubstate(txn, instruction.getData());
-		} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
-			// Optimize local down
-			var index = Ints.fromByteArray(instruction.getData());
-			var substateId = SubstateId.ofSubstate(tx, index).asBytes();
-			downSubstate(txn, substateId);
-		} else if (instruction.getMicroOp() == REInstruction.REOp.END) {
-			// No-Op
-			return;
+	private void updateParticle(com.sleepycat.je.Transaction txn, ParsedInstruction inst) {
+		if (inst.getSpin() == Spin.UP) {
+			upParticle(txn, inst.getParticle().getClass(), inst.getInstruction().getData(), inst.getSubstate().getId());
+		} else if (inst.getSpin() == Spin.DOWN) {
+			if (inst.getSubstate().getId().isVirtual()) {
+				downVirtualSubstate(txn, inst.getSubstate().getId());
+			} else {
+				downSubstate(txn, inst.getSubstate().getId());
+			}
 		} else {
-			throw new BerkeleyStoreException("Unknown op: " + instruction.getMicroOp());
+			throw new BerkeleyStoreException("Unknown op: " + inst.getSpin());
 		}
 	}
 
 	private void doStore(
-		Atom atom,
+		RETxn radixEngineTxn,
 		com.sleepycat.je.Transaction transaction
 	) {
-		var atomData = serialize(atom);
-		var cmd = new Command(atomData);
-		var aid = cmd.getId();
-
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {
 			var key = entry();
@@ -619,8 +600,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
+			var aid = radixEngineTxn.getTxn().getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(atomData);
+			var offset = atomLog.write(radixEngineTxn.getTxn().getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -631,15 +613,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
-				this.updateParticle(transaction, atom, i);
-			}
-
+			radixEngineTxn.instructions().forEach(i -> this.updateParticle(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom:\n" + atom.toInstructionsString(), e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + radixEngineTxn, e);
 		}
 	}
 
@@ -655,8 +634,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return entry(serialization.toDson(instance, Output.ALL));
 	}
 
-	private Pair<List<Atom>, LedgerProof> getNextCommittedAtomsInternal(long stateVersion) {
-		final var start = System.nanoTime();
+	@Override
+	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+		final var startTime = System.nanoTime();
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
 		final LedgerProof nextHeader;
@@ -672,7 +654,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			txn.commit();
 		}
 
-		final var atoms = ImmutableList.<Atom>builder();
+		final var txns = ImmutableList.<Txn>builder();
 		final var atomSearchKey = toPKey(stateVersion + 1);
 		final var atomPosData = entry();
 
@@ -685,31 +667,18 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					throw new BerkeleyStoreException("Atom database search failure");
 				}
 				var offset = fromByteArray(atomPosData.getData());
-				var atom = deserializeOrElseFail(atomLog.read(offset), Atom.class);
-				atoms.add(atom);
+				var txnBytes = atomLog.read(offset);
+				txns.add(Txn.create(txnBytes));
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 				count++;
 			} while (count < atomCount);
-			return Pair.of(atoms.build(), nextHeader);
+
+			return new VerifiedTxnsAndProof(txns.build(), nextHeader);
 		} catch (IOException e) {
 			throw new BerkeleyStoreException("Unable to read from atom store.", e);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
+			addTime(startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
 		}
-	}
-
-	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start) {
-		// TODO: verify start
-		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		var atoms = this.getNextCommittedAtomsInternal(stateVersion);
-		if (atoms == null) {
-			return null;
-		}
-		final var commands = atoms.getFirst().stream()
-			.map(a -> new Command(serialization.toDson(a, DsonOutput.Output.PERSIST)))
-			.collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(commands, atoms.getSecond());
 	}
 
 	@Override

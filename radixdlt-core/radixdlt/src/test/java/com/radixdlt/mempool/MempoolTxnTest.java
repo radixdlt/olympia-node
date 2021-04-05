@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,31 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.mempool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
 import org.junit.Test;
 
-public class CommandTest {
-	private Command command;
-
-	@Before
-	public void setUp() {
-		this.command = new Command(new byte[] {1, 2, 3});
-	}
-
+public class MempoolTxnTest {
 	@Test
-	public void testGetters() {
-		assertThat(this.command.getPayload()).isEqualTo(new byte[] {1, 2, 3});
-	}
-
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(Command.class)
-			.withIgnoredFields("payload")
+	public void equalsVerifier() {
+		EqualsVerifier.forClass(MempoolTxn.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 }

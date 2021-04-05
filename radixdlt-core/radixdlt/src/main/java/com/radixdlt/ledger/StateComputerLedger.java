@@ -20,7 +20,7 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -31,10 +31,9 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.google.common.hash.HashCode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -44,57 +43,56 @@ import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Synchronizes execution
  */
-public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 
-	public interface PreparedCommand {
-		Command command();
-
-		HashCode hash();
+	public interface PreparedTxn {
+		Txn txn();
 	}
 
 	public static class StateComputerResult {
-		private final ImmutableList<PreparedCommand> preparedCommands;
-		private final ImmutableMap<Command, Exception> failedCommands;
+		private final List<PreparedTxn> preparedTxns;
+		private final Map<Txn, Exception> failedCommands;
 		private final BFTValidatorSet nextValidatorSet;
 
 		public StateComputerResult(
-			ImmutableList<PreparedCommand> preparedCommands,
-			ImmutableMap<Command, Exception> failedCommands,
+			List<PreparedTxn> preparedTxns,
+			Map<Txn, Exception> failedCommands,
 			BFTValidatorSet nextValidatorSet
 		) {
-			this.preparedCommands = Objects.requireNonNull(preparedCommands);
+			this.preparedTxns = Objects.requireNonNull(preparedTxns);
 			this.failedCommands = Objects.requireNonNull(failedCommands);
 			this.nextValidatorSet = nextValidatorSet;
 		}
 
-		public StateComputerResult(ImmutableList<PreparedCommand> preparedCommands, ImmutableMap<Command, Exception> failedCommands) {
-			this(preparedCommands, failedCommands, null);
+		public StateComputerResult(List<PreparedTxn> preparedTxns, Map<Txn, Exception> failedCommands) {
+			this(preparedTxns, failedCommands, null);
 		}
 
 		public Optional<BFTValidatorSet> getNextValidatorSet() {
 			return Optional.ofNullable(nextValidatorSet);
 		}
 
-		public ImmutableList<PreparedCommand> getSuccessfulCommands() {
-			return preparedCommands;
+		public List<PreparedTxn> getSuccessfulCommands() {
+			return preparedTxns;
 		}
 
-		public ImmutableMap<Command, Exception> getFailedCommands() {
+		public Map<Txn, Exception> getFailedCommands() {
 			return failedCommands;
 		}
 	}
 
 	public interface StateComputer {
-		void addToMempool(Command command, BFTNode origin);
-		Command getNextCommandFromMempool(ImmutableList<PreparedCommand> prepared);
-		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
-		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
+		void addToMempool(Txn txn, BFTNode origin);
+		List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared);
+		StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp);
+		void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
 	private final Comparator<LedgerProof> headerComparator;
@@ -132,7 +130,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, node));
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, node));
 			}
 		};
 	}
@@ -140,18 +138,18 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				mempoolAdd.getCommands().forEach(cmd -> stateComputer.addToMempool(cmd, null));
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, null));
 			}
 		};
 	}
 
 	@Override
-	public Command generateNextCommand(View view, List<PreparedVertex> prepared) {
-		final ImmutableList<PreparedCommand> preparedCommands = prepared.stream()
+	public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+		final ImmutableList<PreparedTxn> preparedTxns = prepared.stream()
 				.flatMap(PreparedVertex::successfulCommands)
 				.collect(ImmutableList.toImmutableList());
 		synchronized (lock) {
-			return stateComputer.getNextCommandFromMempool(preparedCommands);
+			return stateComputer.getNextTxnsFromMempool(preparedTxns);
 		}
 	}
 
@@ -159,7 +157,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
 		final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-		final ImmutableList<PreparedCommand> prevCommands = previous.stream()
+		final ImmutableList<PreparedTxn> prevCommands = previous.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.collect(ImmutableList.toImmutableList());
 		final long quorumTimestamp;
@@ -183,14 +181,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				final long localTimestamp = timeSupplier.currentTime();
 				final PreparedVertex preparedVertex = vertex
 					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), quorumTimestamp), localTimestamp)
-					.andCommands(ImmutableList.of(), ImmutableMap.of());
+					.andTxns(ImmutableList.of(), ImmutableMap.of());
 				return Optional.of(preparedVertex);
 			}
 
-			final Optional<ImmutableList<PreparedCommand>> maybeCommands = this.verifier.verifyAndGetExtension(
+			final var maybeCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
-				PreparedCommand::hash,
+				p -> p.txn().getId().asHashCode(),
 				parentAccumulatorState
 			);
 
@@ -200,19 +198,19 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return Optional.empty();
 			}
 
-			final ImmutableList<PreparedCommand> concatenatedCommands = maybeCommands.get();
+			final var concatenatedCommands = maybeCommands.get();
 
 			final StateComputerResult result = stateComputer.prepare(
 				concatenatedCommands,
-				vertex.getCommand().orElse(null),
+				vertex.getTxns(),
 				vertex.getParentHeader().getLedgerHeader().getEpoch(),
 				vertex.getView(),
 				quorumTimestamp
 			);
 
 			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
-			for (PreparedCommand cmd : result.getSuccessfulCommands()) {
-				accumulatorState = this.accumulator.accumulate(accumulatorState, cmd.hash());
+			for (PreparedTxn txn : result.getSuccessfulCommands()) {
+				accumulatorState = this.accumulator.accumulate(accumulatorState, txn.txn().getId().asHashCode());
 			}
 
 			final LedgerHeader ledgerHeader = LedgerHeader.create(
@@ -226,56 +224,56 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			final long localTimestamp = timeSupplier.currentTime();
 			return Optional.of(vertex
 				.withHeader(ledgerHeader, localTimestamp)
-				.andCommands(result.getSuccessfulCommands(), result.getFailedCommands())
+				.andTxns(result.getSuccessfulCommands(), result.getFailedCommands())
 			);
 		}
 	}
 
 	public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
 		return committedUpdate -> {
-			final ImmutableList<Command> commands = committedUpdate.getCommitted().stream()
+			final ImmutableList<Txn> txns = committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)
-				.map(PreparedCommand::command)
+				.map(PreparedTxn::txn)
 				.collect(ImmutableList.toImmutableList());
-			LedgerProof proof = committedUpdate.getVertexStoreState().getRootHeader();
-			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
+			var proof = committedUpdate.getVertexStoreState().getRootHeader();
+			var verifiedTxnsAndProof = new VerifiedTxnsAndProof(txns, proof);
 
 			// TODO: Make these two atomic (RPNV1-827)
-			this.commit(verifiedCommandsAndProof, committedUpdate.getVertexStoreState());
+			this.commit(verifiedTxnsAndProof, committedUpdate.getVertexStoreState());
 		};
 	}
 
-	public EventProcessor<VerifiedCommandsAndProof> syncEventProcessor() {
+	public EventProcessor<VerifiedTxnsAndProof> syncEventProcessor() {
 		return p -> this.commit(p, null);
 	}
 
-	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+	private void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		synchronized (lock) {
-			final LedgerProof nextHeader = verifiedCommandsAndProof.getProof();
+			final LedgerProof nextHeader = verifiedTxnsAndProof.getProof();
 			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
 
-			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
+			var verifiedExtension = verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
-				verifiedCommandsAndProof.getCommands(),
-				cmd -> cmd.getId().asHashCode(),
-				verifiedCommandsAndProof.getProof().getAccumulatorState()
+				verifiedTxnsAndProof.getTxns(),
+				txn -> txn.getId().asHashCode(),
+				verifiedTxnsAndProof.getProof().getAccumulatorState()
 			);
 
-			if (!verifiedExtension.isPresent()) {
-				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
+			if (verifiedExtension.isEmpty()) {
+				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedTxnsAndProof);
 			}
 
-			ImmutableList<Command> commands = verifiedExtension.get();
+			var txns = verifiedExtension.get();
 			if (vertexStoreState == null) {
-				this.counters.add(CounterType.LEDGER_SYNC_COMMANDS_PROCESSED, commands.size());
+				this.counters.add(CounterType.LEDGER_SYNC_COMMANDS_PROCESSED, txns.size());
 			} else {
-				this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, commands.size());
+				this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, txns.size());
 			}
 
-			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
-				commands, verifiedCommandsAndProof.getProof()
+			VerifiedTxnsAndProof commandsToStore = new VerifiedTxnsAndProof(
+				txns, verifiedTxnsAndProof.getProof()
 			);
 
 			// persist

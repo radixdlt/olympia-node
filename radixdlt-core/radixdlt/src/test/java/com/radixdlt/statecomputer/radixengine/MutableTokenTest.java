@@ -18,7 +18,6 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -30,7 +29,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
@@ -87,11 +85,7 @@ public class MutableTokenTest {
 			"Best Token",
 			UInt256.ONE,
 			null,
-			null,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.NONE
-			)
+			null
 		);
 		var atom = TxLowLevelBuilder.newBuilder()
 			.virtualDown(new RRIParticle(RRI.of(address, "JOSH")))
@@ -111,11 +105,7 @@ public class MutableTokenTest {
 			"test",
 			"desc",
 			null,
-			null,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			)
+			null
 		);
 		var atom = TxBuilder.newBuilder(address)
 			.createMutableToken(tokDef)
@@ -136,11 +126,7 @@ public class MutableTokenTest {
 			"test",
 			null,
 			null,
-			null,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			)
+			null
 		);
 		var atom = TxBuilder.newBuilder(address)
 			.createMutableToken(tokDef)
@@ -160,11 +146,7 @@ public class MutableTokenTest {
 			"desc",
 			null,
 			null,
-			UInt256.TWO,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			)
+			UInt256.TWO
 		);
 		var atom = TxBuilder.newBuilder(address)
 			.createMutableToken(tokDef)

@@ -99,11 +99,6 @@ public final class ParticleGroup {
 			return this;
 		}
 
-		public final ParticleGroupBuilder spinDown(SubstateId substateId) {
-			this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
-			return this;
-		}
-
 		public ParticleGroup build() {
 			return new ParticleGroup(ImmutableList.copyOf(this.instructions));
 		}

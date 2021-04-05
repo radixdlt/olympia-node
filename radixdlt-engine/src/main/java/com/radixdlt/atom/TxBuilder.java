@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
@@ -28,7 +27,6 @@ import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -40,55 +38,47 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
-	private static final Logger logger = LogManager.getLogger();
-
 	private final TxLowLevelBuilder lowLevelBuilder;
-	private final Set<SubstateId> downParticles;
 	private final RadixAddress address;
-	private final Iterable<Substate> remoteUpSubstate;
+	private final SubstateStore remoteSubstate;
 
 	private TxBuilder(
 		RadixAddress address,
-		Set<SubstateId> downVirtualParticles,
-		Iterable<Substate> remoteUpSubstate
+		SubstateStore remoteSubstate
 	) {
 		this.address = address;
 		this.lowLevelBuilder = TxLowLevelBuilder.newBuilder();
-		this.downParticles = new HashSet<>(downVirtualParticles);
-		this.remoteUpSubstate = remoteUpSubstate;
+		this.remoteSubstate = remoteSubstate;
 	}
 
-	public static TxBuilder newBuilder(RadixAddress address, Iterable<Substate> remoteUpSubstate) {
-		return new TxBuilder(address, Set.of(), remoteUpSubstate);
+	public static TxBuilder newBuilder(RadixAddress address, SubstateStore remoteSubstate) {
+		return new TxBuilder(address, remoteSubstate);
 	}
 
 	public static TxBuilder newBuilder(RadixAddress address) {
-		return new TxBuilder(address, Set.of(), List.of());
+		return new TxBuilder(address, c -> List.of());
 	}
 
-	public static TxBuilder newSystemBuilder(Iterable<Substate> remoteUpSubstate) {
-		return new TxBuilder(null, Set.of(), remoteUpSubstate);
+	public static TxBuilder newSystemBuilder(SubstateStore remoteSubstate) {
+		return new TxBuilder(null, remoteSubstate);
 	}
 
 	public static TxBuilder newSystemBuilder() {
-		return new TxBuilder(null, Set.of(), List.of());
+		return new TxBuilder(null, c -> List.of());
 	}
 
 	public TxLowLevelBuilder toLowLevelBuilder() {
@@ -105,21 +95,25 @@ public final class TxBuilder {
 
 	private void virtualDown(Particle particle) {
 		lowLevelBuilder.virtualDown(particle);
-		downParticles.add(SubstateId.ofVirtualSubstate(particle));
 	}
 
 	private void down(SubstateId substateId) {
 		lowLevelBuilder.down(substateId);
-		downParticles.add(substateId);
 	}
 
 	private void localDown(int index) {
 		lowLevelBuilder.localDown(index);
 	}
 
+	private Iterable<Substate> remoteSubstates(Class<? extends Particle> particleClass) {
+		return Iterables.filter(
+			remoteSubstate.index(particleClass),
+			s -> !lowLevelBuilder.remoteDownSubstate().contains(s.getId())
+		);
+	}
 
-	private Iterable<Substate> remoteUpSubstates() {
-		return Iterables.filter(remoteUpSubstate, s -> !downParticles.contains(s.getId()));
+	private Stream<Substate> remoteSubstatesStream(Class<? extends Particle> particleClass) {
+		return StreamSupport.stream(remoteSubstates(particleClass).spliterator(), false);
 	}
 
 	private <T extends Particle> Substate findSubstate(
@@ -128,7 +122,7 @@ public final class TxBuilder {
 		int index,
 		String errorMessage
 	) throws TxBuilderException {
-		var substateRead = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
+		var substateRead = remoteSubstatesStream(particleClass)
 			.filter(s -> {
 				if (!particleClass.isInstance(s.getParticle())) {
 					return false;
@@ -152,7 +146,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		var substateRead = Streams.concat(
 			lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-			StreamSupport.stream(remoteUpSubstates().spliterator(), false).map(Substate::getParticle)
+			remoteSubstatesStream(particleClass).map(Substate::getParticle)
 		)
 			.filter(particleClass::isInstance)
 			.map(particleClass::cast)
@@ -204,14 +198,8 @@ public final class TxBuilder {
 			return localDown.get();
 		}
 
-		var substateDown = StreamSupport.stream(remoteUpSubstates().spliterator(), false)
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
+		var substateDown = remoteSubstatesStream(particleClass)
+			.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 			.peek(s -> this.down(s.getId()))
 			.map(Substate::getParticle)
 			.map(particleClass::cast)
@@ -440,7 +428,7 @@ public final class TxBuilder {
 			tokenDefinition.getSupply(),
 			tokenDefinition.getGranularity(),
 			tokenRRI,
-			ImmutableMap.of())
+			false)
 		);
 
 		up(new FixedSupplyTokenDefinitionParticle(
@@ -469,7 +457,7 @@ public final class TxBuilder {
 			"RRI not available"
 		);
 		final var factory = TokDefParticleFactory.create(
-			tokenRRI, tokenDefinition.getTokenPermissions(), UInt256.ONE
+			tokenRRI, true, UInt256.ONE
 		);
 		up(factory.createUnallocated(UInt256.MAX_VALUE));
 		up(new MutableSupplyTokenDefinitionParticle(
@@ -478,8 +466,7 @@ public final class TxBuilder {
 			tokenDefinition.getDescription(),
 			tokenDefinition.getGranularity(),
 			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl(),
-			tokenDefinition.getTokenPermissions()
+			tokenDefinition.getTokenUrl()
 		));
 		particleGroup();
 
@@ -494,7 +481,7 @@ public final class TxBuilder {
 		);
 
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 
 		swapFungible(
@@ -518,10 +505,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -549,10 +533,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -571,14 +552,14 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		// TODO: Need to include mutable supply
+		// TODO: Need to include fixed supply
 		var tokenDefSubstate = find(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
 			"Could not find token rri " + rri
 		);
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 		swapFungible(
 			TransferrableTokensParticle.class,
@@ -601,7 +582,7 @@ public final class TxBuilder {
 			"Could not find token rri " + rri
 		);
 		final var factory = TokDefParticleFactory.create(
-			rri, tokenDefSubstate.getTokenPermissions(), tokenDefSubstate.getGranularity()
+			rri, true, tokenDefSubstate.getGranularity()
 		);
 		swapFungible(
 			TransferrableTokensParticle.class,
@@ -622,10 +603,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -654,10 +632,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -681,10 +656,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 
@@ -706,10 +678,7 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			ImmutableMap.of(
-				MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-				MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			),
+			true,
 			UInt256.ONE
 		);
 		swapFungible(
@@ -725,35 +694,37 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public Atom signAndBuildRemoteSubstateOnly(
+	public Txn signAndBuildRemoteSubstateOnly(
 		Function<HashCode, ECDSASignature> signer,
-		Consumer<Iterable<Substate>> upSubstateConsumer
+		Consumer<SubstateStore> upSubstateConsumer
 	) {
-		var atom = lowLevelBuilder.signAndBuild(signer);
-		upSubstateConsumer.accept(remoteUpSubstates());
-		return atom;
+		var txn = lowLevelBuilder.signAndBuild(signer);
+		upSubstateConsumer.accept(this::remoteSubstates);
+		return txn;
 	}
 
-	public Atom signAndBuild(
+	public Txn signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
-		Consumer<Iterable<Substate>> upSubstateConsumer
+		Consumer<SubstateStore> upSubstateConsumer
 	) {
-		var atom = lowLevelBuilder.signAndBuild(signer);
-		var upSubstate = Iterables.concat(
+		var txn = lowLevelBuilder.signAndBuild(signer);
+		SubstateStore upSubstate = c -> Iterables.concat(
 			lowLevelBuilder.localUpSubstate().stream()
-				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(atom, l.getIndex())))
+				.filter(l -> c.isInstance(l.getParticle()))
+				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
 				.collect(Collectors.toList()),
-			remoteUpSubstates()
+			remoteSubstates(c)
 		);
 		upSubstateConsumer.accept(upSubstate);
-		return atom;
+
+		return txn;
 	}
 
-	public Atom signAndBuild(Function<HashCode, ECDSASignature> signer) {
+	public Txn signAndBuild(Function<HashCode, ECDSASignature> signer) {
 		return lowLevelBuilder.signAndBuild(signer);
 	}
 
-	public Atom buildWithoutSignature() {
+	public Txn buildWithoutSignature() {
 		return lowLevelBuilder.buildWithoutSignature();
 	}
 }

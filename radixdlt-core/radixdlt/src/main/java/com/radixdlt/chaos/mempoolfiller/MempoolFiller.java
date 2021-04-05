@@ -19,13 +19,11 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -40,8 +38,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
@@ -53,14 +49,12 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Periodically fills the mempool with valid transactions
  */
 public final class MempoolFiller {
 	private static final Logger logger = LogManager.getLogger();
-	private final Serialization serialization;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
@@ -83,7 +77,6 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@NativeToken RRI nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
-		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
@@ -95,7 +88,6 @@ public final class MempoolFiller {
 		this.selfAddress = selfAddress;
 		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
-		this.serialization = serialization;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;
@@ -111,10 +103,12 @@ public final class MempoolFiller {
 			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
 			if (u.enabled() == enabled) {
+				u.onError("Already " + (enabled ? "enabled." : "disabled."));
 				return;
 			}
 
 			logger.info("Mempool Filler: Updating " + u.enabled());
+			u.onSuccess();
 
 			if (u.enabled()) {
 				enabled = true;
@@ -125,13 +119,13 @@ public final class MempoolFiller {
 		};
 	}
 
-	private Optional<Atom> createAtom(Iterable<Substate> substate, int index, Consumer<Iterable<Substate>> nextSubstate) {
+	private Optional<Txn> createTxn(SubstateStore substateStore, int index, Consumer<SubstateStore> nextSubstate) {
 		try {
-			var atom = TxBuilder.newBuilder(selfAddress, substate)
+			var txn = TxBuilder.newBuilder(selfAddress, substateStore)
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
 				.burnForFee(nativeToken, fee)
 				.signAndBuildRemoteSubstateOnly(hashSigner::sign, nextSubstate);
-			return Optional.of(atom);
+			return Optional.of(txn);
 		} catch (TxBuilderException e) {
 			return Optional.empty();
 		}
@@ -144,47 +138,46 @@ public final class MempoolFiller {
 			}
 
 			var particleCount = radixEngine.getComputedState(Integer.class);
-			final List<Atom> atoms = radixEngine.getSubstateCache(
-				List.of(TransferrableTokensParticle.class),
-				substate -> {
-					var list = new ArrayList<Atom>();
-					var substateHolder = new AtomicReference<>(substate);
+			if (particleCount == 0) {
+				logger.info("Mempool Filler empty balance");
+				return;
+			}
+			final List<Txn> txns = radixEngine.accessSubstateStoreCache(
+				substateStore -> {
+					var list = new ArrayList<Txn>();
+					var substateHolder = new AtomicReference<>(substateStore);
 					for (int i = 0; i < numTransactions; i++) {
 						var index = random.nextInt(Math.min(particleCount, 500));
-						var maybeAtom = createAtom(substateHolder.get(), index, substateHolder::set);
-						if (maybeAtom.isEmpty()) {
+						var maybeTxn = createTxn(substateHolder.get(), index, substateHolder::set);
+						if (maybeTxn.isEmpty()) {
 							break;
 						}
-						list.add(maybeAtom.get());
+						list.add(maybeTxn.get());
 					}
 					return list;
 				}
 			);
 
-			var cmds = atoms.stream().map(a -> {
-				var payload = serialization.toDson(a, DsonOutput.Output.ALL);
-				return new Command(payload);
-			}).collect(Collectors.toList());
-
-			if (cmds.size() == 1) {
+			if (txns.size() == 1) {
 				logger.info("Mempool Filler mempool: {} Adding atom {} to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
-					cmds.get(0).getId()
+					txns.get(0).getId()
 				);
 			} else {
 				logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
-					cmds.size()
+					txns.size()
 				);
 			}
 
 			List<BFTNode> peers = peersView.peers();
-			cmds.forEach(cmd -> {
+			txns.forEach(txn -> {
 				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
+				var mempoolAdd = MempoolAdd.create(txn);
 				if (index == peers.size()) {
-					this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(cmd));
+					this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
 				} else {
-					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), MempoolAdd.create(cmd));
+					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), mempoolAdd);
 				}
 			});
 

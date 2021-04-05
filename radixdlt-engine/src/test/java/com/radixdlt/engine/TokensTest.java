@@ -1,6 +1,5 @@
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -62,7 +61,7 @@ public class TokensTest {
 			UInt256.TEN,
 			UInt256.ONE,
 			rri,
-			ImmutableMap.of()
+			false
 		);
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)

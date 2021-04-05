@@ -21,7 +21,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.constraintmachine.Particle;
@@ -50,7 +53,13 @@ public final class FeeTable {
 		return this.feeEntries;
 	}
 
-	public UInt256 feeFor(Atom atom, Set<Particle> outputs, int feeSize) {
+	public UInt256 feeFor(Txn txn, Set<Particle> outputs, int feeSize) {
+		Atom atom;
+		try {
+			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
 		UInt384 incrementalFees = UInt384.ZERO;
 		for (FeeEntry entry : this.feeEntries) {
 			incrementalFees = incrementalFees.add(entry.feeFor(atom, feeSize, outputs));

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,33 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.crypto.HashUtils;
 
-import java.util.Set;
+import java.util.List;
 
-public final class AtomQuery {
-	private final EUID destination;
-
-	public AtomQuery(EUID destination) {
-		this.destination = destination;
-	}
-
-	public EUID getDestination() {
-		return this.destination;
-	}
-
+/**
+ * Generates new random hash commands
+ */
+public final class RandomHashTxnsGenerator implements NextTxnsGenerator {
 	@Override
-	public String toString() {
-		return "AtomQuery: destination(" + this.destination + ")";
-	}
-
-	public boolean filter(Set<EUID> destinations) {
-		if (this.destination != null) {
-			return destinations.contains(this.destination);
-		}
-
-		return true;
+	public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+		return List.of(Txn.create(HashUtils.random256().asBytes()));
 	}
 }

@@ -18,12 +18,9 @@
 package com.radixdlt.atommodel.validators;
 
 import java.util.Objects;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -41,11 +38,6 @@ public final class UnregisteredValidatorParticle extends Particle {
 
 	public UnregisteredValidatorParticle(RadixAddress address) {
 		this.address = Objects.requireNonNull(address, "address");
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of(this.address.euid());
 	}
 
 	public RadixAddress getAddress() {

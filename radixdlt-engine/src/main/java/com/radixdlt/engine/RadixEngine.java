@@ -17,19 +17,22 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.Iterables;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
@@ -48,7 +51,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -171,28 +173,28 @@ public final class RadixEngine<M> {
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
-			var substateIterable = engineStore.upSubstates(
-				substateCacheRegister.getParticleClass(),
-				substateCacheRegister.getParticlePredicate()
-			);
-			substateIterable.forEach(cache::bringUp);
+			engineStore.index(substateCacheRegister.getParticleClass())
+				.forEach(substate -> {
+					var p = substateCacheRegister.getParticleClass().cast(substate.getParticle());
+					if (substateCacheRegister.getParticlePredicate().test(p)) {
+						cache.bringUp(substate);
+					}
+				});
 			substateCache.put(substateCacheRegister.getParticleClass(), cache);
 		}
 	}
 
-	public <T> T getSubstateCache(
-		List<Class<? extends Particle>> particleClasses,
-		Function<Iterable<Substate>, T> func
-	) {
+	// TODO: access engine store index
+	public <T> T accessSubstateStoreCache(Function<SubstateStore, T> func) {
 		synchronized (stateUpdateEngineLock) {
-			var substates = Iterables.concat(
-				particleClasses.stream()
-					.map(substateCache::get)
-					.map(s -> s.cache.values())
-					.collect(Collectors.toList())
-			);
-
-			return func.apply(substates);
+			SubstateStore substateStore = c -> {
+				var cache = substateCache.get(c);
+				if (cache == null) {
+					throw new IllegalStateException("Cache for substate type " + c + " does not exist.");
+				}
+				return substateCache.get(c).cache.values();
+			};
+			return func.apply(substateStore);
 		}
 	}
 
@@ -274,19 +276,16 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
-			return engine.execute(atoms);
+		public List<RETxn> execute(List<Txn> txns) throws RadixEngineException {
+			return engine.execute(txns);
 		}
 
-		public List<ParsedTransaction> execute(List<Atom> atoms, PermissionLevel permissionLevel) throws RadixEngineException {
-			return engine.execute(atoms, null, permissionLevel);
+		public List<RETxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+			return engine.execute(txns, null, permissionLevel);
 		}
 
-		public <T> T getSubstateCache(
-			List<Class<? extends Particle>> particleClasses,
-			Function<Iterable<Substate>, T> func
-		) {
-			return engine.getSubstateCache(particleClasses, func);
+		public <T> T getSubstateCache(Function<SubstateStore, T> func) {
+			return engine.accessSubstateStoreCache(func);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -328,12 +327,19 @@ public final class RadixEngine<M> {
 		}
 	}
 
-
-	private ParsedTransaction verify(CMStore.Transaction txn, Atom atom, PermissionLevel permissionLevel)
+	private RETxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws RadixEngineException {
+
+		final Atom atom;
+		try {
+			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+		} catch (DeserializeException e) {
+			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize atom", DataPointer.ofAtom());
+		}
+
 		var parsedInstructions = new ArrayList<ParsedInstruction>();
 		final Optional<CMError> error = constraintMachine.validate(
-			txn,
+			dbTransaction,
 			engineStore,
 			atom,
 			permissionLevel,
@@ -342,16 +348,16 @@ public final class RadixEngine<M> {
 
 		if (error.isPresent()) {
 			CMError e = error.get();
-			throw new RadixEngineException(atom, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
+			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
-		var parsedTransaction = new ParsedTransaction(atom, parsedInstructions);
+		var parsedTransaction = new RETxn(txn, parsedInstructions);
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom, permissionLevel, parsedTransaction);
+			Result hookResult = checker.check(txn, permissionLevel, parsedTransaction);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
-					atom,
+					txn,
 					RadixEngineErrorCode.HOOK_ERROR,
 					"Checker failed: " + hookResult.getErrorMessage(),
 					DataPointer.ofAtom()
@@ -366,22 +372,21 @@ public final class RadixEngine<M> {
 	 * Atomically stores the given atom into the store with default permission level USER.
 	 * If the atom has any conflicts or dependency issues the atom will not be stored.
 	 *
-	 * @param atoms atom to store
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<ParsedTransaction> execute(List<Atom> atoms) throws RadixEngineException {
-		return execute(atoms, null, PermissionLevel.USER);
+	public List<RETxn> execute(List<Txn> txns) throws RadixEngineException {
+		return execute(txns, null, PermissionLevel.USER);
 	}
 
 	/**
 	 * Atomically stores the given atom into the store. If the atom
 	 * has any conflicts or dependency issues the atom will not be stored.
 	 *
-	 * @param atoms atoms to store
+	 * @param txns transactions to execute
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<ParsedTransaction> execute(List<Atom> atoms, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public List<RETxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -391,33 +396,33 @@ public final class RadixEngine<M> {
 					)
 				);
 			}
-			var txn = engineStore.createTransaction();
+			var dbTransaction = engineStore.createTransaction();
 			try {
-				var parsedTransactions = executeInternal(txn, atoms, meta, permissionLevel);
-				txn.commit();
+				var parsedTransactions = executeInternal(dbTransaction, txns, meta, permissionLevel);
+				dbTransaction.commit();
 				return parsedTransactions;
 			} catch (Exception e) {
-				txn.abort();
+				dbTransaction.abort();
 				throw e;
 			}
 		}
 	}
 
-	private List<ParsedTransaction> executeInternal(
-		CMStore.Transaction txn,
-		List<Atom> atoms,
+	private List<RETxn> executeInternal(
+		CMStore.Transaction dbTransaction,
+		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<ParsedTransaction>();
-		for (var atom : atoms) {
+		var parsedTransactions = new ArrayList<RETxn>();
+		for (var txn : txns) {
 			// TODO: combine verification and storage
-			var parsedTransaction = this.verify(txn, atom, permissionLevel);
+			var parsedTransaction = this.verify(dbTransaction, txn, permissionLevel);
 			try {
-				this.engineStore.storeAtom(txn, atom);
+				this.engineStore.storeAtom(dbTransaction, parsedTransaction);
 			} catch (Exception e) {
-				logger.error("Store of atom {} failed. parsed: {}", atom, parsedTransaction);
+				logger.error("Store of atom failed: {}", parsedTransaction);
 				throw e;
 			}
 
@@ -446,7 +451,7 @@ public final class RadixEngine<M> {
 
 		checker.testMetadata(meta, this::getComputedState);
 		if (meta != null) {
-			this.engineStore.storeMetadata(txn, meta);
+			this.engineStore.storeMetadata(dbTransaction, meta);
 		}
 
 		return parsedTransactions;

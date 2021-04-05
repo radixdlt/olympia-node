@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.core.ledger;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
@@ -32,15 +31,12 @@ import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.client.core.ledger.AtomObservation.Type;
-import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.DeserializeException;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.annotations.Nullable;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -142,78 +138,6 @@ public class InMemoryAtomStore implements AtomStore {
 	 * @param atomObservation the atom to store
 	 */
 	public void store(RadixAddress address, AtomObservation atomObservation) {
-		synchronized (lock) {
-			final boolean synced = atomObservation.isHead();
-			syncedMap.put(address, synced);
-
-			final var atom = atomObservation.getAtom();
-			if (atom != null) {
-
-				final AtomObservation curObservation = atoms.get(atom);
-				final AtomObservationUpdateType nextUpdate = atomObservation.getUpdateType();
-				final AtomObservationUpdateType lastUpdate = curObservation != null ? curObservation.getUpdateType() : null;
-
-				final boolean include;
-				if (lastUpdate == null) {
-					include = nextUpdate.getType() == Type.STORE;
-					for (int i = 0; i < atom.getMicroInstructions().size(); i++) {
-						var instruction = atom.getMicroInstructions().get(i);
-						if (instruction.getMicroOp() == REInstruction.REOp.END) {
-							continue;
-						}
-
-						Particle particle;
-						try {
-							particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
-						} catch (DeserializeException e) {
-							particle = null;
-						}
-						var substate = Substate.create(particle, SubstateId.ofSubstate(atom, i));
-						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(substate);
-						if (spinParticleIndex == null) {
-							spinParticleIndex = new EnumMap<>(Spin.class);
-							particleIndex.put(substate, spinParticleIndex);
-						}
-						spinParticleIndex.merge(
-							instruction.getNextSpin(),
-							Collections.singleton(atom),
-							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
-						);
-					}
-				} else {
-					// Soft observation should not be able to update a hard state
-					// Only update if type changes
-					include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
-						&& nextUpdate.getType() != lastUpdate.getType();
-				}
-
-				final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
-				if (include || isSoftToHard) {
-					atoms.put(atom, atomObservation);
-				}
-
-				if (include) {
-					Addresses.ofAtom(atom).forEach(addr -> {
-						final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(addr);
-						if (observers != null) {
-							observers.forEach(e -> e.onNext(atomObservation));
-						}
-					});
-				}
-			} else {
-				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
-				if (observers != null) {
-					observers.forEach(e -> e.onNext(atomObservation));
-				}
-			}
-
-			if (synced) {
-				final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers = allSyncers.get(address);
-				if (syncers != null) {
-					syncers.forEach(e -> e.onNext(System.currentTimeMillis()));
-				}
-			}
-		}
 	}
 
 	@Override

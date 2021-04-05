@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
@@ -44,7 +44,7 @@ public final class MockedGenesisAtomModule extends AbstractModule {
 	    install(new RadixNativeTokenModule());
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
-		bind(new TypeLiteral<List<Atom>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

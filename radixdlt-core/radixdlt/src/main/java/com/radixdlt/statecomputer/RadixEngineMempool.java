@@ -21,15 +21,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.ParsedTransaction;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
@@ -37,26 +36,23 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAtom;
+import com.radixdlt.mempool.MempoolTxn;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -64,9 +60,9 @@ import java.util.stream.Collectors;
  * A mempool which uses internal radix engine to be more efficient.
  */
 @Singleton
-public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
-	private final ConcurrentHashMap<Command, MempoolAtom> data = new ConcurrentHashMap<>();
-	private final Map<SubstateId, Set<Command>> particleIndex = new HashMap<>();
+public final class RadixEngineMempool implements Mempool<RETxn> {
+	private final ConcurrentHashMap<AID, MempoolTxn> data = new ConcurrentHashMap<>();
+	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
 	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -89,28 +85,21 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 	}
 
 	@Override
-	public void add(Command command) throws MempoolRejectedException {
-		Atom atom;
-		try {
-			atom = DefaultSerialization.getInstance().fromDson(command.getPayload(), Atom.class);
-		} catch (DeserializeException e) {
-			throw new MempoolRejectedException("Deserialize failure.");
-		}
-
+	public void add(Txn txn) throws MempoolRejectedException {
 		if (this.data.size() >= this.mempoolConfig.maxSize()) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), this.mempoolConfig.maxSize())
 			);
 		}
 
-		if (this.data.containsKey(command)) {
-			throw new MempoolDuplicateException(String.format("Mempool already has command %s", command.getId()));
+		if (this.data.containsKey(txn.getId())) {
+			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn.getId()));
 		}
 
-		final List<ParsedTransaction> parsedTransactions;
+		final List<RETxn> radixEngineTxns;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			parsedTransactions = checker.execute(List.of(atom));
+			radixEngineTxns = checker.execute(List.of(txn));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new RadixEngineMempoolException(e);
@@ -118,31 +107,23 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 			radixEngine.deleteBranches();
 		}
 
-		this.data.put(command, MempoolAtom.create(atom, System.currentTimeMillis(), Optional.empty()));
-
-		for (var instruction : parsedTransactions.get(0).instructions()) {
+		var mempoolTxn = MempoolTxn.create(radixEngineTxns.get(0), System.currentTimeMillis(), Optional.empty());
+		this.data.put(txn.getId(), mempoolTxn);
+		for (var instruction : radixEngineTxns.get(0).instructions()) {
 			if (instruction.getSpin() == Spin.DOWN) {
 				var substateId = instruction.getSubstate().getId();
-				particleIndex.merge(substateId, Set.of(command), Sets::union);
+				substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
 			}
 		}
 
 		updateCounts();
 	}
 
-	// Hack, remove later
-	private static AID atomIdOf(Atom atom) {
-		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		var firstHash = HashUtils.sha256(dson);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return AID.from(secondHash.asBytes());
-	}
-
 	@Override
-	public List<Pair<Command, Exception>> committed(List<ParsedTransaction> transactions) {
-		final var removed = new ArrayList<Pair<Command, Exception>>();
-		final var atomIds = transactions.stream()
-			.map(ParsedTransaction::getAtomId)
+	public List<Pair<Txn, Exception>> committed(List<RETxn> transactions) {
+		final var removed = new ArrayList<Pair<Txn, Exception>>();
+		final var committedIds = transactions.stream()
+			.map(p -> p.getTxn().getId())
 			.collect(Collectors.toSet());
 
 		transactions.stream()
@@ -150,23 +131,25 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 			.filter(i -> i.getSpin() == Spin.DOWN)
 			.forEach(instruction -> {
 				var substateId = instruction.getSubstate().getId();
-				Set<Command> cmds = particleIndex.remove(substateId);
-				if (cmds == null) {
+				Set<AID> txnIds = substateIndex.remove(substateId);
+				if (txnIds == null) {
 					return;
 				}
 
-				for (var cmd : cmds) {
-					var toRemove = data.remove(cmd);
+				for (var txnId : txnIds) {
+					var toRemove = data.remove(txnId);
 					// TODO: Cleanup
-					if (toRemove != null && !atomIds.contains(atomIdOf(toRemove.getAtom()))) {
-						removed.add(Pair.of(cmd, new RadixEngineMempoolException(
-							new RadixEngineException(
-								toRemove.getAtom(),
-								RadixEngineErrorCode.CM_ERROR,
-								"Mempool evicted",
-								DataPointer.ofAtom()
+					if (toRemove != null && !committedIds.contains(toRemove.getRETxn().getTxn().getId())) {
+						removed.add(Pair.of(toRemove.getRETxn().getTxn(),
+							new RadixEngineMempoolException(
+								new RadixEngineException(
+									toRemove.getRETxn().getTxn(),
+									RadixEngineErrorCode.CM_ERROR,
+									"Mempool evicted",
+									DataPointer.ofAtom()
+								)
 							)
-						)));
+						));
 					}
 				}
 			});
@@ -175,18 +158,43 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 		return removed;
 	}
 
-	// TODO: Order by highest fees paid
 	@Override
-	public List<Command> getCommands(int count, List<ParsedTransaction> prepared) {
-		var copy = new HashSet<>(data.keySet());
+	public List<Txn> getTxns(int count, List<RETxn> prepared) {
+		// TODO: Order by highest fees paid
+		var copy = new TreeSet<>(data.keySet());
 		prepared.stream()
 			.flatMap(t -> t.instructions().stream())
 			.filter(i -> i.getSpin() == Spin.DOWN)
-			.flatMap(i -> particleIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
+			.flatMap(i -> substateIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
 
-		return copy.stream().limit(count).collect(Collectors.toList());
+		var txns = new ArrayList<Txn>();
+
+		for (int i = 0; i < count && !copy.isEmpty(); i++) {
+			var txId = copy.first();
+			copy.remove(txId);
+			var mempoolTxn = data.get(txId);
+			mempoolTxn.getRETxn().instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
+				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
+				.distinct()
+				.forEach(copy::remove);
+
+			txns.add(mempoolTxn.getRETxn().getTxn());
+		}
+
+		try {
+			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
+			checker.execute(prepared.stream().map(RETxn::getTxn).collect(Collectors.toList()), PermissionLevel.SYSTEM);
+			checker.execute(txns);
+		} catch (RadixEngineException e) {
+			// TODO: allow missing dependency atoms to live for a certain amount of time
+			throw new IllegalStateException();
+		} finally {
+			radixEngine.deleteBranches();
+		}
+
+		return txns;
 	}
 
 	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
@@ -202,7 +210,7 @@ public final class RadixEngineMempool implements Mempool<ParsedTransaction> {
 				.map(e -> {
 					final var updated = e.getValue().withLastRelayed(now);
 					this.data.put(e.getKey(), updated);
-					return e.getKey();
+					return e.getValue().getRETxn().getTxn();
 				})
 				.collect(ImmutableList.toImmutableList());
 

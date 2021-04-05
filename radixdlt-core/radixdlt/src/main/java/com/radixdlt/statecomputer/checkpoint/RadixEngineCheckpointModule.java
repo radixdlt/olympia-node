@@ -23,9 +23,12 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
@@ -45,12 +48,21 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Provides
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
-	private RRI nativeToken(@Genesis List<Atom> atoms) {
+	private RRI nativeToken(@Genesis List<Txn> genesisTxns) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = atoms.stream().flatMap(Atom::bootUpInstructions)
+		ImmutableList<RRI> rris = genesisTxns.stream()
+			.map(txn -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}

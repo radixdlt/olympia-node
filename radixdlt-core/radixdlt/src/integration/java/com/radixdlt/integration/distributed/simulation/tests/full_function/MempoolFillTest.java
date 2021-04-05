@@ -66,7 +66,8 @@ public class MempoolFillTest {
 				install(new MempoolFillerModule());
 				install(new NodeWalletModule());
 			}
-
+		})
+		.addGenesisModule(new AbstractModule() {
 			@ProvidesIntoSet
 			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECKeyPair> validators) {
 				return TokenIssuance.of(validators.get(0).getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
@@ -84,7 +85,7 @@ public class MempoolFillTest {
 		.addActor(MempoolFillerStarter.class);
 
 	@Test
-	@Ignore("Ignore for now due to issues with genesis atom")
+	@Ignore("Travis not playing nice")
 	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();

@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.identifiers.AID;
 
 import java.util.Optional;
@@ -38,7 +38,7 @@ public interface AtomIndex {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<Atom> get(AID aid);
+	Optional<Txn> get(AID aid);
 
 	// TODO: remove once we clean up API to not require searching
 	SearchCursor search();

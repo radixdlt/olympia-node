@@ -31,12 +31,12 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
@@ -107,7 +107,7 @@ public class MessageCentralLedgerSyncTest {
 			this.messageCentralLedgerSync.syncRequests().test();
 		final var peer = createPeer();
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
+		DtoLedgerProof header = mock(DtoLedgerProof.class);
 		when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
 		messageCentral.send(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
@@ -122,11 +122,11 @@ public class MessageCentralLedgerSyncTest {
 		TestSubscriber<RemoteEvent<SyncResponse>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		final var peer = createPeer();
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		DtoCommandsAndProof commands = mock(DtoCommandsAndProof.class);
+		DtoTxnsAndProof commands = mock(DtoTxnsAndProof.class);
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageCentral.send(peer, syncResponseMessage);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(resp -> resp.getEvent().getCommandsAndProof().equals(commands));
+		testObserver.assertValue(resp -> resp.getEvent().getTxnsAndProof().equals(commands));
 	}
 
 	@Test

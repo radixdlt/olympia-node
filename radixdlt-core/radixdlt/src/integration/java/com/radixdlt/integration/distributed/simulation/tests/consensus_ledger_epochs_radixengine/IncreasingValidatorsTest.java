@@ -30,6 +30,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import org.junit.Test;
 
 /**
@@ -50,6 +51,7 @@ public class IncreasingValidatorsTest {
 			ConsensusMonitors.directParents(),
 			LedgerMonitors.consensusToLedger(),
 			LedgerMonitors.ordered(),
+			RadixEngineMonitors.noInvalidProposedCommands(),
 			ApplicationMonitors.registeredNodeToEpoch()
 		)
 		.addActor(NodeValidatorRegistrator.class);

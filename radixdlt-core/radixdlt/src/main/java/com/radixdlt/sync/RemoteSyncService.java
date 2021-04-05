@@ -19,6 +19,7 @@ package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
@@ -27,15 +28,17 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -105,8 +108,8 @@ public final class RemoteSyncService {
 			return;
 		}
 
-		final var verifiable = new DtoCommandsAndProof(
-			committedCommands.getCommands(),
+		final var verifiable = new DtoTxnsAndProof(
+			committedCommands.getTxns().stream().map(Txn::getPayload).collect(Collectors.toList()),
 			remoteCurrentHeader,
 			committedCommands.getProof().toDto()
 		);
@@ -117,9 +120,9 @@ public final class RemoteSyncService {
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}
 
-	private VerifiedCommandsAndProof getCommittedCommandsForSyncRequest(DtoLedgerHeaderAndProof startHeader) {
+	private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerProof startHeader) {
 		final var start = System.currentTimeMillis();
-		final var result = committedReader.getNextCommittedCommands(startHeader);
+		final var result = committedReader.getNextCommittedTxns(startHeader);
 		final var finish = System.currentTimeMillis();
 		systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
 		return result;

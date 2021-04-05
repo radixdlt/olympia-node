@@ -17,12 +17,9 @@
 
 package com.radixdlt.serialization;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.TestSetupUtils;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -32,7 +29,6 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.MINT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +38,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 	public static final RRI TOKEN = RRI.of(ADDRESS, "COOKIE");
 	public static final UInt256 AMOUNT = UInt256.EIGHT;
 	public static final UInt256 GRANULARITY = UInt256.ONE;
-	public static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> TOKEN_PERMISSIONS = ImmutableMap.of();
 
 	public StakedTokensParticleSerializationTest() {
 		super(StakedTokensParticle.class, StakedTokensParticleSerializationTest::get);
@@ -61,8 +56,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(AMOUNT, p.getAmount());
 		assertEquals(GRANULARITY, p.getGranularity());
 		assertEquals(TOKEN, p.getTokDefRef());
-		assertEquals(TOKEN_PERMISSIONS, p.getTokenPermissions());
-		assertEquals(TOKEN_PERMISSIONS.get(MINT), p.getTokenPermission(MINT));
 	}
 
 	@Test
@@ -90,7 +83,7 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 			AMOUNT,
 			GRANULARITY,
 			TOKEN,
-			TOKEN_PERMISSIONS
+			true
 		);
 	}
 }

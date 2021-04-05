@@ -22,7 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
@@ -73,7 +73,7 @@ public final class UniverseModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	List<Atom> genesisAtoms(Universe universe) {
+	List<Txn> genesisAtoms(Universe universe) {
 		return universe.getGenesis();
 	}
 }

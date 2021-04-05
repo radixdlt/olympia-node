@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,50 +13,29 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.atom;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.function.Function;
-import javax.annotation.concurrent.Immutable;
 
-/**
- * Generic application command
- */
-@Immutable
-@SerializerId2("consensus.command")
-public final class Command {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("payload")
-	@DsonOutput(Output.ALL)
+public final class Txn {
 	private final byte[] payload;
-
 	private final AID id;
 
-	@JsonCreator
-	public Command(@JsonProperty("payload") byte[] payload) {
+	private Txn(byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
 		var firstHash = HashUtils.sha256(payload);
 		var secondHash = HashUtils.sha256(firstHash.asBytes());
 		this.id = AID.from(secondHash.asBytes());
 	}
 
-	public <T> T map(Function<byte[], T> mapper) {
-		return mapper.apply(payload);
+	public static Txn create(byte[] payload) {
+		return new Txn(payload);
 	}
 
 	public AID getId() {
@@ -74,11 +53,11 @@ public final class Command {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Command)) {
+		if (!(o instanceof Txn)) {
 			return false;
 		}
 
-		Command other = (Command) o;
+		Txn other = (Txn) o;
 		return Objects.equals(this.id, other.id);
 	}
 

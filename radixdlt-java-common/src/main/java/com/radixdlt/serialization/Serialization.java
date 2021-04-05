@@ -179,6 +179,23 @@ public class Serialization {
 	 * @return The deserialized object
 	 * @throws DeserializeException if something goes wrong with serialization
 	 */
+	public <T> T fromDson(byte[] bytes, int offset, int len, Class<T> valueType) throws DeserializeException {
+		try {
+			return dsonMapper(Output.ALL).readValue(bytes, offset, len, valueType);
+		} catch (IOException ex) {
+			throw new DeserializeException("Error converting from DSON", ex);
+		}
+	}
+
+	/**
+	 * Convert the specified DSON encoded byte array to an instance of the
+	 * specified class.
+	 *
+	 * @param bytes The DSON encoded object to deserialize
+	 * @param valueType The class of the object to deserialize
+	 * @return The deserialized object
+	 * @throws DeserializeException if something goes wrong with serialization
+	 */
 	public <T> T fromDson(byte[] bytes, Class<T> valueType) throws DeserializeException {
 		try {
 			return dsonMapper(Output.ALL).readValue(bytes, valueType);

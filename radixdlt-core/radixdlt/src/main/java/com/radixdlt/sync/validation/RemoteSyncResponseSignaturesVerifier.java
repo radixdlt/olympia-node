@@ -25,8 +25,8 @@ import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 
 import java.util.Map;
@@ -48,8 +48,8 @@ public final class RemoteSyncResponseSignaturesVerifier {
 	}
 
 	public boolean verifyResponseSignatures(SyncResponse syncResponse) {
-		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
-		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
+		DtoTxnsAndProof commandsAndProof = syncResponse.getTxnsAndProof();
+		DtoLedgerProof endHeader = commandsAndProof.getTail();
 
 		// TODO: Figure out where this reconstruction should take place
 		VoteData voteData = endHeader.toVoteData();

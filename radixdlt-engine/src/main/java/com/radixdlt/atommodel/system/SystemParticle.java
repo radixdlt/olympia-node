@@ -17,45 +17,36 @@
 
 package com.radixdlt.atommodel.system;
 
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("radix.particles.system_particle")
+@SerializerId2("s")
 public final class SystemParticle extends Particle {
-	@JsonProperty("epoch")
+	@JsonProperty("e")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long epoch;
 
-	@JsonProperty("view")
+	@JsonProperty("v")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long view;
 
-	@JsonProperty("timestamp")
+	@JsonProperty("t")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long timestamp;
 
 	@JsonCreator
 	public SystemParticle(
-		@JsonProperty("epoch") long epoch,
-		@JsonProperty("view") long view,
-		@JsonProperty("timestamp") long timestamp
+		@JsonProperty("e") long epoch,
+		@JsonProperty("v") long view,
+		@JsonProperty("t") long timestamp
 	) {
 		this.epoch = epoch;
 		this.view = view;
 		this.timestamp = timestamp;
-	}
-
-	@Override
-	public Set<EUID> getDestinations() {
-		return ImmutableSet.of();
 	}
 
 	public long getEpoch() {
@@ -72,7 +63,7 @@ public final class SystemParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(epoch, view, timestamp, getDestinations());
+		return Objects.hashCode(epoch, view, timestamp);
 	}
 
 	@Override
@@ -84,8 +75,7 @@ public final class SystemParticle extends Particle {
 		SystemParticle other = (SystemParticle) o;
 		return this.epoch == other.epoch
 			&& this.view == other.view
-			&& this.timestamp == other.timestamp
-			&& Objects.equal(this.getDestinations(), other.getDestinations());
+			&& this.timestamp == other.timestamp;
 	}
 
 	@Override

@@ -28,28 +28,23 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
-import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -57,31 +52,25 @@ import org.radix.TokenIssuance;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class TokenFeeTest {
-
+public class StakingTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> sut;
 
-	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	private RadixAddress address;
-
 	@Inject
-	@NativeToken
-	private RRI nativeToken;
-
-	@Inject
-	@Genesis
-	private List<Txn> genesisTxns;
+	@Self
+	private ECKeyPair self;
 
 	@Inject
 	@Named("magic")
-	private int magic;
+	int magic;
+
+	@Inject
+	private EngineStore<LedgerAndBFTProof> engineStore;
 
 	// FIXME: Hack, need this in order to cause provider for genesis to be stored
 	@Inject
@@ -89,14 +78,14 @@ public class TokenFeeTest {
 	private LedgerProof ledgerProof;
 
 	@Inject
-	private EngineStore<LedgerAndBFTProof> engineStore;
+	@NativeToken
+	private RRI nativeToken;
 
-	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private ECKeyPair staker = ECKeyPair.generateNew();
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new TokenFeeModule(),
 			new MockedGenesisAtomModule(),
 			new AbstractModule() {
 				@Override
@@ -107,44 +96,58 @@ public class TokenFeeTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
 
+
 				@ProvidesIntoSet
 				private TokenIssuance mempoolFillerIssuance() {
-					return TokenIssuance.of(ecKeyPair.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
+					return TokenIssuance.of(staker.getPublicKey(), TokenUnitConversions.unitsToSubunits(10000000000L));
 				}
 			}
 		);
 	}
 
-	@Before
-	public void setup() {
+	@Test
+	public void staking_increases_stake_to_validator() throws Exception {
+		// Arrange
 		createInjector().injectMembers(this);
-		this.address = new RadixAddress((byte) magic, ecKeyPair.getPublicKey());
-	}
+		var stakes = sut.getComputedState(Stakes.class);
+		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
+		var delegateAddress = new RadixAddress((byte) magic, self.getPublicKey());
+		var staked = stakes.toMap().get(self.getPublicKey());
 
-	@Test
-	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, engineStore)
-			.mutex("test")
-			.burnForFee(nativeToken, fee)
-			.signAndBuild(ecKeyPair::sign);
-
+		// Act
+		var atom = TxBuilder.newBuilder(stakerAddress, engineStore)
+			.stakeTo(nativeToken, delegateAddress, UInt256.FIVE)
+			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
+
+		// Assert
+		var nextStaked = sut.getComputedState(Stakes.class);
+		assertThat(nextStaked.toMap().get(self.getPublicKey()))
+			.isEqualTo(UInt256.FIVE.add(staked));
 	}
 
 	@Test
-	public void when_validating_atom_without_particles__result_has_error() {
-		var atom = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
-		assertThatThrownBy(() -> sut.execute(List.of(atom)))
-			.isInstanceOf(RadixEngineException.class);
-	}
+	public void unstaking_decreases_stake_to_validator() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+		var stakes = sut.getComputedState(Stakes.class);
+		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
+		var delegateAddress = new RadixAddress((byte) magic, self.getPublicKey());
+		var staked = stakes.toMap().get(self.getPublicKey());
+		var txn = TxBuilder.newBuilder(stakerAddress, engineStore)
+			.stakeTo(nativeToken, delegateAddress, UInt256.FIVE)
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(txn));
 
+		// Act
+		var nextTxn = TxBuilder.newBuilder(stakerAddress, engineStore)
+			.unstakeFrom(nativeToken, delegateAddress, UInt256.THREE)
+			.signAndBuild(staker::sign);
+		sut.execute(List.of(nextTxn));
 
-	@Test
-	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, engineStore)
-			.burnForFee(nativeToken, fee)
-			.signAndBuild(ecKeyPair::sign);
-
-		sut.execute(List.of(atom));
+		// Assert
+		var nextStaked = sut.getComputedState(Stakes.class);
+		assertThat(nextStaked.toMap().get(self.getPublicKey()))
+			.isEqualTo(UInt256.FIVE.add(staked).subtract(UInt256.THREE));
 	}
 }
