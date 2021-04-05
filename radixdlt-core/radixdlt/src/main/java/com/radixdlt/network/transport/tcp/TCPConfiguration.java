@@ -38,7 +38,16 @@ public interface TCPConfiguration {
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return network port to bind listeners to
 	 */
-	int networkPort(int defaultValue);
+	int listenPort(int defaultValue);
+
+	/**
+	 * Get the network port to broadcast to other peers.
+	 * This can be different from the listen port if proxy server is used.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return network port to broadcast to other peers
+	 */
+	int broadcastPort(int defaultValue);
 
 	/**
 	 * Get the maximum number of inbound open channels allowed.
@@ -99,8 +108,13 @@ public interface TCPConfiguration {
 			}
 
 			@Override
-			public int networkPort(int defaultValue) {
-				return properties.get("network.tcp.port", defaultValue);
+			public int listenPort(int defaultValue) {
+				return properties.get("network.tcp.listen_port", defaultValue);
+			}
+
+			@Override
+			public int broadcastPort(int defaultValue) {
+				return properties.get("network.tcp.broadcast_port", defaultValue);
 			}
 
 			@Override

@@ -76,7 +76,7 @@ public class NettyTCPTransportImplTest {
 	@Test
 	public void testConstructionNoPort() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		TransportMetadata localMetadata = StaticTransportMetadata.of(
 				TCPConstants.METADATA_HOST, "127.0.0.2"
 		);
@@ -97,7 +97,7 @@ public class NettyTCPTransportImplTest {
 	public void testName() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
 		when(config.networkAddress(any())).thenReturn(NettyTCPTransportImpl.DEFAULT_HOST);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
@@ -112,7 +112,7 @@ public class NettyTCPTransportImplTest {
 	public void testControl() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
 		when(config.networkAddress(any())).thenReturn(NettyTCPTransportImpl.DEFAULT_HOST);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		// Resource leak not an issue for mocks
@@ -131,7 +131,7 @@ public class NettyTCPTransportImplTest {
 	public void testCanHandle() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
 		when(config.networkAddress(any())).thenReturn(NettyTCPTransportImpl.DEFAULT_HOST);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		// Resource leak not an issue for mocks
@@ -154,7 +154,7 @@ public class NettyTCPTransportImplTest {
 	public void testPriority() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
 		when(config.networkAddress(any())).thenReturn(NettyTCPTransportImpl.DEFAULT_HOST);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		when(config.priority(anyInt())).thenReturn(1234);
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
@@ -170,7 +170,7 @@ public class NettyTCPTransportImplTest {
 	public void sensibleToString() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
 		when(config.networkAddress(any())).thenReturn(NettyTCPTransportImpl.DEFAULT_HOST);
-		when(config.networkPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
+		when(config.listenPort(anyInt())).thenReturn(NettyTCPTransportImpl.DEFAULT_PORT);
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
