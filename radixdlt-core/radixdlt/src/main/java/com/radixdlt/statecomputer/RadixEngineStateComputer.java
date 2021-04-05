@@ -20,9 +20,10 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -167,28 +168,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 			validatorSet = null;
 		}
 
-		var systemUpdateBuilder = branch.getSubstateCache(
-			substateStore -> {
-				var builder = TxBuilder.newSystemBuilder(substateStore);
-				try {
-					if (validatorSet == null) {
-						builder.systemNextView(view.number(), timestamp, epoch);
-					} else {
-						builder.systemNextEpoch(timestamp, epoch);
-					}
-				} catch (TxBuilderException e) {
-					throw new IllegalStateException("Could not create system update", e);
-				}
-				return builder;
-			});
+		var systemAction = validatorSet == null
+			? new SystemNextView(view.number(), timestamp, epoch)
+			: new SystemNextEpoch(timestamp, epoch);
 
-		final var systemUpdate = systemUpdateBuilder.buildWithoutSignature();
+		final Txn systemUpdate;
 		final List<RETxn> txs;
 		try {
+			// TODO: combine
+			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException e) {
+		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate),	e
+				String.format("Failed to execute system update:%n%s", e.getMessage()), e
 			);
 		}
 		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(

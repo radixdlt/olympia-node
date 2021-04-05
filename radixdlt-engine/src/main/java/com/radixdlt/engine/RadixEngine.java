@@ -304,8 +304,8 @@ public final class RadixEngine<M> {
 			return engine.execute(txns, null, permissionLevel);
 		}
 
-		public <T> T getSubstateCache(Function<SubstateStore, T> func) {
-			return engine.accessSubstateStore(func);
+		public TxBuilder construct(TxAction action) throws TxBuilderException {
+			return engine.construct(action);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -477,13 +477,18 @@ public final class RadixEngine<M> {
 		return parsedTransactions;
 	}
 
+	public TxBuilder construct(TxAction action) throws TxBuilderException {
+		return construct(null, List.of(action));
+	}
 
 	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
 		// FIXME: a little hacky but good enough
 		var exception = new AtomicReference<TxBuilderException>();
 		var builder = accessSubstateStore(s -> {
 			try {
-				var txBuilder = TxBuilder.newBuilder(address, s);
+				var txBuilder = address != null
+					? TxBuilder.newBuilder(address, s)
+					: TxBuilder.newSystemBuilder(s);
 				for (var action : actions) {
 					action.execute(txBuilder);
 				}

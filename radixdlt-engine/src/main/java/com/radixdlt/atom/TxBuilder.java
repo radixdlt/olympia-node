@@ -339,7 +339,7 @@ public final class TxBuilder {
 		}
 	}
 
-	private void assertIsSystem(String message) throws TxBuilderException {
+	public void assertIsSystem(String message) throws TxBuilderException {
 		if (address != null) {
 			throw new TxBuilderException(message);
 		}
