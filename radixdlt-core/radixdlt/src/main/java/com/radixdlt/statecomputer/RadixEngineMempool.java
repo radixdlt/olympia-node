@@ -144,7 +144,7 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 									toRemove.getRETxn().getTxn(),
 									toRemove.getRETxn().instructions(),
 									RadixEngineErrorCode.CM_ERROR,
-									"Mempool evictedRadixEngineMempool.java"
+									"Mempool evicted"
 								)
 							)
 						));
