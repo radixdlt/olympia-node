@@ -24,6 +24,9 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
@@ -34,6 +37,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -50,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -470,5 +475,30 @@ public final class RadixEngine<M> {
 		}
 
 		return parsedTransactions;
+	}
+
+
+	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
+		// FIXME: a little hacky but good enough
+		var exception = new AtomicReference<TxBuilderException>();
+		var builder = accessSubstateStore(s -> {
+			try {
+				var txBuilder = TxBuilder.newBuilder(address, s);
+				for (var action : actions) {
+					action.execute(txBuilder);
+				}
+
+				return txBuilder;
+			} catch (TxBuilderException e) {
+				exception.set(e);
+				return null;
+			}
+		});
+
+		if (builder == null) {
+			throw exception.get();
+		} else {
+			return builder;
+		}
 	}
 }

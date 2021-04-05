@@ -81,11 +81,15 @@ public final class TxBuilder {
 		return new TxBuilder(null, SubstateStore.empty());
 	}
 
+	public RadixAddress getAddress() {
+		return address;
+	}
+
 	public TxLowLevelBuilder toLowLevelBuilder() {
 		return lowLevelBuilder;
 	}
 
-	private void particleGroup() {
+	public void particleGroup() {
 		lowLevelBuilder.particleGroup();
 	}
 
@@ -272,11 +276,11 @@ public final class TxBuilder {
 		};
 	}
 
-	private interface FungibleMapper<U extends Particle> {
+	public interface FungibleMapper<U extends Particle> {
 		U map(UInt256 t) throws TxBuilderException;
 	}
 
-	private interface FungibleReplacer<U extends Particle> {
+	public interface FungibleReplacer<U extends Particle> {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
@@ -301,7 +305,7 @@ public final class TxBuilder {
 		return spent.subtract(amount);
 	}
 
-	private <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
+	public <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Function<T, UInt256> amountMapper,

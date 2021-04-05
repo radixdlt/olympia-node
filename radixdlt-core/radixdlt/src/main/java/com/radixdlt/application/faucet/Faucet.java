@@ -20,8 +20,8 @@ package com.radixdlt.application.faucet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -32,13 +32,10 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Optional;
 
 /**
  * Faucet service which sends funds from this node to another address
@@ -50,7 +47,6 @@ public final class Faucet {
 	private final RadixAddress self;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
-	private final Serialization serialization;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final RRI nativeToken;
 	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
@@ -62,14 +58,12 @@ public final class Faucet {
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
 		@NativeToken RRI nativeToken,
-		Serialization serialization,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
 		this.hashSigner = hashSigner;
 		this.nativeToken = nativeToken;
-		this.serialization = serialization;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
@@ -77,26 +71,20 @@ public final class Faucet {
 	private void processRequest(FaucetRequest request) {
 		log.info("Faucet Request {}", request);
 
-		var builderMaybe = radixEngine.<Optional<TxBuilder>>accessSubstateStore(
-			substateStore -> {
-				try {
-					var txBuilder = TxBuilder.newBuilder(self, substateStore)
-						.transferNative(nativeToken, request.getAddress(), amount)
-						.burnForFee(nativeToken, FEE);
-					return Optional.of(txBuilder);
-				} catch (TxBuilderException e) {
-					log.error("Faucet failed to fulfil request {}", request, e);
-					request.onFailure(e.getMessage());
-					return Optional.empty();
-				}
-			}
-		);
+		var actions = new TxActionListBuilder()
+			.transferNative(nativeToken, request.getAddress(), amount)
+			.burnNative(nativeToken, FEE)
+			.build();
 
-		builderMaybe.ifPresent(builder -> {
-			var txn = builder.signAndBuild(hashSigner::sign);
+		try {
+			var txBuilder = radixEngine.construct(self, actions);
+			var txn = txBuilder.signAndBuild(hashSigner::sign);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 			request.onSuccess(txn.getId());
-		});
+		} catch (TxBuilderException e) {
+			log.error("Faucet failed to fulfil request {}", request, e);
+			request.onFailure(e.getMessage());
+		}
 	}
 
 	public EventProcessor<FaucetRequest> requestEventProcessor() {
