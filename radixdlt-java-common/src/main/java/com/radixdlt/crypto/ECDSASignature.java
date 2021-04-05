@@ -147,14 +147,14 @@ public final class ECDSASignature implements Signature {
 		return SignatureScheme.ECDSA;
 	}
 
+	//WARNING: Never ever use it to restore recoverable signature! It misses 'v' bit necessary for recovery.
 	public static ECDSASignature decodeFromDER(byte[] bytes) {
 		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
 			DLSequence seq = (DLSequence) decoder.readObject();
 			ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
 			ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
-			ASN1Boolean v = (ASN1Boolean) seq.getObjectAt(2);
 
-			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), v.isTrue() ? 1 : 0);
+			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), 0);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
 		} catch (ClassCastException e) {

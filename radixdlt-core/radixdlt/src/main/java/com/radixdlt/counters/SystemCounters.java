@@ -116,7 +116,7 @@ public interface SystemCounters {
 		ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.transaction.read"),
 		ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.transaction.write"),
 
-		ELAPSED_APIDB_FLUSH_TIME("elapsed.apidb.particle.flush.time"),
+		ELAPSED_APIDB_FLUSH_TIME("elapsed.apidb.flush.time"),
 
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
 

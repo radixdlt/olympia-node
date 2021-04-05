@@ -19,6 +19,7 @@ package com.radixdlt.client.store;
 
 import org.json.JSONObject;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -49,5 +50,29 @@ public class MessageEntry {
 
 	public JSONObject asJson() {
 		return jsonObject().put("msg", message).put("encryptionScheme", encryptionScheme);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (o instanceof MessageEntry) {
+			var that = (MessageEntry) o;
+			return Objects.equals(message, that.message) && Objects.equals(encryptionScheme, that.encryptionScheme);
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(message, encryptionScheme);
+	}
+
+	@Override
+	public String toString() {
+		return asJson().toString(2);
 	}
 }

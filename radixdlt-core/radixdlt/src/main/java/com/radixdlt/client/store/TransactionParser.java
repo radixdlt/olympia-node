@@ -143,8 +143,8 @@ public class TransactionParser {
 				pos++;
 			}
 
-			if (current() instanceof MutableSupplyTokenDefinitionParticle ||
-				current() instanceof FixedSupplyTokenDefinitionParticle) {
+			if (current() instanceof MutableSupplyTokenDefinitionParticle
+				|| current() instanceof FixedSupplyTokenDefinitionParticle) {
 				pos++;
 			}
 		}
@@ -157,7 +157,7 @@ public class TransactionParser {
 			if (current() instanceof UnregisteredValidatorParticle && isUp()) {
 				pos++;
 
-				if(current() instanceof RegisteredValidatorParticle && isDown()) {
+				if (current() instanceof RegisteredValidatorParticle && isDown()) {
 					pos++;
 				}
 			}
@@ -171,7 +171,7 @@ public class TransactionParser {
 			if (current() instanceof RegisteredValidatorParticle && isDown()) {
 				pos++;
 
-				if(current() instanceof RegisteredValidatorParticle && isUp()) {
+				if (current() instanceof RegisteredValidatorParticle && isUp()) {
 					pos++;
 				}
 			}

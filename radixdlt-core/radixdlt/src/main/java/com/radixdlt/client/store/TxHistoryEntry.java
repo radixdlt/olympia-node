@@ -79,7 +79,7 @@ public class TxHistoryEntry {
 			.put("txId", txId)
 			.put("date", DateTimeFormatter.ISO_INSTANT.format(date))
 			.put("fee", fee)
-			.put("message", message)
+			.put("message", message.asJson())
 			.put("actions", fromList(actions, ActionEntry::asJson));
 	}
 

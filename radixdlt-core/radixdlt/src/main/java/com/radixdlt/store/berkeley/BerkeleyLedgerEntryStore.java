@@ -301,7 +301,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 		});
 	}
-	
+
 	//-------------- other
 // TODO: Hack for Client Api store, remove at some point
 	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
@@ -326,7 +326,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new IllegalStateException("Unable to deserialize substate");
 		}
 	}
-	
+
 	//-------------- end
 
 	@Override
