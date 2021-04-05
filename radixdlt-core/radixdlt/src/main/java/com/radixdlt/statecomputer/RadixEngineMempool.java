@@ -25,7 +25,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -181,17 +180,6 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				.forEach(copy::remove);
 
 			txns.add(mempoolTxn.getRETxn().getTxn());
-		}
-
-		try {
-			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			checker.execute(prepared.stream().map(RETxn::getTxn).collect(Collectors.toList()), PermissionLevel.SYSTEM);
-			checker.execute(txns);
-		} catch (RadixEngineException e) {
-			// TODO: allow missing dependency atoms to live for a certain amount of time
-			throw new IllegalStateException();
-		} finally {
-			radixEngine.deleteBranches();
 		}
 
 		return txns;
