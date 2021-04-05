@@ -24,8 +24,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
@@ -58,21 +56,18 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 	private final ConcurrentHashMap<AID, Pair<RETxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
 	private final MempoolConfig mempoolConfig;
-	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	public RadixEngineMempool(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		MempoolConfig mempoolConfig,
-		SystemCounters counters
+		MempoolConfig mempoolConfig
 	) {
 		if (mempoolConfig.maxSize() <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
 		}
 		this.radixEngine = radixEngine;
 		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
-		this.counters = Objects.requireNonNull(counters);
 	}
 
 	@Override
@@ -107,8 +102,6 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
 			}
 		}
-
-		updateCounts();
 	}
 
 	@Override
@@ -146,7 +139,6 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 				}
 			});
 
-		updateCounts();
 		return removed;
 	}
 
@@ -188,9 +180,8 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			.collect(Collectors.toList());
 	}
 
-	private void updateCounts() {
-		this.counters.set(CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.mempoolConfig.maxSize());
+	public int getCount() {
+		return this.data.size();
 	}
 
 	@Override

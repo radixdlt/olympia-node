@@ -45,6 +45,11 @@ public class Mempools {
 			}
 
 			@Override
+			public int getCount() {
+				return 0;
+			}
+
+			@Override
 			public List<Txn> getTxns(int count, List<T> seen) {
 				return List.of();
 			}

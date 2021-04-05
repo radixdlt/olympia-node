@@ -51,4 +51,6 @@ public interface Mempool<T> {
 	List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
 
 	List<Pair<Txn, Exception>> committed(List<T> committed);
+
+	int getCount();
 }

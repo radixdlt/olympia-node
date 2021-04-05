@@ -65,12 +65,13 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool) {
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool, SystemCounters counters) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(Txn txn, BFTNode origin) {
 				try {
 					mempool.add(txn);
+					counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 				} catch (MempoolRejectedException e) {
 					log.error(e);
 				}
@@ -98,6 +99,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			@Override
 			public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 				mempool.committed(txnsAndProof.getTxns());
+				counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 			}
 		};
 	}

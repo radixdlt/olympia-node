@@ -125,6 +125,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
 		try {
 			mempool.add(txn);
+			systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
 			log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
@@ -281,6 +282,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
 		List<Pair<Txn, Exception>> removed = this.mempool.committed(txCommitted);
+		systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);

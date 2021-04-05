@@ -79,6 +79,11 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
+	public int getCount() {
+		return data.size();
+	}
+
+	@Override
 	public List<Txn> getTxns(int count, List<Txn> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
