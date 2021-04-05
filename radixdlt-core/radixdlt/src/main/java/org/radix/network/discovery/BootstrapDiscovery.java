@@ -113,8 +113,8 @@ public class BootstrapDiscovery {
 
 				String host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
 				if (host != null) {
-				log.info("seeding from random host: {}", host);
-				hostNames.add(host);
+					log.info("seeding from random host: {}", host);
+					hostNames.add(host);
 				}
 			} catch (MalformedURLException ignoreConcreteHost) {
 				// concrete host addresses end up here.

@@ -50,8 +50,6 @@ import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.MockedCommittedReaderModule;
-import com.radixdlt.sync.MockedLedgerStatusUpdatesRunnerModule;
-import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -568,12 +566,8 @@ public class SimulationTest {
 			if (ledgerType.hasLedger && ledgerType.hasSync) {
 				modules.add(new MockedCommittedReaderModule());
 				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedSyncRunnerModule());
-				} else {
-					modules.add(new SyncRunnerModule());
+					modules.add(new NoEpochsSyncModule());
 				}
-			} else if (ledgerType.hasEpochs && !ledgerType.hasSync) {
-				modules.add(new MockedLedgerStatusUpdatesRunnerModule());
 			}
 
 			return new SimulationTest(

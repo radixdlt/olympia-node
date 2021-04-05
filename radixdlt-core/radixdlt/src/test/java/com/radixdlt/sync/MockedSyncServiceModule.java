@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
@@ -28,10 +27,11 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.ProcessWithSyncRunner;
-import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -65,17 +65,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { }, ProcessWithSyncRunner.class);
-		bind(new TypeLiteral<EventProcessor<SyncCheckTrigger>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<EventProcessor<SyncCheckReceiveStatusTimeout>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<EventProcessor<SyncRequestTimeout>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<EventProcessor<SyncLedgerUpdateTimeout>>() { }).toInstance(req -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<StatusRequest>>() { }).toInstance((node, res) -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<StatusResponse>>() { }).toInstance((node, res) -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<SyncRequest>>() { }).toInstance((node, res) -> { });
-		bind(new TypeLiteral<RemoteEventProcessor<SyncResponse>>() { }).toInstance((node, res) -> { });
-
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
@@ -83,11 +72,12 @@ public class MockedSyncServiceModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
 		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
 		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
+		eventBinder.addBinding().toInstance(EpochsLedgerUpdate.class);
 	}
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
-	private EventProcessor<LedgerUpdate> sync() {
+	private EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return update -> {
 			final LedgerProof headerAndProof = update.getTail();
 			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
@@ -150,11 +140,73 @@ public class MockedSyncServiceModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor(
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
 		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher
 	) {
-		return (sender, ev) ->
-			localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender)));
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.SYNC,
+			LedgerStatusUpdate.class,
+			(sender, ev) -> localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender)))
+		);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor() {
+		return noOpProcessor(EpochsLedgerUpdate.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncCheckTriggerEventProcessor() {
+		return noOpProcessor(SyncCheckTrigger.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncCheckReceiveStatusTimeoutEventProcessor() {
+		return noOpProcessor(SyncCheckReceiveStatusTimeout.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncRequestTimeoutEventProcessor() {
+		return noOpProcessor(SyncRequestTimeout.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> localSyncRequestEventProcessor() {
+		return noOpProcessor(LocalSyncRequest.class);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncLedgerUpdateTimeoutEventProcessor() {
+		return noOpProcessor(SyncLedgerUpdateTimeout.class);
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor() {
+		return noOpRemoteProcessor(StatusRequest.class);
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor() {
+		return noOpRemoteProcessor(StatusResponse.class);
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor() {
+		return noOpRemoteProcessor(SyncRequest.class);
+	}
+
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor() {
+		return noOpRemoteProcessor(SyncResponse.class);
+	}
+
+	private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
+		return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> { });
+	}
+
+	private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
+		return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> { });
 	}
 }

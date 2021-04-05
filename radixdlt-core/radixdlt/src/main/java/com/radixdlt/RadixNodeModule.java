@@ -61,7 +61,6 @@ import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.UniverseModule;
 
 /**
@@ -119,7 +118,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new MempoolRelayerModule());
 
 		// Sync
-		install(new SyncRunnerModule());
 		install(new SyncServiceModule());
 
 		// Epochs - Consensus

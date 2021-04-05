@@ -24,12 +24,12 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncService;
 import com.radixdlt.epochs.LocalSyncServiceFactory;
@@ -75,75 +75,113 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	@ProcessWithSyncRunner
-	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessorLocalSync(
+	private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessorLocalSync(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.epochsLedgerUpdateEventProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			EpochsLedgerUpdate.class,
+			epochsLocalSyncService.epochsLedgerUpdateEventProcessor()
+		);
 	}
 
 	@ProvidesIntoSet
-	@ProcessWithSyncRunner
-	private EventProcessor<EpochsLedgerUpdate> ledgerUpdateEventProcessorRemoteSync(
+	private EventProcessorOnRunner<?> ledgerUpdateEventProcessorRemoteSync(
 		RemoteSyncService remoteSyncService
 	) {
-		return update -> remoteSyncService.ledgerUpdateEventProcessor().process(update.getBase());
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			EpochsLedgerUpdate.class,
+			update -> remoteSyncService.ledgerUpdateEventProcessor().process(update.getBase())
+		);
 	}
 
-	@Provides
-	private EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor(
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncCheckTriggerEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.syncCheckTriggerEventProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			SyncCheckTrigger.class,
+			epochsLocalSyncService.syncCheckTriggerEventProcessor()
+		);
 	}
 
-	@Provides
-	private EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor(
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncCheckReceiveStatusTimeoutEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.syncCheckReceiveStatusTimeoutEventProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			SyncCheckReceiveStatusTimeout.class,
+			epochsLocalSyncService.syncCheckReceiveStatusTimeoutEventProcessor()
+		);
 	}
 
-	@Provides
-	private EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor(
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncRequestTimeoutEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.syncRequestTimeoutEventProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			SyncRequestTimeout.class,
+			epochsLocalSyncService.syncRequestTimeoutEventProcessor()
+		);
 	}
 
-	@Provides
-	private EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor(
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> syncLedgerUpdateTimeoutProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			SyncLedgerUpdateTimeout.class,
+			epochsLocalSyncService.syncLedgerUpdateTimeoutProcessor()
+		);
 	}
 
-	@Provides
-	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> localSyncRequestEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.localSyncRequestEventProcessor();
+		return new EventProcessorOnRunner<>(
+			Runners.SYNC,
+			LocalSyncRequest.class,
+			epochsLocalSyncService.localSyncRequestEventProcessor()
+		);
 	}
 
-	@Provides
-	private RemoteEventProcessor<StatusResponse> statusResponseEventProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.statusResponseEventProcessor();
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.SYNC,
+			StatusResponse.class,
+			epochsLocalSyncService.statusResponseEventProcessor()
+		);
 	}
 
-	@Provides
-	private RemoteEventProcessor<SyncResponse> syncResponseEventProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.syncResponseEventProcessor();
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.SYNC,
+			SyncResponse.class,
+			epochsLocalSyncService.syncResponseEventProcessor()
+		);
 	}
 
-	@Provides
-	private RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateEventProcessor(
 		EpochsLocalSyncService epochsLocalSyncService
 	) {
-		return epochsLocalSyncService.ledgerStatusUpdateEventProcessor();
+		return new RemoteEventProcessorOnRunner<>(
+			Runners.SYNC,
+			LedgerStatusUpdate.class,
+			epochsLocalSyncService.ledgerStatusUpdateEventProcessor()
+		);
 	}
 
 	@Provides

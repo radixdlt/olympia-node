@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.identifiers.RadixAddress;
 
 /**
@@ -56,7 +57,7 @@ public final class ValidatorRegistratorModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> validatorRegistrator(ValidatorRegistrator validatorRegistrator) {
 		return new EventProcessorOnRunner<>(
-			"application",
+			Runners.APPLICATION,
 			ValidatorRegistration.class,
 			validatorRegistrator.validatorRegistrationEventProcessor()
 		);

@@ -19,6 +19,7 @@ package com.radixdlt.environment.rx;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.utils.ThreadFactories;
@@ -29,11 +30,13 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -48,7 +51,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 	private CompositeDisposable compositeDisposable;
 
 	private final List<Subscription<?>> subscriptions;
-	private final Consumer<ScheduledExecutorService> onStart;
+	private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
 	private static class Subscription<T> {
 		final Observable<T> o;
@@ -73,7 +76,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 	private ModuleRunnerImpl(
 		String threadName,
 		List<Subscription<?>> subscriptions,
-		Consumer<ScheduledExecutorService> onStart
+		ImmutableList<Consumer<ScheduledExecutorService>> onStart
 	) {
 		this.subscriptions = subscriptions;
 		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
@@ -84,8 +87,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 
 	public static class Builder {
 		private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
-
-		private Consumer<ScheduledExecutorService> onStart;
+		private ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder = new ImmutableList.Builder<>();
 
 		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
 			subscriptionsBuilder.add(new Subscription<>(o, p));
@@ -102,13 +104,29 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			return this;
 		}
 
-		public Builder onStart(Consumer<ScheduledExecutorService> r) {
-			this.onStart = r;
+		public <T> Builder scheduleWithFixedDelay(
+			EventDispatcher<T> eventDispatcher,
+			Supplier<T> eventSupplier,
+			Duration initialDelay,
+			Duration interval
+		) {
+			return onStart(executor ->
+				executor.scheduleWithFixedDelay(
+					() -> eventDispatcher.dispatch(eventSupplier.get()),
+					initialDelay.toMillis(),
+					interval.toMillis(),
+					TimeUnit.MILLISECONDS
+				)
+			);
+		}
+
+		public Builder onStart(Consumer<ScheduledExecutorService> fn) {
+			this.onStartBuilder.add(fn);
 			return this;
 		}
 
 		public ModuleRunnerImpl build(String threadName) {
-			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build(), onStart);
+			return new ModuleRunnerImpl(threadName, subscriptionsBuilder.build(), onStartBuilder.build());
 		}
 	}
 
@@ -129,9 +147,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 				.collect(Collectors.toList());
 			this.compositeDisposable = new CompositeDisposable(disposables);
 
-			if (this.onStart != null) {
-				this.onStart.accept(this.executorService);
-			}
+			this.onStart.forEach(f -> f.accept(this.executorService));
 		}
 	}
 
