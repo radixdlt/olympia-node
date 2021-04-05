@@ -26,8 +26,7 @@ import org.radix.universe.system.LocalSystem;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.application.NodeWalletModule;
-import com.radixdlt.application.faucet.FaucetModule;
+import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.validator.ValidatorRegistratorModule;
 import com.radixdlt.chaos.ChaosModule;
 import com.radixdlt.client.ClientApiModule;
@@ -160,9 +159,8 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new HostIpModule(properties));
 
 		// Application
-		install(new NodeWalletModule());
+		install(new NodeApplicationModule());
 		install(new ValidatorRegistratorModule());
-		install(new FaucetModule());
 
 		if (properties.get("chaos.enable", false)) {
 			install(new ChaosModule());

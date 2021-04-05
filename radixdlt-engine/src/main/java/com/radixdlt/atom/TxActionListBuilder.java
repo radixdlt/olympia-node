@@ -30,6 +30,13 @@ import java.util.List;
 public class TxActionListBuilder {
 	private List<TxAction> actions = new ArrayList<>();
 
+	private TxActionListBuilder() {
+	}
+
+	public static TxActionListBuilder create() {
+		return new TxActionListBuilder();
+	}
+
 	public TxActionListBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) {
 		var action = new TransferNativeToken(rri, to, amount);
 		actions.add(action);

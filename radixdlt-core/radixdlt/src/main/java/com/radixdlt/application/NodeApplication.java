@@ -16,68 +16,48 @@
  *
  */
 
-package com.radixdlt.application.faucet;
+package com.radixdlt.application;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxActionListBuilder;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Faucet service which sends funds from this node to another address
- * when requested.
- */
-public final class Faucet {
+public class NodeApplication {
 	private static final Logger log = LogManager.getLogger();
 
 	private final RadixAddress self;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-	private final RRI nativeToken;
-	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
-	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
-
 
 	@Inject
-	public Faucet(
+	public NodeApplication(
 		@Self RadixAddress self,
 		@Named("RadixEngine") HashSigner hashSigner,
-		@NativeToken RRI nativeToken,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
 		this.self = self;
 		this.hashSigner = hashSigner;
-		this.nativeToken = nativeToken;
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
-	private void processRequest(FaucetRequest request) {
-		log.info("Faucet Request {}", request);
-
-		var actions = new TxActionListBuilder()
-			.transferNative(nativeToken, request.getAddress(), amount)
-			.burnNative(nativeToken, FEE)
-			.build();
+	private void processRequest(NodeApplicationRequest request) {
+		log.info("NodeServiceRequest {}", request);
 
 		try {
-			var txBuilder = radixEngine.construct(self, actions);
+			var txBuilder = radixEngine.construct(self, request.getActions());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 			request.onSuccess(txn.getId());
@@ -87,7 +67,7 @@ public final class Faucet {
 		}
 	}
 
-	public EventProcessor<FaucetRequest> requestEventProcessor() {
+	public EventProcessor<NodeApplicationRequest> requestEventProcessor() {
 		return this::processRequest;
 	}
 }

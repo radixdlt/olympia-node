@@ -20,7 +20,6 @@ package org.radix.api.http;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.application.faucet.FaucetRequest;
 import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
