@@ -42,20 +42,22 @@ public final class MempoolRelayer {
 	private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
 	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
+	private final Mempool<?> mempool;
 
 	@Inject
 	public MempoolRelayer(
+		Mempool<?> mempool,
 		RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
 		PeersView peersView,
 		MempoolConfig mempoolConfig,
 		SystemCounters counters
 	) {
+		this.mempool = mempool;
 		this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
 		this.peersView = Objects.requireNonNull(peersView);
 		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
 	}
-
 
 	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
 		return mempoolAddSuccess -> {
@@ -66,8 +68,20 @@ public final class MempoolRelayer {
 		};
 	}
 
-	public EventProcessor<MempoolRelayCommands> mempoolRelayCommandsEventProcessor() {
-		return mempoolRelayCommands -> relayCommands(mempoolRelayCommands.getTxns(), ImmutableList.of());
+	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
+		return ev -> {
+			final var now = System.currentTimeMillis();
+			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
+			final var txns = mempool.scanUpdateAndGet(
+				m -> m.getInserted() <= maxAddTime
+					&& now >= m.getLastRelayed().orElse(0L)
+					+ this.mempoolConfig.commandRelayRepeatDelay(),
+				m -> m.setLastRelayed(now)
+			);
+			if (!txns.isEmpty()) {
+				relayCommands(txns, ImmutableList.of());
+			}
+		};
 	}
 
 	private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {

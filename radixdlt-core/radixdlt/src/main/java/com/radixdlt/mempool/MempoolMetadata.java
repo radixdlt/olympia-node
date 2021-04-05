@@ -18,7 +18,7 @@
 package com.radixdlt.mempool;
 
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * An atom with additional information stored in a mempool.
@@ -26,27 +26,27 @@ import java.util.Optional;
 public final class MempoolMetadata {
 
 	private final long inserted;
-	private final Optional<Long> lastRelayed;
+	private long lastRelayed;
 
-	private MempoolMetadata(long inserted, Optional<Long> lastRelayed) {
-		this.inserted = Objects.requireNonNull(inserted);
-		this.lastRelayed = Objects.requireNonNull(lastRelayed);
+	private MempoolMetadata(long inserted, long lastRelayed) {
+		this.inserted = inserted;
+		this.lastRelayed = lastRelayed;
 	}
 
-	public static MempoolMetadata create(long inserted, Optional<Long> lastRelayed) {
-		return new MempoolMetadata(inserted, lastRelayed);
+	public static MempoolMetadata create(long inserted) {
+		return new MempoolMetadata(inserted, -1);
 	}
 
 	public long getInserted() {
 		return inserted;
 	}
 
-	public Optional<Long> getLastRelayed() {
-		return lastRelayed;
+	public OptionalLong getLastRelayed() {
+		return lastRelayed < 0 ? OptionalLong.empty() : OptionalLong.of(lastRelayed);
 	}
 
-	public MempoolMetadata withLastRelayed(long lastRelayed) {
-		return new MempoolMetadata(inserted, Optional.of(lastRelayed));
+	public void setLastRelayed(long lastRelayed) {
+		this.lastRelayed = lastRelayed;
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public final class MempoolMetadata {
 		}
 		final var that = (MempoolMetadata) o;
 		return inserted == that.inserted
-			&& Objects.equals(lastRelayed, that.lastRelayed);
+			&& lastRelayed == that.lastRelayed;
 	}
 
 	@Override

@@ -36,7 +36,6 @@ public final class MempoolRelayerModule extends AbstractModule {
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(MempoolAddSuccess.class);
-		eventBinder.addBinding().toInstance(MempoolRelayCommands.class);
 		eventBinder.addBinding().toInstance(MempoolRelayTrigger.class);
 	}
 
@@ -51,8 +50,8 @@ public final class MempoolRelayerModule extends AbstractModule {
 	) {
 		return new EventProcessorOnRunner<>(
 			"mempool",
-			MempoolRelayCommands.class,
-			mempoolRelayer.mempoolRelayCommandsEventProcessor()
+			MempoolRelayTrigger.class,
+			mempoolRelayer.mempoolRelayTriggerEventProcessor()
 		);
 	}
 }

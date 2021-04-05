@@ -36,6 +36,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -307,8 +308,9 @@ public class MempoolTest {
 		Thread.sleep(mempoolConfig.commandRelayInitialDelay());
 		processor.handleMessage(self, MempoolRelayTrigger.create());
 		assertThat(network.allMessages())
-			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
-		network.dropMessages(msg -> msg.message() instanceof MempoolRelayCommands);
+			.extracting(ControlledMessage::message)
+			.hasOnlyElementsOfType(MempoolAdd.class);
+		network.dropMessages(msg -> msg.message() instanceof MempoolAdd);
 
 		// should not relay again immediately
 		processor.handleMessage(self, MempoolRelayTrigger.create());
@@ -318,6 +320,7 @@ public class MempoolTest {
 		Thread.sleep(mempoolConfig.commandRelayRepeatDelay());
 		processor.handleMessage(self, MempoolRelayTrigger.create());
 		assertThat(network.allMessages())
-			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolRelayCommands.class));
+			.extracting(ControlledMessage::message)
+			.hasOnlyElementsOfType(MempoolAdd.class);
 	}
 }

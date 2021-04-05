@@ -21,6 +21,8 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Mempool which is always empty
@@ -44,6 +46,11 @@ public class Mempools {
 
 			@Override
 			public List<Txn> getTxns(int count, List<T> seen) {
+				return List.of();
+			}
+
+			@Override
+			public List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
 				return List.of();
 			}
 		};

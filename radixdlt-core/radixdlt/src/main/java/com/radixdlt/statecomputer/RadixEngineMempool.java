@@ -17,7 +17,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -30,8 +29,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolMetadata;
@@ -39,8 +36,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.MempoolRelayCommands;
-import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -48,10 +43,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -64,14 +60,12 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 	private final MempoolConfig mempoolConfig;
 	private final SystemCounters counters;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher;
 
 	@Inject
 	public RadixEngineMempool(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		MempoolConfig mempoolConfig,
-		SystemCounters counters,
-		EventDispatcher<MempoolRelayCommands> mempoolRelayCommandsEventDispatcher
+		SystemCounters counters
 	) {
 		if (mempoolConfig.maxSize() <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + mempoolConfig.maxSize());
@@ -79,7 +73,6 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		this.radixEngine = radixEngine;
 		this.mempoolConfig = Objects.requireNonNull(mempoolConfig);
 		this.counters = Objects.requireNonNull(counters);
-		this.mempoolRelayCommandsEventDispatcher = Objects.requireNonNull(mempoolRelayCommandsEventDispatcher);
 	}
 
 	@Override
@@ -105,7 +98,7 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			radixEngine.deleteBranches();
 		}
 
-		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis(), Optional.empty());
+		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
 		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
 		this.data.put(txn.getId(), data);
 		for (var instruction : radixEngineTxns.get(0).instructions()) {
@@ -185,28 +178,14 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		return txns;
 	}
 
-	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
-		return ev -> {
-			final var now = System.currentTimeMillis();
-			final var maxAddTime = now - this.mempoolConfig.commandRelayInitialDelay();
-			final var commandsToRelay = this.data
-				.entrySet().stream()
-				.filter(e ->
-					e.getValue().getSecond().getInserted() <= maxAddTime
-						&& now >= e.getValue().getSecond().getLastRelayed().orElse(0L)
-						+ this.mempoolConfig.commandRelayRepeatDelay()
-				)
-				.map(e -> {
-					final var updated = e.getValue().getSecond().withLastRelayed(now);
-					this.data.put(e.getKey(), Pair.of(e.getValue().getFirst(), updated));
-					return e.getValue().getFirst().getTxn();
-				})
-				.collect(ImmutableList.toImmutableList());
-
-			if (!commandsToRelay.isEmpty()) {
-				mempoolRelayCommandsEventDispatcher.dispatch(MempoolRelayCommands.create(commandsToRelay));
-			}
-		};
+	@Override
+	public List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+		return this.data
+			.values().stream()
+			.filter(e -> predicate.test(e.getSecond()))
+			.peek(e -> operator.accept(e.getSecond()))
+			.map(e -> e.getFirst().getTxn())
+			.collect(Collectors.toList());
 	}
 
 	private void updateCounts() {

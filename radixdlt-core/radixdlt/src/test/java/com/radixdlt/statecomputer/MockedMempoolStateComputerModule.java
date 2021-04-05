@@ -19,7 +19,9 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -45,6 +47,11 @@ import java.util.stream.Collectors;
  */
 public class MockedMempoolStateComputerModule extends AbstractModule {
 	private static final Logger log = LogManager.getLogger();
+
+	@Override
+	protected void configure() {
+		bind(new TypeLiteral<Mempool<?>>() { }).to(new TypeLiteral<Mempool<Txn>>() { }).in(Scopes.SINGLETON);
+	}
 
 	@Provides
 	@Singleton

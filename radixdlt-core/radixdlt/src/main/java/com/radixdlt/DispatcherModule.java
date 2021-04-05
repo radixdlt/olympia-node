@@ -18,7 +18,6 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -132,8 +131,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MempoolRelayCommands>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayCommands.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })

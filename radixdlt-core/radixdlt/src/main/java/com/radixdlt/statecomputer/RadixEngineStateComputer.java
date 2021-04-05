@@ -38,7 +38,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -60,7 +59,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<RETxn> mempool;
+	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
@@ -75,7 +74,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Mempool<RETxn> mempool,
+		RadixEngineMempool mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
