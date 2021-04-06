@@ -15,7 +15,6 @@ bin/
 *.iml
 out/
 emunie-json/out/
-default.config
 api.users
 
 # other
