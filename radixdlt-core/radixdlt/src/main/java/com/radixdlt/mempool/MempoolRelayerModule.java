@@ -23,8 +23,13 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.ScheduledEventProducerOnRunner;
+
+import java.time.Duration;
 
 /**
  * Module responsible for sending mempool messages to other nodes.
@@ -41,7 +46,7 @@ public final class MempoolRelayerModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessorOnRunner<?> mempoolAddEventProcessor(MempoolRelayer mempoolRelayer) {
-		return new EventProcessorOnRunner<>("mempool", MempoolAddSuccess.class, mempoolRelayer.mempoolAddSuccessEventProcessor());
+		return new EventProcessorOnRunner<>(Runners.MEMPOOL, MempoolAddSuccess.class, mempoolRelayer.mempoolAddSuccessEventProcessor());
 	}
 
 	@ProvidesIntoSet
@@ -49,9 +54,23 @@ public final class MempoolRelayerModule extends AbstractModule {
 		MempoolRelayer mempoolRelayer
 	) {
 		return new EventProcessorOnRunner<>(
-			"mempool",
+			Runners.MEMPOOL,
 			MempoolRelayTrigger.class,
 			mempoolRelayer.mempoolRelayTriggerEventProcessor()
 		);
 	}
+
+	@ProvidesIntoSet
+	public ScheduledEventProducerOnRunner<?> mempoolRelayTriggerEventProducer(
+		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
+	) {
+		return new ScheduledEventProducerOnRunner<>(
+			Runners.MEMPOOL,
+			mempoolRelayTriggerEventDispatcher,
+			MempoolRelayTrigger::create,
+			Duration.ofSeconds(10),
+			Duration.ofSeconds(10)
+		);
+	}
+
 }

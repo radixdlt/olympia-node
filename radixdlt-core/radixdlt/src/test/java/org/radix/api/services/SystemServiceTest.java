@@ -14,8 +14,10 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+
 package org.radix.api.services;
 
+import com.radixdlt.environment.Runners;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
@@ -51,7 +53,7 @@ public class SystemServiceTest {
 	private final LocalSystem localSystem = assembleLocalSystem();
 	private final ModuleRunner consensusRunner = mock(ModuleRunner.class);
 	private final SystemService systemService =
-		new SystemService(serialization, universe, localSystem, Map.of("consensus", consensusRunner));
+		new SystemService(serialization, universe, localSystem, Map.of(Runners.CONSENSUS, consensusRunner));
 
 	@Test
 	public void pingPong() {

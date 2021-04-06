@@ -59,7 +59,6 @@ import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.sync.SyncRunnerModule;
 import com.radixdlt.universe.UniverseModule;
 
 /**
@@ -117,7 +116,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new MempoolRelayerModule());
 
 		// Sync
-		install(new SyncRunnerModule());
 		install(new SyncServiceModule());
 
 		// Epochs - Consensus
@@ -173,7 +171,9 @@ public final class RadixNodeModule extends AbstractModule {
 		HostIp hostIp,
 		TCPConfiguration tcpConfiguration
 	) {
-		String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		return LocalSystem.create(self, infoSupplier, host, tcpConfiguration.networkPort(30000));
+		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+		final var listenPort = tcpConfiguration.listenPort(30000);
+		final var broadcastPort = tcpConfiguration.broadcastPort(listenPort); // defaults to listen port
+		return LocalSystem.create(self, infoSupplier, host, broadcastPort);
 	}
 }

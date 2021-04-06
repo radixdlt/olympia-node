@@ -103,6 +103,7 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, network.remoteEventDispatcher(LedgerStatusUpdate.class));
 	}
 
+
 	@Provides
 	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesRequest.class);

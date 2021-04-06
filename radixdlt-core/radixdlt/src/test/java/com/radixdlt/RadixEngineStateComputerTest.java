@@ -63,6 +63,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -137,14 +138,16 @@ public class RadixEngineStateComputerTest {
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
-						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
-						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
-						.toInstance(TypedMocks.rmock(EventDispatcher.class));
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(SystemCounters.class).to(SystemCountersImpl.class);

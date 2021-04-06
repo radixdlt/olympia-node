@@ -75,7 +75,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 			.ledgerAndEpochsAndSync(
 				View.of(100),
 				(unused) -> VALIDATORS.stream().mapToInt(i -> i),
-				SyncConfig.of(200L, 10, 1000L)
+				SyncConfig.of(1000L, 10, 500L, 10, Long.MAX_VALUE)
 			)
 			.addTestModules(
 				ConsensusMonitors.safety(),

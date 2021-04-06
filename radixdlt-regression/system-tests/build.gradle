@@ -64,6 +64,7 @@ task copyCLIJar {
         }
     }
 }
+
 task bddTest(type: Test) {
     dependsOn clean,copyCLIJar
     testLogging.showStandardStreams = true
@@ -96,6 +97,18 @@ task clusterSystemTests(type: Test) {
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     exclude "Runner.class"
+    jacoco {
+        // We don't want these tests included in code coverage.
+        enabled false
+    }
+}
+
+task chaosExperiments(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.test.chaos.*"
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
     jacoco {
         // We don't want these tests included in code coverage.
         enabled false

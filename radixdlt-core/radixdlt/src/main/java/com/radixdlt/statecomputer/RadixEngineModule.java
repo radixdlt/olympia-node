@@ -67,6 +67,7 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
+
 	@Provides
 	private ValidatorSetBuilder validatorSetBuilder(
 		@MinValidators int minValidators,

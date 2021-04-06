@@ -21,11 +21,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.consensus.EpochManagerRunner;
+import com.radixdlt.environment.Runners;
 
 public class ConsensusRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
-		moduleRunners.addBinding("consensus").to(EpochManagerRunner.class).in(Scopes.SINGLETON);
+		moduleRunners.addBinding(Runners.CONSENSUS).to(EpochManagerRunner.class).in(Scopes.SINGLETON);
 	}
 }
