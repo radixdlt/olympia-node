@@ -87,8 +87,8 @@ public final class NodeController implements Controller {
 			);
 		});
 		return new JSONObject()
-			.put("stake", stakeReceived.getTotal())
-			.put("from", stakeFrom);
+			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
+			.put("stakes", stakeFrom);
 	}
 
 	private JSONObject getBalance() {
@@ -104,18 +104,15 @@ public final class NodeController implements Controller {
 		);
 		return new JSONObject()
 			.put("spendable", TokenUnitConversions.subunitsToUnits(spendable))
-			.put("stakeTo", stakeTo);
+			.put("staked", stakeTo);
 	}
 
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
-		var particleCount = radixEngine.getComputedState(Integer.class);
-
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
 			.put("balance", getBalance())
-			.put("validator", getValidator())
-			.put("numParticles", particleCount));
+			.put("validator", getValidator()));
 	}
 
 	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {

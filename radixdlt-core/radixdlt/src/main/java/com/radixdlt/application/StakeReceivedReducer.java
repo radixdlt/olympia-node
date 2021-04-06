@@ -62,7 +62,7 @@ public class StakeReceivedReducer implements StateReducer<StakeReceived, StakedT
 	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> outputReducer() {
 		return (stakes, p) -> {
 			if (p.getDelegateAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
-				stakes.addStake(p.getDelegateAddress(), p.getAmount());
+				stakes.addStake(p.getAddress(), p.getAmount());
 			}
 			return stakes;
 		};
@@ -72,7 +72,7 @@ public class StakeReceivedReducer implements StateReducer<StakeReceived, StakedT
 	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> inputReducer() {
 		return (stakes, p) -> {
 			if (p.getDelegateAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
-				stakes.removeStake(p.getDelegateAddress(), p.getAmount());
+				stakes.removeStake(p.getAddress(), p.getAmount());
 			}
 			return stakes;
 		};
