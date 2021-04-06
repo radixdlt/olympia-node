@@ -28,7 +28,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public class StakeNativeToken implements TxAction {
+public final class StakeNativeToken implements TxAction {
 	private final RRI nativeToken;
 	private final RadixAddress delegateAddress;
 	private final UInt256 amount;
@@ -63,7 +63,5 @@ public class StakeNativeToken implements TxAction {
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> factory.createStaked(delegateAddress, address, amt));
-
-		txBuilder.particleGroup();
 	}
 }

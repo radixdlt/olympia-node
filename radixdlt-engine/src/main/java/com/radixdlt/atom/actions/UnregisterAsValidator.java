@@ -36,6 +36,5 @@ public final class UnregisterAsValidator implements TxAction {
 		).with(
 			substateDown -> new UnregisteredValidatorParticle(address)
 		);
-		txBuilder.particleGroup();
 	}
 }

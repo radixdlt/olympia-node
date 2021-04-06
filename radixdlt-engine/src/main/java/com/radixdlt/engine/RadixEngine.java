@@ -482,6 +482,10 @@ public final class RadixEngine<M> {
 		return construct(null, List.of(action));
 	}
 
+	public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {
+		return construct(address, List.of(action));
+	}
+
 	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
 		return construct(address, actions, Set.of());
 	}
@@ -497,6 +501,7 @@ public final class RadixEngine<M> {
 					: TxBuilder.newSystemBuilder(filteredStore);
 				for (var action : actions) {
 					action.execute(txBuilder);
+					txBuilder.particleGroup();
 				}
 
 				return txBuilder;

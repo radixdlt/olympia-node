@@ -27,7 +27,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public class TransferNativeToken implements TxAction {
+public final class TransferNativeToken implements TxAction {
 	private final RRI rri;
 	private final RadixAddress to;
 	private final UInt256 amount;
@@ -57,7 +57,5 @@ public class TransferNativeToken implements TxAction {
 			amount,
 			"Not enough balance for transfer."
 		).with(amt -> factory.createTransferrable(to, amount));
-
-		txBuilder.particleGroup();
 	}
 }

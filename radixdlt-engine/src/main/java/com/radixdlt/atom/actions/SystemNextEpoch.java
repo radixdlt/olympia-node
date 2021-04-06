@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 
 import java.util.Optional;
 
-public class SystemNextEpoch implements TxAction {
+public final class SystemNextEpoch implements TxAction {
 	private final long timestamp;
 	private final long currentEpoch;
 
@@ -44,6 +44,5 @@ public class SystemNextEpoch implements TxAction {
 			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
 			"No System particle available"
 		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
-		txBuilder.particleGroup();
 	}
 }

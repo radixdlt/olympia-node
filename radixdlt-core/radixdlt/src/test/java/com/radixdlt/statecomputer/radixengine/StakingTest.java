@@ -28,6 +28,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -140,9 +141,10 @@ public class StakingTest {
 		sut.execute(List.of(txn));
 
 		// Act
-		var nextTxn = TxBuilder.newBuilder(stakerAddress, engineStore)
-			.unstakeFrom(nativeToken, delegateAddress, UInt256.THREE)
-			.signAndBuild(staker::sign);
+		var nextTxn = sut.construct(
+			stakerAddress,
+			new UnstakeNativeToken(nativeToken, delegateAddress, UInt256.THREE)
+		).signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));
 
 		// Assert

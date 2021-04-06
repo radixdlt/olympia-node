@@ -51,7 +51,5 @@ public final class SystemNextView implements TxAction {
 			}
 			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
 		});
-
-		txBuilder.particleGroup();
 	}
 }

@@ -27,7 +27,7 @@ import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 
 import java.util.Optional;
 
-public class RegisterAsValidator implements TxAction {
+public final class RegisterAsValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address to register.");
@@ -40,7 +40,5 @@ public class RegisterAsValidator implements TxAction {
 		).with(
 			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
 		);
-
-		txBuilder.particleGroup();
 	}
 }

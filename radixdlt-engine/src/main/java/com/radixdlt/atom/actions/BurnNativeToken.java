@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
-public class BurnNativeToken implements TxAction {
+public final class BurnNativeToken implements TxAction {
 	private final RRI rri;
 	private final UInt256 amount;
 
@@ -53,7 +53,6 @@ public class BurnNativeToken implements TxAction {
 			amount,
 			"Not enough balance to for fee burn."
 		).with(factory::createUnallocated);
-		txBuilder.particleGroup();
 	}
 }
 

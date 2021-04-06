@@ -56,7 +56,5 @@ public final class UnstakeNativeToken implements TxAction {
 			amount,
 			"Not enough staked."
 		).with(amt -> factory.createTransferrable(address, amt));
-
-		txBuilder.particleGroup();
 	}
 }

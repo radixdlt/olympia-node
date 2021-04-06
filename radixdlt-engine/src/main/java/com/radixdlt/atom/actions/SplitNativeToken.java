@@ -26,7 +26,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
-public class SplitNativeToken implements TxAction {
+public final class SplitNativeToken implements TxAction {
 	private final RRI rri;
 	private final UInt256 minSize;
 
@@ -60,6 +60,5 @@ public class SplitNativeToken implements TxAction {
 		var amt2 = particle.getAmount().subtract(amt1);
 		txBuilder.up(factory.createTransferrable(address, amt1));
 		txBuilder.up(factory.createTransferrable(address, amt2));
-		txBuilder.particleGroup();
 	}
 }

@@ -572,29 +572,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
-		assertHasAddress("Must have an address.");
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(delegateAddress, address, amt),
-			amount,
-			"Not enough staked."
-		).with(amt -> factory.createTransferrable(address, amt));
-
-		particleGroup();
-
-		return this;
-	}
-
 	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
 	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
