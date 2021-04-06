@@ -78,7 +78,7 @@ public final class NodeController implements Controller {
 	@VisibleForTesting
 	void respondWithNode(HttpServerExchange exchange) {
 		var particleCount = radixEngine.getComputedState(Integer.class);
-		var balance = radixEngine.getComputedState(UInt256.class);
+		var spendable = radixEngine.getComputedState(UInt256.class);
 		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
 		var staked = new JSONArray();
 		stakedBalance.forEach((addr, amt) ->
@@ -88,10 +88,13 @@ public final class NodeController implements Controller {
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
+		var balance = new JSONObject()
+			.put("spendable", TokenUnitConversions.subunitsToUnits(spendable))
+			.put("staked", staked);
+
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
-			.put("balance", TokenUnitConversions.subunitsToUnits(balance))
-			.put("staked", staked)
+			.put("balance", balance)
 			.put("numParticles", particleCount));
 	}
 
