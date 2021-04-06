@@ -109,7 +109,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 		// and test node didn't communicate directly with a validator
 		assertThat(
 			syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
-		).isBetween(-2L, 2L); // small discrepancies are fine
+		).isBetween(-4L, 4L); // small discrepancies are fine
 	}
 
 }
