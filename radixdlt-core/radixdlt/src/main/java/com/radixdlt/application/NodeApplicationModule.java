@@ -48,6 +48,8 @@ public final class NodeApplicationModule extends AbstractModule {
 			.addBinding().to(BalanceReducer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
 			.addBinding().to(StakedBalanceReducer.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+			.addBinding().to(StakeReceivedReducer.class).in(Scopes.SINGLETON);
 
 		bind(NodeApplication.class).in(Scopes.SINGLETON);
 
@@ -55,7 +57,6 @@ public final class NodeApplicationModule extends AbstractModule {
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(NodeApplicationRequest.class);
 	}
-
 
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
