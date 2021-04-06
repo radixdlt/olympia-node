@@ -141,6 +141,7 @@ public class ECDSASignatureTest {
 			var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
 			var sigFromDER = ECDSASignature.decodeFromDER(expectedSignatureDERBytes);
 
+			//Signature from DER has no `v` byte, so comparing using `equals` fails.
 			assertEquals(sigFromDER.getR(), signature.getR());
 			assertEquals(sigFromDER.getS(), signature.getS());
 		}
