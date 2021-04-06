@@ -20,6 +20,7 @@ package org.radix.api.http;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.application.StakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnNativeToken;
@@ -39,6 +40,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
@@ -77,9 +79,19 @@ public final class NodeController implements Controller {
 	void respondWithNode(HttpServerExchange exchange) {
 		var particleCount = radixEngine.getComputedState(Integer.class);
 		var balance = radixEngine.getComputedState(UInt256.class);
+		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
+		var staked = new JSONArray();
+		stakedBalance.forEach((addr, amt) ->
+			staked.put(
+				new JSONObject()
+					.put("delegate", addr)
+					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
+			)
+		);
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
 			.put("balance", TokenUnitConversions.subunitsToUnits(balance))
+			.put("staked", staked)
 			.put("numParticles", particleCount));
 	}
 

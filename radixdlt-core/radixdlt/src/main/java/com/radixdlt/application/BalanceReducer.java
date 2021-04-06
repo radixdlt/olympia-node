@@ -34,12 +34,12 @@ import java.util.function.Supplier;
 /**
  * Balance reducer for local node
  */
-public final class Balance implements StateReducer<UInt256, TransferrableTokensParticle> {
+public final class BalanceReducer implements StateReducer<UInt256, TransferrableTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 
 	@Inject
-	public Balance(
+	public BalanceReducer(
 		@NativeToken RRI tokenRRI,
 		@Self RadixAddress address
 	) {
