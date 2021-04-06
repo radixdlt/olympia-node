@@ -23,8 +23,9 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.RegisterAsValidator;
 import com.radixdlt.atom.actions.StakeNativeToken;
-import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.actions.UnregisterAsValidator;
 import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
@@ -68,7 +69,6 @@ public final class NodeController implements Controller {
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/node/validator", this::handleValidatorRegistration);
 		handler.post("/node/execute", this::handleExecute);
 		handler.get("/node", this::respondWithNode);
 	}
@@ -81,32 +81,6 @@ public final class NodeController implements Controller {
 			.put("address", selfAddress)
 			.put("balance", TokenUnitConversions.subunitsToUnits(balance))
 			.put("numParticles", particleCount));
-	}
-
-	@VisibleForTesting
-	void handleValidatorRegistration(HttpServerExchange exchange) {
-		// TODO: implement JSON-RPC 2.0 specification
-		withBodyAsync(exchange, values -> {
-			boolean enabled = values.getBoolean("enabled");
-
-			var builder = TxActionListBuilder.create();
-			if (enabled) {
-				builder.registerAsValidator();
-			} else {
-				builder.unregisterAsValidator();
-			}
-			var actions = builder
-				.burnNative(nativeToken, FEE)
-				.build();
-
-			var request = NodeApplicationRequest.create(
-				actions,
-				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
-				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
-			);
-
-			nodeApplicationRequestEventDispatcher.dispatch(request);
-		});
 	}
 
 	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {
@@ -124,7 +98,11 @@ public final class NodeController implements Controller {
 			var amountBigInt = paramsObject.getBigInteger("amount");
 			var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 			return new UnstakeNativeToken(nativeToken, delegate, subunits);
-		} else {
+		} else if (actionString.equals("RegisterAsValidator")) {
+			return new RegisterAsValidator();
+		} else if (actionString.equals("UnregisterAsValidator")) {
+			return new UnregisterAsValidator();
+		} else	{
 			throw new IllegalArgumentException("Bad action object: " + actionObject);
 		}
 	}
