@@ -139,7 +139,9 @@ public class TransactionParserTest {
 		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.THREE, atom4);
 	}
 
-	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws RadixEngineException, InterruptedException {
+	private void executeAndDecode(
+		List<ActionType> expectedActions, UInt256 fee, Txn... txns
+	) throws RadixEngineException, InterruptedException {
 		var list = engine.execute(List.of(txns), null, PermissionLevel.USER);
 
 		// Wait for propagation
@@ -149,11 +151,9 @@ public class TransactionParserTest {
 			return;
 		}
 
-		var parser = new TransactionParser(serialization);
-
 		list.stream()
 			.map(this::toParsedTx)
-			.map(result -> result.flatMap(parsedTx -> parser.parse(tokenOwnerAddress, parsedTx, Instant.now())))
+			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenOwnerAddress, parsedTx, Instant.now())))
 			.forEach(entry -> {
 				entry
 					.onFailureDo(Assert::fail)

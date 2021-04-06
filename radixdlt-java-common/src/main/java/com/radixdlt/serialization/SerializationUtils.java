@@ -17,7 +17,6 @@
 
 package com.radixdlt.serialization;
 
-import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.radixdlt.identifiers.EUID;

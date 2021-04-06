@@ -17,10 +17,6 @@
 
 package com.radixdlt.client.store;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -29,35 +25,22 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static com.radixdlt.serialization.SerializationUtils.restore;
+public final class TransactionParser {
+	private TransactionParser() { }
 
-public class TransactionParser {
-	private static final Logger log = LogManager.getLogger();
-
-	private final Serialization serialization;
-
-	@Inject
-	public TransactionParser(Serialization serialization) {
-		this.serialization = serialization;
-	}
-
-	public Result<TxHistoryEntry> parse(RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
+	public static Result<TxHistoryEntry> parse(RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
 		return new ParsingContext(parsedTx.getParticles(), parsedTx.getMessage(), parsedTx.getId(), txDate, owner)
 			.parse();
 	}
@@ -303,14 +286,5 @@ public class TransactionParser {
 		private boolean isDown() {
 			return input.get(pos).getSpin() == Spin.DOWN;
 		}
-	}
-
-	private void reportError(Failure failure) {
-		log.error(failure.message());
-	}
-
-	private <T> T shouldNeverHappen(Failure f) {
-		log.error("Should never happen {}", f.message());
-		return null;
 	}
 }

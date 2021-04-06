@@ -32,7 +32,6 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.ClientApiUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
-import com.radixdlt.client.store.ParsedTx;
 import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -40,10 +39,8 @@ import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -62,7 +59,6 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -70,10 +66,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
@@ -137,7 +131,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database tokenDefinitions;
 	private Database addressBalances;
 	private Database supplyBalances;
-	private TransactionParser transactionParser;
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -147,8 +140,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
-		@Named("magic") int universeMagic,
-		TransactionParser transactionParser
+		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
 		this.store = store;
@@ -157,7 +149,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.ledgerCommitted = ledgerCommitted;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
-		this.transactionParser = transactionParser;
 
 		open();
 	}
@@ -286,7 +277,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
 					)
 					.flatMap(txn -> ClientApiUtils.toParsedTx(txn, universeMagic, sid -> store.loadUpParticle(null, sid)))
-					.flatMap(parsed -> transactionParser.parse(address, parsed, instantFromKey(key)))
+					.flatMap(parsed -> TransactionParser.parse(address, parsed, instantFromKey(key)))
 					.onSuccess(txHistoryEntry -> {
 						count.incrementAndGet();
 						list.add(txHistoryEntry);
@@ -441,7 +432,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.map(atom -> toInstructions(atom.getInstructions()))
 			.onSuccess(instructions -> instructionsToParticles(instructions)
 				.sorted(Comparator.comparingInt(pi -> pi.getSpin().intValue()))
-				.forEach(this::storeSingleSubstate))
+				.forEach(particleWithSpin -> particleWithSpin.ifTokenDefinitionOrElse(
+					this::storeTokenDefinition,
+					pws -> pws.ifDownOrElse(this::storeSingleDownSubstate, this::storeSingleUpSubstate)
+				)))
 			.onFailure(this::reportError);
 	}
 
@@ -479,12 +473,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private <T> T shouldNeverHappen(Failure f) {
-		log.error("Should never happen {}", f.message());
-		return null;
-	}
-
-
 	private void safeClose(Database database) {
 		if (database != null) {
 			database.close();
@@ -504,19 +492,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.incrementAndGet());
 	}
 
-	private void storeSingleSubstate(ParticleWithSpin particleWithSpin) {
-		if (particleWithSpin.getParticle() instanceof TokenDefinitionSubstate) {
-			storeTokenDefinition((TokenDefinitionSubstate) particleWithSpin.getParticle());
-		} else {
-			//Store balance and supply
-			if (particleWithSpin.getSpin() == Spin.DOWN) {
-				storeSingleDownSubstate(particleWithSpin.getParticle());
-			} else {
-				storeSingleUpSubstate(particleWithSpin.getParticle());
-			}
-		}
-	}
-
 	private void storeTokenDefinition(TokenDefinitionSubstate substate) {
 		TokenDefinitionRecord.from(substate)
 			.onSuccess(this::storeTokenDefinition)
@@ -525,7 +500,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.rri());
-		var value = serializeToEntry(entry(), tokenDefinition);
+		var value = serializeTo(entry(), tokenDefinition);
 		var status = withTime(
 			() -> tokenDefinitions.putNoOverwrite(null, key, value),
 			() -> addTokenWriteBytes(value),
@@ -556,7 +531,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void storeSingleUpSubstate(Particle substate) {
 		toBalanceEntry(substate, true).ifPresent(balanceEntry -> {
 			var key = asKey(balanceEntry);
-			var value = serializeToEntry(entry(), balanceEntry);
+			var value = serializeTo(entry(), balanceEntry);
 
 			mergeBalances(key, value, balanceEntry, true);
 		});
@@ -576,12 +551,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		var status = readBalance(() -> database.get(null, key, oldValue, null), oldValue);
 
 		if (status == OperationStatus.NOTFOUND) {
-			serializeToEntry(value, balanceEntry);
+			serializeTo(value, balanceEntry);
 		} else if (status == OperationStatus.SUCCESS) {
 			// Merge with existing balance
 			restore(serialization, oldValue.getData(), BalanceEntry.class)
 				.map(existingBalance -> existingBalance.add(balanceEntry))
-				.onSuccess(entry -> serializeToEntry(value, entry))
+				.onSuccess(entry -> serializeTo(value, entry))
 				.onFailure(this::reportError);
 		}
 
@@ -592,9 +567,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private DatabaseEntry serializeToEntry(DatabaseEntry value, Object entry) {
+	private DatabaseEntry serializeTo(DatabaseEntry value, Object entry) {
 		value.setData(serialization.toDson(entry, Output.ALL));
 		return value;
+	}
+
+	private <T> T shouldNeverHappen(Failure f) {
+		log.error("Should never happen {}", f.message());
+		return null;
 	}
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {
@@ -645,7 +625,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return new DatabaseEntry();
 	}
 
-	private Optional<BalanceEntry> toBalanceEntry(Particle substate, boolean isUp) {
+	private static Optional<BalanceEntry> toBalanceEntry(Particle substate, boolean isUp) {
 		if (substate instanceof StakedTokensParticle) {
 			var a = (StakedTokensParticle) substate;
 			return Optional.of(BalanceEntry.createBalance(

@@ -134,7 +134,9 @@ public final class Optionals {
 								v6 -> op7.flatMap(
 									v7 -> op8.flatMap(
 										v8 -> op9.flatMap(
-											v9 -> Optional.of(tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)))))))))));
+											v9 -> Optional.of(
+												tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)
+											))))))))));
 	}
 
 	public interface Mapper1<T1> {

@@ -17,6 +17,10 @@
 
 package com.radixdlt.crypto;
 
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DLSequence;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
@@ -25,11 +29,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
-
-import org.bouncycastle.asn1.ASN1Boolean;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.DLSequence;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -57,7 +56,7 @@ public final class ECDSASignature implements Signature {
 	private ECDSASignature(BigInteger r, BigInteger s, int v) {
     	this.r = Objects.requireNonNull(r);
         this.s = Objects.requireNonNull(s);
-		this.v = (v == 0 ? (byte) 0x00 : (byte) 0x01);
+		this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
 	}
 
 	@JsonCreator
@@ -129,9 +128,11 @@ public final class ECDSASignature implements Signature {
 		}
 
 		if (o instanceof ECDSASignature) {
-			ECDSASignature signature = (ECDSASignature) o;
+			var signature = (ECDSASignature) o;
+
 			return Objects.equals(r, signature.r)
-				&& Objects.equals(s, signature.s);
+				&& Objects.equals(s, signature.s)
+				&& Objects.equals(v, signature.v);
 		}
 
 		return false;
@@ -139,7 +140,7 @@ public final class ECDSASignature implements Signature {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(r, s);
+		return Objects.hash(r, s, v);
 	}
 
 	@Override

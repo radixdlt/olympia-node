@@ -17,9 +17,12 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -49,5 +52,24 @@ public class ParticleWithSpin {
 
 	public Spin getSpin() {
 		return spin;
+	}
+
+	public void ifTokenDefinitionOrElse(
+		Consumer<TokenDefinitionSubstate> consumer1,
+		Consumer<ParticleWithSpin> consumer2
+	) {
+		if (particle instanceof TokenDefinitionSubstate) {
+			consumer1.accept((TokenDefinitionSubstate) particle);
+		} else {
+			consumer2.accept(this);
+		}
+	}
+
+	public void ifDownOrElse(Consumer<Particle> downConsumer, Consumer<Particle> upConsumer) {
+		if (spin == Spin.DOWN) {
+			downConsumer.accept(particle);
+		} else {
+			upConsumer.accept(particle);
+		}
 	}
 }

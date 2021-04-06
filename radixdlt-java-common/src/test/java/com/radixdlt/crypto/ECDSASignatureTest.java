@@ -9,7 +9,6 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -115,7 +114,7 @@ public class ECDSASignatureTest {
 				"]";
 		//CHECKSTYLE:ON
 
-		var type = new TypeToken<ArrayList<Map<String, String>>>() {}.getType();
+		var type = new TypeToken<ArrayList<Map<String, String>>>() { }.getType();
 
 		ArrayList<Map<String, String>> vectors = new Gson().fromJson(rfc6979TestVectors, type);
 
@@ -142,7 +141,8 @@ public class ECDSASignatureTest {
 			var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
 			var sigFromDER = ECDSASignature.decodeFromDER(expectedSignatureDERBytes);
 
-			assertEquals(sigFromDER, signature);
+			assertEquals(sigFromDER.getR(), signature.getR());
+			assertEquals(sigFromDER.getS(), signature.getS());
 		}
 	}
 

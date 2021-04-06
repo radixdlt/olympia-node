@@ -62,6 +62,20 @@ public final class ClientApiUtils {
 			.flatMap(tuple -> toParsedTx(txn.getId(), tuple));
 	}
 
+	public static Result<Atom> txToAtom(Txn txn) {
+		return restore(serialization, txn.getPayload(), Atom.class);
+	}
+
+	public static Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {
+		return txToAtom(tx).toOptional().flatMap(atom -> extractCreator(atom, universeMagic));
+	}
+
+	public static Optional<RadixAddress> extractCreator(Atom tx, byte universeMagic) {
+		return tx.getSignature()
+			.flatMap(signature -> ECPublicKey.recoverFrom(tx.computeHashToSign(), signature))
+			.map(publicKey -> new RadixAddress(universeMagic, publicKey));
+	}
+
 	private static Result<ParsedTx> toParsedTx(
 		AID id, Tuple3<List<ParticleWithSpin>, Optional<RadixAddress>, Optional<String>> tuple
 	) {
@@ -82,19 +96,6 @@ public final class ClientApiUtils {
 
 	private static Tuple2<List<REInstruction>, Optional<RadixAddress>> extractInstructionsAndAuthor(byte universeMagic, Atom atom) {
 		return tuple(toInstructions(atom.getInstructions()), extractCreator(atom, universeMagic));
-	}
-
-	public static Result<Atom> txToAtom(Txn txn) {
-		return restore(serialization, txn.getPayload(), Atom.class);
-	}
-	public static Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {
-		return txToAtom(tx).toOptional().flatMap(atom -> extractCreator(atom, universeMagic));
-	}
-
-	public static Optional<RadixAddress> extractCreator(Atom tx, byte universeMagic) {
-		return tx.getSignature()
-			.flatMap(signature -> ECPublicKey.recoverFrom(tx.computeHashToSign(), signature))
-			.map(publicKey -> new RadixAddress(universeMagic, publicKey));
 	}
 
 	private static Optional<String> extractMessage(List<REInstruction> instructions) {
