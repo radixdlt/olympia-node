@@ -36,7 +36,6 @@ api.users
 RADIXDB/
 RADIXDB_TEST/
 logs/
-default.config
 logger.config
 *.ks
 *.key
