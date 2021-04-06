@@ -32,7 +32,6 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -42,6 +41,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.counters.SystemCounters;
@@ -191,9 +191,13 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
-			.signAndBuild(TOKEN_KEYPAIR::sign, store ->
-				store.index(MutableSupplyTokenDefinitionParticle.class)
-					.forEach(particle -> toTokenDefinitionRecord(particle).ifPresent(fooDef::set)));
+			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
+				try (var cursor = store.openIndexedCursor(MutableSupplyTokenDefinitionParticle.class)) {
+					while (cursor.hasNext()) {
+						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
+					}
+				}
+			});
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
@@ -208,9 +212,13 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareFixedTokenDef();
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createFixedToken(tokenDef)
-			.signAndBuild(TOKEN_KEYPAIR::sign, store ->
-				store.index(FixedSupplyTokenDefinitionParticle.class)
-						  .forEach(particle -> toTokenDefinitionRecord(particle).ifPresent(fooDef::set)));
+			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
+				try (var cursor = store.openIndexedCursor(FixedSupplyTokenDefinitionParticle.class)) {
+					while (cursor.hasNext()) {
+						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
+					}
+				}
+			});
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
@@ -332,9 +340,9 @@ public class BerkeleyClientApiStoreTest {
 		Assert.fail(failure.message());
 	}
 
-	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Substate substate) {
-		if (substate.getParticle() instanceof TokenDefinitionSubstate) {
-			return TokenDefinitionRecord.from((TokenDefinitionSubstate) substate.getParticle()).toOptional();
+	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Particle particle) {
+		if (particle instanceof TokenDefinitionSubstate) {
+			return TokenDefinitionRecord.from((TokenDefinitionSubstate) particle).toOptional();
 		} else {
 			return Optional.empty();
 		}

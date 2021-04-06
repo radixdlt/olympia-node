@@ -25,6 +25,7 @@ import com.radixdlt.utils.UInt256;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -79,8 +80,8 @@ public class TxHistoryEntry {
 			.put("txId", txId)
 			.put("date", DateTimeFormatter.ISO_INSTANT.format(date))
 			.put("fee", fee)
-			.put("message", message.asJson())
-			.put("actions", fromList(actions, ActionEntry::asJson));
+			.put("actions", fromList(actions, ActionEntry::asJson))
+			.putOpt("message", Optional.ofNullable(message).map(MessageEntry::asJson).orElse(null));
 	}
 
 	@Override
