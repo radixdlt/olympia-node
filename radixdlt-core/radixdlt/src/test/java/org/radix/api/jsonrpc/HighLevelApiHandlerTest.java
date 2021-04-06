@@ -32,6 +32,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -144,6 +145,8 @@ public class HighLevelApiHandlerTest {
 
 		var singleTransaction = transactions.getJSONObject(0);
 		assertEquals(UInt256.ONE, singleTransaction.get("fee"));
+		assertEquals(DateTimeFormatter.ISO_INSTANT.format(now), singleTransaction.getString("sentAt"));
+		assertEquals(AID.ZERO, singleTransaction.get("txId"));
 
 		assertTrue(singleTransaction.has("actions"));
 		var actions = singleTransaction.getJSONArray("actions");

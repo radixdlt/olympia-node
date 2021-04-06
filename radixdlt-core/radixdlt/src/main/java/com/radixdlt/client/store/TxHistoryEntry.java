@@ -78,7 +78,7 @@ public class TxHistoryEntry {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("txId", txId)
-			.put("date", DateTimeFormatter.ISO_INSTANT.format(date))
+			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(date))
 			.put("fee", fee)
 			.put("actions", fromList(actions, ActionEntry::asJson))
 			.putOpt("message", Optional.ofNullable(message).map(MessageEntry::asJson).orElse(null));
