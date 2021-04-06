@@ -17,27 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.RETxn;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.StoreConfig;
-import com.radixdlt.sync.CommittedReader;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.SecondaryCursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
@@ -81,14 +61,12 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -97,7 +75,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.crypto.HashUtils.transactionIdHash;
 import static com.radixdlt.store.berkeley.BerkeleyTransaction.wrap;
 import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -672,7 +649,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
 		final LedgerProof nextHeader;
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+		try (var proofCursor = proofDatabase.openCursor(txn, null)) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
 			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
@@ -734,7 +711,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public Optional<LedgerProof> getLastProof() {
 		return withTime(() -> {
-			try (var proofCursor = proofDatabase.openCursor(null, null);) {
+			try (var proofCursor = proofDatabase.openCursor(null, null)) {
 				var pKey = entry();
 				var value = entry();
 

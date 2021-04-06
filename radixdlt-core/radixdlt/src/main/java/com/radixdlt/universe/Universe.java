@@ -205,7 +205,7 @@ public class Universe {
 	public enum UniverseType {
 		PRODUCTION,
 		TEST,
-		DEVELOPMENT;
+		DEVELOPMENT
 	}
 
 	@JsonProperty("name")

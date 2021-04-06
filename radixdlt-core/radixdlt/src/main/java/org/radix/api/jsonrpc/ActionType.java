@@ -17,10 +17,6 @@
 
 package org.radix.api.jsonrpc;
 
-import org.json.JSONObject;
-
-import com.radixdlt.client.store.ActionEntry;
-
 public enum ActionType {
 	TRANSFER("TokenTransfer"),
 	STAKE("StakeTokens"),

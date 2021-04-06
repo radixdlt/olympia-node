@@ -155,13 +155,11 @@ public class TransactionParserTest {
 		list.stream()
 			.map(this::toParsedTx)
 			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenOwnerAddress, parsedTx, Instant.now())))
-			.forEach(entry -> {
-				entry
-					.onFailureDo(Assert::fail)
-					.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
-					.map(this::toActionTypes)
-					.onSuccess(types -> assertEquals(expectedActions, types));
-			});
+			.forEach(entry -> entry
+				.onFailureDo(Assert::fail)
+				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
+				.map(this::toActionTypes)
+				.onSuccess(types -> assertEquals(expectedActions, types)));
 	}
 
 	private Result<ParsedTx> toParsedTx(RETxn reTxn) {
