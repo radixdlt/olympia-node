@@ -39,7 +39,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,7 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 	private static final Logger logger = LogManager.getLogger();
 
 	private final ConcurrentHashMap<AID, Pair<RETxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
-	private final Map<SubstateId, Set<AID>> substateIndex = new HashMap<>();
+	private final Map<SubstateId, Set<AID>> substateIndex = new ConcurrentHashMap<>();
 	private final MempoolConfig mempoolConfig;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
