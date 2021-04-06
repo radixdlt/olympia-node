@@ -30,7 +30,7 @@ import java.util.Objects;
  * Particle representing a mutable supply token definition
  */
 @SerializerId2("m_tkn")
-public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionParticle {
+public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionSubstate {
 	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
 	private RRI rri;

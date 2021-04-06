@@ -23,7 +23,6 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -268,66 +267,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 	}
 
-	// TODO: Hack for Client Api store, remove at some point
-	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
-		try (var cursor = particleDatabase.openCursor(null, null)) {
-			var key = entry();
-			var value = entry();
-			var status = cursor.getFirst(key, value, DEFAULT);
-
-			while (status == SUCCESS) {
-				if (value.getData().length > 0) {
-					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
-					var particle = deserializeOrElseFail(particleBytes, Particle.class);
-					particleConsumer.accept(ParsedInstruction.up(particle));
-				}
-
-				status = cursor.getNext(key, value, DEFAULT);
-			}
-		}
+	public void forEach(Consumer<Txn> particleConsumer) {
+		atomLog.forEach((bytes, offset) -> particleConsumer.accept(Txn.create(bytes)));
 	}
-	//-------------- my
-
-	public void forEach(Consumer<FullTransaction> particleConsumer) {
-		atomLog.forEach((bytes, offset) -> {
-			var cmd = new Command(bytes);
-			try {
-				var tx = serialization.fromDson(bytes, Atom.class);
-				var txId = AID.from(transactionIdHash(bytes).asBytes());
-
-				particleConsumer.accept(FullTransaction.create(txId, tx));
-			} catch (DeserializeException e) {
-				log.error("Incompatible or corrupted data in transaction log at {}", offset);
-			}
-		});
-	}
-
-	//-------------- other
-// TODO: Hack for Client Api store, remove at some point
-	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
-		try (var cursor = particleDatabase.openCursor(null, null)) {
-			var key = entry();
-			var value = entry();
-			var status = cursor.getFirst(key, value, DEFAULT);
-
-			while (status == SUCCESS) {
-				if (value.getData().length > 0) {
-					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
-					var particle = SubstateSerializer.deserialize(particleBytes);
-					var substateId = SubstateId.fromBytes(key.getData());
-					var substate = Substate.create(particle, substateId);
-					var instruction = REInstruction.create(REInstruction.REOp.UP.opCode(), particleBytes);
-					particleConsumer.accept(ParsedInstruction.of(instruction, substate, Spin.UP));
-				}
-
-				status = cursor.getNext(key, value, DEFAULT);
-			}
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Unable to deserialize substate");
-		}
-	}
-
-	//-------------- end
 
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {

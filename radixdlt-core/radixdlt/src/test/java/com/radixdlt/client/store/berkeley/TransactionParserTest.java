@@ -29,60 +29,50 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.client.store.ActionEntry;
+import com.radixdlt.client.store.ParsedTx;
+import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ParsedTransaction;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.FullTransaction;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.BURN;
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.MINT;
-import static com.radixdlt.atommodel.tokens.TokenPermission.ALL;
-import static com.radixdlt.atommodel.tokens.TokenPermission.TOKEN_OWNER_ONLY;
+import static com.radixdlt.client.ClientApiUtils.extractCreator;
 
 public class TransactionParserTest {
+	private static final byte MAGIC = (byte) 0;
 	private final ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
-	private final RadixAddress tokenOwnerAddress = new RadixAddress((byte) 0, tokenOwnerKeyPair.getPublicKey());
+	private final RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, tokenOwnerKeyPair.getPublicKey());
 	private final ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
 	private final RadixAddress validatorAddress = new RadixAddress((byte) 0, validatorKeyPair.getPublicKey());
-	private final List<Particle> upParticles = new ArrayList<>();
+
 	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "TEST");
-	private final Map<TokenTransition, TokenPermission> permissions = Map.of(BURN, ALL, MINT, TOKEN_OWNER_ONLY);
-	private final MutableTokenDefinition tokDef = new MutableTokenDefinition("TEST", "Test", "description", null, null, permissions);
+	private final MutableTokenDefinition tokDef =
+		new MutableTokenDefinition("TEST", "Test", "description", null, null);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -91,6 +81,8 @@ public class TransactionParserTest {
 	private RadixEngine<LedgerAndBFTProof> engine;
 	@Inject
 	private Serialization serialization;
+	@Inject
+	private EngineStore<LedgerAndBFTProof> store;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -100,8 +92,7 @@ public class TransactionParserTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 0L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
@@ -116,32 +107,31 @@ public class TransactionParserTest {
 	}
 
 	@Test
-	public void typicalPatternsAreDetectedProperly() throws TxBuilderException, RadixEngineException {
+	public void typicalPatternsAreDetectedProperly() throws Exception {
 		var tokDefBuilder = TxBuilder.newBuilder(tokenOwnerAddress)
 			.createMutableToken(tokDef)
 			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN);
-		var atom0 = tokDefBuilder.signAndBuild(tokenOwnerKeyPair::sign, u -> u.forEach(upParticles::add));
+		var atom0 = tokDefBuilder.signAndBuild(tokenOwnerKeyPair::sign);
 
 		var validatorBuilder = TxBuilder.newBuilder(validatorAddress)
 			.registerAsValidator();
-		var atom1 = validatorBuilder.signAndBuild(validatorKeyPair::sign, u -> u.forEach(upParticles::add));
+		var atom1 = validatorBuilder.signAndBuild(validatorKeyPair::sign);
 
 		executeAndDecode(List.of(), UInt256.ZERO, atom0, atom1);
 
-		var upSubstate = new AtomicReference<Iterable<Particle>>();
-		var atom2 = TxBuilder.newBuilder(tokenOwnerAddress, upParticles)
+		var atom2 = TxBuilder.newBuilder(tokenOwnerAddress, store)
 			.stakeTo(tokenRri, validatorAddress, UInt256.FIVE)
-			.signAndBuild(tokenOwnerKeyPair::sign, upSubstate::set);
+			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.STAKE), UInt256.ZERO, atom2);
 
-		var atom3 = TxBuilder.newBuilder(tokenOwnerAddress, upSubstate.get())
+		var atom3 = TxBuilder.newBuilder(tokenOwnerAddress, store)
 			.unstakeFrom(tokenRri, validatorAddress, UInt256.ONE)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.ZERO, atom3);
 
-		var atom4 = TxBuilder.newBuilder(tokenOwnerAddress, upSubstate.get())
+		var atom4 = TxBuilder.newBuilder(tokenOwnerAddress, store)
 			.transfer(tokenRri, validatorAddress, UInt256.TWO)
 			.burnForFee(tokenRri, UInt256.THREE)
 			.signAndBuild(tokenOwnerKeyPair::sign);
@@ -149,18 +139,21 @@ public class TransactionParserTest {
 		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.THREE, atom4);
 	}
 
-	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Atom... atoms) throws RadixEngineException {
-		var list = engine.execute(List.of(atoms), null, PermissionLevel.USER);
+	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws RadixEngineException, InterruptedException {
+		var list = engine.execute(List.of(txns), null, PermissionLevel.USER);
 
-		if (atoms.length != 1) {
+		// Wait for propagation
+		Thread.sleep(100L);
+
+		if (txns.length != 1) {
 			return;
 		}
 
 		var parser = new TransactionParser(serialization);
 
 		list.stream()
-			.map(parsedTransaction -> parsedToFull(tokenOwnerKeyPair, parsedTransaction))
-			.map(txWithId -> parser.parse(tokenOwnerAddress, txWithId, Instant.now()))
+			.map(this::toParsedTx)
+			.map(result -> result.flatMap(parsedTx -> parser.parse(tokenOwnerAddress, parsedTx, Instant.now())))
 			.forEach(entry -> {
 				entry
 					.onFailureDo(Assert::fail)
@@ -170,36 +163,19 @@ public class TransactionParserTest {
 			});
 	}
 
+	private Result<ParsedTx> toParsedTx(RETxn reTxn) {
+		var particles = reTxn.instructions()
+			.stream()
+			.map(ParticleWithSpin::create)
+			.collect(Collectors.toList());
+
+		return ParsedTx.create(reTxn.getTxn().getId(), particles, Optional.empty(), extractCreator(reTxn.getTxn(), MAGIC));
+	}
+
 	private List<ActionType> toActionTypes(com.radixdlt.client.store.TxHistoryEntry txEntry) {
 		return txEntry.getActions()
 			.stream()
 			.map(ActionEntry::getType)
 			.collect(Collectors.toList());
-	}
-
-	private FullTransaction parsedToFull(ECKeyPair keyPair, ParsedTransaction parsedTransaction) {
-		var builder = TxLowLevelBuilder.newBuilder();
-
-		parsedTransaction.instructions().forEach(i -> {
-			switch (i.getSpin()) {
-				case NEUTRAL:
-					break;
-				case UP:
-					builder.up(i.getParticle());
-					break;
-				case DOWN:
-					builder.virtualDown(i.getParticle());
-					break;
-			}
-		});
-
-		return toFullTransaction(builder.signAndBuild(keyPair::sign));
-	}
-
-	private FullTransaction toFullTransaction(Atom tx) {
-		var payload = serialization.toDson(tx, DsonOutput.Output.ALL);
-		var txId = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-
-		return FullTransaction.create(txId, tx);
 	}
 }

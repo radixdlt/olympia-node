@@ -35,7 +35,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.FullTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -43,6 +42,7 @@ import com.radixdlt.utils.functional.Result;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.serialization.SerializationUtils.restore;
@@ -57,25 +57,16 @@ public class TransactionParser {
 		this.serialization = serialization;
 	}
 
-	public Result<TxHistoryEntry> parse(RadixAddress owner, FullTransaction txWithId, Instant txDate) {
-		var instructions = txWithId.getTx()
-			.uniqueInstructions()
-			.map(i -> restore(serialization, i.getData(), Particle.class)
-				.map(substate -> ParsedInstruction.of(substate, i.getNextSpin())))
-			.peek(instruction -> instruction.onFailure(this::reportError))
-			.filter(Result::isSuccess)
-			.map(p -> p.fold(this::shouldNeverHappen, v -> v))
-			.collect(Collectors.toList());
-
-		return new ParsingContext(instructions, txWithId.getTx().getMessage(), txWithId.getTxId(), txDate, owner)
+	public Result<TxHistoryEntry> parse(RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
+		return new ParsingContext(parsedTx.getParticles(), parsedTx.getMessage(), parsedTx.getId(), txDate, owner)
 			.parse();
 	}
 
 	private static class ParsingContext {
 		private static final ActionEntry UNKNOWN_ACTION = ActionEntry.unknown();
 
-		private final List<ParsedInstruction> input;
-		private final String message;
+		private final List<ParticleWithSpin> input;
+		private final Optional<String> message;
 		private final AID txId;
 		private final Instant txDate;
 		private final RadixAddress owner;
@@ -84,7 +75,7 @@ public class TransactionParser {
 		private int pos;
 		private UInt256 fee = UInt256.ZERO;
 
-		ParsingContext(List<ParsedInstruction> input, String message, AID txId, Instant txDate, RadixAddress owner) {
+		ParsingContext(List<ParticleWithSpin> input, Optional<String> message, AID txId, Instant txDate, RadixAddress owner) {
 			this.input = input;
 			this.message = message;
 			this.txId = txId;
@@ -99,8 +90,8 @@ public class TransactionParser {
 				txId,
 				txDate,
 				fee,
-				//TODO: add support for encrypted messages
-				MessageEntry.fromPlainString(message).orElse(null),
+				//TODO: remove!!!
+				message.flatMap(MessageEntry::fromPlainString).orElse(null),
 				actions
 			));
 		}

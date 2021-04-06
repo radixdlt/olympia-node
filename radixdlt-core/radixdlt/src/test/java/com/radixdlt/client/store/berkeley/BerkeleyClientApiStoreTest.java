@@ -17,11 +17,14 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,59 +38,41 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.ParsedTransaction;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.store.berkeley.FullTransaction;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -127,8 +112,7 @@ public class BerkeleyClientApiStoreTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bindConstant().annotatedWith(MempoolThrottleMs.class).to(10L);
-					bindConstant().annotatedWith(MempoolMaxSize.class).to(1000);
+					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 0L));
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 				}
@@ -207,10 +191,13 @@ public class BerkeleyClientApiStoreTest {
 	@Test
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
+
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
-			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
+			.signAndBuild(TOKEN_KEYPAIR::sign, store ->
+				store.index(MutableSupplyTokenDefinitionParticle.class)
+					.forEach(particle -> toTokenDefinitionRecord(particle).ifPresent(fooDef::set)));
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
@@ -225,13 +212,15 @@ public class BerkeleyClientApiStoreTest {
 		var tokenDef = prepareFixedTokenDef();
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createFixedToken(tokenDef)
-			.signAndBuild(TOKEN_KEYPAIR::sign, i -> extractTokenDefinition(i).ifPresent(fooDef::set));
+			.signAndBuild(TOKEN_KEYPAIR::sign, store ->
+				store.index(FixedSupplyTokenDefinitionParticle.class)
+						  .forEach(particle -> toTokenDefinitionRecord(particle).ifPresent(fooDef::set)));
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
-			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef))
-			.onFailure(this::failWithMessage);
+			.onFailure(this::failWithMessage)
+			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef));
 	}
 
 	@Test
@@ -290,20 +279,20 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Atom... tx) throws RadixEngineException {
+	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn... tx) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
-			.map(parsedTransaction -> parsedToFull(keyPair, parsedTransaction))
+			.map(reTxn -> parsedToFull(keyPair, reTxn))
 			.collect(Collectors.toList());
 
-		var txMap = transactions.stream().collect(Collectors.toMap(FullTransaction::getTxId, FullTransaction::getTx));
+		var txMap = transactions.stream().collect(Collectors.toMap(Txn::getId, Function.identity()));
 
 		when(ledgerStore.get(any(AID.class)))
 			.thenAnswer(invocation -> Optional.ofNullable(txMap.get(invocation.getArgument(0, AID.class))));
 
 		//Insert necessary values on DB rebuild
 		doAnswer(invocation -> {
-			transactions.forEach(invocation.<Consumer<FullTransaction>>getArgument(0));
+			transactions.forEach(invocation.<Consumer<Txn>>getArgument(0));
 			return null;
 		}).when(ledgerStore).forEach(any(Consumer.class));
 
@@ -325,10 +314,10 @@ public class BerkeleyClientApiStoreTest {
 		);
 	}
 
-	private FullTransaction parsedToFull(ECKeyPair keyPair, ParsedTransaction parsedTransaction) {
+	private Txn parsedToFull(ECKeyPair keyPair, RETxn reTxn) {
 		var builder = TxLowLevelBuilder.newBuilder();
 
-		parsedTransaction.instructions().forEach(i -> {
+		reTxn.instructions().forEach(i -> {
 			switch (i.getSpin()) {
 				case NEUTRAL:
 					break;
@@ -341,36 +330,24 @@ public class BerkeleyClientApiStoreTest {
 			}
 		});
 
-		return toFullTransaction(builder.signAndBuild(keyPair::sign));
-	}
-
-	private FullTransaction toFullTransaction(Atom tx) {
-		var payload = serialization.toDson(tx, DsonOutput.Output.ALL);
-		var txId = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-
-		return FullTransaction.create(txId, tx);
+		return builder.signAndBuild(keyPair::sign);
 	}
 
 	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {
 		Assert.fail(failure.message());
 	}
 
-	private Optional<TokenDefinitionRecord> extractTokenDefinition(Iterable<Particle> iterable) {
-		return StreamSupport.stream(iterable.spliterator(), false)
-			.filter(TokenDefinitionSubstate.class::isInstance)
-			.map(TokenDefinitionSubstate.class::cast)
-			.map(TokenDefinitionRecord::from)
-			.findFirst()
-			.flatMap(Result::toOptional);
+	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Substate substate) {
+		if (substate.getParticle() instanceof TokenDefinitionSubstate) {
+			return TokenDefinitionRecord.from((TokenDefinitionSubstate) substate.getParticle()).toOptional();
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	private MutableTokenDefinition prepareMutableTokenDef(String symbol) {
 		return new MutableTokenDefinition(
-			symbol, symbol, description(symbol), iconUrl(symbol), homeUrl(symbol), UInt256.ONE,
-			Map.of(
-				TokenTransition.BURN, TokenPermission.ALL,
-				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-			)
+			symbol, symbol, symbol, null, null, UInt256.ONE
 		);
 	}
 
@@ -378,19 +355,7 @@ public class BerkeleyClientApiStoreTest {
 		var symbol = TOKEN.getName();
 
 		return new FixedTokenDefinition(
-			symbol, symbol, description(symbol), iconUrl(symbol), homeUrl(symbol), UInt256.ONE
+			symbol, symbol, symbol, null, null, UInt256.ONE
 		);
-	}
-
-	private String description(String symbol) {
-		return "Token with symbol " + symbol;
-	}
-
-	private String iconUrl(String symbol) {
-		return "https://" + symbol.toLowerCase(Locale.US) + ".coin.com/icon";
-	}
-
-	private String homeUrl(String symbol) {
-		return "https://" + symbol.toLowerCase(Locale.US) + ".coin.com/home";
 	}
 }

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
-import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -108,7 +107,6 @@ public class TokenDefinitionRecord {
 	) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(rri);
-		Objects.requireNonNull(description);
 		Objects.requireNonNull(granularity);
 		Objects.requireNonNull(currentSupply);
 
@@ -210,11 +208,11 @@ public class TokenDefinitionRecord {
 			return mutable == that.mutable
 				&& name.equals(that.name)
 				&& rri.equals(that.rri)
-				&& description.equals(that.description)
 				&& granularity.equals(that.granularity)
 				&& currentSupply.equals(that.currentSupply)
-				&& iconUrl.equals(that.iconUrl)
-				&& url.equals(that.url);
+				&& Objects.equals(description, that.description)
+				&& Objects.equals(iconUrl, that.iconUrl)
+				&& Objects.equals(url, that.url);
 		}
 
 		return false;
