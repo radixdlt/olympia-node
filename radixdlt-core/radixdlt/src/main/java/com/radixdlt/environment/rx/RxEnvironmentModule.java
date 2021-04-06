@@ -53,7 +53,6 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -92,7 +91,6 @@ public final class RxEnvironmentModule extends AbstractModule {
 
 		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
 		bind(new TypeLiteral<Observable<MempoolRelayTrigger>>() { }).toProvider(new ObservableProvider<>(MempoolRelayTrigger.class));
-		bind(new TypeLiteral<Observable<MempoolRelayCommands>>() { }).toProvider(new ObservableProvider<>(MempoolRelayCommands.class));
 		bind(new TypeLiteral<Observable<ScheduledLocalTimeout>>() { }).toProvider(new ObservableProvider<>(ScheduledLocalTimeout.class));
 		bind(new TypeLiteral<Observable<BFTInsertUpdate>>() { }).toProvider(new ObservableProvider<>(BFTInsertUpdate.class));
 		bind(new TypeLiteral<Observable<BFTRebuildUpdate>>() { }).toProvider(new ObservableProvider<>(BFTRebuildUpdate.class));

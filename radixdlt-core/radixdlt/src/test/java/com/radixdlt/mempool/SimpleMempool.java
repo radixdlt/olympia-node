@@ -29,6 +29,8 @@ import java.util.Objects;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Simple mempool which performs no validation and removes on commit.
@@ -77,6 +79,11 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
+	public int getCount() {
+		return data.size();
+	}
+
+	@Override
 	public List<Txn> getTxns(int count, List<Txn> seen) {
 		int size = Math.min(count, this.data.size());
 		if (size > 0) {
@@ -95,6 +102,11 @@ public final class SimpleMempool implements Mempool<Txn> {
 		} else {
 			return Collections.emptyList();
 		}
+	}
+
+	@Override
+	public List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+		return List.of();
 	}
 
 	private void updateCounts() {

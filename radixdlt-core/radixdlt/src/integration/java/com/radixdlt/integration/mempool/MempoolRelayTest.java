@@ -18,7 +18,6 @@
 package com.radixdlt.integration.mempool;
 
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.NodeWalletModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
@@ -173,7 +172,6 @@ public class MempoolRelayTest {
 		return Guice.createInjector(
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
-			new NodeWalletModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

@@ -17,7 +17,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.mempool.MempoolRelayCommands;
+import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -30,8 +30,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.application.faucet.FaucetRequest;
-import com.radixdlt.application.validator.ValidatorRegistration;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
@@ -99,10 +97,8 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(new TypeLiteral<EventDispatcher<FaucetRequest>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(FaucetRequest.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<ValidatorRegistration>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(ValidatorRegistration.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(NodeApplicationRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
@@ -135,8 +131,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MempoolRelayCommands>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayCommands.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(AtomsCommittedToLedger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })

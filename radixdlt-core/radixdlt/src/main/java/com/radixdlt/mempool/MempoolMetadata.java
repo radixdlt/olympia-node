@@ -17,44 +17,36 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.constraintmachine.RETxn;
-
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * An atom with additional information stored in a mempool.
  */
-public final class MempoolTxn {
+public final class MempoolMetadata {
 
-	private final RETxn reTxn;
 	private final long inserted;
-	private final Optional<Long> lastRelayed;
+	private long lastRelayed;
 
-	private MempoolTxn(RETxn reTxn, long inserted, Optional<Long> lastRelayed) {
-		this.reTxn = Objects.requireNonNull(reTxn);
-		this.inserted = Objects.requireNonNull(inserted);
-		this.lastRelayed = Objects.requireNonNull(lastRelayed);
+	private MempoolMetadata(long inserted, long lastRelayed) {
+		this.inserted = inserted;
+		this.lastRelayed = lastRelayed;
 	}
 
-	public static MempoolTxn create(RETxn reTxn, long inserted, Optional<Long> lastRelayed) {
-		return new MempoolTxn(reTxn, inserted, lastRelayed);
-	}
-
-	public RETxn getRETxn() {
-		return reTxn;
+	public static MempoolMetadata create(long inserted) {
+		return new MempoolMetadata(inserted, -1);
 	}
 
 	public long getInserted() {
 		return inserted;
 	}
 
-	public Optional<Long> getLastRelayed() {
-		return lastRelayed;
+	public OptionalLong getLastRelayed() {
+		return lastRelayed < 0 ? OptionalLong.empty() : OptionalLong.of(lastRelayed);
 	}
 
-	public MempoolTxn withLastRelayed(long lastRelayed) {
-		return new MempoolTxn(reTxn, inserted, Optional.of(lastRelayed));
+	public void setLastRelayed(long lastRelayed) {
+		this.lastRelayed = lastRelayed;
 	}
 
 	@Override
@@ -65,20 +57,19 @@ public final class MempoolTxn {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		final var that = (MempoolTxn) o;
+		final var that = (MempoolMetadata) o;
 		return inserted == that.inserted
-			&& Objects.equals(lastRelayed, that.lastRelayed)
-			&& Objects.equals(reTxn, that.reTxn);
+			&& lastRelayed == that.lastRelayed;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(reTxn, inserted, lastRelayed);
+		return Objects.hash(inserted, lastRelayed);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{txn=%s inserted=%s lastRelayed=%s}",
-			getClass().getSimpleName(), this.reTxn, this.inserted, this.lastRelayed);
+		return String.format("%s{inserted=%s lastRelayed=%s}",
+			getClass().getSimpleName(), this.inserted, this.lastRelayed);
 	}
 }

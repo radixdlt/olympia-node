@@ -19,41 +19,57 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.application.faucet.FaucetRequest;
-import com.radixdlt.application.validator.ValidatorRegistration;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.RegisterAsValidator;
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.UnregisterAsValidator;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.json.JSONObject;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
 
 import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private final RRI nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher;
+	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 
 	@Inject
 	public NodeController(
+		@NativeToken RRI nativeToken,
 		@Self RadixAddress selfAddress,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<ValidatorRegistration> validatorRegistrationEventDispatcher
+		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
+		this.nativeToken = nativeToken;
 		this.selfAddress = selfAddress;
 		this.radixEngine = radixEngine;
-		this.validatorRegistrationEventDispatcher = validatorRegistrationEventDispatcher;
+		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
 	}
 
 	@Override
 	public void configureRoutes(final RoutingHandler handler) {
-		handler.post("/node/validator", this::handleValidatorRegistration);
+		handler.post("/node/execute", this::handleExecute);
 		handler.get("/node", this::respondWithNode);
 	}
 
@@ -67,18 +83,48 @@ public final class NodeController implements Controller {
 			.put("numParticles", particleCount));
 	}
 
-	@VisibleForTesting
-	void handleValidatorRegistration(HttpServerExchange exchange) {
+	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {
+		var actionString = actionObject.getString("action");
+		var paramsObject = actionObject.getJSONObject("params");
+		if (actionString.equals("StakeTokens")) {
+			var addressString = paramsObject.getString("to");
+			var delegate = RadixAddress.from(addressString);
+			var amountBigInt = paramsObject.getBigInteger("amount");
+			var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+			return new StakeNativeToken(nativeToken, delegate, subunits);
+		} else if (actionString.equals("UnstakeTokens")) {
+			var addressString = paramsObject.getString("from");
+			var delegate = RadixAddress.from(addressString);
+			var amountBigInt = paramsObject.getBigInteger("amount");
+			var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+			return new UnstakeNativeToken(nativeToken, delegate, subunits);
+		} else if (actionString.equals("RegisterAsValidator")) {
+			return new RegisterAsValidator();
+		} else if (actionString.equals("UnregisterAsValidator")) {
+			return new UnregisterAsValidator();
+		} else	{
+			throw new IllegalArgumentException("Bad action object: " + actionObject);
+		}
+	}
+
+	void handleExecute(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
 		withBodyAsync(exchange, values -> {
-			boolean enabled = values.getBoolean("enabled");
-			var registration = ValidatorRegistration.create(
-				enabled,
+			var actionsArray = values.getJSONArray("actions");
+			var actions = new ArrayList<TxAction>();
+			for (int i = 0; i < actionsArray.length(); i++) {
+				var actionObject = actionsArray.getJSONObject(i);
+				var txAction = parseAction(actionObject);
+				actions.add(txAction);
+			}
+			actions.add(new BurnNativeToken(nativeToken, FEE));
+			var request = NodeApplicationRequest.create(
+				actions,
 				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
 				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
 			);
 
-			validatorRegistrationEventDispatcher.dispatch(registration);
+			nodeApplicationRequestEventDispatcher.dispatch(request);
 		});
 	}
 }

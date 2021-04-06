@@ -24,6 +24,9 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateStore;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
@@ -34,6 +37,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -50,6 +54,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -174,7 +180,7 @@ public final class RadixEngine<M> {
 	public <T extends Particle> void addSubstateCache(SubstateCacheRegister<T> substateCacheRegister, boolean includeInBranches) {
 		synchronized (stateUpdateEngineLock) {
 			if (substateCache.containsKey(substateCacheRegister.getParticleClass())) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Already added " + substateCacheRegister.getParticleClass());
 			}
 
 			var cache = new SubstateCache<>(substateCacheRegister.getParticlePredicate(), includeInBranches);
@@ -190,7 +196,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public <T> T accessSubstateStore(Function<SubstateStore, T> func) {
+	private <T> T accessSubstateStore(Function<SubstateStore, T> func) {
 		synchronized (stateUpdateEngineLock) {
 			SubstateStore substateStore = c -> {
 				var cache = substateCache.get(c);
@@ -299,8 +305,8 @@ public final class RadixEngine<M> {
 			return engine.execute(txns, null, permissionLevel);
 		}
 
-		public <T> T getSubstateCache(Function<SubstateStore, T> func) {
-			return engine.accessSubstateStore(func);
+		public TxBuilder construct(TxAction action) throws TxBuilderException {
+			return engine.construct(action);
 		}
 
 		public <U> U getComputedState(Class<U> applicationStateClass) {
@@ -470,5 +476,45 @@ public final class RadixEngine<M> {
 		}
 
 		return parsedTransactions;
+	}
+
+	public TxBuilder construct(TxAction action) throws TxBuilderException {
+		return construct(null, List.of(action));
+	}
+
+	public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {
+		return construct(address, List.of(action));
+	}
+
+	public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
+		return construct(address, actions, Set.of());
+	}
+
+	public TxBuilder construct(RadixAddress address, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
+		// FIXME: a little hacky but good enough
+		var exception = new AtomicReference<TxBuilderException>();
+		var builder = accessSubstateStore(s -> {
+			SubstateStore filteredStore = c -> SubstateCursor.filter(s.openIndexedCursor(c), i -> !avoid.contains(i.getId()));
+			try {
+				var txBuilder = address != null
+					? TxBuilder.newBuilder(address, filteredStore)
+					: TxBuilder.newSystemBuilder(filteredStore);
+				for (var action : actions) {
+					action.execute(txBuilder);
+					txBuilder.particleGroup();
+				}
+
+				return txBuilder;
+			} catch (TxBuilderException e) {
+				exception.set(e);
+				return null;
+			}
+		});
+
+		if (builder == null) {
+			throw exception.get();
+		} else {
+			return builder;
+		}
 	}
 }

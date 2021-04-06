@@ -24,10 +24,14 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -36,12 +40,29 @@ import com.radixdlt.identifiers.RadixAddress;
  * Module which manages different applications a node can run with
  * it's node key.
  */
-public final class NodeWalletModule extends AbstractModule {
+public final class NodeApplicationModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
 			.addBinding().to(Balance.class).in(Scopes.SINGLETON);
+
+		bind(NodeApplication.class).in(Scopes.SINGLETON);
+
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(NodeApplicationRequest.class);
+	}
+
+
+	@ProvidesIntoSet
+	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
+		return new SubstateCacheRegister<>(RegisteredValidatorParticle.class, p -> p.getAddress().equals(self));
+	}
+
+	@ProvidesIntoSet
+	private SubstateCacheRegister<?> unregisteredSubstate(@Self RadixAddress self) {
+		return new SubstateCacheRegister<>(UnregisteredValidatorParticle.class, p -> p.getAddress().equals(self));
 	}
 
 	@ProvidesIntoSet
@@ -52,6 +73,15 @@ public final class NodeWalletModule extends AbstractModule {
 		return new SubstateCacheRegister<>(
 			TransferrableTokensParticle.class,
 			p -> p.getAddress().equals(self) && p.getTokDefRef().equals(tokenRRI)
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> nodeApplication(NodeApplication nodeApplication) {
+		return new EventProcessorOnRunner<>(
+			"application",
+			NodeApplicationRequest.class,
+			nodeApplication.requestEventProcessor()
 		);
 	}
 }

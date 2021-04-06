@@ -19,9 +19,8 @@ package com.radixdlt.chaos.mempoolfiller;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.HashSigner;
@@ -39,16 +38,14 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 /**
  * Periodically fills the mempool with valid transactions
@@ -59,6 +56,8 @@ public final class MempoolFiller {
 
 	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+
+	private final RadixEngineMempool radixEngineMempool;
 	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
 	private final SystemCounters systemCounters;
 	private final PeersView peersView;
@@ -77,6 +76,7 @@ public final class MempoolFiller {
 		@Self RadixAddress selfAddress,
 		@NativeToken RRI nativeToken,
 		@Named("RadixEngine") HashSigner hashSigner,
+		RadixEngineMempool radixEngineMempool,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
@@ -89,6 +89,7 @@ public final class MempoolFiller {
 		this.nativeToken = nativeToken;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
+		this.radixEngineMempool = radixEngineMempool;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;
 		this.mempoolFillDispatcher = mempoolFillDispatcher;
@@ -119,18 +120,6 @@ public final class MempoolFiller {
 		};
 	}
 
-	private Optional<Txn> createTxn(SubstateStore substateStore, int index, Consumer<SubstateStore> nextSubstate) {
-		try {
-			var txn = TxBuilder.newBuilder(selfAddress, substateStore)
-				.splitNative(nativeToken, fee.multiply(UInt256.TWO), index)
-				.burnForFee(nativeToken, fee)
-				.signAndBuildRemoteSubstateOnly(hashSigner::sign, nextSubstate);
-			return Optional.of(txn);
-		} catch (TxBuilderException e) {
-			return Optional.empty();
-		}
-	}
-
 	public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
 		return p -> {
 			if (!enabled) {
@@ -142,29 +131,32 @@ public final class MempoolFiller {
 				logger.info("Mempool Filler empty balance");
 				return;
 			}
-			final List<Txn> txns = radixEngine.accessSubstateStore(
-				substateStore -> {
-					var list = new ArrayList<Txn>();
-					var substateHolder = new AtomicReference<>(substateStore);
-					for (int i = 0; i < numTransactions; i++) {
-						var index = random.nextInt(Math.min(particleCount, 500));
-						var maybeTxn = createTxn(substateHolder.get(), index, substateHolder::set);
-						if (maybeTxn.isEmpty()) {
-							break;
-						}
-						list.add(maybeTxn.get());
-					}
-					return list;
+
+			var actions = TxActionListBuilder.create()
+				.splitNative(nativeToken, fee.multiply(UInt256.TWO))
+				.burnNative(nativeToken, fee)
+				.build();
+
+			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
+			var txns = new ArrayList<Txn>();
+			for (int i = 0; i < numTransactions; i++) {
+				try {
+					var builder = radixEngine.construct(selfAddress, actions, shuttingDown);
+					shuttingDown.addAll(builder.toLowLevelBuilder().remoteDownSubstate());
+					var txn = builder.signAndBuild(hashSigner::sign);
+					txns.add(txn);
+				} catch (TxBuilderException e) {
+					break;
 				}
-			);
+			}
 
 			if (txns.size() == 1) {
-				logger.info("Mempool Filler mempool: {} Adding atom {} to mempool...",
+				logger.info("Mempool Filler mempool: {} Adding txn {} to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 					txns.get(0).getId()
 				);
 			} else {
-				logger.info("Mempool Filler mempool: {} Adding {} atoms to mempool...",
+				logger.info("Mempool Filler mempool: {} Adding {} txns to mempool...",
 					systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT),
 					txns.size()
 				);

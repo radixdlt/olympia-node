@@ -20,9 +20,10 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -37,7 +38,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 public final class RadixEngineStateComputer implements StateComputer {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Mempool<RETxn> mempool;
+	private final RadixEngineMempool mempool;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
@@ -74,7 +74,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Inject
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Mempool<RETxn> mempool,
+		RadixEngineMempool mempool,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
@@ -125,6 +125,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
 		try {
 			mempool.add(txn);
+			systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		} catch (MempoolDuplicateException e) {
 			// Idempotent commands
 			log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
@@ -167,28 +168,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 			validatorSet = null;
 		}
 
-		var systemUpdateBuilder = branch.getSubstateCache(
-			substateStore -> {
-				var builder = TxBuilder.newSystemBuilder(substateStore);
-				try {
-					if (validatorSet == null) {
-						builder.systemNextView(view.number(), timestamp, epoch);
-					} else {
-						builder.systemNextEpoch(timestamp, epoch);
-					}
-				} catch (TxBuilderException e) {
-					throw new IllegalStateException("Could not create system update", e);
-				}
-				return builder;
-			});
+		var systemAction = validatorSet == null
+			? new SystemNextView(view.number(), timestamp, epoch)
+			: new SystemNextEpoch(timestamp, epoch);
 
-		final var systemUpdate = systemUpdateBuilder.buildWithoutSignature();
+		final Txn systemUpdate;
 		final List<RETxn> txs;
 		try {
+			// TODO: combine construct/execute
+			systemUpdate = branch.construct(systemAction).buildWithoutSignature();
 			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException e) {
+		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
-				String.format("Failed to execute system update:%n%s%n%s", e.getMessage(), systemUpdate),	e
+				String.format("Failed to execute system update:%n%s", e.getMessage()), e
 			);
 		}
 		RadixEngineTxn radixEngineCommand = new RadixEngineTxn(
@@ -290,6 +282,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
 		List<Pair<Txn, Exception>> removed = this.mempool.committed(txCommitted);
+		systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);

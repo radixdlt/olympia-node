@@ -20,9 +20,14 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.application.faucet.FaucetRequest;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
@@ -30,10 +35,17 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class FaucetController implements Controller {
-	private final EventDispatcher<FaucetRequest> faucetRequestDispatcher;
+	private final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher;
+	private final RRI nativeToken;
+	private final UInt256 amount = TokenDefinitionUtils.SUB_UNITS.multiply(UInt256.TEN);
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	@Inject
-	public FaucetController(final EventDispatcher<FaucetRequest> faucetRequestDispatcher) {
+	public FaucetController(
+		@NativeToken RRI nativeToken,
+		final EventDispatcher<NodeApplicationRequest> faucetRequestDispatcher
+	) {
+		this.nativeToken = nativeToken;
 		this.faucetRequestDispatcher = faucetRequestDispatcher;
 	}
 
@@ -56,8 +68,13 @@ public final class FaucetController implements Controller {
 				return;
 			}
 
-			var request = FaucetRequest.create(
-				address,
+			var actions = TxActionListBuilder.create()
+				.transferNative(nativeToken, address, amount)
+				.burnNative(nativeToken, FEE)
+				.build();
+
+			var request = NodeApplicationRequest.create(
+				actions,
 				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
 				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
 			);

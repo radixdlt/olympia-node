@@ -22,10 +22,10 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class MempoolRelayCommandsTest {
+public class MempoolMetadataTest {
 	@Test
 	public void equalsVerifier() {
-		EqualsVerifier.forClass(MempoolRelayCommands.class)
+		EqualsVerifier.simple().forClass(MempoolMetadata.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}

@@ -19,7 +19,9 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -46,6 +48,11 @@ import java.util.stream.Collectors;
 public class MockedMempoolStateComputerModule extends AbstractModule {
 	private static final Logger log = LogManager.getLogger();
 
+	@Override
+	protected void configure() {
+		bind(new TypeLiteral<Mempool<?>>() { }).to(new TypeLiteral<Mempool<Txn>>() { }).in(Scopes.SINGLETON);
+	}
+
 	@Provides
 	@Singleton
 	private Mempool<Txn> mempool(
@@ -58,12 +65,13 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool) {
+	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool, SystemCounters counters) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(Txn txn, BFTNode origin) {
 				try {
 					mempool.add(txn);
+					counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 				} catch (MempoolRejectedException e) {
 					log.error(e);
 				}
@@ -91,6 +99,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			@Override
 			public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 				mempool.committed(txnsAndProof.getTxns());
+				counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 			}
 		};
 	}

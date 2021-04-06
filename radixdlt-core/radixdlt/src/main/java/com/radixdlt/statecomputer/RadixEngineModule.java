@@ -23,7 +23,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -39,21 +38,15 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Duration;
 import java.util.Set;
 
 /**
@@ -66,6 +59,7 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<?>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<RETxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
@@ -73,29 +67,6 @@ public class RadixEngineModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<SubstateCacheRegister<?>>() { });
 	}
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> mempoolRelayTriggerEventProcessor(
-		RadixEngineMempool mempool
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.MEMPOOL,
-			MempoolRelayTrigger.class,
-			mempool.mempoolRelayTriggerEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public ScheduledEventProducerOnRunner<?> mempoolRelayTriggerEventProducer(
-		EventDispatcher<MempoolRelayTrigger> mempoolRelayTriggerEventDispatcher
-	) {
-		return new ScheduledEventProducerOnRunner<>(
-			Runners.MEMPOOL,
-			mempoolRelayTriggerEventDispatcher,
-			MempoolRelayTrigger::create,
-			Duration.ofSeconds(10),
-			Duration.ofSeconds(10)
-		);
-	}
 
 	@Provides
 	private ValidatorSetBuilder validatorSetBuilder(

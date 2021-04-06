@@ -16,45 +16,51 @@
  *
  */
 
-package com.radixdlt.application.faucet;
+package com.radixdlt.application;
 
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RadixAddress;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/**
- * Faucet request object
- */
-public final class FaucetRequest {
-	private final RadixAddress address;
+public final class NodeApplicationRequest {
+	private final List<TxAction> actions;
 	private final Consumer<AID> onSuccess;
 	private final Consumer<String> onError;
 
-	private FaucetRequest(
-		RadixAddress address,
+	private NodeApplicationRequest(
+		List<TxAction> actions,
 		Consumer<AID> onSuccess,
 		Consumer<String> onError
 	) {
-		this.address = address;
+		this.actions = actions;
 		this.onSuccess = onSuccess;
 		this.onError = onError;
 	}
 
-	public static FaucetRequest create(
-		RadixAddress address,
-		Consumer<AID> onSuccess,
-		Consumer<String> onFailure
-	) {
-		Objects.requireNonNull(address);
-		Objects.requireNonNull(onSuccess);
-		Objects.requireNonNull(onFailure);
-		return new FaucetRequest(address, onSuccess, onFailure);
+	public static NodeApplicationRequest create(TxAction action) {
+		return create(List.of(action));
 	}
 
-	public RadixAddress getAddress() {
-		return address;
+	public static NodeApplicationRequest create(List<TxAction> actions) {
+		return create(actions, aid -> { }, error -> { });
+	}
+
+	public static NodeApplicationRequest create(
+		List<TxAction> actions,
+		Consumer<AID> onSuccess,
+		Consumer<String> onError
+	) {
+		Objects.requireNonNull(actions);
+		Objects.requireNonNull(onSuccess);
+		Objects.requireNonNull(onError);
+		return new NodeApplicationRequest(actions, onSuccess, onError);
+	}
+
+	public List<TxAction> getActions() {
+		return actions;
 	}
 
 	public void onSuccess(AID aid) {
@@ -63,10 +69,5 @@ public final class FaucetRequest {
 
 	public void onFailure(String errorMessage) {
 		onError.accept(errorMessage);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{address=%s}", this.getClass().getSimpleName(), address);
 	}
 }

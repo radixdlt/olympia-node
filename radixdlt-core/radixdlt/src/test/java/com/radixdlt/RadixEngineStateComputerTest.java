@@ -63,7 +63,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolRelayCommands;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -147,8 +146,6 @@ public class RadixEngineStateComputerTest {
 				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
-					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolRelayCommands>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));

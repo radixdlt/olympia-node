@@ -85,11 +85,11 @@ public final class TxBuilder {
 		return lowLevelBuilder;
 	}
 
-	private void particleGroup() {
+	public void particleGroup() {
 		lowLevelBuilder.particleGroup();
 	}
 
-	private void up(Particle particle) {
+	public void up(Particle particle) {
 		lowLevelBuilder.up(particle);
 	}
 
@@ -97,7 +97,7 @@ public final class TxBuilder {
 		lowLevelBuilder.virtualDown(particle);
 	}
 
-	private void down(SubstateId substateId) {
+	public void down(SubstateId substateId) {
 		lowLevelBuilder.down(substateId);
 	}
 
@@ -123,16 +123,14 @@ public final class TxBuilder {
 	}
 
 	// For mempool filler
-	private <T extends Particle> Substate findSubstate(
+	public <T extends Particle> Substate findSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		int index,
 		String errorMessage
 	) throws TxBuilderException {
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateRead = iteratorToStream(cursor)
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.skip(index)
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
@@ -143,7 +141,7 @@ public final class TxBuilder {
 		}
 	}
 
-	private <T extends Particle> T find(
+	public <T extends Particle> T find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -227,15 +225,15 @@ public final class TxBuilder {
 		}
 	}
 
-	private interface Mapper<T extends Particle, U extends Particle> {
+	public interface Mapper<T extends Particle, U extends Particle> {
 		U map(T t) throws TxBuilderException;
 	}
 
-	private interface Replacer<T extends Particle, U extends Particle> {
+	public interface Replacer<T extends Particle, U extends Particle> {
 		void with(Mapper<T, U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
@@ -259,7 +257,7 @@ public final class TxBuilder {
 		};
 	}
 
-	private <T extends Particle, U extends Particle> Replacer<T, U> swap(
+	public <T extends Particle, U extends Particle> Replacer<T, U> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
@@ -272,11 +270,11 @@ public final class TxBuilder {
 		};
 	}
 
-	private interface FungibleMapper<U extends Particle> {
+	public interface FungibleMapper<U extends Particle> {
 		U map(UInt256 t) throws TxBuilderException;
 	}
 
-	private interface FungibleReplacer<U extends Particle> {
+	public interface FungibleReplacer<U extends Particle> {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
@@ -301,7 +299,7 @@ public final class TxBuilder {
 		return spent.subtract(amount);
 	}
 
-	private <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
+	public <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Function<T, UInt256> amountMapper,
@@ -325,14 +323,21 @@ public final class TxBuilder {
 		};
 	}
 
+	public RadixAddress getAddressOrFail(String errorMessage) throws TxBuilderException {
+		if (address == null) {
+			throw new TxBuilderException(errorMessage);
+		}
+		return address;
+	}
 
-	private void assertHasAddress(String message) throws TxBuilderException {
+
+	public void assertHasAddress(String message) throws TxBuilderException {
 		if (address == null) {
 			throw new TxBuilderException(message);
 		}
 	}
 
-	private void assertIsSystem(String message) throws TxBuilderException {
+	public void assertIsSystem(String message) throws TxBuilderException {
 		if (address != null) {
 			throw new TxBuilderException(message);
 		}
@@ -385,21 +390,6 @@ public final class TxBuilder {
 		);
 
 		particleGroup();
-		return this;
-	}
-
-	public TxBuilder unregisterAsValidator() throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			"Already unregistered."
-		).with(
-			substateDown -> new UnregisteredValidatorParticle(address)
-		);
-		particleGroup();
-
 		return this;
 	}
 
@@ -506,59 +496,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	// For mempool filler
-	public TxBuilder splitNative(RRI rri, UInt256 minSize, int index) throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		var substate = findSubstate(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri)
-				&& p.getAddress().equals(address)
-				&& p.getAmount().compareTo(minSize) > 0,
-			index,
-			"Could not find large particle greater than " + minSize
-		);
-
-		down(substate.getId());
-		var particle = (TransferrableTokensParticle) substate.getParticle();
-		var amt1 = particle.getAmount().divide(UInt256.TWO);
-		var amt2 = particle.getAmount().subtract(amt1);
-		up(factory.createTransferrable(address, amt1));
-		up(factory.createTransferrable(address, amt2));
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
-			amount,
-			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount));
-
-		particleGroup();
-
-		return this;
-	}
-
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		// TODO: Need to include fixed supply
 		var tokenDefSubstate = find(
@@ -635,29 +572,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder unstakeFrom(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
-		assertHasAddress("Must have an address.");
-		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
-
-		swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(delegateAddress, address, amt),
-			amount,
-			"Not enough staked."
-		).with(amt -> factory.createTransferrable(address, amt));
-
-		particleGroup();
-
-		return this;
-	}
-
 	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
 	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
@@ -700,15 +614,6 @@ public final class TxBuilder {
 
 		particleGroup();
 		return this;
-	}
-
-	public Txn signAndBuildRemoteSubstateOnly(
-		Function<HashCode, ECDSASignature> signer,
-		Consumer<SubstateStore> upSubstateConsumer
-	) {
-		var txn = lowLevelBuilder.signAndBuild(signer);
-		upSubstateConsumer.accept(this::createRemoteSubstateCursor);
-		return txn;
 	}
 
 	public Txn signAndBuild(
