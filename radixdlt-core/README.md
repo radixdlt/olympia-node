@@ -19,7 +19,7 @@ git clone https://github.com/radixdlt/radixdlt.git
 
 Checkout the required branch:
 ```
-cd radixdlt && git checkout release/1.0-beta.27
+cd radixdlt && git checkout release/1.0-beta.28
 ```
 
 Run tests (note that integration tests take several minutes to run):
