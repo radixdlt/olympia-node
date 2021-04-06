@@ -79,15 +79,16 @@ public final class NodeController implements Controller {
 	private JSONObject getValidator() {
 		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
 		var stakeFrom = new JSONArray();
-		stakeReceived.forEach((addr, amt) ->
+		stakeReceived.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
 					.put("delegator", addr)
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
-			)
-		);
+			);
+		});
 		return new JSONObject()
-			.put("stakeFrom", stakeFrom);
+			.put("stake", stakeReceived.getTotal())
+			.put("from", stakeFrom);
 	}
 
 	private JSONObject getBalance() {

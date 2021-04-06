@@ -42,4 +42,8 @@ public class StakeReceived {
 	public void forEach(BiConsumer<RadixAddress, UInt256> consumer) {
 		this.stakes.forEach(consumer);
 	}
+
+	public UInt256 getTotal() {
+		return stakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
+	}
 }
