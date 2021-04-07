@@ -37,6 +37,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Synchronizes execution
@@ -89,7 +91,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	}
 
 	public interface StateComputer {
-		void addToMempool(Txn txn, BFTNode origin);
+		void addToMempool(Txn txn, BFTNode origin, Consumer<AID> onSuccess, Consumer<String> onError);
 		List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared);
 		StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp);
 		void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -130,7 +132,9 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, node));
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(
+					txn, node, mempoolAdd::onSuccess, mempoolAdd::onError
+				));
 			}
 		};
 	}
@@ -138,7 +142,9 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, null));
+				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(
+					txn, null, mempoolAdd::onSuccess, mempoolAdd::onError
+				));
 			}
 		};
 	}

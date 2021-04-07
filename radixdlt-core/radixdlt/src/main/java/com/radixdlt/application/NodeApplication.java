@@ -57,10 +57,10 @@ public class NodeApplication {
 		log.info("NodeServiceRequest {}", request);
 
 		try {
+			// TODO: remove use of mempoolAdd message and add to mempool synchronously
 			var txBuilder = radixEngine.construct(self, request.getActions());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
-			request.onSuccess(txn.getId());
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn, request::onSuccess, request::onFailure));
 		} catch (TxBuilderException e) {
 			log.error("Faucet failed to fulfil request {}", request, e);
 			request.onFailure(e.getMessage());

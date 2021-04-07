@@ -23,14 +23,17 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,8 +52,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Txn txn, BFTNode origin) {
-		// No-op
+	public void addToMempool(Txn txn, @Nullable BFTNode origin, Consumer<AID> onSuccess, Consumer<String> onError) {
+		onError.accept("Mocked mempool");
 	}
 
 	@Override
