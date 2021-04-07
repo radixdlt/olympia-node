@@ -103,10 +103,6 @@ public final class TransactionParser {
 		}
 
 		private void parseTokenDefinition() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (!(current() instanceof RRIParticle)) {
 				return;
 			}
@@ -124,10 +120,6 @@ public final class TransactionParser {
 		}
 
 		private void parseRegisterValidator() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof UnregisteredValidatorParticle && isUp()) {
 				pos++;
 
@@ -138,10 +130,6 @@ public final class TransactionParser {
 		}
 
 		private void parseUnregisterValidator() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof RegisteredValidatorParticle && isDown()) {
 				pos++;
 
@@ -152,10 +140,6 @@ public final class TransactionParser {
 		}
 
 		private void parseMint() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof TransferrableTokensParticle) {
 				pos++;
 
@@ -174,10 +158,6 @@ public final class TransactionParser {
 		}
 
 		private void parseStake() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof StakedTokensParticle && isUp()) {
 				var stake = (StakedTokensParticle) current();
 				pos++;
@@ -193,10 +173,6 @@ public final class TransactionParser {
 		}
 
 		private void parseUnStake() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof TransferrableTokensParticle && isUp()) {
 				pos++;
 
@@ -218,10 +194,6 @@ public final class TransactionParser {
 		}
 
 		private void parseTransfer() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof TransferrableTokensParticle && isUp()) {
 				var transfer = (TransferrableTokensParticle) current();
 				pos++;
@@ -237,10 +209,6 @@ public final class TransactionParser {
 		}
 
 		private void parseFeeBurn() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof UnallocatedTokensParticle) {
 				var feeParticle = (UnallocatedTokensParticle) current();
 				pos++;
@@ -256,10 +224,6 @@ public final class TransactionParser {
 		}
 
 		private void parseRemainder() {
-			if (pos >= input.size()) {
-				return;
-			}
-
 			if (current() instanceof TransferrableTokensParticle && isUp()) {
 				//This can be remainder or beginning if the next transfer/unstake
 				var remainder = (TransferrableTokensParticle) current();
@@ -276,7 +240,7 @@ public final class TransactionParser {
 		}
 
 		private Particle current() {
-			return input.get(pos).getParticle();
+			return pos >= input.size() ? null : input.get(pos).getParticle();
 		}
 
 		private boolean isUp() {

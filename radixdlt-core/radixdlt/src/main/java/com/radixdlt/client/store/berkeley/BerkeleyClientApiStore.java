@@ -23,8 +23,8 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -32,15 +32,18 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.ClientApiUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
+import com.radixdlt.client.store.ParsedTx;
 import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -50,7 +53,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -61,11 +63,10 @@ import com.sleepycat.je.OperationStatus;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -77,7 +78,6 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.constraintmachine.ConstraintMachine.toInstructions;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -121,10 +121,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<Txn> txCollector = StackingCollector.create();
+	private final StackingCollector<AtomsCommittedToLedger> txCollector = StackingCollector.create();
 	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
+	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>();
 	private final byte universeMagic;
 
 	private Database transactionHistory;
@@ -191,7 +192,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			log.debug("Storing collected transactions started");
 
 			var count = withTime(
-				() -> txCollector.consumeCollected(this::storeTransaction),
+				() -> txCollector.consumeCollected(this::storeTransactionBatch),
 				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
 				ELAPSED_APIDB_FLUSH_TIME
 			);
@@ -268,7 +269,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			var list = new ArrayList<TxHistoryEntry>();
-			var count = new AtomicInteger(0);
 
 			do {
 				AID.fromBytes(data.getData())
@@ -276,16 +276,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.onFailureDo(
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
 					)
-					.flatMap(txn -> ClientApiUtils.toParsedTx(txn, universeMagic, sid -> store.loadUpParticle(null, sid)))
+					//TODO: rework!!!
+					.flatMap(txn -> toParsedTx(txn))
 					.flatMap(parsed -> TransactionParser.parse(address, parsed, instantFromKey(key)))
-					.onSuccess(txHistoryEntry -> {
-						count.incrementAndGet();
-						list.add(txHistoryEntry);
-					});
+					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
 			}
-			while (status == OperationStatus.SUCCESS && count.get() < size);
+			while (status == OperationStatus.SUCCESS && list.size() < size);
 
 			return Result.ok(list);
 		}
@@ -404,9 +402,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
 
-			disposable.add(ledgerCommitted
-							   .observeOn(Schedulers.io())
-							   .subscribe(transactions -> transactions.getTxns().forEach(this::newTransaction)));
+			disposable.add(ledgerCommitted.observeOn(Schedulers.io()).subscribe(this::newBatch));
 
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);
@@ -425,54 +421,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.error(failure.message());
 	}
 
-	private void storeTransaction(Txn txn) {
-		restore(serialization, txn.getPayload(), Atom.class)
-			.onSuccess(atom -> ClientApiUtils.extractCreator(atom, universeMagic)
-				.ifPresent(author -> storeSingleTransaction(author, txn.getId())))
-			.map(atom -> toInstructions(atom.getInstructions()))
-			.onSuccess(instructions -> instructionsToParticles(instructions)
-				.sorted(Comparator.comparingInt(pi -> pi.getSpin().intValue()))
-				.forEach(particleWithSpin -> particleWithSpin.ifTokenDefinitionOrElse(
-					this::storeTokenDefinition,
-					pws -> pws.ifDownOrElse(this::storeSingleDownSubstate, this::storeSingleUpSubstate)
-				)))
-			.onFailure(this::reportError);
-	}
-
-	private Stream<ParticleWithSpin> instructionsToParticles(List<REInstruction> instructions) {
-		return instructions.stream()
-			.filter(REInstruction::isPush)
-			.map(i -> toParticleWithSpin(i, instructions))
-			.peek(substate -> substate.onFailure(this::reportError))
-			.filter(Result::isSuccess)
-			.map(p -> p.fold(this::shouldNeverHappen, v -> v));
-	}
-
-	private Result<ParticleWithSpin> toParticleWithSpin(REInstruction instruction, List<REInstruction> raw) {
-		if (instruction.getMicroOp() == REInstruction.REOp.UP) {
-			return restore(serialization, instruction.getData(), Particle.class)
-				.map(particle -> ParticleWithSpin.create(particle, instruction.getNextSpin()));
-		} else if (instruction.getMicroOp() == REInstruction.REOp.VDOWN) {
-			return restore(serialization, instruction.getData(), Particle.class)
-				.map(particle -> ParticleWithSpin.create(particle, instruction.getNextSpin()));
-
-		} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
-			var substateId = SubstateId.fromBytes(instruction.getData());
-
-			return Result.fromOptional(
-				store.loadUpParticle(null, substateId),
-				"Unable to find particle"
-			).map(particle -> ParticleWithSpin.create(particle, instruction.getNextSpin()));
-		} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
-			var index = Ints.fromByteArray(instruction.getData());
-
-			return restore(serialization, raw.get(index).getData(), Particle.class)
-				.map(particle -> ParticleWithSpin.create(particle, instruction.getNextSpin()));
-		} else {
-			return Result.fail("Unable to reconstruct particle");
-		}
-	}
-
 	private void safeClose(Database database) {
 		if (database != null) {
 			database.close();
@@ -482,14 +430,101 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
 
-		store.forEach(this::storeTransaction);
+		store.forEach(this::rebuildTransaction);
 
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	private void newTransaction(Txn transaction) {
-		txCollector.push(transaction);
-		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.incrementAndGet());
+	private void rebuildTransaction(Txn txn) {
+		toParsedTx(txn)
+			.onFailure(this::reportError)
+			.onSuccess(this::processParsedTransaction);
+	}
+
+	private Result<ParsedTx> toParsedTx(Txn txn) {
+		//TODO: finish it
+		return ClientApiUtils.toParsedTx(txn, universeMagic);
+	}
+
+	private void newBatch(AtomsCommittedToLedger transactions) {
+		txCollector.push(transactions);
+		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.addAndGet(transactions.getTxns().size()));
+	}
+
+	private void storeTransactionBatch(AtomsCommittedToLedger act) {
+		act.getParsedTxs().forEach(this::processRETransaction);
+	}
+
+	private void processParsedTransaction(ParsedTx parsedTx) {
+		var upParticles = parsedTx.getParticles()
+			.stream()
+			.filter(pws -> pws.getSpin() == Spin.UP)
+			.map(ParticleWithSpin::getParticle);
+
+		extractTimestamp(upParticles);
+
+		parsedTx.getCreator()
+			.ifPresent(creator -> storeSingleTransaction(parsedTx.getId(), creator));
+
+		parsedTx.getParticles()
+			.forEach(this::storeParticle);
+	}
+
+	private void processRETransaction(RETxn reTxn) {
+		extractTimestamp(reTxn.upSubstates());
+
+		extractCreator(reTxn.getTxn(), universeMagic)
+			.ifPresent(creator -> storeSingleTransaction(reTxn.getTxn().getId(), creator));
+
+		reTxn.instructions()
+			.stream()
+			.map(pi -> ParticleWithSpin.create(pi.getParticle(), pi.getSpin()))
+			.forEach(this::storeParticle);
+	}
+
+	private void extractTimestamp(Stream<Particle> upParticles) {
+		upParticles.filter(SystemParticle.class::isInstance)
+			.map(SystemParticle.class::cast)
+			.findFirst()
+			.ifPresent(sp -> currentTimestamp.set(Instant.ofEpochMilli(sp.getTimestamp())));
+	}
+
+	private Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {
+		return restore(serialization, tx.getPayload(), Atom.class)
+			.toOptional()
+			.flatMap(atom -> atom.getSignature()
+				.flatMap(signature -> ECPublicKey.recoverFrom(atom.computeHashToSign(), signature))
+				.map(publicKey -> new RadixAddress(universeMagic, publicKey)));
+	}
+
+	private void storeSingleTransaction(AID id, RadixAddress creator) {
+		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
+		var key = asKey(creator, currentTimestamp.get());
+		var data = entry(id.getBytes());
+
+		var status = withTime(
+			() -> transactionHistory.put(null, key, data),
+			() -> addTxHistoryWriteBytes(data),
+			ELAPSED_APIDB_TRANSACTION_WRITE
+		);
+
+		if (status != OperationStatus.SUCCESS) {
+			log.error("Error while storing transaction {} for {}", id, creator);
+		}
+	}
+
+	private void storeParticle(ParticleWithSpin particleWithSpin) {
+		var particle = particleWithSpin.getParticle();
+
+		if (particle instanceof TokenDefinitionSubstate) {
+			storeTokenDefinition((TokenDefinitionSubstate) particle);
+		} else {
+			if (particleWithSpin.getSpin() == Spin.DOWN) {
+				storeSingleDownSubstate(particle);
+			} else {
+				storeSingleUpSubstate(particle);
+			}
+		}
 	}
 
 	private void storeTokenDefinition(TokenDefinitionSubstate substate) {
@@ -509,22 +544,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 		if (status != OperationStatus.SUCCESS) {
 			log.error("Error while storing token definition {}", tokenDefinition.asJson());
-		}
-	}
-
-	private void storeSingleTransaction(RadixAddress creator, AID id) {
-		//Note: since Java 9 the Clock.systemUTC() produces values with real nanosecond resolution.
-		var key = asKey(creator, Instant.now());
-		var data = entry(id.getBytes());
-
-		var status = withTime(
-			() -> transactionHistory.put(null, key, data),
-			() -> addTxHistoryWriteBytes(data),
-			ELAPSED_APIDB_TRANSACTION_WRITE
-		);
-
-		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing transaction {} for {}", id, creator);
 		}
 	}
 

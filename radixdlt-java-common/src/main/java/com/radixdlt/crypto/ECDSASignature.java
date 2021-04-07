@@ -54,16 +54,16 @@ public final class ECDSASignature implements Signature {
 	private static final ECDSASignature ZERO_SIGNATURE = new ECDSASignature(BigInteger.ZERO, BigInteger.ZERO, 0);
 
 	private ECDSASignature(BigInteger r, BigInteger s, int v) {
-    	this.r = Objects.requireNonNull(r);
-        this.s = Objects.requireNonNull(s);
+		this.r = Objects.requireNonNull(r);
+		this.s = Objects.requireNonNull(s);
 		this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
 	}
 
 	@JsonCreator
 	public static ECDSASignature deserialize(
-		@JsonProperty("r") byte[]  r,
-		@JsonProperty("s") byte[]  s,
-		@JsonProperty("v") int  v
+		@JsonProperty("r") byte[] r,
+		@JsonProperty("s") byte[] s,
+		@JsonProperty("v") int v
 	) {
 		return create(new BigInteger(1, r), new BigInteger(1, s), v);
 	}
@@ -148,12 +148,12 @@ public final class ECDSASignature implements Signature {
 		return SignatureScheme.ECDSA;
 	}
 
-	//WARNING: Never ever use it to restore recoverable signature! It misses 'v' bit necessary for recovery.
+	//WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit necessary for recovery.
 	public static ECDSASignature decodeFromDER(byte[] bytes) {
 		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
-			DLSequence seq = (DLSequence) decoder.readObject();
-			ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
-			ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
+			var seq = (DLSequence) decoder.readObject();
+			var r = (ASN1Integer) seq.getObjectAt(0);
+			var s = (ASN1Integer) seq.getObjectAt(1);
 
 			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), 0);
 		} catch (IOException e) {

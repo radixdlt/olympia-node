@@ -39,6 +39,14 @@ public class ParticleWithSpin {
 		return create(instruction.getParticle(), instruction.getSpin());
 	}
 
+	public static ParticleWithSpin up(Particle particle) {
+		return create(particle, Spin.UP);
+	}
+
+	public static ParticleWithSpin down(Particle particle) {
+		return create(particle, Spin.DOWN);
+	}
+
 	public static ParticleWithSpin create(Particle particle, Spin spin) {
 		requireNonNull(particle);
 		requireNonNull(spin);
@@ -54,22 +62,4 @@ public class ParticleWithSpin {
 		return spin;
 	}
 
-	public void ifTokenDefinitionOrElse(
-		Consumer<TokenDefinitionSubstate> consumer1,
-		Consumer<ParticleWithSpin> consumer2
-	) {
-		if (particle instanceof TokenDefinitionSubstate) {
-			consumer1.accept((TokenDefinitionSubstate) particle);
-		} else {
-			consumer2.accept(this);
-		}
-	}
-
-	public void ifDownOrElse(Consumer<Particle> downConsumer, Consumer<Particle> upConsumer) {
-		if (spin == Spin.DOWN) {
-			downConsumer.accept(particle);
-		} else {
-			upConsumer.accept(particle);
-		}
-	}
 }

@@ -122,7 +122,7 @@ public class HighLevelApiHandlerTest {
 		var service = mock(HighLevelApiService.class);
 		var handler = new HighLevelApiHandler(service);
 
-		var now = Instant.now();
+		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 		var action = ActionEntry.unknown();
 		var entry = TxHistoryEntry.create(
 			AID.ZERO, now, UInt256.ONE, MessageEntry.create("text", "scheme"), List.of(action)

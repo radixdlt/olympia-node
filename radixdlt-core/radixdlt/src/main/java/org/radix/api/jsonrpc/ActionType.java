@@ -17,6 +17,12 @@
 
 package org.radix.api.jsonrpc;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 public enum ActionType {
 	TRANSFER("TokenTransfer"),
 	STAKE("StakeTokens"),
@@ -31,7 +37,8 @@ public enum ActionType {
 	;
 	private final String text;
 
-	//TODO: add deserialization
+	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(ActionType.values())
+		.collect(Collectors.toMap(ActionType::toString, Function.identity()));
 
 	ActionType(String text) {
 		this.text = text;
@@ -40,5 +47,9 @@ public enum ActionType {
 	@Override
 	public String toString() {
 		return text;
+	}
+
+	public static Optional<ActionType> fromString(String action) {
+		return Optional.ofNullable(TO_ACTION_TYPE.get(action));
 	}
 }

@@ -17,35 +17,34 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.atom.Txn;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
 
 public class ParsedTx {
-	private final AID id;
+	private final Txn txn;
 	private final List<ParticleWithSpin> particles;
 	private final Optional<String> message;
-	private final RadixAddress creator;
+	private final Optional<RadixAddress> creator;
 
-	public ParsedTx(AID id, List<ParticleWithSpin> particles, Optional<String> message, RadixAddress creator) {
-		this.id = id;
+	private ParsedTx(Txn txn, List<ParticleWithSpin> particles, Optional<String> message, Optional<RadixAddress> creator) {
+		this.txn = txn;
 		this.particles = particles;
 		this.message = message;
 		this.creator = creator;
 	}
 
-	public static Result<ParsedTx> create(
-		AID id, List<ParticleWithSpin> particles, Optional<String> message, Optional<RadixAddress> creator
+	public static ParsedTx create(
+		Txn txn, List<ParticleWithSpin> particles, Optional<String> message, Optional<RadixAddress> creator
 	) {
-		return creator.map(author -> Result.ok(new ParsedTx(id, particles, message, author)))
-			.orElseGet(() -> Result.fail("No transaction author"));
+		return new ParsedTx(txn, particles, message, creator);
 	}
 
 	public AID getId() {
-		return id;
+		return txn.getId();
 	}
 
 	public List<ParticleWithSpin> getParticles() {
@@ -56,7 +55,7 @@ public class ParsedTx {
 		return message;
 	}
 
-	public RadixAddress getCreator() {
+	public Optional<RadixAddress> getCreator() {
 		return creator;
 	}
 }

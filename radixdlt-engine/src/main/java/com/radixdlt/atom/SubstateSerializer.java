@@ -22,6 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.utils.functional.Result;
 
 public final class SubstateSerializer {
 	private SubstateSerializer() {
@@ -30,6 +31,14 @@ public final class SubstateSerializer {
 
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
 		return DefaultSerialization.getInstance().fromDson(bytes, Particle.class);
+	}
+
+	public static Result<Particle> deserializeFromBytes(byte[] bytes) {
+		try {
+			return Result.ok(deserialize(bytes));
+		} catch (DeserializeException e) {
+			return Result.fail(e.getMessage());
+		}
 	}
 
 	public static Particle deserialize(byte[] bytes, int offset) throws DeserializeException {

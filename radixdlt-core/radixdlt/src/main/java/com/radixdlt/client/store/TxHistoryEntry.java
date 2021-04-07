@@ -34,14 +34,14 @@ import static java.util.Objects.requireNonNull;
 
 public class TxHistoryEntry {
 	private final AID txId;
-	private final Instant date;
+	private final Instant timestamp;
 	private final UInt256 fee;
 	private final MessageEntry message;
 	private final List<ActionEntry> actions;
 
-	private TxHistoryEntry(AID txId, Instant date, UInt256 fee, MessageEntry message, List<ActionEntry> actions) {
+	private TxHistoryEntry(AID txId, Instant timestamp, UInt256 fee, MessageEntry message, List<ActionEntry> actions) {
 		this.txId = txId;
-		this.date = date;
+		this.timestamp = timestamp;
 		this.fee = fee;
 		this.message = message;
 		this.actions = actions;
@@ -56,7 +56,7 @@ public class TxHistoryEntry {
 	}
 
 	public Instant timestamp() {
-		return date;
+		return timestamp;
 	}
 
 	public AID getTxId() {
@@ -78,7 +78,7 @@ public class TxHistoryEntry {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("txId", txId)
-			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(date))
+			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp))
 			.put("fee", fee)
 			.put("actions", fromList(actions, ActionEntry::asJson))
 			.putOpt("message", Optional.ofNullable(message).map(MessageEntry::asJson).orElse(null));

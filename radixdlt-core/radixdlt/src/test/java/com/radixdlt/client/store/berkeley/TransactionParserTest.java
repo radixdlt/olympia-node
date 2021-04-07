@@ -18,25 +18,22 @@ package com.radixdlt.client.store.berkeley;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.radix.api.jsonrpc.ActionType;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.name.Names;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
+import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ParsedTx;
 import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.crypto.ECKeyPair;
@@ -44,13 +41,8 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -65,79 +57,78 @@ import static com.radixdlt.client.ClientApiUtils.extractCreator;
 
 public class TransactionParserTest {
 	private static final byte MAGIC = (byte) 0;
+
 	private final ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private final RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, tokenOwnerKeyPair.getPublicKey());
 	private final ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
-	private final RadixAddress validatorAddress = new RadixAddress((byte) 0, validatorKeyPair.getPublicKey());
+	private final RadixAddress validatorAddress = new RadixAddress(MAGIC, validatorKeyPair.getPublicKey());
+
+	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 
 	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "TEST");
-	private final MutableTokenDefinition tokDef =
-		new MutableTokenDefinition("TEST", "Test", "description", null, null);
+	private final EngineStore<Void> store = new InMemoryEngineStore<>();
+	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
+		"TEST", "Test", "description", null, null
+	);
 
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> engine;
-	@Inject
-	private Serialization serialization;
-	@Inject
-	private EngineStore<LedgerAndBFTProof> store;
-
-	private Injector createInjector() {
-		return Guice.createInjector(
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisAtomModule(),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(Names.named("numPeers")).to(0);
-					bind(MempoolConfig.class).toInstance(MempoolConfig.of(1000L, 0L));
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
-				}
-			}
-		);
-	}
+	private RadixEngine<Void> engine;
 
 	@Before
-	public void setUp() {
-		var injector = createInjector();
-		injector.injectMembers(this);
-	}
+	public void setup() throws Exception {
+		final var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScrypt());
 
-	@Test
-	public void typicalPatternsAreDetectedProperly() throws Exception {
-		var atom0 = TxBuilder.newBuilder(tokenOwnerAddress, store)
+		final var cm = new ConstraintMachine.Builder()
+			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
+			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
+			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.build();
+
+		engine = new RadixEngine<>(cm, store);
+
+		var txn1 = TxBuilder.newBuilder(tokenOwnerAddress)
 			.createMutableToken(tokDef)
-			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN).signAndBuild(tokenOwnerKeyPair::sign);
+			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN)
+			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		var atom1 = TxBuilder.newBuilder(validatorAddress, store)
+		var txn2 = TxBuilder.newBuilder(validatorAddress)
 			.registerAsValidator()
 			.signAndBuild(validatorKeyPair::sign);
 
-		//Preparations
-		executeAndDecode(List.of(), UInt256.ZERO, atom0, atom1);
+		engine.execute(List.of(txn1, txn2));
+	}
 
-		var atom2 = TxBuilder.newBuilder(tokenOwnerAddress, store)
-			.stakeTo(tokenRri, validatorAddress, UInt256.FIVE)
+	@Test
+	public void stakeIsParsedCorrectly() throws Exception {
+		var txn = engine.construct(tokenOwnerAddress, nativeStake())
+			.burnForFee(tokenRri, UInt256.TWO)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.STAKE), UInt256.ZERO, atom2);
+		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
+	}
 
-		var atom3 = TxBuilder.newBuilder(tokenOwnerAddress, store)
-			.unstakeFrom(tokenRri, validatorAddress, UInt256.ONE)
+	@Test
+	public void unstakeIsParsedCorrectly() throws Exception {
+		var txn1 = engine.construct(tokenOwnerAddress, nativeStake())
+			.signAndBuild(tokenOwnerKeyPair::sign);
+		engine.execute(List.of(txn1));
+
+		var txn2 = engine.construct(tokenOwnerAddress, nativeUnstake())
+			.burnForFee(tokenRri, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.ZERO, atom3);
+		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.FOUR, txn2);
+	}
 
-		//TODO: temporarily disabled because of unexpected "Could not find token rri ...." error
-//		var atom4 = TxBuilder.newBuilder(tokenOwnerAddress, store)
-//			.transfer(tokenRri, validatorAddress, UInt256.TWO)
-//			.burnForFee(tokenRri, UInt256.THREE)
-//			.signAndBuild(tokenOwnerKeyPair::sign);
-//
-//		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.THREE, atom4);
+	@Test
+	public void transferIsParsedCorrectly() throws Exception {
+		var txn = engine.construct(tokenOwnerAddress, List.of())
+			.transfer(tokenRri, otherAddress, UInt256.FIVE)
+			.burnForFee(tokenRri, UInt256.FOUR)
+			.signAndBuild(tokenOwnerKeyPair::sign);
+
+		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.FOUR, txn);
 	}
 
 	private void executeAndDecode(
@@ -152,14 +143,23 @@ public class TransactionParserTest {
 			return;
 		}
 
+		var timestamo = Instant.now();
 		list.stream()
 			.map(this::toParsedTx)
-			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenOwnerAddress, parsedTx, Instant.now())))
+			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenOwnerAddress, parsedTx, timestamo)))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
 				.map(this::toActionTypes)
 				.onSuccess(types -> assertEquals(expectedActions, types)));
+	}
+
+	private StakeNativeToken nativeStake() {
+		return new StakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
+	}
+
+	private UnstakeNativeToken nativeUnstake() {
+		return new UnstakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
 	}
 
 	private Result<ParsedTx> toParsedTx(RETxn reTxn) {
