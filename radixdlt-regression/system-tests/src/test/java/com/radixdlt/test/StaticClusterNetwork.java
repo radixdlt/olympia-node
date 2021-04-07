@@ -106,9 +106,11 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 	}
 
 	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes, String dockerOptions, String cmdOptions) {
-		ImmutableSet<String> nodesList = new TestnetNodes()
+		TestnetNodes testnetNodes = new TestnetNodes()
 			.usingDockerRunOptions(dockerOptions)
 			.usingCmdOptions(cmdOptions)
+			.setAnsibleImage();
+		ImmutableSet<String> nodesList = testnetNodes
 			.nodeURLList();
 		return new StaticClusterNetwork(nodesList, System.getenv(STATIC_CLUSTER_TESTNET_NAME));
 	}

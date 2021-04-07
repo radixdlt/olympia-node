@@ -46,21 +46,36 @@ public class ClusterTests {
 
     private SlowNodeSetup slowNodeSetup;
     private StaticClusterNetwork network;
-
+    String extraCmdOptions;
+    String dockerOptions;
     @Before
     public void setupSlowNode() {
         logger.info("Test name is {}", Generic.extractTestName(testNameRule.getMethodName()));
 
-        network = StaticClusterNetwork.clusterInfo(10);
         String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+        String dynamicInventory = Optional.ofNullable(System.getenv("AWS_DYNAMIC_INVENTORY")).orElse("");
+
+        if (!dynamicInventory.equals("")) {
+            extraCmdOptions = dynamicInventory;
+            dockerOptions = " -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID";
+            network = StaticClusterNetwork.clusterInfo(10, dockerOptions, extraCmdOptions);
+
+        } else {
+            extraCmdOptions = "";
+            dockerOptions = "";
+            network = StaticClusterNetwork.clusterInfo(10);
+
+        }
+
 
         //Creating named volume and copying over the file to volume works with or without docker in docker setup
+
         slowNodeSetup = SlowNodeSetup.builder()
                 .withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
                 .nodesToSlowDown(1)
                 .usingCluster(network.getClusterName())
-                .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
-                .cmdOptions("-e \"optionsArgs='loss 20%'\"")
+                .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible " + dockerOptions)
+                .cmdOptions(extraCmdOptions + " -e \"optionsArgs='loss 20%'\"")
                 .build();
         slowNodeSetup.copyfileToNamedVolume(sshKeylocation, "key-volume");
         slowNodeSetup.pullImage();
@@ -69,7 +84,7 @@ public class ClusterTests {
 
     @Test
     public void given_10_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-        RemoteBFTTest test = AssertionChecks.latentTestBuilder()
+        RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
                 .network(RemoteBFTNetworkBridge.of(network))
                 .waitUntilResponsive()
                 .startConsensusOnRun() // in case we're the first to access the cluster
@@ -81,7 +96,7 @@ public class ClusterTests {
     public void given_10_correct_bfts_in_latent_cluster_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail() {
         try {
             Conditions.waitUntilNetworkHasLiveness(network);
-
+            slowNodeSetup.setAddtionalDockerCmdOptions(extraCmdOptions);
             // The SlowNodeSetup object here is used only to run ansible playbook tasks via the togglePortViaAnsible() method
             slowNodeSetup.togglePortViaAnsible(30000, true);
 
