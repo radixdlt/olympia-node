@@ -100,7 +100,8 @@ class SlowNodeSetup {
         }
 
         Builder withImage(String image) {
-            this.image = image
+            String imageTag = Optional.ofNullable(System.getenv("ANSIBLE_TAG")).orElse("latest")
+            this.image = "${image}:${imageTag}"
             return this
         }
 

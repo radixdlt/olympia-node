@@ -59,6 +59,12 @@ class TestnetNodes {
         })
     }
 
+    TestnetNodes setAnsibleImage(){
+        String imageTag = Optional.ofNullable(System.getenv("ANSIBLE_TAG")).orElse("latest")
+        this.ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible:${imageTag}"
+        return this
+    }
+
     ImmutableSet<String> nodeURLList() {
         fetchNodes()
 
