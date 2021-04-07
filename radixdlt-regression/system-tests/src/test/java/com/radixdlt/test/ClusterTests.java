@@ -76,7 +76,7 @@ public class ClusterTests {
                 .nodesToSlowDown(1)
                 .usingCluster(network.getClusterName())
                 .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
-                .cmdOptions(extraCmdOptions + "-e \"optionsArgs='loss 20%'\"")
+                .cmdOptions(extraCmdOptions + " -e \"optionsArgs='loss 20%'\"")
                 .build();
         slowNodeSetup.copyfileToNamedVolume(sshKeylocation, "key-volume");
         slowNodeSetup.pullImage();
