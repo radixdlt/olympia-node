@@ -56,16 +56,13 @@ public class ClusterTests {
         String dynamicInventory = Optional.ofNullable(System.getenv("AWS_DYNAMIC_INVENTORY")).orElse("");
 
         if (!dynamicInventory.equals("")) {
-            extraCmdOptions = dynamicInventory ;
+            extraCmdOptions = dynamicInventory;
             dockerOptions = " -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID";
-            network= StaticClusterNetwork.clusterInfo(
-                10,
-                dockerOptions ,
-                extraCmdOptions );
+            network = StaticClusterNetwork.clusterInfo(10, dockerOptions, extraCmdOptions);
 
-        }else{
-            extraCmdOptions ="";
-            dockerOptions="";
+        } else {
+            extraCmdOptions = "";
+            dockerOptions = "";
             network = StaticClusterNetwork.clusterInfo(10);
 
         }
@@ -87,7 +84,7 @@ public class ClusterTests {
 
     @Test
     public void given_10_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-        RemoteBFTTest test = AssertionChecks.latentTestBuilder()
+        RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
                 .network(RemoteBFTNetworkBridge.of(network))
                 .waitUntilResponsive()
                 .startConsensusOnRun() // in case we're the first to access the cluster
