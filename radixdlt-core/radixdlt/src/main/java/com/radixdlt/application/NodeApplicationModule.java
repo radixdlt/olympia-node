@@ -50,6 +50,8 @@ public final class NodeApplicationModule extends AbstractModule {
 			.addBinding().to(StakedBalanceReducer.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
 			.addBinding().to(StakeReceivedReducer.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { })
+			.addBinding().to(ValidatorInfoReducer.class).in(Scopes.SINGLETON);
 
 		bind(NodeApplication.class).in(Scopes.SINGLETON);
 

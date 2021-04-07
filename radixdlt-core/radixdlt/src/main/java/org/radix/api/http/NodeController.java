@@ -23,6 +23,7 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.StakeReceived;
 import com.radixdlt.application.StakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnNativeToken;
 import com.radixdlt.atom.actions.RegisterAsValidator;
@@ -78,10 +79,12 @@ public final class NodeController implements Controller {
 
 	private JSONObject getValidator() {
 		var stakeReceived = radixEngine.getComputedState(StakeReceived.class);
+		var validatorInfo = radixEngine.getComputedState(ValidatorInfo.class);
 		var stakeFrom = new JSONArray();
 		stakeReceived.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
+					.put("registered", validatorInfo.isRegistered())
 					.put("delegator", addr)
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			);
