@@ -56,7 +56,7 @@ public class ClusterTests {
         String extraCmdOptions;
         String dockerOptions;
         if (!dynamicInventory.equals("")) {
-            extraCmdOptions = "-i " + dynamicInventory ;
+            extraCmdOptions = dynamicInventory ;
             dockerOptions = " -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID";
             network= StaticClusterNetwork.clusterInfo(
                 10,
