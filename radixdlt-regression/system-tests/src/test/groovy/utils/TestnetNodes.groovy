@@ -27,6 +27,8 @@ class TestnetNodes {
     private static final String scheme = "https"
     private String additionalCommandOptions
     private String additionalDockerOptions
+    private String dockerBinary = Optional.ofNullable(System.getenv("DOCKER_BINARY")).orElse("docker")
+
 
     public TestnetNodes() {
     }
@@ -79,14 +81,14 @@ class TestnetNodes {
             logger.info("Node information not avaliable. Fetching using ansible")
 
             String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa")
-            CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
-            CmdHelper.runCommand("docker cp ${sshKeylocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
-            CmdHelper.runCommand("docker rm -f dummy")
+            CmdHelper.runCommand("${dockerBinary} container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
+            CmdHelper.runCommand("${dockerBinary} cp ${sshKeylocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
+            CmdHelper.runCommand("${dockerBinary} rm -f dummy")
 
             def output, error
             def default_dockerOptions = "-v ${keyVolume}:/ansible/ssh"
-            def runCommand = "bash -c".tokenize() << (
-                    "docker run --rm  " +
+            def runCommand = "/bin/bash -c".tokenize() << (
+                    "${dockerBinary} run --rm  " +
                             "${additionalDockerOptions ?: default_dockerOptions} " +
                             "--name node-ansible ${ansibleImage}  " +
                             "check.yml " +

@@ -189,7 +189,7 @@ class CmdHelper {
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
                 runCommand(dockerCommand.tokenize(), dockerEnv, true) :
-                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
+                runCommand("/bin/bash -c".tokenize() << dockerCommand, dockerEnv, true)
         return results[0][0]
     }
 
@@ -221,7 +221,7 @@ class CmdHelper {
         Closure getVeth = {
             // Below command executed to find a veth* files that match index number.
             // More details on /sys/class/net can be found on this link https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
-            def string = "bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
+            def string = "/bin/bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
             (veth, error) = runCommand(string)
             if(error){
                 throw new IllegalStateException("Docker container is not running ")

@@ -46,15 +46,15 @@ public class ClusterTests {
 
     private SlowNodeSetup slowNodeSetup;
     private StaticClusterNetwork network;
-
+    String extraCmdOptions;
+    String dockerOptions;
     @Before
     public void setupSlowNode() {
         logger.info("Test name is {}", Generic.extractTestName(testNameRule.getMethodName()));
 
         String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
         String dynamicInventory = Optional.ofNullable(System.getenv("AWS_DYNAMIC_INVENTORY")).orElse("");
-        String extraCmdOptions;
-        String dockerOptions;
+
         if (!dynamicInventory.equals("")) {
             extraCmdOptions = dynamicInventory ;
             dockerOptions = " -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID";
@@ -65,7 +65,9 @@ public class ClusterTests {
 
         }else{
             extraCmdOptions ="";
+            dockerOptions="";
             network = StaticClusterNetwork.clusterInfo(10);
+
         }
 
 
@@ -75,7 +77,7 @@ public class ClusterTests {
                 .withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
                 .nodesToSlowDown(1)
                 .usingCluster(network.getClusterName())
-                .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
+                .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible " + dockerOptions)
                 .cmdOptions(extraCmdOptions + " -e \"optionsArgs='loss 20%'\"")
                 .build();
         slowNodeSetup.copyfileToNamedVolume(sshKeylocation, "key-volume");
@@ -97,7 +99,7 @@ public class ClusterTests {
     public void given_10_correct_bfts_in_latent_cluster_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail() {
         try {
             Conditions.waitUntilNetworkHasLiveness(network);
-
+            slowNodeSetup.setAddtionalDockerCmdOptions(extraCmdOptions);
             // The SlowNodeSetup object here is used only to run ansible playbook tasks via the togglePortViaAnsible() method
             slowNodeSetup.togglePortViaAnsible(30000, true);
 

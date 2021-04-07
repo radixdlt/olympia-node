@@ -24,6 +24,7 @@ class SlowNodeSetup {
     private String addtionalDockerCmdOptions
     private String sshDestinationLocDir = "/ansible/ssh"
     private String sshDestinationFileName = "testnet"
+    private String dockerBinary = Optional.ofNullable(System.getenv("DOCKER_BINARY")).orElse("docker")
 
 
     private SlowNodeSetup(String image, String runOptions, String cmdOptions, int numOfSlowNodes, String clusterName) {
@@ -35,19 +36,23 @@ class SlowNodeSetup {
     }
 
     void copyfileToNamedVolume(String fileLocation, String keyVolume) {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        CmdHelper.runCommand("${dockerBinary} container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("${dockerBinary} cp ${fileLocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("${dockerBinary} rm -f dummy")
     }
 
     void pullImage() {
-        CmdHelper.runCommand("docker pull ${image}")
+        CmdHelper.runCommand("${dockerBinary} pull ${image}")
+    }
+
+    void setAddtionalDockerCmdOptions(cmdOptions){
+        this.addtionalDockerCmdOptions = cmdOptions
     }
 
     void setup() {
         (1..numOfSlowNodes).each {
-            def runnerCommand = "bash -c".tokenize() << (
-                    "docker run " +
+            def runnerCommand = "/bin/bash -c".tokenize() << (
+                    "${dockerBinary} run " +
                             "${dockerRunOptions ?: ''} " +
                             "${this.image} " +
                             "slow-down-node.yml " +
@@ -59,8 +64,8 @@ class SlowNodeSetup {
 
     void tearDown() {
         (1..numOfSlowNodes).each {
-            def runnerCommand = "bash -c".tokenize() << (
-                    "docker run " +
+            def runnerCommand = "/bin/bash -c".tokenize() << (
+                    "${dockerBinary} run " +
                             "${dockerRunOptions ?: ''} " +
                             "${this.image} " +
                             "slow-down-node.yml " +
@@ -68,7 +73,7 @@ class SlowNodeSetup {
                             "--limit ${clusterName}[${it - 1}] -t teardown ")
             CmdHelper.runCommand(runnerCommand,Generic.getAWSCredentials()as String[])
         }
-        CmdHelper.runCommand("docker volume rm -f ${keyVolume}")
+        CmdHelper.runCommand("${dockerBinary} volume rm -f ${keyVolume}")
 
     }
 
@@ -83,7 +88,7 @@ class SlowNodeSetup {
         def extraVariables = (shouldEnable) ? "-e 'port_number=${portNumber}'" : ""
         def tag = (shouldEnable) ? "-t block-port-container" : "-t restore-blocked-port-container"
 
-        def dockerCommand = "docker run " +
+        def dockerCommand = "${dockerBinary} run " +
                         "${dockerRunOptions ?: ''} " +
                         "${this.image} " +
                         "system-testing.yml " +
