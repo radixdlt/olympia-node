@@ -51,7 +51,7 @@ public final class StakeNativeToken implements TxAction {
 
 		txBuilder.swap(
 			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
+			p -> p.getAddress().equals(delegateAddress)/* && p.allowsDelegator(address)*/,
 			"Cannot delegate to " + delegateAddress
 		).with(RegisteredValidatorParticle::copy);
 

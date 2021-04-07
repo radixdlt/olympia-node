@@ -37,6 +37,8 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
 import java.util.Optional;
@@ -52,6 +54,7 @@ import java.util.stream.StreamSupport;
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
+	private static final Logger logger = LogManager.getLogger();
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final RadixAddress address;
 	private final SubstateStore remoteSubstate;
@@ -204,6 +207,7 @@ public final class TxBuilder {
 
 		try (var cursor = createRemoteSubstateCursor(particleClass)) {
 			var substateDown = iteratorToStream(cursor)
+				.peek(s -> logger.info("substate: " + s))
 				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
 				.peek(s -> this.down(s.getId()))
 				.map(Substate::getParticle)
@@ -218,7 +222,7 @@ public final class TxBuilder {
 				});
 
 			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new TxBuilderException(errorMessage + " (Substate not found.)");
 			}
 
 			return substateDown.get();
