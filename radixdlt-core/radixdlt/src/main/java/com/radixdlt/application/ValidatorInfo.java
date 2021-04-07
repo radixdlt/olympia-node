@@ -18,8 +18,11 @@
 
 package com.radixdlt.application;
 
-public class ValidatorInfo {
-	private boolean registered;
+/**
+ * Info about node as validator
+ */
+public final class ValidatorInfo {
+	private final boolean registered;
 
 	public ValidatorInfo(boolean registered) {
 		this.registered = registered;

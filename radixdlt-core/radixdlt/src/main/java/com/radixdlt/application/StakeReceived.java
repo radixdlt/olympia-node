@@ -25,7 +25,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
-public class StakeReceived {
+/**
+ * Amount of stake received from each of one's delegators.
+ */
+public final class StakeReceived {
 	private final Map<RadixAddress, UInt256> stakes = new ConcurrentHashMap<>();
 
 	public void addStake(RadixAddress delegate, UInt256 amount) {

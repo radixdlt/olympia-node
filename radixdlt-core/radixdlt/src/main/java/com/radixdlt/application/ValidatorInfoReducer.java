@@ -28,7 +28,10 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public class ValidatorInfoReducer implements StateReducer<ValidatorInfo, RegisteredValidatorParticle> {
+/**
+ * Reduces radix engine state to validator info
+ */
+public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, RegisteredValidatorParticle> {
 	private final RadixAddress address;
 
 	@Inject

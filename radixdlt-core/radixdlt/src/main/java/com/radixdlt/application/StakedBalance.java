@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
-public class StakedBalance {
+public final class StakedBalance {
 	private final Map<RadixAddress, UInt256> stakes = new ConcurrentHashMap<>();
 
 	public void addStake(RadixAddress delegate, UInt256 amount) {

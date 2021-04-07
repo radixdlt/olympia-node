@@ -30,7 +30,10 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public class StakeReceivedReducer implements StateReducer<StakeReceived, StakedTokensParticle> {
+/**
+ * Reduces radix engine to stake received
+ */
+public final class StakeReceivedReducer implements StateReducer<StakeReceived, StakedTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 

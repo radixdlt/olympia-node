@@ -84,12 +84,12 @@ public final class NodeController implements Controller {
 		stakeReceived.forEach((addr, amt) -> {
 			stakeFrom.put(
 				new JSONObject()
-					.put("registered", validatorInfo.isRegistered())
 					.put("delegator", addr)
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			);
 		});
 		return new JSONObject()
+			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
 	}

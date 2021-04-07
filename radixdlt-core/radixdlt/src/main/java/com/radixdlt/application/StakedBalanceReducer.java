@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public class StakedBalanceReducer implements StateReducer<StakedBalance, StakedTokensParticle> {
+public final class StakedBalanceReducer implements StateReducer<StakedBalance, StakedTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 
