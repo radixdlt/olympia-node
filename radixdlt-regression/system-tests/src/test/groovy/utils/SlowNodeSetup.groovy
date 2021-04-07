@@ -53,7 +53,7 @@ class SlowNodeSetup {
                             "slow-down-node.yml " +
                             "${addtionalDockerCmdOptions ?: ''} " +
                             "--limit ${clusterName}[${it - 1}] -t setup ")
-            CmdHelper.runCommand(runnerCommand)
+            CmdHelper.runCommand(runnerCommand,Generic.getAWSCredentials()as String[])
         }
     }
 
@@ -66,7 +66,7 @@ class SlowNodeSetup {
                             "slow-down-node.yml " +
                             "${addtionalDockerCmdOptions ?: ''} " +
                             "--limit ${clusterName}[${it - 1}] -t teardown ")
-            CmdHelper.runCommand(runnerCommand)
+            CmdHelper.runCommand(runnerCommand,Generic.getAWSCredentials()as String[])
         }
         CmdHelper.runCommand("docker volume rm -f ${keyVolume}")
 
@@ -82,12 +82,14 @@ class SlowNodeSetup {
     void togglePortViaAnsible(int portNumber, boolean shouldEnable) {
         def extraVariables = (shouldEnable) ? "-e 'port_number=${portNumber}'" : ""
         def tag = (shouldEnable) ? "-t block-port-container" : "-t restore-blocked-port-container"
+
         def dockerCommand = "docker run " +
                         "${dockerRunOptions ?: ''} " +
                         "${this.image} " +
                         "system-testing.yml " +
+                        "${addtionalDockerCmdOptions ?: ''} " +
                         "--limit ${clusterName} ${tag} ${extraVariables}"
-        CmdHelper.runCommand(dockerCommand)
+        CmdHelper.runCommand(dockerCommand,Generic.getAWSCredentials()as String[])
     }
 
     static class Builder {

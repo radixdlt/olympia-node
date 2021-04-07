@@ -51,16 +51,32 @@ public class ClusterTests {
     public void setupSlowNode() {
         logger.info("Test name is {}", Generic.extractTestName(testNameRule.getMethodName()));
 
-        network = StaticClusterNetwork.clusterInfo(10);
         String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+        String dynamicInventory = Optional.ofNullable(System.getenv("AWS_DYNAMIC_INVENTORY")).orElse("");
+        String extraCmdOptions;
+        String dockerOptions;
+        if (!dynamicInventory.equals("")) {
+            extraCmdOptions = "-i " + dynamicInventory ;
+            dockerOptions = " -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID";
+            network= StaticClusterNetwork.clusterInfo(
+                10,
+                dockerOptions ,
+                extraCmdOptions );
+
+        }else{
+            extraCmdOptions ="";
+            network = StaticClusterNetwork.clusterInfo(10);
+        }
+
 
         //Creating named volume and copying over the file to volume works with or without docker in docker setup
+
         slowNodeSetup = SlowNodeSetup.builder()
                 .withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
                 .nodesToSlowDown(1)
                 .usingCluster(network.getClusterName())
                 .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
-                .cmdOptions("-e \"optionsArgs='loss 20%'\"")
+                .cmdOptions(extraCmdOptions + "-e \"optionsArgs='loss 20%'\"")
                 .build();
         slowNodeSetup.copyfileToNamedVolume(sshKeylocation, "key-volume");
         slowNodeSetup.pullImage();

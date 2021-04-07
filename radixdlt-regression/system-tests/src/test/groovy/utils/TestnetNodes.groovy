@@ -86,7 +86,7 @@ class TestnetNodes {
                             "check.yml " +
                             "${additionalCommandOptions ?: ''} " +
                             "--limit ${clusterName} --list-hosts" as String)
-            (output, error) = CmdHelper.runCommand(runCommand)
+            (output, error) = CmdHelper.runCommand(runCommand,Generic.getAWSCredentials()as String[])
             nodes = output.findAll({
                 !(it.contains("play") || it.contains("pattern") || it.contains("hosts") || it == "")
             }).collect({ it.trim() })
