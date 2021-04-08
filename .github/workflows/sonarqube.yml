@@ -1,6 +1,6 @@
 name: Sonarqube static code analysis
 
-on: [pull_request]
+on: [push,pull_request]
 
 jobs:
   build:
@@ -12,18 +12,12 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: joschi/setup-jdk@v2
+      - uses: actions/setup-java@v2
         with:
-          java-version: '11' # The OpenJDK version to make available on the path
-          architecture: 'x64' # defaults to 'x64'
-      - name: Build and analyze
-        #run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
-        run: ./gradlew check jacocoTestReport --refresh-dependencies
+          java-version: '11'
+        run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
