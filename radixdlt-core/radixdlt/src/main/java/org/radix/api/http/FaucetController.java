@@ -75,7 +75,7 @@ public final class FaucetController implements Controller {
 
 			var request = NodeApplicationRequest.create(
 				actions,
-				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
+				(txn, aid) -> respond(exchange, jsonObject().put("result", aid.toString())),
 				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
 			);
 

@@ -82,7 +82,7 @@ public class NodeApplication {
 				return;
 			}
 
-			req.onSuccess(mempoolAddSuccess.getTxn().getId());
+			req.onSuccess(mempoolAddSuccess.getTxn(), mempoolAddSuccess.getTxn().getId());
 		};
 	}
 

@@ -159,10 +159,15 @@ public final class NodeController implements Controller {
 			actions.add(new BurnNativeToken(nativeToken, FEE));
 			var request = NodeApplicationRequest.create(
 				actions,
-				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
+				(txn, aid) -> respond(exchange, jsonObject()
+					.put("result", jsonObject()
+						.put("transaction", Hex.toHexString(txn.getPayload()))
+						.put("txnId", aid.toString())
+					)
+				),
 				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject()
 					.put("message", error))
-					.put("txn", txn == null ? null : Hex.toHexString(txn.getPayload()))
+					.put("transaction", txn == null ? null : Hex.toHexString(txn.getPayload()))
 				)
 			);
 

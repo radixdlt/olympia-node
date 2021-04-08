@@ -25,16 +25,15 @@ import com.radixdlt.identifiers.AID;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public final class NodeApplicationRequest {
 	private final List<TxAction> actions;
-	private final Consumer<AID> onSuccess;
+	private final BiConsumer<Txn, AID> onSuccess;
 	private final BiConsumer<Txn, String> onError;
 
 	private NodeApplicationRequest(
 		List<TxAction> actions,
-		Consumer<AID> onSuccess,
+		BiConsumer<Txn, AID> onSuccess,
 		BiConsumer<Txn, String> onError
 	) {
 		this.actions = actions;
@@ -47,12 +46,12 @@ public final class NodeApplicationRequest {
 	}
 
 	public static NodeApplicationRequest create(List<TxAction> actions) {
-		return create(actions, aid -> { }, (txn, error) -> { });
+		return create(actions, (txn, aid) -> { }, (txn, error) -> { });
 	}
 
 	public static NodeApplicationRequest create(
 		List<TxAction> actions,
-		Consumer<AID> onSuccess,
+		BiConsumer<Txn, AID> onSuccess,
 		BiConsumer<Txn, String> onError
 	) {
 		Objects.requireNonNull(actions);
@@ -65,8 +64,8 @@ public final class NodeApplicationRequest {
 		return actions;
 	}
 
-	public void onSuccess(AID aid) {
-		onSuccess.accept(aid);
+	public void onSuccess(Txn txn, AID aid) {
+		onSuccess.accept(txn, aid);
 	}
 
 	public void onFailure(Txn txn, String errorMessage) {
