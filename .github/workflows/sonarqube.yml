@@ -15,8 +15,17 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Build and analyze
-        run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github -Dsonar.projectKey=com.radixdlt:radixdlt-parent -Dsonar.sourceEncoding=UTF-8
+      - name: Unit tests and coverage
+        run: ./gradlew check jacocoTestReport
+        env:
+          # Needed to get some information about the pull request, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Sonar
+        run: |
+          find . -name "jaco*"
+          ./gradlew sonarqube --stacktrace -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
