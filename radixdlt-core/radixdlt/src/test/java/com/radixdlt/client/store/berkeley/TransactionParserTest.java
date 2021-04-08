@@ -18,7 +18,6 @@ package com.radixdlt.client.store.berkeley;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.api.jsonrpc.ActionType;
 
@@ -68,11 +67,16 @@ public class TransactionParserTest {
 	private final RadixAddress validatorAddress = new RadixAddress(MAGIC, validatorKeyPair.getPublicKey());
 
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
 	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "TEST");
-	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
 		"TEST", "Test", "description", null, null
+	);
+
+	private final RRI tokenRriII = RRI.of(tokenOwnerAddress, "TEST2");
+	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
+		"TEST2", "Test2", "description2", null, null
 	);
 
 	private RadixEngine<Void> engine;
@@ -126,11 +130,13 @@ public class TransactionParserTest {
 	}
 
 	@Test
-	@Ignore	//Still failing with "Could not find token rri ..." error
 	public void transferIsParsedCorrectly() throws Exception {
+		//Use different token
 		var txn = engine.construct(tokenOwnerAddress, List.of())
-			.transfer(tokenRri, otherAddress, UInt256.FIVE)
-			.burnForFee(tokenRri, UInt256.FOUR)
+			.createMutableToken(tokDefII)
+			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
+			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
+			.burnForFee(tokenRriII, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.FOUR, txn);
@@ -140,9 +146,6 @@ public class TransactionParserTest {
 		List<ActionType> expectedActions, UInt256 fee, Txn... txns
 	) throws RadixEngineException, InterruptedException {
 		var list = engine.execute(List.of(txns), null, PermissionLevel.USER);
-
-		// Wait for propagation
-		Thread.sleep(100L);
 
 		if (txns.length != 1) {
 			return;
