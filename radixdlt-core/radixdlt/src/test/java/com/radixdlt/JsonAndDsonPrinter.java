@@ -17,7 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
@@ -75,10 +74,7 @@ public class JsonAndDsonPrinter {
     }
 
     private void logRegisteredValidatorParticle() {
-        final var particle = new RegisteredValidatorParticle(
-                ADDRESS,
-                ImmutableSet.of(ADDRESS2, ADDRESS3)
-                );
+        final var particle = new RegisteredValidatorParticle(ADDRESS);
         logParticle(particle);
     }
 

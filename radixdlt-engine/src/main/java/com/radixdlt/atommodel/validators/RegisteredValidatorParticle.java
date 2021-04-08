@@ -19,79 +19,54 @@ package com.radixdlt.atommodel.validators;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.Set;
 
-@SerializerId2("radix.particles.registered_validator")
+@SerializerId2("v")
 public final class RegisteredValidatorParticle extends Particle {
-	@JsonProperty("address")
+	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RadixAddress address;
 
-	@JsonProperty("allowedDelegators")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<RadixAddress> allowedDelegators;
-
-	@JsonProperty("url")
+	@JsonProperty("u")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String url;
 
-	RegisteredValidatorParticle() {
-		// Serializer only
-		this.address = null;
-		this.allowedDelegators = null;
-		this.url = null;
-	}
-
-	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators) {
-		this(address, allowedDelegators, null);
+	public RegisteredValidatorParticle(RadixAddress address) {
+		this(address, null);
 	}
 
 	@JsonCreator
 	public RegisteredValidatorParticle(
-		@JsonProperty("address") RadixAddress address,
-		@JsonProperty("allowedDelegators") ImmutableSet<RadixAddress> allowedDelegators,
-		@JsonProperty("url") String url
+		@JsonProperty("o") RadixAddress address,
+		@JsonProperty("u") String url
 	) {
 		this.address = Objects.requireNonNull(address);
-		this.allowedDelegators = allowedDelegators == null ? ImmutableSet.of() : allowedDelegators;
 		this.url = url;
-	}
-
-	public RegisteredValidatorParticle(RadixAddress address) {
-		this(address, ImmutableSet.of(), null);
 	}
 
 	public RegisteredValidatorParticle copy() {
 		return new RegisteredValidatorParticle(
 			this.address,
-			this.allowedDelegators,
 			this.url
 		);
 	}
 
 	public boolean allowsDelegator(RadixAddress delegator) {
-		return this.allowedDelegators == null || this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
+		return true;
 	}
 
 	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {
 		return Objects.equals(address, other.address)
-			&& Objects.equals(allowedDelegators, other.allowedDelegators)
 			&& Objects.equals(url, other.url);
 	}
 
 	public RadixAddress getAddress() {
 		return address;
-	}
-
-	public Set<RadixAddress> getAllowedDelegators() {
-		return allowedDelegators == null ? Set.of() : allowedDelegators;
 	}
 
 	public String getUrl() {
@@ -100,7 +75,7 @@ public final class RegisteredValidatorParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.allowedDelegators, this.url);
+		return Objects.hash(this.address, this.url);
 	}
 
 	@Override
@@ -113,15 +88,14 @@ public final class RegisteredValidatorParticle extends Particle {
 		}
 		final var that = (RegisteredValidatorParticle) obj;
 		return Objects.equals(this.address, that.address)
-			&& Objects.equals(this.allowedDelegators, that.allowedDelegators)
 			&& Objects.equals(this.url, that.url);
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[%s, %s, %s]",
-			getClass().getSimpleName(), getAddress(), getUrl(), getAllowedDelegators()
+			"%s[%s, %s]",
+			getClass().getSimpleName(), getAddress(), getUrl()
 		);
 	}
 }

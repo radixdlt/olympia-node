@@ -19,24 +19,21 @@ package com.radixdlt.atommodel.validators;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("radix.particles.unregistered_validator")
+@SerializerId2("v_u")
 public final class UnregisteredValidatorParticle extends Particle {
-	@JsonProperty("address")
+	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RadixAddress address;
 
-	UnregisteredValidatorParticle() {
-		// Serializer only
-		this.address = null;
-	}
-
-	public UnregisteredValidatorParticle(RadixAddress address) {
+	@JsonCreator
+	public UnregisteredValidatorParticle(@JsonProperty("o") RadixAddress address) {
 		this.address = Objects.requireNonNull(address, "address");
 	}
 

@@ -200,7 +200,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
-        assertEquals(expected.getAllowedDelegators(), argsExtractor.asAddressSet("allowedDelegators"));
 
         assertTrue(argsExtractor.isFinished());
     }

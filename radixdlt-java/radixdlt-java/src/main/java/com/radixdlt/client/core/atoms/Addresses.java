@@ -66,7 +66,6 @@ public final class Addresses {
 		} else if (p instanceof RegisteredValidatorParticle) {
 			var a = (RegisteredValidatorParticle) p;
 			addresses.add(a.getAddress());
-			addresses.addAll(a.getAllowedDelegators());
 		} else if (p instanceof UnregisteredValidatorParticle) {
 			var a = (UnregisteredValidatorParticle) p;
 			addresses.add(a.getAddress());

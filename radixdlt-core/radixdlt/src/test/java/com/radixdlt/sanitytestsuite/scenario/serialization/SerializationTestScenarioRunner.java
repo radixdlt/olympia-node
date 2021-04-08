@@ -18,7 +18,6 @@
 package com.radixdlt.sanitytestsuite.scenario.serialization;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -148,8 +147,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static RegisteredValidatorParticle makeRegisteredValidatorParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var rvp = new RegisteredValidatorParticle(
-            argsExtractor.asRadixAddress("address"),
-            ImmutableSet.copyOf(argsExtractor.asAddressSet("allowedDelegators"))
+            argsExtractor.asRadixAddress("address")
         );
         assertTrue(argsExtractor.isFinished());
         return rvp;

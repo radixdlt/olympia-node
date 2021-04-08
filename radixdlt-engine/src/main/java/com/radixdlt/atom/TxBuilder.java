@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -383,7 +382,7 @@ public final class TxBuilder {
 			Optional.of(new UnregisteredValidatorParticle(address)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
+			substateDown -> new RegisteredValidatorParticle(address)
 		);
 
 		particleGroup();
