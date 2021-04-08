@@ -17,26 +17,30 @@
 
 package com.radixdlt.consensus.safety;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.safety.SafetyState.Builder;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
+
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
@@ -51,7 +55,7 @@ public class SafetyRulesTest {
 		Hasher hasher = mock(Hasher.class);
 		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
-		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
+		when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
 		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, mock(PersistentSafetyStateStore.class), hasher, hashSigner);
 	}
 
@@ -72,7 +76,7 @@ public class SafetyRulesTest {
 		Hasher hasher = mock(Hasher.class);
 		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
-		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
+		when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
 
 		Vote lastVote = mock(Vote.class);
 		when(lastVote.getView()).thenReturn(View.of(1));

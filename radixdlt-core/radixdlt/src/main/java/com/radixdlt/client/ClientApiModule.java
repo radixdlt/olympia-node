@@ -26,7 +26,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
-import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
+import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
@@ -39,7 +39,7 @@ public class ClientApiModule extends AbstractModule {
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		eventBinder.addBinding().toInstance(ScheduledParticleFlush.class);
+		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 	}
 
 	@ProvidesIntoMap
@@ -63,7 +63,7 @@ public class ClientApiModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("radix.executedTransactions")
 	public JsonRpcHandler executedTransactions(HighLevelApiHandler highLevelApiHandler) {
-		return highLevelApiHandler::handleExecutedTransactions;
+		return highLevelApiHandler::handleTransactionHistory;
 	}
 
 	@ProvidesIntoMap
@@ -81,8 +81,8 @@ public class ClientApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
 		return new EventProcessorOnRunner<>(Runners.APPLICATION,
-			ScheduledParticleFlush.class,
-			clientApiStore.particleFlushProcessor()
+			ScheduledQueueFlush.class,
+			clientApiStore.queueFlushProcessor()
 		);
 	}
 }

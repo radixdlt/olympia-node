@@ -18,20 +18,25 @@
 
 package com.radixdlt.atom;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
+
+import static com.radixdlt.crypto.HashUtils.transactionIdHash;
 
 /**
  * The id of a unique substate
  */
 public final class SubstateId {
+	public static final int BYTES = AID.BYTES + Integer.BYTES;
+
 	private final byte[] idBytes;
 
 	private SubstateId(byte[] idBytes) {
@@ -40,29 +45,25 @@ public final class SubstateId {
 
 	private static AID atomIdOf(Atom atom) {
 		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		var firstHash = HashUtils.sha256(dson);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return AID.from(secondHash.asBytes());
+		return AID.from(transactionIdHash(dson).asBytes());
 	}
 
 	public static SubstateId ofSubstate(AID txId, int index) {
-		byte[] id = new byte[AID.BYTES + Integer.BYTES];
+		byte[] id = new byte[BYTES];
 		txId.copyTo(id, 0);
 		Ints.copyTo(index, id, AID.BYTES);
 		return new SubstateId(id);
 	}
 
 	public static SubstateId ofSubstate(Atom atom, int index) {
-		byte[] id = new byte[AID.BYTES + Integer.BYTES];
+		byte[] id = new byte[BYTES];
 		atomIdOf(atom).copyTo(id, 0);
 		Ints.copyTo(index, id, AID.BYTES);
 		return new SubstateId(id);
 	}
 
 	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
-		var firstHash = HashUtils.sha256(particleBytes);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return new SubstateId(secondHash.asBytes());
+		return new SubstateId(transactionIdHash(particleBytes).asBytes());
 	}
 
 	public static SubstateId fromBytes(byte[] bytes) {
@@ -70,11 +71,21 @@ public final class SubstateId {
 	}
 
 	public boolean isVirtual() {
-		return idBytes.length == 32;
+		return idBytes.length == AID.BYTES;
 	}
 
 	public byte[] asBytes() {
 		return idBytes;
+	}
+
+	public AID getTxnId() {
+		return AID.from(idBytes);
+	}
+
+	public Optional<Integer> getIndex() {
+		return idBytes.length == BYTES
+			   ? Optional.of(Ints.fromByteArray(idBytes, AID.BYTES))
+			   : Optional.empty();
 	}
 
 	@Override

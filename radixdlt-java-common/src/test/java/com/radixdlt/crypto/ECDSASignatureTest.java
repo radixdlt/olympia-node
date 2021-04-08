@@ -9,7 +9,6 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -115,37 +114,36 @@ public class ECDSASignatureTest {
 				"]";
 		//CHECKSTYLE:ON
 
-		Type type = new TypeToken<ArrayList<Map<String, String>>>() {
-		}.getType();
+		var type = new TypeToken<ArrayList<Map<String, String>>>() { }.getType();
+
 		ArrayList<Map<String, String>> vectors = new Gson().fromJson(rfc6979TestVectors, type);
+
 		assertEquals(6, vectors.size());
-		for (Map<String, String> vector : vectors) {
-			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.get("privateKey")));
-			ECPublicKey publicKey = keyPair.getPublicKey();
 
-			String expectedPublicKeyHex = vector.get("expectedPublicKeyCompressed");
-			assertEquals(expectedPublicKeyHex, Bytes.toHexString(publicKey.getBytes()));
+		for (var vector : vectors) {
+			var keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.get("privateKey")));
+			var publicKey = keyPair.getPublicKey();
 
-			String messageUnhashedPlaintext = vector.get("message");
-			byte[] messageUnhashed = messageUnhashedPlaintext.getBytes(StandardCharsets.UTF_8);
-			byte[] message = sha2bits256Once(messageUnhashed);
+			assertEquals(vector.get("expectedPublicKeyCompressed"), Bytes.toHexString(publicKey.getBytes()));
+
+			var messageUnhashedPlaintext = vector.get("message");
+			var messageUnhashed = messageUnhashedPlaintext.getBytes(StandardCharsets.UTF_8);
+			var message = sha2bits256Once(messageUnhashed);
 
 			assertEquals(vector.get("expectedHashOfMessage"), Bytes.toHexString(message));
 
-			ECDSASignature signature = keyPair.sign(message, true, true);
+			var signature = keyPair.sign(message, true, true);
 
-			String expectedSigRHexString = vector.get("expectedSignatureR");
-			String expectedSigSHexString = vector.get("expectedSignatureS");
-
-			assertEquals(expectedSigRHexString, signature.getR().toString(16));
-			assertEquals(expectedSigSHexString, signature.getS().toString(16));
+			assertEquals(vector.get("expectedSignatureR"), signature.getR().toString(16));
+			assertEquals(vector.get("expectedSignatureS"), signature.getS().toString(16));
 			assertTrue("Should verify", publicKey.verify(message, signature));
 
-			String expectedSignatureDERHexString =  vector.get("expectedDer");
-			byte[] expectedSignatureDERBytes = Bytes.fromHexString(expectedSignatureDERHexString);
-			ECDSASignature sigFromDER = ECDSASignature.decodeFromDER(expectedSignatureDERBytes);
+			var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
+			var sigFromDER = ECDSASignature.decodeFromDER(expectedSignatureDERBytes);
 
-			assertEquals(sigFromDER, signature);
+			//Signature from DER has no `v` byte, so comparing using `equals` fails.
+			assertEquals(sigFromDER.getR(), signature.getR());
+			assertEquals(sigFromDER.getS(), signature.getS());
 		}
 	}
 

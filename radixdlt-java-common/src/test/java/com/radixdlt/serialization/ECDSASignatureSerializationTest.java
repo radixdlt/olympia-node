@@ -25,6 +25,6 @@ public class ECDSASignatureSerializationTest extends SerializeObjectEngine<ECDSA
 
 	private static ECDSASignature getECDSASignature() {
 		Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
-		return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
+		return ECDSASignature.create(randomBigInt.get(), randomBigInt.get(), randomBigInt.get().signum());
 	}
 }

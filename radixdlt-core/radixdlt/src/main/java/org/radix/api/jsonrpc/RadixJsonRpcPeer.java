@@ -22,11 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.services.AtomsService;
 
-import com.radixdlt.serialization.Serialization;
-
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 

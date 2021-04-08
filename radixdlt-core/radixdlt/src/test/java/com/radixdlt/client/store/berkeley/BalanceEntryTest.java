@@ -33,29 +33,37 @@ public class BalanceEntryTest {
 
 	@Test
 	public void verifyBalanceCalculation() {
-		BalanceEntry entry1 = BalanceEntry.create(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FOUR);
-		BalanceEntry entry2 = BalanceEntry.create(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FIVE);
+		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FOUR);
+		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FIVE);
 
-		validateDifference(entry1, entry2, UInt256.ONE, true);
-		validateDifference(entry2, entry1, UInt256.ONE, false);
-		validateDifference(entry1, entry2.negate(), UInt256.NINE, false);
-		validateDifference(entry2, entry1.negate(), UInt256.NINE, false);
-		validateDifference(entry1.negate(), entry2, UInt256.NINE, true);
-		validateDifference(entry2.negate(), entry1, UInt256.NINE, true);
-		validateDifference(entry1.negate(), entry2.negate(), UInt256.ONE, false);
-		validateDifference(entry2.negate(), entry1.negate(), UInt256.ONE, true);
+		validate(entry1, entry2, UInt256.NINE, false);           		// 4 + 5 => 9
+		validate(entry2, entry1, UInt256.NINE, false);               	// 5 + 4 => 9
+		validate(entry1, entry2.negate(), UInt256.ONE, true);        	// 4 + (-5) = -1
+		validate(entry2, entry1.negate(), UInt256.ONE, false);    		// 5 + (-4) = 1
+		validate(entry1.negate(), entry2, UInt256.ONE, false);    		// -4 + 5 = 1
+		validate(entry2.negate(), entry1, UInt256.ONE, true);    		// -5 + 4 = -1
+		validate(entry1.negate(), entry2.negate(), UInt256.NINE, true);  // -4 + (-5) = -9
+		validate(entry2.negate(), entry1.negate(), UInt256.NINE, true);	// -5 + (-4) = -9
 	}
 
-	void validateDifference(BalanceEntry entry1, BalanceEntry entry2, UInt256 expectedAmount, boolean expectedNegative) {
-		var difference = entry1.subtract(entry2);
-		assertEquals(expectedAmount, difference.getAmount());
-		assertEquals(expectedNegative, difference.isNegative());
+	void validate(BalanceEntry entry1, BalanceEntry entry2, UInt256 expectedAmount, boolean expectedNegative) {
+		var sum = entry1.add(entry2);
+		assertEquals(expectedAmount, sum.getAmount());
+		assertEquals(format(entry1) + " + " + format(entry2) + " = " + format(sum), expectedNegative, sum.isNegative());
+	}
+
+	private String format(BalanceEntry be) {
+		var prefix = be.isNegative() ? "(-" : "";
+		var suffix = be.isNegative() ? ")" : "";
+
+		return prefix + be.getAmount().toString() + suffix;
 	}
 
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(BalanceEntry.class)
 			.suppress(Warning.NONFINAL_FIELDS)
+			.withIgnoredFields("supply")
 			.withNonnullFields("owner", "rri", "granularity", "amount")
 			.verify();
 	}

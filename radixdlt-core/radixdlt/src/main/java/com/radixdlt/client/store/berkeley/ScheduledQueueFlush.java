@@ -17,10 +17,10 @@
 
 package com.radixdlt.client.store.berkeley;
 
-public enum ScheduledParticleFlush {
+public enum ScheduledQueueFlush {
 	INSTANCE;
 
-	public static ScheduledParticleFlush create() {
+	public static ScheduledQueueFlush create() {
 		return INSTANCE;
 	}
 }

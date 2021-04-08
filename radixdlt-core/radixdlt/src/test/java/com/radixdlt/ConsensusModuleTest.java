@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -81,7 +81,6 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -96,6 +95,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -218,7 +218,7 @@ public class ConsensusModuleTest {
 		);
 		QuorumCertificate unsyncedQC = new QuorumCertificate(
 			voteData,
-			new TimestampedECDSASignatures(ImmutableMap.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, new ECDSASignature())))
+			new TimestampedECDSASignatures(Map.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, zeroSignature())))
 		);
 
 		return Pair.of(unsyncedQC, verifiedVertex);

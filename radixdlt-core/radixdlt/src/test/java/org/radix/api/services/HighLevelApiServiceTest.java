@@ -15,13 +15,12 @@ package org.radix.api.services;/*
  * language governing permissions and limitations under the License.
  */
 
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;

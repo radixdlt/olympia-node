@@ -17,14 +17,16 @@
 
 package com.radixdlt.client.store;
 
-import com.radixdlt.client.store.berkeley.ScheduledParticleFlush;
+import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * High level JSON RPC client API store.
@@ -43,7 +45,7 @@ public interface ClientApiStore {
 	/**
 	 * Flush intermediate storage and save particles into persistent DB.
 	 */
-	void storeCollectedParticles();
+	void storeCollected();
 
 	/**
 	 * Get current supply of the specified token.
@@ -64,5 +66,16 @@ public interface ClientApiStore {
 	 */
 	Result<TokenDefinitionRecord> getTokenDefinition(RRI rri);
 
-	EventProcessor<ScheduledParticleFlush> particleFlushProcessor();
+	/**
+	 * Retrieve transaction history for provided address.
+	 *
+	 * @param address client address
+	 * @param size number of elements to return
+	 * @param cursor optional cursor from previous request
+	 *
+	 * @return list of transaction history entries.
+	 */
+	Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor);
+
+	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }

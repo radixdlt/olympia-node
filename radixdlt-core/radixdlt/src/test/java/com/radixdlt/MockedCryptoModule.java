@@ -17,27 +17,27 @@
 
 package com.radixdlt;
 
-import com.radixdlt.consensus.bft.Self;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
-import com.google.common.hash.HashCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * For testing where verification and signing is skipped
@@ -69,12 +69,14 @@ public class MockedCryptoModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return h -> {
-			byte[] concat = new byte[64];
+			var concat = new byte[64];
 			System.arraycopy(h, 0, concat, 0, 32);
 			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
-			long hashCode = hashFunction.hashBytes(concat).asLong();
+
+			var hashCode = hashFunction.hashBytes(concat).asLong();
 			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
-			return new ECDSASignature(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode));
+
+			return ECDSASignature.create(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode), 0);
 		};
 	}
 
@@ -112,7 +114,7 @@ public class MockedCryptoModule extends AbstractModule {
 		};
 
 		// Make sure classes etc loaded, as first use seems to take some time
-		Object dummyObject = new ECDSASignature(); // Arbitrary serializable class
+		Object dummyObject = ECDSASignature.zeroSignature(); // Arbitrary serializable class
 		hasher.hash(dummyObject);
 		running.set(true);
 

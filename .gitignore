@@ -15,7 +15,6 @@ bin/
 *.iml
 out/
 emunie-json/out/
-default.config
 api.users
 
 # other
@@ -36,7 +35,6 @@ api.users
 RADIXDB/
 RADIXDB_TEST/
 logs/
-default.config
 logger.config
 *.ks
 *.key

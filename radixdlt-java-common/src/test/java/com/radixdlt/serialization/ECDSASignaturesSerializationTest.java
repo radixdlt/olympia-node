@@ -26,14 +26,9 @@ public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDS
     }
 
     private static ECDSASignatures getECDSASignatures() {
+        var k1 = ECKeyPair.generateNew();
+        var s1 = ECDSASignature.create(BigInteger.ONE, BigInteger.ONE, 1);
 
-        ECKeyPair k1 = ECKeyPair.generateNew();
-        ECDSASignature s1 = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
-
-        return new ECDSASignatures(
-                ImmutableMap.of(
-                    Objects.requireNonNull(k1).getPublicKey(), s1
-                )
-        );
+        return new ECDSASignatures(ImmutableMap.of(Objects.requireNonNull(k1).getPublicKey(), s1));
     }
 }

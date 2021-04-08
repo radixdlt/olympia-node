@@ -19,33 +19,28 @@ package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.AtomStatus;
+import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.HighLevelApiService;
 
 import com.google.inject.Inject;
 import com.radixdlt.client.store.TokenBalance;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
@@ -54,6 +49,8 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.services.ApiAtomStatus.FAILED;
 import static org.radix.api.services.ApiAtomStatus.PENDING;
 import static org.radix.api.services.ApiAtomStatus.fromAtomStatus;
+
+import static com.radixdlt.utils.functional.Optionals.allOf;
 
 public class HighLevelApiHandler {
 	private final HighLevelApiService highLevelApiService;
@@ -64,13 +61,13 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
-		return response(request, jsonObject().put("magic", highLevelApiService.getUniverseMagic()));
+		return response(request, jsonObject().put("networkId", highLevelApiService.getUniverseMagic()));
 	}
 
 	public JSONObject handleNativeToken(JSONObject request) {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
-				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				failure -> toErrorResponse(request, failure),
 				description -> response(request, description.asJson())
 			);
 	}
@@ -81,8 +78,8 @@ public class HighLevelApiHandler {
 			(params, tokenId) -> RRI.fromString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
-					failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
-					tokenDescription -> response(request, tokenDescription.asJson())
+					failure -> toErrorResponse(request, failure),
+					description -> response(request, description.asJson())
 				)
 		);
 	}
@@ -96,44 +93,103 @@ public class HighLevelApiHandler {
 		);
 	}
 
-	public JSONObject handleExecutedTransactions(JSONObject request) {
-		return withRequiredParameters(request, Set.of("address", "size"), params -> {
-			var address = RadixAddress.fromString(params.getString("address"));
-			var size = safeInteger(params, "size").filter(value -> value > 0);
-
-			if (address.isEmpty() || size.isEmpty()) {
-				return errorResponse(request, RpcError.INVALID_PARAMS,
-									 address.isEmpty() ? "Unable to recognize address" : "Invalid size"
-				);
-			}
-
-			var transactions = jsonArray();
-			AID newCursor = null;
-
-			for (int i = 0; i < size.get(); i++) {
-				var transaction = SingleTransaction.generate();
-				newCursor = transaction.getAid();
-				transactions.put(transaction.asJsonObj());
-			}
-
-			return response(request, jsonObject().put("cursor", newCursor).put("transactions", transactions));
-		});
+	public JSONObject handleTransactionHistory(JSONObject request) {
+		return withRequiredParameters(request, Set.of("address", "size"), __ -> respondWithTransactionHistory(request));
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
-		return withRequiredParameter(request, "atomIdentifier", (params, atomId) ->
+		return withRequiredParameter(request, "txID", (params, atomId) ->
 			AID.fromString(atomId)
 				.map(aid -> response(request, stubTransactionStatus(aid)))
-				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize atom ID")));
+				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
+	}
+
+	private JSONObject respondWithTransactionHistory(JSONObject request) {
+		return allOf(Optional.of(request), parseAddress(request), parseSize(request))
+			.map(this::formatTransactionHistory)
+			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
+	}
+
+	private JSONObject formatTransactionHistory(JSONObject request, RadixAddress address, int size) {
+		return highLevelApiService
+			.getTransactionHistory(address, size, parseCursor(request))
+			.fold(
+				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
+				value -> value.map((newCursor, transactions) -> buildTransactionHistoryResponse(request, newCursor, transactions))
+			);
+	}
+
+	private static JSONObject buildTransactionHistoryResponse(
+		JSONObject request, Optional<Instant> cursor, List<TxHistoryEntry> transactions
+	) {
+		return response(
+			request,
+			jsonObject()
+				.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
+				.put("transactions", fromList(transactions, TxHistoryEntry::asJson))
+		);
+	}
+
+	private static String asCursor(Instant instant) {
+		return "" + instant.getEpochSecond() + ":" + instant.getNano();
+	}
+
+	private static Optional<Instant> parseCursor(JSONObject request) {
+		var params = JsonRpcUtil.params(request);
+
+		return !params.has("cursor")
+			   ? Optional.empty()
+			   : Optional.of(params.getString("cursor")).flatMap(HighLevelApiHandler::instantFromString);
+	}
+
+	private static Optional<Instant> instantFromString(String source) {
+		return Optional.of(source.split(":"))
+			.filter(v -> v.length == 2)
+			.flatMap(HighLevelApiHandler::parseInstant);
+	}
+
+	private static Optional<Instant> parseInstant(String[] pair) {
+		return allOf(parseLong(pair[0]).filter(v -> v > 0), parseInt(pair[1]).filter(v -> v > 0))
+			.map(Instant::ofEpochSecond);
+	}
+
+	private static Optional<Long> parseLong(String input) {
+		try {
+			return Optional.of(Long.parseLong(input));
+		} catch (NumberFormatException e) {
+			return Optional.empty();
+		}
+	}
+
+	private static Optional<Integer> parseInt(String input) {
+		try {
+			return Optional.of(Integer.parseInt(input));
+		} catch (NumberFormatException e) {
+			return Optional.empty();
+		}
+	}
+
+	private static Optional<Integer> parseSize(JSONObject request) {
+		return safeInteger(JsonRpcUtil.params(request), "size")
+			.filter(value -> value > 0);
+	}
+
+	private static Optional<RadixAddress> parseAddress(JSONObject request) {
+		return RadixAddress.fromString(JsonRpcUtil.params(request).getString("address"));
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
-		return highLevelApiService.getTokenBalances(radixAddress).fold(
-			failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
-			list -> jsonObject()
-				.put("owner", radixAddress.toString())
-				.put("tokenBalances", fromList(list, TokenBalance::asJson))
-		);
+		return highLevelApiService.getTokenBalances(radixAddress)
+			.fold(
+				failure -> toErrorResponse(request, failure),
+				list -> jsonObject()
+					.put("owner", radixAddress.toString())
+					.put("tokenBalances", fromList(list, TokenBalance::asJson))
+			);
+	}
+
+	private JSONObject toErrorResponse(JSONObject request, Failure failure) {
+		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
 	}
 
 	//TODO: remove all code below once functionality will be implemented
@@ -163,82 +219,5 @@ public class HighLevelApiHandler {
 		}
 
 		return result;
-	}
-
-	public static class SingleTransaction {
-		private final AID atomId;
-		private final Instant sentAt;
-		private final UInt256 fee;
-		private final List<Map<String, Object>> actions;
-
-		public SingleTransaction(
-			AID atomId,
-			Instant sentAt,
-			UInt256 fee,
-			List<Map<String, Object>> actions
-		) {
-			this.atomId = atomId;
-			this.sentAt = sentAt;
-			this.fee = fee;
-			this.actions = actions;
-		}
-
-		public static SingleTransaction generate() {
-			var atomId = AID.from(HashUtils.random(AID.BYTES).asBytes());
-			var sentAt = Instant.now().minus(random.nextInt(60 * 24) + 1L, ChronoUnit.MINUTES);
-			var fee = UInt256.from(random.nextInt(1000));
-			var actions = IntStream.range(0, random.nextInt(5) + 1)
-				.mapToObj(n -> randomAction()).collect(Collectors.toList());
-
-			return new SingleTransaction(atomId, sentAt, fee, actions);
-		}
-
-		private static Map<String, Object> randomAction() {
-			var types = new String[]{"UNKNOWN", "stake", "unstake", "tokenTransfer"};
-			var type = random.nextInt(types.length);
-			var from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-			var to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-			var amount = UInt256.from(random.nextInt(1000));
-
-			switch (type) {
-				case 0: // Unknown
-					return Map.of("type", types[type], "particleGroup", "Unable to decode");
-				case 1:    // Stake
-					return Map.of("type", types[type], "to", to, "amount", amount);
-				case 2: // Unstake
-					return Map.of("type", types[type], "from", from, "amount", amount);
-				case 3: // transfer
-					return Map.of("type", types[type], "from", from, "to", to, "amount", amount);
-			}
-
-			throw new IllegalStateException("Should not happen! " + type);
-		}
-
-		public AID getAid() {
-			return atomId;
-		}
-
-		@Override
-		public String toString() {
-			return asJsonObj().toString();
-		}
-
-		public JSONObject asJsonObj() {
-			var list = jsonArray();
-
-			actions.forEach(action -> {
-				var obj = jsonObject();
-
-				action.forEach((k, v) -> obj.put(k, v.toString()));
-
-				list.put(obj);
-			});
-
-			return jsonObject()
-				.put("atomId", atomId.toString())
-				.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(sentAt))
-				.put("fee", fee.toString())
-				.put("actions", list);
-		}
 	}
 }

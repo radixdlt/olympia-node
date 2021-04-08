@@ -117,27 +117,27 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 	public EUID euid() {
-		return this.publicKey.euid();
+		return publicKey.euid();
 	}
 
 	public byte[] getPrivateKey() {
-		return this.privateKey;
+		return privateKey;
 	}
 
 	public ECPublicKey getPublicKey() {
-		return this.publicKey;
+		return publicKey;
 	}
 	// TODO move this to new class (yet to be created) `ECPrivateKey`.
 
 	@Override
 	public ECPoint multiply(ECPoint point) {
-		BigInteger scalarFromPrivateKey = new BigInteger(1, this.privateKey);
+		BigInteger scalarFromPrivateKey = new BigInteger(1, privateKey);
 		return point.multiply(scalarFromPrivateKey).normalize();
 	}
 
 	@Override
 	public ECDSASignature sign(byte[] hash) {
-		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
+		return ECKeyUtils.keyHandler.sign(hash, privateKey, publicKey.decompressedBytes());
 	}
 
 	/**
@@ -151,7 +151,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 * @return An ECDSA Signature.
 	 */
 	public ECDSASignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
-		return ECKeyUtils.keyHandler.sign(data, this.privateKey, enforceLowS, beDeterministic);
+		return ECKeyUtils.keyHandler.sign(data, privateKey, publicKey.decompressedBytes(), enforceLowS, beDeterministic);
 	}
 
 	@Override
@@ -167,14 +167,14 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		if (object instanceof ECKeyPair) {
 			ECKeyPair other = (ECKeyPair) object;
 			// Comparing private keys should be sufficient
-			return Arrays.equals(other.getPrivateKey(), this.getPrivateKey());
+			return Arrays.equals(other.getPrivateKey(), getPrivateKey());
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(this.getPrivateKey());
+		return Arrays.hashCode(getPrivateKey());
 	}
 
 	@Override
@@ -201,7 +201,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 	public byte[] encrypt(byte[] data) {
 		try {
-			return this.publicKey.encrypt(data);
+			return publicKey.encrypt(data);
 		} catch (ECIESException e) {
 			throw new IllegalStateException("Failed to encrypt data", e);
 		}
@@ -214,16 +214,16 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey)
 			throws PrivateKeyException, PublicKeyException, ECIESException {
-		byte[] privateKeyData = this.decrypt(sharedKey.toByteArray());
+		byte[] privateKeyData = decrypt(sharedKey.toByteArray());
 		ECKeyPair sharedKeyPair = fromPrivateKey(privateKeyData);
 		return sharedKeyPair.decrypt(data);
 	}
 
 	public EncryptedPrivateKey encryptPrivateKeyWithPublicKey(ECPublicKey publicKeyUsedToEncrypt) {
 		try {
-			return new EncryptedPrivateKey(publicKeyUsedToEncrypt.encrypt(this.privateKey));
+			return new EncryptedPrivateKey(publicKeyUsedToEncrypt.encrypt(privateKey));
 		} catch (ECIESException e) {
-			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
+			throw new IllegalStateException("Failed to encrypt `privateKey` with provided `ECPublicKey`", e);
 		}
 	}
 }

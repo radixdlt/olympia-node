@@ -17,57 +17,55 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateCursor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.RETxn;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.StoreConfig;
-import com.radixdlt.sync.CommittedReader;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.SecondaryCursor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateCursor;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.berkeley.atom.AppendLog;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -265,28 +263,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 	}
 
-	// TODO: Hack for Client Api store, remove at some point
-	public void forEach(Consumer<ParsedInstruction> particleConsumer) {
-		try (var cursor = particleDatabase.openCursor(null, null)) {
-			var key = entry();
-			var value = entry();
-			var status = cursor.getFirst(key, value, DEFAULT);
-
-			while (status == SUCCESS) {
-				if (value.getData().length > 0) {
-					var particleBytes = Arrays.copyOfRange(value.getData(), EUID.BYTES, value.getData().length);
-					var particle = SubstateSerializer.deserialize(particleBytes);
-					var substateId = SubstateId.fromBytes(key.getData());
-					var substate = Substate.create(particle, substateId);
-					var instruction = REInstruction.create(REInstruction.REOp.UP.opCode(), particleBytes);
-					particleConsumer.accept(ParsedInstruction.of(instruction, substate, Spin.UP));
-				}
-
-				status = cursor.getNext(key, value, DEFAULT);
-			}
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Unable to deserialize substate");
-		}
+	public void forEach(Consumer<Txn> particleConsumer) {
+		atomLog.forEach((bytes, offset) -> particleConsumer.accept(Txn.create(bytes)));
 	}
 
 	@Override
@@ -671,7 +649,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		com.sleepycat.je.Transaction txn = beginTransaction();
 		final LedgerProof nextHeader;
-		try (var proofCursor = proofDatabase.openCursor(txn, null);) {
+		try (var proofCursor = proofDatabase.openCursor(txn, null)) {
 			final var headerSearchKey = toPKey(stateVersion + 1);
 			final var headerValue = entry();
 			var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
@@ -733,7 +711,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	@Override
 	public Optional<LedgerProof> getLastProof() {
 		return withTime(() -> {
-			try (var proofCursor = proofDatabase.openCursor(null, null);) {
+			try (var proofCursor = proofDatabase.openCursor(null, null)) {
 				var pKey = entry();
 				var value = entry();
 

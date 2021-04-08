@@ -20,6 +20,8 @@ package com.radixdlt.identifiers;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.functional.Result;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
@@ -57,15 +59,15 @@ public final class AID implements Comparable<AID> {
 	/**
 	 * Copies this AID to a byte array with some offset.
 	 * Note that the array must fit the offset + AID.BYTES.
+	 *
 	 * @param array The array
 	 * @param offset The offset into that array
 	 */
 	public void copyTo(byte[] array, int offset) {
 		Objects.requireNonNull(array, "array is required");
 		if (array.length - offset < BYTES) {
-			throw new IllegalArgumentException(String.format(
-				"Array must be bigger than offset + %d but was %d",
-				BYTES, array.length)
+			throw new IllegalArgumentException(
+				String.format("Array must be bigger than offset + %d but was %d", BYTES, array.length)
 			);
 		}
 		System.arraycopy(this.value, 0, array, offset, BYTES);
@@ -106,7 +108,9 @@ public final class AID implements Comparable<AID> {
 
 	/**
 	 * Create an AID from its bytes
+	 *
 	 * @param bytes The bytes (must be of length AID.BYTES)
+	 *
 	 * @return An AID with those bytes
 	 */
 	public static AID from(byte[] bytes) {
@@ -115,8 +119,10 @@ public final class AID implements Comparable<AID> {
 
 	/**
 	 * Create an AID from a portion of a byte array
+	 *
 	 * @param bytes The bytes (must be of length AID.BYTES)
 	 * @param offset The offset into the bytes array
+	 *
 	 * @return An AID with those bytes
 	 */
 	public static AID from(byte[] bytes, int offset) {
@@ -125,9 +131,8 @@ public final class AID implements Comparable<AID> {
 			throw new IllegalArgumentException("Offset must be >= 0: " + offset);
 		}
 		if (offset + BYTES > bytes.length) {
-			throw new IllegalArgumentException(String.format(
-				"Bytes length must be %d but is %d",
-				offset + BYTES, bytes.length)
+			throw new IllegalArgumentException(
+				String.format("Bytes length must be %d but is %d", offset + BYTES, bytes.length)
 			);
 		}
 		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
@@ -135,27 +140,50 @@ public final class AID implements Comparable<AID> {
 
 	/**
 	 * Create an AID from its hex bytes
+	 *
 	 * @param hexBytes The bytes in hex (must be of length AID.BYTES * 2)
+	 *
 	 * @return An AID with those bytes
 	 */
 	public static AID from(String hexBytes) {
 		Objects.requireNonNull(hexBytes, "hexBytes is required");
 		if (hexBytes.length() != BYTES * 2) {
-			throw new IllegalArgumentException(String.format(
-				"Hex bytes string length must be %d but is %d",
-				BYTES * 2, hexBytes.length())
+			throw new IllegalArgumentException(
+				String.format("Hex bytes string length must be %d but is %d", BYTES * 2, hexBytes.length())
 			);
 		}
 
 		return new AID(Bytes.fromHexString(hexBytes));
 	}
 
+	/**
+	 * Create an AID from string. Unlike {@link #from(String)} this method does not throw an exception.
+	 *
+	 * @param hexBytes The bytes in hex (must be of length AID.BYTES * 2)
+	 *
+	 * @return Present {@link Optional} in case of success and empty {@link Optional} in case of failure
+	 */
 	public static Optional<AID> fromString(String hexBytes) {
 		return Optional.ofNullable(hexBytes)
 			.filter(bytes -> bytes.length() == BYTES * 2)
 			.map(Bytes::fromHexString)
 			.filter(bytes -> bytes.length == HASH_BYTES)
 			.map(AID::new);
+	}
+
+	/**
+	 * Create an AID from bytes. Unlike {@link #from(byte[])} this method does not throw an exception.
+	 *
+	 * @param bytes The bytes (must be of length AID.BYTES)
+	 *
+	 * @return Success result in case of successful conversion and failure result in case of error.
+	 */
+	public static Result<AID> fromBytes(byte[] bytes) {
+		try {
+			return Result.ok(from(bytes));
+		} catch (IllegalArgumentException e) {
+			return Result.fail("Error while decoding AID from bytes: {0}", e.getMessage());
+		}
 	}
 
 	@Override

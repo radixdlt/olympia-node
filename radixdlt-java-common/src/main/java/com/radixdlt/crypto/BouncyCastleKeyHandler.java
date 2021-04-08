@@ -17,10 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -33,10 +29,15 @@ import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
 import java.math.BigInteger;
 import java.security.KeyFactory;
 
-@SecurityCritical({ SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.SIG_VERIFY })
+@SecurityCritical({SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.SIG_VERIFY})
 final class BouncyCastleKeyHandler implements KeyHandler {
 	private final BigInteger curveOrder;
 	private final BigInteger halfCurveOrder;
@@ -51,30 +52,30 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 	}
 
 	@Override
-	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) {
-		final var kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
-		ECDSASigner signer = new ECDSASigner(kCalculator);
-		BigInteger privateKeyScalar = new BigInteger(1, privateKey);
-		ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(privateKeyScalar, domain);
-		signer.init(true, privateKeyParameters);
+	public ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey, boolean enforceLowS, boolean useDeterministicSignatures) {
+		var signer = new ECDSASigner(useDeterministicSignatures
+									 ? new HMacDSAKCalculator(new SHA256Digest())
+									 : new RandomDSAKCalculator());
 
-		BigInteger[] components = signer.generateSignature(hash);
-		BigInteger r = components[0];
-		BigInteger s = components[1];
+		signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, privateKey), domain));
 
-		boolean sIsLow = s.compareTo(this.halfCurveOrder) <= 0;
+		var components = signer.generateSignature(hash);
+		var r = components[0];
+		var s = components[1];
 
-		if (enforceLowS && !sIsLow) {
-			s = this.curveOrder.subtract(s);
+		if (enforceLowS) {
+			s = s.compareTo(this.halfCurveOrder) <= 0 ? s : curveOrder.subtract(s);
 		}
 
-		return new ECDSASignature(r, s);
+		return ECDSASignature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
 	}
 
 	@Override
 	public boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) {
-		ECDSASigner verifier = new ECDSASigner();
+		var verifier = new ECDSASigner();
+
 		verifier.init(false, new ECPublicKeyParameters(spec.getCurve().decodePoint(publicKey), domain));
+
 		return verifier.verifySignature(hash, signature.getR(), signature.getS());
 	}
 
@@ -82,14 +83,17 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 	public byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException {
 		ECKeyUtils.validatePrivate(privateKey);
 
-		BigInteger d = new BigInteger(1, privateKey);
+		var d = new BigInteger(1, privateKey);
+
 		try {
-			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
+			var publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
 
 			// Note that the provider here *must* be "BC" for this to work
 			// correctly because we are using the bouncy castle ECPublicKeySpec,
 			// and are casting to a bouncy castle ECPublicKey.
-			return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec)).getQ().getEncoded(true);
+			return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec))
+				.getQ().getEncoded(true);
+
 		} catch (Exception e) {
 			throw new PublicKeyException(e);
 		}

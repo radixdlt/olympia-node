@@ -28,7 +28,6 @@ import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +41,6 @@ import static org.mockito.Mockito.when;
 public class RadixEngineTest {
 	private ConstraintMachine constraintMachine;
 	private EngineStore<Void> engineStore;
-	private Predicate<Particle> virtualStore;
 	private RadixEngine<Void> radixEngine;
 
 	@Before

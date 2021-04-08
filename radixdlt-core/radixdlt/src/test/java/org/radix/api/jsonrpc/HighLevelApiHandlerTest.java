@@ -20,22 +20,32 @@ import org.junit.Test;
 import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 import org.radix.api.services.HighLevelApiService;
 
+import com.radixdlt.client.store.ActionEntry;
+import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
+
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {
 	private static final String KNOWN_ADDRESS_STRING = "JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor";
@@ -107,6 +117,45 @@ public class HighLevelApiHandlerTest {
 		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
 	}
 
+	@Test
+	public void testTransactionHistory() {
+		var service = mock(HighLevelApiService.class);
+		var handler = new HighLevelApiHandler(service);
+
+		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
+		var action = ActionEntry.unknown();
+		var entry = TxHistoryEntry.create(
+			AID.ZERO, now, UInt256.ONE, MessageEntry.create("text", "scheme"), List.of(action)
+		);
+
+		when(service.getTransactionHistory(any(), eq(5), any()))
+			.thenReturn(Result.ok(tuple(Optional.ofNullable(now), List.of(entry))));
+
+		var params = jsonObject().put("address", KNOWN_ADDRESS_STRING).put("size", 5);
+		var response = handler.handleTransactionHistory(jsonObject().put("id", "1").put("params", params));
+
+		assertNotNull(response);
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("cursor"));
+		assertTrue(result.has("transactions"));
+		var transactions = result.getJSONArray("transactions");
+		assertEquals(1, transactions.length());
+
+		var singleTransaction = transactions.getJSONObject(0);
+		assertEquals(UInt256.ONE, singleTransaction.get("fee"));
+		assertEquals(DateTimeFormatter.ISO_INSTANT.format(now), singleTransaction.getString("sentAt"));
+		assertEquals(AID.ZERO, singleTransaction.get("txId"));
+
+		assertTrue(singleTransaction.has("actions"));
+		var actions = singleTransaction.getJSONArray("actions");
+		assertEquals(1, actions.length());
+
+		var singleAction = actions.getJSONObject(0);
+		assertEquals("Other", singleAction.getString("type"));
+	}
+
 	private Result<TokenDefinitionRecord> buildNativeToken() {
 		return buildToken("XRD");
 	}
@@ -118,18 +167,5 @@ public class HighLevelApiHandlerTest {
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));
-	}
-
-	//TODO: test methods below should be removed once stubs will be replaced with real implementations
-
-	@Test
-	public void stubExecutedTransactions() {
-		var service = mock(HighLevelApiService.class);
-		var handler = new HighLevelApiHandler(service);
-
-		var params = jsonObject().put("address", KNOWN_ADDRESS_STRING).put("size", 5);
-		var result = handler.handleExecutedTransactions(jsonObject().put("id", "1").put("params", params));
-
-		assertNotNull(result);
 	}
 }

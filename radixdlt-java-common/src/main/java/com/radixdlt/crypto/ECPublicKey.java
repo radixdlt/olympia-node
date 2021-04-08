@@ -27,102 +27,114 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Base58;
 import com.radixdlt.utils.Bytes;
+
 import org.bouncycastle.math.ec.ECPoint;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
  */
 public final class ECPublicKey {
-    public static final int BYTES = 32;
+	public static final int BYTES = 32;
 
-    @JsonValue
-    private final byte[] publicKey;
+	@JsonValue
+	private final byte[] publicKey;
 
-    private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
-    private final int hashCode;
+	private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
+	private final int hashCode;
 
-    private ECPublicKey(byte[] key) {
-        this.publicKey = Arrays.copyOf(key, key.length);
-        this.hashCode = computeHashCode();
-    }
+	ECPublicKey(byte[] key) {
+		this.publicKey = Arrays.copyOf(key, key.length);
+		this.hashCode = computeHashCode();
+	}
 
-    private int computeHashCode() {
-        return Arrays.hashCode(publicKey);
-    }
+	private int computeHashCode() {
+		return Arrays.hashCode(publicKey);
+	}
 
-    @JsonCreator
-    public static ECPublicKey fromBytes(byte[] key) throws PublicKeyException {
-        ECKeyUtils.validatePublic(key);
-        return new ECPublicKey(key);
-    }
+	@JsonCreator
+	public static ECPublicKey fromBytes(byte[] key) throws PublicKeyException {
+		ECKeyUtils.validatePublic(key);
+		return new ECPublicKey(key);
+	}
 
-    @JsonCreator
-    public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
-        return fromBytes(Bytes.fromBase64String(base64));
-    }
+	@JsonCreator
+	public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
+		return fromBytes(Bytes.fromBase64String(base64));
+	}
 
-    public EUID euid() {
-        return this.uid.get();
-    }
+	public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
+		return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
+			.map(q -> new ECPublicKey(q.getEncoded(true)));
+	}
 
-    public byte[] getBytes() {
-        return this.publicKey;
-    }
+	public EUID euid() {
+		return this.uid.get();
+	}
 
-    public int length() {
-        return publicKey.length;
-    }
+	public byte[] getBytes() {
+		return this.publicKey;
+	}
 
-    public ECPoint getPublicPoint() {
-        return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
-    }
+	public int length() {
+		return publicKey.length;
+	}
 
-    public boolean verify(HashCode hash, ECDSASignature signature) {
-        return verify(hash.asBytes(), signature);
-    }
+	public ECPoint getPublicPoint() {
+		return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
+	}
 
-    public boolean verify(byte[] hash, ECDSASignature signature) {
-        return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, this.publicKey);
-    }
+	public byte[] decompressedBytes() {
+		return getPublicPoint().getEncoded(false);
+	}
 
-    public byte[] encrypt(byte[] data) throws ECIESException {
-        return ECIES.encrypt(data, this);
-    }
+	public boolean verify(HashCode hash, ECDSASignature signature) {
+		return verify(hash.asBytes(), signature);
+	}
 
-    public String toBase58() {
-        return Base58.toBase58(this.publicKey);
-    }
+	public boolean verify(byte[] hash, ECDSASignature signature) {
+		return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, this.publicKey);
+	}
 
-    public String toBase64() {
-        return Bytes.toBase64String(this.publicKey);
-    }
+	public byte[] encrypt(byte[] data) throws ECIESException {
+		return ECIES.encrypt(data, this);
+	}
 
-    @Override
-    public int hashCode() {
-        return this.hashCode;
-    }
+	public String toBase58() {
+		return Base58.toBase58(this.publicKey);
+	}
 
-    @Override
-    public boolean equals(Object object) {
-        if (object == this) {
-            return true;
-        }
-        if (object instanceof ECPublicKey) {
-            ECPublicKey other = (ECPublicKey) object;
-            return this.hashCode() == other.hashCode() && Arrays.equals(this.publicKey, other.publicKey);
-        }
-        return false;
-    }
+	public String toBase64() {
+		return Bytes.toBase64String(this.publicKey);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), toBase58());
-    }
+	@Override
+	public int hashCode() {
+		return this.hashCode;
+	}
 
-    private EUID computeUID() {
-        return EUID.sha256(getBytes());
-    }
+	@Override
+	public boolean equals(Object object) {
+		if (object == this) {
+			return true;
+		}
+		if (object instanceof ECPublicKey) {
+			ECPublicKey other = (ECPublicKey) object;
+			return this.hashCode() == other.hashCode() && Arrays.equals(this.publicKey, other.publicKey);
+		}
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), toBase58());
+	}
+
+	private EUID computeUID() {
+		return EUID.sha256(getBytes());
+	}
+
 }

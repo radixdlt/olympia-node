@@ -18,7 +18,6 @@
 package org.radix.api.http;
 
 import org.json.JSONObject;
-import org.radix.api.services.AtomsService;
 import org.radix.api.services.SystemService;
 
 import com.google.common.annotations.VisibleForTesting;

@@ -17,16 +17,18 @@
 
 package com.radixdlt.consensus;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.util.Optional;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -46,7 +48,7 @@ public class VoteTest {
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.highQC = mock(HighQC.class);
-		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), highQC, Optional.empty());
+		this.testObject = new Vote(author, timestampedVoteData, ECDSASignature.zeroSignature(), highQC, Optional.empty());
 	}
 
 	@Test

@@ -72,7 +72,7 @@ public final class RRI {
 		try {
 			return Result.ok(from(s));
 		} catch (RuntimeException e) {
-			return Result.fail("Error while parsing RRI: {}", e.getMessage());
+			return Result.fail("Error while parsing RRI: {0}", e.getMessage());
 		}
 	}
 

@@ -18,6 +18,9 @@
 package com.radixdlt;
 
 import com.radixdlt.api.ApiModule;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.mempool.MempoolConfig;
@@ -65,6 +68,8 @@ import com.radixdlt.universe.UniverseModule;
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
+	private static final Logger log = LogManager.getLogger();
+
 	private final RuntimeProperties properties;
 
 	public RadixNodeModule(RuntimeProperties properties) {
@@ -99,6 +104,7 @@ public final class RadixNodeModule extends AbstractModule {
 		// API
 		install(new ApiModule());
 		if (properties.get("client_api.enable", false)) {
+			log.info("Enabling high level API");
 			install(new ClientApiModule());
 		}
 

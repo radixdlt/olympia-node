@@ -20,5 +20,5 @@ package com.radixdlt.atommodel.tokens;
 /**
  * Marker interface for token definition particles
  */
-public interface TokenDefinitionParticle {
+public interface TokenDefinitionSubstate {
 }

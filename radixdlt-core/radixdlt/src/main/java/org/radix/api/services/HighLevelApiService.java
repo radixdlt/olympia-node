@@ -27,8 +27,8 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -36,8 +36,13 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiService {
 	private final Universe universe;
@@ -71,6 +76,23 @@ public class HighLevelApiService {
 	public Result<TokenDefinitionRecord> getTokenDescription(RRI rri) {
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(rri, definition));
+	}
+
+	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(
+		RadixAddress address, int size, Optional<Instant> cursor
+	) {
+		return clientApiStore.getTransactionHistory(address, size, cursor)
+			.map(response -> tuple(calculateNewCursor(response), response));
+	}
+
+	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
+		return response.stream()
+			.reduce(HighLevelApiService::findLast)
+			.map(TxHistoryEntry::timestamp);
+	}
+
+	private static <T> T findLast(T first, T second) {
+		return second;
 	}
 
 	private Result<TokenDefinitionRecord> withSupply(RRI rri, TokenDefinitionRecord definition) {

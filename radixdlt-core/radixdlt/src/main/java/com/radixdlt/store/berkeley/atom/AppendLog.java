@@ -110,7 +110,6 @@ public interface AppendLog {
 
 	/**
 	 * Scan log from start to end and submit every found chunk and its offset into provided consumer.
-	 * Last entry submitted to consumer will have empty array and -1L as a parameters.
 	 */
 	void forEach(BiConsumer<byte[], Long> chunkConsumer);
 }

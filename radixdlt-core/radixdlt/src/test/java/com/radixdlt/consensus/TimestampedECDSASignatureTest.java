@@ -17,17 +17,17 @@
 
 package com.radixdlt.consensus;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.utils.UInt256;
 
-import static org.assertj.core.api.Assertions.*;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class TimestampedECDSASignatureTest extends  SerializeObject<TimestampedECDSASignature> {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
 	public TimestampedECDSASignatureTest() {
 		super(TimestampedECDSASignature.class, TimestampedECDSASignatureTest::create);
 	}
@@ -44,6 +44,6 @@ public class TimestampedECDSASignatureTest extends  SerializeObject<TimestampedE
 	}
 
 	private static TimestampedECDSASignature create() {
-		return TimestampedECDSASignature.from(1L, UInt256.ONE, new ECDSASignature());
+		return TimestampedECDSASignature.from(1L, UInt256.ONE, ECDSASignature.zeroSignature());
 	}
 }
