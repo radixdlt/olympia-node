@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -37,9 +38,11 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -68,12 +71,14 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool, SystemCounters counters) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
-			public void addToMempool(Txn txn, BFTNode origin) {
+			public void addToMempool(Txn txn, @Nullable BFTNode origin, Consumer<AID> onSuccess, Consumer<String> onError) {
 				try {
 					mempool.add(txn);
 					counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+					onSuccess.accept(txn.getId());
 				} catch (MempoolRejectedException e) {
 					log.error(e);
+					onError.accept(e.getMessage());
 				}
 			}
 

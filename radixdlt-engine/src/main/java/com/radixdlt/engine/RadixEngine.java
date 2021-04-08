@@ -55,9 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -196,28 +194,6 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private <T> T accessSubstateStore(Function<SubstateStore, T> func) {
-		synchronized (stateUpdateEngineLock) {
-			SubstateStore substateStore = c -> {
-				var cache = substateCache.get(c);
-				if (cache == null) {
-					return engineStore.openIndexedCursor(c);
-				}
-
-				var cacheIterator = cache.cache.asMap().values().iterator();
-
-				return SubstateCursor.concat(
-					SubstateCursor.wrapIterator(cacheIterator),
-					() -> SubstateCursor.filter(
-						engineStore.openIndexedCursor(c),
-						next -> !cache.cache.asMap().containsKey(next.getId())
-					)
-				);
-			};
-
-			return func.apply(substateStore);
-		}
-	}
 
 	/**
 	 * Add a deterministic computation engine which maps an ordered list of
@@ -491,30 +467,38 @@ public final class RadixEngine<M> {
 	}
 
 	public TxBuilder construct(RadixAddress address, List<TxAction> actions, Set<SubstateId> avoid) throws TxBuilderException {
-		// FIXME: a little hacky but good enough
-		var exception = new AtomicReference<TxBuilderException>();
-		var builder = accessSubstateStore(s -> {
-			SubstateStore filteredStore = c -> SubstateCursor.filter(s.openIndexedCursor(c), i -> !avoid.contains(i.getId()));
-			try {
-				var txBuilder = address != null
-					? TxBuilder.newBuilder(address, filteredStore)
-					: TxBuilder.newSystemBuilder(filteredStore);
-				for (var action : actions) {
-					action.execute(txBuilder);
-					txBuilder.particleGroup();
+		synchronized (stateUpdateEngineLock) {
+			SubstateStore substateStore = c -> {
+				var cache = substateCache.get(c);
+				if (cache == null) {
+					return engineStore.openIndexedCursor(c);
 				}
 
-				return txBuilder;
-			} catch (TxBuilderException e) {
-				exception.set(e);
-				return null;
-			}
-		});
+				var cacheIterator = cache.cache.asMap().values().iterator();
 
-		if (builder == null) {
-			throw exception.get();
-		} else {
-			return builder;
+				return SubstateCursor.concat(
+					SubstateCursor.wrapIterator(cacheIterator),
+					() -> SubstateCursor.filter(
+						engineStore.openIndexedCursor(c),
+						next -> !cache.cache.asMap().containsKey(next.getId())
+					)
+				);
+			};
+
+			SubstateStore filteredStore = c -> SubstateCursor.filter(
+				substateStore.openIndexedCursor(c),
+				i -> !avoid.contains(i.getId())
+			);
+
+			var txBuilder = address != null
+				? TxBuilder.newBuilder(address, filteredStore)
+				: TxBuilder.newSystemBuilder(filteredStore);
+			for (var action : actions) {
+				action.execute(txBuilder);
+				txBuilder.particleGroup();
+			}
+
+			return txBuilder;
 		}
 	}
 }

@@ -66,7 +66,15 @@ public interface SubstateCursor extends Iterator<Substate>, Closeable {
 
 			@Override
 			public boolean hasNext() {
-				return cursor0.hasNext() || (cursor1 != null && cursor1.hasNext());
+				if (cursor0.hasNext()) {
+					return true;
+				}
+
+				if (cursor1 == null) {
+					cursor1 = supplier1.get();
+				}
+
+				return cursor1.hasNext();
 			}
 
 			@Override
