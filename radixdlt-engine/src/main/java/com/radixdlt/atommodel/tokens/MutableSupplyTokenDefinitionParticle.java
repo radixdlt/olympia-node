@@ -40,7 +40,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 
 	@JsonProperty("d")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String	description;
+	private String description;
 
 	@JsonProperty("i")
 	@DsonOutput(DsonOutput.Output.ALL)

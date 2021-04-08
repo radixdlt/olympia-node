@@ -19,21 +19,23 @@
 package com.radixdlt.application;
 
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.identifiers.AID;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public final class NodeApplicationRequest {
 	private final List<TxAction> actions;
 	private final Consumer<AID> onSuccess;
-	private final Consumer<String> onError;
+	private final BiConsumer<Txn, String> onError;
 
 	private NodeApplicationRequest(
 		List<TxAction> actions,
 		Consumer<AID> onSuccess,
-		Consumer<String> onError
+		BiConsumer<Txn, String> onError
 	) {
 		this.actions = actions;
 		this.onSuccess = onSuccess;
@@ -45,13 +47,13 @@ public final class NodeApplicationRequest {
 	}
 
 	public static NodeApplicationRequest create(List<TxAction> actions) {
-		return create(actions, aid -> { }, error -> { });
+		return create(actions, aid -> { }, (txn, error) -> { });
 	}
 
 	public static NodeApplicationRequest create(
 		List<TxAction> actions,
 		Consumer<AID> onSuccess,
-		Consumer<String> onError
+		BiConsumer<Txn, String> onError
 	) {
 		Objects.requireNonNull(actions);
 		Objects.requireNonNull(onSuccess);
@@ -67,7 +69,7 @@ public final class NodeApplicationRequest {
 		onSuccess.accept(aid);
 	}
 
-	public void onFailure(String errorMessage) {
-		onError.accept(errorMessage);
+	public void onFailure(Txn txn, String errorMessage) {
+		onError.accept(txn, errorMessage);
 	}
 }

@@ -35,7 +35,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -52,7 +51,6 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -124,22 +122,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Txn txn, @Nullable BFTNode origin, Consumer<AID> onSuccess, Consumer<String> onError) {
+	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
 		try {
 			mempool.add(txn);
 			systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		} catch (MempoolDuplicateException e) {
+			var failure = MempoolAddFailure.create(txn, e);
 			// Idempotent commands
-			onError.accept(e.getMessage());
 			log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
 			return;
 		} catch (MempoolRejectedException e) {
-			onError.accept(e.getMessage());
-			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(txn, e));
+			var failure = MempoolAddFailure.create(txn, e);
+			mempoolAddFailureEventDispatcher.dispatch(failure);
 			return;
 		}
 
-		onSuccess.accept(txn.getId());
 		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(txn, origin));
 	}
 

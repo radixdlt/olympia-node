@@ -42,6 +42,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -159,7 +160,10 @@ public final class NodeController implements Controller {
 			var request = NodeApplicationRequest.create(
 				actions,
 				aid -> respond(exchange, jsonObject().put("result", aid.toString())),
-				error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
+				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject()
+					.put("message", error))
+					.put("txn", txn == null ? null : Hex.toHexString(txn.getPayload()))
+				)
 			);
 
 			nodeApplicationRequestEventDispatcher.dispatch(request);
