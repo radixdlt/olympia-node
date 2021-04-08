@@ -82,7 +82,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
                 argsExtractor.asString("name"),
                 argsExtractor.asString("description"),
                 argsExtractor.asUInt256("supply"),
-                argsExtractor.asUInt256("granularity"),
                 argsExtractor.asString("iconUrl"),
                 argsExtractor.asString("url")
         );
@@ -96,7 +95,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
             argsExtractor.asRRI("rri"),
             argsExtractor.asString("name"),
             argsExtractor.asString("description"),
-            argsExtractor.asUInt256("granularity"),
             argsExtractor.asString("iconUrl"),
             argsExtractor.asString("url")
         );
@@ -110,7 +108,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
             argsExtractor.asRadixAddress("delegateAddress"),
             argsExtractor.asRadixAddress("address"),
             argsExtractor.asUInt256("amount"),
-            argsExtractor.asUInt256("granularity"),
             argsExtractor.asRRI("tokenDefinitionReference"),
             true
         );
@@ -124,7 +121,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         var ttp = new TransferrableTokensParticle(
             argsExtractor.asRadixAddress("address"),
             argsExtractor.asUInt256("amount"),
-            argsExtractor.asUInt256("granularity"),
             argsExtractor.asRRI("tokenDefinitionReference"),
     true
         );
@@ -135,9 +131,8 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
     private static UnallocatedTokensParticle makeUnallocatedTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
         var utp = new UnallocatedTokensParticle(
-                argsExtractor.asUInt256("amount"),
-                argsExtractor.asUInt256("granularity"),
-                argsExtractor.asRRI("tokenDefinitionReference")
+            argsExtractor.asUInt256("amount"),
+            argsExtractor.asRRI("tokenDefinitionReference")
         );
         assertTrue(argsExtractor.isFinished());
         return utp;

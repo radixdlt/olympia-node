@@ -83,7 +83,6 @@ public class MutableTokenTest {
 			RRI.of(address, "JOSH"),
 			"Joshy Token",
 			"Best Token",
-			UInt256.ONE,
 			null,
 			null
 		);
@@ -134,27 +133,5 @@ public class MutableTokenTest {
 
 		// Act/Assert
 		sut.execute(List.of(atom));
-	}
-
-	@Test
-	public void burn_outside_of_granularity_should_fail() throws Exception {
-		// Arrange
-		createInjector().injectMembers(this);
-		var tokDef = new MutableTokenDefinition(
-			"TEST",
-			"test",
-			"desc",
-			null,
-			null,
-			UInt256.TWO
-		);
-		var atom = TxBuilder.newBuilder(address)
-			.createMutableToken(tokDef)
-			.mint(RRI.of(address, "TEST"), address, UInt256.EIGHT)
-			.burn(RRI.of(address, "TEST"), UInt256.ONE)
-			.signAndBuild(keyPair::sign);
-
-		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 }

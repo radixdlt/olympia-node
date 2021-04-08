@@ -33,8 +33,8 @@ public class BalanceEntryTest {
 
 	@Test
 	public void verifyBalanceCalculation() {
-		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FOUR);
-		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.ONE, UInt256.FIVE);
+		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.FOUR);
+		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.FIVE);
 
 		validate(entry1, entry2, UInt256.NINE, false);           		// 4 + 5 => 9
 		validate(entry2, entry1, UInt256.NINE, false);               	// 5 + 4 => 9
@@ -64,7 +64,7 @@ public class BalanceEntryTest {
 		EqualsVerifier.forClass(BalanceEntry.class)
 			.suppress(Warning.NONFINAL_FIELDS)
 			.withIgnoredFields("supply")
-			.withNonnullFields("owner", "rri", "granularity", "amount")
+			.withNonnullFields("owner", "rri", "amount")
 			.verify();
 	}
 }

@@ -93,7 +93,6 @@ public class HighLevelApiHandlerTest {
 		assertNotNull(result);
 		assertEquals("XRD", result.getString("name"));
 		assertEquals("XRD XRD", result.getString("description"));
-		assertEquals(UInt256.ONE, result.get("granularity"));
 		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
 	}
 
@@ -113,7 +112,6 @@ public class HighLevelApiHandlerTest {
 		assertNotNull(result);
 		assertEquals("FOO", result.getString("name"));
 		assertEquals("FOO FOO", result.getString("description"));
-		assertEquals(UInt256.ONE, result.get("granularity"));
 		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
 	}
 
@@ -163,7 +161,7 @@ public class HighLevelApiHandlerTest {
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt256.ONE, UInt256.EIGHT,
+				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt256.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));

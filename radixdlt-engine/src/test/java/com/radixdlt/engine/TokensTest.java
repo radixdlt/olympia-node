@@ -52,14 +52,12 @@ public class TokensTest {
 			"TEST",
 			"description",
 			UInt256.TEN,
-			UInt256.ONE,
 			null,
 			null
 		);
 		TransferrableTokensParticle transferrableTokensParticle = new TransferrableTokensParticle(
 			address,
 			UInt256.TEN,
-			UInt256.ONE,
 			rri,
 			false
 		);

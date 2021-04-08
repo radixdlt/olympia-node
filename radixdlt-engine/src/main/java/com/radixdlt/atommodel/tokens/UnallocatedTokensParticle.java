@@ -35,10 +35,6 @@ public final class UnallocatedTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("g")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private UInt256 granularity;
-
 	@JsonProperty("a")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
@@ -50,10 +46,8 @@ public final class UnallocatedTokensParticle extends Particle {
 
 	public UnallocatedTokensParticle(
 		UInt256 amount,
-		UInt256 granularity,
 		RRI tokenDefinitionReference
 	) {
-		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 	}
@@ -66,17 +60,12 @@ public final class UnallocatedTokensParticle extends Particle {
 		return this.tokenDefinitionReference;
 	}
 
-	public UInt256 getGranularity() {
-		return this.granularity;
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
 			tokenDefinitionReference,
-			amount,
-			granularity
+			amount
 		);
 	}
 
@@ -94,12 +83,11 @@ public final class UnallocatedTokensParticle extends Particle {
 		}
 		UnallocatedTokensParticle that = (UnallocatedTokensParticle) o;
 		return Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-			&& Objects.equals(granularity, that.granularity)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(tokenDefinitionReference, granularity, amount);
+		return Objects.hash(tokenDefinitionReference, amount);
 	}
 }

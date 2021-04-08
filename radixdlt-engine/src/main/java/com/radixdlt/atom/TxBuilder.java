@@ -421,7 +421,6 @@ public final class TxBuilder {
 		up(new TransferrableTokensParticle(
 			address,
 			tokenDefinition.getSupply(),
-			tokenDefinition.getGranularity(),
 			tokenRRI,
 			false)
 		);
@@ -431,7 +430,6 @@ public final class TxBuilder {
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
 			tokenDefinition.getSupply(),
-			tokenDefinition.getGranularity(),
 			tokenDefinition.getIconUrl(),
 			tokenDefinition.getTokenUrl()
 		));
@@ -451,15 +449,12 @@ public final class TxBuilder {
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
 		);
-		final var factory = TokDefParticleFactory.create(
-			tokenRRI, true, UInt256.ONE
-		);
+		final var factory = TokDefParticleFactory.create(tokenRRI, true);
 		up(factory.createUnallocated(UInt256.MAX_VALUE));
 		up(new MutableSupplyTokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
-			tokenDefinition.getGranularity(),
 			tokenDefinition.getIconUrl(),
 			tokenDefinition.getTokenUrl()
 		));
@@ -475,9 +470,7 @@ public final class TxBuilder {
 			"Could not find token rri " + rri
 		);
 
-		final var factory = TokDefParticleFactory.create(
-			rri, true, tokenDefSubstate.getGranularity()
-		);
+		final var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
 			UnallocatedTokensParticle.class,
@@ -494,15 +487,7 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		// TODO: Need to include fixed supply
-		var tokenDefSubstate = find(
-			MutableSupplyTokenDefinitionParticle.class,
-			p -> p.getRRI().equals(rri),
-			"Could not find token rri " + rri
-		);
-		final var factory = TokDefParticleFactory.create(
-			rri, true, tokenDefSubstate.getGranularity()
-		);
+		final var factory = TokDefParticleFactory.create(rri, true);
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
@@ -518,14 +503,7 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
-		var tokenDefSubstate = find(
-			MutableSupplyTokenDefinitionParticle.class,
-			p -> p.getRRI().equals(rri),
-			"Could not find token rri " + rri
-		);
-		final var factory = TokDefParticleFactory.create(
-			rri, true, tokenDefSubstate.getGranularity()
-		);
+		final var factory = TokDefParticleFactory.create(rri, true);
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
@@ -543,11 +521,7 @@ public final class TxBuilder {
 	public TxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
 		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
+		var factory = TokDefParticleFactory.create(rri, true);
 
 		swap(
 			RegisteredValidatorParticle.class,
@@ -573,11 +547,7 @@ public final class TxBuilder {
 	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
 		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
+		var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
 			StakedTokensParticle.class,
@@ -595,11 +565,7 @@ public final class TxBuilder {
 
 	public TxBuilder burnForFee(RRI rri, UInt256 amount) throws TxBuilderException {
 		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true,
-			UInt256.ONE
-		);
+		var factory = TokDefParticleFactory.create(rri, true);
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),

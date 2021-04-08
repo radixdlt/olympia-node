@@ -52,7 +52,7 @@ public class HighLevelApiServiceTest {
 	@Before
 	public void setup() {
 		var nativeTokenParticle = new MutableSupplyTokenDefinitionParticle(
-			TOKEN, "XRD", "XRD XRD", UInt256.ONE, "", ""
+			TOKEN, "XRD", "XRD XRD", "", ""
 		);
 
 		genesisAtom = TxLowLevelBuilder.newBuilder()
@@ -121,7 +121,6 @@ public class HighLevelApiServiceTest {
 			RRI.of(TOKEN_ADDRESS, symbol),
 			symbol,
 			description(symbol),
-			UInt256.ONE,
 			iconUrl(symbol),
 			homeUrl(symbol)
 		);

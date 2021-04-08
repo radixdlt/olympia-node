@@ -90,7 +90,6 @@ public class JsonAndDsonPrinter {
     private void logUnallocatedTokensParticle() {
         final var particle = new UnallocatedTokensParticle(
                 UInt256.TEN,
-                UInt256.ONE,
                 TOKEN_RRI
         );
         logParticle(particle);
@@ -100,7 +99,6 @@ public class JsonAndDsonPrinter {
         final var particle = new TransferrableTokensParticle(
             ADDRESS,
             UInt256.EIGHT,
-            UInt256.ONE,
             TOKEN_RRI,
             true
         );
@@ -112,7 +110,6 @@ public class JsonAndDsonPrinter {
             ADDRESS,
             ADDRESS,
             UInt256.EIGHT,
-            UInt256.ONE,
             TOKEN_RRI,
             true
         );
@@ -124,7 +121,6 @@ public class JsonAndDsonPrinter {
             TOKEN_RRI,
             "TEST",
             "description",
-            UInt256.ONE,
             "http://somewhere.com/icon.jpg",
             "http://somewhere.com"
         );
@@ -137,7 +133,6 @@ public class JsonAndDsonPrinter {
                 "TEST",
                 "description",
                 UInt256.TEN,
-                UInt256.ONE,
                 "http://somewhere.com/icon.jpg",
                 "http://somewhere.com"
         );

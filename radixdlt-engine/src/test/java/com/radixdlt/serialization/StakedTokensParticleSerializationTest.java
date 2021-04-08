@@ -37,7 +37,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 	public static final RadixAddress ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	public static final RRI TOKEN = RRI.of(ADDRESS, "COOKIE");
 	public static final UInt256 AMOUNT = UInt256.EIGHT;
-	public static final UInt256 GRANULARITY = UInt256.ONE;
 
 	public StakedTokensParticleSerializationTest() {
 		super(StakedTokensParticle.class, StakedTokensParticleSerializationTest::get);
@@ -54,7 +53,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(DELEGATE_ADDRESS, p.getDelegateAddress());
 		assertEquals(ADDRESS, p.getAddress());
 		assertEquals(AMOUNT, p.getAmount());
-		assertEquals(GRANULARITY, p.getGranularity());
 		assertEquals(TOKEN, p.getTokDefRef());
 	}
 
@@ -81,7 +79,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 			DELEGATE_ADDRESS,
 			ADDRESS,
 			AMOUNT,
-			GRANULARITY,
 			TOKEN,
 			true
 		);

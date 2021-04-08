@@ -119,11 +119,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAmount,
 			UnallocatedTokensParticle::getAmount,
-			checkEquals(
-				UnallocatedTokensParticle::getGranularity,
-				UnallocatedTokensParticle::getGranularity,
-				"Granularities not equal."
-			),
+			(i, o) -> Result.success(),
 			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
@@ -137,10 +133,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> {
-				if (!i.getGranularity().equals(o.getGranularity())) {
-					return Result.error("Granularities not equal.");
-				}
-
 				if (!o.isMutable()) {
 					return Result.error("Output is not mutable");
 				}
@@ -159,9 +151,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			checkEquals(
-				TransferrableTokensParticle::getGranularity,
-				TransferrableTokensParticle::getGranularity,
-				"Granularities not equal.",
 				TransferrableTokensParticle::isMutable,
 				TransferrableTokensParticle::isMutable,
 				"Permissions not equal."
@@ -176,10 +165,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			UnallocatedTokensParticle::getAmount,
 			(i, o) -> {
-				if (!i.getGranularity().equals(o.getGranularity())) {
-					return Result.error("Granularities not equal.");
-				}
-
 				if (!i.isMutable()) {
 					return Result.error("Input is not mutable");
 				}
@@ -477,9 +462,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		// Staking
 		os.executeRoutine(new CreateStakingTransitionRoutine(
 			checkEquals(
-				TransferrableTokensParticle::getGranularity,
-				StakedTokensParticle::getGranularity,
-				"Granularities not equal.",
 				TransferrableTokensParticle::isMutable,
 				StakedTokensParticle::isMutable,
 				"Mutability not equal."
@@ -495,9 +477,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			checkEquals(
-				StakedTokensParticle::getGranularity,
-				TransferrableTokensParticle::getGranularity,
-				"Granularities not equal.",
 				StakedTokensParticle::isMutable,
 				TransferrableTokensParticle::isMutable,
 				"Mutability not equal."
@@ -512,9 +491,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			checkEquals(
-				StakedTokensParticle::getGranularity,
-				StakedTokensParticle::getGranularity,
-				"Granularities not equal.",
 				StakedTokensParticle::isMutable,
 				StakedTokensParticle::isMutable,
 				"Mutability not equal.",
@@ -528,9 +504,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@VisibleForTesting
 	static Result checkCreateTransferrable(FixedSupplyTokenDefinitionParticle tokDef, TransferrableTokensParticle transferrable) {
-		if (!Objects.equals(tokDef.getGranularity(), transferrable.getGranularity())) {
-			return Result.error("Granularities not equal.");
-		}
 		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
 			return Result.error("Supply and amount are not equal.");
 		}
@@ -544,9 +517,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@VisibleForTesting
 	static Result checkCreateUnallocated(MutableSupplyTokenDefinitionParticle tokDef, UnallocatedTokensParticle unallocated) {
-		if (!Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())) {
-			return Result.error("Granularities not equal.");
-		}
 		if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
 			return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
 		}

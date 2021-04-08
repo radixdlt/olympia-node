@@ -48,14 +48,12 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.identifiers.RadixAddress;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -133,13 +131,6 @@ public class MintMultiIssuanceTokens {
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
-		setupApi();
-		// No tokens exist for this account, because it is a freshly created account
-		RRI tokenClass = RRI.of(api.getAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.observeTokenDefs()
-			.firstOrError()
-			.blockingGet();
-		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
 	}
 
 	@Given("^a library client who does not own a token class \"([^\"]*)\" on another account$")

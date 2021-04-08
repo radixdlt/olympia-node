@@ -39,7 +39,6 @@ public class TokenState {
 	private final String description;
 	private final String iconUrl;
 	private final BigDecimal totalSupply;
-	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
 
 	public TokenState(
@@ -48,7 +47,6 @@ public class TokenState {
 		String description,
 		String iconUrl,
 		BigDecimal totalSupply,
-		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
 		this.name = name;
@@ -56,7 +54,6 @@ public class TokenState {
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.totalSupply = totalSupply;
-		this.granularity = granularity;
 		this.tokenSupplyType = tokenSupplyType;
 	}
 
@@ -74,7 +71,6 @@ public class TokenState {
 			state0.description != null ? state0.description : state1.description,
 			state0.iconUrl != null ? state0.iconUrl : state1.iconUrl,
 			totalSupply,
-			state0.granularity != null ? state0.granularity : state1.granularity,
 			state0.tokenSupplyType != null ? state0.tokenSupplyType : state1.tokenSupplyType
 		);
 	}
@@ -97,10 +93,6 @@ public class TokenState {
 
 	public BigDecimal getTotalSupply() {
 		return totalSupply;
-	}
-
-	public BigDecimal getGranularity() {
-		return this.granularity;
 	}
 
 	public TokenSupplyType getTokenSupplyType() {
@@ -128,20 +120,18 @@ public class TokenState {
 			&& Objects.equals(this.tokenSupplyType, tokenState.tokenSupplyType)
 			&& Objects.equals(this.description, tokenState.description)
 			// Note BigDecimal.equal does not return true for different scales
-			&& Objects.compare(this.granularity, tokenState.granularity, BigDecimal::compareTo) == 0
 			&& Objects.compare(this.totalSupply, tokenState.totalSupply, BigDecimal::compareTo) == 0;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Token(%s:%s) name(%s) description(%s) url(%s) totalSupply(%s) granularity(%s)",
+		return String.format("Token(%s:%s) name(%s) description(%s) url(%s) totalSupply(%s)",
 			this.iso,
 			this.tokenSupplyType,
 			this.name,
 			this.description,
 			this.iconUrl,
-			this.totalSupply,
-			this.granularity
+			this.totalSupply
 		);
 	}
 }

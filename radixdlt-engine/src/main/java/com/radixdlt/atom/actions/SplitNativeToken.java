@@ -42,8 +42,7 @@ public final class SplitNativeToken implements TxAction {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			true,
-			UInt256.ONE
+			true
 		);
 
 		var substate = txBuilder.findSubstate(

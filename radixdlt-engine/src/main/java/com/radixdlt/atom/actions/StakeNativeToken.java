@@ -45,8 +45,7 @@ public final class StakeNativeToken implements TxAction {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			nativeToken,
-			true,
-			UInt256.ONE
+			true
 		);
 
 		txBuilder.swap(

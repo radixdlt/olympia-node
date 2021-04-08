@@ -54,10 +54,6 @@ public class TokenDefinitionRecord {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String description;
 
-	@JsonProperty("granularity")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 granularity;
-
 	@JsonProperty("currentSupply")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt256 currentSupply;
@@ -78,7 +74,6 @@ public class TokenDefinitionRecord {
 		String name,
 		RRI rri,
 		String description,
-		UInt256 granularity,
 		UInt256 currentSupply,
 		String iconUrl,
 		String url,
@@ -87,7 +82,6 @@ public class TokenDefinitionRecord {
 		this.name = name;
 		this.rri = rri;
 		this.description = description;
-		this.granularity = granularity;
 		this.currentSupply = currentSupply;
 		this.iconUrl = iconUrl;
 		this.url = url;
@@ -99,7 +93,6 @@ public class TokenDefinitionRecord {
 		@JsonProperty("name") String name,
 		@JsonProperty("rri") RRI rri,
 		@JsonProperty("description") String description,
-		@JsonProperty("granularity") UInt256 granularity,
 		@JsonProperty("currentSupply") UInt256 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
 		@JsonProperty("url") String url,
@@ -107,11 +100,11 @@ public class TokenDefinitionRecord {
 	) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(rri);
-		Objects.requireNonNull(granularity);
+		Objects.requireNonNull(description);
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			name, rri, description, granularity, currentSupply, iconUrl, url, mutable
+			name, rri, description, currentSupply, iconUrl, url, mutable
 		);
 	}
 
@@ -119,12 +112,11 @@ public class TokenDefinitionRecord {
 		String name,
 		RRI rri,
 		String description,
-		UInt256 granularity,
 		String iconUrl,
 		String url,
 		boolean mutable
 	) {
-		return create(name, rri, description, granularity, UInt256.ZERO, iconUrl, url, mutable);
+		return create(name, rri, description, UInt256.ZERO, iconUrl, url, mutable);
 	}
 
 	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
@@ -142,7 +134,6 @@ public class TokenDefinitionRecord {
 			definition.getName(),
 			definition.getRRI(),
 			definition.getDescription(),
-			definition.getGranularity(),
 			supply,
 			definition.getIconUrl(),
 			definition.getUrl(),
@@ -155,7 +146,6 @@ public class TokenDefinitionRecord {
 			definition.getName(),
 			definition.getRRI(),
 			definition.getDescription(),
-			definition.getGranularity(),
 			definition.getSupply(),
 			definition.getIconUrl(),
 			definition.getUrl(),
@@ -169,7 +159,6 @@ public class TokenDefinitionRecord {
 			.put("rri", rri)
 			.put("symbol", rri.getName())
 			.put("description", description)
-			.put("granularity", granularity)
 			.put("currentSupply", currentSupply)
 			.put("iconUrl", iconUrl)
 			.put("url", url)
@@ -193,7 +182,7 @@ public class TokenDefinitionRecord {
 			return this;
 		}
 
-		return create(name, rri, description, granularity, supply, iconUrl, url, true);
+		return create(name, rri, description, supply, iconUrl, url, true);
 	}
 
 	@Override
@@ -208,7 +197,6 @@ public class TokenDefinitionRecord {
 			return mutable == that.mutable
 				&& name.equals(that.name)
 				&& rri.equals(that.rri)
-				&& granularity.equals(that.granularity)
 				&& currentSupply.equals(that.currentSupply)
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(iconUrl, that.iconUrl)
@@ -220,6 +208,6 @@ public class TokenDefinitionRecord {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(name, rri, description, granularity, currentSupply, iconUrl, url, mutable);
+		return Objects.hash(name, rri, description, currentSupply, iconUrl, url, mutable);
 	}
 }

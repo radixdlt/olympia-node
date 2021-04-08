@@ -28,23 +28,19 @@ import java.util.Objects;
  */
 public final class TokDefParticleFactory {
 	private final RRI tokDefRef;
-	private final UInt256 granularity;
 	private final boolean isMutable;
 
 	private TokDefParticleFactory(
 		RRI tokDefRef,
-		boolean isMutable,
-		UInt256 granularity
+		boolean isMutable
 	) {
 		this.tokDefRef = tokDefRef;
 		this.isMutable = isMutable;
-		this.granularity = granularity;
 	}
 
 	public UnallocatedTokensParticle createUnallocated(UInt256 amount) {
 		return new UnallocatedTokensParticle(
 			amount,
-			granularity,
 			tokDefRef
 		);
 	}
@@ -53,7 +49,6 @@ public final class TokDefParticleFactory {
 		return new TransferrableTokensParticle(
 			address,
 			amount,
-			granularity,
 			tokDefRef,
 			isMutable
 		);
@@ -64,7 +59,6 @@ public final class TokDefParticleFactory {
 			delegate,
 			address,
 			amount,
-			granularity,
 			tokDefRef,
 			isMutable
 		);
@@ -72,16 +66,10 @@ public final class TokDefParticleFactory {
 
 	public static TokDefParticleFactory create(
 		RRI tokDefRef,
-		boolean isMutable,
-		UInt256 granularity
+		boolean isMutable
 	) {
 		Objects.requireNonNull(tokDefRef);
-		Objects.requireNonNull(granularity);
 
-		return new TokDefParticleFactory(tokDefRef, isMutable, granularity);
-	}
-
-	public static TokDefParticleFactory createFrom(TransferrableTokensParticle particle) {
-		return new TokDefParticleFactory(particle.getTokDefRef(), particle.isMutable(), particle.getGranularity());
+		return new TokDefParticleFactory(tokDefRef, isMutable);
 	}
 }

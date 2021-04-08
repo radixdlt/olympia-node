@@ -45,8 +45,7 @@ public final class TransferNativeToken implements TxAction {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			true,
-			UInt256.ONE
+			true
 		);
 
 		txBuilder.swapFungible(

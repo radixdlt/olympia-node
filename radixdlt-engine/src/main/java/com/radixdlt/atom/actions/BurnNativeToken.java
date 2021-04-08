@@ -42,8 +42,7 @@ public final class BurnNativeToken implements TxAction {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
-			true,
-			UInt256.ONE
+			true
 		);
 		txBuilder.swapFungible(
 			TransferrableTokensParticle.class,

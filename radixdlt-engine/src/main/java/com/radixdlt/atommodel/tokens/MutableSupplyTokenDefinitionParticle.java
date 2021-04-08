@@ -23,7 +23,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
 /**
@@ -43,10 +42,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String	description;
 
-	@JsonProperty("g")
-	@DsonOutput(Output.ALL)
-	private UInt256 granularity;
-
 	@JsonProperty("i")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String iconUrl;
@@ -64,14 +59,12 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		RRI rri,
 		String name,
 		String description,
-		UInt256 granularity,
 		String iconUrl,
 		String url
 	) {
 		this.rri = rri;
 		this.name = name;
 		this.description = description;
-		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
 	}
@@ -88,10 +81,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		return this.description;
 	}
 
-	public UInt256 getGranularity() {
-		return this.granularity;
-	}
-
 	public String getIconUrl() {
 		return this.iconUrl;
 	}
@@ -104,7 +93,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 	@Override
 	public String toString() {
 		return String.format("%s[(%s:%s:%s), (am%s)]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(rri), String.valueOf(granularity),
+			String.valueOf(name), String.valueOf(rri),
 			String.valueOf(description));
 	}
 
@@ -120,13 +109,12 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		return Objects.equals(rri, that.rri)
 				&& Objects.equals(name, that.name)
 				&& Objects.equals(description, that.description)
-				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, granularity, iconUrl, url);
+		return Objects.hash(rri, name, description, iconUrl, url);
 	}
 }

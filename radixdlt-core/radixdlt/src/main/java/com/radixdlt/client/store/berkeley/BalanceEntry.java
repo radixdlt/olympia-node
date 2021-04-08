@@ -48,10 +48,6 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RRI rri;
 
-	@JsonProperty("granularity")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 granularity;
-
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final UInt256 amount;
@@ -66,13 +62,12 @@ public class BalanceEntry {
 
 	private BalanceEntry(
 		RadixAddress owner, RadixAddress delegate, RRI rri,
-		UInt256 granularity, UInt256 amount, boolean negative,
+		UInt256 amount, boolean negative,
 		boolean supply
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
 		this.rri = rri;
-		this.granularity = granularity;
 		this.amount = amount;
 		this.negative = negative;
 		this.supply = supply;
@@ -82,17 +77,15 @@ public class BalanceEntry {
 		RadixAddress owner,
 		RadixAddress delegate,
 		RRI rri,
-		UInt256 granularity,
 		UInt256 amount,
 		boolean negative,
 		boolean supply
 	) {
 		Objects.requireNonNull(owner);
 		Objects.requireNonNull(rri);
-		Objects.requireNonNull(granularity);
 		Objects.requireNonNull(amount);
 
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negative, supply);
 	}
 
 	@JsonCreator
@@ -100,23 +93,22 @@ public class BalanceEntry {
 		@JsonProperty("owner") RadixAddress owner,
 		@JsonProperty("delegate") RadixAddress delegate,
 		@JsonProperty("rri") RRI rri,
-		@JsonProperty("granularity") UInt256 granularity,
 		@JsonProperty("amount") UInt256 amount,
 		@JsonProperty("negative") boolean negative
 	) {
-		return createFull(owner, delegate, rri, granularity, amount, negative, false);
+		return createFull(owner, delegate, rri, amount, negative, false);
 	}
 
 	public static BalanceEntry createBalance(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
 	) {
-		return createFull(owner, delegate, rri, granularity, amount, false, false);
+		return createFull(owner, delegate, rri, amount, false, false);
 	}
 
 	public static BalanceEntry createSupply(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 granularity, UInt256 amount
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
 	) {
-		return createFull(owner, delegate, rri, granularity, amount, false, true);
+		return createFull(owner, delegate, rri, amount, false, true);
 	}
 
 	public RadixAddress getOwner() {
@@ -129,10 +121,6 @@ public class BalanceEntry {
 
 	public RRI getRri() {
 		return rri;
-	}
-
-	public UInt256 getGranularity() {
-		return granularity;
 	}
 
 	public UInt256 getAmount() {
@@ -152,7 +140,7 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, !negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, !negative, supply);
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
@@ -179,7 +167,6 @@ public class BalanceEntry {
 				&& owner.equals(entry.owner)
 				&& Objects.equals(delegate, entry.delegate)
 				&& rri.equals(entry.rri)
-				&& granularity.equals(entry.granularity)
 				&& amount.equals(entry.amount);
 		}
 		return false;
@@ -187,7 +174,7 @@ public class BalanceEntry {
 
 	@Override
 	public final int hashCode() {
-		return Objects.hash(owner, delegate, rri, granularity, amount, negative);
+		return Objects.hash(owner, delegate, rri, amount, negative);
 	}
 
 	@Override
@@ -202,10 +189,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, granularity, amount, negate == isBigger, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, supply);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, granularity, amount.add(balanceEntry.amount), negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, supply);
 	}
 }
