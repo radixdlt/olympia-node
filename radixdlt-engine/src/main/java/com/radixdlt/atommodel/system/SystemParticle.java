@@ -24,6 +24,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.time.Instant;
+
 @SerializerId2("s")
 public final class SystemParticle extends Particle {
 	@JsonProperty("e")
@@ -61,6 +63,10 @@ public final class SystemParticle extends Particle {
 		return timestamp;
 	}
 
+	public Instant asInstant() {
+		return Instant.ofEpochMilli(timestamp);
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hashCode(epoch, view, timestamp);
@@ -72,7 +78,8 @@ public final class SystemParticle extends Particle {
 			return false;
 		}
 
-		SystemParticle other = (SystemParticle) o;
+		var other = (SystemParticle) o;
+
 		return this.epoch == other.epoch
 			&& this.view == other.view
 			&& this.timestamp == other.timestamp;

@@ -62,6 +62,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -115,6 +116,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private static final long DEFAULT_FLUSH_INTERVAL = 100L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
+	private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
 	private final DatabaseEnvironment dbEnv;
 	private final BerkeleyLedgerEntryStore store;
@@ -125,7 +127,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Observable<AtomsCommittedToLedger> ledgerCommitted;
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
-	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>();
+	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final byte universeMagic;
 
 	private Database transactionHistory;
@@ -442,8 +444,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Result<ParsedTx> toParsedTx(Txn txn) {
-		//TODO: finish it
-		return ClientApiUtils.toParsedTx(txn, universeMagic);
+		return ClientApiUtils.toParsedTx(txn, universeMagic, store::get);
 	}
 
 	private void newBatch(AtomsCommittedToLedger transactions) {
@@ -486,7 +487,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		upParticles.filter(SystemParticle.class::isInstance)
 			.map(SystemParticle.class::cast)
 			.findFirst()
-			.ifPresent(sp -> currentTimestamp.set(Instant.ofEpochMilli(sp.getTimestamp())));
+			.map(SystemParticle::asInstant)
+			.ifPresent(timestamp -> {
+				log.debug("Timestamp set to {}", DateTimeFormatter.ISO_INSTANT.format(timestamp));
+				currentTimestamp.set(timestamp);
+			});
 	}
 
 	private Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {

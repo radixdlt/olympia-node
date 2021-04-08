@@ -22,30 +22,30 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.utils.functional.Result;
 
 public final class SubstateSerializer {
+	private static final Serialization serialization = DefaultSerialization.getInstance();
+
 	private SubstateSerializer() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
-		return DefaultSerialization.getInstance().fromDson(bytes, Particle.class);
-	}
-
-	public static Result<Particle> deserializeFromBytes(byte[] bytes) {
-		try {
-			return Result.ok(deserialize(bytes));
-		} catch (DeserializeException e) {
-			return Result.fail(e.getMessage());
-		}
+		return serialization.fromDson(bytes, Particle.class);
 	}
 
 	public static Particle deserialize(byte[] bytes, int offset) throws DeserializeException {
-		return DefaultSerialization.getInstance().fromDson(bytes, offset, bytes.length - offset, Particle.class);
+		return serialization.fromDson(bytes, offset, bytes.length - offset, Particle.class);
 	}
 
 	public static byte[] serialize(Particle p) {
-		return DefaultSerialization.getInstance().toDson(p, DsonOutput.Output.ALL);
+		return serialization.toDson(p, DsonOutput.Output.ALL);
+	}
+
+	public static Result<Particle> deserializeFromBytes(byte[] bytes) {
+		return SerializationUtils.restore(serialization, bytes, Particle.class);
 	}
 }
