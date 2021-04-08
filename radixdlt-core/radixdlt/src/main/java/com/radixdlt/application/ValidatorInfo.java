@@ -13,20 +13,22 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.application;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+/**
+ * Info about node as validator
+ */
+public final class ValidatorInfo {
+	private final boolean registered;
 
-public class MempoolAddTest {
-	@Test
-	public void equalsVerifier() {
-		EqualsVerifier.forClass(MempoolAdd.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+	public ValidatorInfo(boolean registered) {
+		this.registered = registered;
+	}
+
+	public boolean isRegistered() {
+		return registered;
 	}
 }

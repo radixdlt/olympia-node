@@ -19,27 +19,26 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Balance reducer for local node
+ * Reduces radix engine to stake received
  */
-public final class Balance implements StateReducer<UInt256, TransferrableTokensParticle> {
+public final class StakeReceivedReducer implements StateReducer<StakeReceived, StakedTokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 
 	@Inject
-	public Balance(
+	public StakeReceivedReducer(
 		@NativeToken RRI tokenRRI,
 		@Self RadixAddress address
 	) {
@@ -48,37 +47,37 @@ public final class Balance implements StateReducer<UInt256, TransferrableTokensP
 	}
 
 	@Override
-	public Class<UInt256> stateClass() {
-		return UInt256.class;
+	public Class<StakeReceived> stateClass() {
+		return StakeReceived.class;
 	}
 
 	@Override
-	public Class<TransferrableTokensParticle> particleClass() {
-		return TransferrableTokensParticle.class;
+	public Class<StakedTokensParticle> particleClass() {
+		return StakedTokensParticle.class;
 	}
 
 	@Override
-	public Supplier<UInt256> initial() {
-		return () -> UInt256.ZERO;
+	public Supplier<StakeReceived> initial() {
+		return StakeReceived::new;
 	}
 
 	@Override
-	public BiFunction<UInt256, TransferrableTokensParticle, UInt256> outputReducer() {
-		return (balance, p) -> {
-			if (p.getAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
-				return balance.add(p.getAmount());
+	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> outputReducer() {
+		return (stakes, p) -> {
+			if (p.getDelegateAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
+				stakes.addStake(p.getAddress(), p.getAmount());
 			}
-			return balance;
+			return stakes;
 		};
 	}
 
 	@Override
-	public BiFunction<UInt256, TransferrableTokensParticle, UInt256> inputReducer() {
-		return (balance, p) -> {
-			if (p.getAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
-				return balance.subtract(p.getAmount());
+	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> inputReducer() {
+		return (stakes, p) -> {
+			if (p.getDelegateAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
+				stakes.removeStake(p.getAddress(), p.getAmount());
 			}
-			return balance;
+			return stakes;
 		};
 	}
 }

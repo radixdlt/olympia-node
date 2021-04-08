@@ -215,7 +215,7 @@ public final class TxBuilder {
 				});
 
 			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new TxBuilderException(errorMessage + " (Substate not found)");
 			}
 
 			return substateDown.get();
@@ -618,35 +618,13 @@ public final class TxBuilder {
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
 		var txn = lowLevelBuilder.signAndBuild(signer);
-		SubstateStore upSubstate = c -> new SubstateCursor() {
-			private SubstateCursor cursor = createRemoteSubstateCursor(c);
-			private Iterator<Substate> iterator =
-				lowLevelBuilder.localUpSubstate().stream()
-					.filter(l -> c.isInstance(l.getParticle()))
-					.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
-					.iterator();
-
-			@Override
-			public void close() {
-				if (cursor != null) {
-					cursor.close();
-				}
-			}
-
-			@Override
-			public boolean hasNext() {
-				return iterator.hasNext() || (cursor.hasNext());
-			}
-
-			@Override
-			public Substate next() {
-				if (!iterator.hasNext()) {
-					return cursor.next();
-				} else {
-					return iterator.next();
-				}
-			}
-		};
+		SubstateStore upSubstate = c -> SubstateCursor.concat(
+			createRemoteSubstateCursor(c),
+			() -> SubstateCursor.wrapIterator(lowLevelBuilder.localUpSubstate().stream()
+				.filter(l -> c.isInstance(l.getParticle()))
+				.map(l -> Substate.create(l.getParticle(), SubstateId.ofSubstate(txn.getId(), l.getIndex())))
+				.iterator())
+		);
 		upSubstateConsumer.accept(upSubstate);
 
 		return txn;
