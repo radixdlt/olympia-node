@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom.actions;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -56,7 +57,10 @@ public final class StakeNativeToken implements TxAction {
 
 		txBuilder.swapFungible(
 			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(nativeToken) && p.getAddress().equals(address),
+			p -> p.getTokDefRef().equals(nativeToken)
+				&& p.getAddress().equals(address)
+				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
+				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TransferrableTokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,

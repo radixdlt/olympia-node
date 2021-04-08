@@ -166,9 +166,9 @@ public final class NodeController implements Controller {
 					)
 				),
 				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject()
-					.put("message", error))
+					.put("message", error)
 					.put("transaction", txn == null ? null : Hex.toHexString(txn.getPayload()))
-				)
+				))
 			);
 
 			nodeApplicationRequestEventDispatcher.dispatch(request);
