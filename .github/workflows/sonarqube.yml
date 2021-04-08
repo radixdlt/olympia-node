@@ -29,7 +29,7 @@ jobs:
       - name: Sonar
         run: |
           find . -name "jaco*"
-          ./gradlew sonarqube --stacktrace -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github
+          ./gradlew sonarqube --debug -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
