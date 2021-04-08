@@ -17,12 +17,9 @@
 
 package com.radixdlt.client.store;
 
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-
-import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
