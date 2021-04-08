@@ -1,0 +1,48 @@
+name: Sonarqube static code analysis
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: Unit tests and sonarqube
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Unit tests
+        run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
+        env:
+          # Needed to get some information about the pull request, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  # integration:
+  #   name: Integration tests
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         # Shallow clones should be disabled for a better relevancy of analysis
+  #         fetch-depth: 0
+  #     - uses: joschi/setup-jdk@v2
+  #       with:
+  #         java-version: '11' # The OpenJDK version to make available on the path
+  #         architecture: 'x64' # defaults to 'x64'
+  #     - name: Cache Gradle packages
+  #       uses: actions/cache@v1
+  #       with:
+  #         path: ~/.gradle/caches
+  #         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+  #         restore-keys: ${{ runner.os }}-gradle
+  #     - name: integration tests
+  #       run: ./gradlew integrationTest --refresh-dependencies
