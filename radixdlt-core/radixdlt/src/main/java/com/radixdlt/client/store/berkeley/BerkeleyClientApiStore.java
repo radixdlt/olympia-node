@@ -278,8 +278,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.onFailureDo(
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
 					)
-					//TODO: rework!!!
-					.flatMap(txn -> toParsedTx(txn))
+					.flatMap(this::toParsedTx)
 					.flatMap(parsed -> TransactionParser.parse(address, parsed, instantFromKey(key)))
 					.onSuccess(list::add);
 
