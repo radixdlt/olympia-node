@@ -35,12 +35,12 @@ import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ParsedTx;
 import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TransactionParser;
+import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
@@ -142,9 +142,7 @@ public class TransactionParserTest {
 		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.FOUR, txn);
 	}
 
-	private void executeAndDecode(
-		List<ActionType> expectedActions, UInt256 fee, Txn... txns
-	) throws RadixEngineException, InterruptedException {
+	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {
 		var list = engine.execute(List.of(txns), null, PermissionLevel.USER);
 
 		if (txns.length != 1) {
@@ -186,7 +184,7 @@ public class TransactionParserTest {
 			));
 	}
 
-	private List<ActionType> toActionTypes(com.radixdlt.client.store.TxHistoryEntry txEntry) {
+	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {
 		return txEntry.getActions()
 			.stream()
 			.map(ActionEntry::getType)
