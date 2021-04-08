@@ -7,7 +7,6 @@ on:
       - RPNV1-977-continue
 jobs:
   update_release_draft:
-    needs: version
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v5
