@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: cancel running workflows
-        uses: everphone-gmbh/cancel-previous-workflows@v5
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
