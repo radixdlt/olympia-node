@@ -17,9 +17,6 @@
 
 package com.radixdlt.client;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
@@ -54,7 +51,6 @@ public final class ClientApiUtils {
 	private ClientApiUtils() { }
 
 	private static final Serialization serialization = DefaultSerialization.getInstance();
-	private static final Logger log = LogManager.getLogger();
 
 	public static Result<ParsedTx> toParsedTx(
 		Txn txn,
