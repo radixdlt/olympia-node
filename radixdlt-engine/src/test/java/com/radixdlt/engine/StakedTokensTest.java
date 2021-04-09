@@ -134,7 +134,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(atom));
 
 		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
-			.moveStake(this.tokenRri, this.validatorAddress, newAddress(), UInt256.SEVEN)
+			.moveStake(this.validatorAddress, newAddress(), UInt256.SEVEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(atom2));

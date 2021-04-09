@@ -535,11 +535,8 @@ public final class TxBuilder {
 		return this;
 	}
 
-	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
-	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
+	public TxBuilder moveStake(RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
-		// HACK
-		var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
 			StakedTokensParticle.class,
