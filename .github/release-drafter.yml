@@ -1,3 +1,7 @@
+template: |
+  ## Changes
+
+  $CHANGES
 categories:
   - title: '🚀 Features'
     labels:
@@ -23,7 +27,3 @@ version-resolver:
     labels:
       - 'patch'
   default: patch
-template: |
-  ## Changes
-
-  $CHANGES
