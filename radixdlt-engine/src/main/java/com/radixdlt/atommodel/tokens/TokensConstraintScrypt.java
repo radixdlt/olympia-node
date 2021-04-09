@@ -18,11 +18,20 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
+import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.VoidParticle;
+import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -134,21 +143,46 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 
-		// Burns
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TransferrableTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
-			UnallocatedTokensParticle::getAmount,
-			(i, o) -> {
-				if (!i.isBurnable()) {
-					return Result.error("Input is not mutable");
-				}
 
-				return Result.success();
-			},
-			i -> Optional.of(i.getAddress().getPublicKey())
-		));
+		// Burns
+		os.executeRoutine(new ConstraintRoutine() {
+			@Override
+			public void main(RoutineCalls calls) {
+				calls.createTransition(
+					new TransitionToken<>(
+						TransferrableTokensParticle.class,
+						TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class),
+						VoidParticle.class,
+						TypeToken.of(VoidUsedData.class)
+					),
+					new TransitionProcedure<>() {
+						@Override
+						public Result precondition(TransferrableTokensParticle inputParticle, CreateFungibleTransitionRoutine.UsedAmount inputUsed, VoidParticle outputParticle, VoidUsedData outputUsed) {
+							if (!inputParticle.isBurnable()) {
+								return Result.error("Cannot burn token.");
+							}
+
+							return Result.success();
+						}
+
+						@Override
+						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputUsedCompute() {
+							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						}
+
+						@Override
+						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> outputUsedCompute() {
+							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						}
+
+						@Override
+						public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
+							return i -> Optional.of(i.getAddress().getPublicKey());
+						}
+					}
+				);
+			}
+		});
 	}
 
 	@VisibleForTesting

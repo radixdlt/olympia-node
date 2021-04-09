@@ -37,6 +37,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
@@ -335,12 +336,14 @@ public final class RadixEngine<M> {
 		}
 
 		var parsedInsts = new ArrayList<ParsedInstruction>();
+		var deallocated = new ArrayList<Pair<Particle, UsedData>>();
 		final Optional<CMError> error = constraintMachine.validate(
 			dbTransaction,
 			engineStore,
 			atom,
 			permissionLevel,
-			parsedInsts
+			parsedInsts,
+			deallocated
 		);
 
 		if (error.isPresent()) {
@@ -348,10 +351,10 @@ public final class RadixEngine<M> {
 			throw new RadixEngineException(txn, parsedInsts, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e);
 		}
 
-		var parsedTransaction = new RETxn(txn, parsedInsts);
+		var reTxn = new RETxn(txn, parsedInsts, deallocated);
 
 		if (checker != null) {
-			Result hookResult = checker.check(txn, permissionLevel, parsedTransaction);
+			Result hookResult = checker.check(permissionLevel, reTxn);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
@@ -362,7 +365,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		return parsedTransaction;
+		return reTxn;
 	}
 
 	/**

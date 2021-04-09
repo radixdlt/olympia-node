@@ -21,6 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Objects;
@@ -32,10 +33,16 @@ import java.util.stream.Stream;
 public final class RETxn {
 	private final Txn txn;
 	private final List<ParsedInstruction> instructions;
+	private final List<Pair<Particle, UsedData>> deallocated;
 
-	public RETxn(Txn txn, List<ParsedInstruction> instructions) {
+	public RETxn(Txn txn, List<ParsedInstruction> instructions, List<Pair<Particle, UsedData>> deallocated) {
 		this.txn = txn;
 		this.instructions = instructions;
+		this.deallocated = deallocated;
+	}
+
+	public List<Pair<Particle, UsedData>> getDeallocated() {
+		return deallocated;
 	}
 
 	public Txn getTxn() {

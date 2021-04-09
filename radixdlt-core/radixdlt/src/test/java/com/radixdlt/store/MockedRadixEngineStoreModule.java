@@ -90,7 +90,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			instructions.add(parsed);
 		}
 
-		return new RETxn(txn, instructions);
+		return new RETxn(txn, instructions, List.of());
 	}
 
 	@Provides

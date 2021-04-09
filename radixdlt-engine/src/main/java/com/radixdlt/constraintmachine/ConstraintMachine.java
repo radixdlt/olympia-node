@@ -31,6 +31,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -104,14 +105,15 @@ public final class ConstraintMachine {
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
 		private TransitionToken currentTransitionToken = null;
+
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
+
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final HashCode witness;
 		private final Optional<ECDSASignature> signature;
-		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 		private final CMStore store;
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
@@ -428,7 +430,8 @@ public final class ConstraintMachine {
 	Optional<CMError> validateInstructions(
 		CMValidationState validationState,
 		Atom atom,
-		List<ParsedInstruction> parsedInstructions
+		List<ParsedInstruction> parsedInstructions,
+		List<Pair<Particle, UsedData>> deallocated
 	) {
 		var rawInstructions = toInstructions(atom.getInstructions());
 		long particleIndex = 0;
@@ -539,7 +542,23 @@ public final class ConstraintMachine {
 				}
 
 				if (!validationState.isEmpty()) {
-					return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+
+					if (validationState.particleRemainingIsInput) {
+						deallocated.add(Pair.of(validationState.particleRemaining, validationState.particleRemainingUsed));
+						var errMaybe = validateParticle(
+							validationState,
+							VoidParticle.create(),
+							false,
+							instructionIndex
+						);
+						if (errMaybe.isPresent()) {
+							return errMaybe;
+						}
+					}
+
+					if (!validationState.isEmpty()) {
+						return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+					}
 				}
 				particleIndex = 0;
 			} else {
@@ -571,7 +590,8 @@ public final class ConstraintMachine {
 		CMStore cmStore,
 		Atom atom,
 		PermissionLevel permissionLevel,
-		List<ParsedInstruction> parsedInstructions
+		List<ParsedInstruction> parsedInstructions,
+		List<Pair<Particle, UsedData>> deallocated
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			virtualStoreLayer,
@@ -582,6 +602,6 @@ public final class ConstraintMachine {
 			atom.getSignature()
 		);
 
-		return this.validateInstructions(validationState, atom, parsedInstructions);
+		return this.validateInstructions(validationState, atom, parsedInstructions, deallocated);
 	}
 }

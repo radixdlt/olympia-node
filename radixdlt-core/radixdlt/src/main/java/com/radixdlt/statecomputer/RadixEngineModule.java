@@ -110,9 +110,9 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
-		return (atom, permissionLevel, parsed) -> {
+		return (permissionLevel, reTxn) -> {
 			for (var checker : checkers) {
-				var result = checker.check(atom, permissionLevel, parsed);
+				var result = checker.check(permissionLevel, reTxn);
 				if (result.isError()) {
 					return result;
 				}

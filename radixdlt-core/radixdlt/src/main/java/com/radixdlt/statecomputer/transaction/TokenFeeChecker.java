@@ -19,11 +19,11 @@
 package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
@@ -55,7 +55,8 @@ public class TokenFeeChecker implements PostParsedChecker {
 	}
 
 	@Override
-	public Result check(Txn txn, PermissionLevel permissionLevel, RETxn radixEngineTxn) {
+	public Result check(PermissionLevel permissionLevel, RETxn radixEngineTxn) {
+		var txn = radixEngineTxn.getTxn();
 		final int totalSize = txn.getPayload().length;
 		if (txn.getPayload().length > MAX_ATOM_SIZE) {
 			return Result.error("atom too big: " + totalSize);
@@ -72,9 +73,10 @@ public class TokenFeeChecker implements PostParsedChecker {
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
+		UInt256 feePaid = computeFeePaid(radixEngineTxn);
+
 		Set<Particle> outputParticles = radixEngineTxn.upSubstates().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(txn, outputParticles, totalSize);
-		UInt256 feePaid = computeFeePaid(radixEngineTxn);
 		if (feePaid.compareTo(requiredMinimumFee) < 0) {
 			String message = String.format(
 				"atom fee invalid: '%s' is less than required minimum '%s' atom_size: %s",
@@ -88,13 +90,24 @@ public class TokenFeeChecker implements PostParsedChecker {
 		return Result.success();
 	}
 
-	// TODO: Need to make sure that these unallocated particles are never DOWNED.
 	private UInt256 computeFeePaid(RETxn radixEngineTxn) {
-		return radixEngineTxn.upSubstates()
-			.filter(UnallocatedTokensParticle.class::isInstance)
-			.map(UnallocatedTokensParticle.class::cast)
-			.filter(u -> u.getTokDefRef().equals(this.feeTokenRri))
-			.map(UnallocatedTokensParticle::getAmount)
-			.reduce(UInt256.ZERO, UInt256::add);
+		return radixEngineTxn.getDeallocated().stream()
+			.map(p -> {
+				if (!(p.getFirst() instanceof TransferrableTokensParticle)) {
+					return UInt256.ZERO;
+				}
+
+				var t = (TransferrableTokensParticle) p.getFirst();
+				if (!t.getTokDefRef().equals(feeTokenRri)) {
+					return UInt256.ZERO;
+				}
+
+				if (!(p.getSecond() instanceof CreateFungibleTransitionRoutine.UsedAmount)) {
+					return t.getAmount();
+				}
+
+				var used = (CreateFungibleTransitionRoutine.UsedAmount) p.getSecond();
+				return t.getAmount().subtract(used.getUsedAmount());
+			}).reduce(UInt256::add).orElse(UInt256.ZERO);
 	}
 }

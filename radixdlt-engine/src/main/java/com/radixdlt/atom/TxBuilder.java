@@ -294,6 +294,20 @@ public final class TxBuilder {
 		return spent.subtract(amount);
 	}
 
+	public <T extends Particle> void deallocateFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Function<T, UInt256> amountMapper,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) throws TxBuilderException {
+		var remainder = downFungible(particleClass, particlePredicate, amountMapper, amount, errorMessage);
+		if (!remainder.isZero()) {
+			up(remainderMapper.map(remainder));
+		}
+	}
+
 	public <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
@@ -555,14 +569,14 @@ public final class TxBuilder {
 	public TxBuilder burnForFee(RRI rri, UInt256 amount) throws TxBuilderException {
 		// HACK
 		var factory = TokDefParticleFactory.create(rri, true);
-		swapFungible(
+		deallocateFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
+		);
 
 		particleGroup();
 		return this;

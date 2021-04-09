@@ -44,14 +44,14 @@ public final class BurnNativeToken implements TxAction {
 			rri,
 			true
 		);
-		txBuilder.swapFungible(
+		txBuilder.deallocateFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
 			TransferrableTokensParticle::getAmount,
 			amt -> factory.createTransferrable(user, amt),
 			amount,
 			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
+		);
 	}
 }
 
