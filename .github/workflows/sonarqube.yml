@@ -1,6 +1,6 @@
 name: Sonarqube static code analysis
 
-on: [push,pull_request]
+on: [pull_request]
 
 jobs:
   build:
@@ -28,8 +28,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Sonar
         run: |
-          find . -name "jaco*"
-          ./gradlew sonarqube --debug -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github
+          ./gradlew sonarqube --debug -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github -Dsonar.branch.name=${GITHUB_BASE_REF}
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
