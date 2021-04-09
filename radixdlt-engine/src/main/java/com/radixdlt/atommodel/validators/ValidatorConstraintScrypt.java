@@ -28,8 +28,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
@@ -152,20 +151,9 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public WitnessValidator<I> inputWitnessValidator() {
+		public SignatureValidator<I> inputSignatureRequired() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, meta) -> {
-				RadixAddress address = inputAddressMapper.apply(i);
-				return meta.isSignedBy(address.getPublicKey())
-					? WitnessValidatorResult.success()
-					: WitnessValidatorResult.error(String.format("validator %s not signed", address));
-			};
-		}
-
-		@Override
-		public WitnessValidator<O> outputWitnessValidator() {
-			// input.address == output.address, so no need to check signature twice
-			return (i, meta) -> WitnessValidatorResult.success();
+			return i -> Optional.of(inputAddressMapper.apply(i).getPublicKey());
 		}
 	}
 }

@@ -17,38 +17,14 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.util.Optional;
+
 /**
  * Validates whether a specific transition procedure is permissible
  * @param <P> particle class
  */
-public interface WitnessValidator<P extends Particle> {
-	final class WitnessValidatorResult {
-		private final String errorMessage;
-
-		WitnessValidatorResult(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		public static WitnessValidatorResult success() {
-			return new WitnessValidatorResult(null);
-		}
-
-		public static WitnessValidatorResult error(String errorMessage) {
-			return new WitnessValidatorResult(errorMessage);
-		}
-
-		public boolean isSuccess() {
-			return this.errorMessage == null;
-		}
-
-		public boolean isError() {
-			return this.errorMessage != null;
-		}
-
-		public String getErrorMessage() {
-			return errorMessage;
-		}
-	}
-
-	WitnessValidatorResult validate(P particle, WitnessData witnessData);
+public interface SignatureValidator<P extends Particle> {
+	Optional<ECPublicKey> requiredSignature(P particle);
 }

@@ -28,8 +28,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -57,14 +56,14 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
 	private final TypeToken<UsedParticle<V>> typeToken1;
-	private final WitnessValidator<I> inputWitnessValidator;
+	private final SignatureValidator<I> inputSignatureValidator;
 
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
 		Class<V> outputClass1,
 		BiFunction<O, V, Result> combinedCheck,
-		WitnessValidator<I> inputWitnessValidator
+		SignatureValidator<I> inputSignatureValidator
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
@@ -73,7 +72,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
 		this.typeToken1 = new TypeToken<UsedParticle<V>>() { }.where(new TypeParameter<V>() { }, outputClass1);
 		this.combinedCheck = combinedCheck;
-		this.inputWitnessValidator = inputWitnessValidator;
+		this.inputSignatureValidator = inputSignatureValidator;
 	}
 
 	@Override
@@ -112,18 +111,13 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
+			public SignatureValidator<I> inputSignatureRequired() {
 				throw new IllegalStateException("Should never call here");
 			}
 
 			@Override
 			public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
 				return (input, inputUsed, output, outputUsed) -> Optional.empty();
-			}
-
-			@Override
-			public WitnessValidator<O> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
 			}
 		};
 	}
@@ -146,14 +140,10 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
+			public SignatureValidator<I> inputSignatureRequired() {
 				throw new IllegalStateException("Should never call here");
 			}
 
-			@Override
-			public WitnessValidator<V> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
-			}
 		};
 	}
 
@@ -175,13 +165,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				return inputWitnessValidator;
-			}
-
-			@Override
-			public WitnessValidator<O> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}
@@ -204,13 +189,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				return inputWitnessValidator;
-			}
-
-			@Override
-			public WitnessValidator<V> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}

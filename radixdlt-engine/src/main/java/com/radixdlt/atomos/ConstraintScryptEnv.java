@@ -27,8 +27,7 @@ import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -156,17 +155,8 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public WitnessValidator<RRIParticle> inputWitnessValidator() {
-					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getPublicKey())
-												 ? WitnessValidatorResult.success()
-												 : WitnessValidatorResult.error(
-												 	"Not signed by " + rri.getRri().getAddress()
-												 );
-				}
-
-				@Override
-				public WitnessValidator<O> outputWitnessValidator() {
-					return (o, witnessData) -> WitnessValidatorResult.success();
+				public SignatureValidator<RRIParticle> inputSignatureRequired() {
+					return rri -> Optional.of(rri.getRri().getAddress().getPublicKey());
 				}
 			}
 		);
@@ -192,8 +182,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass0,
 			particleClass1,
 			combinedCheck,
-			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getPublicKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
+			in -> Optional.of(in.getRri().getAddress().getPublicKey())
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -246,13 +235,8 @@ final class ConstraintScryptEnv implements SysCalls {
 
 
 				@Override
-				public WitnessValidator<Particle> inputWitnessValidator() {
-					return (i, w) -> procedure.inputWitnessValidator().validate((I) i, w);
-				}
-
-				@Override
-				public WitnessValidator<Particle> outputWitnessValidator() {
-					return (o, w) -> procedure.outputWitnessValidator().validate((O) o, w);
+				public SignatureValidator<Particle> inputSignatureRequired() {
+					return i -> procedure.inputSignatureRequired().requiredSignature((I) i);
 				}
 			};
 

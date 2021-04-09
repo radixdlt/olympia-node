@@ -24,7 +24,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -276,21 +275,5 @@ public class TokensConstraintScryptTest {
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
 		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE);
 		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_checking_signed_by_and_signed__result_has_no_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_checking_signed_by_and_not_signed__result_has_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
 	}
 }

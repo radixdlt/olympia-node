@@ -26,7 +26,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DeserializeException;
@@ -102,7 +101,7 @@ public final class ConstraintMachine {
 		this.particleProcedures = particleProcedures;
 	}
 
-	public static final class CMValidationState implements WitnessData {
+	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
 		private TransitionToken currentTransitionToken = null;
 		private Particle particleRemaining = null;
@@ -116,6 +115,7 @@ public final class ConstraintMachine {
 		private final CMStore store;
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
+		private ECPublicKey signatureRequired;
 
 		CMValidationState(
 			Predicate<Particle> virtualStoreLayer,
@@ -175,11 +175,6 @@ public final class ConstraintMachine {
 			var maybeParticle = loadUpParticle(substateId);
 			remoteDownParticles.add(substateId);
 			return maybeParticle;
-		}
-
-		@Override
-		public boolean isSignedBy(ECPublicKey publicKey) {
-			return this.isSignedByCache.computeIfAbsent(publicKey, this::verifySignedWith);
 		}
 
 		private boolean verifySignedWith(ECPublicKey publicKey) {
@@ -364,21 +359,35 @@ public final class ConstraintMachine {
 						validationState.updateUsed(usedData.get());
 					}
 				} else {
-					final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
-						: transitionProcedure.outputWitnessValidator();
-					final WitnessValidatorResult inputWitness = witnessValidator.validate(
-						testInput ? inputParticle : outputParticle, validationState
-					);
+					if (testInput) {
+						var pkeyMaybe = transitionProcedure.inputSignatureRequired()
+							.requiredSignature(inputParticle);
 
-					if (inputWitness.isError()) {
-						return Optional.of(
-							new CMError(
-								dp,
-								CMErrorCode.WITNESS_ERROR,
-								validationState,
-								inputWitness.getErrorMessage()
-							)
-						);
+						if (pkeyMaybe.isPresent()) {
+							var pkey = pkeyMaybe.get();
+							if (validationState.signatureRequired != null
+								&& !validationState.signatureRequired.equals(pkey)) {
+								return Optional.of(
+									new CMError(
+										dp,
+										CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES,
+										validationState
+									)
+								);
+							} else {
+								if (!validationState.verifySignedWith(pkey)) {
+									return Optional.of(
+										new CMError(
+											dp,
+											CMErrorCode.INCORRECT_SIGNATURE,
+											validationState
+										)
+									);
+								}
+
+								validationState.signatureRequired = pkey;
+							}
+						}
 					}
 
 					if (prevUsedData != null && !prevUsedData.isPresent()) {

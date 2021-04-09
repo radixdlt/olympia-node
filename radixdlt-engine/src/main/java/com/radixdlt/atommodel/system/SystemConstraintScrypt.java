@@ -27,8 +27,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import java.util.Optional;
 
 /**
@@ -113,13 +112,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public WitnessValidator<SystemParticle> inputWitnessValidator() {
-					return (i, w) -> WitnessValidatorResult.success();
-				}
-
-				@Override
-				public WitnessValidator<SystemParticle> outputWitnessValidator() {
-					return (msg, meta) -> WitnessValidatorResult.success();
+				public SignatureValidator<SystemParticle> inputSignatureRequired() {
+					return i -> Optional.empty();
 				}
 			}
 		);

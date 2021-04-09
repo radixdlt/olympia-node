@@ -23,12 +23,10 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
-import com.radixdlt.constraintmachine.WitnessData;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -101,8 +99,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle::getAmount,
 			UnallocatedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
+			i -> Optional.of(i.getTokDefRef().getAddress().getPublicKey())
 		));
 	}
 
@@ -120,9 +117,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(in, meta) ->
-				meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
-					? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
+			i -> Optional.of(i.getTokDefRef().getAddress().getPublicKey())
 		));
 
 		// Transfers
@@ -136,7 +131,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::isMutable,
 				"Permissions not equal."
 			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 
 		// Burns
@@ -152,13 +147,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 				return Result.success();
 			},
-			(in, meta) -> {
-				if (in.isMutable()) {
-					return WitnessValidatorResult.success();
-				} else {
-					return WitnessValidatorResult.error("Not allowed to burn fixed supply tokens.");
-				}
-			}
+			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 	}
 
@@ -182,13 +171,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		}
 
 		return Result.success();
-	}
-
-	@VisibleForTesting
-	static WitnessValidatorResult checkSignedBy(WitnessData meta, RadixAddress address) {
-		return meta.isSignedBy(address.getPublicKey())
-			? WitnessValidatorResult.success()
-			: WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
 
 	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(

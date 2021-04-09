@@ -27,8 +27,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UIntUtils;
 
@@ -83,7 +82,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<I, UInt256> inputAmountMapper;
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
-	private final WitnessValidator<I> inputWitnessValidator;
+	private final SignatureValidator<I> inputSignatureValidator;
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
@@ -91,7 +90,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<I, UInt256> inputAmountMapper,
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
-		WitnessValidator<I> inputWitnessValidator
+		SignatureValidator<I> inputSignatureValidator
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -102,7 +101,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
-		this.inputWitnessValidator = inputWitnessValidator;
+		this.inputSignatureValidator = inputSignatureValidator;
 	}
 
 	@Override
@@ -220,13 +219,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		}
 
 		@Override
-		public WitnessValidator<I> inputWitnessValidator() {
-			return inputWitnessValidator;
-		}
-
-		@Override
-		public WitnessValidator<O> outputWitnessValidator() {
-			return (p, witnessData) -> WitnessValidatorResult.success();
+		public SignatureValidator<I> inputSignatureRequired() {
+			return inputSignatureValidator;
 		}
 	}
 
@@ -250,7 +244,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		return outputClass;
 	}
 
-	public WitnessValidator<I> getInputWitnessValidator() {
-		return inputWitnessValidator;
+	public SignatureValidator<I> getInputWitnessValidator() {
+		return inputSignatureValidator;
 	}
 }

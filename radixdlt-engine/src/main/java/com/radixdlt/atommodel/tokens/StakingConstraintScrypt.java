@@ -23,12 +23,10 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.WitnessData;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -61,7 +59,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 
 		// Unstaking
@@ -71,7 +69,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 
 		// Stake movement
@@ -85,7 +83,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress().getPublicKey())
 		));
 	}
 
@@ -93,11 +91,5 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
 	) {
 		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
-	}
-
-	static WitnessValidator.WitnessValidatorResult checkSignedBy(WitnessData meta, RadixAddress address) {
-		return meta.isSignedBy(address.getPublicKey())
-			? WitnessValidator.WitnessValidatorResult.success()
-			: WitnessValidator.WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
 }
