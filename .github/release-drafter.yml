@@ -17,7 +17,6 @@ categories:
     labels:
       - 'chore'
       - 'task'
-      - 'docs'
       - 'refactor'
   - title: '📚 Documentation'
     labels:
