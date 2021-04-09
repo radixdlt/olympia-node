@@ -19,13 +19,12 @@ package com.radixdlt.atommodel.validators;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
-
 import org.junit.Test;
 
-public class UnregisteredValidatorParticleTest {
+public class ValidatorParticleTest {
     @Test
     public void equalsContract() {
-        EqualsVerifier.forClass(UnregisteredValidatorParticle.class)
+        EqualsVerifier.forClass(ValidatorParticle.class)
             .suppress(Warning.NONFINAL_FIELDS)
             .verify();
     }

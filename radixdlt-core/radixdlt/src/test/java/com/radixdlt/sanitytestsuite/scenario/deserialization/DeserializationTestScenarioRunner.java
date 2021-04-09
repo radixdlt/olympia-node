@@ -28,8 +28,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
@@ -63,7 +62,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         mutableMap.put("radix.particles.unallocated_tokens", DeserializationTestScenarioRunner::assertUnallocatedTokensParticle);
         mutableMap.put("radix.particles.rri", DeserializationTestScenarioRunner::assertRRIParticle);
         mutableMap.put("radix.particles.registered_validator", DeserializationTestScenarioRunner::assertRegisteredValidatorParticle);
-        mutableMap.put("radix.particles.unregistered_validator", DeserializationTestScenarioRunner::assertUnregisteredValidatorParticle);
         mutableMap.put("radix.particles.system_particle", DeserializationTestScenarioRunner::assertSystemParticle);
         assertEqualsMap = ImmutableMap.copyOf(mutableMap);
     }
@@ -196,16 +194,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
     }
 
     private static void assertRegisteredValidatorParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        RegisteredValidatorParticle expected = (RegisteredValidatorParticle) expectedObject;
-        ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
-
-        assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
-
-        assertTrue(argsExtractor.isFinished());
-    }
-
-    private static void assertUnregisteredValidatorParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        UnregisteredValidatorParticle expected = (UnregisteredValidatorParticle) expectedObject;
+        ValidatorParticle expected = (ValidatorParticle) expectedObject;
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));

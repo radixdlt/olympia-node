@@ -49,33 +49,19 @@ import java.util.regex.Pattern;
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
-			.staticValidation(checkAddress(UnregisteredValidatorParticle::getAddress))
-			.virtualizeUp(p -> true) // virtualize first instance as UP
-			.build()
-		);
-
-		os.registerParticle(RegisteredValidatorParticle.class, ParticleDefinition.<RegisteredValidatorParticle>builder()
-			.staticValidation(checkAddressAndUrl(RegisteredValidatorParticle::getAddress,
-				RegisteredValidatorParticle::getUrl))
+		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
+			.staticValidation(checkAddressAndUrl(ValidatorParticle::getAddress,
+				ValidatorParticle::getUrl))
+			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl() == null)
 			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt
 			.build()
 		);
 
-		// transition from unregistered => registered
 		createTransition(os,
-			UnregisteredValidatorParticle.class,
-			UnregisteredValidatorParticle::getAddress,
-			RegisteredValidatorParticle.class,
-			RegisteredValidatorParticle::getAddress
-		);
-
-		// transition from registered => unregistered
-		createTransition(os,
-			RegisteredValidatorParticle.class,
-			RegisteredValidatorParticle::getAddress,
-			UnregisteredValidatorParticle.class,
-			UnregisteredValidatorParticle::getAddress
+			ValidatorParticle.class,
+			ValidatorParticle::getAddress,
+			ValidatorParticle.class,
+			ValidatorParticle::getAddress
 		);
 	}
 

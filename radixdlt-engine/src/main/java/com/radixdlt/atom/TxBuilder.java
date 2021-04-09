@@ -28,8 +28,7 @@ import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
@@ -377,12 +376,12 @@ public final class TxBuilder {
 		assertHasAddress("Must have address");
 
 		swap(
-			UnregisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address)),
+			ValidatorParticle.class,
+			p -> p.getAddress().equals(address) && !p.isRegisteredForNextEpoch(),
+			Optional.of(new ValidatorParticle(address, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address)
+			substateDown -> new ValidatorParticle(address, true, substateDown.getUrl())
 		);
 
 		particleGroup();

@@ -22,8 +22,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -120,20 +119,20 @@ public final class TransactionParser {
 		}
 
 		private void parseRegisterValidator() {
-			if (current() instanceof UnregisteredValidatorParticle && isUp()) {
+			if (current() instanceof ValidatorParticle && isUp()) {
 				pos++;
 
-				if (current() instanceof RegisteredValidatorParticle && isDown()) {
+				if (current() instanceof ValidatorParticle && isDown()) {
 					pos++;
 				}
 			}
 		}
 
 		private void parseUnregisterValidator() {
-			if (current() instanceof RegisteredValidatorParticle && isDown()) {
+			if (current() instanceof ValidatorParticle && isDown()) {
 				pos++;
 
-				if (current() instanceof RegisteredValidatorParticle && isUp()) {
+				if (current() instanceof ValidatorParticle && isUp()) {
 					pos++;
 				}
 			}

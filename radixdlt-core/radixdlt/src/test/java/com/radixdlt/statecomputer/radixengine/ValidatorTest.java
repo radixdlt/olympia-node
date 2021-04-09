@@ -25,8 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -75,9 +74,9 @@ public class ValidatorTest {
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var atom = TxLowLevelBuilder.newBuilder()
-			.virtualDown(new UnregisteredValidatorParticle(address))
-			.up(new RegisteredValidatorParticle(address))
-			.up(new RegisteredValidatorParticle(address))
+			.virtualDown(new ValidatorParticle(address, false))
+			.up(new ValidatorParticle(address, true))
+			.up(new ValidatorParticle(address, true))
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert

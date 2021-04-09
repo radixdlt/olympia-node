@@ -23,7 +23,7 @@
 package com.radixdlt.cli;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.identifiers.RadixAddress;
 import picocli.CommandLine;
 
@@ -69,8 +69,8 @@ public class ShowValidatorConfig implements Runnable {
 
 		api.getAtomStore()
 			.getUpParticles(api.getAddress(), null)
-			.filter(substate -> substate.getParticle() instanceof RegisteredValidatorParticle)
-			.map(substate -> (RegisteredValidatorParticle) substate.getParticle())
+			.filter(substate -> substate.getParticle() instanceof ValidatorParticle)
+			.map(substate -> (ValidatorParticle) substate.getParticle())
 			.findFirst()
 			.ifPresentOrElse(validator -> printDetails(validator, address),
 					() -> printfln("No active validator configuration at %s", address)
@@ -79,7 +79,7 @@ public class ShowValidatorConfig implements Runnable {
 		println("Done");
 	}
 
-	private static void printDetails(RegisteredValidatorParticle validator, RadixAddress address) {
+	private static void printDetails(ValidatorParticle validator, RadixAddress address) {
 		printfln("Current validator configuration at %s:", address);
 
 		var url = ofNullable(validator.getUrl())

@@ -27,8 +27,8 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -73,8 +73,7 @@ public final class Serialize {
 				TransferrableTokensParticle.class,
 				StakedTokensParticle.class,
 				UniqueParticle.class,
-				RegisteredValidatorParticle.class,
-				UnregisteredValidatorParticle.class,
+				ValidatorParticle.class,
 				SystemParticle.class,
 				ECDSASignature.class,
 				NodeRunnerData.class,
