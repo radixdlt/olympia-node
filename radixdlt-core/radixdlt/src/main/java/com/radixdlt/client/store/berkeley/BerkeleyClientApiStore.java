@@ -77,7 +77,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
@@ -250,6 +249,44 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
+	public Result<TxHistoryEntry> getSingleTransaction(AID txId) {
+		return retrieveTx(txId)
+			.flatMap(txn -> ClientApiUtils.extractCreator(txn, universeMagic)
+				.map(Result::ok)
+				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
+				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
+	}
+
+	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
+		var key = asKey(creator, Instant.EPOCH);
+		var data = entry();
+
+		try (var cursor = transactionHistory.openCursor(null, null)) {
+			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
+
+			if (status != OperationStatus.SUCCESS) {
+				return errorTxNotFound(txn);
+			}
+
+			do {
+				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
+					return Result.ok(txn)
+						.flatMap(this::toParsedTx)
+						.flatMap(parsed -> TransactionParser.parse(creator, parsed, instantFromKey(key)));
+				}
+
+				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
+			}
+			while (status == OperationStatus.SUCCESS);
+		}
+		return errorTxNotFound(txn);
+	}
+
+	private Result<TxHistoryEntry> errorTxNotFound(Txn txn) {
+		return Result.fail("Transaction with id {0} not found", txn.getId());
+	}
+
+	@Override
 	public Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> ptr) {
 		if (size <= 0) {
 			return Result.fail("Invalid size specified: {0}", size);
@@ -280,9 +317,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				AID.fromBytes(data.getData())
 					.flatMap(this::retrieveTx)
-					.onFailureDo(
-						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
-					)
+					.onFailure(this::reportError)
 					.flatMap(this::toParsedTx)
 					.flatMap(parsed -> TransactionParser.parse(nativeToken, address, parsed, instantFromKey(key)))
 					.onSuccess(list::add);
@@ -408,7 +443,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			scheduledFlushEventDispatcher.dispatch(ScheduledQueueFlush.create(), DEFAULT_FLUSH_INTERVAL);
 
-			disposable.add(ledgerCommitted.observeOn(Schedulers.io()).subscribe(this::newBatch));
+			disposable.add(ledgerCommitted.subscribe(this::newBatch));
 
 		} catch (Exception e) {
 			throw new ClientApiStoreException("Error while opening databases", e);

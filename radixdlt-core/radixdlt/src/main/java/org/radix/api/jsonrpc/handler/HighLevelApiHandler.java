@@ -18,12 +18,12 @@
 package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
-import org.radix.api.jsonrpc.AtomStatus;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import org.radix.api.services.HighLevelApiService;
+import com.radixdlt.client.api.HighLevelApiService;
 
 import com.google.inject.Inject;
+import com.radixdlt.client.api.TransactionStatusService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.identifiers.AID;
@@ -31,13 +31,9 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.functional.Failure;
 
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
@@ -46,18 +42,19 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
-import static org.radix.api.services.ApiAtomStatus.FAILED;
-import static org.radix.api.services.ApiAtomStatus.PENDING;
-import static org.radix.api.services.ApiAtomStatus.fromAtomStatus;
 
 import static com.radixdlt.utils.functional.Optionals.allOf;
 
 public class HighLevelApiHandler {
 	private final HighLevelApiService highLevelApiService;
+	private TransactionStatusService transactionStatusService;
 
 	@Inject
-	public HighLevelApiHandler(HighLevelApiService highLevelApiService) {
+	public HighLevelApiHandler(
+		HighLevelApiService highLevelApiService, TransactionStatusService transactionStatusService
+	) {
 		this.highLevelApiService = highLevelApiService;
+		this.transactionStatusService = transactionStatusService;
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
@@ -98,10 +95,30 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
-		return withRequiredParameter(request, "txID", (params, atomId) ->
-			AID.fromString(atomId)
-				.map(aid -> response(request, stubTransactionStatus(aid)))
+		return withRequiredParameter(request, "txID", (params, idString) ->
+			AID.fromString(idString)
+				.map(txId -> response(request, formatTransactionStatus(txId)))
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
+	}
+
+	public JSONObject handleLookupTransaction(JSONObject request) {
+		return withRequiredParameter(request, "txID", (params, idString) ->
+			AID.fromString(idString)
+				.map(txId -> respondWithTransactionLookupResult(request, txId))
+				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
+	}
+
+	private JSONObject formatTransactionStatus(AID txId) {
+		return transactionStatusService.getTransactionStatus(txId)
+			.asJson(jsonObject().put("txID", txId));
+	}
+
+	private JSONObject respondWithTransactionLookupResult(JSONObject request, AID txId) {
+		return highLevelApiService.getSingleTransaction(txId)
+			.fold(
+				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				value -> response(request, value.asJson())
+			);
 	}
 
 	private JSONObject respondWithTransactionHistory(JSONObject request) {
@@ -115,19 +132,10 @@ public class HighLevelApiHandler {
 			.getTransactionHistory(address, size, parseCursor(request))
 			.fold(
 				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
-				value -> value.map((newCursor, transactions) -> buildTransactionHistoryResponse(request, newCursor, transactions))
+				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
+					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
 			);
-	}
-
-	private static JSONObject buildTransactionHistoryResponse(
-		JSONObject request, Optional<Instant> cursor, List<TxHistoryEntry> transactions
-	) {
-		return response(
-			request,
-			jsonObject()
-				.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
-				.put("transactions", fromList(transactions, TxHistoryEntry::asJson))
-		);
 	}
 
 	private static String asCursor(Instant instant) {
@@ -190,34 +198,5 @@ public class HighLevelApiHandler {
 
 	private JSONObject toErrorResponse(JSONObject request, Failure failure) {
 		return errorResponse(request, RpcError.INVALID_PARAMS, failure.message());
-	}
-
-	//TODO: remove all code below once functionality will be implemented
-	//---------------------------------------------------------------------
-	// Stubs
-	//---------------------------------------------------------------------
-
-	private final ConcurrentMap<AID, AtomStatus> atomStatuses = new ConcurrentHashMap<>();
-
-	private static final SecureRandom random = new SecureRandom();
-	private static final AtomStatus[] STATUSES = AtomStatus.values();
-	private static final int LIMIT = STATUSES.length;
-
-	private JSONObject stubTransactionStatus(AID aid) {
-		var originalStatus = atomStatuses.computeIfAbsent(aid, key -> STATUSES[random.nextInt(LIMIT)]);
-		var status = fromAtomStatus(originalStatus);
-
-		var result = jsonObject().put("atomIdentifier", aid.toString()).put("status", status);
-
-		if (status == FAILED) {
-			result.put("failure", originalStatus.toString());
-		}
-
-		if (status == PENDING) {
-			//Prepare for the next request
-			atomStatuses.put(aid, random.nextBoolean() ? AtomStatus.STORED : AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
-		}
-
-		return result;
 	}
 }

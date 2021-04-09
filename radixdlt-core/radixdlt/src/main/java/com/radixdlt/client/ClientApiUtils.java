@@ -81,6 +81,12 @@ public final class ClientApiUtils {
 		return toParticleWithSpin(reInstructions, loader);
 	}
 
+	public static Optional<RadixAddress> extractCreator(Txn txn, byte universeMagic) {
+		return restore(serialization, txn.getPayload(), Atom.class)
+			.toOptional()
+			.flatMap(atom -> extractCreator(atom, universeMagic));
+	}
+
 	public static Optional<RadixAddress> extractCreator(Atom tx, byte universeMagic) {
 		return tx.getSignature()
 			.flatMap(signature -> ECPublicKey.recoverFrom(tx.computeHashToSign(), signature))

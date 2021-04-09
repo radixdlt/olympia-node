@@ -36,38 +36,110 @@ import java.util.Objects;
 public interface Tuple<S extends Tuple> {
 	interface Tuple0 extends Tuple<Tuple0> {
 		<T> T map(FN0<T> mapper);
+
+		default <T1> Tuple1<T1> append(final T1 value) {
+			return tuple(value);
+		}
+
+		default <T1> Tuple1<T1> prepend(final T1 value) {
+			return tuple(value);
+		}
 	}
 
 	interface Tuple1<T1> extends Tuple<Tuple1<T1>> {
 		<T> T map(Functions.FN1<T, T1> mapper);
+
+		default <T2> Tuple2<T1, T2> append(final T2 value) {
+			return map(v1 -> tuple(v1, value));
+		}
+
+		default <T2> Tuple2<T2, T1> prepend(final T2 value) {
+			return map(v1 -> tuple(value, v1));
+		}
 	}
 
 	interface Tuple2<T1, T2> extends Tuple {
 		<T> T map(FN2<T, T1, T2> mapper);
+
+		default <T3> Tuple3<T1, T2, T3> append(final T3 value) {
+			return map((v1, v2) -> tuple(v1, v2, value));
+		}
+
+		default <T3> Tuple3<T3, T1, T2> prepend(final T3 value) {
+			return map((v1, v2) -> tuple(value, v1, v2));
+		}
 	}
 
 	interface Tuple3<T1, T2, T3> extends Tuple {
 		<T> T map(FN3<T, T1, T2, T3> mapper);
+
+		default <T4> Tuple4<T1, T2, T3, T4> append(final T4 value) {
+			return map((v1, v2, v3) -> tuple(v1, v2, v3, value));
+		}
+
+		default <T4> Tuple4<T4, T1, T2, T3> prepend(final T4 value) {
+			return map((v1, v2, v3) -> tuple(value, v1, v2, v3));
+		}
 	}
 
 	interface Tuple4<T1, T2, T3, T4> extends Tuple {
 		<T> T map(FN4<T, T1, T2, T3, T4> mapper);
+
+		default <T5> Tuple5<T1, T2, T3, T4, T5> append(final T5 value) {
+			return map((v1, v2, v3, v4) -> tuple(v1, v2, v3, v4, value));
+		}
+
+		default <T5> Tuple5<T5, T1, T2, T3, T4> prepend(final T5 value) {
+			return map((v1, v2, v3, v4) -> tuple(value, v1, v2, v3, v4));
+		}
 	}
 
 	interface Tuple5<T1, T2, T3, T4, T5> extends Tuple {
 		<T> T map(FN5<T, T1, T2, T3, T4, T5> mapper);
+
+		default <T6> Tuple6<T1, T2, T3, T4, T5, T6> append(final T6 value) {
+			return map((v1, v2, v3, v4, v5) -> tuple(v1, v2, v3, v4, v5, value));
+		}
+
+		default <T6> Tuple6<T6, T1, T2, T3, T4, T5> prepend(final T6 value) {
+			return map((v1, v2, v3, v4, v5) -> tuple(value, v1, v2, v3, v4, v5));
+		}
 	}
 
 	interface Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple {
 		<T> T map(FN6<T, T1, T2, T3, T4, T5, T6> mapper);
+
+		default <T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> append(final T7 value) {
+			return map((v1, v2, v3, v4, v5, v6) -> tuple(v1, v2, v3, v4, v5, v6, value));
+		}
+
+		default <T7> Tuple7<T7, T1, T2, T3, T4, T5, T6> prepend(final T7 value) {
+			return map((v1, v2, v3, v4, v5, v6) -> tuple(value, v1, v2, v3, v4, v5, v6));
+		}
 	}
 
 	interface Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple {
 		<T> T map(FN7<T, T1, T2, T3, T4, T5, T6, T7> mapper);
+
+		default <T8> Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> append(final T8 value) {
+			return map((v1, v2, v3, v4, v5, v6, v7) -> tuple(v1, v2, v3, v4, v5, v6, v7, value));
+		}
+
+		default <T8> Tuple8<T8, T1, T2, T3, T4, T5, T6, T7> prepend(final T8 value) {
+			return map((v1, v2, v3, v4, v5, v6, v7) -> tuple(value, v1, v2, v3, v4, v5, v6, v7));
+		}
 	}
 
 	interface Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple {
 		<T> T map(FN8<T, T1, T2, T3, T4, T5, T6, T7, T8> mapper);
+
+		default <T9> Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> append(final T9 value) {
+			return map((v1, v2, v3, v4, v5, v6, v7, v8) -> tuple(v1, v2, v3, v4, v5, v6, v7, v8, value));
+		}
+
+		default <T9> Tuple9<T9, T1, T2, T3, T4, T5, T6, T7, T8> prepend(final T9 value) {
+			return map((v1, v2, v3, v4, v5, v6, v7, v8) -> tuple(value, v1, v2, v3, v4, v5, v6, v7, v8));
+		}
 	}
 
 	interface Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> extends Tuple {

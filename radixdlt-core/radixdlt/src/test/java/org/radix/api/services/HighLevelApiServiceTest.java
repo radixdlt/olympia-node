@@ -22,6 +22,8 @@ import org.junit.Test;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.api.HighLevelApiService;
+import com.radixdlt.client.api.HighLevelApiService;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -115,6 +117,15 @@ public class HighLevelApiServiceTest {
 			.onFailureDo(Assert::fail);
 	}
 
+	@Test
+	public void testGetTransactionHistory() {
+		//TODO: finish
+	}
+
+	@Test
+	public void testGetSingleTransaction() {
+		//TODO: finish
+	}
 
 	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {
 		return new MutableSupplyTokenDefinitionParticle(

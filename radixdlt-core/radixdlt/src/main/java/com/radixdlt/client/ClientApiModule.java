@@ -24,22 +24,26 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.client.api.ScheduledCacheCleanup;
+import com.radixdlt.client.api.TransactionStatusService;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+
 import org.radix.api.jsonrpc.JsonRpcHandler;
 import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 
 public class ClientApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
+		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 	}
 
 	@ProvidesIntoMap
@@ -67,7 +71,13 @@ public class ClientApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
-	@StringMapKey("radix.transactionStatus")
+	@StringMapKey("radix.lookupTransaction")
+	public JsonRpcHandler lookupTransaction(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleLookupTransaction;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.statusOfTransaction")
 	public JsonRpcHandler transactionStatus(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleTransactionStatus;
 	}
@@ -80,9 +90,19 @@ public class ClientApiModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> clientApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(Runners.APPLICATION,
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
 			ScheduledQueueFlush.class,
 			clientApiStore.queueFlushProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> transactionStatusService(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledCacheCleanup.class,
+			transactionStatusService.cacheCleanupProcessor()
 		);
 	}
 }
