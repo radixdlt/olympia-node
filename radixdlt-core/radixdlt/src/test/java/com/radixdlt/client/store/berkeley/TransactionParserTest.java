@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -86,6 +87,7 @@ public class TransactionParserTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScrypt());
 
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())

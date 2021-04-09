@@ -42,7 +42,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		registerParticles(os);
 		defineTokenCreation(os);
 		defineMintTransferBurn(os);
-		defineStaking(os);
 	}
 
 	private void registerParticles(SysCalls os) {
@@ -73,18 +72,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TransferrableTokensParticle.class,
 			ParticleDefinition.<TransferrableTokensParticle>builder()
+				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(TransferrableTokensParticle::getTokDefRef)
 				.build()
 		);
 
-		os.registerParticle(
-			StakedTokensParticle.class,
-			ParticleDefinition.<StakedTokensParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(StakedTokensParticle::getTokDefRef)
-				.build()
-		);
 	}
 
 	private void defineTokenCreation(SysCalls os) {
@@ -169,53 +162,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		));
 	}
 
-	private void defineStaking(SysCalls os) {
-		// Staking
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TransferrableTokensParticle.class,
-			StakedTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
-			StakedTokensParticle::getAmount,
-			checkEquals(
-				TransferrableTokensParticle::isMutable,
-				StakedTokensParticle::isMutable,
-				"Mutability not equal."
-			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
-		));
-
-		// Unstaking
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
-			TransferrableTokensParticle.class,
-			StakedTokensParticle::getAmount,
-			TransferrableTokensParticle::getAmount,
-			checkEquals(
-				StakedTokensParticle::isMutable,
-				TransferrableTokensParticle::isMutable,
-				"Mutability not equal."
-			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
-		));
-
-		// Stake movement
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			StakedTokensParticle.class,
-			StakedTokensParticle.class,
-			StakedTokensParticle::getAmount,
-			StakedTokensParticle::getAmount,
-			checkEquals(
-				StakedTokensParticle::isMutable,
-				StakedTokensParticle::isMutable,
-				"Mutability not equal.",
-				StakedTokensParticle::getAddress,
-				StakedTokensParticle::getAddress,
-				"Can't send staked tokens to another address."
-			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
-		));
-	}
-
 	@VisibleForTesting
 	static Result checkCreateTransferrable(FixedSupplyTokenDefinitionParticle tokDef, TransferrableTokensParticle transferrable) {
 		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
@@ -251,12 +197,4 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
 	}
 
-
-	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
-		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0,
-		Function<L, R1> leftMapper1, Function<R, R1> rightMapper1, String errorMessage1
-	) {
-		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0)
-			.mapSuccess(() -> Result.of(Objects.equals(leftMapper1.apply(l), rightMapper1.apply(r)), errorMessage1));
-	}
 }

@@ -26,6 +26,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
@@ -90,6 +91,7 @@ public class RadixEngineModule extends AbstractModule {
 		});
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
+		os.load(new StakingConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new SystemConstraintScrypt());
 		return os;
@@ -104,7 +106,6 @@ public class RadixEngineModule extends AbstractModule {
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
 	}
-
 
 	@Provides
 	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
