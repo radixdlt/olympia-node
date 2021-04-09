@@ -522,12 +522,6 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(rri, true);
 
-		swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
-			"Cannot delegate to " + delegateAddress
-		).with(RegisteredValidatorParticle::copy);
-
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
