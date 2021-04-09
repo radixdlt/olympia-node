@@ -111,7 +111,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> {
-				if (!o.isMutable()) {
+				if (!o.isBurnable()) {
 					return Result.error("Output is not mutable");
 				}
 
@@ -127,8 +127,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			checkEquals(
-				TransferrableTokensParticle::isMutable,
-				TransferrableTokensParticle::isMutable,
+				TransferrableTokensParticle::isBurnable,
+				TransferrableTokensParticle::isBurnable,
 				"Permissions not equal."
 			),
 			i -> Optional.of(i.getAddress().getPublicKey())
@@ -141,7 +141,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			UnallocatedTokensParticle::getAmount,
 			(i, o) -> {
-				if (!i.isMutable()) {
+				if (!i.isBurnable()) {
 					return Result.error("Input is not mutable");
 				}
 
@@ -157,7 +157,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			return Result.error("Supply and amount are not equal.");
 		}
 
-		if (transferrable.isMutable()) {
+		if (transferrable.isBurnable()) {
 			return Result.error("Tokens must be non-mutable.");
 		}
 
