@@ -36,7 +36,7 @@ import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-public class ConstructionController implements Controller {
+public final class ConstructionController implements Controller {
 	private final AtomIndex atomIndex;
 
 	@Inject
@@ -46,8 +46,7 @@ public class ConstructionController implements Controller {
 
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
-		// TODO: move to /construction/parse
-		handler.post("/node/parse", this::handleParse);
+		handler.post("/construction/parse", this::handleParse);
 	}
 
 	void handleParse(HttpServerExchange exchange) {
