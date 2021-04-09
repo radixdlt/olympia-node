@@ -20,9 +20,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Unit tests
-        run: ./gradlew check
-      - name: Sonar
-        run: ./gradlew jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
+        run: ./gradlew check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
