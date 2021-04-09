@@ -21,8 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 
 public final class UnregisterAsValidator implements TxAction {
 	@Override
@@ -30,11 +29,11 @@ public final class UnregisterAsValidator implements TxAction {
 		var address = txBuilder.getAddressOrFail("Must have address");
 
 		txBuilder.swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
+			ValidatorParticle.class,
+			p -> p.getAddress().equals(address) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
-			substateDown -> new UnregisteredValidatorParticle(address)
+			substateDown -> new ValidatorParticle(address, false, substateDown.getUrl())
 		);
 	}
 }

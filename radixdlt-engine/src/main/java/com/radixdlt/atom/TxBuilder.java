@@ -28,8 +28,7 @@ import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
@@ -377,12 +376,12 @@ public final class TxBuilder {
 		assertHasAddress("Must have address");
 
 		swap(
-			UnregisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address)),
+			ValidatorParticle.class,
+			p -> p.getAddress().equals(address) && !p.isRegisteredForNextEpoch(),
+			Optional.of(new ValidatorParticle(address, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address)
+			substateDown -> new ValidatorParticle(address, true, substateDown.getUrl())
 		);
 
 		particleGroup();
@@ -522,12 +521,6 @@ public final class TxBuilder {
 		// HACK
 		var factory = TokDefParticleFactory.create(rri, true);
 
-		swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
-			"Cannot delegate to " + delegateAddress
-		).with(RegisteredValidatorParticle::copy);
-
 		swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
@@ -535,27 +528,24 @@ public final class TxBuilder {
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 
 		particleGroup();
 
 		return this;
 	}
 
-	// FIXME: This is broken as can move stake to delegate who doesn't approve of you
-	public TxBuilder moveStake(RRI rri, RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
+	public TxBuilder moveStake(RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
-		// HACK
-		var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			p -> p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(from, address, amt),
+			amt -> new StakedTokensParticle(from, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createStaked(to, address, amt));
+		).with(amt -> new StakedTokensParticle(to, address, amt));
 
 		particleGroup();
 

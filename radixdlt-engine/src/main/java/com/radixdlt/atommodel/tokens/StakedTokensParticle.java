@@ -18,9 +18,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -28,7 +26,6 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
-import java.util.Set;
 
 /**
  *  A particle which represents an amount of staked fungible tokens
@@ -44,17 +41,9 @@ public final class StakedTokensParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("rri")
-	@DsonOutput(Output.ALL)
-	private RRI tokenDefinitionReference;
-
 	@JsonProperty("a")
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
-
-	@JsonProperty("m")
-	@DsonOutput(Output.ALL)
-	private boolean isMutable;
 
 	public StakedTokensParticle() {
 		super();
@@ -63,15 +52,11 @@ public final class StakedTokensParticle extends Particle {
 	public StakedTokensParticle(
 		RadixAddress delegateAddress,
 		RadixAddress address,
-		UInt256 amount,
-		RRI tokenDefinitionReference,
-		boolean isMutable
+		UInt256 amount
 	) {
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
-		this.isMutable = isMutable;
 	}
 
 	public RadixAddress getDelegateAddress() {
@@ -82,23 +67,10 @@ public final class StakedTokensParticle extends Particle {
 		return this.address;
 	}
 
-	public Set<RadixAddress> getAddresses() {
-		return ImmutableSet.of(this.address, this.delegateAddress);
-	}
-
-	public RRI getTokDefRef() {
-		return this.tokenDefinitionReference;
-	}
-
-	public boolean isMutable() {
-		return isMutable;
-	}
-
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
-			tokenDefinitionReference,
 			amount,
 			address,
 			delegateAddress
@@ -120,9 +92,7 @@ public final class StakedTokensParticle extends Particle {
 		StakedTokensParticle that = (StakedTokensParticle) o;
 		return Objects.equals(delegateAddress, that.delegateAddress)
 			&& Objects.equals(address, that.address)
-			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-			&& Objects.equals(amount, that.amount)
-			&& isMutable == that.isMutable;
+			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
@@ -130,9 +100,7 @@ public final class StakedTokensParticle extends Particle {
 		return Objects.hash(
 			delegateAddress,
 			address,
-			tokenDefinitionReference,
-			amount,
-			isMutable
+			amount
 		);
 	}
 }

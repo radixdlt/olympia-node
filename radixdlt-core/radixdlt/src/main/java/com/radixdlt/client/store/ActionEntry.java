@@ -57,22 +57,22 @@ public class ActionEntry {
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 
-	public static ActionEntry fromStake(StakedTokensParticle stake) {
+	public static ActionEntry fromStake(StakedTokensParticle stake, RRI nativeToken) {
 		return create(
 			ActionType.STAKE,
 			stake.getAddress(),
 			stake.getDelegateAddress(),
-			stake.getAmount(), stake.getTokDefRef()
+			stake.getAmount(), nativeToken
 		);
 	}
 
-	public static ActionEntry fromUnstake(StakedTokensParticle unstake) {
+	public static ActionEntry fromUnstake(StakedTokensParticle unstake, RRI nativeToken) {
 		return create(
 			ActionType.UNSTAKE,
 			unstake.getAddress(),
 			unstake.getDelegateAddress(),
 			unstake.getAmount(),
-			unstake.getTokDefRef()
+			nativeToken
 		);
 	}
 

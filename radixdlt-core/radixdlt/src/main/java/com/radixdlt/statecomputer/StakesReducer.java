@@ -19,9 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.identifiers.RRI;
 
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -29,10 +27,7 @@ import java.util.function.Supplier;
  * Reduces staked tokens particles to total amount staked per node
  */
 public final class StakesReducer implements StateReducer<Stakes, StakedTokensParticle> {
-    private final RRI stakingToken;
-
-    public StakesReducer(RRI stakingToken) {
-        this.stakingToken = Objects.requireNonNull(stakingToken);
+    public StakesReducer() {
     }
 
     @Override
@@ -52,23 +47,11 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
 
     @Override
     public BiFunction<Stakes, StakedTokensParticle, Stakes> outputReducer() {
-        return (prev, p) -> {
-            if (!p.getTokDefRef().equals(stakingToken)) {
-                return prev;
-            }
-
-            return prev.add(p.getDelegateAddress().getPublicKey(), p.getAmount());
-        };
+        return (prev, p) -> prev.add(p.getDelegateAddress().getPublicKey(), p.getAmount());
     }
 
     @Override
     public BiFunction<Stakes, StakedTokensParticle, Stakes> inputReducer() {
-        return (prev, p) -> {
-            if (!p.getTokDefRef().equals(stakingToken)) {
-                return prev;
-            }
-
-            return prev.remove(p.getDelegateAddress().getPublicKey(), p.getAmount());
-        };
+        return (prev, p) -> prev.remove(p.getDelegateAddress().getPublicKey(), p.getAmount());
     }
 }

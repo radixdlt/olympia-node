@@ -23,8 +23,7 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
@@ -59,7 +58,6 @@ public class JsonAndDsonPrinter {
         logUnallocatedTokensParticle();
         logRRIParticle();
         logRegisteredValidatorParticle();
-        logUnregisteredValidatorParticle();
         logSystemParticle();
     }
 
@@ -68,13 +66,8 @@ public class JsonAndDsonPrinter {
         logParticle(particle);
     }
 
-    private void logUnregisteredValidatorParticle() {
-        final var particle = new UnregisteredValidatorParticle(ADDRESS);
-        logParticle(particle);
-    }
-
     private void logRegisteredValidatorParticle() {
-        final var particle = new RegisteredValidatorParticle(ADDRESS);
+        final var particle = new ValidatorParticle(ADDRESS, true);
         logParticle(particle);
     }
 
@@ -105,9 +98,7 @@ public class JsonAndDsonPrinter {
         final var particle = new StakedTokensParticle(
             ADDRESS,
             ADDRESS,
-            UInt256.EIGHT,
-            TOKEN_RRI,
-            true
+            UInt256.EIGHT
         );
         logParticle(particle);
     }

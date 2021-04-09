@@ -26,8 +26,7 @@ import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
@@ -59,7 +58,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         mutableMap.put("radix.particles.unallocated_tokens", SerializationTestScenarioRunner::makeUnallocatedTokensParticle);
         mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::makeRRIParticle);
         mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::makeRegisteredValidatorParticle);
-        mutableMap.put("radix.particles.unregistered_validator", SerializationTestScenarioRunner::makeUnregisteredValidatorParticle);
         mutableMap.put("radix.particles.system_particle", SerializationTestScenarioRunner::makeSystemParticle);
         constructorMap = ImmutableMap.copyOf(mutableMap);
     }
@@ -106,9 +104,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         var ttp = new StakedTokensParticle(
             argsExtractor.asRadixAddress("delegateAddress"),
             argsExtractor.asRadixAddress("address"),
-            argsExtractor.asUInt256("amount"),
-            argsExtractor.asRRI("tokenDefinitionReference"),
-            true
+            argsExtractor.asUInt256("amount")
         );
 
         assertTrue(argsExtractor.isFinished());
@@ -144,20 +140,13 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         return rrip;
     }
 
-    private static RegisteredValidatorParticle makeRegisteredValidatorParticle(final Map<String, Object> arguments) {
+    private static ValidatorParticle makeRegisteredValidatorParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var rvp = new RegisteredValidatorParticle(
-            argsExtractor.asRadixAddress("address")
+        var rvp = new ValidatorParticle(
+            argsExtractor.asRadixAddress("address"), true
         );
         assertTrue(argsExtractor.isFinished());
         return rvp;
-    }
-
-    private static UnregisteredValidatorParticle makeUnregisteredValidatorParticle(final Map<String, Object> arguments) {
-        var argsExtractor = ArgumentsExtractor.from(arguments);
-        var uvp = new UnregisteredValidatorParticle(argsExtractor.asRadixAddress("address"));
-        assertTrue(argsExtractor.isFinished());
-        return uvp;
     }
 
     private static SystemParticle makeSystemParticle(final Map<String, Object> arguments) {

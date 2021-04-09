@@ -21,8 +21,7 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 
 import java.util.Optional;
 
@@ -32,12 +31,12 @@ public final class RegisterAsValidator implements TxAction {
 		var address = txBuilder.getAddressOrFail("Must have an address to register.");
 
 		txBuilder.swap(
-			UnregisteredValidatorParticle.class,
-			p -> p.getAddress().equals(address),
-			Optional.of(new UnregisteredValidatorParticle(address)),
+			ValidatorParticle.class,
+			p -> p.getAddress().equals(address) && !p.isRegisteredForNextEpoch(),
+			Optional.of(new ValidatorParticle(address, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address)
+			substateDown -> new ValidatorParticle(address, true, substateDown.getUrl())
 		);
 	}
 }

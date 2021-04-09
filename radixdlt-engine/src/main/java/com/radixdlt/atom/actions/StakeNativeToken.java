@@ -22,9 +22,9 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -49,12 +49,6 @@ public final class StakeNativeToken implements TxAction {
 			true
 		);
 
-		txBuilder.swap(
-			RegisteredValidatorParticle.class,
-			p -> p.getAddress().equals(delegateAddress) && p.allowsDelegator(address),
-			"Cannot delegate to " + delegateAddress
-		).with(RegisteredValidatorParticle::copy);
-
 		txBuilder.swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(nativeToken)
@@ -65,6 +59,6 @@ public final class StakeNativeToken implements TxAction {
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 	}
 }

@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.identifiers.RadixAddress;
@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * Reduces radix engine state to validator info
  */
-public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, RegisteredValidatorParticle> {
+public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, ValidatorParticle> {
 	private final RadixAddress address;
 
 	@Inject
@@ -45,8 +45,8 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, R
 	}
 
 	@Override
-	public Class<RegisteredValidatorParticle> particleClass() {
-		return RegisteredValidatorParticle.class;
+	public Class<ValidatorParticle> particleClass() {
+		return ValidatorParticle.class;
 	}
 
 	@Override
@@ -55,22 +55,17 @@ public final class ValidatorInfoReducer implements StateReducer<ValidatorInfo, R
 	}
 
 	@Override
-	public BiFunction<ValidatorInfo, RegisteredValidatorParticle, ValidatorInfo> outputReducer() {
+	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> outputReducer() {
 		return (i, r) -> {
 			if (r.getAddress().equals(address)) {
-				return new ValidatorInfo(true);
+				return new ValidatorInfo(r.isRegisteredForNextEpoch());
 			}
 			return i;
 		};
 	}
 
 	@Override
-	public BiFunction<ValidatorInfo, RegisteredValidatorParticle, ValidatorInfo> inputReducer() {
-		return (i, r) -> {
-			if (r.getAddress().equals(address)) {
-				return new ValidatorInfo(false);
-			}
-			return i;
-		};
+	public BiFunction<ValidatorInfo, ValidatorParticle, ValidatorInfo> inputReducer() {
+		return (i, r) -> i;
 	}
 }

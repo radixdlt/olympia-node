@@ -162,7 +162,7 @@ public final class NodeController implements Controller {
 				(txn, aid) -> respond(exchange, jsonObject()
 					.put("result", jsonObject()
 						.put("transaction", Hex.toHexString(txn.getPayload()))
-						.put("txnId", aid.toString())
+						.put("transaction_identifier", aid.toString())
 					)
 				),
 				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject()

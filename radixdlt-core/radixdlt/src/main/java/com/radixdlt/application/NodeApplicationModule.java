@@ -24,8 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
@@ -66,12 +65,7 @@ public final class NodeApplicationModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
-		return new SubstateCacheRegister<>(RegisteredValidatorParticle.class, p -> p.getAddress().equals(self));
-	}
-
-	@ProvidesIntoSet
-	private SubstateCacheRegister<?> unregisteredSubstate(@Self RadixAddress self) {
-		return new SubstateCacheRegister<>(UnregisteredValidatorParticle.class, p -> p.getAddress().equals(self));
+		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getAddress().equals(self));
 	}
 
 	@ProvidesIntoSet

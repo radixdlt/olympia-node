@@ -27,42 +27,36 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 @SerializerId2("v")
-public final class RegisteredValidatorParticle extends Particle {
+public final class ValidatorParticle extends Particle {
 	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final RadixAddress address;
+
+	@JsonProperty("r")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final boolean registeredForNextEpoch;
 
 	@JsonProperty("u")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final String url;
 
-	public RegisteredValidatorParticle(RadixAddress address) {
-		this(address, null);
+	public ValidatorParticle(RadixAddress address, boolean registeredForNextEpoch) {
+		this(address, registeredForNextEpoch, null);
 	}
 
 	@JsonCreator
-	public RegisteredValidatorParticle(
+	public ValidatorParticle(
 		@JsonProperty("o") RadixAddress address,
+		@JsonProperty("r") boolean registeredForNextEpoch,
 		@JsonProperty("u") String url
 	) {
 		this.address = Objects.requireNonNull(address);
+		this.registeredForNextEpoch = registeredForNextEpoch;
 		this.url = url;
 	}
 
-	public RegisteredValidatorParticle copy() {
-		return new RegisteredValidatorParticle(
-			this.address,
-			this.url
-		);
-	}
-
-	public boolean allowsDelegator(RadixAddress delegator) {
-		return true;
-	}
-
-	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {
-		return Objects.equals(address, other.address)
-			&& Objects.equals(url, other.url);
+	public boolean isRegisteredForNextEpoch() {
+		return registeredForNextEpoch;
 	}
 
 	public RadixAddress getAddress() {
@@ -75,7 +69,7 @@ public final class RegisteredValidatorParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.url);
+		return Objects.hash(this.address, this.registeredForNextEpoch, this.url);
 	}
 
 	@Override
@@ -83,19 +77,20 @@ public final class RegisteredValidatorParticle extends Particle {
 		if (this == obj) {
 			return true;
 		}
-		if (!(obj instanceof RegisteredValidatorParticle)) {
+		if (!(obj instanceof ValidatorParticle)) {
 			return false;
 		}
-		final var that = (RegisteredValidatorParticle) obj;
+		final var that = (ValidatorParticle) obj;
 		return Objects.equals(this.address, that.address)
+			&& this.registeredForNextEpoch == that.registeredForNextEpoch
 			&& Objects.equals(this.url, that.url);
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[%s, %s]",
-			getClass().getSimpleName(), getAddress(), getUrl()
+			"%s[%s, %s, %s]",
+			getClass().getSimpleName(), getAddress(), registeredForNextEpoch, getUrl()
 		);
 	}
 }

@@ -46,7 +46,7 @@ public final class ConstructionController implements Controller {
 
 	@Override
 	public void configureRoutes(RoutingHandler handler) {
-		handler.post("/construction/parse", this::handleParse);
+		handler.post("/node/parse", this::handleParse);
 	}
 
 	void handleParse(HttpServerExchange exchange) {

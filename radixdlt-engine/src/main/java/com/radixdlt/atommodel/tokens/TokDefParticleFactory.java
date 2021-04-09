@@ -54,16 +54,6 @@ public final class TokDefParticleFactory {
 		);
 	}
 
-	public StakedTokensParticle createStaked(RadixAddress delegate, RadixAddress address, UInt256 amount) {
-		return new StakedTokensParticle(
-			delegate,
-			address,
-			amount,
-			tokDefRef,
-			isMutable
-		);
-	}
-
 	public static TokDefParticleFactory create(
 		RRI tokDefRef,
 		boolean isMutable

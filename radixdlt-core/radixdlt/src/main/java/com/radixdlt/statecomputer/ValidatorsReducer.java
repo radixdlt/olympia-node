@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.engine.StateReducer;
 
 import java.util.function.BiFunction;
@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 /**
  * Reduces particles to Registered Validators
  */
-public final class ValidatorsReducer implements StateReducer<RegisteredValidators, RegisteredValidatorParticle> {
+public final class ValidatorsReducer implements StateReducer<RegisteredValidators, ValidatorParticle> {
 
     public ValidatorsReducer() {
     }
@@ -37,8 +37,8 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
-    public Class<RegisteredValidatorParticle> particleClass() {
-        return RegisteredValidatorParticle.class;
+    public Class<ValidatorParticle> particleClass() {
+        return ValidatorParticle.class;
     }
 
     @Override
@@ -47,12 +47,18 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     }
 
     @Override
-    public BiFunction<RegisteredValidators, RegisteredValidatorParticle, RegisteredValidators> outputReducer() {
-        return (prev, p) -> prev.add(p.getAddress().getPublicKey());
+    public BiFunction<RegisteredValidators, ValidatorParticle, RegisteredValidators> outputReducer() {
+        return (prev, p) -> {
+            if (p.isRegisteredForNextEpoch()) {
+                return prev.add(p.getAddress().getPublicKey());
+            } else {
+                return prev.remove(p.getAddress().getPublicKey());
+            }
+        };
     }
 
     @Override
-    public BiFunction<RegisteredValidators, RegisteredValidatorParticle, RegisteredValidators> inputReducer() {
-        return (prev, p) -> prev.remove(p.getAddress().getPublicKey());
+    public BiFunction<RegisteredValidators, ValidatorParticle, RegisteredValidators> inputReducer() {
+        return (prev, p) -> prev;
     }
 }

@@ -22,6 +22,7 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,9 +52,12 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
+		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
+
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScrypt(tokenRri));
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -62,7 +66,6 @@ public class StakedTokensTest {
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(cm, this.store);
 
-		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
 		var tokDef = new MutableTokenDefinition(
 			"TEST",
 			"Test",
@@ -131,7 +134,7 @@ public class StakedTokensTest {
 		this.engine.execute(List.of(atom));
 
 		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
-			.moveStake(this.tokenRri, this.validatorAddress, newAddress(), UInt256.SEVEN)
+			.moveStake(this.validatorAddress, newAddress(), UInt256.SEVEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(atom2));

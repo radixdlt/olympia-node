@@ -22,12 +22,12 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -40,8 +40,8 @@ import java.util.Optional;
 public final class TransactionParser {
 	private TransactionParser() { }
 
-	public static Result<TxHistoryEntry> parse(RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
-		return new ParsingContext(parsedTx.getParticles(), parsedTx.getMessage(), parsedTx.getId(), txDate, owner)
+	public static Result<TxHistoryEntry> parse(RRI nativeToken, RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
+		return new ParsingContext(parsedTx.getParticles(), parsedTx.getMessage(), parsedTx.getId(), txDate, nativeToken, owner)
 			.parse();
 	}
 
@@ -52,17 +52,20 @@ public final class TransactionParser {
 		private final Optional<String> message;
 		private final AID txId;
 		private final Instant txDate;
+		private final RRI nativeToken;
 		private final RadixAddress owner;
 		private final List<ActionEntry> actions = new ArrayList<>();
 
 		private int pos;
 		private UInt256 fee = UInt256.ZERO;
 
-		ParsingContext(List<ParticleWithSpin> input, Optional<String> message, AID txId, Instant txDate, RadixAddress owner) {
+		ParsingContext(List<ParticleWithSpin> input, Optional<String> message, AID txId, Instant txDate, RRI nativeToken,
+					   RadixAddress owner) {
 			this.input = input;
 			this.message = message;
 			this.txId = txId;
 			this.txDate = txDate;
+			this.nativeToken = nativeToken;
 			this.owner = owner;
 		}
 
@@ -120,20 +123,20 @@ public final class TransactionParser {
 		}
 
 		private void parseRegisterValidator() {
-			if (current() instanceof UnregisteredValidatorParticle && isUp()) {
+			if (current() instanceof ValidatorParticle && isUp()) {
 				pos++;
 
-				if (current() instanceof RegisteredValidatorParticle && isDown()) {
+				if (current() instanceof ValidatorParticle && isDown()) {
 					pos++;
 				}
 			}
 		}
 
 		private void parseUnregisterValidator() {
-			if (current() instanceof RegisteredValidatorParticle && isDown()) {
+			if (current() instanceof ValidatorParticle && isDown()) {
 				pos++;
 
-				if (current() instanceof RegisteredValidatorParticle && isUp()) {
+				if (current() instanceof ValidatorParticle && isUp()) {
 					pos++;
 				}
 			}
@@ -168,7 +171,7 @@ public final class TransactionParser {
 
 				parseRemainder();
 
-				actions.add(ActionEntry.fromStake(stake));
+				actions.add(ActionEntry.fromStake(stake, nativeToken));
 			}
 		}
 
@@ -189,7 +192,7 @@ public final class TransactionParser {
 					pos++;
 				}
 
-				actions.add(ActionEntry.fromUnstake(unstake));
+				actions.add(ActionEntry.fromUnstake(unstake, nativeToken));
 			}
 		}
 
