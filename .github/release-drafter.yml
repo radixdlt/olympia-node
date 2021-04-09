@@ -27,7 +27,7 @@ categories:
       - 'performance'
       - 'test'
 
-  - title: '🥦 CI & Build'
+  - title: '🍏 CI & Build'
     labels:
       - 'ci'
       - 'build'
