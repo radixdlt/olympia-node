@@ -27,8 +27,7 @@ jobs:
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Sonar
-        run: |
-          ./gradlew sonarqube --debug -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=radixdlt-github -Dsonar.branch.name=${GITHUB_BASE_REF}
+        run: ./gradlew sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
