@@ -29,24 +29,4 @@ public final class UniverseValidator {
 			throw new IllegalStateException("Invalid universe signature");
 		}
 	}
-
-	//This needs to be removed
-	public static void dupvalidate(Universe universe, Hasher hasher) {
-		// Check signature
-		if (!universe.getCreator().verify(hasher.hash(universe), universe.getSignature())) {
-			throw new IllegalStateException("Invalid universe signature");
-		}
-	}
-	public static void dupvalidate1(Universe universe, Hasher hasher) {
-		// Check signature
-		if (!universe.getCreator().verify(hasher.hash(universe), universe.getSignature())) {
-			throw new IllegalStateException("Invalid universe signature");
-		}
-	}
-	public static void dupvalidate2(Universe universe, Hasher hasher) {
-		// Check signature
-		if (!universe.getCreator().verify(hasher.hash(universe), universe.getSignature())) {
-			throw new IllegalStateException("Invalid universe signature");
-		}
-	}
 }
