@@ -92,7 +92,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s:%s), (am%s)]", getClass().getSimpleName(),
+		return String.format("%s[(%s:%s), (am%s)]", getClass().getSimpleName(),
 			String.valueOf(name), String.valueOf(rri),
 			String.valueOf(description));
 	}
