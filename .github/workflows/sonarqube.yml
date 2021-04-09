@@ -19,15 +19,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Unit tests and coverage
-        run: ./gradlew check jacocoTestReport
-        env:
-          # Needed to get some information about the pull request, if any
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Unit tests
+        run: ./gradlew check
       - name: Sonar
-        run: ./gradlew sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
+        run: ./gradlew jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

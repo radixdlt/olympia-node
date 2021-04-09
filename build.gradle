@@ -62,7 +62,10 @@ subprojects {
 
     sonarqube {
         properties {
-            property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+            property "sonar.sourceEncoding", "UTF-8"
+            property 'sonar.host.url', 'https://sonarcloud.io'
+            property 'sonar.organization', 'radixdlt-github'
+            property 'sonar.login', System.env.SONAR_TOKEN
         }
     }
 
