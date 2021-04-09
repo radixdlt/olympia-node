@@ -17,7 +17,6 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.fees.NativeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +46,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -272,7 +272,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
 					return Result.ok(txn)
 						.flatMap(this::toParsedTx)
-						.flatMap(parsed -> TransactionParser.parse(creator, parsed, instantFromKey(key)));
+						.flatMap(parsed -> TransactionParser.parse(nativeToken, creator, parsed, instantFromKey(key)));
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);

@@ -39,7 +39,7 @@ import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 public class ClientApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
