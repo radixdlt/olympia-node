@@ -41,10 +41,6 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("g")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private UInt256 granularity;
-
 	@JsonProperty("a")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
@@ -60,12 +56,10 @@ public final class TransferrableTokensParticle extends Particle {
 	public TransferrableTokensParticle(
 		RadixAddress address,
 		UInt256 amount,
-		UInt256 granularity,
 		RRI tokenDefinitionReference,
 		boolean isMutable
 	) {
 		this.address = Objects.requireNonNull(address);
-		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.isMutable = isMutable;
@@ -83,17 +77,12 @@ public final class TransferrableTokensParticle extends Particle {
 		return this.tokenDefinitionReference;
 	}
 
-	public UInt256 getGranularity() {
-		return this.granularity;
-	}
-
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			tokenDefinitionReference,
 			amount,
-			granularity,
 			address,
 			isMutable
 		);
@@ -114,13 +103,12 @@ public final class TransferrableTokensParticle extends Particle {
 		TransferrableTokensParticle that = (TransferrableTokensParticle) o;
 		return Objects.equals(address, that.address)
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-			&& Objects.equals(granularity, that.granularity)
 			&& Objects.equals(amount, that.amount)
 			&& isMutable == that.isMutable;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenDefinitionReference, granularity, amount, isMutable);
+		return Objects.hash(address, tokenDefinitionReference, amount, isMutable);
 	}
 }

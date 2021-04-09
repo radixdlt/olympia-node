@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom.actions;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -38,7 +37,7 @@ public final class RegisterAsValidator implements TxAction {
 			Optional.of(new UnregisteredValidatorParticle(address)),
 			"Already a validator"
 		).with(
-			substateDown -> new RegisteredValidatorParticle(address, ImmutableSet.of())
+			substateDown -> new RegisteredValidatorParticle(address)
 		);
 	}
 }

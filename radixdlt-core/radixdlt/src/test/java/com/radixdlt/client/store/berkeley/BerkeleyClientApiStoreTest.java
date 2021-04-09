@@ -350,7 +350,7 @@ public class BerkeleyClientApiStoreTest {
 
 	private MutableTokenDefinition prepareMutableTokenDef(String symbol) {
 		return new MutableTokenDefinition(
-			symbol, symbol, symbol, null, null, UInt256.ONE
+			symbol, symbol, symbol, null, null
 		);
 	}
 

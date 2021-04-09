@@ -18,51 +18,32 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.identifiers.AID;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Message to attempt to add commands to the mempool
  */
 public final class MempoolAdd {
 	private final List<Txn> txns;
-	private final Consumer<AID> onSuccess;
-	private final Consumer<String> onError;
 
-	private MempoolAdd(List<Txn> txns, Consumer<AID> onSuccess, Consumer<String> onError) {
+	private MempoolAdd(List<Txn> txns) {
 		this.txns = txns;
-		this.onSuccess = onSuccess;
-		this.onError = onError;
-	}
-
-	public void onSuccess(AID txnId) {
-		onSuccess.accept(txnId);
-	}
-
-	public void onError(String error) {
-		onError.accept(error);
 	}
 
 	public List<Txn> getTxns() {
 		return txns;
 	}
 
-	public static MempoolAdd create(Txn txn, Consumer<AID> onSuccess, Consumer<String> onError) {
-		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn), onSuccess, onError);
-	}
-
 	public static MempoolAdd create(Txn txn) {
 		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn), aid -> { }, err -> { });
+		return new MempoolAdd(List.of(txn));
 	}
 
 	public static MempoolAdd create(List<Txn> txns) {
 		Objects.requireNonNull(txns);
-		return new MempoolAdd(txns, aid -> { }, err -> { });
+		return new MempoolAdd(txns);
 	}
 
 	@Override

@@ -101,7 +101,6 @@ public class TokensConstraintScryptTest {
 			RRI.of(addr, "TOK"),
 			null,
 			null,
-			UInt256.ONE,
 			null,
 			null
 		);
@@ -115,7 +114,6 @@ public class TokensConstraintScryptTest {
 			RRI.of(addr, "TOK"),
 			"",
 			"",
-			UInt256.ONE,
 			null,
 			null
 		);
@@ -238,68 +236,6 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_token_instance_with_null_granularity__result_has_error() {
-		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
-		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ONE);
-		when(transferrableTokensParticle.getGranularity()).thenReturn(null);
-		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
-	public void when_validating_unallocated_token_with_null_granularity__result_has_error() {
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
-		when(unallocated.getGranularity()).thenReturn(null);
-		assertThat(staticCheck.apply(unallocated).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
-	public void when_validating_staked_token_with_null_granularity__result_has_error() {
-		StakedTokensParticle staked = mock(StakedTokensParticle.class);
-		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
-		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(staked.getAmount()).thenReturn(UInt256.ONE);
-		when(staked.getGranularity()).thenReturn(null);
-		assertThat(staticCheck.apply(staked).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
-	public void when_validating_unallocated_token_with_zero_granularity__result_has_error() {
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
-		when(unallocated.getGranularity()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(unallocated).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
-	public void when_validating_token_instance_with_amount_not_divisible_by_granularity__result_has_error() {
-		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
-		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.THREE);
-		when(transferrableTokensParticle.getGranularity()).thenReturn(UInt256.TWO);
-		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
-	public void when_validating_staked_token_with_zero_granularity__result_has_error() {
-		StakedTokensParticle staked = mock(StakedTokensParticle.class);
-		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
-		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(staked.getAmount()).thenReturn(UInt256.ONE);
-		when(staked.getGranularity()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(staked).getErrorMessage())
-			.contains("granularity");
-	}
-
-	@Test
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
 		StakedTokensParticle staked = mock(StakedTokensParticle.class);
 		when(staked.getDelegateAddress()).thenReturn(null);
@@ -309,20 +245,9 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_create_transferrable_with_mismatching_granularities__result_has_error() {
-		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
-		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(transferrable.getGranularity()).thenReturn(UInt256.FOUR);
-		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
-	}
-
-	@Test
 	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
 		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
 		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
 		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
@@ -332,28 +257,15 @@ public class TokensConstraintScryptTest {
 	public void when_validating_create_transferrable__result_has_no_error() {
 		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
 		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
 		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();
 	}
 
 	@Test
-	public void when_validating_create_unallocated_with_mismatching_granularities__result_has_error() {
-		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(unallocated.getGranularity()).thenReturn(UInt256.FOUR);
-		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
-	}
-
-	@Test
 	public void when_validating_create_unallocated_with_non_max_unallocated__result_has_error() {
 		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
 		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE.decrement());
 		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
 	}
@@ -362,8 +274,6 @@ public class TokensConstraintScryptTest {
 	public void when_validating_create_unallocated__result_has_no_error() {
 		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
-		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
 		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE);
 		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isSuccess()).isTrue();
 	}

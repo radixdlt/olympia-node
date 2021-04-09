@@ -18,8 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 /**
@@ -31,23 +29,6 @@ public final class MutableTokenDefinition {
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
-	private final UInt256 granularity;
-
-	public MutableTokenDefinition(
-		String symbol,
-		String name,
-		String description,
-		String iconUrl,
-		String tokenUrl,
-		UInt256 granularity
-	) {
-		this.symbol = Objects.requireNonNull(symbol);
-		this.name = Objects.requireNonNull(name);
-		this.description = description;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.granularity = granularity;
-	}
 
 	public MutableTokenDefinition(
 		String symbol,
@@ -56,7 +37,11 @@ public final class MutableTokenDefinition {
 		String iconUrl,
 		String tokenUrl
 	) {
-		this(symbol, name, description, iconUrl, tokenUrl, UInt256.ONE);
+		this.symbol = Objects.requireNonNull(symbol);
+		this.name = Objects.requireNonNull(name);
+		this.description = description;
+		this.iconUrl = iconUrl;
+		this.tokenUrl = tokenUrl;
 	}
 
 	public String getSymbol() {
@@ -69,10 +54,6 @@ public final class MutableTokenDefinition {
 
 	public String getDescription() {
 		return description;
-	}
-
-	public UInt256 getGranularity() {
-		return granularity;
 	}
 
 	public String getIconUrl() {

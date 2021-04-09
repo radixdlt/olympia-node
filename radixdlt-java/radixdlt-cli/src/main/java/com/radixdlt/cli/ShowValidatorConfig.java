@@ -85,11 +85,6 @@ public class ShowValidatorConfig implements Runnable {
 		var url = ofNullable(validator.getUrl())
 				.orElse("<not set>");
 
-		var delegators = ofNullable(validator.getAllowedDelegators())
-				.map(Object::toString)
-				.orElse("<not set, allows any>");
-
 		printfln("  url: %s", url);
-		printfln("  allowed delegators: %s", delegators);
 	}
 }

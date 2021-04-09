@@ -35,6 +35,8 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
 /**
  * Module which manages different applications a node can run with
@@ -58,6 +60,8 @@ public final class NodeApplicationModule extends AbstractModule {
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(NodeApplicationRequest.class);
+		eventBinder.addBinding().toInstance(MempoolAddSuccess.class);
+		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 	}
 
 	@ProvidesIntoSet
@@ -87,6 +91,24 @@ public final class NodeApplicationModule extends AbstractModule {
 			"application",
 			NodeApplicationRequest.class,
 			nodeApplication.requestEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccess(NodeApplication nodeApplication) {
+		return new EventProcessorOnRunner<>(
+			"application",
+			MempoolAddSuccess.class,
+			nodeApplication.mempoolAddSuccessEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailure(NodeApplication nodeApplication) {
+		return new EventProcessorOnRunner<>(
+			"application",
+			MempoolAddFailure.class,
+			nodeApplication.mempoolAddFailureEventProcessor()
 		);
 	}
 }

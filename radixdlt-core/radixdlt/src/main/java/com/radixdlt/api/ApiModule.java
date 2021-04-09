@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.construction.ConstructionController;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -46,6 +47,7 @@ public final class ApiModule extends AbstractModule {
 	public void configure() {
 		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
 		var controllers = Multibinder.newSetBinder(binder(), Controller.class);
+		controllers.addBinding().to(ConstructionController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(ChaosController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(FaucetController.class).in(Scopes.SINGLETON);
 		controllers.addBinding().to(NodeController.class).in(Scopes.SINGLETON);

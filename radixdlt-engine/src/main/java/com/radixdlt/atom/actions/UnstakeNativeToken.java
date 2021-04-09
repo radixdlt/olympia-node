@@ -44,8 +44,7 @@ public final class UnstakeNativeToken implements TxAction {
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			nativeToken,
-			true,
-			UInt256.ONE
+			true
 		);
 
 		txBuilder.swapFungible(

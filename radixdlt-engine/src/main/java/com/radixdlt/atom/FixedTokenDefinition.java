@@ -32,7 +32,6 @@ public final class FixedTokenDefinition {
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
-	private final UInt256 granularity = UInt256.ONE;
 	private final UInt256 supply;
 
 	public FixedTokenDefinition(
@@ -61,10 +60,6 @@ public final class FixedTokenDefinition {
 
 	public String getDescription() {
 		return description;
-	}
-
-	public UInt256 getGranularity() {
-		return granularity;
 	}
 
 	public String getIconUrl() {

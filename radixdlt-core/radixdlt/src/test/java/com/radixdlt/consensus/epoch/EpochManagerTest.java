@@ -84,7 +84,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
@@ -127,7 +126,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public void addToMempool(Txn txn, @Nullable BFTNode origin, Consumer<AID> onSuccess, Consumer<String> onError) {
+		public void addToMempool(Txn txn, @Nullable BFTNode origin) {
 			// No-op
 		}
 

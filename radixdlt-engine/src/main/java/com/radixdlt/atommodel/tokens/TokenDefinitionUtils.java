@@ -114,12 +114,6 @@ public final class TokenDefinitionUtils {
 		if (stakedParticle.getAmount().isZero()) {
 			return Result.error("amount must not be zero");
 		}
-		if (stakedParticle.getGranularity() == null) {
-			return Result.error("granularity must not be null");
-		}
-		if (stakedParticle.getGranularity().isZero() || !stakedParticle.getAmount().remainder(stakedParticle.getGranularity()).isZero()) {
-			return Result.error("amount " + stakedParticle.getAmount() + " does not fit granularity " + stakedParticle.getGranularity());
-		}
 
 		return Result.success();
 	}
@@ -131,12 +125,6 @@ public final class TokenDefinitionUtils {
 		if (tokensParticle.getAmount().isZero()) {
 			return Result.error("amount must not be zero");
 		}
-		if (tokensParticle.getGranularity() == null) {
-			return Result.error("granularity must not be null");
-		}
-		if (tokensParticle.getGranularity().isZero() || !tokensParticle.getAmount().remainder(tokensParticle.getGranularity()).isZero()) {
-			return Result.error("amount " + tokensParticle.getAmount() + " does not fit granularity " + tokensParticle.getGranularity());
-		}
 
 		return Result.success();
 	}
@@ -147,12 +135,6 @@ public final class TokenDefinitionUtils {
 		}
 		if (particle.getAmount().isZero()) {
 			return Result.error("amount cannot be zero");
-		}
-		if (particle.getGranularity() == null) {
-			return Result.error("granularity must not be null");
-		}
-		if (particle.getGranularity().isZero()) {
-			return Result.error("granularity must not be zero");
 		}
 
 		return Result.success();

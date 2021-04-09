@@ -26,11 +26,17 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class NodeApplication {
 	private static final Logger log = LogManager.getLogger();
@@ -39,6 +45,7 @@ public class NodeApplication {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final Map<AID, NodeApplicationRequest> inflightRequests = new HashMap<>();
 
 	@Inject
 	public NodeApplication(
@@ -60,11 +67,34 @@ public class NodeApplication {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously
 			var txBuilder = radixEngine.construct(self, request.getActions());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
-			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn, request::onSuccess, request::onFailure));
+			this.inflightRequests.put(txn.getId(), request);
+			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		} catch (TxBuilderException e) {
-			log.error("Faucet failed to fulfil request {}", request, e);
-			request.onFailure(e.getMessage());
+			log.error("Faucet failed to fulfil request {}", request);
+			request.onFailure(null, e.getMessage());
 		}
+	}
+
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return mempoolAddSuccess -> {
+			var req = inflightRequests.remove(mempoolAddSuccess.getTxn().getId());
+			if (req == null) {
+				return;
+			}
+
+			req.onSuccess(mempoolAddSuccess.getTxn(), mempoolAddSuccess.getTxn().getId());
+		};
+	}
+
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
+		return failure -> {
+			var req = inflightRequests.remove(failure.getTxn().getId());
+			if (req == null) {
+				return;
+			}
+
+			req.onFailure(failure.getTxn(), failure.getException().getMessage());
+		};
 	}
 
 	public EventProcessor<NodeApplicationRequest> requestEventProcessor() {

@@ -30,7 +30,6 @@ public class TokenDefinitionRecordTest {
 				"name",
 				"rri",
 				"description",
-				"granularity",
 				"currentSupply",
 				"iconUrl",
 				"url"

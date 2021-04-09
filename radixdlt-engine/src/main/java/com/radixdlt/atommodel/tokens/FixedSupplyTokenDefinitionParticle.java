@@ -48,10 +48,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 	@DsonOutput(Output.ALL)
 	private UInt256 supply;
 
-	@JsonProperty("granularity")
-	@DsonOutput(Output.ALL)
-	private UInt256 granularity;
-
 	@JsonProperty("iconUrl")
 	@DsonOutput(Output.ALL)
 	private String iconUrl;
@@ -70,7 +66,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		String name,
 		String description,
 		UInt256 supply,
-		UInt256 granularity,
 		String iconUrl,
 		String url
 	) {
@@ -78,7 +73,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		this.name = name;
 		this.description = description;
 		this.supply = Objects.requireNonNull(supply);
-		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
 		this.url = url;
 	}
@@ -99,10 +93,6 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		return this.supply;
 	}
 
-	public UInt256 getGranularity() {
-		return this.granularity;
-	}
-
 	public String getIconUrl() {
 		return this.iconUrl;
 	}
@@ -113,9 +103,9 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s:%s:%s), (%s)]", getClass().getSimpleName(),
+		return String.format("%s[(%s:%s:%s), (%s)]", getClass().getSimpleName(),
 			String.valueOf(this.rri), String.valueOf(name),
-			String.valueOf(supply), String.valueOf(granularity),
+			String.valueOf(supply),
 			String.valueOf(description));
 	}
 
@@ -132,13 +122,12 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 				&& Objects.equals(name, that.name)
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(supply, that.supply)
-				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, supply, granularity, iconUrl, url);
+		return Objects.hash(rri, name, description, supply, iconUrl, url);
 	}
 }

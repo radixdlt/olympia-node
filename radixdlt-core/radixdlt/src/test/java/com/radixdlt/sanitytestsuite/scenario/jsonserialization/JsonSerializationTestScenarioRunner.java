@@ -51,7 +51,6 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		var ttp = new TransferrableTokensParticle(
 			argsExtractor.asRadixAddress("address"),
 			argsExtractor.asUInt256("amount"),
-			argsExtractor.asUInt256("granularity"),
 			argsExtractor.asRRI("tokenDefinitionReference"),
 			true
 		);

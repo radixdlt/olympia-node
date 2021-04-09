@@ -655,7 +655,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				a.getAddress(),
 				a.getDelegateAddress(),
 				a.getTokDefRef(),
-				a.getGranularity(),
 				a.getAmount()
 			));
 		} else if (substate instanceof TransferrableTokensParticle) {
@@ -664,7 +663,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				a.getAddress(),
 				null,
 				a.getTokDefRef(),
-				a.getGranularity(),
 				a.getAmount()
 			));
 		} else if (substate instanceof UnallocatedTokensParticle) {
@@ -673,7 +671,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				a.getAddress(),
 				null,
 				a.getTokDefRef(),
-				a.getGranularity(),
 				a.getAmount()
 			));
 		}

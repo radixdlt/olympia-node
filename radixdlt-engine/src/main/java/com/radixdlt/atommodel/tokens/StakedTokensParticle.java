@@ -48,10 +48,6 @@ public final class StakedTokensParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private RRI tokenDefinitionReference;
 
-	@JsonProperty("g")
-	@DsonOutput(Output.ALL)
-	private UInt256 granularity;
-
 	@JsonProperty("a")
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
@@ -68,13 +64,11 @@ public final class StakedTokensParticle extends Particle {
 		RadixAddress delegateAddress,
 		RadixAddress address,
 		UInt256 amount,
-		UInt256 granularity,
 		RRI tokenDefinitionReference,
 		boolean isMutable
 	) {
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);
-		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.isMutable = isMutable;
@@ -96,21 +90,16 @@ public final class StakedTokensParticle extends Particle {
 		return this.tokenDefinitionReference;
 	}
 
-	public UInt256 getGranularity() {
-		return this.granularity;
-	}
-
 	public boolean isMutable() {
 		return isMutable;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			tokenDefinitionReference,
 			amount,
-			granularity,
 			address,
 			delegateAddress
 		);
@@ -132,7 +121,6 @@ public final class StakedTokensParticle extends Particle {
 		return Objects.equals(delegateAddress, that.delegateAddress)
 			&& Objects.equals(address, that.address)
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
-			&& Objects.equals(granularity, that.granularity)
 			&& Objects.equals(amount, that.amount)
 			&& isMutable == that.isMutable;
 	}
@@ -143,7 +131,6 @@ public final class StakedTokensParticle extends Particle {
 			delegateAddress,
 			address,
 			tokenDefinitionReference,
-			granularity,
 			amount,
 			isMutable
 		);
