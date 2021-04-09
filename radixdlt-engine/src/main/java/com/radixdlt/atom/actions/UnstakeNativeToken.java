@@ -51,7 +51,7 @@ public final class UnstakeNativeToken implements TxAction {
 			StakedTokensParticle.class,
 			p -> p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(delegateAddress, address, amt),
+			amt -> new StakedTokensParticle(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
 		).with(amt -> factory.createTransferrable(address, amt));

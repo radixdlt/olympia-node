@@ -22,6 +22,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
@@ -58,6 +59,6 @@ public final class StakeNativeToken implements TxAction {
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 	}
 }

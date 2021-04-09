@@ -528,7 +528,7 @@ public final class TxBuilder {
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> factory.createStaked(delegateAddress, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 
 		particleGroup();
 
@@ -545,10 +545,10 @@ public final class TxBuilder {
 			StakedTokensParticle.class,
 			p -> p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
-			amt -> factory.createStaked(from, address, amt),
+			amt -> new StakedTokensParticle(from, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createStaked(to, address, amt));
+		).with(amt -> new StakedTokensParticle(to, address, amt));
 
 		particleGroup();
 
