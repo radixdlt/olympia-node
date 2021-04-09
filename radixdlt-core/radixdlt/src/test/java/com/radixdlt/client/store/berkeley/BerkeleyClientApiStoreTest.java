@@ -313,6 +313,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
+			TOKEN,
 			0
 		);
 	}

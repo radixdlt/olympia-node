@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.fees.NativeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,12 +129,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
+	private final RRI nativeToken;
 	private final byte universeMagic;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
 	private Database addressBalances;
 	private Database supplyBalances;
+
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -143,6 +146,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
+		@NativeToken RRI nativeToken,
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
@@ -151,6 +155,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.ledgerCommitted = ledgerCommitted;
+		this.nativeToken = nativeToken;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
 
 		open();
@@ -279,7 +284,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
 					)
 					.flatMap(this::toParsedTx)
-					.flatMap(parsed -> TransactionParser.parse(address, parsed, instantFromKey(key)))
+					.flatMap(parsed -> TransactionParser.parse(nativeToken, address, parsed, instantFromKey(key)))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -648,13 +653,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return new DatabaseEntry();
 	}
 
-	private static Optional<BalanceEntry> toBalanceEntry(Particle substate, boolean isUp) {
+	private Optional<BalanceEntry> toBalanceEntry(Particle substate, boolean isUp) {
 		if (substate instanceof StakedTokensParticle) {
 			var a = (StakedTokensParticle) substate;
 			return Optional.of(BalanceEntry.createBalance(
 				a.getAddress(),
 				a.getDelegateAddress(),
-				a.getTokDefRef(),
+				nativeToken,
 				a.getAmount()
 			));
 		} else if (substate instanceof TransferrableTokensParticle) {

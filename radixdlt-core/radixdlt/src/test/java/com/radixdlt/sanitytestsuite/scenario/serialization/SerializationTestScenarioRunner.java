@@ -104,9 +104,7 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         var ttp = new StakedTokensParticle(
             argsExtractor.asRadixAddress("delegateAddress"),
             argsExtractor.asRadixAddress("address"),
-            argsExtractor.asUInt256("amount"),
-            argsExtractor.asRRI("tokenDefinitionReference"),
-            true
+            argsExtractor.asUInt256("amount")
         );
 
         assertTrue(argsExtractor.isFinished());

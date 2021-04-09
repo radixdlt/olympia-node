@@ -87,7 +87,7 @@ public class TransactionParserTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScrypt(tokenRri));
 
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
@@ -155,7 +155,7 @@ public class TransactionParserTest {
 
 		list.stream()
 			.map(this::toParsedTx)
-			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenOwnerAddress, parsedTx, timestamp)))
+			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenRri, tokenOwnerAddress, parsedTx, timestamp)))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))

@@ -49,7 +49,7 @@ public final class UnstakeNativeToken implements TxAction {
 
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getTokDefRef().equals(nativeToken) && p.getAddress().equals(address),
+			p -> p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
 			amt -> factory.createStaked(delegateAddress, address, amt),
 			amount,

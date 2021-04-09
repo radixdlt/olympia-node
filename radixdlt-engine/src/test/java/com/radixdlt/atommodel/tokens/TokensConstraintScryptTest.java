@@ -25,6 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.WitnessData;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
@@ -39,13 +40,14 @@ import org.powermock.api.mockito.PowerMockito;
 
 public class TokensConstraintScryptTest {
 	private static Function<Particle, Result> staticCheck;
+	private static RRI stakedToken = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "TOK");
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt());
+		cmAtomOS.load(new StakingConstraintScrypt(stakedToken));
 		staticCheck = cmAtomOS.buildParticleStaticCheck();
 	}
 
@@ -202,7 +204,6 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_staked_token_with_null_amount__result_has_error() {
 		StakedTokensParticle staked = mock(StakedTokensParticle.class);
-		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(staked.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("null");
@@ -230,7 +231,6 @@ public class TokensConstraintScryptTest {
 	public void when_validating_staked_token_with_zero_amount__result_has_error() {
 		StakedTokensParticle stakedTokensParticle = mock(StakedTokensParticle.class);
 		when(stakedTokensParticle.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
-		when(stakedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(stakedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(stakedTokensParticle).getErrorMessage())
 			.contains("zero");
@@ -240,7 +240,6 @@ public class TokensConstraintScryptTest {
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
 		StakedTokensParticle staked = mock(StakedTokensParticle.class);
 		when(staked.getDelegateAddress()).thenReturn(null);
-		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");
 	}

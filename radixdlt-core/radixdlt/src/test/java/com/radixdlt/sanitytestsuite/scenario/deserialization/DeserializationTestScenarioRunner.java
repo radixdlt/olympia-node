@@ -169,7 +169,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
         assertEquals(expected.getDelegateAddress(), argsExtractor.asRadixAddress("delegateAddress"));
-        assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
 
         assertTrue(argsExtractor.isFinished());
     }

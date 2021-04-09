@@ -21,7 +21,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertEquals;
 public class StakedTokensParticleSerializationTest extends SerializeObjectEngine<StakedTokensParticle> {
 	public static final RadixAddress DELEGATE_ADDRESS = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 	public static final RadixAddress ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-	public static final RRI TOKEN = RRI.of(ADDRESS, "COOKIE");
 	public static final UInt256 AMOUNT = UInt256.EIGHT;
 
 	public StakedTokensParticleSerializationTest() {
@@ -53,7 +51,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(DELEGATE_ADDRESS, p.getDelegateAddress());
 		assertEquals(ADDRESS, p.getAddress());
 		assertEquals(AMOUNT, p.getAmount());
-		assertEquals(TOKEN, p.getTokDefRef());
 	}
 
 	@Test
@@ -78,9 +75,7 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		return new StakedTokensParticle(
 			DELEGATE_ADDRESS,
 			ADDRESS,
-			AMOUNT,
-			TOKEN,
-			true
+			AMOUNT
 		);
 	}
 }

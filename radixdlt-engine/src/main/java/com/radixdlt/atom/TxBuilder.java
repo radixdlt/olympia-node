@@ -543,7 +543,7 @@ public final class TxBuilder {
 
 		swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			p -> p.getAddress().equals(address),
 			StakedTokensParticle::getAmount,
 			amt -> factory.createStaked(from, address, amt),
 			amount,

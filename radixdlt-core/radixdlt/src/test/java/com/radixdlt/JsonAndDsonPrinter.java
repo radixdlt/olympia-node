@@ -98,9 +98,7 @@ public class JsonAndDsonPrinter {
         final var particle = new StakedTokensParticle(
             ADDRESS,
             ADDRESS,
-            UInt256.EIGHT,
-            TOKEN_RRI,
-            true
+            UInt256.EIGHT
         );
         logParticle(particle);
     }

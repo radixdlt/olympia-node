@@ -58,9 +58,7 @@ public final class TokDefParticleFactory {
 		return new StakedTokensParticle(
 			delegate,
 			address,
-			amount,
-			tokDefRef,
-			isMutable
+			amount
 		);
 	}
 

@@ -45,7 +45,6 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
-import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
@@ -128,8 +127,7 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
-			.addReducer(new TokenBalanceReducer())
-			.addReducer(new StakedTokenBalanceReducer());
+			.addReducer(new TokenBalanceReducer());
 	}
 
 	private final RadixIdentity identity;
