@@ -33,6 +33,7 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -297,14 +298,12 @@ public final class ConstraintMachine {
 		validationState.setCurrentTransitionToken(transitionToken);
 
 		final var transitionProcedure = this.particleProcedures.apply(transitionToken);
+		if (inputParticle == null || outputParticle == null) {
+			validationState.popAndReplace(nextParticle, isInput, isRead ? new ReadOnlyData() : null);
+			return Optional.empty();
+		}
 
 		if (transitionProcedure == null) {
-			if (inputParticle == null || outputParticle == null) {
-				validationState.popAndReplace(nextParticle, isInput, isRead ? new ReadOnlyData() : null);
-				return Optional.empty();
-			}
-
-
 			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
 		}
 
@@ -404,13 +403,14 @@ public final class ConstraintMachine {
 	Optional<CMError> validateInstructions(
 		CMValidationState validationState,
 		Atom atom,
-		List<ParsedInstruction> parsedInstructions,
-		List<Pair<Particle, UsedData>> deallocated
+		List<REParsedAction> parsedActions
 	) {
+		var parsedInstructions = new ArrayList<REParsedInstruction>();
 		var rawInstructions = toInstructions(atom.getInstructions());
 		long particleIndex = 0;
 		int instructionIndex = 0;
 		int numMessages = 0;
+		var expectEnd = false;
 
 		for (var inst : rawInstructions) {
 			if (inst.getData().length > DATA_MAX_SIZE)	 {
@@ -419,7 +419,11 @@ public final class ConstraintMachine {
 				));
 			}
 
-			if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.UP) {
+			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
+				return Optional.of(new CMError(instructionIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
+			}
+
+			if (inst.getMicroOp() == REInstruction.REOp.UP) {
 				// TODO: Cleanup indexing of substate class
 				final Particle nextParticle;
 				try {
@@ -445,7 +449,7 @@ public final class ConstraintMachine {
 					));
 				}
 
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.VDOWN) {
 				final Particle nextParticle;
@@ -476,7 +480,7 @@ public final class ConstraintMachine {
 					));
 				}
 
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 				var substateId = SubstateId.fromBytes(inst.getData());
@@ -497,7 +501,7 @@ public final class ConstraintMachine {
 				}
 
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.LDOWN) {
 				int index = Ints.fromByteArray(inst.getData());
@@ -519,7 +523,7 @@ public final class ConstraintMachine {
 
 				var substateId = SubstateId.ofSubstate(atom, index);
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.DOWN));
 				particleIndex++;
 
 			} else if (inst.getMicroOp() == REInstruction.REOp.READ) {
@@ -541,7 +545,7 @@ public final class ConstraintMachine {
 				}
 
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.LREAD) {
 				int index = Ints.fromByteArray(inst.getData());
@@ -563,7 +567,7 @@ public final class ConstraintMachine {
 
 				var substateId = SubstateId.ofSubstate(atom, index);
 				var substate = Substate.create(particle, substateId);
-				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
+				parsedInstructions.add(REParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
 				numMessages++;
@@ -579,10 +583,11 @@ public final class ConstraintMachine {
 					);
 				}
 
+				final Pair<Particle, UsedData> deallocated;
 				if (!validationState.isEmpty()) {
-
 					if (validationState.particleRemainingIsInput) {
-						deallocated.add(Pair.of(validationState.particleRemaining, validationState.particleRemainingUsed));
+						var particle = validationState.particleRemaining;
+						var used = validationState.particleRemainingUsed;
 						var errMaybe = validateParticle(
 							validationState,
 							VoidParticle.create(),
@@ -597,17 +602,27 @@ public final class ConstraintMachine {
 								errMaybe.get().getSecond()
 							));
 						}
-					}
-
-					if (!validationState.isEmpty()) {
+						if (validationState.isEmpty()) {
+							deallocated = Pair.of(particle, used);
+						} else {
+							return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+						}
+					} else {
 						return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 					}
+				} else {
+					deallocated = null;
 				}
+
+				var parsedAction = REParsedAction.create(parsedInstructions, deallocated);
+				parsedActions.add(parsedAction);
+				parsedInstructions = new ArrayList<>();
 				particleIndex = 0;
 			} else {
 				throw new IllegalStateException("Unknown CM Operation: " + inst.getMicroOp());
 			}
 
+			expectEnd = validationState.isEmpty() && inst.getMicroOp() != REInstruction.REOp.END;
 			instructionIndex++;
 		}
 
@@ -633,8 +648,7 @@ public final class ConstraintMachine {
 		CMStore cmStore,
 		Atom atom,
 		PermissionLevel permissionLevel,
-		List<ParsedInstruction> parsedInstructions,
-		List<Pair<Particle, UsedData>> deallocated
+		List<REParsedAction> parsedActions
 	) {
 		final CMValidationState validationState = new CMValidationState(
 			virtualStoreLayer,
@@ -645,6 +659,6 @@ public final class ConstraintMachine {
 			atom.getSignature()
 		);
 
-		return this.validateInstructions(validationState, atom, parsedInstructions, deallocated);
+		return this.validateInstructions(validationState, atom, parsedActions);
 	}
 }

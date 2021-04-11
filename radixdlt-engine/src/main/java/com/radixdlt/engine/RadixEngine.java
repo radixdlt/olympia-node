@@ -28,16 +28,15 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.ParsedInstruction;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
@@ -274,11 +273,11 @@ public final class RadixEngine<M> {
 			engine.stateComputers.putAll(stateComputers);
 		}
 
-		public List<RETxn> execute(List<Txn> txns) throws RadixEngineException {
+		public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
 			return engine.execute(txns);
 		}
 
-		public List<RETxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public List<REParsedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			return engine.execute(txns, null, permissionLevel);
 		}
 
@@ -325,40 +324,37 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private RETxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
+	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 
 		final Atom atom;
 		try {
 			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		} catch (DeserializeException e) {
-			throw new RadixEngineException(txn, List.of(), RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
+			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
 		}
 
-		var parsedInsts = new ArrayList<ParsedInstruction>();
-		var deallocated = new ArrayList<Pair<Particle, UsedData>>();
+		var parsedActions = new ArrayList<REParsedAction>();
 		final Optional<CMError> error = constraintMachine.validate(
 			dbTransaction,
 			engineStore,
 			atom,
 			permissionLevel,
-			parsedInsts,
-			deallocated
+			parsedActions
 		);
 
 		if (error.isPresent()) {
 			CMError e = error.get();
-			throw new RadixEngineException(txn, parsedInsts, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e);
+			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e);
 		}
 
-		var reTxn = new RETxn(txn, parsedInsts, deallocated);
+		var reTxn = new REParsedTxn(txn, parsedActions);
 
 		if (checker != null) {
 			Result hookResult = checker.check(permissionLevel, reTxn);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
-					parsedInsts,
 					RadixEngineErrorCode.HOOK_ERROR,
 					"Checker failed: " + hookResult.getErrorMessage()
 				);
@@ -374,7 +370,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<RETxn> execute(List<Txn> txns) throws RadixEngineException {
+	public List<REParsedTxn> execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -386,7 +382,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<RETxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public List<REParsedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -408,27 +404,27 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<RETxn> executeInternal(
+	private List<REParsedTxn> executeInternal(
 		CMStore.Transaction dbTransaction,
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<RETxn>();
+		var parsedTransactions = new ArrayList<REParsedTxn>();
 		for (var txn : txns) {
 			// TODO: combine verification and storage
-			var parsedTransaction = this.verify(dbTransaction, txn, permissionLevel);
+			var parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
 			try {
-				this.engineStore.storeAtom(dbTransaction, parsedTransaction);
+				this.engineStore.storeAtom(dbTransaction, parsedTxn);
 			} catch (Exception e) {
-				logger.error("Store of atom failed: {}", parsedTransaction);
+				logger.error("Store of atom failed: {}", parsedTxn);
 				throw e;
 			}
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			for (ParsedInstruction parsedInstruction : parsedTransaction.instructions()) {
+			parsedTxn.instructions().forEach(parsedInstruction -> {
 				final var particle = parsedInstruction.getSubstate().getParticle();
 				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
@@ -445,8 +441,8 @@ public final class RadixEngine<M> {
 				if (parsedInstruction.getSpin() == Spin.UP) {
 					checker.test(this::getComputedState);
 				}
-			}
-			parsedTransactions.add(parsedTransaction);
+			});
+			parsedTransactions.add(parsedTxn);
 		}
 
 		checker.testMetadata(meta, this::getComputedState);

@@ -17,7 +17,7 @@
 
 package com.radixdlt.client.store;
 
-import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
@@ -32,7 +32,7 @@ public class ParticleWithSpin {
 		this.spin = spin;
 	}
 
-	public static ParticleWithSpin create(ParsedInstruction instruction) {
+	public static ParticleWithSpin create(REParsedInstruction instruction) {
 		return create(instruction.getParticle(), instruction.getSpin());
 	}
 

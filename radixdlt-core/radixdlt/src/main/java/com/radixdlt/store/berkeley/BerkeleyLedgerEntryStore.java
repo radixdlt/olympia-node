@@ -31,9 +31,9 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -185,7 +185,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeAtom(Transaction tx, RETxn radixEngineTxn) {
+	public void storeAtom(Transaction tx, REParsedTxn radixEngineTxn) {
 		withTime(() -> doStore(radixEngineTxn, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
@@ -577,7 +577,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, ParsedInstruction inst) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
 		if (inst.getSpin() == Spin.UP) {
 			upParticle(txn, inst.getParticle().getClass(), inst.getInstruction().getData(), inst.getSubstate().getId());
 		} else if (inst.getSpin() == Spin.DOWN) {
@@ -592,7 +592,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void doStore(
-		RETxn radixEngineTxn,
+		REParsedTxn radixEngineTxn,
 		com.sleepycat.je.Transaction transaction
 	) {
 		final long stateVersion;

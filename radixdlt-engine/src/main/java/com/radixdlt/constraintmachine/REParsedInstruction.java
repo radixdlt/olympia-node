@@ -25,12 +25,12 @@ import java.util.Objects;
 /**
  * Instruction which has been parsed and state checked by Radix Engine
  */
-public final class ParsedInstruction {
+public final class REParsedInstruction {
 	private final REInstruction instruction;
 	private final Substate substate;
 	private final Spin spin;
 
-	private ParsedInstruction(REInstruction instruction, Substate substate, Spin spin) {
+	private REParsedInstruction(REInstruction instruction, Substate substate, Spin spin) {
 		Objects.requireNonNull(instruction);
 		Objects.requireNonNull(substate);
 		Objects.requireNonNull(spin);
@@ -40,8 +40,8 @@ public final class ParsedInstruction {
 		this.spin = spin;
 	}
 
-	public static ParsedInstruction of(REInstruction instruction, Substate substate, Spin spin) {
-		return new ParsedInstruction(instruction, substate, spin);
+	public static REParsedInstruction of(REInstruction instruction, Substate substate, Spin spin) {
+		return new REParsedInstruction(instruction, substate, spin);
 	}
 
 	public REInstruction getInstruction() {
@@ -74,11 +74,11 @@ public final class ParsedInstruction {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof ParsedInstruction)) {
+		if (!(obj instanceof REParsedInstruction)) {
 			return false;
 		}
 
-		ParsedInstruction parsedInstruction = (ParsedInstruction) obj;
+		REParsedInstruction parsedInstruction = (REParsedInstruction) obj;
 
 		return Objects.equals(this.instruction, parsedInstruction.instruction)
 			&& Objects.equals(this.substate, parsedInstruction.substate)

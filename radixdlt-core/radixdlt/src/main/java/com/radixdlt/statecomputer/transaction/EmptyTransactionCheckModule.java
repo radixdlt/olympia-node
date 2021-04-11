@@ -30,7 +30,7 @@ public class EmptyTransactionCheckModule extends AbstractModule {
 	@ProvidesIntoSet
 	private PostParsedChecker emptyTxChecker() {
 		return (permissionLevel, reTxn) ->
-			reTxn.instructions().isEmpty()
+			reTxn.getActions().isEmpty()
 				? Result.error("atom has no instructions")
 				: Result.success();
 	}

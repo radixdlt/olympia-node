@@ -43,7 +43,7 @@ import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -315,7 +315,7 @@ public class BerkeleyClientApiStoreTest {
 		);
 	}
 
-	private Txn parsedToFull(ECKeyPair keyPair, RETxn reTxn) {
+	private Txn parsedToFull(ECKeyPair keyPair, REParsedTxn reTxn) {
 		var builder = TxLowLevelBuilder.newBuilder();
 
 		reTxn.instructions().forEach(i -> {

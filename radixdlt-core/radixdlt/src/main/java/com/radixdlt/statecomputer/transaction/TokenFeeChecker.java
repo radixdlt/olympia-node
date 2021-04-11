@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
@@ -55,7 +55,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 	}
 
 	@Override
-	public Result check(PermissionLevel permissionLevel, RETxn radixEngineTxn) {
+	public Result check(PermissionLevel permissionLevel, REParsedTxn radixEngineTxn) {
 		var txn = radixEngineTxn.getTxn();
 		final int totalSize = txn.getPayload().length;
 		if (txn.getPayload().length > MAX_ATOM_SIZE) {
@@ -90,8 +90,8 @@ public class TokenFeeChecker implements PostParsedChecker {
 		return Result.success();
 	}
 
-	private UInt256 computeFeePaid(RETxn radixEngineTxn) {
-		return radixEngineTxn.getDeallocated().stream()
+	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
+		return radixEngineTxn.deallocated()
 			.map(p -> {
 				if (!(p.getFirst() instanceof TransferrableTokensParticle)) {
 					return UInt256.ZERO;

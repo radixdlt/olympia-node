@@ -39,7 +39,7 @@ import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
@@ -171,9 +171,8 @@ public class TransactionParserTest {
 		return new UnstakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
 	}
 
-	private Result<ParsedTx> toParsedTx(RETxn reTxn) {
+	private Result<ParsedTx> toParsedTx(REParsedTxn reTxn) {
 		var particles = reTxn.instructions()
-			.stream()
 			.map(ParticleWithSpin::create)
 			.collect(Collectors.toList());
 

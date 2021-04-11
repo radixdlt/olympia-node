@@ -21,8 +21,8 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
@@ -37,16 +37,13 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
-	private final Map<SubstateId, ParsedInstruction> storedParticles = new HashMap<>();
+	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
-	public void storeAtom(Transaction txn, RETxn parsed) {
+	public void storeAtom(Transaction txn, REParsedTxn parsed) {
 		synchronized (lock) {
-			for (var instruction : parsed.instructions()) {
-				storedParticles.put(instruction.getSubstate().getId(), instruction);
-			}
-
+			parsed.instructions().forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			txnIds.add(parsed.getTxn().getId());
 		}
 	}

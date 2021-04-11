@@ -30,19 +30,17 @@ import java.util.stream.Stream;
 /**
  * Transaction which has been successfully parsed and state checked by radix engine
  */
-public final class RETxn {
+public final class REParsedTxn {
 	private final Txn txn;
-	private final List<ParsedInstruction> instructions;
-	private final List<Pair<Particle, UsedData>> deallocated;
+	private final List<REParsedAction> actions;
 
-	public RETxn(Txn txn, List<ParsedInstruction> instructions, List<Pair<Particle, UsedData>> deallocated) {
+	public REParsedTxn(Txn txn, List<REParsedAction> actions) {
 		this.txn = txn;
-		this.instructions = instructions;
-		this.deallocated = deallocated;
+		this.actions = actions;
 	}
 
-	public List<Pair<Particle, UsedData>> getDeallocated() {
-		return deallocated;
+	public List<REParsedAction> getActions() {
+		return actions;
 	}
 
 	public Txn getTxn() {
@@ -50,33 +48,38 @@ public final class RETxn {
 	}
 
 	public boolean isUserCommand() {
-		return instructions.stream().noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
+		return actions.stream().flatMap(a -> a.getInstructions().stream())
+			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
-	public List<ParsedInstruction> instructions() {
-		return instructions;
+	public Stream<Pair<Particle, UsedData>> deallocated() {
+		return actions.stream().flatMap(a -> a.getDeallocated().stream());
+	}
+
+	public Stream<REParsedInstruction> instructions() {
+		return actions.stream().flatMap(a -> a.getInstructions().stream());
 	}
 
 	public Stream<Particle> upSubstates() {
-		return instructions.stream()
-			.filter(ParsedInstruction::isUp)
-			.map(ParsedInstruction::getSubstate)
+		return instructions()
+			.filter(REParsedInstruction::isUp)
+			.map(REParsedInstruction::getSubstate)
 			.map(Substate::getParticle);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txn, instructions);
+		return Objects.hash(txn, actions);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RETxn)) {
+		if (!(o instanceof REParsedTxn)) {
 			return false;
 		}
 
-		var other = (RETxn) o;
+		var other = (REParsedTxn) o;
 		return Objects.equals(this.txn, other.txn)
-			&& Objects.equals(this.instructions, other.instructions);
+			&& Objects.equals(this.actions, other.actions);
 	}
 }

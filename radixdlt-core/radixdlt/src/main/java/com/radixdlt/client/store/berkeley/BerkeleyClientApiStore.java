@@ -39,7 +39,7 @@ import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -474,14 +474,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.forEach(this::storeParticle);
 	}
 
-	private void processRETransaction(RETxn reTxn) {
+	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
 		extractCreator(reTxn.getTxn(), universeMagic)
 			.ifPresent(creator -> storeSingleTransaction(reTxn.getTxn().getId(), creator));
 
 		reTxn.instructions()
-			.stream()
 			.map(pi -> ParticleWithSpin.create(pi.getParticle(), pi.getSpin()))
 			.forEach(this::storeParticle);
 	}
