@@ -134,7 +134,7 @@ public final class MempoolFiller {
 
 			var actions = TxActionListBuilder.create()
 				.splitNative(nativeToken, fee.multiply(UInt256.TWO))
-				.burnNative(nativeToken, fee)
+				.burn(nativeToken, fee)
 				.build();
 
 			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();

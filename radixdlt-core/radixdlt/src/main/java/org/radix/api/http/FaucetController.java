@@ -70,7 +70,7 @@ public final class FaucetController implements Controller {
 
 			var actions = TxActionListBuilder.create()
 				.transferNative(nativeToken, address, amount)
-				.burnNative(nativeToken, FEE)
+				.burn(nativeToken, FEE)
 				.build();
 
 			var request = NodeApplicationRequest.create(

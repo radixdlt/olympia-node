@@ -25,7 +25,7 @@ import com.radixdlt.application.StakedBalance;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.RegisterAsValidator;
 import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.UnregisterAsValidator;
@@ -156,7 +156,7 @@ public final class NodeController implements Controller {
 				var txAction = parseAction(actionObject);
 				actions.add(txAction);
 			}
-			actions.add(new BurnNativeToken(nativeToken, FEE));
+			actions.add(new BurnToken(nativeToken, FEE));
 			var request = NodeApplicationRequest.create(
 				actions,
 				(txn, aid) -> respond(exchange, jsonObject()

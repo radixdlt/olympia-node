@@ -112,7 +112,7 @@ public class TransactionParserTest {
 	@Test
 	public void stakeIsParsedCorrectly() throws Exception {
 		var txn = engine.construct(tokenOwnerAddress, nativeStake())
-			.burnForFee(tokenRri, UInt256.TWO)
+			.burn(tokenRri, UInt256.TWO)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
@@ -125,7 +125,7 @@ public class TransactionParserTest {
 		engine.execute(List.of(txn1));
 
 		var txn2 = engine.construct(tokenOwnerAddress, nativeUnstake())
-			.burnForFee(tokenRri, UInt256.FOUR)
+			.burn(tokenRri, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.FOUR, txn2);
@@ -138,7 +138,7 @@ public class TransactionParserTest {
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
 			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
-			.burnForFee(tokenRriII, UInt256.FOUR)
+			.burn(tokenRriII, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.FOUR, txn);

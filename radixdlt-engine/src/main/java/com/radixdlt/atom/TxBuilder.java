@@ -602,22 +602,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder burnForFee(RRI rri, UInt256 amount) throws TxBuilderException {
-		// HACK
-		var factory = TokDefParticleFactory.create(rri, true);
-		deallocateFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
-			amount,
-			"Not enough balance to for fee burn."
-		);
-
-		particleGroup();
-		return this;
-	}
-
 	public Txn signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer

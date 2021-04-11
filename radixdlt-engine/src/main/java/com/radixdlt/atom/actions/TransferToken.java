@@ -27,12 +27,12 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class TransferNativeToken implements TxAction {
+public final class TransferToken implements TxAction {
 	private final RRI rri;
 	private final RadixAddress to;
 	private final UInt256 amount;
 
-	public TransferNativeToken(RRI rri, RadixAddress to, UInt256 amount) {
+	public TransferToken(RRI rri, RadixAddress to, UInt256 amount) {
 		this.rri = rri;
 		this.to = to;
 		this.amount = amount;

@@ -130,7 +130,6 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
 			.burn(TOKEN, UInt256.ONE)
-			.burnForFee(TOKEN, UInt256.ONE)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -174,7 +173,6 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.burn(TOKEN, UInt256.ONE)
-			.burnForFee(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -234,7 +232,6 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
-			.burnForFee(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -274,7 +271,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
-			.burnForFee(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);

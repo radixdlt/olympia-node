@@ -18,10 +18,10 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.RegisterAsValidator;
-import com.radixdlt.atom.actions.SplitNativeToken;
-import com.radixdlt.atom.actions.TransferNativeToken;
+import com.radixdlt.atom.actions.SplitToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterAsValidator;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -53,19 +53,19 @@ public class TxActionListBuilder {
 	}
 
 	public TxActionListBuilder splitNative(RRI rri, UInt256 minSize) {
-		var action = new SplitNativeToken(rri, minSize);
+		var action = new SplitToken(rri, minSize);
 		actions.add(action);
 		return this;
 	}
 
 	public TxActionListBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) {
-		var action = new TransferNativeToken(rri, to, amount);
+		var action = new TransferToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder burnNative(RRI rri, UInt256 amount) {
-		var action = new BurnNativeToken(rri, amount);
+	public TxActionListBuilder burn(RRI rri, UInt256 amount) {
+		var action = new BurnToken(rri, amount);
 		actions.add(action);
 		return this;
 	}
