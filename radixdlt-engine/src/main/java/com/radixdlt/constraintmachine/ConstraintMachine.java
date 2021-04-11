@@ -260,18 +260,11 @@ public final class ConstraintMachine {
 	 * @param validationState local state of validation
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticle(CMValidationState validationState, Particle nextParticle, boolean isInput, int instructionIndex) {
+	Optional<Pair<CMErrorCode, String>> validateParticle(CMValidationState validationState, Particle nextParticle, boolean isInput) {
 		final Particle curParticle = validationState.getCurParticle();
 
 		if (validationState.spinClashes(isInput)) {
-			return Optional.of(
-				new CMError(
-					instructionIndex,
-					CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
-					validationState,
-					validationState.toString()
-				)
-			);
+			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
 		}
 
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
@@ -293,25 +286,13 @@ public final class ConstraintMachine {
 				return Optional.empty();
 			}
 
-			return Optional.of(
-				new CMError(
-					instructionIndex,
-					CMErrorCode.MISSING_TRANSITION_PROCEDURE,
-					validationState,
-					"TransitionToken{" + transitionToken + "}"
-				)
-			);
+
+			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
 		}
 
 		final PermissionLevel requiredPermissionLevel = transitionProcedure.requiredPermissionLevel();
 		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(
-				new CMError(
-					instructionIndex,
-					CMErrorCode.INVALID_EXECUTION_PERMISSION,
-					validationState
-				)
-			);
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
 		final UsedData inputUsed = validationState.getInputUsed();
@@ -325,14 +306,7 @@ public final class ConstraintMachine {
 			outputUsed
 		);
 		if (preconditionCheckResult.isError()) {
-			return Optional.of(
-				new CMError(
-					instructionIndex,
-					CMErrorCode.TRANSITION_PRECONDITION_FAILURE,
-					validationState,
-					preconditionCheckResult.getErrorMessage()
-				)
-			);
+			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
 		}
 
 		Optional<UsedData> prevUsedData = null;
@@ -345,13 +319,7 @@ public final class ConstraintMachine {
 				final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
 				if (usedData.isPresent()) {
 					if (prevUsedData != null && prevUsedData.isPresent()) {
-						return Optional.of(
-							new CMError(
-								instructionIndex,
-								CMErrorCode.NO_FULL_POP_ERROR,
-								validationState
-							)
-						);
+						return Optional.of(Pair.of(CMErrorCode.NO_FULL_POP_ERROR, null));
 					}
 
 					if (isInput == testInput) {
@@ -368,22 +336,10 @@ public final class ConstraintMachine {
 							var pkey = pkeyMaybe.get();
 							if (validationState.signatureRequired != null
 								&& !validationState.signatureRequired.equals(pkey)) {
-								return Optional.of(
-									new CMError(
-										instructionIndex,
-										CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES,
-										validationState
-									)
-								);
+								return Optional.of(Pair.of(CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES, null));
 							} else {
 								if (!validationState.verifySignedWith(pkey)) {
-									return Optional.of(
-										new CMError(
-											instructionIndex,
-											CMErrorCode.INCORRECT_SIGNATURE,
-											validationState
-										)
-									);
+									return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
 								}
 
 								validationState.signatureRequired = pkey;
@@ -397,7 +353,7 @@ public final class ConstraintMachine {
 				}
 				prevUsedData = usedData;
 			} catch (ArithmeticException e) {
-				return Optional.of(new CMError(instructionIndex, CMErrorCode.ARITHMETIC_ERROR, validationState, e.getMessage()));
+				return Optional.of(Pair.of(CMErrorCode.ARITHMETIC_ERROR, e.getMessage()));
 			}
 		}
 
@@ -461,9 +417,14 @@ public final class ConstraintMachine {
 				}
 				var substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				validationState.bootUp(instructionIndex, substate);
-				Optional<CMError> error = validateParticle(validationState, nextParticle, false, instructionIndex);
+				var error = validateParticle(validationState, nextParticle, false);
 				if (error.isPresent()) {
-					return error;
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
 				}
 
 				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
@@ -487,9 +448,14 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instructionIndex, stateError.get(), validationState));
 				}
 
-				Optional<CMError> error = validateParticle(validationState, nextParticle, true, instructionIndex);
+				var error = validateParticle(validationState, nextParticle, true);
 				if (error.isPresent()) {
-					return error;
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
 				}
 
 				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
@@ -502,9 +468,14 @@ public final class ConstraintMachine {
 				}
 
 				var particle = maybeParticle.get();
-				Optional<CMError> error = validateParticle(validationState, particle, true, instructionIndex);
+				var error = validateParticle(validationState, particle, true);
 				if (error.isPresent()) {
-					return error;
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
 				}
 
 				var substate = Substate.create(particle, substateId);
@@ -518,9 +489,14 @@ public final class ConstraintMachine {
 				}
 
 				var particle = maybeParticle.get();
-				Optional<CMError> error = validateParticle(validationState, particle, true, instructionIndex);
+				var error = validateParticle(validationState, particle, true);
 				if (error.isPresent()) {
-					return error;
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
 				}
 
 				var substateId = SubstateId.ofSubstate(atom, index);
@@ -548,11 +524,15 @@ public final class ConstraintMachine {
 						var errMaybe = validateParticle(
 							validationState,
 							VoidParticle.create(),
-							false,
-							instructionIndex
+							false
 						);
 						if (errMaybe.isPresent()) {
-							return errMaybe;
+							return Optional.of(new CMError(
+								instructionIndex,
+								errMaybe.get().getFirst(),
+								validationState,
+								errMaybe.get().getSecond()
+							));
 						}
 					}
 
