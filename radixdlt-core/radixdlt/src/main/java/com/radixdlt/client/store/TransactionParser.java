@@ -21,7 +21,6 @@ import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -112,10 +111,6 @@ public final class TransactionParser {
 
 			pos++;
 
-			if (current() instanceof UnallocatedTokensParticle) {
-				pos++;
-			}
-
 			if (current() instanceof MutableSupplyTokenDefinitionParticle
 				|| current() instanceof FixedSupplyTokenDefinitionParticle) {
 				pos++;
@@ -145,18 +140,6 @@ public final class TransactionParser {
 		private void parseMint() {
 			if (current() instanceof TransferrableTokensParticle) {
 				pos++;
-
-				if (!(current() instanceof UnallocatedTokensParticle)) {
-					pos--;
-					return;
-				}
-
-				pos++;
-
-				if (current() instanceof UnallocatedTokensParticle) {
-					// remainder transfer, optional
-					pos++;
-				}
 			}
 		}
 
@@ -212,6 +195,7 @@ public final class TransactionParser {
 		}
 
 		private void parseFeeBurn() {
+			/*
 			if (current() instanceof UnallocatedTokensParticle) {
 				var feeParticle = (UnallocatedTokensParticle) current();
 				pos++;
@@ -224,6 +208,7 @@ public final class TransactionParser {
 
 				fee = fee.add(feeParticle.getAmount());
 			}
+			 */
 		}
 
 		private void parseRemainder() {

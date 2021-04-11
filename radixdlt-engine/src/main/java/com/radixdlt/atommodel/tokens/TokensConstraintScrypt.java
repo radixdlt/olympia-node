@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.constraintmachine.ReadOnlyData;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -69,14 +70,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.registerParticle(
-			UnallocatedTokensParticle.class,
-			ParticleDefinition.<UnallocatedTokensParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(UnallocatedTokensParticle::getTokDefRef)
-				.build()
-		);
-
-		os.registerParticle(
 			TransferrableTokensParticle.class,
 			ParticleDefinition.<TransferrableTokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
@@ -89,45 +82,64 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void defineTokenCreation(SysCalls os) {
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRICombined(
-			MutableSupplyTokenDefinitionParticle.class,
-			UnallocatedTokensParticle.class,
-			TokensConstraintScrypt::checkCreateUnallocated
-		);
+		os.createTransitionFromRRI(MutableSupplyTokenDefinitionParticle.class);
 
 		os.createTransitionFromRRICombined(
 			FixedSupplyTokenDefinitionParticle.class,
 			TransferrableTokensParticle.class,
 			TokensConstraintScrypt::checkCreateTransferrable
 		);
-
-		// Unallocated movement
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAmount,
-			UnallocatedTokensParticle::getAmount,
-			(i, o) -> Result.success(),
-			i -> Optional.of(i.getTokDefRef().getAddress().getPublicKey())
-		));
 	}
 
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			UnallocatedTokensParticle.class,
-			TransferrableTokensParticle.class,
-			UnallocatedTokensParticle::getAmount,
-			TransferrableTokensParticle::getAmount,
-			(i, o) -> {
-				if (!o.isBurnable()) {
-					return Result.error("Output is not mutable");
-				}
+		os.executeRoutine(new ConstraintRoutine() {
+			@Override
+			public void main(RoutineCalls calls) {
+				calls.createTransition(
+					new TransitionToken<>(
+						MutableSupplyTokenDefinitionParticle.class,
+						TypeToken.of(ReadOnlyData.class),
+						TransferrableTokensParticle.class,
+						TypeToken.of(VoidUsedData.class)
+					),
+					new TransitionProcedure<>() {
+						@Override
+						public Result precondition(
+							MutableSupplyTokenDefinitionParticle inputParticle,
+							ReadOnlyData inputUsed,
+							TransferrableTokensParticle outputParticle,
+							VoidUsedData outputUsed
+						) {
+							if (!outputParticle.isBurnable()) {
+								return Result.error("Must be able to burn mutable token.");
+							}
 
-				return Result.success();
-			},
-			i -> Optional.of(i.getTokDefRef().getAddress().getPublicKey())
-		));
+							if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
+								return Result.error("Minted token must be equivalent to token def.");
+							}
+
+							return Result.success();
+						}
+
+						@Override
+						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputUsedCompute() {
+							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						}
+
+						@Override
+						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> outputUsedCompute() {
+							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						}
+
+						@Override
+						public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
+							return i -> Optional.of(i.getRRI().getAddress().getPublicKey());
+						}
+					}
+				);
+			}
+		});
 
 		// Transfers
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
@@ -157,7 +169,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					),
 					new TransitionProcedure<>() {
 						@Override
-						public Result precondition(TransferrableTokensParticle inputParticle, CreateFungibleTransitionRoutine.UsedAmount inputUsed, VoidParticle outputParticle, VoidUsedData outputUsed) {
+						public Result precondition(
+							TransferrableTokensParticle inputParticle,
+							CreateFungibleTransitionRoutine.UsedAmount inputUsed,
+							VoidParticle outputParticle,
+							VoidUsedData outputUsed
+						) {
 							if (!inputParticle.isBurnable()) {
 								return Result.error("Cannot burn token.");
 							}
@@ -193,15 +210,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		if (transferrable.isBurnable()) {
 			return Result.error("Tokens must be non-mutable.");
-		}
-
-		return Result.success();
-	}
-
-	@VisibleForTesting
-	static Result checkCreateUnallocated(MutableSupplyTokenDefinitionParticle tokDef, UnallocatedTokensParticle unallocated) {
-		if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
-			return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
 		}
 
 		return Result.success();

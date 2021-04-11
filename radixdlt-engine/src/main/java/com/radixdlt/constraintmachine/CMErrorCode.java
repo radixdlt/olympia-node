@@ -30,6 +30,7 @@ public enum CMErrorCode {
 	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),
 	SPIN_CONFLICT("Spin conflict"),
+	READ_FAILURE("Substate read fail (does not exist)"),
 	LOCAL_NONEXISTENT("Local non-existent"),
 	INVALID_PARTICLE("Invalid particle"),
 	PARTICLE_REGISTER_SPIN_CLASH("Particle spin clashes with current particle in register"),

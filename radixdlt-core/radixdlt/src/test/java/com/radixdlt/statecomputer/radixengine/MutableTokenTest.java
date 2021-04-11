@@ -77,25 +77,6 @@ public class MutableTokenTest {
 	}
 
 	@Test
-	public void token_with_no_unallocated_should_fail() {
-		createInjector().injectMembers(this);
-		var particle = new MutableSupplyTokenDefinitionParticle(
-			RRI.of(address, "JOSH"),
-			"Joshy Token",
-			"Best Token",
-			null,
-			null
-		);
-		var atom = TxLowLevelBuilder.newBuilder()
-			.virtualDown(new RRIParticle(RRI.of(address, "JOSH")))
-			.up(particle)
-			.particleGroup()
-			.signAndBuild(keyPair::sign);
-
-		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
-	}
-
-	@Test
 	public void atomic_token_creation_and_spend_should_succeed() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -55,7 +54,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         mutableMap.put("radix.particles.mutable_supply_token_definition",
                 SerializationTestScenarioRunner::makeMutableSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.staked_tokens", SerializationTestScenarioRunner::makeStakedTokensParticle);
-        mutableMap.put("radix.particles.unallocated_tokens", SerializationTestScenarioRunner::makeUnallocatedTokensParticle);
         mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::makeRRIParticle);
         mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::makeRegisteredValidatorParticle);
         mutableMap.put("radix.particles.system_particle", SerializationTestScenarioRunner::makeSystemParticle);
@@ -121,16 +119,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         );
         assertTrue(argsExtractor.isFinished());
         return ttp;
-    }
-
-    private static UnallocatedTokensParticle makeUnallocatedTokensParticle(final Map<String, Object> arguments) {
-        var argsExtractor = ArgumentsExtractor.from(arguments);
-        var utp = new UnallocatedTokensParticle(
-            argsExtractor.asUInt256("amount"),
-            argsExtractor.asRRI("tokenDefinitionReference")
-        );
-        assertTrue(argsExtractor.isFinished());
-        return utp;
     }
 
     private static RRIParticle makeRRIParticle(final Map<String, Object> arguments) {

@@ -129,18 +129,6 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(UnallocatedTokensParticle particle) {
-		if (particle.getAmount() == null) {
-			return Result.error("amount must not be null");
-		}
-		if (particle.getAmount().isZero()) {
-			return Result.error("amount cannot be zero");
-		}
-
-		return Result.success();
-	}
-
-
 	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {

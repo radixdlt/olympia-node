@@ -31,7 +31,9 @@ public final class REInstruction {
 		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
 		DOWN((byte) 3, Spin.UP, Spin.DOWN),
 		LDOWN((byte) 4, Spin.UP, Spin.DOWN),
-		MSG((byte) 5, null, null),
+		READ((byte) 5, Spin.UP, Spin.UP),
+		LREAD((byte) 6, Spin.UP, Spin.UP),
+		MSG((byte) 7, null, null),
 		END((byte) 0, null, null);
 
 		private final Spin checkSpin;
@@ -76,7 +78,7 @@ public final class REInstruction {
 	}
 
 	public boolean isPush() {
-		return operation.nextSpin != null;
+		return operation.nextSpin != null && !operation.nextSpin.equals(operation.checkSpin);
 	}
 
 	public Spin getNextSpin() {

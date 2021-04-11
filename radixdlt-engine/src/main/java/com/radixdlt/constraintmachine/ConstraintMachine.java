@@ -173,6 +173,15 @@ public final class ConstraintMachine {
 			return Optional.ofNullable(maybeParticle);
 		}
 
+		public Optional<Particle> localRead(int index) {
+			var maybeParticle = localUpParticles.get(index);
+			return Optional.ofNullable(maybeParticle);
+		}
+
+		public Optional<Particle> read(SubstateId substateId) {
+			return loadUpParticle(substateId);
+		}
+
 		public Optional<Particle> shutdown(SubstateId substateId) {
 			var maybeParticle = loadUpParticle(substateId);
 			remoteDownParticles.add(substateId);
@@ -260,18 +269,27 @@ public final class ConstraintMachine {
 	 * @param validationState local state of validation
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<Pair<CMErrorCode, String>> validateParticle(CMValidationState validationState, Particle nextParticle, boolean isInput) {
+	Optional<Pair<CMErrorCode, String>> validateParticle(
+		CMValidationState validationState,
+		Particle nextParticle,
+		boolean isInput,
+		boolean isRead
+	) {
 		final Particle curParticle = validationState.getCurParticle();
 
 		if (validationState.spinClashes(isInput)) {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
 		}
 
+		if (isRead && validationState.getInputUsed() != null && validationState.getOutputUsed() != null) {
+			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, "Read clash"));
+		}
+
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
 		final TransitionToken transitionToken = new TransitionToken(
 			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
-			validationState.getInputUsedType(),
+			isRead ? TypeToken.of(ReadOnlyData.class) : validationState.getInputUsedType(),
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
 			validationState.getOutputUsedType()
 		);
@@ -282,7 +300,7 @@ public final class ConstraintMachine {
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {
-				validationState.popAndReplace(nextParticle, isInput, null);
+				validationState.popAndReplace(nextParticle, isInput, isRead ? new ReadOnlyData() : null);
 				return Optional.empty();
 			}
 
@@ -417,7 +435,7 @@ public final class ConstraintMachine {
 				}
 				var substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
 				validationState.bootUp(instructionIndex, substate);
-				var error = validateParticle(validationState, nextParticle, false);
+				var error = validateParticle(validationState, nextParticle, false, false);
 				if (error.isPresent()) {
 					return Optional.of(new CMError(
 						instructionIndex,
@@ -448,7 +466,7 @@ public final class ConstraintMachine {
 					return Optional.of(new CMError(instructionIndex, stateError.get(), validationState));
 				}
 
-				var error = validateParticle(validationState, nextParticle, true);
+				var error = validateParticle(validationState, nextParticle, true, false);
 				if (error.isPresent()) {
 					return Optional.of(new CMError(
 						instructionIndex,
@@ -468,7 +486,7 @@ public final class ConstraintMachine {
 				}
 
 				var particle = maybeParticle.get();
-				var error = validateParticle(validationState, particle, true);
+				var error = validateParticle(validationState, particle, true, false);
 				if (error.isPresent()) {
 					return Optional.of(new CMError(
 						instructionIndex,
@@ -489,7 +507,7 @@ public final class ConstraintMachine {
 				}
 
 				var particle = maybeParticle.get();
-				var error = validateParticle(validationState, particle, true);
+				var error = validateParticle(validationState, particle, true, false);
 				if (error.isPresent()) {
 					return Optional.of(new CMError(
 						instructionIndex,
@@ -502,6 +520,50 @@ public final class ConstraintMachine {
 				var substateId = SubstateId.ofSubstate(atom, index);
 				var substate = Substate.create(particle, substateId);
 				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.DOWN));
+				particleIndex++;
+
+			} else if (inst.getMicroOp() == REInstruction.REOp.READ) {
+				var substateId = SubstateId.fromBytes(inst.getData());
+				var maybeParticle = validationState.read(substateId);
+				if (maybeParticle.isEmpty()) {
+					return Optional.of(new CMError(instructionIndex, CMErrorCode.READ_FAILURE, validationState));
+				}
+
+				var particle = maybeParticle.get();
+				var error = validateParticle(validationState, particle, true, true);
+				if (error.isPresent()) {
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
+				}
+
+				var substate = Substate.create(particle, substateId);
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
+				particleIndex++;
+			} else if (inst.getMicroOp() == REInstruction.REOp.LREAD) {
+				int index = Ints.fromByteArray(inst.getData());
+				var maybeParticle = validationState.localRead(index);
+				if (maybeParticle.isEmpty()) {
+					return Optional.of(new CMError(instructionIndex, CMErrorCode.LOCAL_NONEXISTENT, validationState));
+				}
+
+				var particle = maybeParticle.get();
+				var error = validateParticle(validationState, particle, true, true);
+				if (error.isPresent()) {
+					return Optional.of(new CMError(
+						instructionIndex,
+						error.get().getFirst(),
+						validationState,
+						error.get().getSecond()
+					));
+				}
+
+				var substateId = SubstateId.ofSubstate(atom, index);
+				var substate = Substate.create(particle, substateId);
+				parsedInstructions.add(ParsedInstruction.of(inst, substate, Spin.UP));
 				particleIndex++;
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
 				numMessages++;
@@ -524,6 +586,7 @@ public final class ConstraintMachine {
 						var errMaybe = validateParticle(
 							validationState,
 							VoidParticle.create(),
+							false,
 							false
 						);
 						if (errMaybe.isPresent()) {

@@ -29,7 +29,6 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.ClientApiUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
@@ -665,14 +664,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		} else if (substate instanceof TransferrableTokensParticle) {
 			var a = (TransferrableTokensParticle) substate;
 			return Optional.of(BalanceEntry.createBalance(
-				a.getAddress(),
-				null,
-				a.getTokDefRef(),
-				a.getAmount()
-			));
-		} else if (substate instanceof UnallocatedTokensParticle) {
-			var a = (UnallocatedTokensParticle) substate;
-			return Optional.of(BalanceEntry.createSupply(
 				a.getAddress(),
 				null,
 				a.getTokDefRef(),
