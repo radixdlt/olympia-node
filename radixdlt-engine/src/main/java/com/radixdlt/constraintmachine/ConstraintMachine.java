@@ -326,51 +326,33 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
 		}
 
-		Optional<UsedData> prevUsedData = null;
-		for (boolean testInput : truefalse) {
+		var reducer = transitionProcedure.inputOutputReducer();
+		var usedData = reducer.compute(inputParticle, inputUsed, outputParticle, outputUsed);
+		if (usedData.isPresent()) {
+			var keepInput = usedData.get().getSecond();
+			if (isInput == keepInput) {
+				validationState.popAndReplace(nextParticle, isInput, usedData.get().getFirst());
+			} else {
+				validationState.updateUsed(usedData.get().getFirst());
+			}
+		} else {
+			validationState.pop();
+		}
 
-			UsedCompute<Particle, UsedData, Particle, UsedData> usedCompute
-				= testInput ? transitionProcedure.inputUsedCompute() : transitionProcedure.outputUsedCompute();
-
-			try {
-				final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
-				if (usedData.isPresent()) {
-					if (prevUsedData != null && prevUsedData.isPresent()) {
-						return Optional.of(Pair.of(CMErrorCode.NO_FULL_POP_ERROR, null));
-					}
-
-					if (isInput == testInput) {
-						validationState.popAndReplace(nextParticle, isInput, usedData.get());
-					} else {
-						validationState.updateUsed(usedData.get());
-					}
-				} else {
-					if (testInput) {
-						var pkeyMaybe = transitionProcedure.inputSignatureRequired()
-							.requiredSignature(inputParticle);
-
-						if (pkeyMaybe.isPresent()) {
-							var pkey = pkeyMaybe.get();
-							if (validationState.signatureRequired != null
-								&& !validationState.signatureRequired.equals(pkey)) {
-								return Optional.of(Pair.of(CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES, null));
-							} else {
-								if (!validationState.verifySignedWith(pkey)) {
-									return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
-								}
-
-								validationState.signatureRequired = pkey;
-							}
-						}
-					}
-
-					if (prevUsedData != null && !prevUsedData.isPresent()) {
-						validationState.pop();
-					}
+		var pkeyMaybe = transitionProcedure.inputSignatureRequired()
+			.requiredSignature(inputParticle);
+		if (pkeyMaybe.isPresent()) {
+			var pkey = pkeyMaybe.get();
+			if (validationState.signatureRequired != null) {
+				if (!validationState.signatureRequired.equals(pkey)) {
+					return Optional.of(Pair.of(CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES, null));
 				}
-				prevUsedData = usedData;
-			} catch (ArithmeticException e) {
-				return Optional.of(Pair.of(CMErrorCode.ARITHMETIC_ERROR, e.getMessage()));
+			} else {
+				if (!validationState.verifySignedWith(pkey)) {
+					return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
+				}
+
+				validationState.signatureRequired = pkey;
 			}
 		}
 

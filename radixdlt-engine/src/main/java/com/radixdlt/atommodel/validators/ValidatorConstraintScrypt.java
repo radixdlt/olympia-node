@@ -141,12 +141,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-			return (input, inputUsed, output, outputUsed) -> Optional.empty();
-		}
-
-		@Override
-		public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
+		public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
 			return (input, inputUsed, output, outputUsed) -> Optional.empty();
 		}
 

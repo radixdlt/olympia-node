@@ -33,8 +33,7 @@ public interface TransitionProcedure<I extends Particle, N extends UsedData, O e
 		O outputParticle, U outputUsed
 	);
 
-	UsedCompute<I, N, O, U> inputUsedCompute();
-	UsedCompute<I, N, O, U> outputUsedCompute();
+	UsedCompute<I, N, O, U> inputOutputReducer();
 
 	SignatureValidator<I> inputSignatureRequired();
 }

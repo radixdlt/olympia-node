@@ -123,12 +123,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputUsedCompute() {
-							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
-						}
-
-						@Override
-						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> outputUsedCompute() {
+						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputOutputReducer() {
 							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 						}
 
@@ -183,12 +178,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputUsedCompute() {
-							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
-						}
-
-						@Override
-						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> outputUsedCompute() {
+						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputOutputReducer() {
 							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 						}
 

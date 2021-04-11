@@ -102,12 +102,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> outputUsedCompute() {
+				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputOutputReducer() {
 					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 

@@ -144,13 +144,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					return Result.success();
 				}
 
-				@Override
-				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
+				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
 					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 
@@ -222,17 +216,10 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public UsedCompute<Particle, UsedData, Particle, UsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> procedure.inputUsedCompute()
+				public UsedCompute<Particle, UsedData, Particle, UsedData> inputOutputReducer() {
+					return (input, inputUsed, output, outputUsed) -> procedure.inputOutputReducer()
 						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
 				}
-
-				@Override
-				public UsedCompute<Particle, UsedData, Particle, UsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> procedure.outputUsedCompute()
-						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
-				}
-
 
 				@Override
 				public SignatureValidator<Particle> inputSignatureRequired() {
