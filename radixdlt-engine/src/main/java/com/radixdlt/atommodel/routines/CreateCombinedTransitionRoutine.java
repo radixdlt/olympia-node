@@ -25,7 +25,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.SignatureValidator;
@@ -108,7 +108,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
 				return (input, inputUsed, output, outputUsed)
 					-> Optional.of(Pair.of(new UsedParticle<>(typeToken0, output), true));
 			}
@@ -128,7 +128,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public UsedCompute<I, VoidUsedData, V, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, VoidUsedData, V, VoidUsedData> inputOutputReducer() {
 				return (input, inputUsed, output, outputUsed)
 					-> Optional.of(Pair.of(new UsedParticle<>(typeToken1, output), true));
 			}
@@ -149,7 +149,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<V>, O, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, UsedParticle<V>, O, VoidUsedData> inputOutputReducer() {
 				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 
@@ -168,7 +168,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<O>, V, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, UsedParticle<O>, V, VoidUsedData> inputOutputReducer() {
 				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 

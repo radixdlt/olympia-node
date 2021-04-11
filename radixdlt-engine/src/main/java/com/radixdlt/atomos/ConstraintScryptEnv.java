@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -144,7 +144,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					return Result.success();
 				}
 
-				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
+				public InputOutputReducer<RRIParticle, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
 					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 
@@ -216,9 +216,9 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public UsedCompute<Particle, UsedData, Particle, UsedData> inputOutputReducer() {
+				public InputOutputReducer<Particle, UsedData, Particle, UsedData> inputOutputReducer() {
 					return (input, inputUsed, output, outputUsed) -> procedure.inputOutputReducer()
-						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
+						.reduce((I) input, (N) inputUsed, (O) output, (U) outputUsed);
 				}
 
 				@Override

@@ -25,7 +25,7 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import java.util.Optional;
@@ -102,7 +102,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputOutputReducer() {
+				public InputOutputReducer<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputOutputReducer() {
 					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 

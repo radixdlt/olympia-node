@@ -327,7 +327,7 @@ public final class ConstraintMachine {
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
-		var usedData = reducer.compute(inputParticle, inputUsed, outputParticle, outputUsed);
+		var usedData = reducer.reduce(inputParticle, inputUsed, outputParticle, outputUsed);
 		if (usedData.isPresent()) {
 			var keepInput = usedData.get().getSecond();
 			if (isInput == keepInput) {

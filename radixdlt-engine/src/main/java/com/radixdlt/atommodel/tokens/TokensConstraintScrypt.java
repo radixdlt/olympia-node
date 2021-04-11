@@ -30,10 +30,9 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -123,7 +122,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public UsedCompute<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputOutputReducer() {
+						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputOutputReducer() {
 							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 						}
 
@@ -178,7 +177,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public UsedCompute<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputOutputReducer() {
+						public InputOutputReducer<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputOutputReducer() {
 							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 						}
 

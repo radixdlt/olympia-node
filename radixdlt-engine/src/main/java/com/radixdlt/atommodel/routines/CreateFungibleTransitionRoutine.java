@@ -24,7 +24,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
+import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.SignatureValidator;
@@ -126,7 +126,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	protected class FungibleTransitionProcedure<N extends UsedData, U extends UsedData> implements TransitionProcedure<I, N, O, U> {
 		private final Function<N, UInt256> inputUsedMapper;
 		private final Function<U, UInt256> outputUsedMapper;
-		private final UsedCompute<I, N, O, U> additionalOutputUsedCompute;
+		private final InputOutputReducer<I, N, O, U> additionalOutputUsedCompute;
 
 		public FungibleTransitionProcedure(
 			Function<N, UInt256> inputUsedMapper,
@@ -141,7 +141,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		public FungibleTransitionProcedure(
 			Function<N, UInt256> inputUsedMapper,
 			Function<U, UInt256> outputUsedMapper,
-			UsedCompute<I, N, O, U> additionalOutputUsedCompute
+			InputOutputReducer<I, N, O, U> additionalOutputUsedCompute
 		) {
 			this.inputUsedMapper = inputUsedMapper;
 			this.outputUsedMapper = outputUsedMapper;
@@ -154,7 +154,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		}
 
 		@Override
-		public UsedCompute<I, N, O, U> inputOutputReducer() {
+		public InputOutputReducer<I, N, O, U> inputOutputReducer() {
 			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 				final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
 				final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
