@@ -139,7 +139,7 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.TWO, list.get(0).getAmount());
+				assertEquals(UInt256.THREE, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));

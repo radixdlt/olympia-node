@@ -24,7 +24,10 @@ import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Optional;
 
-public class REParsedAction {
+/**
+ * Action which was parsed by constraint machine from a transaction
+ */
+public final class REParsedAction {
 	private final TxAction txAction;
 	private final List<REParsedInstruction> instructions;
 	private final Pair<Particle, ReducerState> deallocated;

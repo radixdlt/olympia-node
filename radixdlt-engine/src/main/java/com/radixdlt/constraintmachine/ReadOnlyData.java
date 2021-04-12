@@ -20,6 +20,9 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.reflect.TypeToken;
 
+/**
+ * Temporary class to be used for constraint machine read instructions
+ */
 public final class ReadOnlyData implements ReducerState {
 	@Override
 	public TypeToken<? extends ReducerState> getTypeToken() {

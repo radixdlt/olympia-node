@@ -73,7 +73,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 		}
 
 		// FIXME: This logic needs to move into the constraint machine
-		UInt256 feePaid = computeFeePaid(radixEngineTxn);
+		var feePaid = computeFeePaid(radixEngineTxn);
 
 		Set<Particle> outputParticles = radixEngineTxn.upSubstates().collect(Collectors.toSet());
 		UInt256 requiredMinimumFee = feeTable.feeFor(txn, outputParticles, totalSize);

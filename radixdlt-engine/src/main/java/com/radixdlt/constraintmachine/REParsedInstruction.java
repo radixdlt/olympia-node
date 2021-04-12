@@ -96,6 +96,6 @@ public final class REParsedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), substate);
+		return String.format("%s[%s]", getClass().getSimpleName(), substate);
 	}
 }

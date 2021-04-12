@@ -22,7 +22,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.constraintmachine.ReadOnlyData;
 import com.radixdlt.atomos.SysCalls;
@@ -36,7 +35,6 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidParticle;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;

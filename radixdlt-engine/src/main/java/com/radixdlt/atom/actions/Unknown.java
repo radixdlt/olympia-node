@@ -22,7 +22,8 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 
-public class Unknown implements TxAction {
+// TODO: Remove once all actions accounted for
+public final class Unknown implements TxAction {
 	private Unknown() {
 	}
 

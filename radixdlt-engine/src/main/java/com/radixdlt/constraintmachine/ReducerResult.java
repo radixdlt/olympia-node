@@ -25,7 +25,10 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class ReducerResult {
+/**
+ * Result of an instruction reduction
+ */
+public final class ReducerResult {
 	private final ReducerState reducerState;
 	private final boolean keepInput;
 	private final TxAction txAction;

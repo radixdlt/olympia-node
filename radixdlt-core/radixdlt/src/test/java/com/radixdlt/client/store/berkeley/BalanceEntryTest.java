@@ -63,7 +63,6 @@ public class BalanceEntryTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(BalanceEntry.class)
 			.suppress(Warning.NONFINAL_FIELDS)
-			.withIgnoredFields("supply")
 			.withNonnullFields("owner", "rri", "amount")
 			.verify();
 	}

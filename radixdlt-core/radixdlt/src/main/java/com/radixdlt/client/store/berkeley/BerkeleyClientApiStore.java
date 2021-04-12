@@ -35,13 +35,9 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.ClientApiUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
-import com.radixdlt.client.store.ParsedTx;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
@@ -138,7 +134,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final RRI nativeToken;
 	private final byte universeMagic;
-
+	private final CMStore readLogStore;
 	private final ConstraintMachine constraintMachine;
 
 	private Database transactionHistory;
@@ -146,7 +142,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database addressBalances;
 	private Database supplyBalances;
 
-	private CMStore readLogStore;
 
 
 
@@ -488,10 +483,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.info("Database rebuilding is finished successfully");
 	}
 
-	private Result<ParsedTx> toParsedTx(Txn txn) {
-		return ClientApiUtils.toParsedTx(txn, universeMagic, store::get);
-	}
-
 	private void newBatch(AtomsCommittedToLedger transactions) {
 		txCollector.push(transactions);
 		systemCounters.set(COUNT_APIDB_QUEUE_SIZE, inputCounter.addAndGet(transactions.getTxns().size()));
@@ -715,27 +706,5 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static DatabaseEntry entry() {
 		return new DatabaseEntry();
-	}
-
-	private Optional<BalanceEntry> toBalanceEntry(Particle substate, boolean isUp) {
-		if (substate instanceof StakedTokensParticle) {
-			var a = (StakedTokensParticle) substate;
-			return Optional.of(BalanceEntry.createBalance(
-				a.getAddress(),
-				a.getDelegateAddress(),
-				nativeToken,
-				a.getAmount()
-			));
-		} else if (substate instanceof TransferrableTokensParticle) {
-			var a = (TransferrableTokensParticle) substate;
-			return Optional.of(BalanceEntry.createBalance(
-				a.getAddress(),
-				null,
-				a.getTokDefRef(),
-				a.getAmount()
-			));
-		}
-
-		return Optional.empty();
 	}
 }

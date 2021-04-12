@@ -27,7 +27,6 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
