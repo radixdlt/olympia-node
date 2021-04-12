@@ -61,7 +61,7 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private Predicate<Particle> virtualStoreLayer;
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures;
+		private Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
@@ -69,7 +69,7 @@ public final class ConstraintMachine {
 		}
 
 		public Builder setParticleTransitionProcedures(
-			Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures
+			Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures
 		) {
 			this.particleProcedures = particleProcedures;
 			return this;
@@ -91,12 +91,12 @@ public final class ConstraintMachine {
 
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures;
+	private final Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures;
 
 	ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures
+		Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> particleProcedures
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
 		this.particleStaticCheck = particleStaticCheck;
@@ -109,7 +109,7 @@ public final class ConstraintMachine {
 
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
-		private UsedData particleRemainingUsed = null;
+		private ReducerState particleRemainingUsed = null;
 
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
@@ -205,12 +205,12 @@ public final class ConstraintMachine {
 			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
 		}
 
-		TypeToken<? extends UsedData> getUsedType() {
+		TypeToken<? extends ReducerState> getUsedType() {
 			return particleRemaining != null && particleRemainingUsed != null
-				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
+				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidReducerState.class);
 		}
 
-		UsedData getUsed() {
+		ReducerState getUsed() {
 			return particleRemaining != null ? particleRemainingUsed : null;
 		}
 
@@ -219,13 +219,13 @@ public final class ConstraintMachine {
 			this.particleRemainingUsed = null;
 		}
 
-		void popAndReplace(Particle particle, boolean isInput, UsedData particleRemainingUsed) {
+		void popAndReplace(Particle particle, boolean isInput, ReducerState particleRemainingUsed) {
 			this.particleRemaining = particle;
 			this.particleRemainingIsInput = isInput;
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
-		void updateUsed(UsedData particleRemainingUsed) {
+		void updateState(ReducerState particleRemainingUsed) {
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
@@ -315,17 +315,17 @@ public final class ConstraintMachine {
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
-		var usedData = reducer.reduce(inputParticle, outputParticle, used);
-		if (usedData.isPresent()) {
-			var keepInput = usedData.get().getSecond();
-			if (isInput == keepInput) {
-				validationState.popAndReplace(nextParticle, isInput, usedData.get().getFirst());
-			} else {
-				validationState.updateUsed(usedData.get().getFirst());
-			}
-		} else {
-			validationState.pop();
-		}
+		var result = reducer.reduce(inputParticle, outputParticle, used);
+		result.ifIncompleteElse(
+			(keepInput, state) -> {
+				if (isInput == keepInput) {
+					validationState.popAndReplace(nextParticle, isInput, state);
+				} else {
+					validationState.updateState(state);
+				}
+			},
+			validationState::pop
+		);
 
 		var pkeyMaybe = transitionProcedure.inputSignatureRequired()
 			.requiredSignature(inputParticle);
@@ -553,11 +553,11 @@ public final class ConstraintMachine {
 					);
 				}
 
-				final Pair<Particle, UsedData> deallocated;
+				final Pair<Particle, ReducerState> deallocated;
 				if (!validationState.isEmpty()) {
 					if (validationState.particleRemainingIsInput) {
 						var particle = validationState.particleRemaining;
-						var used = validationState.particleRemainingUsed;
+						var reducerState = validationState.particleRemainingUsed;
 						var errMaybe = validateParticle(
 							validationState,
 							VoidParticle.create(),
@@ -573,7 +573,7 @@ public final class ConstraintMachine {
 							));
 						}
 						if (validationState.isEmpty()) {
-							deallocated = Pair.of(particle, used);
+							deallocated = Pair.of(particle, reducerState);
 						} else {
 							return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 						}

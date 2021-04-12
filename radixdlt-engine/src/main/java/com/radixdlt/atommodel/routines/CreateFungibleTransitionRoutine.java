@@ -22,17 +22,16 @@ import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -40,7 +39,7 @@ import java.util.function.Function;
  * Transition Procedure for one to one fungible types
  */
 public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
-	public static final class UsedAmount implements UsedData {
+	public static final class UsedAmount implements ReducerState {
 		private final UInt256 amount;
 		private final boolean isInput;
 
@@ -58,7 +57,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		}
 
 		@Override
-		public TypeToken<? extends UsedData> getTypeToken() {
+		public TypeToken<? extends ReducerState> getTypeToken() {
 			return TypeToken.of(UsedAmount.class);
 		}
 
@@ -114,7 +113,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass, TypeToken.of(VoidReducerState.class)),
 			getProcedure0()
 		);
 
@@ -124,25 +123,25 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		);
 	}
 
-	public TransitionProcedure<I, O, VoidUsedData> getProcedure0() {
-		return new TransitionProcedure<I, O, VoidUsedData>() {
+	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
+		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
 				return transition.apply(inputParticle, outputParticle);
 			}
 
 			@Override
-			public InputOutputReducer<I, O, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
 				return (input, output, v) -> {
 					var i = inputAmountMapper.apply(input);
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return Optional.empty();
+						return ReducerResult.complete();
 					}
 					return compare > 0
-						? Optional.of(Pair.of(new UsedAmount(true, o), true))
-						: Optional.of(Pair.of(new UsedAmount(false, i), false));
+						? ReducerResult.incomplete(new UsedAmount(true, o), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i), false);
 				};
 			}
 
@@ -172,11 +171,11 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					}
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return Optional.empty();
+						return ReducerResult.complete();
 					}
 					return compare > 0
-						? Optional.of(Pair.of(new UsedAmount(true, o), true))
-						: Optional.of(Pair.of(new UsedAmount(false, i), false));
+						? ReducerResult.incomplete(new UsedAmount(true, o), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i), false);
 				};
 			}
 
@@ -185,17 +184,5 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 				return inputSignatureValidator;
 			}
 		};
-	}
-
-	public Class<I> getInputClass() {
-		return inputClass;
-	}
-
-	public Class<O> getOutputClass() {
-		return outputClass;
-	}
-
-	public SignatureValidator<I> getInputWitnessValidator() {
-		return inputSignatureValidator;
 	}
 }

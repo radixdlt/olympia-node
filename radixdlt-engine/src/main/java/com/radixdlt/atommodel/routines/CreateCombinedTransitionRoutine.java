@@ -23,15 +23,14 @@ import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.utils.Pair;
 
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 /**
@@ -39,7 +38,7 @@ import java.util.function.BiFunction;
  */
 public final class CreateCombinedTransitionRoutine<I extends Particle, O extends Particle, V extends Particle> implements ConstraintRoutine {
 
-	public static class UsedParticle<P extends Particle> implements UsedData {
+	public static class UsedParticle<P extends Particle> implements ReducerState {
 		private final P usedParticle;
 		private final TypeToken<UsedParticle<P>> typeToken;
 		UsedParticle(TypeToken<UsedParticle<P>> typeToken, P usedParticle) {
@@ -48,7 +47,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		}
 
 		@Override
-		public TypeToken<? extends UsedData> getTypeToken() {
+		public TypeToken<? extends ReducerState> getTypeToken() {
 			return typeToken;
 		}
 	}
@@ -80,7 +79,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass0, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass0, TypeToken.of(VoidReducerState.class)),
 			getProcedure0()
 		);
 
@@ -90,7 +89,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass1, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass1, TypeToken.of(VoidReducerState.class)),
 			getProcedure1()
 		);
 
@@ -100,17 +99,17 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		);
 	}
 
-	public TransitionProcedure<I, O, VoidUsedData> getProcedure0() {
-		return new TransitionProcedure<I, O, VoidUsedData>() {
+	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
+		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
 				return Result.success();
 			}
 
 			@Override
-			public InputOutputReducer<I, O, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
 				return (input, output, outputUsed)
-					-> Optional.of(Pair.of(new UsedParticle<>(typeToken0, output), true));
+					-> ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true);
 			}
 
 			@Override
@@ -120,17 +119,17 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		};
 	}
 
-	public TransitionProcedure<I, V, VoidUsedData> getProcedure1() {
-		return new TransitionProcedure<I, V, VoidUsedData>() {
+	public TransitionProcedure<I, V, VoidReducerState> getProcedure1() {
+		return new TransitionProcedure<I, V, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, V outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, V outputParticle, VoidReducerState outputUsed) {
 				return Result.success();
 			}
 
 			@Override
-			public InputOutputReducer<I, V, VoidUsedData> inputOutputReducer() {
+			public InputOutputReducer<I, V, VoidReducerState> inputOutputReducer() {
 				return (input, output, outputUsed)
-					-> Optional.of(Pair.of(new UsedParticle<>(typeToken1, output), true));
+					-> ReducerResult.incomplete(new UsedParticle<>(typeToken1, output), true);
 			}
 
 			@Override
@@ -149,7 +148,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, UsedParticle<V>> inputOutputReducer() {
-				return (input, output, outputUsed) -> Optional.empty();
+				return (input, output, outputUsed) -> ReducerResult.complete();
 			}
 
 			@Override
@@ -168,7 +167,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, outputUsed) -> Optional.empty();
+				return (input, output, outputUsed) -> ReducerResult.complete();
 			}
 
 			@Override

@@ -24,10 +24,11 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -72,7 +73,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		Function<O, RadixAddress> outputAddressMapper
 	) {
 		os.createTransition(
-			new TransitionToken<>(inputParticle, outputParticle, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputParticle, outputParticle, TypeToken.of(VoidReducerState.class)),
 			new ValidatorTransitionProcedure<>(inputAddressMapper, outputAddressMapper)
 		);
 	}
@@ -113,7 +114,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 	@VisibleForTesting
 	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
-		implements TransitionProcedure<I, O, VoidUsedData> {
+		implements TransitionProcedure<I, O, VoidReducerState> {
 		private final Function<I, RadixAddress> inputAddressMapper;
 		private final Function<O, RadixAddress> outputAddressMapper;
 
@@ -126,7 +127,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public Result precondition(I inputParticle, O outputParticle, VoidUsedData outputUsed) {
+		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
 			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
 			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address
@@ -141,8 +142,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public InputOutputReducer<I, O, VoidUsedData> inputOutputReducer() {
-			return (input, output, outputUsed) -> Optional.empty();
+		public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
+			return (input, output, outputUsed) -> ReducerResult.complete();
 		}
 
 		@Override

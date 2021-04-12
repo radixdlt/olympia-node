@@ -20,9 +20,9 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.reflect.TypeToken;
 
-public final class ReadOnlyData implements UsedData {
+public final class ReadOnlyData implements ReducerState {
 	@Override
-	public TypeToken<? extends UsedData> getTypeToken() {
+	public TypeToken<? extends ReducerState> getTypeToken() {
 		return TypeToken.of(ReadOnlyData.class);
 	}
 }

@@ -22,10 +22,11 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RRI;
@@ -48,7 +49,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> scryptTransitionProcedures;
+	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -65,7 +66,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> getScryptTransitionProcedures() {
+	public Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 
@@ -132,19 +133,19 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
 					RRIParticle inputParticle,
 					O outputParticle,
-					VoidUsedData outputUsed
+					VoidReducerState outputUsed
 				) {
 					return Result.success();
 				}
 
-				public InputOutputReducer<RRIParticle, O, VoidUsedData> inputOutputReducer() {
-					return (input, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
+					return (input, output, outputUsed) -> ReducerResult.complete();
 				}
 
 				@Override
@@ -182,7 +183,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <I extends Particle, O extends Particle, U extends UsedData> void createTransition(
+	public <I extends Particle, O extends Particle, U extends ReducerState> void createTransition(
 		TransitionToken<I, O, U> transitionToken,
 		TransitionProcedure<I, O, U> procedure
 	) {
@@ -193,15 +194,15 @@ final class ConstraintScryptEnv implements SysCalls {
 		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
 		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
 
-		final TransitionProcedure<Particle, Particle, UsedData> transformedProcedure
-			= new TransitionProcedure<Particle, Particle, UsedData>() {
+		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
+			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel() {
 					return procedure.requiredPermissionLevel();
 				}
 
 				@Override
-				public Result precondition(Particle inputParticle, Particle outputParticle, UsedData outputUsed) {
+				public Result precondition(Particle inputParticle, Particle outputParticle, ReducerState outputUsed) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
 						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
@@ -215,7 +216,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public InputOutputReducer<Particle, Particle, UsedData> inputOutputReducer() {
+				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
 					return (input, output, outputUsed) -> procedure.inputOutputReducer()
 						.reduce((I) input, (O) output, (U) outputUsed);
 				}

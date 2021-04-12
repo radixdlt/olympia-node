@@ -17,10 +17,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.utils.Pair;
-
-import java.util.Optional;
-
-public interface InputOutputReducer<I extends Particle, O extends Particle, U extends UsedData> {
-	Optional<Pair<UsedData, Boolean>> reduce(I inputParticle, O outputParticle, U outputUsed);
+public interface InputOutputReducer<I extends Particle, O extends Particle, U extends ReducerState> {
+	ReducerResult reduce(I inputParticle, O outputParticle, U reducerState);
 }

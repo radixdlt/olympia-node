@@ -23,10 +23,11 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import java.util.Optional;
 
@@ -72,7 +73,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			new TransitionToken<>(
 				SystemParticle.class,
 				SystemParticle.class,
-				TypeToken.of(VoidUsedData.class)
+				TypeToken.of(VoidReducerState.class)
 			),
 
 			new TransitionProcedure<>() {
@@ -84,7 +85,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				@Override
 				public Result precondition(
 					SystemParticle inputParticle, SystemParticle outputParticle,
-					VoidUsedData outputUsed
+					VoidReducerState outputUsed
 				) {
 
 					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {
@@ -101,8 +102,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public InputOutputReducer<SystemParticle, SystemParticle, VoidUsedData> inputOutputReducer() {
-					return (input, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
+					return (input, output, outputUsed) -> ReducerResult.complete();
 				}
 
 				@Override

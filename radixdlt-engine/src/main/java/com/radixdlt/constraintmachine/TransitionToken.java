@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
-public final class TransitionToken<I extends Particle, O extends Particle, U extends UsedData> {
+public final class TransitionToken<I extends Particle, O extends Particle, U extends ReducerState> {
 	private final Class<I> inputClass;
 	private final Class<O> outputClass;
 	private final TypeToken<U> usedClass;

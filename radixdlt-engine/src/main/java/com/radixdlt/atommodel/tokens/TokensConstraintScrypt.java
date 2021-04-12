@@ -27,12 +27,12 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidParticle;
-import com.radixdlt.constraintmachine.VoidUsedData;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -121,7 +121,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData> inputOutputReducer() {
-							return (inputParticle, outputParticle, outputUsed) -> Optional.empty();
+							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete();
 						}
 
 						@Override
@@ -178,7 +178,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public InputOutputReducer<TransferrableTokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount> inputOutputReducer() {
-							return (inputParticle, outputParticle, outputUsed) -> Optional.empty();
+							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete();
 						}
 
 						@Override

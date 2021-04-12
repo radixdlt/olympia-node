@@ -28,7 +28,7 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmoun
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.utils.UInt256;
 import static org.assertj.core.api.Assertions.*;
@@ -78,7 +78,7 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
-		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
@@ -88,19 +88,19 @@ public class CreateFungibleTransitionRoutineTest {
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.ONE),
 			null
-		)).isEmpty();
+		).isComplete()).isTrue();
 
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.ONE),
 			null
-		)).isEmpty();
+		).isComplete()).isTrue();
 	}
 
 	@Test
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
-		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
@@ -111,12 +111,12 @@ public class CreateFungibleTransitionRoutineTest {
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
 			null
-		)).get().isEqualTo(Pair.of(new UsedAmount(true, UInt256.ONE), true));
+		).getIncomplete()).get().isEqualTo(Pair.of(true, new UsedAmount(true, UInt256.ONE)));
 	}
 
 	@Test
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
-		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
@@ -126,12 +126,12 @@ public class CreateFungibleTransitionRoutineTest {
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
 			null
-		)).get().isEqualTo(Pair.of(new UsedAmount(false, UInt256.ONE), false));
+		).getIncomplete()).get().isEqualTo(Pair.of(false, new UsedAmount(false, UInt256.ONE)));
 	}
 
 	@Test
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
@@ -141,7 +141,7 @@ public class CreateFungibleTransitionRoutineTest {
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.TWO),
 			null
-		)).isEmpty();
+		).getIncomplete()).isEmpty();
 	}
 
 	@Test
@@ -156,12 +156,12 @@ public class CreateFungibleTransitionRoutineTest {
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
 			new UsedAmount(false, UInt256.ONE)
-		)).isEmpty();
+		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
 			new UsedAmount(true, UInt256.ONE)
-		)).isEmpty();
+		).getIncomplete()).isEmpty();
 	}
 }

@@ -52,7 +52,7 @@ public final class REParsedTxn {
 			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
 	}
 
-	public Stream<Pair<Particle, UsedData>> deallocated() {
+	public Stream<Pair<Particle, ReducerState>> deallocated() {
 		return actions.stream().flatMap(a -> a.getDeallocated().stream());
 	}
 

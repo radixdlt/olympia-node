@@ -25,16 +25,16 @@ import java.util.Optional;
 
 public class REParsedAction {
 	private final List<REParsedInstruction> instructions;
-	private final Pair<Particle, UsedData> deallocated;
+	private final Pair<Particle, ReducerState> deallocated;
 
-	private REParsedAction(List<REParsedInstruction> instructions, Pair<Particle, UsedData> deallocated) {
+	private REParsedAction(List<REParsedInstruction> instructions, Pair<Particle, ReducerState> deallocated) {
 		this.instructions = instructions;
 		this.deallocated = deallocated;
 	}
 
 	public static REParsedAction create(
 		List<REParsedInstruction> instructions,
-		Pair<Particle, UsedData> deallocated
+		Pair<Particle, ReducerState> deallocated
 	) {
 		return new REParsedAction(instructions, deallocated);
 	}
@@ -43,7 +43,7 @@ public class REParsedAction {
 		return instructions;
 	}
 
-	public Optional<Pair<Particle, UsedData>> getDeallocated() {
+	public Optional<Pair<Particle, ReducerState>> getDeallocated() {
 		return Optional.ofNullable(deallocated);
 	}
 }

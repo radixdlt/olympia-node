@@ -20,7 +20,7 @@ package com.radixdlt.atomos;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.VoidReducerState;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -62,18 +62,18 @@ public class CMAtomOSTest {
 		// Empty
 	}
 
-	interface TransitionProcedureTestParticle00 extends TransitionProcedure<TestParticle0, TestParticle0, VoidUsedData> {
+	interface TransitionProcedureTestParticle00 extends TransitionProcedure<TestParticle0, TestParticle0, VoidReducerState> {
 		// Empty
 	}
 
-	interface TransitionProcedureTestParticle10 extends TransitionProcedure<TestParticle1, TestParticle0, VoidUsedData> {
+	interface TransitionProcedureTestParticle10 extends TransitionProcedure<TestParticle1, TestParticle0, VoidReducerState> {
 		// Empty
 	}
 
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS();
-		TransitionProcedure<TestParticle0, TestParticle0, VoidUsedData> procedure =
+		TransitionProcedure<TestParticle0, TestParticle0, VoidReducerState> procedure =
 			mock(TransitionProcedureTestParticle00.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
@@ -82,12 +82,12 @@ public class CMAtomOSTest {
 				new TransitionToken<>(
 					TestParticle0.class,
 					TestParticle0.class,
-					TypeToken.of(VoidUsedData.class)
+					TypeToken.of(VoidReducerState.class)
 				),
 				procedure
 			);
 		});
-		TransitionProcedure<TestParticle1, TestParticle0, VoidUsedData> procedure0 =
+		TransitionProcedure<TestParticle1, TestParticle0, VoidReducerState> procedure0 =
 			mock(TransitionProcedureTestParticle10.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
@@ -97,7 +97,7 @@ public class CMAtomOSTest {
 					new TransitionToken<>(
 						TestParticle1.class,
 						TestParticle0.class,
-						TypeToken.of(VoidUsedData.class)
+						TypeToken.of(VoidReducerState.class)
 					),
 					procedure0
 				);
