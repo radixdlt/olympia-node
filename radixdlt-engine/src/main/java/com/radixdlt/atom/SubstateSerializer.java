@@ -31,10 +31,12 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RadixConstants;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.nio.ByteBuffer;
@@ -76,6 +78,8 @@ public final class SubstateSerializer {
 			return deserializeRRIParticle(buf);
 		} else if (c == SystemParticle.class) {
 			return deserializeSystemParticle(buf);
+		} else if (c == TokensParticle.class) {
+			return deserializeTokensParticle(buf);
 		} else {
 			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
 		}
@@ -89,6 +93,8 @@ public final class SubstateSerializer {
 			serializeData((RRIParticle) p, buf);
 		} else if (p instanceof SystemParticle) {
 			serializeData((SystemParticle) p, buf);
+		} else if (p instanceof TokensParticle) {
+			serializeData((TokensParticle) p, buf);
 		} else {
 			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
 		}
@@ -142,4 +148,38 @@ public final class SubstateSerializer {
 		return new SystemParticle(epoch, view, timestamp);
 	}
 
+	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
+		var rri = tokensParticle.getTokDefRef().toString().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (rri.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var length = (byte) rri.length;
+		buf.put(length); // rri length
+		buf.put(rri); // rri
+		buf.put((byte) tokensParticle.getAddress().toByteArray().length); // address length
+		buf.put(tokensParticle.getAddress().toByteArray()); // address
+		buf.put(tokensParticle.getAmount().toByteArray()); // amount
+		buf.put((byte) (tokensParticle.isBurnable() ? 1 : 0)); // isBurnable
+	}
+
+	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
+		var length = Byte.toUnsignedInt(buf.get()); // length
+		byte[] dst = new byte[length];
+		buf.get(dst, 0, length);
+		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
+		var rri = RRI.from(rriString);
+
+		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
+		var addressDest = new byte[addressLength]; // address
+		buf.get(addressDest);
+		var address = RadixAddress.from(addressDest);
+
+		var amountDest = new byte[UInt256.BYTES]; // amount
+		buf.get(amountDest);
+		var amount = UInt256.from(amountDest);
+
+		var isBurnable = buf.get() != 0; // isBurnable
+
+		return new TokensParticle(address, amount, rri, isBurnable);
+	}
 }

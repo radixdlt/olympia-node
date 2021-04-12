@@ -17,13 +17,9 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
@@ -31,27 +27,11 @@ import java.util.Objects;
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-@SerializerId2("t")
 public final class TokensParticle extends Particle {
-	@JsonProperty("o")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
-
-	@JsonProperty("r")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RRI tokenDefinitionReference;
-
-	@JsonProperty("a")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private UInt256 amount;
-
-	@JsonProperty("b")
-	@DsonOutput(Output.ALL)
-	private boolean isBurnable;
-
-	private TokensParticle() {
-		super();
-	}
+	private final RRI tokenDefinitionReference;
+	private final RadixAddress address;
+	private final UInt256 amount;
+	private final boolean isBurnable;
 
 	public TokensParticle(
 		RadixAddress address,
