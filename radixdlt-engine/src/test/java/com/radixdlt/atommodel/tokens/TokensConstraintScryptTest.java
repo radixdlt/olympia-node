@@ -184,10 +184,10 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
-		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
-		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(transferrableTokensParticle.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
+		TokensParticle tokensParticle = mock(TokensParticle.class);
+		when(tokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(tokensParticle.getAmount()).thenReturn(null);
+		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("null");
 	}
 
@@ -201,10 +201,10 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
-		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
-		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
+		TokensParticle tokensParticle = mock(TokensParticle.class);
+		when(tokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -228,7 +228,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
 		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
-		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		TokensParticle transferrable = mock(TokensParticle.class);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
 		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
@@ -237,7 +237,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_create_transferrable__result_has_no_error() {
 		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
-		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		TokensParticle transferrable = mock(TokensParticle.class);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
 		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();

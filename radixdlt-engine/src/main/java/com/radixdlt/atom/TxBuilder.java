@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -477,7 +477,7 @@ public final class TxBuilder {
 			"RRI not available"
 		);
 
-		up(new TransferrableTokensParticle(
+		up(new TokensParticle(
 			address,
 			tokenDefinition.getSupply(),
 			tokenRRI,
@@ -536,9 +536,9 @@ public final class TxBuilder {
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		final var factory = TokDefParticleFactory.create(rri, true);
 		swapFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
@@ -553,9 +553,9 @@ public final class TxBuilder {
 		final var factory = TokDefParticleFactory.create(rri, true);
 
 		deallocateFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance to for burn."
@@ -572,9 +572,9 @@ public final class TxBuilder {
 		var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."

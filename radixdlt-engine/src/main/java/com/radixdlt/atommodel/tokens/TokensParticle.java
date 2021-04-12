@@ -32,7 +32,7 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 @SerializerId2("t")
-public final class TransferrableTokensParticle extends Particle {
+public final class TokensParticle extends Particle {
 	@JsonProperty("o")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
@@ -49,11 +49,11 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private boolean isBurnable;
 
-	private TransferrableTokensParticle() {
+	private TokensParticle() {
 		super();
 	}
 
-	public TransferrableTokensParticle(
+	public TokensParticle(
 		RadixAddress address,
 		UInt256 amount,
 		RRI tokenDefinitionReference,
@@ -97,10 +97,10 @@ public final class TransferrableTokensParticle extends Particle {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof TransferrableTokensParticle)) {
+		if (!(o instanceof TokensParticle)) {
 			return false;
 		}
-		TransferrableTokensParticle that = (TransferrableTokensParticle) o;
+		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(address, that.address)
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 			&& Objects.equals(amount, that.amount)

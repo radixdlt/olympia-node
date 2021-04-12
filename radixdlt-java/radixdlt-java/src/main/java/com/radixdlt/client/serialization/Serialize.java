@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -68,7 +68,7 @@ public final class Serialize {
 				RRIParticle.class,
 				MutableSupplyTokenDefinitionParticle.class,
 				FixedSupplyTokenDefinitionParticle.class,
-				TransferrableTokensParticle.class,
+				TokensParticle.class,
 				StakedTokensParticle.class,
 				UniqueParticle.class,
 				ValidatorParticle.class,

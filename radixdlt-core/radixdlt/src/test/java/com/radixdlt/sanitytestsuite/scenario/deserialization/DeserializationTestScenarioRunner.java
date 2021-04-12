@@ -25,7 +25,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -123,7 +123,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
     }
 
     private static void assertTransferableTokensParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        TransferrableTokensParticle expected = (TransferrableTokensParticle) expectedObject;
+        TokensParticle expected = (TokensParticle) expectedObject;
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));

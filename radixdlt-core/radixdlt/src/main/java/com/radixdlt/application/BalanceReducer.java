@@ -19,7 +19,7 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 /**
  * Balance reducer for local node
  */
-public final class BalanceReducer implements StateReducer<UInt256, TransferrableTokensParticle> {
+public final class BalanceReducer implements StateReducer<UInt256, TokensParticle> {
 	private final RRI tokenRRI;
 	private final RadixAddress address;
 
@@ -53,8 +53,8 @@ public final class BalanceReducer implements StateReducer<UInt256, Transferrable
 	}
 
 	@Override
-	public Class<TransferrableTokensParticle> particleClass() {
-		return TransferrableTokensParticle.class;
+	public Class<TokensParticle> particleClass() {
+		return TokensParticle.class;
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public final class BalanceReducer implements StateReducer<UInt256, Transferrable
 	}
 
 	@Override
-	public BiFunction<UInt256, TransferrableTokensParticle, UInt256> outputReducer() {
+	public BiFunction<UInt256, TokensParticle, UInt256> outputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
 				return balance.add(p.getAmount());
@@ -73,7 +73,7 @@ public final class BalanceReducer implements StateReducer<UInt256, Transferrable
 	}
 
 	@Override
-	public BiFunction<UInt256, TransferrableTokensParticle, UInt256> inputReducer() {
+	public BiFunction<UInt256, TokensParticle, UInt256> inputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address) && p.getTokDefRef().equals(tokenRRI)) {
 				return balance.subtract(p.getAmount());

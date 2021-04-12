@@ -24,7 +24,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
@@ -109,9 +109,9 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         return ttp;
     }
 
-    private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
+    private static TokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var ttp = new TransferrableTokensParticle(
+        var ttp = new TokensParticle(
             argsExtractor.asRadixAddress("address"),
             argsExtractor.asUInt256("amount"),
             argsExtractor.asRRI("tokenDefinitionReference"),

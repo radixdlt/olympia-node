@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
@@ -74,7 +74,7 @@ public final class NodeApplicationModule extends AbstractModule {
 		@Self RadixAddress self
 	) {
 		return new SubstateCacheRegister<>(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getAddress().equals(self) && p.getTokDefRef().equals(tokenRRI)
 		);
 	}

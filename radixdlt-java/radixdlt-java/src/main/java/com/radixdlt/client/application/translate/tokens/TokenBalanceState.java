@@ -25,7 +25,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 
 import java.math.BigDecimal;
@@ -60,7 +60,7 @@ public class TokenBalanceState implements ApplicationState {
 		return new TokenBalanceState(balance);
 	}
 
-	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens) {
+	public static TokenBalanceState merge(TokenBalanceState state, TokensParticle tokens) {
 		HashMap<RRI, BigDecimal> balance = new HashMap<>(state.balance);
 		BigDecimal amount = TokenUnitConversions.subunitsToUnits(tokens.getAmount());
 		balance.merge(

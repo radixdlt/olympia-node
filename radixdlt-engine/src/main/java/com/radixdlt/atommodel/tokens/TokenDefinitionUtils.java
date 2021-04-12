@@ -118,7 +118,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TransferrableTokensParticle tokensParticle) {
+	public static Result staticCheck(TokensParticle tokensParticle) {
 		if (tokensParticle.getAmount() == null) {
 			return Result.error("amount must not be null");
 		}

@@ -38,8 +38,8 @@ public final class TokDefParticleFactory {
 		this.isMutable = isMutable;
 	}
 
-	public TransferrableTokensParticle createTransferrable(RadixAddress address, UInt256 amount) {
-		return new TransferrableTokensParticle(
+	public TokensParticle createTransferrable(RadixAddress address, UInt256 amount) {
+		return new TokensParticle(
 			address,
 			amount,
 			tokDefRef,

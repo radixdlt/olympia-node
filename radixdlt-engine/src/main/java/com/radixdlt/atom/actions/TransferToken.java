@@ -22,7 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -61,9 +61,9 @@ public final class TransferToken implements TxAction {
 		);
 
 		txBuilder.swapFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(user, amt),
 			amount,
 			"Not enough balance for transfer."

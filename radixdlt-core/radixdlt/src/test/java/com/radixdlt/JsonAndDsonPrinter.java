@@ -19,7 +19,7 @@ package com.radixdlt;
 
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
@@ -75,7 +75,7 @@ public class JsonAndDsonPrinter {
     }
 
     private void logTransferableTokensParticle() {
-        final var particle = new TransferrableTokensParticle(
+        final var particle = new TokensParticle(
             ADDRESS,
             UInt256.EIGHT,
             TOKEN_RRI,
