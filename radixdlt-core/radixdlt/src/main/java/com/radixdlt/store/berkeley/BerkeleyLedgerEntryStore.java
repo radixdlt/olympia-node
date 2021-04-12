@@ -578,16 +578,16 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
-		if (inst.getSpin() == Spin.UP) {
+		if (inst.isBootUp()) {
 			upParticle(txn, inst.getParticle().getClass(), inst.getInstruction().getData(), inst.getSubstate().getId());
-		} else if (inst.getSpin() == Spin.DOWN) {
+		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
 				downVirtualSubstate(txn, inst.getSubstate().getId());
 			} else {
 				downSubstate(txn, inst.getSubstate().getId());
 			}
 		} else {
-			throw new BerkeleyStoreException("Unknown op: " + inst.getSpin());
+			throw new IllegalStateException("Must bootup or shutdown to update particle.");
 		}
 	}
 
@@ -620,7 +620,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			radixEngineTxn.instructions().forEach(i -> this.updateParticle(transaction, i));
+			radixEngineTxn.instructions()
+				.filter(REParsedInstruction::isStateUpdate)
+				.forEach(i -> this.updateParticle(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();

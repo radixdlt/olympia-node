@@ -33,7 +33,7 @@ public class ParticleWithSpin {
 	}
 
 	public static ParticleWithSpin create(REParsedInstruction instruction) {
-		return create(instruction.getParticle(), instruction.getSpin());
+		return create(instruction.getParticle(), instruction.getNextSpin());
 	}
 
 	public static ParticleWithSpin up(Particle particle) {

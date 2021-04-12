@@ -94,7 +94,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 				throw new IllegalStateException();
 			}
 
-			var parsed = REParsedInstruction.of(instruction, Substate.create(particle, substateId), nextSpin);
+			var parsed = REParsedInstruction.of(instruction, Substate.create(particle, substateId));
 			instructions.add(parsed);
 		}
 

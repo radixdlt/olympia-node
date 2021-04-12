@@ -77,15 +77,19 @@ public final class REInstruction {
 		return data;
 	}
 
+	public boolean hasSubstate() {
+		return operation.checkSpin != null;
+	}
+
 	public boolean isPush() {
 		return operation.nextSpin != null && !operation.nextSpin.equals(operation.checkSpin);
 	}
 
-	public Spin getNextSpin() {
-		if (!isPush()) {
-			throw new IllegalStateException(operation + " is not a push operation.");
-		}
+	public Spin getCheckSpin() {
+		return operation.checkSpin;
+	}
 
+	public Spin getNextSpin() {
 		return operation.nextSpin;
 	}
 

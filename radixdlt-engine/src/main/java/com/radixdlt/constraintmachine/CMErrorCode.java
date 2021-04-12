@@ -29,6 +29,7 @@ public enum CMErrorCode {
 	HOOK_ERROR("Hook error"),
 	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),
+	UNKNOWN_OP("Unknown op"),
 	SPIN_CONFLICT("Spin conflict"),
 	READ_FAILURE("Substate read fail (does not exist)"),
 	LOCAL_NONEXISTENT("Local non-existent"),

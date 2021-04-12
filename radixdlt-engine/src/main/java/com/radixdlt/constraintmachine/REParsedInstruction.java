@@ -28,24 +28,29 @@ import java.util.Objects;
 public final class REParsedInstruction {
 	private final REInstruction instruction;
 	private final Substate substate;
-	private final Spin spin;
 
-	private REParsedInstruction(REInstruction instruction, Substate substate, Spin spin) {
+	private REParsedInstruction(REInstruction instruction, Substate substate) {
 		Objects.requireNonNull(instruction);
 		Objects.requireNonNull(substate);
-		Objects.requireNonNull(spin);
 
 		this.instruction = instruction;
 		this.substate = substate;
-		this.spin = spin;
 	}
 
-	public static REParsedInstruction of(REInstruction instruction, Substate substate, Spin spin) {
-		return new REParsedInstruction(instruction, substate, spin);
+	public static REParsedInstruction of(REInstruction instruction, Substate substate) {
+		return new REParsedInstruction(instruction, substate);
 	}
 
 	public REInstruction getInstruction() {
 		return instruction;
+	}
+
+	public Spin getCheckSpin() {
+		return instruction.getCheckSpin();
+	}
+
+	public Spin getNextSpin() {
+		return instruction.getNextSpin();
 	}
 
 	public Substate getSubstate() {
@@ -60,16 +65,16 @@ public final class REParsedInstruction {
 		return cls.cast(substate.getParticle());
 	}
 
-	public Spin getSpin() {
-		return spin;
+	public boolean isStateUpdate() {
+		return this.instruction.isPush();
 	}
 
-	public boolean isUp() {
-		return this.spin.equals(Spin.UP);
+	public boolean isBootUp() {
+		return this.instruction.isPush() && this.instruction.getNextSpin() == Spin.UP;
 	}
 
-	public boolean isDown() {
-		return this.spin.equals(Spin.DOWN);
+	public boolean isShutDown() {
+		return this.instruction.isPush() && this.instruction.getNextSpin() == Spin.DOWN;
 	}
 
 	@Override
@@ -81,17 +86,16 @@ public final class REParsedInstruction {
 		REParsedInstruction parsedInstruction = (REParsedInstruction) obj;
 
 		return Objects.equals(this.instruction, parsedInstruction.instruction)
-			&& Objects.equals(this.substate, parsedInstruction.substate)
-			&& Objects.equals(this.spin, parsedInstruction.spin);
+			&& Objects.equals(this.substate, parsedInstruction.substate);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(instruction, substate, spin);
+		return Objects.hash(instruction, substate);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), spin, substate);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), substate);
 	}
 }

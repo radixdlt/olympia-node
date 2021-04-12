@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngine;
@@ -100,11 +101,9 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
 		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
 		this.data.put(txn.getId(), data);
-		radixEngineTxns.get(0).instructions().forEach(instruction -> {
-			if (instruction.getSpin() == Spin.DOWN) {
-				var substateId = instruction.getSubstate().getId();
-				substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
-			}
+		radixEngineTxns.get(0).instructions().filter(REParsedInstruction::isShutDown).forEach(instruction -> {
+			var substateId = instruction.getSubstate().getId();
+			substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
 		});
 	}
 
@@ -117,7 +116,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 
 		transactions.stream()
 			.flatMap(REParsedTxn::instructions)
-			.filter(i -> i.getSpin() == Spin.DOWN)
+			.filter(REParsedInstruction::isShutDown)
 			.forEach(instruction -> {
 				var substateId = instruction.getSubstate().getId();
 				Set<AID> txnIds = substateIndex.remove(substateId);
@@ -155,7 +154,7 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 		var copy = new TreeSet<>(data.keySet());
 		prepared.stream()
 			.flatMap(REParsedTxn::instructions)
-			.filter(i -> i.getSpin() == Spin.DOWN)
+			.filter(REParsedInstruction::isShutDown)
 			.flatMap(i -> substateIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
@@ -166,7 +165,8 @@ public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 			var txId = copy.first();
 			copy.remove(txId);
 			var txnData = data.get(txId);
-			txnData.getFirst().instructions().filter(inst -> inst.getSpin() == Spin.DOWN)
+			txnData.getFirst().instructions()
+				.filter(REParsedInstruction::isShutDown)
 				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);

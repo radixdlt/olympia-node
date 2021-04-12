@@ -17,6 +17,7 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -173,6 +174,7 @@ public class TransactionParserTest {
 
 	private Result<ParsedTx> toParsedTx(REParsedTxn reTxn) {
 		var particles = reTxn.instructions()
+			.filter(REParsedInstruction::isStateUpdate)
 			.map(ParticleWithSpin::create)
 			.collect(Collectors.toList());
 

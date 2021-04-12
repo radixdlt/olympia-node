@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -318,8 +319,8 @@ public class BerkeleyClientApiStoreTest {
 	private Txn parsedToFull(ECKeyPair keyPair, REParsedTxn reTxn) {
 		var builder = TxLowLevelBuilder.newBuilder();
 
-		reTxn.instructions().forEach(i -> {
-			switch (i.getSpin()) {
+		reTxn.instructions().filter(REParsedInstruction::isStateUpdate).forEach(i -> {
+			switch (i.getNextSpin()) {
 				case NEUTRAL:
 					break;
 				case UP:

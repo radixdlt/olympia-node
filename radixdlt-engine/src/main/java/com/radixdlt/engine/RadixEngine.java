@@ -31,6 +31,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
@@ -424,21 +425,21 @@ public final class RadixEngine<M> {
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
-			parsedTxn.instructions().forEach(parsedInstruction -> {
+			parsedTxn.instructions().filter(REParsedInstruction::isStateUpdate).forEach(parsedInstruction -> {
 				final var particle = parsedInstruction.getSubstate().getParticle();
-				final var checkSpin = SpinStateMachine.prev(parsedInstruction.getSpin());
+				final var checkSpin = parsedInstruction.getCheckSpin();
 				stateComputers.forEach((a, computer) -> computer.processCheckSpin(particle, checkSpin));
 
 				var cache = substateCache.get(particle.getClass());
 				if (cache != null && cache.test(particle)) {
-					if (parsedInstruction.getSpin() == Spin.UP) {
+					if (parsedInstruction.isBootUp()) {
 						cache.bringUp(parsedInstruction.getSubstate());
 					} else {
 						cache.shutDown(parsedInstruction.getSubstate().getId());
 					}
 				}
 
-				if (parsedInstruction.getSpin() == Spin.UP) {
+				if (parsedInstruction.isBootUp()) {
 					checker.test(this::getComputedState);
 				}
 			});

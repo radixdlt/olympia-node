@@ -43,7 +43,9 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	@Override
 	public void storeAtom(Transaction txn, REParsedTxn parsed) {
 		synchronized (lock) {
-			parsed.instructions().forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
+			parsed.instructions()
+				.filter(REParsedInstruction::isStateUpdate)
+				.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
 			txnIds.add(parsed.getTxn().getId());
 		}
 	}
@@ -66,7 +68,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		V v = initial;
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (i.getSpin() != Spin.UP || !particleClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !particleClass.isInstance(i.getParticle())) {
 					continue;
 				}
 				v = outputReducer.apply(v, particleClass.cast(i.getParticle()));
@@ -80,7 +82,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (i.getSpin() != Spin.UP || !substateClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !substateClass.isInstance(i.getParticle())) {
 					continue;
 				}
 				substates.add(i.getSubstate());
@@ -99,14 +101,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst != null && inst.getSpin().equals(Spin.DOWN);
+			return inst != null && inst.isShutDown();
 		}
 	}
 
 	public Spin getSpin(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst == null ? Spin.NEUTRAL : inst.getSpin();
+			return inst == null ? Spin.NEUTRAL : inst.getNextSpin();
 		}
 	}
 
@@ -114,7 +116,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			if (inst == null || inst.getSpin() != Spin.UP) {
+			if (inst == null || inst.getNextSpin() != Spin.UP) {
 				return Optional.empty();
 			}
 

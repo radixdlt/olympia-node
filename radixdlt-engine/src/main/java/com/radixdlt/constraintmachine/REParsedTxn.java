@@ -62,7 +62,7 @@ public final class REParsedTxn {
 
 	public Stream<Particle> upSubstates() {
 		return instructions()
-			.filter(REParsedInstruction::isUp)
+			.filter(REParsedInstruction::isBootUp)
 			.map(REParsedInstruction::getSubstate)
 			.map(Substate::getParticle);
 	}

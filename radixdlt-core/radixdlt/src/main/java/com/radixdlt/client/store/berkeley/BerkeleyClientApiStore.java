@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.fees.NativeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -481,7 +482,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.ifPresent(creator -> storeSingleTransaction(reTxn.getTxn().getId(), creator));
 
 		reTxn.instructions()
-			.map(pi -> ParticleWithSpin.create(pi.getParticle(), pi.getSpin()))
+			.filter(REParsedInstruction::isStateUpdate)
+			.map(pi -> ParticleWithSpin.create(pi.getParticle(), pi.getNextSpin()))
 			.forEach(this::storeParticle);
 	}
 
