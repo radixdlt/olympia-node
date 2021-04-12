@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import org.junit.Assert;
 import org.junit.Before;
@@ -73,6 +74,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -93,6 +95,9 @@ public class BerkeleyClientApiStoreTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
+
+	@Inject
+	private ConstraintMachine constraintMachine;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
@@ -120,7 +125,6 @@ public class BerkeleyClientApiStoreTest {
 		injector.injectMembers(this);
 	}
 
-	/*
 	@Test
 	public void tokenBalancesAreReturned() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
@@ -179,7 +183,6 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(amount -> assertEquals(UInt256.EIGHT, amount))
 			.onFailure(this::failWithMessage);
 	}
-	 */
 
 	@Test
 	public void mutableTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
@@ -284,7 +287,7 @@ public class BerkeleyClientApiStoreTest {
 	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn... tx) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
-			.map(reTxn -> parsedToFull(keyPair, reTxn))
+			.map(REParsedTxn::getTxn)
 			.collect(Collectors.toList());
 
 		var txMap = transactions.stream().collect(Collectors.toMap(Txn::getId, Function.identity()));
@@ -306,6 +309,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
+			constraintMachine,
 			ledgerStore,
 			serialization,
 			mock(SystemCounters.class),
@@ -314,25 +318,6 @@ public class BerkeleyClientApiStoreTest {
 			TOKEN,
 			0
 		);
-	}
-
-	private Txn parsedToFull(ECKeyPair keyPair, REParsedTxn reTxn) {
-		var builder = TxLowLevelBuilder.newBuilder();
-
-		reTxn.instructions().filter(REParsedInstruction::isStateUpdate).forEach(i -> {
-			switch (i.getNextSpin()) {
-				case NEUTRAL:
-					break;
-				case UP:
-					builder.up(i.getParticle());
-					break;
-				case DOWN:
-					builder.virtualDown(i.getParticle());
-					break;
-			}
-		});
-
-		return builder.signAndBuild(keyPair::sign);
 	}
 
 	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {

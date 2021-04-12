@@ -17,8 +17,14 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
+import com.radixdlt.store.CMStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,14 +40,12 @@ import com.radixdlt.client.ClientApiUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.ParsedTx;
-import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -71,6 +75,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
@@ -132,6 +137,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final RRI nativeToken;
 	private final byte universeMagic;
 
+	private final ConstraintMachine constraintMachine;
+
 	private Database transactionHistory;
 	private Database tokenDefinitions;
 	private Database addressBalances;
@@ -141,6 +148,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
+		ConstraintMachine constraintMachine,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
@@ -150,6 +158,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
+		this.constraintMachine = constraintMachine;
 		this.store = store;
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
@@ -217,6 +226,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var data = entry();
 
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
+
+			if (status == OperationStatus.NOTFOUND) {
+				return Result.ok(UInt256.ZERO);
+			}
 
 			if (status != OperationStatus.SUCCESS) {
 				return Result.fail("Unknown RRI " + rri.toString());
@@ -436,15 +449,43 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
 
-		store.forEach(this::rebuildTransaction);
+		var cmStore = new CMStore() {
+			@Override
+			public Transaction createTransaction() {
+				return null;
+			}
+
+			@Override
+			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
+				return false;
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
+				var txnId = substateId.getTxnId();
+				return store.get(txnId)
+					.flatMap(txn ->
+						restore(serialization, txn.getPayload(), Atom.class)
+							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
+							.map(i -> i.get(substateId.getIndex().orElseThrow()))
+							.flatMap(i -> restore(serialization, i.getData(), Particle.class))
+							.toOptional()
+					);
+			}
+		};
+
+		store.forEach(txn -> {
+			final REParsedTxn parsedTxn;
+			try {
+				parsedTxn = constraintMachine.validate(null, cmStore, txn, PermissionLevel.SUPER_USER);
+			} catch (RadixEngineException e) {
+				throw new IllegalStateException(e);
+			}
+
+			processRETransaction(parsedTxn);
+		});
 
 		log.info("Database rebuilding is finished successfully");
-	}
-
-	private void rebuildTransaction(Txn txn) {
-		toParsedTx(txn)
-			.onFailure(this::reportError)
-			.onSuccess(this::processParsedTransaction);
 	}
 
 	private Result<ParsedTx> toParsedTx(Txn txn) {
@@ -460,31 +501,44 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		act.getParsedTxs().forEach(this::processRETransaction);
 	}
 
-	private void processParsedTransaction(ParsedTx parsedTx) {
-		var upParticles = parsedTx.getParticles()
-			.stream()
-			.filter(pws -> pws.getSpin() == Spin.UP)
-			.map(ParticleWithSpin::getParticle);
-
-		extractTimestamp(upParticles);
-
-		parsedTx.getCreator()
-			.ifPresent(creator -> storeSingleTransaction(parsedTx.getId(), creator));
-
-		parsedTx.getParticles()
-			.forEach(this::storeParticle);
-	}
-
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
 		extractCreator(reTxn.getTxn(), universeMagic)
 			.ifPresent(creator -> storeSingleTransaction(reTxn.getTxn().getId(), creator));
 
-		reTxn.instructions()
-			.filter(REParsedInstruction::isStateUpdate)
-			.map(pi -> ParticleWithSpin.create(pi.getParticle(), pi.getNextSpin()))
-			.forEach(this::storeParticle);
+		reTxn.getActions()
+			.forEach(a -> storeAction(reTxn.getUser(), a));
+	}
+
+
+	private void storeAction(RadixAddress user, REParsedAction action) {
+		if (action.getTxAction() instanceof TransferToken) {
+			var transferToken = (TransferToken) action.getTxAction();
+			var entry0 = BalanceEntry.create(
+				user,
+				null,
+				transferToken.rri(),
+				transferToken.amount(),
+				true
+			);
+			var entry1 = BalanceEntry.create(
+				transferToken.to(),
+				null,
+				transferToken.rri(),
+				transferToken.amount(),
+				false
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else {
+			var tokDefs = action.getInstructions().stream()
+				.filter(i -> i.getParticle() instanceof TokenDefinitionSubstate)
+				.map(i -> (TokenDefinitionSubstate) i.getParticle())
+				.collect(Collectors.toList());
+
+			tokDefs.forEach(this::storeTokenDefinition);
+		}
 	}
 
 	private void extractTimestamp(Stream<Particle> upParticles) {
@@ -522,20 +576,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeParticle(ParticleWithSpin particleWithSpin) {
-		var particle = particleWithSpin.getParticle();
-
-		if (particle instanceof TokenDefinitionSubstate) {
-			storeTokenDefinition((TokenDefinitionSubstate) particle);
-		} else {
-			if (particleWithSpin.getSpin() == Spin.DOWN) {
-				storeSingleDownSubstate(particle);
-			} else {
-				storeSingleUpSubstate(particle);
-			}
-		}
-	}
-
 	private void storeTokenDefinition(TokenDefinitionSubstate substate) {
 		TokenDefinitionRecord.from(substate)
 			.onSuccess(this::storeTokenDefinition)
@@ -556,24 +596,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeSingleUpSubstate(Particle substate) {
-		toBalanceEntry(substate, true).ifPresent(balanceEntry -> {
-			var key = asKey(balanceEntry);
-			var value = serializeTo(entry(), balanceEntry);
-
-			mergeBalances(key, value, balanceEntry, true);
-		});
+	private void storeBalanceEntry(BalanceEntry entry) {
+		var key = asKey(entry);
+		mergeBalances(key, entry(), entry);
 	}
 
-	private void storeSingleDownSubstate(Particle substate) {
-		toBalanceEntry(substate, false).ifPresent(balanceEntry -> {
-			var key = asKey(balanceEntry);
-
-			mergeBalances(key, entry(), balanceEntry.negate(), false);
-		});
-	}
-
-	private void mergeBalances(DatabaseEntry key, DatabaseEntry value, BalanceEntry balanceEntry, boolean isUp) {
+	private void mergeBalances(DatabaseEntry key, DatabaseEntry value, BalanceEntry balanceEntry) {
 		var database = balanceEntry.isSupply() ? supplyBalances : addressBalances;
 		var oldValue = entry();
 		var status = readBalance(() -> database.get(null, key, oldValue, null), oldValue);
