@@ -151,7 +151,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle> inputSignatureRequired() {
-					return rri -> Optional.of(rri.getRri().getAddress().getPublicKey());
+					return rri -> Optional.of(rri.getRri().getAddress());
 				}
 			}
 		);
@@ -177,7 +177,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass0,
 			particleClass1,
 			combinedCheck,
-			in -> Optional.of(in.getRri().getAddress().getPublicKey())
+			in -> Optional.of(in.getRri().getAddress())
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);

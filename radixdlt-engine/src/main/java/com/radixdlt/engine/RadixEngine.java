@@ -329,31 +329,15 @@ public final class RadixEngine<M> {
 	private REParsedTxn verify(CMStore.Transaction dbTransaction, Txn txn, PermissionLevel permissionLevel)
 		throws RadixEngineException {
 
-		final Atom atom;
-		try {
-			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-		} catch (DeserializeException e) {
-			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
-		}
-
-		var parsedActions = new ArrayList<REParsedAction>();
-		final Optional<CMError> error = constraintMachine.validate(
+		var parsedTxn = constraintMachine.validate(
 			dbTransaction,
 			engineStore,
-			atom,
-			permissionLevel,
-			parsedActions
+			txn,
+			permissionLevel
 		);
 
-		if (error.isPresent()) {
-			CMError e = error.get();
-			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e);
-		}
-
-		var reTxn = new REParsedTxn(txn, parsedActions);
-
 		if (checker != null) {
-			Result hookResult = checker.check(permissionLevel, reTxn);
+			Result hookResult = checker.check(permissionLevel, parsedTxn);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(
 					txn,
@@ -363,7 +347,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		return reTxn;
+		return parsedTxn;
 	}
 
 	/**

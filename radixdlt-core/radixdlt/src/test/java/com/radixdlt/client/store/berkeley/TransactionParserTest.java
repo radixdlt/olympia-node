@@ -83,6 +83,8 @@ public class TransactionParserTest {
 
 	private RadixEngine<Void> engine;
 
+	private TransactionParser parser = new TransactionParser(tokenRriII);
+
 	@Before
 	public void setup() throws Exception {
 		final var cmAtomOS = new CMAtomOS();
@@ -155,13 +157,13 @@ public class TransactionParserTest {
 		var timestamp = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
 		list.stream()
-			.map(this::toParsedTx)
-			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenRri, tokenOwnerAddress, parsedTx, timestamp)))
+			.map(txn -> parser.parse(txn, timestamp))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
 				.map(this::toActionTypes)
-				.onSuccess(types -> assertEquals(expectedActions, types)));
+				.onSuccess(types -> assertEquals(expectedActions, types))
+			);
 	}
 
 	private StakeNativeToken nativeStake() {
@@ -170,21 +172,6 @@ public class TransactionParserTest {
 
 	private UnstakeNativeToken nativeUnstake() {
 		return new UnstakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
-	}
-
-	private Result<ParsedTx> toParsedTx(REParsedTxn reTxn) {
-		var particles = reTxn.instructions()
-			.filter(REParsedInstruction::isStateUpdate)
-			.map(ParticleWithSpin::create)
-			.collect(Collectors.toList());
-
-		return restore(DefaultSerialization.getInstance(), reTxn.getTxn().getPayload(), Atom.class)
-			.map(atom -> ParsedTx.create(
-				reTxn.getTxn(),
-				particles,
-				Optional.empty(),
-				extractCreator(atom, MAGIC)
-			));
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

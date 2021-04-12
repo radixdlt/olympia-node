@@ -35,6 +35,14 @@ public final class BurnToken implements TxAction {
 		this.amount = amount;
 	}
 
+	public RRI rri() {
+		return rri;
+	}
+
+	public UInt256 amount() {
+		return amount;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var user = txBuilder.getAddressOrFail("Must have an address to burn.");

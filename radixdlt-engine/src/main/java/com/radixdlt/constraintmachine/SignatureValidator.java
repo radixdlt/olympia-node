@@ -17,7 +17,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Optional;
 
@@ -26,5 +26,5 @@ import java.util.Optional;
  * @param <P> particle class
  */
 public interface SignatureValidator<P extends Particle> {
-	Optional<ECPublicKey> requiredSignature(P particle);
+	Optional<RadixAddress> requiredSignature(P particle);
 }

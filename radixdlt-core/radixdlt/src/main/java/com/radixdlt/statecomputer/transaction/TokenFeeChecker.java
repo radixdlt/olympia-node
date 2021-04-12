@@ -19,10 +19,13 @@
 package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
@@ -91,23 +94,14 @@ public class TokenFeeChecker implements PostParsedChecker {
 	}
 
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
-		return radixEngineTxn.deallocated()
-			.map(p -> {
-				if (!(p.getFirst() instanceof TransferrableTokensParticle)) {
-					return UInt256.ZERO;
-				}
-
-				var t = (TransferrableTokensParticle) p.getFirst();
-				if (!t.getTokDefRef().equals(feeTokenRri)) {
-					return UInt256.ZERO;
-				}
-
-				if (!(p.getSecond() instanceof CreateFungibleTransitionRoutine.UsedAmount)) {
-					return t.getAmount();
-				}
-
-				var used = (CreateFungibleTransitionRoutine.UsedAmount) p.getSecond();
-				return t.getAmount().subtract(used.getUsedAmount());
-			}).reduce(UInt256::add).orElse(UInt256.ZERO);
+		return radixEngineTxn.getActions()
+			.stream()
+			.map(REParsedAction::getTxAction)
+			.filter(BurnToken.class::isInstance)
+			.map(BurnToken.class::cast)
+			.filter(t -> t.rri().equals(feeTokenRri))
+			.map(BurnToken::amount)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
 	}
 }

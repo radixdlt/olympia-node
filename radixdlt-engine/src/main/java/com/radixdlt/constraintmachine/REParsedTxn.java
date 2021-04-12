@@ -21,6 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
@@ -33,11 +34,17 @@ import java.util.stream.Stream;
  */
 public final class REParsedTxn {
 	private final Txn txn;
+	private final RadixAddress user;
 	private final List<REParsedAction> actions;
 
-	public REParsedTxn(Txn txn, List<REParsedAction> actions) {
+	public REParsedTxn(Txn txn, RadixAddress user, List<REParsedAction> actions) {
 		this.txn = txn;
+		this.user = user;
 		this.actions = actions;
+	}
+
+	public RadixAddress getUser() {
+		return user;
 	}
 
 	public List<REParsedAction> getActions() {

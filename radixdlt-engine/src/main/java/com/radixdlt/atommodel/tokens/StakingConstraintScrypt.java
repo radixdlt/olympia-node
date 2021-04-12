@@ -59,7 +59,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress().getPublicKey())
+			i -> Optional.of(i.getAddress())
 		));
 
 		// Unstaking
@@ -69,7 +69,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress().getPublicKey())
+			i -> Optional.of(i.getAddress())
 		));
 
 		// Stake movement
@@ -83,7 +83,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			i -> Optional.of(i.getAddress().getPublicKey())
+			i -> Optional.of(i.getAddress())
 		));
 	}
 

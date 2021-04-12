@@ -17,6 +17,9 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -24,20 +27,63 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
+import org.radix.api.jsonrpc.ActionType;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private TransactionParser() { }
+	private RRI nativeToken;
+
+	public TransactionParser(RRI nativeToken) {
+		this.nativeToken = nativeToken;
+	}
+
+	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
+		return radixEngineTxn.getActions()
+			.stream()
+			.map(REParsedAction::getTxAction)
+			.filter(BurnToken.class::isInstance)
+			.map(BurnToken.class::cast)
+			.filter(t -> t.rri().equals(nativeToken))
+			.map(BurnToken::amount)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
+	}
+
+	private ActionEntry mapToEntry(RadixAddress user, TxAction txAction) {
+		if (txAction instanceof TransferToken) {
+			var transferToken = (TransferToken) txAction;
+			return ActionEntry.create(ActionType.TRANSFER, user, transferToken.to(), transferToken.amount(), transferToken.rri());
+		} else if (txAction instanceof BurnToken) {
+			var burnToken = (BurnToken) txAction;
+			return ActionEntry.create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
+		} else {
+			return ActionEntry.unknown();
+		}
+	}
+
+	public Result<TxHistoryEntry> parse(REParsedTxn parsedTxn, Instant txDate) {
+		var txnId = parsedTxn.getTxn().getId();
+		var fee = computeFeePaid(parsedTxn);
+
+		var actions = parsedTxn.getActions().stream()
+			.map(a -> mapToEntry(parsedTxn.getUser(), a.getTxAction()))
+			.collect(Collectors.toList());
+
+		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));
+	}
 
 	public static Result<TxHistoryEntry> parse(RRI nativeToken, RadixAddress owner, ParsedTx parsedTx, Instant txDate) {
 		return new ParsingContext(parsedTx.getParticles(), parsedTx.getMessage(), parsedTx.getId(), txDate, nativeToken, owner)

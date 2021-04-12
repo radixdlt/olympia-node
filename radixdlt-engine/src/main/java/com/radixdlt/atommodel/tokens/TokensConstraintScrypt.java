@@ -128,7 +128,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
-							return i -> Optional.of(i.getRRI().getAddress().getPublicKey());
+							return i -> Optional.of(i.getRRI().getAddress());
 						}
 					}
 				);
@@ -146,7 +146,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::isBurnable,
 				"Permissions not equal."
 			),
-			i -> Optional.of(i.getAddress().getPublicKey())
+			i -> Optional.of(i.getAddress())
 		));
 
 
@@ -187,7 +187,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
-							return i -> Optional.of(i.getAddress().getPublicKey());
+							return i -> Optional.of(i.getAddress());
 						}
 					}
 				);

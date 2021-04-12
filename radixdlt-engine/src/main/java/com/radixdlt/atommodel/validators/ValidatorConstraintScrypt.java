@@ -150,7 +150,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		@Override
 		public SignatureValidator<I> inputSignatureRequired() {
 			// verify that the transition was authenticated by the validator address in question
-			return i -> Optional.of(inputAddressMapper.apply(i).getPublicKey());
+			return i -> Optional.of(inputAddressMapper.apply(i));
 		}
 	}
 }

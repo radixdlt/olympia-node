@@ -47,6 +47,10 @@ public class REParsedAction {
 		return new REParsedAction(txAction, instructions, deallocated);
 	}
 
+	public TxAction getTxAction() {
+		return txAction;
+	}
+
 	public List<REParsedInstruction> getInstructions() {
 		return instructions;
 	}

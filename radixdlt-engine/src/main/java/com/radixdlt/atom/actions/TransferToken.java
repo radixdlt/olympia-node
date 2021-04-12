@@ -38,6 +38,18 @@ public final class TransferToken implements TxAction {
 		this.amount = amount;
 	}
 
+	public UInt256 amount() {
+		return amount;
+	}
+
+	public RRI rri() {
+		return rri;
+	}
+
+	public RadixAddress to() {
+		return to;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");

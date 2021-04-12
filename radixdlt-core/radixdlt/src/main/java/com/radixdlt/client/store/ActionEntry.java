@@ -51,7 +51,6 @@ public class ActionEntry {
 	public static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
 		requireNonNull(type);
 		requireNonNull(from);
-		requireNonNull(to);
 		requireNonNull(amount);
 		requireNonNull(rri);
 		return new ActionEntry(type, from, to, amount, rri);

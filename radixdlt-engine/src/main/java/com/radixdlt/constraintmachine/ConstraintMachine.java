@@ -21,14 +21,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.engine.RadixEngineErrorCode;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Ints;
@@ -118,7 +123,7 @@ public final class ConstraintMachine {
 		private final CMStore store;
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
-		private ECPublicKey signatureRequired;
+		private RadixAddress signatureRequired;
 		private TxAction txAction;
 
 		CMValidationState(
@@ -322,20 +327,20 @@ public final class ConstraintMachine {
 			validationState::popAndComplete
 		);
 
-		var pkeyMaybe = transitionProcedure.inputSignatureRequired()
+		var addressMaybe = transitionProcedure.inputSignatureRequired()
 			.requiredSignature(inputParticle);
-		if (pkeyMaybe.isPresent()) {
-			var pkey = pkeyMaybe.get();
+		if (addressMaybe.isPresent()) {
+			var address = addressMaybe.get();
 			if (validationState.signatureRequired != null) {
-				if (!validationState.signatureRequired.equals(pkey)) {
+				if (!validationState.signatureRequired.equals(address)) {
 					return Optional.of(Pair.of(CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES, null));
 				}
 			} else {
-				if (!validationState.verifySignedWith(pkey)) {
+				if (!validationState.verifySignedWith(address.getPublicKey())) {
 					return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
 				}
 
-				validationState.signatureRequired = pkey;
+				validationState.signatureRequired = address;
 			}
 		}
 
@@ -558,22 +563,36 @@ public final class ConstraintMachine {
 	 *
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(
-		CMStore.Transaction txn,
+	public REParsedTxn validate(
+		CMStore.Transaction dbTxn,
 		CMStore cmStore,
-		Atom atom,
-		PermissionLevel permissionLevel,
-		List<REParsedAction> parsedActions
-	) {
+		Txn txn,
+		PermissionLevel permissionLevel
+	) throws RadixEngineException {
+		final Atom atom;
+		try {
+			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+		} catch (DeserializeException e) {
+			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
+		}
+
 		final CMValidationState validationState = new CMValidationState(
 			virtualStoreLayer,
-			txn,
+			dbTxn,
 			cmStore,
 			permissionLevel,
 			atom.computeHashToSign(),
 			atom.getSignature()
 		);
 
-		return this.validateInstructions(validationState, atom, parsedActions);
+		var parsedActions = new ArrayList<REParsedAction>();
+		var error = this.validateInstructions(validationState, atom, parsedActions);
+		if (error.isPresent()) {
+			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, error.get().getErrorDescription(), error.get());
+		}
+
+		var address = validationState.signatureRequired;
+
+		return new REParsedTxn(txn, address, parsedActions);
 	}
 }
