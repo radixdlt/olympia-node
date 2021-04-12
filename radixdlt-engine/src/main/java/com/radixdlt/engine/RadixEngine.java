@@ -19,8 +19,6 @@ package com.radixdlt.engine;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateStore;
@@ -30,20 +28,16 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 
-import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -54,11 +48,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.

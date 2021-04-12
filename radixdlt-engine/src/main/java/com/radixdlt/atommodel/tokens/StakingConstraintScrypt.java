@@ -18,6 +18,9 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -59,7 +62,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress())
+			i -> Optional.of(i.getAddress()),
+			() -> new StakeNativeToken(null, null, null) // FIXME: fill in
 		));
 
 		// Unstaking
@@ -69,7 +73,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress())
+			i -> Optional.of(i.getAddress()),
+			() -> new UnstakeNativeToken(null, null, null) // FIXME: fill in
 		));
 
 		// Stake movement
@@ -83,7 +88,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			i -> Optional.of(i.getAddress())
+			i -> Optional.of(i.getAddress()),
+			Unknown::create
 		));
 	}
 

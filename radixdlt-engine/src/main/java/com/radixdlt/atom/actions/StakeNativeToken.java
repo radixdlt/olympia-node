@@ -40,6 +40,18 @@ public final class StakeNativeToken implements TxAction {
 		this.amount = amount;
 	}
 
+	public RRI rri() {
+		return nativeToken;
+	}
+
+	public RadixAddress to() {
+		return delegateAddress;
+	}
+
+	public UInt256 amount() {
+		return amount;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address.");

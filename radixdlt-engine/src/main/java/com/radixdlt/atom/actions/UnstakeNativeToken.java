@@ -38,6 +38,18 @@ public final class UnstakeNativeToken implements TxAction {
 		this.amount = amount;
 	}
 
+	public RadixAddress from() {
+		return delegateAddress;
+	}
+
+	public UInt256 amount() {
+		return amount;
+	}
+
+	public RRI rri() {
+		return nativeToken;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address.");

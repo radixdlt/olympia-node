@@ -20,15 +20,15 @@ package com.radixdlt.atommodel.tokens;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.Unknown;
-import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.constraintmachine.ReadOnlyData;
-import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
+import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -94,45 +94,44 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
-		os.executeRoutine(new ConstraintRoutine() {
-			@Override
-			public void main(RoutineCalls calls) {
-				calls.createTransition(
-					new TransitionToken<>(
-						MutableSupplyTokenDefinitionParticle.class,
-						TransferrableTokensParticle.class,
-						TypeToken.of(ReadOnlyData.class)
-					),
-					new TransitionProcedure<>() {
-						@Override
-						public Result precondition(
-							MutableSupplyTokenDefinitionParticle inputParticle,
-							TransferrableTokensParticle outputParticle,
-							ReadOnlyData inputUsed
-						) {
-							if (!outputParticle.isBurnable()) {
-								return Result.error("Must be able to burn mutable token.");
-							}
-
-							if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
-								return Result.error("Minted token must be equivalent to token def.");
-							}
-
-							return Result.success();
+		os.executeRoutine(calls -> {
+			calls.createTransition(
+				new TransitionToken<>(
+					MutableSupplyTokenDefinitionParticle.class,
+					TransferrableTokensParticle.class,
+					TypeToken.of(ReadOnlyData.class)
+				),
+				new TransitionProcedure<>() {
+					@Override
+					public Result precondition(
+						MutableSupplyTokenDefinitionParticle inputParticle,
+						TransferrableTokensParticle outputParticle,
+						ReadOnlyData inputUsed
+					) {
+						if (!outputParticle.isBurnable()) {
+							return Result.error("Must be able to burn mutable token.");
 						}
 
-						@Override
-						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData> inputOutputReducer() {
-							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete(Unknown.create());
+						if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
+							return Result.error("Minted token must be equivalent to token def.");
 						}
 
-						@Override
-						public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
-							return i -> Optional.of(i.getRRI().getAddress());
-						}
+						return Result.success();
 					}
-				);
-			}
+
+					@Override
+					public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData>
+						inputOutputReducer() {
+						return (inputParticle, outputParticle, outputUsed)
+							-> ReducerResult.complete(Unknown.create());
+					}
+
+					@Override
+					public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
+						return i -> Optional.of(i.getRRI().getAddress());
+					}
+				}
+			);
 		});
 
 		// Transfers
@@ -146,52 +145,51 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::isBurnable,
 				"Permissions not equal."
 			),
-			i -> Optional.of(i.getAddress())
+			i -> Optional.of(i.getAddress()),
+			() -> new TransferToken(null, null, null)
 		));
 
 
 		// Burns
-		os.executeRoutine(new ConstraintRoutine() {
-			@Override
-			public void main(RoutineCalls calls) {
-				calls.createTransition(
-					new TransitionToken<>(
-						TransferrableTokensParticle.class,
-						VoidParticle.class,
-						TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
-					),
-					new TransitionProcedure<>() {
-						@Override
-						public Result precondition(
-							TransferrableTokensParticle inputParticle,
-							VoidParticle outputParticle,
-							CreateFungibleTransitionRoutine.UsedAmount inputUsed
-						) {
-							if (!inputUsed.isInput()) {
-								return Result.error("Broken state.");
-							}
-
-							if (!inputParticle.isBurnable()) {
-								return Result.error("Cannot burn token.");
-							}
-
-							return Result.success();
+		os.executeRoutine(calls -> {
+			calls.createTransition(
+				new TransitionToken<>(
+					TransferrableTokensParticle.class,
+					VoidParticle.class,
+					TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
+				),
+				new TransitionProcedure<>() {
+					@Override
+					public Result precondition(
+						TransferrableTokensParticle inputParticle,
+						VoidParticle outputParticle,
+						CreateFungibleTransitionRoutine.UsedAmount inputUsed
+					) {
+						if (!inputUsed.isInput()) {
+							return Result.error("Broken state.");
 						}
 
-						@Override
-						public InputOutputReducer<TransferrableTokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount> inputOutputReducer() {
-							return (inputParticle, outputParticle, state) -> ReducerResult.complete(
-								new BurnToken(inputParticle.getTokDefRef(), inputParticle.getAmount().subtract(state.getUsedAmount()))
-							);
+						if (!inputParticle.isBurnable()) {
+							return Result.error("Cannot burn token.");
 						}
 
-						@Override
-						public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
-							return i -> Optional.of(i.getAddress());
-						}
+						return Result.success();
 					}
-				);
-			}
+
+					@Override
+					public InputOutputReducer<TransferrableTokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
+						return (inputParticle, outputParticle, state) -> {
+							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
+							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
+						};
+					}
+
+					@Override
+					public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
+						return i -> Optional.of(i.getAddress());
+					}
+				}
+			);
 		});
 	}
 

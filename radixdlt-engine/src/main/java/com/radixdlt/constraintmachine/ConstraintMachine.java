@@ -376,62 +376,58 @@ public final class ConstraintMachine {
 		var parsedInstructions = new ArrayList<REParsedInstruction>();
 		var rawInstructions = toInstructions(atom.getInstructions());
 		long particleIndex = 0;
-		int instructionIndex = 0;
+		int instIndex = 0;
 		int numMessages = 0;
 		var expectEnd = false;
 
 		for (var inst : rawInstructions) {
 			if (inst.getData().length > DATA_MAX_SIZE)	 {
-				return Optional.of(new CMError(
-					instructionIndex, CMErrorCode.DATA_TOO_LARGE, validationState, "Length is " + inst.getData().length
-				));
+				var msg = "Length is " + inst.getData().length;
+				return Optional.of(new CMError(instIndex, CMErrorCode.DATA_TOO_LARGE, validationState, msg));
 			}
 
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
-				return Optional.of(new CMError(instructionIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
+				return Optional.of(new CMError(instIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
 			}
 
 			if (inst.hasSubstate()) {
 				final Particle nextParticle;
 				final Substate substate;
-
 				if (inst.getMicroOp() == REInstruction.REOp.UP) {
 					// TODO: Cleanup indexing of substate class
 					try {
 						nextParticle = SubstateSerializer.deserialize(inst.getData());
 					} catch (DeserializeException e) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.INVALID_PARTICLE, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.INVALID_PARTICLE, validationState));
 					}
-
 					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 					if (staticCheckResult.isError()) {
 						var errMsg = staticCheckResult.getErrorMessage();
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
+						return Optional.of(new CMError(instIndex, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 					}
-					substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instructionIndex));
-					validationState.bootUp(instructionIndex, substate);
+					substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, instIndex));
+					validationState.bootUp(instIndex, substate);
 				} else if (inst.getMicroOp() == REInstruction.REOp.VDOWN) {
 					try {
 						nextParticle = SubstateSerializer.deserialize(inst.getData());
 					} catch (DeserializeException e) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.INVALID_PARTICLE, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.INVALID_PARTICLE, validationState));
 					}
 					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 					if (staticCheckResult.isError()) {
 						var errMsg = staticCheckResult.getErrorMessage();
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
+						return Optional.of(new CMError(instIndex, CMErrorCode.INVALID_PARTICLE, validationState, errMsg));
 					}
-
 					substate = Substate.create(nextParticle, SubstateId.ofVirtualSubstate(inst.getData()));
 					var stateError = validationState.virtualShutdown(substate);
 					if (stateError.isPresent()) {
-						return Optional.of(new CMError(instructionIndex, stateError.get(), validationState));
+						return Optional.of(new CMError(instIndex, stateError.get(), validationState));
 					}
 				} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.DOWN) {
 					var substateId = SubstateId.fromBytes(inst.getData());
 					var maybeParticle = validationState.shutdown(substateId);
 					if (maybeParticle.isEmpty()) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.SPIN_CONFLICT, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.SPIN_CONFLICT, validationState));
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
@@ -439,33 +435,28 @@ public final class ConstraintMachine {
 					int index = Ints.fromByteArray(inst.getData());
 					var maybeParticle = validationState.localShutdown(index);
 					if (maybeParticle.isEmpty()) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.LOCAL_NONEXISTENT, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.LOCAL_NONEXISTENT, validationState));
 					}
-
 					nextParticle = maybeParticle.get();
-					var substateId = SubstateId.ofSubstate(atom, index);
-					substate = Substate.create(nextParticle, substateId);
+					substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, index));
 				} else if (inst.getMicroOp() == REInstruction.REOp.READ) {
 					var substateId = SubstateId.fromBytes(inst.getData());
 					var maybeParticle = validationState.read(substateId);
 					if (maybeParticle.isEmpty()) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.READ_FAILURE, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.READ_FAILURE, validationState));
 					}
-
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
 				} else if (inst.getMicroOp() == REInstruction.REOp.LREAD) {
 					int index = Ints.fromByteArray(inst.getData());
 					var maybeParticle = validationState.localRead(index);
 					if (maybeParticle.isEmpty()) {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.LOCAL_NONEXISTENT, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.LOCAL_NONEXISTENT, validationState));
 					}
-
 					nextParticle = maybeParticle.get();
-					var substateId = SubstateId.ofSubstate(atom, index);
-					substate = Substate.create(nextParticle, substateId);
+					substate = Substate.create(nextParticle, SubstateId.ofSubstate(atom, index));
 				} else {
-					return Optional.of(new CMError(instructionIndex, CMErrorCode.UNKNOWN_OP, validationState));
+					return Optional.of(new CMError(instIndex, CMErrorCode.UNKNOWN_OP, validationState));
 				}
 
 				var error = validateParticle(
@@ -475,12 +466,7 @@ public final class ConstraintMachine {
 					!inst.isPush() && inst.getCheckSpin() == Spin.UP
 				);
 				if (error.isPresent()) {
-					return Optional.of(new CMError(
-						instructionIndex,
-						error.get().getFirst(),
-						validationState,
-						error.get().getSecond()
-					));
+					return Optional.of(new CMError(instIndex, error.get().getFirst(), validationState, error.get().getSecond()));
 				}
 
 				parsedInstructions.add(REParsedInstruction.of(inst, substate));
@@ -489,52 +475,34 @@ public final class ConstraintMachine {
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
 				numMessages++;
 				if (numMessages > MAX_NUM_MESSAGES) {
-					return Optional.of(
-						new CMError(instructionIndex, CMErrorCode.TOO_MANY_MESSAGES, validationState)
-					);
+					return Optional.of(new CMError(instIndex, CMErrorCode.TOO_MANY_MESSAGES, validationState));
 				}
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
 				if (particleIndex == 0) {
-					return Optional.of(
-						new CMError(instructionIndex, CMErrorCode.EMPTY_PARTICLE_GROUP, validationState)
-					);
+					return Optional.of(new CMError(instIndex, CMErrorCode.EMPTY_PARTICLE_GROUP, validationState));
 				}
 
 				final Pair<Particle, ReducerState> deallocated;
 				if (validationState.txAction == null && validationState.particleRemainingIsInput) {
 					var particle = validationState.particleRemaining;
 					var reducerState = validationState.reducerState;
-					var errMaybe = validateParticle(
-						validationState,
-						VoidParticle.create(),
-						false,
-						false
-					);
+					var errMaybe = validateParticle(validationState,
+						VoidParticle.create(), false, false);
 					if (errMaybe.isPresent()) {
-						return Optional.of(new CMError(
-							instructionIndex,
-							errMaybe.get().getFirst(),
-							validationState,
-							errMaybe.get().getSecond()
-						));
+						return Optional.of(new CMError(instIndex,
+							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));
 					}
-
 					deallocated = Pair.of(particle, reducerState);
 				} else {
 					deallocated = null;
 				}
 
 				if (validationState.txAction == null) {
-					return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+					return Optional.of(new CMError(instIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 				}
 
-				var parsedAction = REParsedAction.create(
-					validationState.txAction,
-					parsedInstructions,
-					deallocated
-				);
+				var parsedAction = REParsedAction.create(validationState.txAction, parsedInstructions, deallocated);
 				parsedActions.add(parsedAction);
-
 				parsedInstructions = new ArrayList<>();
 				particleIndex = 0;
 				validationState.txAction = null;
@@ -543,15 +511,11 @@ public final class ConstraintMachine {
 			}
 
 			expectEnd = validationState.txAction != null;
-			instructionIndex++;
+			instIndex++;
 		}
 
 		if (particleIndex != 0) {
-			return Optional.of(new CMError(
-				instructionIndex,
-				CMErrorCode.MISSING_PARTICLE_GROUP,
-				validationState
-			));
+			return Optional.of(new CMError(instIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
 		}
 
 		return Optional.empty();

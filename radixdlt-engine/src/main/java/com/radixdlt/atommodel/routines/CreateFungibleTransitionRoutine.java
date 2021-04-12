@@ -18,7 +18,7 @@
 package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
@@ -35,6 +35,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Transition Procedure for one to one fungible types
@@ -43,10 +44,13 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public static final class UsedAmount implements ReducerState {
 		private final UInt256 amount;
 		private final boolean isInput;
+		// FIXME: super hack
+		private final TxAction txAction;
 
-		public UsedAmount(boolean isInput, UInt256 usedAmount) {
+		public UsedAmount(boolean isInput, UInt256 usedAmount, TxAction txAction) {
 			this.isInput = isInput;
 			this.amount = Objects.requireNonNull(usedAmount);
+			this.txAction = txAction;
 		}
 
 		public boolean isInput() {
@@ -64,7 +68,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(isInput, amount);
+			return Objects.hash(isInput, amount, txAction);
 		}
 
 		@Override
@@ -75,7 +79,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 
 			UsedAmount u = (UsedAmount) obj;
 			return this.isInput == u.isInput
-				&& Objects.equals(this.amount, u.amount);
+				&& Objects.equals(this.amount, u.amount)
+				&& Objects.equals(this.txAction, u.txAction);
 		}
 
 		@Override
@@ -90,6 +95,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
 	private final SignatureValidator<I> inputSignatureValidator;
+	private final Supplier<TxAction> txActionSupplier;
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
@@ -97,7 +103,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<I, UInt256> inputAmountMapper,
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
-		SignatureValidator<I> inputSignatureValidator
+		SignatureValidator<I> inputSignatureValidator,
+		Supplier<TxAction> txActionSupplier
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -109,6 +116,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
 		this.inputSignatureValidator = inputSignatureValidator;
+		this.txActionSupplier = txActionSupplier;
 	}
 
 	@Override
@@ -138,11 +146,11 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return ReducerResult.complete(Unknown.create());
+						return ReducerResult.complete(txActionSupplier.get());
 					}
 					return compare > 0
-						? ReducerResult.incomplete(new UsedAmount(true, o), true)
-						: ReducerResult.incomplete(new UsedAmount(false, i), false);
+						? ReducerResult.incomplete(new UsedAmount(true, o, txActionSupplier.get()), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i, txActionSupplier.get()), false);
 				};
 			}
 
@@ -172,11 +180,11 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					}
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return ReducerResult.complete(Unknown.create());
+						return ReducerResult.complete(used.txAction);
 					}
 					return compare > 0
-						? ReducerResult.incomplete(new UsedAmount(true, o), true)
-						: ReducerResult.incomplete(new UsedAmount(false, i), false);
+						? ReducerResult.incomplete(new UsedAmount(true, o, used.txAction), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i, used.txAction), false);
 				};
 			}
 

@@ -17,7 +17,7 @@
 
 package com.radixdlt.atommodel.routines;
 
-import com.radixdlt.utils.Pair;
+import com.radixdlt.atom.actions.Unknown;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
@@ -81,7 +81,8 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
+			mock(SignatureValidatorFungible.class),
+			Unknown::create
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
@@ -103,15 +104,20 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
+			mock(SignatureValidatorFungible.class),
+			Unknown::create
 		).getProcedure0();
 
-
-		assertThat(procedure.inputOutputReducer().reduce(
+		var state = procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
 			null
-		).getIncomplete()).get().isEqualTo(Pair.of(true, new UsedAmount(true, UInt256.ONE)));
+		).getIncomplete().get();
+
+		assertThat(state.getFirst()).isEqualTo(true);
+		var usedAmount = (UsedAmount) state.getSecond();
+		assertThat(usedAmount.getUsedAmount()).isEqualTo(UInt256.ONE);
+		assertThat(usedAmount.isInput()).isTrue();
 	}
 
 	@Test
@@ -119,14 +125,20 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
+			mock(SignatureValidatorFungible.class),
+			Unknown::create
 		).getProcedure0();
 
-		assertThat(procedure.inputOutputReducer().reduce(
+		var state = procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
 			null
-		).getIncomplete()).get().isEqualTo(Pair.of(false, new UsedAmount(false, UInt256.ONE)));
+		).getIncomplete().get();
+
+		assertThat(state.getFirst()).isFalse();
+		var usedAmount = (UsedAmount) state.getSecond();
+		assertThat(usedAmount.getUsedAmount()).isEqualTo(UInt256.ONE);
+		assertThat(usedAmount.isInput()).isFalse();
 	}
 
 	@Test
@@ -134,7 +146,8 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, Fungible, VoidReducerState> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
+			mock(SignatureValidatorFungible.class),
+			Unknown::create
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
@@ -149,19 +162,20 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
+			mock(SignatureValidatorFungible.class),
+			Unknown::create
 		).getProcedure1();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
-			new UsedAmount(false, UInt256.ONE)
+			new UsedAmount(false, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
-			new UsedAmount(true, UInt256.ONE)
+			new UsedAmount(true, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 	}
 }

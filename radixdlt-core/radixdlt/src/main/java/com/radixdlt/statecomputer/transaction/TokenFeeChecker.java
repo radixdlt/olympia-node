@@ -19,10 +19,7 @@
 package com.radixdlt.statecomputer.transaction;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;

@@ -20,7 +20,6 @@ package com.radixdlt.store;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedInstruction;
-import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.List;

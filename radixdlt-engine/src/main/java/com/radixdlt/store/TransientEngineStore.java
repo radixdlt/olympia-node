@@ -4,7 +4,6 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedInstruction;
-import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 

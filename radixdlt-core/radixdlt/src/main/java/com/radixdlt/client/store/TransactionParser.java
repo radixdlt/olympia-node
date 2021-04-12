@@ -19,7 +19,9 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
@@ -69,6 +71,12 @@ public final class TransactionParser {
 		} else if (txAction instanceof BurnToken) {
 			var burnToken = (BurnToken) txAction;
 			return ActionEntry.create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
+		} else if (txAction instanceof StakeNativeToken) {
+			var stakeToken = (StakeNativeToken) txAction;
+			return ActionEntry.create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), stakeToken.rri());
+		} else if (txAction instanceof UnstakeNativeToken) {
+			var unstakeToken = (UnstakeNativeToken) txAction;
+			return ActionEntry.create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), unstakeToken.rri());
 		} else {
 			return ActionEntry.unknown();
 		}
