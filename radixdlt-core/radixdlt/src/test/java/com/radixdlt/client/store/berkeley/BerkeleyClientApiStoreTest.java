@@ -17,6 +17,7 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -139,7 +140,7 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.THREE, list.get(0).getAmount());
+				assertEquals(UInt384.THREE, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
@@ -147,7 +148,7 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTokenBalances(OWNER)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.FOUR, list.get(0).getAmount());
+				assertEquals(UInt384.FOUR, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
@@ -163,7 +164,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onSuccess(amount -> assertEquals(UInt256.ZERO, amount))
+			.onSuccess(amount -> assertEquals(UInt384.ZERO, amount))
 			.onFailure(this::failWithMessage);
 	}
 
@@ -179,7 +180,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onSuccess(amount -> assertEquals(UInt256.EIGHT, amount))
+			.onSuccess(amount -> assertEquals(UInt384.EIGHT, amount))
 			.onFailure(this::failWithMessage);
 	}
 

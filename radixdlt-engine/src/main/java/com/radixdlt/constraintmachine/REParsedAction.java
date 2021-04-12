@@ -22,6 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -47,6 +48,8 @@ public final class REParsedAction {
 		List<REParsedInstruction> instructions,
 		Pair<Particle, ReducerState> deallocated
 	) {
+		Objects.requireNonNull(txAction);
+		Objects.requireNonNull(instructions);
 		return new REParsedAction(txAction, instructions, deallocated);
 	}
 

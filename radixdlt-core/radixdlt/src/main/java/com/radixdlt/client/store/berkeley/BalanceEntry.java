@@ -25,7 +25,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
@@ -49,7 +49,7 @@ public class BalanceEntry {
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 amount;
+	private final UInt384 amount;
 
 	@JsonProperty("negative")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -57,7 +57,7 @@ public class BalanceEntry {
 
 	private BalanceEntry(
 		RadixAddress owner, RadixAddress delegate, RRI rri,
-		UInt256 amount, boolean negative
+		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
@@ -70,7 +70,7 @@ public class BalanceEntry {
 		RadixAddress owner,
 		RadixAddress delegate,
 		RRI rri,
-		UInt256 amount,
+		UInt384 amount,
 		boolean negative
 	) {
 		Objects.requireNonNull(rri);
@@ -84,14 +84,14 @@ public class BalanceEntry {
 		@JsonProperty("owner") RadixAddress owner,
 		@JsonProperty("delegate") RadixAddress delegate,
 		@JsonProperty("rri") RRI rri,
-		@JsonProperty("amount") UInt256 amount,
+		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative
 	) {
 		return createFull(owner, delegate, rri, amount, negative);
 	}
 
 	public static BalanceEntry createBalance(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt384 amount
 	) {
 		return createFull(owner, delegate, rri, amount, false);
 	}
@@ -108,7 +108,7 @@ public class BalanceEntry {
 		return rri;
 	}
 
-	public UInt256 getAmount() {
+	public UInt384 getAmount() {
 		return amount;
 	}
 

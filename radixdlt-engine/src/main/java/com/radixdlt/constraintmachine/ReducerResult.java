@@ -21,6 +21,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.utils.Pair;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -40,10 +41,12 @@ public final class ReducerResult {
 	}
 
 	public static ReducerResult incomplete(ReducerState reducerState, boolean keepInput) {
+		Objects.requireNonNull(reducerState);
 		return new ReducerResult(reducerState, keepInput, null);
 	}
 
 	public static ReducerResult complete(TxAction txAction) {
+		Objects.requireNonNull(txAction);
 		return new ReducerResult(null, false, txAction);
 	}
 

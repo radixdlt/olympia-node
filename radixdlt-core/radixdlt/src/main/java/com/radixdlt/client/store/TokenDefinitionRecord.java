@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -29,7 +30,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class TokenDefinitionRecord {
 
 	@JsonProperty("currentSupply")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 currentSupply;
+	private final UInt384 currentSupply;
 
 	@JsonProperty("iconUrl")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -74,7 +74,7 @@ public class TokenDefinitionRecord {
 		String name,
 		RRI rri,
 		String description,
-		UInt256 currentSupply,
+		UInt384 currentSupply,
 		String iconUrl,
 		String url,
 		boolean mutable
@@ -93,7 +93,7 @@ public class TokenDefinitionRecord {
 		@JsonProperty("name") String name,
 		@JsonProperty("rri") RRI rri,
 		@JsonProperty("description") String description,
-		@JsonProperty("currentSupply") UInt256 currentSupply,
+		@JsonProperty("currentSupply") UInt384 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
 		@JsonProperty("url") String url,
 		@JsonProperty("mutable") boolean mutable
@@ -116,12 +116,12 @@ public class TokenDefinitionRecord {
 		String url,
 		boolean mutable
 	) {
-		return create(name, rri, description, UInt256.ZERO, iconUrl, url, mutable);
+		return create(name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
 	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
 		if (substate instanceof MutableSupplyTokenDefinitionParticle) {
-			return Result.ok(from((MutableSupplyTokenDefinitionParticle) substate, UInt256.ZERO));
+			return Result.ok(from((MutableSupplyTokenDefinitionParticle) substate, UInt384.ZERO));
 		} else if (substate instanceof FixedSupplyTokenDefinitionParticle) {
 			return Result.ok(from((FixedSupplyTokenDefinitionParticle) substate));
 		}
@@ -129,7 +129,7 @@ public class TokenDefinitionRecord {
 		return Result.fail("Unknown token definition substate: {0}", substate);
 	}
 
-	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt256 supply) {
+	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt384 supply) {
 		return create(
 			definition.getName(),
 			definition.getRRI(),
@@ -146,7 +146,7 @@ public class TokenDefinitionRecord {
 			definition.getName(),
 			definition.getRRI(),
 			definition.getDescription(),
-			definition.getSupply(),
+			UInt384.from(definition.getSupply()),
 			definition.getIconUrl(),
 			definition.getUrl(),
 			false
@@ -173,11 +173,11 @@ public class TokenDefinitionRecord {
 		return rri;
 	}
 
-	public UInt256 currentSupply() {
+	public UInt384 currentSupply() {
 		return currentSupply;
 	}
 
-	public TokenDefinitionRecord withSupply(UInt256 supply) {
+	public TokenDefinitionRecord withSupply(UInt384 supply) {
 		if (!mutable) {
 			return this;
 		}

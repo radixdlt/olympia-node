@@ -16,11 +16,11 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.utils.UInt384;
 import org.junit.Test;
 
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.UInt256;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -33,20 +33,20 @@ public class BalanceEntryTest {
 
 	@Test
 	public void verifyBalanceCalculation() {
-		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.FOUR);
-		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt256.FIVE);
+		BalanceEntry entry1 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt384.FOUR);
+		BalanceEntry entry2 = BalanceEntry.createBalance(ADDRESS, null, TOKEN_RRI, UInt384.FIVE);
 
-		validate(entry1, entry2, UInt256.NINE, false);           		// 4 + 5 => 9
-		validate(entry2, entry1, UInt256.NINE, false);               	// 5 + 4 => 9
-		validate(entry1, entry2.negate(), UInt256.ONE, true);        	// 4 + (-5) = -1
-		validate(entry2, entry1.negate(), UInt256.ONE, false);    		// 5 + (-4) = 1
-		validate(entry1.negate(), entry2, UInt256.ONE, false);    		// -4 + 5 = 1
-		validate(entry2.negate(), entry1, UInt256.ONE, true);    		// -5 + 4 = -1
-		validate(entry1.negate(), entry2.negate(), UInt256.NINE, true);  // -4 + (-5) = -9
-		validate(entry2.negate(), entry1.negate(), UInt256.NINE, true);	// -5 + (-4) = -9
+		validate(entry1, entry2, UInt384.NINE, false);           		// 4 + 5 => 9
+		validate(entry2, entry1, UInt384.NINE, false);               	// 5 + 4 => 9
+		validate(entry1, entry2.negate(), UInt384.ONE, true);        	// 4 + (-5) = -1
+		validate(entry2, entry1.negate(), UInt384.ONE, false);    		// 5 + (-4) = 1
+		validate(entry1.negate(), entry2, UInt384.ONE, false);    		// -4 + 5 = 1
+		validate(entry2.negate(), entry1, UInt384.ONE, true);    		// -5 + 4 = -1
+		validate(entry1.negate(), entry2.negate(), UInt384.NINE, true);  // -4 + (-5) = -9
+		validate(entry2.negate(), entry1.negate(), UInt384.NINE, true);	// -5 + (-4) = -9
 	}
 
-	void validate(BalanceEntry entry1, BalanceEntry entry2, UInt256 expectedAmount, boolean expectedNegative) {
+	void validate(BalanceEntry entry1, BalanceEntry entry2, UInt384 expectedAmount, boolean expectedNegative) {
 		var sum = entry1.add(entry2);
 		assertEquals(expectedAmount, sum.getAmount());
 		assertEquals(format(entry1) + " + " + format(entry2) + " = " + format(sum), expectedNegative, sum.isNegative());

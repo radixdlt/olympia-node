@@ -21,7 +21,7 @@ import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -54,7 +54,7 @@ public interface ClientApiStore {
 	 *
 	 * @return eventually consistent token supply
 	 */
-	Result<UInt256> getTokenSupply(RRI rri);
+	Result<UInt384> getTokenSupply(RRI rri);
 
 	/**
 	 * Retrieve token definition. Note that for mutable supply tokens supply is returned zero.

@@ -15,6 +15,7 @@ package org.radix.api.services;/*
  * language governing permissions and limitations under the License.
  */
 
+import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,8 +72,8 @@ public class HighLevelApiServiceTest {
 
 	@Test
 	public void testGetTokenBalances() {
-		var balance1 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "FOO"), UInt256.FIVE);
-		var balance2 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "BAR"), UInt256.NINE);
+		var balance1 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "FOO"), UInt384.FIVE);
+		var balance2 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "BAR"), UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
 		when(clientApiStore.getTokenBalances(OWNER))
@@ -81,8 +82,8 @@ public class HighLevelApiServiceTest {
 		highLevelApiService.getTokenBalances(OWNER)
 			.onSuccess(list -> {
 				assertEquals(2, list.size());
-				assertEquals(UInt256.FIVE, list.get(0).getAmount());
-				assertEquals(UInt256.NINE, list.get(1).getAmount());
+				assertEquals(UInt384.FIVE, list.get(0).getAmount());
+				assertEquals(UInt384.NINE, list.get(1).getAmount());
 			})
 			.onFailureDo(Assert::fail);
 	}
@@ -90,12 +91,12 @@ public class HighLevelApiServiceTest {
 	@Test
 	public void testGetNativeTokenDescription() {
 		when(clientApiStore.getTokenSupply(TOKEN))
-			.thenReturn(Result.ok(UInt256.SEVEN));
+			.thenReturn(Result.ok(UInt384.SEVEN));
 
 		highLevelApiService.getNativeTokenDescription()
 			.onSuccess(token -> assertTrue(token.isMutable()))
 			.onSuccess(token -> assertEquals(TOKEN, token.rri()))
-			.onSuccess(token -> assertEquals(UInt256.SEVEN, token.currentSupply()))
+			.onSuccess(token -> assertEquals(UInt384.SEVEN, token.currentSupply()))
 			.onFailureDo(Assert::fail);
 	}
 
@@ -107,11 +108,11 @@ public class HighLevelApiServiceTest {
 		when(clientApiStore.getTokenDefinition(token))
 			.thenReturn(definition);
 		when(clientApiStore.getTokenSupply(token))
-			.thenReturn(Result.ok(UInt256.NINE));
+			.thenReturn(Result.ok(UInt384.NINE));
 
 		highLevelApiService.getTokenDescription(token)
 			.onSuccess(description -> assertEquals(token, description.rri()))
-			.onSuccess(description -> assertEquals(UInt256.NINE, description.currentSupply()))
+			.onSuccess(description -> assertEquals(UInt384.NINE, description.currentSupply()))
 			.onFailureDo(Assert::fail);
 	}
 

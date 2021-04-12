@@ -27,6 +27,7 @@ import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,7 +57,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import com.sleepycat.je.Database;
@@ -141,9 +141,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database tokenDefinitions;
 	private Database addressBalances;
 	private Database supplyBalances;
-
-
-
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -244,7 +241,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<UInt256> getTokenSupply(RRI rri) {
+	public Result<UInt384> getTokenSupply(RRI rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -252,7 +249,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
 
 			if (status == OperationStatus.NOTFOUND) {
-				return Result.ok(UInt256.ZERO);
+				return Result.ok(UInt384.ZERO);
 			}
 
 			if (status != OperationStatus.SUCCESS) {
@@ -510,14 +507,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				user,
 				null,
 				transferToken.rri(),
-				transferToken.amount(),
+				UInt384.from(transferToken.amount()),
 				true
 			);
 			var entry1 = BalanceEntry.create(
 				transferToken.to(),
 				null,
 				transferToken.rri(),
-				transferToken.amount(),
+				UInt384.from(transferToken.amount()),
 				false
 			);
 			storeBalanceEntry(entry0);
@@ -528,14 +525,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				user,
 				null,
 				burnToken.rri(),
-				burnToken.amount(),
+				UInt384.from(burnToken.amount()),
 				true
 			);
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
 				burnToken.rri(),
-				burnToken.amount(),
+				UInt384.from(burnToken.amount()),
 				true
 			);
 			storeBalanceEntry(entry0);
@@ -546,14 +543,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				mintToken.to(),
 				null,
 				mintToken.rri(),
-				mintToken.amount(),
+				UInt384.from(mintToken.amount()),
 				false
 			);
 			var entry1 = BalanceEntry.create(
 				null,
 				null,
 				mintToken.rri(),
-				mintToken.amount(),
+				UInt384.from(mintToken.amount()),
 				false
 			);
 			storeBalanceEntry(entry0);
