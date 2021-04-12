@@ -18,6 +18,7 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
@@ -182,7 +183,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						restore(serialization, txn.getPayload(), Atom.class)
 							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
 							.map(i -> i.get(substateId.getIndex().orElseThrow()))
-							.flatMap(i -> restore(serialization, i.getData(), Particle.class))
+							.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
 							.toOptional()
 					);
 			}

@@ -37,15 +37,19 @@ public final class SubstateSerializer {
 		return serialization.fromDson(bytes, Particle.class);
 	}
 
+	public static Result<Particle> deserializeToResult(byte[] bytes) {
+		try {
+			return Result.ok(deserialize(bytes));
+		} catch (DeserializeException e) {
+			return Result.fail("Unable to deserialize {0}", Particle.class.getSimpleName());
+		}
+	}
+
 	public static Particle deserialize(byte[] bytes, int offset) throws DeserializeException {
 		return serialization.fromDson(bytes, offset, bytes.length - offset, Particle.class);
 	}
 
 	public static byte[] serialize(Particle p) {
 		return serialization.toDson(p, DsonOutput.Output.ALL);
-	}
-
-	public static Result<Particle> deserializeFromBytes(byte[] bytes) {
-		return SerializationUtils.restore(serialization, bytes, Particle.class);
 	}
 }
