@@ -35,7 +35,6 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Transition Procedure for one to one fungible types
@@ -95,7 +94,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
 	private final SignatureValidator<I> inputSignatureValidator;
-	private final Supplier<TxAction> txActionSupplier;
+	private final BiFunction<I, O, TxAction> txActionSupplier;
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
@@ -104,7 +103,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
 		SignatureValidator<I> inputSignatureValidator,
-		Supplier<TxAction> txActionSupplier
+		BiFunction<I, O, TxAction> txActionSupplier
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -145,12 +144,13 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					var i = inputAmountMapper.apply(input);
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
+					var txAction = txActionSupplier.apply(input, output);
 					if (compare == 0) {
-						return ReducerResult.complete(txActionSupplier.get());
+						return ReducerResult.complete(txAction);
 					}
 					return compare > 0
-						? ReducerResult.incomplete(new UsedAmount(true, o, txActionSupplier.get()), true)
-						: ReducerResult.incomplete(new UsedAmount(false, i, txActionSupplier.get()), false);
+						? ReducerResult.incomplete(new UsedAmount(true, o, txAction), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i, txAction), false);
 				};
 			}
 

@@ -27,6 +27,7 @@ import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -63,7 +64,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
-			() -> new StakeNativeToken(null, null, null) // FIXME: fill in
+			(i, o) -> new StakeNativeToken(i.getTokDefRef(), o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Unstaking
@@ -74,7 +75,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
-			() -> new UnstakeNativeToken(null, null, null) // FIXME: fill in
+			(i, o) -> new UnstakeNativeToken(o.getTokDefRef(), i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Stake movement
@@ -89,7 +90,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				"Can't send staked tokens to another address."
 			),
 			i -> Optional.of(i.getAddress()),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		));
 	}
 

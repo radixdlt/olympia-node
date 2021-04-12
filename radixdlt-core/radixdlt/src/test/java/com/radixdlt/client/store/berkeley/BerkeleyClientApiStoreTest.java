@@ -17,7 +17,6 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.REParsedInstruction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,7 +34,6 @@ import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -235,6 +233,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -248,9 +247,9 @@ public class BerkeleyClientApiStoreTest {
 				var entry = list.get(0);
 
 				assertEquals(UInt256.ONE, entry.getFee());
-				assertEquals(1, entry.getActions().size());
+				assertEquals(4, entry.getActions().size());
 
-				var action = entry.getActions().get(0);
+				var action = entry.getActions().get(2);
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
@@ -267,7 +266,6 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> assertEquals(0, list.size()));
 	}
 
-	/*
 	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
@@ -282,7 +280,6 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 0, Optional.empty())
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
-	 */
 
 	@SuppressWarnings("unchecked")
 	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn... tx) throws RadixEngineException {

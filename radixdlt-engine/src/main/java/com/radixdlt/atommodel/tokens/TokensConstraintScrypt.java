@@ -36,6 +36,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidParticle;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -149,7 +150,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				"Permissions not equal."
 			),
 			i -> Optional.of(i.getAddress()),
-			() -> new TransferToken(null, null, null)
+			(i, o) -> new TransferToken(i.getTokDefRef(), o.getAddress(), o.getAmount()) // FIXME: This isn't 100% correct
 		));
 
 

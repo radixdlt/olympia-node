@@ -146,6 +146,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private Database addressBalances;
 	private Database supplyBalances;
 
+	private CMStore readLogStore;
+
+
 
 	@Inject
 	public BerkeleyClientApiStore(
@@ -168,6 +171,30 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.ledgerCommitted = ledgerCommitted;
 		this.nativeToken = nativeToken;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
+		this.readLogStore = new CMStore() {
+			@Override
+			public Transaction createTransaction() {
+				return null;
+			}
+
+			@Override
+			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
+				return false;
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
+				var txnId = substateId.getTxnId();
+				return store.get(txnId)
+					.flatMap(txn ->
+						restore(serialization, txn.getPayload(), Atom.class)
+							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
+							.map(i -> i.get(substateId.getIndex().orElseThrow()))
+							.flatMap(i -> restore(serialization, i.getData(), Particle.class))
+							.toOptional()
+					);
+			}
+		};
 
 		open();
 	}
@@ -297,8 +324,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.onFailureDo(
 						() -> log.error("Error deserializing TxID while scanning DB for address {}", address)
 					)
-					.flatMap(this::toParsedTx)
-					.flatMap(parsed -> TransactionParser.parse(nativeToken, address, parsed, instantFromKey(key)))
+					.map(this::parseTxn)
+					.flatMap(txn -> new TransactionParser(nativeToken).parse(txn, instantFromKey(key)))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -447,45 +474,17 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
+	private REParsedTxn parseTxn(Txn txn) {
+		try {
+			return constraintMachine.validate(null, readLogStore, txn, PermissionLevel.SUPER_USER);
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-
-		var cmStore = new CMStore() {
-			@Override
-			public Transaction createTransaction() {
-				return null;
-			}
-
-			@Override
-			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
-				return false;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
-				var txnId = substateId.getTxnId();
-				return store.get(txnId)
-					.flatMap(txn ->
-						restore(serialization, txn.getPayload(), Atom.class)
-							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
-							.map(i -> i.get(substateId.getIndex().orElseThrow()))
-							.flatMap(i -> restore(serialization, i.getData(), Particle.class))
-							.toOptional()
-					);
-			}
-		};
-
-		store.forEach(txn -> {
-			final REParsedTxn parsedTxn;
-			try {
-				parsedTxn = constraintMachine.validate(null, cmStore, txn, PermissionLevel.SUPER_USER);
-			} catch (RadixEngineException e) {
-				throw new IllegalStateException(e);
-			}
-
-			processRETransaction(parsedTxn);
-		});
-
+		store.forEach(txn -> processRETransaction(parseTxn(txn)));
 		log.info("Database rebuilding is finished successfully");
 	}
 

@@ -82,7 +82,7 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
@@ -105,7 +105,7 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
@@ -126,7 +126,7 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
@@ -147,7 +147,7 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
@@ -163,7 +163,7 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			Unknown::create
+			(i, o) -> Unknown.create()
 		).getProcedure1();
 
 		assertThat(procedure.inputOutputReducer().reduce(
