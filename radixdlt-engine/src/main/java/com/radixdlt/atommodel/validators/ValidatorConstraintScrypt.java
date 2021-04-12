@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.validators;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -143,7 +144,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		@Override
 		public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-			return (input, output, outputUsed) -> ReducerResult.complete();
+			return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 		}
 
 		@Override

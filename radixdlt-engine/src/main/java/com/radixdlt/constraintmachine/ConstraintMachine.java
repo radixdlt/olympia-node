@@ -25,6 +25,7 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -105,11 +106,10 @@ public final class ConstraintMachine {
 
 	public static final class CMValidationState {
 		private PermissionLevel permissionLevel;
-		private TransitionToken currentTransitionToken = null;
 
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
-		private ReducerState particleRemainingUsed = null;
+		private ReducerState reducerState = null;
 
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
@@ -119,6 +119,7 @@ public final class ConstraintMachine {
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
 		private ECPublicKey signatureRequired;
+		private TxAction txAction;
 
 		CMValidationState(
 			Predicate<Particle> virtualStoreLayer,
@@ -142,10 +143,6 @@ public final class ConstraintMachine {
 			}
 
 			return store.loadUpParticle(txn, substateId);
-		}
-
-		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
-			this.currentTransitionToken = currentTransitionToken;
 		}
 
 		public void bootUp(int instructionIndex, Substate substate) {
@@ -205,28 +202,29 @@ public final class ConstraintMachine {
 			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
 		}
 
-		TypeToken<? extends ReducerState> getUsedType() {
-			return particleRemaining != null && particleRemainingUsed != null
-				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidReducerState.class);
+		TypeToken<? extends ReducerState> getReducerType() {
+			return particleRemaining != null && reducerState != null
+				? reducerState.getTypeToken() : TypeToken.of(VoidReducerState.class);
 		}
 
-		ReducerState getUsed() {
-			return particleRemaining != null ? particleRemainingUsed : null;
+		ReducerState getReducerState() {
+			return particleRemaining != null ? reducerState : null;
 		}
 
-		void pop() {
+		void popAndComplete(TxAction txAction) {
 			this.particleRemaining = null;
-			this.particleRemainingUsed = null;
+			this.reducerState = null;
+			this.txAction = txAction;
 		}
 
-		void popAndReplace(Particle particle, boolean isInput, ReducerState particleRemainingUsed) {
+		void popAndReplace(Particle particle, boolean isInput, ReducerState reducerState) {
 			this.particleRemaining = particle;
 			this.particleRemainingIsInput = isInput;
-			this.particleRemainingUsed = particleRemainingUsed;
+			this.reducerState = reducerState;
 		}
 
-		void updateState(ReducerState particleRemainingUsed) {
-			this.particleRemainingUsed = particleRemainingUsed;
+		void updateState(ReducerState reducerState) {
+			this.reducerState = reducerState;
 		}
 
 		boolean isEmpty() {
@@ -244,11 +242,10 @@ public final class ConstraintMachine {
 					.append("): ")
 					.append(this.particleRemaining)
 					.append("\n  Used: ")
-					.append(this.particleRemainingUsed);
+					.append(this.reducerState);
 			} else {
 				builder.append("  Remaining: [empty]");
 			}
-			builder.append("\n  TransitionToken: ").append(currentTransitionToken);
 			builder.append("\n]");
 
 			return builder.toString();
@@ -273,7 +270,7 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
 		}
 
-		if (isRead && validationState.getUsed() != null) {
+		if (isRead && validationState.getReducerState() != null) {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, "Read clash"));
 		}
 
@@ -282,10 +279,8 @@ public final class ConstraintMachine {
 		final TransitionToken transitionToken = new TransitionToken(
 			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			isRead ? TypeToken.of(ReadOnlyData.class) : validationState.getUsedType()
+			isRead ? TypeToken.of(ReadOnlyData.class) : validationState.getReducerType()
 		);
-
-		validationState.setCurrentTransitionToken(transitionToken);
 
 		final var transitionProcedure = this.particleProcedures.apply(transitionToken);
 		if (inputParticle == null || outputParticle == null) {
@@ -302,7 +297,7 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
-		final var used = validationState.getUsed();
+		final var used = validationState.getReducerState();
 
 		// Precondition check
 		final Result preconditionCheckResult = transitionProcedure.precondition(
@@ -324,7 +319,7 @@ public final class ConstraintMachine {
 					validationState.updateState(state);
 				}
 			},
-			validationState::pop
+			validationState::popAndComplete
 		);
 
 		var pkeyMaybe = transitionProcedure.inputSignatureRequired()
@@ -343,8 +338,6 @@ public final class ConstraintMachine {
 				validationState.signatureRequired = pkey;
 			}
 		}
-
-		validationState.setCurrentTransitionToken(null);
 
 		return Optional.empty();
 	}
@@ -503,45 +496,48 @@ public final class ConstraintMachine {
 				}
 
 				final Pair<Particle, ReducerState> deallocated;
-				if (!validationState.isEmpty()) {
-					if (validationState.particleRemainingIsInput) {
-						var particle = validationState.particleRemaining;
-						var reducerState = validationState.particleRemainingUsed;
-						var errMaybe = validateParticle(
+				if (validationState.txAction == null && validationState.particleRemainingIsInput) {
+					var particle = validationState.particleRemaining;
+					var reducerState = validationState.reducerState;
+					var errMaybe = validateParticle(
+						validationState,
+						VoidParticle.create(),
+						false,
+						false
+					);
+					if (errMaybe.isPresent()) {
+						return Optional.of(new CMError(
+							instructionIndex,
+							errMaybe.get().getFirst(),
 							validationState,
-							VoidParticle.create(),
-							false,
-							false
-						);
-						if (errMaybe.isPresent()) {
-							return Optional.of(new CMError(
-								instructionIndex,
-								errMaybe.get().getFirst(),
-								validationState,
-								errMaybe.get().getSecond()
-							));
-						}
-						if (validationState.isEmpty()) {
-							deallocated = Pair.of(particle, reducerState);
-						} else {
-							return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
-						}
-					} else {
-						return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+							errMaybe.get().getSecond()
+						));
 					}
+
+					deallocated = Pair.of(particle, reducerState);
 				} else {
 					deallocated = null;
 				}
 
-				var parsedAction = REParsedAction.create(parsedInstructions, deallocated);
+				if (validationState.txAction == null) {
+					return Optional.of(new CMError(instructionIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
+				}
+
+				var parsedAction = REParsedAction.create(
+					validationState.txAction,
+					parsedInstructions,
+					deallocated
+				);
 				parsedActions.add(parsedAction);
+
 				parsedInstructions = new ArrayList<>();
 				particleIndex = 0;
+				validationState.txAction = null;
 			} else {
 				throw new IllegalStateException("Unknown CM Operation: " + inst.getMicroOp());
 			}
 
-			expectEnd = validationState.isEmpty() && inst.getMicroOp() != REInstruction.REOp.END;
+			expectEnd = validationState.txAction != null;
 			instructionIndex++;
 		}
 

@@ -58,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -417,7 +418,7 @@ public final class RadixEngine<M> {
 			// TODO: combine verification and storage
 			var parsedTxn = this.verify(dbTransaction, txn, permissionLevel);
 			try {
-				this.engineStore.storeAtom(dbTransaction, parsedTxn);
+				this.engineStore.storeAtom(dbTransaction, txn, parsedTxn.stateUpdates());
 			} catch (Exception e) {
 				logger.error("Store of atom failed: {}", parsedTxn);
 				throw e;

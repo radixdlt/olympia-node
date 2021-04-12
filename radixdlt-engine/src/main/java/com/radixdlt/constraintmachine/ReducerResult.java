@@ -18,37 +18,41 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.utils.Pair;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class ReducerResult {
 	private final ReducerState reducerState;
 	private final boolean keepInput;
+	private final TxAction txAction;
 
-	private ReducerResult(ReducerState reducerState, boolean keepInput) {
+	private ReducerResult(ReducerState reducerState, boolean keepInput, TxAction txAction) {
 		this.reducerState = reducerState;
 		this.keepInput = keepInput;
+		this.txAction = txAction;
 	}
 
 	public static ReducerResult incomplete(ReducerState reducerState, boolean keepInput) {
-		return new ReducerResult(reducerState, keepInput);
+		return new ReducerResult(reducerState, keepInput, null);
 	}
 
-	public static ReducerResult complete() {
-		return new ReducerResult(null, false);
+	public static ReducerResult complete(TxAction txAction) {
+		return new ReducerResult(null, false, txAction);
 	}
 
 	public boolean isComplete() {
 		return reducerState == null;
 	}
 
-	public void ifIncompleteElse(BiConsumer<Boolean, ReducerState> onIncomplete, Runnable onComplete) {
+	public void ifIncompleteElse(BiConsumer<Boolean, ReducerState> onIncomplete, Consumer<TxAction> onComplete) {
 		if (reducerState != null) {
 			onIncomplete.accept(keepInput, reducerState);
 		} else {
-			onComplete.run();
+			onComplete.accept(txAction);
 		}
 	}
 

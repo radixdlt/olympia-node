@@ -18,6 +18,7 @@
 package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
@@ -137,7 +138,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return ReducerResult.complete();
+						return ReducerResult.complete(Unknown.create());
 					}
 					return compare > 0
 						? ReducerResult.incomplete(new UsedAmount(true, o), true)
@@ -171,7 +172,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					}
 					var compare = i.compareTo(o);
 					if (compare == 0) {
-						return ReducerResult.complete();
+						return ReducerResult.complete(Unknown.create());
 					}
 					return compare > 0
 						? ReducerResult.incomplete(new UsedAmount(true, o), true)

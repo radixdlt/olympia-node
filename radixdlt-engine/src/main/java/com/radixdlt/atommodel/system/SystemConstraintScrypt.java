@@ -18,6 +18,8 @@
 package com.radixdlt.atommodel.system;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
@@ -103,7 +105,11 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 				@Override
 				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> ReducerResult.complete();
+					return (input, output, outputUsed) -> ReducerResult.complete(
+						input.getEpoch() == output.getEpoch()
+							? new SystemNextView(output.getView(), output.getTimestamp(), input.getEpoch())
+							: new SystemNextEpoch(output.getTimestamp(), output.getEpoch())
+					);
 				}
 
 				@Override

@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -145,7 +146,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> ReducerResult.complete();
+					return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override

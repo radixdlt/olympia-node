@@ -19,6 +19,8 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.constraintmachine.ReadOnlyData;
@@ -121,7 +123,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData> inputOutputReducer() {
-							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete();
+							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete(Unknown.create());
 						}
 
 						@Override
@@ -178,7 +180,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 						@Override
 						public InputOutputReducer<TransferrableTokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount> inputOutputReducer() {
-							return (inputParticle, outputParticle, outputUsed) -> ReducerResult.complete();
+							return (inputParticle, outputParticle, state) -> ReducerResult.complete(
+								new BurnToken(inputParticle.getTokDefRef(), inputParticle.getAmount().subtract(state.getUsedAmount()))
+							);
 						}
 
 						@Override

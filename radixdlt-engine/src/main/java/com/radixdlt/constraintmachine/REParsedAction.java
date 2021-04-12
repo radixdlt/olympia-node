@@ -18,25 +18,33 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Optional;
 
 public class REParsedAction {
+	private final TxAction txAction;
 	private final List<REParsedInstruction> instructions;
 	private final Pair<Particle, ReducerState> deallocated;
 
-	private REParsedAction(List<REParsedInstruction> instructions, Pair<Particle, ReducerState> deallocated) {
+	private REParsedAction(
+		TxAction txAction,
+		List<REParsedInstruction> instructions,
+		Pair<Particle, ReducerState> deallocated
+	) {
+		this.txAction = txAction;
 		this.instructions = instructions;
 		this.deallocated = deallocated;
 	}
 
 	public static REParsedAction create(
+		TxAction txAction,
 		List<REParsedInstruction> instructions,
 		Pair<Particle, ReducerState> deallocated
 	) {
-		return new REParsedAction(instructions, deallocated);
+		return new REParsedAction(txAction, instructions, deallocated);
 	}
 
 	public List<REParsedInstruction> getInstructions() {

@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
@@ -148,7 +149,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, UsedParticle<V>> inputOutputReducer() {
-				return (input, output, outputUsed) -> ReducerResult.complete();
+				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override
@@ -167,7 +168,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, outputUsed) -> ReducerResult.complete();
+				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override

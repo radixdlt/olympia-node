@@ -66,6 +66,7 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -185,8 +186,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeAtom(Transaction tx, REParsedTxn radixEngineTxn) {
-		withTime(() -> doStore(radixEngineTxn, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -592,8 +593,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void doStore(
-		REParsedTxn radixEngineTxn,
-		com.sleepycat.je.Transaction transaction
+		com.sleepycat.je.Transaction transaction,
+		Txn txn,
+		List<REParsedInstruction> stateUpdates
 	) {
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {
@@ -607,9 +609,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
-			var aid = radixEngineTxn.getTxn().getId();
+			var aid = txn.getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(radixEngineTxn.getTxn().getPayload());
+			var offset = atomLog.write(txn.getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -620,14 +622,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			radixEngineTxn.instructions()
-				.filter(REParsedInstruction::isStateUpdate)
-				.forEach(i -> this.updateParticle(transaction, i));
+			stateUpdates.forEach(i -> this.updateParticle(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom:\n" + radixEngineTxn, e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
 		}
 	}
 

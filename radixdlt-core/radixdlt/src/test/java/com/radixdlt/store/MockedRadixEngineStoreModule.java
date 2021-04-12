@@ -48,26 +48,16 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 	}
 
-	private REParsedTxn toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
+	private List<REParsedInstruction> toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
 		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
-
-
-		var actions = new ArrayList<REParsedAction>();
 		var instructions = new ArrayList<REParsedInstruction>();
 		for (int i = 0; i < rawInstructions.size(); i++) {
 			var instruction = rawInstructions.get(i);
 
-			if (instruction.getMicroOp() == REInstruction.REOp.END) {
-				actions.add(REParsedAction.create(instructions, null));
-				instructions = new ArrayList<>();
-			}
-
 			if (!instruction.isPush()) {
 				continue;
 			}
-
-			Spin nextSpin = instruction.getNextSpin();
 
 			final Particle particle;
 			final SubstateId substateId;
@@ -98,7 +88,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			instructions.add(parsed);
 		}
 
-		return new REParsedTxn(txn, actions);
+		return instructions;
 	}
 
 	@Provides
@@ -110,10 +100,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		for (var genesisTxn : genesisTxns) {
 			if (!inMemoryEngineStore.containsTxn(genesisTxn.getId())) {
 				try {
-					var txn = inMemoryEngineStore.createTransaction();
-					var instruction = toParsed(genesisTxn, inMemoryEngineStore);
-					inMemoryEngineStore.storeAtom(txn, instruction);
-					txn.commit();
+					var dbTxn = inMemoryEngineStore.createTransaction();
+					var instructions = toParsed(genesisTxn, inMemoryEngineStore);
+					inMemoryEngineStore.storeAtom(dbTxn, genesisTxn, instructions);
+					dbTxn.commit();
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}

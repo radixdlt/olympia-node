@@ -25,6 +25,7 @@ import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -54,6 +55,12 @@ public final class REParsedTxn {
 
 	public Stream<Pair<Particle, ReducerState>> deallocated() {
 		return actions.stream().flatMap(a -> a.getDeallocated().stream());
+	}
+
+	public List<REParsedInstruction> stateUpdates() {
+		return instructions()
+			.filter(REParsedInstruction::isStateUpdate)
+			.collect(Collectors.toList());
 	}
 
 	public Stream<REParsedInstruction> instructions() {
