@@ -98,17 +98,15 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				calls.createTransition(
 					new TransitionToken<>(
 						MutableSupplyTokenDefinitionParticle.class,
-						TypeToken.of(ReadOnlyData.class),
 						TransferrableTokensParticle.class,
-						TypeToken.of(VoidUsedData.class)
+						TypeToken.of(ReadOnlyData.class)
 					),
 					new TransitionProcedure<>() {
 						@Override
 						public Result precondition(
 							MutableSupplyTokenDefinitionParticle inputParticle,
-							ReadOnlyData inputUsed,
 							TransferrableTokensParticle outputParticle,
-							VoidUsedData outputUsed
+							ReadOnlyData inputUsed
 						) {
 							if (!outputParticle.isBurnable()) {
 								return Result.error("Must be able to burn mutable token.");
@@ -122,8 +120,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, ReadOnlyData, TransferrableTokensParticle, VoidUsedData> inputOutputReducer() {
-							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData> inputOutputReducer() {
+							return (inputParticle, outputParticle, outputUsed) -> Optional.empty();
 						}
 
 						@Override
@@ -157,18 +155,20 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				calls.createTransition(
 					new TransitionToken<>(
 						TransferrableTokensParticle.class,
-						TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class),
 						VoidParticle.class,
-						TypeToken.of(VoidUsedData.class)
+						TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
 					),
 					new TransitionProcedure<>() {
 						@Override
 						public Result precondition(
 							TransferrableTokensParticle inputParticle,
-							CreateFungibleTransitionRoutine.UsedAmount inputUsed,
 							VoidParticle outputParticle,
-							VoidUsedData outputUsed
+							CreateFungibleTransitionRoutine.UsedAmount inputUsed
 						) {
+							if (!inputUsed.isInput()) {
+								return Result.error("Broken state.");
+							}
+
 							if (!inputParticle.isBurnable()) {
 								return Result.error("Cannot burn token.");
 							}
@@ -177,8 +177,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						@Override
-						public InputOutputReducer<TransferrableTokensParticle, CreateFungibleTransitionRoutine.UsedAmount, VoidParticle, VoidUsedData> inputOutputReducer() {
-							return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						public InputOutputReducer<TransferrableTokensParticle, VoidParticle, CreateFungibleTransitionRoutine.UsedAmount> inputOutputReducer() {
+							return (inputParticle, outputParticle, outputUsed) -> Optional.empty();
 						}
 
 						@Override

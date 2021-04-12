@@ -52,7 +52,7 @@ public final class CMAtomOS {
 
 	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
-	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>>
+	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 
 	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
@@ -76,7 +76,7 @@ public final class CMAtomOS {
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
 	}
 
-	public Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
+	public Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> buildTransitionProcedures() {
 		final var procedures = proceduresBuilder.build();
 		return procedures::get;
 	}

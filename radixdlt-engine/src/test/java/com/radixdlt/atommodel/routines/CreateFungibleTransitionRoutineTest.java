@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.routines;
 
+import com.radixdlt.utils.Pair;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
@@ -76,70 +77,22 @@ public class CreateFungibleTransitionRoutineTest {
 	}
 
 	@Test
-	public void when_underflowing_input__then_arithmetic_exception_thrown() {
-		TransitionProcedure<Fungible, UsedAmount, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
-			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
-		).getProcedure1();
-
-		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			new UsedAmount(UInt256.TWO),
-			new Fungible(UInt256.ZERO),
-			null
-		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
-
-		assertThatThrownBy(() -> procedure.outputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			new UsedAmount(UInt256.TWO),
-			new Fungible(UInt256.ZERO),
-			null
-		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
-	}
-
-	@Test
-	public void when_underflowing_output__then_arithmetic_exception_thrown() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
-			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
-			(a, b) -> Result.success(),
-			mock(SignatureValidatorFungible.class)
-		).getProcedure2();
-
-		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			null,
-			new Fungible(UInt256.ONE),
-			new UsedAmount(UInt256.TWO)
-		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
-
-		assertThatThrownBy(() -> procedure.outputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			null,
-			new Fungible(UInt256.ONE),
-			new UsedAmount(UInt256.TWO)
-		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
-	}
-
-	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
-			null,
 			new Fungible(UInt256.ONE),
 			null
 		)).isEmpty();
 
 
-		assertThat(procedure.outputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
-			null,
 			new Fungible(UInt256.ONE),
 			null
 		)).isEmpty();
@@ -147,69 +100,45 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
 		).getProcedure0();
 
 
-		assertThat(procedure.inputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
-			null,
 			new Fungible(UInt256.ONE),
 			null
-		)).get().isEqualTo(new UsedAmount(UInt256.ONE));
-
-		assertThat(procedure.outputUsedCompute().compute(
-			new Fungible(UInt256.TWO),
-			null,
-			new Fungible(UInt256.ONE),
-			null
-		)).isEmpty();
+		)).get().isEqualTo(Pair.of(new UsedAmount(true, UInt256.ONE), true));
 	}
 
 	@Test
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
-			null,
 			new Fungible(UInt256.TWO),
 			null
-		)).isEmpty();
-
-		assertThat(procedure.outputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			null,
-			new Fungible(UInt256.TWO),
-			null
-		)).get().isEqualTo(new UsedAmount(UInt256.ONE));
+		)).get().isEqualTo(Pair.of(new UsedAmount(false, UInt256.ONE), false));
 	}
 
 	@Test
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
-			null,
-			new Fungible(UInt256.TWO),
-			null
-		)).isEmpty();
-
-		assertThat(procedure.inputUsedCompute().compute(
-			new Fungible(UInt256.TWO),
-			null,
 			new Fungible(UInt256.TWO),
 			null
 		)).isEmpty();
@@ -217,24 +146,22 @@ public class CreateFungibleTransitionRoutineTest {
 
 	@Test
 	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
+		TransitionProcedure<Fungible, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class)
-		).getProcedure2();
+		).getProcedure1();
 
-		assertThat(procedure.inputUsedCompute().compute(
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
-			null,
 			new Fungible(UInt256.TWO),
-			new UsedAmount(UInt256.ONE)
+			new UsedAmount(false, UInt256.ONE)
 		)).isEmpty();
 
-		assertThat(procedure.outputUsedCompute().compute(
-			new Fungible(UInt256.ONE),
-			null,
+		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
-			new UsedAmount(UInt256.ONE)
+			new Fungible(UInt256.ONE),
+			new UsedAmount(true, UInt256.ONE)
 		)).isEmpty();
 	}
 }

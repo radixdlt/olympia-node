@@ -30,7 +30,6 @@ import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UIntUtils;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -43,9 +42,15 @@ import java.util.function.Function;
 public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
 	public static final class UsedAmount implements UsedData {
 		private final UInt256 amount;
+		private final boolean isInput;
 
-		public UsedAmount(UInt256 usedAmount) {
+		public UsedAmount(boolean isInput, UInt256 usedAmount) {
+			this.isInput = isInput;
 			this.amount = Objects.requireNonNull(usedAmount);
+		}
+
+		public boolean isInput() {
+			return isInput;
 		}
 
 		public UInt256 getUsedAmount() {
@@ -59,7 +64,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 
 		@Override
 		public int hashCode() {
-			return Objects.hashCode(amount);
+			return Objects.hash(isInput, amount);
 		}
 
 		@Override
@@ -69,7 +74,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			UsedAmount u = (UsedAmount) obj;
-			return Objects.equals(this.amount, u.amount);
+			return this.isInput == u.isInput
+				&& Objects.equals(this.amount, u.amount);
 		}
 
 		@Override
@@ -108,105 +114,77 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass, TypeToken.of(VoidUsedData.class)),
 			getProcedure0()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(UsedAmount.class), outputClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass, TypeToken.of(UsedAmount.class)),
 			getProcedure1()
 		);
-
-		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass, TypeToken.of(UsedAmount.class)),
-			getProcedure2()
-		);
 	}
 
-	protected class FungibleTransitionProcedure<N extends UsedData, U extends UsedData> implements TransitionProcedure<I, N, O, U> {
-		private final Function<N, UInt256> inputUsedMapper;
-		private final Function<U, UInt256> outputUsedMapper;
-		private final InputOutputReducer<I, N, O, U> additionalOutputUsedCompute;
+	public TransitionProcedure<I, O, VoidUsedData> getProcedure0() {
+		return new TransitionProcedure<I, O, VoidUsedData>() {
+			@Override
+			public Result precondition(I inputParticle, O outputParticle, VoidUsedData outputUsed) {
+				return transition.apply(inputParticle, outputParticle);
+			}
 
-		public FungibleTransitionProcedure(
-			Function<N, UInt256> inputUsedMapper,
-			Function<U, UInt256> outputUsedMapper
-		) {
-			this(inputUsedMapper,
-				outputUsedMapper,
-				(ip, iu, op, ou) -> Optional.empty()
-			);
-		}
+			@Override
+			public InputOutputReducer<I, O, VoidUsedData> inputOutputReducer() {
+				return (input, output, v) -> {
+					var i = inputAmountMapper.apply(input);
+					var o = outputAmountMapper.apply(output);
+					var compare = i.compareTo(o);
+					if (compare == 0) {
+						return Optional.empty();
+					}
+					return compare > 0
+						? Optional.of(Pair.of(new UsedAmount(true, o), true))
+						: Optional.of(Pair.of(new UsedAmount(false, i), false));
+				};
+			}
 
-		public FungibleTransitionProcedure(
-			Function<N, UInt256> inputUsedMapper,
-			Function<U, UInt256> outputUsedMapper,
-			InputOutputReducer<I, N, O, U> additionalOutputUsedCompute
-		) {
-			this.inputUsedMapper = inputUsedMapper;
-			this.outputUsedMapper = outputUsedMapper;
-			this.additionalOutputUsedCompute = additionalOutputUsedCompute;
-		}
-
-		@Override
-		public Result precondition(I inputParticle, N inputUsed, O outputParticle, U outputUsed) {
-			return transition.apply(inputParticle, outputParticle);
-		}
-
-		@Override
-		public InputOutputReducer<I, N, O, U> inputOutputReducer() {
-			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
-				final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
-				final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
-				final UInt256 inputAmount =
-					UIntUtils.subtractWithUnderflow(inputAmountMapper.apply(inputParticle), inputUsedAmount);
-				final UInt256 outputAmount =
-					UIntUtils.subtractWithUnderflow(outputAmountMapper.apply(outputParticle), outputUsedAmount);
-				// Note that overflow is not possible in the addition below.
-				// Given
-				//   inputAmount > outputAmount                                  (comparison in java code below)
-				//   => inputParticle - inputUsed > outputParticle - outputUsed  (substitute equalities)
-				//   => outputParticle - outputUsed < inputParticle - inputUsed  (rearrange [1])
-				// and
-				//   inputUsed + outputAmount <= MAX_VALUE                       (otherwise overflow occurs)
-				//   => inputUsed + outputParticle - outputUsed <= MAX_VALUE     (substitute equalities [2])
-				//
-				// Assume that
-				//   inputUsed + outputParticle - outputUsed > MAX_VALUE         (contradiction of [2])
-				// but
-				//   outputParticle - outputUsed < inputParticle - inputUsed     (from [1])
-				// so this also must be true
-				//   inputUsed + inputParticle - inputUsed > MAX_VALUE           (substitute larger term)
-				//   => inputParticle > MAX_VALUE                                (combine terms)
-				// but this cannot be true, due to properties of variables, therefore
-				//   inputUsed + outputParticle - outputUsed <= MAX_VALUE
-				int compare = inputAmount.compareTo(outputAmount);
-				if (compare == 0) {
-					return Optional.empty();
-				}
-
-				return compare > 0
-					? Optional.of(Pair.of(new UsedAmount(inputUsedAmount.add(outputAmount)), true))
-					: Optional.of(Pair.of(new UsedAmount(outputUsedAmount.add(inputAmount)), false));
-			};
-		}
-
-		@Override
-		public SignatureValidator<I> inputSignatureRequired() {
-			return inputSignatureValidator;
-		}
+			@Override
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
+			}
+		};
 	}
 
-	public TransitionProcedure<I, VoidUsedData, O, VoidUsedData> getProcedure0() {
-		return new FungibleTransitionProcedure<>(u -> UInt256.ZERO, u -> UInt256.ZERO);
-	}
+	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
+		return new TransitionProcedure<I, O, UsedAmount>() {
+			@Override
+			public Result precondition(I inputParticle, O outputParticle, UsedAmount used) {
+				return transition.apply(inputParticle, outputParticle);
+			}
 
-	public TransitionProcedure<I, UsedAmount, O, VoidUsedData> getProcedure1() {
-		return new FungibleTransitionProcedure<>(UsedAmount::getUsedAmount, u -> UInt256.ZERO);
-	}
+			@Override
+			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
+				return (input, output, used) -> {
+					var i = inputAmountMapper.apply(input);
+					var o = outputAmountMapper.apply(output);
+					if (used.isInput) {
+						i = i.subtract(used.getUsedAmount());
+					} else {
+						o = o.subtract(used.getUsedAmount());
+					}
+					var compare = i.compareTo(o);
+					if (compare == 0) {
+						return Optional.empty();
+					}
+					return compare > 0
+						? Optional.of(Pair.of(new UsedAmount(true, o), true))
+						: Optional.of(Pair.of(new UsedAmount(false, i), false));
+				};
+			}
 
-	public TransitionProcedure<I, VoidUsedData, O, UsedAmount> getProcedure2() {
-		return new FungibleTransitionProcedure<>(u -> UInt256.ZERO, UsedAmount::getUsedAmount);
+			@Override
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
+			}
+		};
 	}
 
 	public Class<I> getInputClass() {

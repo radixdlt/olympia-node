@@ -48,7 +48,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
+	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> scryptTransitionProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -65,7 +65,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
+	public Map<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 
@@ -132,20 +132,19 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(RRIParticle.class, TypeToken.of(VoidUsedData.class), particleClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidUsedData.class)),
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
 					RRIParticle inputParticle,
-					VoidUsedData inputUsed,
 					O outputParticle,
 					VoidUsedData outputUsed
 				) {
 					return Result.success();
 				}
 
-				public InputOutputReducer<RRIParticle, VoidUsedData, O, VoidUsedData> inputOutputReducer() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<RRIParticle, O, VoidUsedData> inputOutputReducer() {
+					return (input, output, outputUsed) -> Optional.empty();
 				}
 
 				@Override
@@ -183,9 +182,9 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> procedure
+	public <I extends Particle, O extends Particle, U extends UsedData> void createTransition(
+		TransitionToken<I, O, U> transitionToken,
+		TransitionProcedure<I, O, U> procedure
 	) {
 		if (scryptTransitionProcedures.containsKey(transitionToken)) {
 			throw new IllegalStateException(transitionToken + " already created");
@@ -194,15 +193,15 @@ final class ConstraintScryptEnv implements SysCalls {
 		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
 		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
 
-		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transformedProcedure
-			= new TransitionProcedure<Particle, UsedData, Particle, UsedData>() {
+		final TransitionProcedure<Particle, Particle, UsedData> transformedProcedure
+			= new TransitionProcedure<Particle, Particle, UsedData>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel() {
 					return procedure.requiredPermissionLevel();
 				}
 
 				@Override
-				public Result precondition(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
+				public Result precondition(Particle inputParticle, Particle outputParticle, UsedData outputUsed) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
 						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
@@ -212,13 +211,13 @@ final class ConstraintScryptEnv implements SysCalls {
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
+					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed);
 				}
 
 				@Override
-				public InputOutputReducer<Particle, UsedData, Particle, UsedData> inputOutputReducer() {
-					return (input, inputUsed, output, outputUsed) -> procedure.inputOutputReducer()
-						.reduce((I) input, (N) inputUsed, (O) output, (U) outputUsed);
+				public InputOutputReducer<Particle, Particle, UsedData> inputOutputReducer() {
+					return (input, output, outputUsed) -> procedure.inputOutputReducer()
+						.reduce((I) input, (O) output, (U) outputUsed);
 				}
 
 				@Override

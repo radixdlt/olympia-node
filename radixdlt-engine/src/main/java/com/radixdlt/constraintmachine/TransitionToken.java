@@ -20,27 +20,19 @@ package com.radixdlt.constraintmachine;
 import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
-public final class TransitionToken<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> {
+public final class TransitionToken<I extends Particle, O extends Particle, U extends UsedData> {
 	private final Class<I> inputClass;
-	private final TypeToken<N> inputUsedClass;
 	private final Class<O> outputClass;
-	private final TypeToken<U> outputUsedClass;
+	private final TypeToken<U> usedClass;
 
 	public TransitionToken(
 		Class<I> inputClass,
-		TypeToken<N> inputUsedClass,
 		Class<O> outputClass,
-		TypeToken<U> outputUsedClass
+		TypeToken<U> usedClass
 	) {
-		if (!Objects.equals(inputUsedClass, TypeToken.of(VoidUsedData.class))
-			&& !Objects.equals(outputUsedClass, TypeToken.of(VoidUsedData.class))) {
-			throw new IllegalArgumentException("There must be atleast one VoidUsedData type.");
-		}
-
 		this.inputClass = Objects.requireNonNull(inputClass);
-		this.inputUsedClass = Objects.requireNonNull(inputUsedClass);
+		this.usedClass = Objects.requireNonNull(usedClass);
 		this.outputClass = Objects.requireNonNull(outputClass);
-		this.outputUsedClass = Objects.requireNonNull(outputUsedClass);
 	}
 
 	public Class<I> getInputClass() {
@@ -51,23 +43,18 @@ public final class TransitionToken<I extends Particle, N extends UsedData, O ext
 		return outputClass;
 	}
 
-	public TypeToken<N> getInputUsedClass() {
-		return inputUsedClass;
-	}
-
-	public TypeToken<U> getOutputUsedClass() {
-		return outputUsedClass;
+	public TypeToken<U> getUsedClass() {
+		return usedClass;
 	}
 
 	@Override
 	public String toString() {
-		return inputClass.getSimpleName() + " " + inputUsedClass.getRawType().getSimpleName()
-			+ " " + outputClass.getSimpleName() + " " + outputUsedClass.getRawType().getSimpleName();
+		return inputClass.getSimpleName() + " " + outputClass.getSimpleName() + " " + usedClass.getRawType().getSimpleName();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(inputClass, inputUsedClass, outputClass, outputUsedClass);
+		return Objects.hash(inputClass, outputClass, usedClass);
 	}
 
 	@Override
@@ -76,11 +63,10 @@ public final class TransitionToken<I extends Particle, N extends UsedData, O ext
 			return false;
 		}
 
-		TransitionToken<?, ?, ?, ?> t = (TransitionToken<?, ?, ?, ?>) obj;
+		TransitionToken<?, ?, ?> t = (TransitionToken<?, ?, ?>) obj;
 
 		return Objects.equals(t.inputClass, this.inputClass)
-			&& Objects.equals(t.inputUsedClass, this.inputUsedClass)
 			&& Objects.equals(t.outputClass, this.outputClass)
-			&& Objects.equals(t.outputUsedClass, this.outputUsedClass);
+			&& Objects.equals(t.usedClass, this.usedClass);
 	}
 }

@@ -30,8 +30,8 @@ public interface RoutineCalls {
 	 * @param <I> input particle type
 	 * @param <U> output particle type
 	 */
-	<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> transitionProcedure
+	<I extends Particle, O extends Particle, U extends UsedData> void createTransition(
+		TransitionToken<I, O, U> transitionToken,
+		TransitionProcedure<I, O, U> transitionProcedure
 	);
 }

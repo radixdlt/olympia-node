@@ -71,7 +71,6 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.createTransition(
 			new TransitionToken<>(
 				SystemParticle.class,
-				TypeToken.of(VoidUsedData.class),
 				SystemParticle.class,
 				TypeToken.of(VoidUsedData.class)
 			),
@@ -84,7 +83,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 				@Override
 				public Result precondition(
-					SystemParticle inputParticle, VoidUsedData inputUsed, SystemParticle outputParticle,
+					SystemParticle inputParticle, SystemParticle outputParticle,
 					VoidUsedData outputUsed
 				) {
 
@@ -102,8 +101,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public InputOutputReducer<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputOutputReducer() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<SystemParticle, SystemParticle, VoidUsedData> inputOutputReducer() {
+					return (input, output, outputUsed) -> Optional.empty();
 				}
 
 				@Override

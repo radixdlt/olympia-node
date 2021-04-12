@@ -61,7 +61,7 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private Predicate<Particle> virtualStoreLayer;
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+		private Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
@@ -69,7 +69,7 @@ public final class ConstraintMachine {
 		}
 
 		public Builder setParticleTransitionProcedures(
-			Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+			Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures
 		) {
 			this.particleProcedures = particleProcedures;
 			return this;
@@ -91,12 +91,12 @@ public final class ConstraintMachine {
 
 	private final Predicate<Particle> virtualStoreLayer;
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+	private final Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures;
 
 	ConstraintMachine(
 		Predicate<Particle> virtualStoreLayer,
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+		Function<TransitionToken, TransitionProcedure<Particle, Particle, UsedData>> particleProcedures
 	) {
 		this.virtualStoreLayer = virtualStoreLayer;
 		this.particleStaticCheck = particleStaticCheck;
@@ -205,22 +205,13 @@ public final class ConstraintMachine {
 			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
 		}
 
-		TypeToken<? extends UsedData> getInputUsedType() {
-			return particleRemaining != null && particleRemainingIsInput && particleRemainingUsed != null
+		TypeToken<? extends UsedData> getUsedType() {
+			return particleRemaining != null && particleRemainingUsed != null
 				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
 		}
 
-		TypeToken<? extends UsedData> getOutputUsedType() {
-			return particleRemaining != null && !particleRemainingIsInput && particleRemainingUsed != null
-				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
-		}
-
-		UsedData getInputUsed() {
-			return particleRemaining != null && particleRemainingIsInput ? particleRemainingUsed : null;
-		}
-
-		UsedData getOutputUsed() {
-			return particleRemaining != null && !particleRemainingIsInput ? particleRemainingUsed : null;
+		UsedData getUsed() {
+			return particleRemaining != null ? particleRemainingUsed : null;
 		}
 
 		void pop() {
@@ -282,7 +273,7 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, null));
 		}
 
-		if (isRead && validationState.getInputUsed() != null && validationState.getOutputUsed() != null) {
+		if (isRead && validationState.getUsed() != null) {
 			return Optional.of(Pair.of(CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH, "Read clash"));
 		}
 
@@ -290,9 +281,8 @@ public final class ConstraintMachine {
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
 		final TransitionToken transitionToken = new TransitionToken(
 			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
-			isRead ? TypeToken.of(ReadOnlyData.class) : validationState.getInputUsedType(),
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			validationState.getOutputUsedType()
+			isRead ? TypeToken.of(ReadOnlyData.class) : validationState.getUsedType()
 		);
 
 		validationState.setCurrentTransitionToken(transitionToken);
@@ -312,22 +302,20 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
-		final UsedData inputUsed = validationState.getInputUsed();
-		final UsedData outputUsed = validationState.getOutputUsed();
+		final var used = validationState.getUsed();
 
 		// Precondition check
 		final Result preconditionCheckResult = transitionProcedure.precondition(
 			inputParticle,
-			inputUsed,
 			outputParticle,
-			outputUsed
+			used
 		);
 		if (preconditionCheckResult.isError()) {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
-		var usedData = reducer.reduce(inputParticle, inputUsed, outputParticle, outputUsed);
+		var usedData = reducer.reduce(inputParticle, outputParticle, used);
 		if (usedData.isPresent()) {
 			var keepInput = usedData.get().getSecond();
 			if (isInput == keepInput) {
