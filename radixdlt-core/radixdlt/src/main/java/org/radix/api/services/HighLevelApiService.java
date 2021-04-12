@@ -22,7 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
@@ -47,7 +47,7 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class HighLevelApiService {
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
-	private final MutableSupplyTokenDefinitionParticle nativeTokenDefinition;
+	private final TokenDefinitionParticle nativeTokenDefinition;
 
 	@Inject
 	public HighLevelApiService(
@@ -101,7 +101,7 @@ public class HighLevelApiService {
 			   : Result.ok(definition);
 	}
 
-	private static MutableSupplyTokenDefinitionParticle nativeToken(List<Txn> genesisAtoms) {
+	private static TokenDefinitionParticle nativeToken(List<Txn> genesisAtoms) {
 		return genesisAtoms.stream()
 			.map(txn -> {
 				try {
@@ -119,8 +119,8 @@ public class HighLevelApiService {
 					throw new IllegalStateException("Cannot deserialize genesis");
 				}
 			})
-			.filter(MutableSupplyTokenDefinitionParticle.class::isInstance)
-			.map(MutableSupplyTokenDefinitionParticle.class::cast)
+			.filter(TokenDefinitionParticle.class::isInstance)
+			.map(TokenDefinitionParticle.class::cast)
 			.filter(particle -> particle.getRRI().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));

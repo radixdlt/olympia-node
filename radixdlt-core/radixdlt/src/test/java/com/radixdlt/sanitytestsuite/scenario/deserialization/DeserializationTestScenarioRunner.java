@@ -23,8 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
@@ -55,8 +54,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         var mutableMap = Maps.<String, BiConsumer<Map<String, Object>, Object>>newHashMap();
         mutableMap.put("radix.particles.transferrable_tokens", DeserializationTestScenarioRunner::assertTransferableTokensParticle);
         mutableMap.put("radix.particles.fixed_supply_token_definition", DeserializationTestScenarioRunner::assertFixedSupplyTokenDefinitionParticle);
-        mutableMap.put("radix.particles.mutable_supply_token_definition",
-                DeserializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.staked_tokens", DeserializationTestScenarioRunner::assertStakedTokensParticle);
         mutableMap.put("radix.particles.rri", DeserializationTestScenarioRunner::assertRRIParticle);
         mutableMap.put("radix.particles.registered_validator", DeserializationTestScenarioRunner::assertRegisteredValidatorParticle);
@@ -134,7 +131,7 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
     }
 
     private static void assertFixedSupplyTokenDefinitionParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        FixedSupplyTokenDefinitionParticle expected = (FixedSupplyTokenDefinitionParticle) expectedObject;
+        TokenDefinitionParticle expected = (TokenDefinitionParticle) expectedObject;
         ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
 
         assertEquals(expected.getRRI(), argsExtractor.asRRI("rri"));
@@ -142,19 +139,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getDescription(), argsExtractor.asString("description"));
         assertEquals(expected.getIconUrl(), argsExtractor.asString("iconUrl"));
         assertEquals(expected.getSupply(), argsExtractor.asUInt256("supply"));
-        assertEquals(expected.getUrl(), argsExtractor.asString("url"));
-
-        assertTrue(argsExtractor.isFinished());
-    }
-
-    private static void assertMutableSupplyTokenDefinitionParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        MutableSupplyTokenDefinitionParticle expected = (MutableSupplyTokenDefinitionParticle) expectedObject;
-        ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
-
-        assertEquals(expected.getRRI(), argsExtractor.asRRI("rri"));
-        assertEquals(expected.getName(), argsExtractor.asString("name"));
-        assertEquals(expected.getDescription(), argsExtractor.asString("description"));
-        assertEquals(expected.getIconUrl(), argsExtractor.asString("iconUrl"));
         assertEquals(expected.getUrl(), argsExtractor.asString("url"));
 
         assertTrue(argsExtractor.isFinished());

@@ -22,8 +22,7 @@ import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
@@ -120,16 +119,19 @@ public class TokenDefinitionRecord {
 	}
 
 	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
-		if (substate instanceof MutableSupplyTokenDefinitionParticle) {
-			return Result.ok(from((MutableSupplyTokenDefinitionParticle) substate, UInt384.ZERO));
-		} else if (substate instanceof FixedSupplyTokenDefinitionParticle) {
-			return Result.ok(from((FixedSupplyTokenDefinitionParticle) substate));
+		if (substate instanceof TokenDefinitionParticle) {
+			var tokenDefinitionParticle = (TokenDefinitionParticle) substate;
+			if (tokenDefinitionParticle.isMutable()) {
+				return Result.ok(from(tokenDefinitionParticle, UInt384.ZERO));
+			} else {
+				return Result.ok(from(tokenDefinitionParticle));
+			}
 		}
 
 		return Result.fail("Unknown token definition substate: {0}", substate);
 	}
 
-	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt384 supply) {
+	public static TokenDefinitionRecord from(TokenDefinitionParticle definition, UInt384 supply) {
 		return create(
 			definition.getName(),
 			definition.getRRI(),
@@ -141,7 +143,7 @@ public class TokenDefinitionRecord {
 		);
 	}
 
-	public static TokenDefinitionRecord from(FixedSupplyTokenDefinitionParticle definition) {
+	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
 		return create(
 			definition.getName(),
 			definition.getRRI(),

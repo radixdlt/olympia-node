@@ -1,7 +1,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
@@ -47,7 +47,7 @@ public class TokensTest {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "TEST");
 		RRIParticle rriParticle = new RRIParticle(rri);
-		FixedSupplyTokenDefinitionParticle tokenDefinitionParticle = new FixedSupplyTokenDefinitionParticle(
+		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,
 			"TEST",
 			"description",

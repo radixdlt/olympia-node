@@ -129,31 +129,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
-		if (symbolResult.isError()) {
-			return symbolResult;
-		}
-
-		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
-		if (descriptionResult.isError()) {
-			return descriptionResult;
-		}
-
-		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
-		if (iconResult.isError()) {
-			return iconResult;
-		}
-
-		final Result urlResult = validateUrl(tokenDefParticle.getUrl());
-		if (urlResult.isError()) {
-			return urlResult;
-		}
-
-		return Result.success();
-	}
-
-	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
+	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;

@@ -31,10 +31,9 @@ import com.radixdlt.atommodel.validators.ValidatorParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.ledger.AtomEvent;
@@ -66,8 +65,7 @@ public final class Serialize {
 				AtomEvent.class,
 				Particle.class,
 				RRIParticle.class,
-				MutableSupplyTokenDefinitionParticle.class,
-				FixedSupplyTokenDefinitionParticle.class,
+				TokenDefinitionParticle.class,
 				TokensParticle.class,
 				StakedTokensParticle.class,
 				UniqueParticle.class,

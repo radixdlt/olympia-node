@@ -20,8 +20,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
@@ -57,11 +56,9 @@ public final class Addresses {
 		} else if (p instanceof ValidatorParticle) {
 			var a = (ValidatorParticle) p;
 			addresses.add(a.getAddress());
-		} else if (p instanceof FixedSupplyTokenDefinitionParticle) {
-			var i = (FixedSupplyTokenDefinitionParticle) p;
+		} else if (p instanceof TokenDefinitionParticle) {
+			var i = (TokenDefinitionParticle) p;
 			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof MutableSupplyTokenDefinitionParticle) {
-			var i = (MutableSupplyTokenDefinitionParticle) p;
 			addresses.add(i.getRRI().getAddress());
 		} else if (p instanceof UniqueParticle) {
 			var i = (UniqueParticle) p;

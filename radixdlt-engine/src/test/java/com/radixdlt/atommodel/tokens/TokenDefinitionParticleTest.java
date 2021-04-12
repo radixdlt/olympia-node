@@ -6,10 +6,10 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-public class FixedSupplyTokenDefinitionParticleTest {
+public class TokenDefinitionParticleTest {
     @Test
     public void equalsContract() {
-        EqualsVerifier.forClass(FixedSupplyTokenDefinitionParticle.class)
+        EqualsVerifier.forClass(TokenDefinitionParticle.class)
                 .suppress(Warning.NONFINAL_FIELDS)
                 .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
                 .verify();

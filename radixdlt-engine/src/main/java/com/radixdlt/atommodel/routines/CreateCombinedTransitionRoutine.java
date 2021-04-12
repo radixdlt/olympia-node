@@ -33,6 +33,7 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * Transition procedure for a transition from one particle type to two particle types.
@@ -59,17 +60,20 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final TypeToken<UsedParticle<O>> typeToken0;
 	private final TypeToken<UsedParticle<V>> typeToken1;
 	private final SignatureValidator<I> inputSignatureValidator;
+	private final Predicate<O> includeSecondClass;
 
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
 		Class<V> outputClass1,
+		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
 		SignatureValidator<I> inputSignatureValidator
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
 		this.outputClass1 = outputClass1;
+		this.includeSecondClass = includeSecondClass;
 
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
 		this.typeToken1 = new TypeToken<UsedParticle<V>>() { }.where(new TypeParameter<V>() { }, outputClass1);
@@ -88,16 +92,6 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			new TransitionToken<>(inputClass, outputClass0, typeToken1),
 			getProcedure2()
 		);
-
-		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass1, TypeToken.of(VoidReducerState.class)),
-			getProcedure1()
-		);
-
-		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass1, typeToken0),
-			getProcedure3()
-		);
 	}
 
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
@@ -109,28 +103,10 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, outputUsed)
-					-> ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true);
-			}
-
-			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
-			}
-		};
-	}
-
-	public TransitionProcedure<I, V, VoidReducerState> getProcedure1() {
-		return new TransitionProcedure<I, V, VoidReducerState>() {
-			@Override
-			public Result precondition(I inputParticle, V outputParticle, VoidReducerState outputUsed) {
-				return Result.success();
-			}
-
-			@Override
-			public InputOutputReducer<I, V, VoidReducerState> inputOutputReducer() {
-				return (input, output, outputUsed)
-					-> ReducerResult.incomplete(new UsedParticle<>(typeToken1, output), true);
+				return (input, output, outputUsed) ->
+					includeSecondClass.test(output)
+						? ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true)
+						: ReducerResult.complete(Unknown.create());
 			}
 
 			@Override
@@ -149,25 +125,6 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, UsedParticle<V>> inputOutputReducer() {
-				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
-			}
-
-			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
-			}
-		};
-	}
-
-	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure3() {
-		return new TransitionProcedure<I, V, UsedParticle<O>>() {
-			@Override
-			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed) {
-				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
-			}
-
-			@Override
-			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
 				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 

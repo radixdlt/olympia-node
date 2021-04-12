@@ -25,7 +25,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -67,9 +67,9 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 					throw new IllegalStateException();
 				}
 			})
-			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
-			.map(p -> (MutableSupplyTokenDefinitionParticle) p)
-			.map(MutableSupplyTokenDefinitionParticle::getRRI)
+			.filter(p -> p instanceof TokenDefinitionParticle)
+			.map(p -> (TokenDefinitionParticle) p)
+			.map(TokenDefinitionParticle::getRRI)
 			.filter(rri -> rri.getName().equals(tokenName))
 			.collect(ImmutableList.toImmutableList());
 		if (rris.isEmpty()) {

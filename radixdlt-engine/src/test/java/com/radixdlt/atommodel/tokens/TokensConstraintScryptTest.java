@@ -52,37 +52,14 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_mutable_token_def_particle_with_no_rri__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = mock(MutableSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = mock(TokenDefinitionParticle.class);
 		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("rri cannot be null");
-	}
-
-	@Test
-	public void when_validating_fixed_token_def_particle_with_no_rri__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = mock(FixedSupplyTokenDefinitionParticle.class);
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("rri cannot be null");
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_too_long_symbol__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Symbol: invalid length");
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_too_short_symbol__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Symbol: invalid length");
 	}
 
 	@Test
 	public void when_validating_fixed_token_class_particle_with_too_long_symbol__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
 		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Symbol: invalid length");
@@ -90,71 +67,15 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_fixed_token_class_particle_with_too_short_symbol__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
 		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Symbol: invalid length");
 	}
 
 	@Test
-	public void when_validating_token_class_particle_without_description__result_is_success() {
-		RadixAddress addr = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			RRI.of(addr, "TOK"),
-			null,
-			null,
-			null,
-			null
-		);
-		assertTrue(staticCheck.apply(token).isSuccess());
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_empty_description__result_is_success() {
-		RadixAddress addr = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			RRI.of(addr, "TOK"),
-			"",
-			"",
-			null,
-			null
-		);
-		assertTrue(staticCheck.apply(token).isSuccess());
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_too_long_description__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
-		when(token.getDescription()).thenReturn(
-			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Description: invalid length");
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_invalid_icon_url__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(token.getDescription()).thenReturn("Hello");
-		when(token.getIconUrl()).thenReturn("this is not a url");
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Icon: not a valid URL");
-	}
-
-	@Test
-	public void when_validating_token_class_particle_with_invalid_url__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(token.getDescription()).thenReturn("Hello");
-		when(token.getUrl()).thenReturn("this is not a url");
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("not a valid URL");
-	}
-
-	@Test
 	public void when_validating_fixed_token_class_particle_with_too_long_description__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
 		when(token.getDescription()).thenReturn(
 			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
@@ -164,7 +85,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_fixed_token_class_particle_with_invalid_icon_url__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(token.getDescription()).thenReturn("Hello");
 		when(token.getIconUrl()).thenReturn("this is not a url");
@@ -174,7 +95,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_fixed_token_class_particle_with_invalid_url__result_has_error() {
-		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(token.getDescription()).thenReturn("Hello");
 		when(token.getUrl()).thenReturn("this is not a url");
@@ -227,7 +148,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
-		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle tokDef = mock(TokenDefinitionParticle.class);
 		TokensParticle transferrable = mock(TokensParticle.class);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
@@ -236,7 +157,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_create_transferrable__result_has_no_error() {
-		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TokenDefinitionParticle tokDef = mock(TokenDefinitionParticle.class);
 		TokensParticle transferrable = mock(TokensParticle.class);
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);

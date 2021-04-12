@@ -21,8 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokensParticle;
@@ -484,13 +483,13 @@ public final class TxBuilder {
 			false)
 		);
 
-		up(new FixedSupplyTokenDefinitionParticle(
+		up(new TokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
-			tokenDefinition.getSupply(),
 			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl()
+			tokenDefinition.getTokenUrl(),
+			tokenDefinition.getSupply()
 		));
 
 		particleGroup();
@@ -508,12 +507,13 @@ public final class TxBuilder {
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
 		);
-		up(new MutableSupplyTokenDefinitionParticle(
+		up(new TokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
 			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl()
+			tokenDefinition.getTokenUrl(),
+			null
 		));
 		particleGroup();
 
@@ -522,7 +522,7 @@ public final class TxBuilder {
 
 	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		read(
-			MutableSupplyTokenDefinitionParticle.class,
+			TokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
 			"Could not find mutable token rri " + rri
 		);

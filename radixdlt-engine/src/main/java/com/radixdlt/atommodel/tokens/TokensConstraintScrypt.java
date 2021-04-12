@@ -55,18 +55,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void registerParticles(SysCalls os) {
 		os.registerParticle(
-			MutableSupplyTokenDefinitionParticle.class,
-			ParticleDefinition.<MutableSupplyTokenDefinitionParticle>builder()
+			TokenDefinitionParticle.class,
+			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(MutableSupplyTokenDefinitionParticle::getRRI)
-				.build()
-		);
-
-		os.registerParticle(
-			FixedSupplyTokenDefinitionParticle.class,
-			ParticleDefinition.<FixedSupplyTokenDefinitionParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(FixedSupplyTokenDefinitionParticle::getRRI)
+				.rriMapper(TokenDefinitionParticle::getRRI)
 				.build()
 		);
 
@@ -82,12 +74,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private void defineTokenCreation(SysCalls os) {
-		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRI(MutableSupplyTokenDefinitionParticle.class);
-
 		os.createTransitionFromRRICombined(
-			FixedSupplyTokenDefinitionParticle.class,
+			TokenDefinitionParticle.class,
 			TokensParticle.class,
+			t -> !t.isMutable(),
 			TokensConstraintScrypt::checkCreateTransferrable
 		);
 	}
@@ -97,17 +87,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(calls -> {
 			calls.createTransition(
 				new TransitionToken<>(
-					MutableSupplyTokenDefinitionParticle.class,
+					TokenDefinitionParticle.class,
 					TokensParticle.class,
 					TypeToken.of(ReadOnlyData.class)
 				),
 				new TransitionProcedure<>() {
 					@Override
 					public Result precondition(
-						MutableSupplyTokenDefinitionParticle inputParticle,
+						TokenDefinitionParticle inputParticle,
 						TokensParticle outputParticle,
 						ReadOnlyData inputUsed
 					) {
+						if (!inputParticle.isMutable()) {
+							return Result.error("Can only mint mutable tokens.");
+						}
+
 						if (!outputParticle.isBurnable()) {
 							return Result.error("Must be able to burn mutable token.");
 						}
@@ -120,7 +114,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TokensParticle, ReadOnlyData>
+					public InputOutputReducer<TokenDefinitionParticle, TokensParticle, ReadOnlyData>
 						inputOutputReducer() {
 						return (inputParticle, outputParticle, outputUsed)
 							-> ReducerResult.complete(new MintToken(
@@ -129,7 +123,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
+					public SignatureValidator<TokenDefinitionParticle> inputSignatureRequired() {
 						return i -> Optional.of(i.getRRI().getAddress());
 					}
 				}
@@ -196,7 +190,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@VisibleForTesting
-	static Result checkCreateTransferrable(FixedSupplyTokenDefinitionParticle tokDef, TokensParticle transferrable) {
+	static Result checkCreateTransferrable(TokenDefinitionParticle tokDef, TokensParticle transferrable) {
 		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
 			return Result.error("Supply and amount are not equal.");
 		}

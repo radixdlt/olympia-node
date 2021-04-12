@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
@@ -161,6 +162,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	public <O extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<O> particleClass0,
 		Class<U> particleClass1,
+		Predicate<O> includeSecondClass,
 		BiFunction<O, U, Result> combinedCheck
 	) {
 		final ParticleDefinition<Particle> particleDefinition0 = getParticleDefinition(particleClass0);
@@ -172,10 +174,11 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		CreateCombinedTransitionRoutine<RRIParticle, O, U> createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
+		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
 			particleClass1,
+			includeSecondClass,
 			combinedCheck,
 			in -> Optional.of(in.getRri().getAddress())
 		);
