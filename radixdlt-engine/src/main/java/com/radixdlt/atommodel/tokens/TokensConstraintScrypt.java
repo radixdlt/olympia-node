@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.tokens;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -123,7 +124,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData>
 						inputOutputReducer() {
 						return (inputParticle, outputParticle, outputUsed)
-							-> ReducerResult.complete(Unknown.create());
+							-> ReducerResult.complete(new MintToken(
+								inputParticle.getRRI(), outputParticle.getAddress(), outputParticle.getAmount()
+						));
 					}
 
 					@Override

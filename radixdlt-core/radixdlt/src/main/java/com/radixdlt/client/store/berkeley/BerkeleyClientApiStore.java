@@ -18,6 +18,8 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -237,8 +239,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			return restore(serialization, data.getData(), BalanceEntry.class)
 				.onSuccess(entry -> log.debug("Stored token supply balance: {}", entry))
-				.map(BalanceEntry::getAmount)
-				.map(UInt256.MAX_VALUE::subtract);
+				.map(BalanceEntry::getAmount);
 		}
 	}
 
@@ -531,6 +532,42 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			);
 			storeBalanceEntry(entry0);
 			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof BurnToken) {
+			var burnToken = (BurnToken) action.getTxAction();
+			var entry0 = BalanceEntry.create(
+				user,
+				null,
+				burnToken.rri(),
+				burnToken.amount(),
+				true
+			);
+			var entry1 = BalanceEntry.create(
+				null,
+				null,
+				burnToken.rri(),
+				burnToken.amount(),
+				true
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
+		} else if (action.getTxAction() instanceof MintToken) {
+			var mintToken = (MintToken) action.getTxAction();
+			var entry0 = BalanceEntry.create(
+				mintToken.to(),
+				null,
+				mintToken.rri(),
+				mintToken.amount(),
+				false
+			);
+			var entry1 = BalanceEntry.create(
+				null,
+				null,
+				mintToken.rri(),
+				mintToken.amount(),
+				false
+			);
+			storeBalanceEntry(entry0);
+			storeBalanceEntry(entry1);
 		} else {
 			var tokDefs = action.getInstructions().stream()
 				.filter(i -> i.getParticle() instanceof TokenDefinitionSubstate)
@@ -597,7 +634,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private void storeBalanceEntry(BalanceEntry entry) {
-		var key = asKey(entry);
+		var key = entry.isSupply() ? asKey(entry.getRri()) : asKey(entry);
 		mergeBalances(key, entry(), entry);
 	}
 

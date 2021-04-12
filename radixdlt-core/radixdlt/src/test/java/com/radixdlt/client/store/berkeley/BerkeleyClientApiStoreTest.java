@@ -63,6 +63,7 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,9 +73,9 @@ import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.radix.api.jsonrpc.ActionType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -174,7 +175,7 @@ public class BerkeleyClientApiStoreTest {
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
-			.burn(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.TWO)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -227,7 +228,6 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef));
 	}
 
-	/*
 	@Test
 	public void transactionHistoryIsReturnedInPages() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
@@ -267,6 +267,7 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> assertEquals(0, list.size()));
 	}
 
+	/*
 	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());

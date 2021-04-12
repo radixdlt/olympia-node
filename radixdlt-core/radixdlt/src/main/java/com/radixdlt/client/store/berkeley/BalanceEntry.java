@@ -56,21 +56,15 @@ public class BalanceEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean negative;
 
-	//Not persisted
-	@JsonIgnore
-	private final boolean supply;
-
 	private BalanceEntry(
 		RadixAddress owner, RadixAddress delegate, RRI rri,
-		UInt256 amount, boolean negative,
-		boolean supply
+		UInt256 amount, boolean negative
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
 		this.rri = rri;
 		this.amount = amount;
 		this.negative = negative;
-		this.supply = supply;
 	}
 
 	public static BalanceEntry createFull(
@@ -78,14 +72,12 @@ public class BalanceEntry {
 		RadixAddress delegate,
 		RRI rri,
 		UInt256 amount,
-		boolean negative,
-		boolean supply
+		boolean negative
 	) {
-		Objects.requireNonNull(owner);
 		Objects.requireNonNull(rri);
 		Objects.requireNonNull(amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negative);
 	}
 
 	@JsonCreator
@@ -96,19 +88,13 @@ public class BalanceEntry {
 		@JsonProperty("amount") UInt256 amount,
 		@JsonProperty("negative") boolean negative
 	) {
-		return createFull(owner, delegate, rri, amount, negative, false);
+		return createFull(owner, delegate, rri, amount, negative);
 	}
 
 	public static BalanceEntry createBalance(
 		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
 	) {
-		return createFull(owner, delegate, rri, amount, false, false);
-	}
-
-	public static BalanceEntry createSupply(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
-	) {
-		return createFull(owner, delegate, rri, amount, false, true);
+		return createFull(owner, delegate, rri, amount, false);
 	}
 
 	public RadixAddress getOwner() {
@@ -128,7 +114,7 @@ public class BalanceEntry {
 	}
 
 	public boolean isSupply() {
-		return supply;
+		return owner == null;
 	}
 
 	public boolean isStake() {
@@ -140,11 +126,11 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, amount, !negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, !negative);
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
-		assert this.owner.equals(balanceEntry.owner);
+		assert Objects.equals(this.owner, balanceEntry.owner);
 		assert this.rri.equals(balanceEntry.rri);
 
 		if (negative) {
@@ -189,10 +175,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative);
 	}
 }

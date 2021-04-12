@@ -227,7 +227,7 @@ public final class TxBuilder {
 		}
 	}
 
-	private <T extends Particle> T read(
+	public <T extends Particle> T read(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		String errorMessage
