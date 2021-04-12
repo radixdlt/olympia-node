@@ -21,6 +21,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedAction;
@@ -36,7 +37,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenBalance;
@@ -557,8 +557,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else {
 			var tokDefs = action.getInstructions().stream()
-				.filter(i -> i.getParticle() instanceof TokenDefinitionSubstate)
-				.map(i -> (TokenDefinitionSubstate) i.getParticle())
+				.filter(i -> i.getParticle() instanceof TokenDefinitionParticle)
+				.map(i -> (TokenDefinitionParticle) i.getParticle())
 				.collect(Collectors.toList());
 
 			tokDefs.forEach(this::storeTokenDefinition);
@@ -600,10 +600,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeTokenDefinition(TokenDefinitionSubstate substate) {
-		TokenDefinitionRecord.from(substate)
-			.onSuccess(this::storeTokenDefinition)
-			.onFailure(failure -> log.error("Unable to store token definition: {}", failure.message()));
+	private void storeTokenDefinition(TokenDefinitionParticle substate) {
+		var record = TokenDefinitionRecord.from(substate);
+		storeTokenDefinition(record);
 	}
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {

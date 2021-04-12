@@ -31,7 +31,7 @@ import java.util.Objects;
  * Particle representing a fixed supply token definition
  */
 @SerializerId2("tkn")
-public final class TokenDefinitionParticle extends Particle implements TokenDefinitionSubstate {
+public final class TokenDefinitionParticle extends Particle {
 	@JsonProperty("r")
 	@DsonOutput(Output.ALL)
 	private RRI rri;

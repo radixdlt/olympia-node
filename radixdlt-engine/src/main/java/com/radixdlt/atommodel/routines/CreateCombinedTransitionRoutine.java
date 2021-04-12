@@ -58,7 +58,6 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
-	private final TypeToken<UsedParticle<V>> typeToken1;
 	private final SignatureValidator<I> inputSignatureValidator;
 	private final Predicate<O> includeSecondClass;
 
@@ -76,7 +75,6 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		this.includeSecondClass = includeSecondClass;
 
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
-		this.typeToken1 = new TypeToken<UsedParticle<V>>() { }.where(new TypeParameter<V>() { }, outputClass1);
 		this.combinedCheck = combinedCheck;
 		this.inputSignatureValidator = inputSignatureValidator;
 	}
@@ -89,7 +87,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, outputClass0, typeToken1),
+			new TransitionToken<>(inputClass, outputClass1, typeToken0),
 			getProcedure2()
 		);
 	}
@@ -116,15 +114,15 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		};
 	}
 
-	public TransitionProcedure<I, O, UsedParticle<V>> getProcedure2() {
-		return new TransitionProcedure<I, O, UsedParticle<V>>() {
+	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure2() {
+		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, UsedParticle<V> inputUsed) {
-				return combinedCheck.apply(outputParticle, inputUsed.usedParticle);
+			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed) {
+				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
 			@Override
-			public InputOutputReducer<I, O, UsedParticle<V>> inputOutputReducer() {
+			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
 				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 

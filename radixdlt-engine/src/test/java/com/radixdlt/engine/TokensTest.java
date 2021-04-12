@@ -51,9 +51,9 @@ public class TokensTest {
 			rri,
 			"TEST",
 			"description",
-			UInt256.TEN,
 			null,
-			null
+			null,
+			UInt256.TEN
 		);
 		TokensParticle tokensParticle = new TokensParticle(
 			address,

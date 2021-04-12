@@ -37,7 +37,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
@@ -323,8 +322,8 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Particle particle) {
-		if (particle instanceof TokenDefinitionSubstate) {
-			return TokenDefinitionRecord.from((TokenDefinitionSubstate) particle).toOptional();
+		if (particle instanceof TokenDefinitionParticle) {
+			return Optional.of(TokenDefinitionRecord.from((TokenDefinitionParticle) particle));
 		} else {
 			return Optional.empty();
 		}

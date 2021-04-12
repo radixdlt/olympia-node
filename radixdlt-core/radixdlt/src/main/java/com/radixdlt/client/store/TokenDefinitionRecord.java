@@ -23,13 +23,11 @@ import org.json.JSONObject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
@@ -118,17 +116,16 @@ public class TokenDefinitionRecord {
 		return create(name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
-	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
-		if (substate instanceof TokenDefinitionParticle) {
-			var tokenDefinitionParticle = (TokenDefinitionParticle) substate;
-			if (tokenDefinitionParticle.isMutable()) {
-				return Result.ok(from(tokenDefinitionParticle, UInt384.ZERO));
-			} else {
-				return Result.ok(from(tokenDefinitionParticle));
-			}
-		}
-
-		return Result.fail("Unknown token definition substate: {0}", substate);
+	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
+		return create(
+			definition.getName(),
+			definition.getRRI(),
+			definition.getDescription(),
+			definition.isMutable() ? UInt384.ZERO : UInt384.from(definition.getSupply()),
+			definition.getIconUrl(),
+			definition.getUrl(),
+			definition.isMutable()
+		);
 	}
 
 	public static TokenDefinitionRecord from(TokenDefinitionParticle definition, UInt384 supply) {
@@ -139,19 +136,7 @@ public class TokenDefinitionRecord {
 			supply,
 			definition.getIconUrl(),
 			definition.getUrl(),
-			true
-		);
-	}
-
-	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
-		return create(
-			definition.getName(),
-			definition.getRRI(),
-			definition.getDescription(),
-			UInt384.from(definition.getSupply()),
-			definition.getIconUrl(),
-			definition.getUrl(),
-			false
+			definition.isMutable()
 		);
 	}
 

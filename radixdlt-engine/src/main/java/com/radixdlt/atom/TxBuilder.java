@@ -476,13 +476,6 @@ public final class TxBuilder {
 			"RRI not available"
 		);
 
-		up(new TokensParticle(
-			address,
-			tokenDefinition.getSupply(),
-			tokenRRI,
-			false)
-		);
-
 		up(new TokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
@@ -491,6 +484,13 @@ public final class TxBuilder {
 			tokenDefinition.getTokenUrl(),
 			tokenDefinition.getSupply()
 		));
+
+		up(new TokensParticle(
+			address,
+			tokenDefinition.getSupply(),
+			tokenRRI,
+			false)
+		);
 
 		particleGroup();
 
