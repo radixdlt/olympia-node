@@ -38,15 +38,11 @@ public final class TokenDefinitionParticle extends Particle {
 
 	@JsonProperty("n")
 	@DsonOutput(Output.ALL)
-	private String	name;
+	private String name;
 
 	@JsonProperty("d")
 	@DsonOutput(Output.ALL)
-	private String	description;
-
-	@JsonProperty("s")
-	@DsonOutput(Output.ALL)
-	private UInt256 supply;
+	private String description;
 
 	@JsonProperty("i")
 	@DsonOutput(Output.ALL)
@@ -55,6 +51,10 @@ public final class TokenDefinitionParticle extends Particle {
 	@JsonProperty("url")
 	@DsonOutput(Output.ALL)
 	private String url;
+
+	@JsonProperty("s")
+	@DsonOutput(Output.ALL)
+	private UInt256 supply;
 
 	TokenDefinitionParticle() {
 		// For serializer only

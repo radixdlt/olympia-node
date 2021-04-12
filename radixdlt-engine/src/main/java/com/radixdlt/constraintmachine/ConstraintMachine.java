@@ -57,7 +57,7 @@ import java.util.function.Predicate;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
-	private static final int DATA_MAX_SIZE = 255;
+	public static final int DATA_MAX_SIZE = 255;
 	private static final int MAX_NUM_MESSAGES = 1;
 
 	private static final boolean[] truefalse = new boolean[] {

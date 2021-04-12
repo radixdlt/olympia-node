@@ -20,18 +20,9 @@ package com.radixdlt.constraintmachine;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.SerializerDummy;
 
-/**
- * A content-identifiable, sub-state of the ledger.
- *
- * TODO: Remove serialization stuff out of here
- */
-@SerializerId2("radix.particle")
-@SerializeWithHid
 public abstract class Particle {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)

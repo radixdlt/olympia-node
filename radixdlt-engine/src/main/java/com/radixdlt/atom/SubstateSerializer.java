@@ -18,23 +18,87 @@
 
 package com.radixdlt.atom;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
+
+import java.nio.ByteBuffer;
+import java.util.Map;
 
 public final class SubstateSerializer {
 	private static final Serialization serialization = DefaultSerialization.getInstance();
+	private static final BiMap<Class<? extends Particle>, Byte> classToByte = HashBiMap.create(Map.of(
+		RRIParticle.class, (byte) 0,
+		SystemParticle.class, (byte) 1,
+		TokenDefinitionParticle.class, (byte) 2,
+		TokensParticle.class, (byte) 3,
+		StakedTokensParticle.class, (byte) 4,
+		ValidatorParticle.class, (byte) 5,
+		UniqueParticle.class, (byte) 6
+	));
 
 	private SubstateSerializer() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
+	public static byte classToByte(Class<? extends Particle> particleClass) {
+		return classToByte.get(particleClass);
+	}
+
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
-		return serialization.fromDson(bytes, Particle.class);
+		var buf = ByteBuffer.wrap(bytes);
+		var version = buf.get();
+		if (version != 1) {
+			throw new DeserializeException("Bad version: " + version);
+		}
+		var type = buf.get();
+		var c = classToByte.inverse().get(type);
+		if (c == null) {
+			throw new DeserializeException("Bad type: " + type);
+		}
+
+		if (c == RRIParticle.class) {
+			return deserializeRRIParticle(buf);
+		} else if (c == SystemParticle.class) {
+			return deserializeSystemParticle(buf);
+		} else {
+			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
+		}
+	}
+
+	public static byte[] serialize(Particle p) {
+		var buf = ByteBuffer.allocate(ConstraintMachine.DATA_MAX_SIZE);
+		buf.put((byte) 1); // version
+		buf.put(classToByte.get(p.getClass())); // substate type
+		if (p instanceof RRIParticle) {
+			serializeData((RRIParticle) p, buf);
+		} else if (p instanceof SystemParticle) {
+			serializeData((SystemParticle) p, buf);
+		} else {
+			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
+		}
+
+		var position = buf.position();
+		buf.rewind();
+		var bytes = new byte[position];
+		buf.get(bytes);
+
+		return bytes;
 	}
 
 	public static Result<Particle> deserializeToResult(byte[] bytes) {
@@ -45,11 +109,37 @@ public final class SubstateSerializer {
 		}
 	}
 
-	public static Particle deserialize(byte[] bytes, int offset) throws DeserializeException {
-		return serialization.fromDson(bytes, offset, bytes.length - offset, Particle.class);
+	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
+		var rri = rriParticle.getRri().toString().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (rri.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var length = (byte) rri.length;
+		buf.put(length); // length
+		buf.put(rri); // rri
 	}
 
-	public static byte[] serialize(Particle p) {
-		return serialization.toDson(p, DsonOutput.Output.ALL);
+	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
+		var length = Byte.toUnsignedInt(buf.get()); // length
+		byte[] dst = new byte[length];
+		buf.get(dst, 0, length);
+		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
+		var rri = RRI.from(rriString);
+		return new RRIParticle(rri);
 	}
+
+	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {
+		buf.putLong(systemParticle.getEpoch());
+		buf.putLong(systemParticle.getView());
+		buf.putLong(systemParticle.getTimestamp());
+	}
+
+	private static SystemParticle deserializeSystemParticle(ByteBuffer buf) {
+		var epoch = buf.getLong();
+		var view = buf.getLong();
+		var timestamp = buf.getLong();
+
+		return new SystemParticle(epoch, view, timestamp);
+	}
+
 }
