@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.jsonrpc;
+package com.radixdlt.client.api;
 
 import java.util.Arrays;
 import java.util.Map;

@@ -15,24 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.jsonrpc.handler;
+package com.radixdlt.client.service;
 
-import org.json.JSONObject;
-import org.radix.api.services.LedgerService;
+import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.client.api.PreparedTransaction;
+import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.utils.functional.Result;
 
-import com.google.inject.Inject;
+import java.util.List;
+import java.util.Optional;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
-
-public class LedgerHandler {
-	private final LedgerService ledgerService;
-
-	@Inject
-	public LedgerHandler(LedgerService ledgerService) {
-		this.ledgerService = ledgerService;
-	}
-
-	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredStringParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
+public class SubmissionService {
+	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
+		TxActionListBuilder
+		throw new IllegalStateException("Not implemented yet");
 	}
 }

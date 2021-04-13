@@ -18,7 +18,7 @@
 package com.radixdlt.client.store;
 
 import org.json.JSONObject;
-import org.radix.api.jsonrpc.ActionType;
+import com.radixdlt.client.api.ActionType;
 
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;

@@ -38,7 +38,7 @@ import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -253,7 +253,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TxHistoryEntry> getSingleTransaction(AID txId) {
+	public Result<TxHistoryEntry> getTransaction(AID txId) {
 		return retrieveTx(txId)
 			.flatMap(txn -> extractCreator(txn, universeMagic)
 				.map(Result::ok)

@@ -14,21 +14,21 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.radix.api.jsonrpc;
+package com.radixdlt.client.handler;
 
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 import org.junit.Test;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
 
-import com.radixdlt.client.api.HighLevelApiService;
+import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.api.TransactionStatus;
-import com.radixdlt.client.api.TransactionStatusService;
+import com.radixdlt.client.service.SubmissionService;
+import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
@@ -45,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -60,7 +61,10 @@ public class HighLevelApiHandlerTest {
 
 	private final HighLevelApiService highLevelApiService = mock(HighLevelApiService.class);
 	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
-	private final HighLevelApiHandler handler = new HighLevelApiHandler(highLevelApiService, transactionStatusService);
+	private final SubmissionService submissionService = mock(SubmissionService.class);
+	private final HighLevelApiHandler handler = new HighLevelApiHandler(
+		highLevelApiService, transactionStatusService, submissionService
+	);
 
 	@Test
 	public void testTokenBalance() {
@@ -143,7 +147,7 @@ public class HighLevelApiHandlerTest {
 		var txId = AID.from(HashUtils.random256().asBytes());
 		var entry = createTxHistoryEntry(txId);
 
-		when(highLevelApiService.getSingleTransaction(txId)).thenReturn(Result.ok(entry));
+		when(highLevelApiService.getTransaction(txId)).thenReturn(Result.ok(entry));
 
 		var response = handler.handleLookupTransaction(requestWith(jsonObject().put("txID", txId.toString())));
 
@@ -164,6 +168,21 @@ public class HighLevelApiHandlerTest {
 		validateTransactionStatusResponse(CONFIRMED, txId, handler.handleTransactionStatus(request));
 		validateTransactionStatusResponse(FAILED, txId, handler.handleTransactionStatus(request));
 		validateTransactionStatusResponse(TRANSACTION_NOT_FOUND, txId, handler.handleTransactionStatus(request));
+	}
+
+	@Test
+	public void testBuildTransaction() {
+		fail("Not implemented");
+	}
+
+	@Test
+	public void testFinalizeTransaction() {
+		fail("Not implemented");
+	}
+
+	@Test
+	public void testSubmitTransaction() {
+		fail("Not implemented");
 	}
 
 	private void validateTransactionStatusResponse(TransactionStatus status, AID txId, JSONObject response) {

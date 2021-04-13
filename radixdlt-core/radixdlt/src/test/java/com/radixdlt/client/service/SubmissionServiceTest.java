@@ -1,4 +1,4 @@
-/*
+package com.radixdlt.client.service;/*
  * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
@@ -15,24 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.jsonrpc.handler;
+import org.junit.Test;
 
-import org.json.JSONObject;
-import org.radix.api.services.LedgerService;
+import static org.junit.Assert.*;
 
-import com.google.inject.Inject;
-
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
-
-public class LedgerHandler {
-	private final LedgerService ledgerService;
-
-	@Inject
-	public LedgerHandler(LedgerService ledgerService) {
-		this.ledgerService = ledgerService;
-	}
-
-	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredStringParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
+public class SubmissionServiceTest {
+	@Test
+	public void testPrepareTransaction() {
+		fail("Not implemented");
 	}
 }

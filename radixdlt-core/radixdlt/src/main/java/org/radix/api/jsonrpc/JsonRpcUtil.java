@@ -79,6 +79,14 @@ public final class JsonRpcUtil {
 		return new JSONArray();
 	}
 
+	public static Optional<JSONArray> jsonArray(String data) {
+		try {
+			return Optional.of(new JSONArray(data));
+		} catch (JSONException e) {
+			return Optional.empty();
+		}
+	}
+
 	public static <T> JSONArray fromList(List<T> input, Function<T, JSONObject> mapper) {
 		var array = jsonArray();
 		input.forEach(element -> array.put(mapper.apply(element)));
@@ -93,12 +101,11 @@ public final class JsonRpcUtil {
 		}
 	}
 
-	public static Optional<AID> safeAid(JSONObject params, String name) {
-		try {
-			return AID.fromString(params.getString(name));
-		} catch (JSONException e) {
-			return Optional.empty();
+	public static Optional<String> safeString(JSONObject params, String name) {
+		if (params.has(name)) {
+			return Optional.ofNullable(params.get(name).toString());
 		}
+		return Optional.empty();
 	}
 
 	public static JSONObject errorResponse(Object id, RpcError code, String message) {
@@ -124,10 +131,6 @@ public final class JsonRpcUtil {
 			.put("params", params);
 	}
 
-	public static JSONObject successResponse(Object id) {
-		return commonFields(id).put("result", jsonObject().put("success", true));
-	}
-
 	private static JSONObject commonFields(Object id) {
 		return jsonObject().put("id", id).put("jsonrpc", "2.0");
 	}
@@ -136,7 +139,7 @@ public final class JsonRpcUtil {
 		return commonFields(request.get("id")).put("result", result);
 	}
 
-	public static JSONObject withRequiredParameter(
+	public static JSONObject withRequiredStringParameter(
 		JSONObject request,
 		String name,
 		BiFunction<JSONObject, String, JSONObject> fn
@@ -146,6 +149,20 @@ public final class JsonRpcUtil {
 				return errorResponse(request, RpcError.INVALID_REQUEST, "Field '" + name + "' not present in params");
 			} else {
 				return fn.apply(params, params.getString(name));
+			}
+		});
+	}
+
+	public static JSONObject withRequiredArrayParameter(
+		JSONObject request,
+		String name,
+		BiFunction<JSONObject, JSONArray, JSONObject> fn
+	) {
+		return withParameters(request, params -> {
+			if (!params.has(name)) {
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Field '" + name + "' not present in params");
+			} else {
+				return fn.apply(params, params.getJSONArray(name));
 			}
 		});
 	}

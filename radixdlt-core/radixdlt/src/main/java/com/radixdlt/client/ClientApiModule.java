@@ -24,8 +24,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.client.api.ScheduledCacheCleanup;
-import com.radixdlt.client.api.TransactionStatusService;
+import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
@@ -34,7 +34,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 
 import org.radix.api.jsonrpc.JsonRpcHandler;
-import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
+import com.radixdlt.client.handler.HighLevelApiHandler;
 
 public class ClientApiModule extends AbstractModule {
 	@Override
@@ -86,6 +86,22 @@ public class ClientApiModule extends AbstractModule {
 	@StringMapKey("radix.tokenInfo")
 	public JsonRpcHandler tokenInfo(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleTokenInfo;
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("radix.buildTransaction")
+	public JsonRpcHandler buildTransaction(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleBuildTransaction;
+	}
+
+	@StringMapKey("radix.finalizeTransaction")
+	public JsonRpcHandler finalizeTransaction(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleFinalizeTransaction;
+	}
+
+	@StringMapKey("radix.submitTransaction")
+	public JsonRpcHandler submitTransaction(HighLevelApiHandler highLevelApiHandler) {
+		return highLevelApiHandler::handleSubmitTransaction;
 	}
 
 	@ProvidesIntoSet

@@ -14,11 +14,13 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.client.api;
+package com.radixdlt.client.service;
 
 import org.junit.Test;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.client.service.ScheduledCacheCleanup;
+import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.mempool.MempoolAddFailure;

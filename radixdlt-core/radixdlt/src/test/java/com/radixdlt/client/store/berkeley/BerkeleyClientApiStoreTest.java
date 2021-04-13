@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import com.radixdlt.client.api.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -71,9 +72,10 @@ import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.radix.api.jsonrpc.ActionType;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -280,7 +282,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx, txMap);
 		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
 
-		clientApiStore.getSingleTransaction(txId)
+		clientApiStore.getTransaction(txId)
 			.onFailure(this::failWithMessage)
 			.onSuccess(entry -> {
 				assertEquals(txId, entry.getTxId());
