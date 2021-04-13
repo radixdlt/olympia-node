@@ -22,17 +22,11 @@
 
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.serialization.DeserializeException;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.annotations.Nullable;
@@ -67,49 +61,6 @@ public class InMemoryAtomStore implements AtomStore {
 
 	private final Map<String, TxLowLevelBuilder> stagedAtoms = new ConcurrentHashMap<>();
 	private final Map<String, Map<Substate, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
-
-	@Override
-	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
-		Objects.requireNonNull(uuid);
-		Objects.requireNonNull(particleGroup);
-
-		synchronized (lock) {
-			var stagedAtom = stagedAtoms.get(uuid);
-			if (stagedAtom == null) {
-				stagedAtom = TxLowLevelBuilder.newBuilder();
-				stagedAtoms.put(uuid, stagedAtom);
-			}
-
-			for (REInstruction i : particleGroup.getInstructions()) {
-				if (i.getMicroOp() == REInstruction.REOp.UP) {
-					try {
-						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-						stagedAtom.up(particle);
-					} catch (DeserializeException e) {
-						throw new IllegalStateException(e);
-					}
-				} else if (i.getMicroOp() == REInstruction.REOp.VDOWN) {
-					try {
-						var particle = DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
-						stagedAtom.virtualDown(particle);
-					} catch (DeserializeException e) {
-						throw new IllegalStateException(e);
-					}
-				} else if (i.getMicroOp() == REInstruction.REOp.DOWN) {
-					stagedAtom.down(SubstateId.fromBytes(i.getData()));
-				}
-			}
-			stagedAtom.particleGroup();
-
-			/*
-			stagedAtom.localUpSubstate().forEach(p -> {
-				Map<Substate, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
-				index.put(p.getParticle(), Spin.UP);
-				stagedParticleIndex.put(uuid, index);
-			});
-			 */
-		}
-	}
 
 	@Override
 	public TxLowLevelBuilder getStaged(String uuid) {
