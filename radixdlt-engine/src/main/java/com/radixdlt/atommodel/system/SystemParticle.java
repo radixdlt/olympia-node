@@ -22,7 +22,7 @@ import com.radixdlt.constraintmachine.Particle;
 
 import java.time.Instant;
 
-public final class SystemParticle extends Particle {
+public final class SystemParticle implements Particle {
 	private final long epoch;
 	private final long view;
 	private final long timestamp;

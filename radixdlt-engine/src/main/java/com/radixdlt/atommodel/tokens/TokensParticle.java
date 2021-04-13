@@ -27,7 +27,7 @@ import java.util.Objects;
  *  A particle which represents an amount of transferrable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-public final class TokensParticle extends Particle {
+public final class TokensParticle implements Particle {
 	private final RRI tokenDefinitionReference;
 	private final RadixAddress address;
 	private final UInt256 amount;

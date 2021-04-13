@@ -27,7 +27,7 @@ import java.util.Optional;
 /**
  * Particle representing a fixed supply token definition
  */
-public final class TokenDefinitionParticle extends Particle {
+public final class TokenDefinitionParticle implements Particle {
 	private final RRI rri;
 	private final UInt256 supply;
 	private final String name;

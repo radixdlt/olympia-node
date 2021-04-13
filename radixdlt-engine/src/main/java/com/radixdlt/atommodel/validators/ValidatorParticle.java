@@ -22,7 +22,7 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
 
-public final class ValidatorParticle extends Particle {
+public final class ValidatorParticle implements Particle {
 	private final RadixAddress address;
 	private final boolean registeredForNextEpoch;
 	private final String name;

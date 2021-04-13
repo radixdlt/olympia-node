@@ -22,7 +22,7 @@ import java.util.Objects;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 
-public final class RRIParticle extends Particle {
+public final class RRIParticle implements Particle {
 	private final RRI rri;
 
 	public RRIParticle(RRI rri) {

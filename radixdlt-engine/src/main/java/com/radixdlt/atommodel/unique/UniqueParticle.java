@@ -21,7 +21,7 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.Objects;
 
-public final class UniqueParticle extends Particle {
+public final class UniqueParticle implements Particle {
 	private final RRI rri;
 
 	public UniqueParticle(RRI rri) {

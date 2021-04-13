@@ -17,19 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-
-public abstract class Particle {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	public Particle() {
-		// Nothing for now
-	}
+/**
+ * Marker interface for raw substates
+ */
+public interface Particle {
 }

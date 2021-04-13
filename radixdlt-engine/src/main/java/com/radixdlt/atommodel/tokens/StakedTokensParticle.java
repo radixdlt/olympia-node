@@ -27,7 +27,7 @@ import java.util.Objects;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-public final class StakedTokensParticle extends Particle {
+public final class StakedTokensParticle implements Particle {
 	private final RadixAddress delegateAddress;
 	private final RadixAddress address;
 	private final UInt256 amount;
