@@ -25,6 +25,7 @@ import com.radixdlt.utils.UInt256;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
@@ -73,6 +74,29 @@ public class TxHistoryEntry {
 
 	public List<ActionEntry> getActions() {
 		return actions;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TxHistoryEntry)) {
+			return false;
+		}
+
+		var that = (TxHistoryEntry) o;
+		return txId.equals(that.txId)
+			&& timestamp.equals(that.timestamp)
+			&& fee.equals(that.fee)
+			&& Objects.equals(message, that.message)
+			&& actions.equals(that.actions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(txId, timestamp, fee, message, actions);
 	}
 
 	public JSONObject asJson() {

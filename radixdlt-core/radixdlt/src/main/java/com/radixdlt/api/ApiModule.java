@@ -24,6 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.construction.ConstructionController;
+import com.radixdlt.client.api.ScheduledCacheCleanup;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -61,6 +62,7 @@ public final class ApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
+		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 
 		// For additional handlers
 		MapBinder.newMapBinder(binder(), String.class, JsonRpcHandler.class);

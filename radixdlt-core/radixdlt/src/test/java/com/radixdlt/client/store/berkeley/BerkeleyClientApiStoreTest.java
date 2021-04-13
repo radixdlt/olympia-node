@@ -63,11 +63,12 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -126,7 +127,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void tokenBalancesAreReturned() throws TxBuilderException, RadixEngineException {
+	public void tokenBalancesAreReturned() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
@@ -155,7 +156,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws TxBuilderException, RadixEngineException {
+	public void tokenSupplyIsCalculateProperlyForInitialTokenIssuance() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
@@ -169,7 +170,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws TxBuilderException, RadixEngineException {
+	public void tokenSupplyIsCalculateProperlyAfterBurnMint() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
@@ -185,7 +186,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void mutableTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
+	public void mutableTokenDefinitionIsStoredAndAccessible() throws Exception {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
@@ -207,7 +208,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void fixedTokenDefinitionIsStoredAndAccessible() throws TxBuilderException, RadixEngineException {
+	public void fixedTokenDefinitionIsStoredAndAccessible() throws Exception {
 		var fooDef = new AtomicReference<TokenDefinitionRecord>();
 		var tokenDef = prepareFixedTokenDef();
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
@@ -228,7 +229,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
-	public void transactionHistoryIsReturnedInPages() throws TxBuilderException, RadixEngineException {
+	public void transactionHistoryIsReturnedInPages() throws Exception {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
@@ -268,6 +269,27 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Test
+	public void singleTransactionIsLocatedAndReturned() throws Exception {
+		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
+		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
+			.createMutableToken(tokenDef)
+			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
+			.transfer(TOKEN, OWNER, UInt256.FOUR)
+			.burn(TOKEN, UInt256.ONE)
+			.signAndBuild(TOKEN_KEYPAIR::sign);
+
+		var txMap = new HashMap<AID, Txn>();
+		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx, txMap);
+		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
+
+		clientApiStore.getSingleTransaction(txId)
+			.onFailure(this::failWithMessage)
+			.onSuccess(entry -> {
+				assertEquals(txId, entry.getTxId());
+			});
+	}
+
+	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN.getName());
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
@@ -282,14 +304,20 @@ public class BerkeleyClientApiStoreTest {
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 
+	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn tx) throws RadixEngineException {
+		return prepareApiStore(keyPair, tx, new HashMap<>());
+	}
+
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn... tx) throws RadixEngineException {
+	private BerkeleyClientApiStore prepareApiStore(
+		ECKeyPair keyPair, Txn tx, Map<AID, Txn> txMap
+	) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
 			.map(REParsedTxn::getTxn)
 			.collect(Collectors.toList());
 
-		var txMap = transactions.stream().collect(Collectors.toMap(Txn::getId, Function.identity()));
+		transactions.forEach(txn -> txMap.put(txn.getId(), txn));
 
 		when(ledgerStore.get(any(AID.class)))
 			.thenAnswer(invocation -> Optional.ofNullable(txMap.get(invocation.getArgument(0, AID.class))));
