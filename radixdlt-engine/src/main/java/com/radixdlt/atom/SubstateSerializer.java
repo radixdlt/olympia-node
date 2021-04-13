@@ -82,6 +82,8 @@ public final class SubstateSerializer {
 			return deserializeTokensParticle(buf);
 		} else if (c == StakedTokensParticle.class) {
 			return deserializeStakedTokensParticle(buf);
+		} else if (c == ValidatorParticle.class) {
+			return deserializeValidatorParticle(buf);
 		} else {
 			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
 		}
@@ -99,6 +101,8 @@ public final class SubstateSerializer {
 			serializeData((TokensParticle) p, buf);
 		} else if (p instanceof StakedTokensParticle) {
 			serializeData((StakedTokensParticle) p, buf);
+		} else if (p instanceof ValidatorParticle) {
+			serializeData((ValidatorParticle) p, buf);
 		} else {
 			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
 		}
@@ -213,5 +217,46 @@ public final class SubstateSerializer {
 		return new StakedTokensParticle(delegate, address, amount);
 	}
 
+	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
+		buf.put((byte) p.getAddress().toByteArray().length); // address length
+		buf.put(p.getAddress().toByteArray()); // address
 
+		buf.put((byte) (p.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
+
+		var name = p.getName().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (name.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var length = (byte) name.length;
+		buf.put(length); // name length
+		buf.put(name); // name
+
+		var url = p.getUrl().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (url.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var urlLength = (byte) url.length;
+		buf.put(urlLength); // url length
+		buf.put(url); // url
+	}
+
+	private static ValidatorParticle deserializeValidatorParticle(ByteBuffer buf) {
+		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
+		var addressDest = new byte[addressLength]; // address
+		buf.get(addressDest);
+		var address = RadixAddress.from(addressDest);
+
+		var isRegistered = buf.get() != 0; // isRegistered
+
+		var nameLength = Byte.toUnsignedInt(buf.get()); // name
+		var nameDest = new byte[nameLength];
+		buf.get(nameDest);
+		var name = new String(nameDest, RadixConstants.STANDARD_CHARSET);
+
+		var urlLength = Byte.toUnsignedInt(buf.get()); // url
+		var urlDest = new byte[urlLength];
+		buf.get(urlDest);
+		var url = new String(urlDest, RadixConstants.STANDARD_CHARSET);
+		return new ValidatorParticle(address, isRegistered, name, url);
+	}
 }

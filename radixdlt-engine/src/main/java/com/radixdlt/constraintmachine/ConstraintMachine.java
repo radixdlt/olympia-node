@@ -60,10 +60,6 @@ public final class ConstraintMachine {
 	public static final int DATA_MAX_SIZE = 255;
 	private static final int MAX_NUM_MESSAGES = 1;
 
-	private static final boolean[] truefalse = new boolean[] {
-		true, false
-	};
-
 	public static class Builder {
 		private Predicate<Particle> virtualStoreLayer;
 		private Function<Particle, Result> particleStaticCheck;
@@ -245,9 +241,9 @@ public final class ConstraintMachine {
 					.append(" Used: ")
 					.append(this.reducerState);
 			} else {
-				builder.append(" Remaining: [empty]");
+				builder.append(" Remaining: [empty] ");
 			}
-			builder.append("]");
+			builder.append(" ]");
 
 			return builder.toString();
 		}

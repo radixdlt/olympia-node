@@ -53,7 +53,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
 			.staticValidation(checkAddressAndUrl(ValidatorParticle::getAddress,
 				ValidatorParticle::getUrl))
-			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl() == null)
+			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
 			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt
 			.build()
 		);
@@ -94,7 +94,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 				return Result.error("address is null");
 			}
 			String url = urlMapper.apply(particle);
-			if (url != null && !OWASP_URL_REGEX.matcher(url).matches()) {
+			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 				return Result.error("url is not a valid URL: " + url);
 			}
 

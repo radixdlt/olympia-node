@@ -441,7 +441,7 @@ public final class TxBuilder {
 			Optional.of(new ValidatorParticle(address, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(address, true, substateDown.getUrl())
+			substateDown -> new ValidatorParticle(address, true, substateDown.getName(), substateDown.getUrl())
 		);
 
 		particleGroup();
