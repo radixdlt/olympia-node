@@ -128,21 +128,11 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
-		var rri = rriParticle.getRri().toString().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (rri.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var length = (byte) rri.length;
-		buf.put(length); // length
-		buf.put(rri); // rri
+		serializeRri(buf, rriParticle.getRri());
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
-		var length = Byte.toUnsignedInt(buf.get()); // length
-		byte[] dst = new byte[length];
-		buf.get(dst, 0, length);
-		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
-		var rri = RRI.from(rriString);
+		var rri = deserializeRri(buf);
 		return new RRIParticle(rri);
 	}
 
@@ -161,106 +151,46 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		var rri = tokensParticle.getTokDefRef().toString().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (rri.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var length = (byte) rri.length;
-		buf.put(length); // rri length
-		buf.put(rri); // rri
-		buf.put((byte) tokensParticle.getAddress().toByteArray().length); // address length
-		buf.put(tokensParticle.getAddress().toByteArray()); // address
-		buf.put(tokensParticle.getAmount().toByteArray()); // amount
+		serializeRri(buf, tokensParticle.getTokDefRef());
+		serializeAddress(buf, tokensParticle.getAddress());
+		buf.put(tokensParticle.getAmount().toByteArray());
 		buf.put((byte) (tokensParticle.isBurnable() ? 1 : 0)); // isBurnable
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
-		var length = Byte.toUnsignedInt(buf.get()); // length
-		byte[] dst = new byte[length];
-		buf.get(dst, 0, length);
-		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
-		var rri = RRI.from(rriString);
-
-		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
-		var addressDest = new byte[addressLength]; // address
-		buf.get(addressDest);
-		var address = RadixAddress.from(addressDest);
-
-		var amountDest = new byte[UInt256.BYTES]; // amount
-		buf.get(amountDest);
-		var amount = UInt256.from(amountDest);
-
+		var rri = deserializeRri(buf);
+		var address = deserializeAddress(buf);
+		var amount = deserializeUInt256(buf);
 		var isBurnable = buf.get() != 0; // isBurnable
 
 		return new TokensParticle(address, amount, rri, isBurnable);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
-		buf.put((byte) p.getAddress().toByteArray().length); // address length
-		buf.put(p.getAddress().toByteArray()); // address
-		buf.put((byte) p.getDelegateAddress().toByteArray().length); // delegate length
-		buf.put(p.getDelegateAddress().toByteArray()); // delegate
-		buf.put(p.getAmount().toByteArray()); // amount
+		serializeAddress(buf, p.getAddress());
+		serializeAddress(buf, p.getDelegateAddress());
+		buf.put(p.getAmount().toByteArray());
 	}
 
 	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) {
-		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
-		var addressDest = new byte[addressLength]; // address
-		buf.get(addressDest);
-		var address = RadixAddress.from(addressDest);
-
-		var delegateLength = Byte.toUnsignedInt(buf.get()); // address length
-		var delegateDest = new byte[delegateLength]; // address
-		buf.get(delegateDest);
-		var delegate = RadixAddress.from(delegateDest);
-
-		var amountDest = new byte[UInt256.BYTES]; // amount
-		buf.get(amountDest);
-		var amount = UInt256.from(amountDest);
-
+		var address = deserializeAddress(buf);
+		var delegate = deserializeAddress(buf);
+		var amount = deserializeUInt256(buf);
 		return new StakedTokensParticle(delegate, address, amount);
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
-		buf.put((byte) p.getAddress().toByteArray().length); // address length
-		buf.put(p.getAddress().toByteArray()); // address
-
+		serializeAddress(buf, p.getAddress());
 		buf.put((byte) (p.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
-
-		var name = p.getName().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (name.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var length = (byte) name.length;
-		buf.put(length); // name length
-		buf.put(name); // name
-
-		var url = p.getUrl().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (url.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var urlLength = (byte) url.length;
-		buf.put(urlLength); // url length
-		buf.put(url); // url
+		serializeString(buf, p.getName());
+		serializeString(buf, p.getUrl());
 	}
 
 	private static ValidatorParticle deserializeValidatorParticle(ByteBuffer buf) {
-		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
-		var addressDest = new byte[addressLength]; // address
-		buf.get(addressDest);
-		var address = RadixAddress.from(addressDest);
-
+		var address = deserializeAddress(buf);
 		var isRegistered = buf.get() != 0; // isRegistered
-
-		var nameLength = Byte.toUnsignedInt(buf.get()); // name
-		var nameDest = new byte[nameLength];
-		buf.get(nameDest);
-		var name = new String(nameDest, RadixConstants.STANDARD_CHARSET);
-
-		var urlLength = Byte.toUnsignedInt(buf.get()); // url
-		var urlDest = new byte[urlLength];
-		buf.get(urlDest);
-		var url = new String(urlDest, RadixConstants.STANDARD_CHARSET);
+		var name = deserializeString(buf);
+		var url = deserializeString(buf);
 		return new ValidatorParticle(address, isRegistered, name, url);
 	}
 
@@ -304,6 +234,18 @@ public final class SubstateSerializer {
 		var amountDest = new byte[UInt256.BYTES]; // amount
 		buf.get(amountDest);
 		return UInt256.from(amountDest);
+	}
+
+	private static void serializeAddress(ByteBuffer buf, RadixAddress address) {
+		buf.put((byte) address.toByteArray().length); // address length
+		buf.put(address.toByteArray()); // address
+	}
+
+	private static RadixAddress deserializeAddress(ByteBuffer buf) {
+		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
+		var addressDest = new byte[addressLength]; // address
+		buf.get(addressDest);
+		return RadixAddress.from(addressDest);
 	}
 
 	private static void serializeRri(ByteBuffer buf, RRI rri) {

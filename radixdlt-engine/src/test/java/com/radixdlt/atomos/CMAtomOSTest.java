@@ -34,7 +34,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class CMAtomOSTest {
-	private static final class TestParticle extends Particle {
+	private static final class TestParticle implements Particle {
 		@Override
 		public String toString() {
 			return "Test";
@@ -54,11 +54,11 @@ public class CMAtomOSTest {
 		}
 	}
 
-	private abstract static class TestParticle0 extends Particle {
+	private abstract static class TestParticle0 implements Particle {
 		// Empty
 	}
 
-	private abstract static class TestParticle1 extends Particle {
+	private abstract static class TestParticle1 implements Particle {
 		// Empty
 	}
 
