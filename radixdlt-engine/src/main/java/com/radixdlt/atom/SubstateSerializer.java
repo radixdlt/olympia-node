@@ -80,6 +80,8 @@ public final class SubstateSerializer {
 			return deserializeSystemParticle(buf);
 		} else if (c == TokensParticle.class) {
 			return deserializeTokensParticle(buf);
+		} else if (c == StakedTokensParticle.class) {
+			return deserializeStakedTokensParticle(buf);
 		} else {
 			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
 		}
@@ -95,6 +97,8 @@ public final class SubstateSerializer {
 			serializeData((SystemParticle) p, buf);
 		} else if (p instanceof TokensParticle) {
 			serializeData((TokensParticle) p, buf);
+		} else if (p instanceof StakedTokensParticle) {
+			serializeData((StakedTokensParticle) p, buf);
 		} else {
 			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
 		}
@@ -182,4 +186,32 @@ public final class SubstateSerializer {
 
 		return new TokensParticle(address, amount, rri, isBurnable);
 	}
+
+	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
+		buf.put((byte) p.getAddress().toByteArray().length); // address length
+		buf.put(p.getAddress().toByteArray()); // address
+		buf.put((byte) p.getDelegateAddress().toByteArray().length); // delegate length
+		buf.put(p.getDelegateAddress().toByteArray()); // delegate
+		buf.put(p.getAmount().toByteArray()); // amount
+	}
+
+	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) {
+		var addressLength = Byte.toUnsignedInt(buf.get()); // address length
+		var addressDest = new byte[addressLength]; // address
+		buf.get(addressDest);
+		var address = RadixAddress.from(addressDest);
+
+		var delegateLength = Byte.toUnsignedInt(buf.get()); // address length
+		var delegateDest = new byte[delegateLength]; // address
+		buf.get(delegateDest);
+		var delegate = RadixAddress.from(delegateDest);
+
+		var amountDest = new byte[UInt256.BYTES]; // amount
+		buf.get(amountDest);
+		var amount = UInt256.from(amountDest);
+
+		return new StakedTokensParticle(address, delegate, amount);
+	}
+
+
 }

@@ -17,12 +17,8 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -31,23 +27,10 @@ import java.util.Objects;
  *  A particle which represents an amount of staked fungible tokens
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
-@SerializerId2("s_t")
 public final class StakedTokensParticle extends Particle {
-	@JsonProperty("d")
-	@DsonOutput(Output.ALL)
-	private RadixAddress delegateAddress;
-
-	@JsonProperty("o")
-	@DsonOutput(Output.ALL)
-	private RadixAddress address;
-
-	@JsonProperty("a")
-	@DsonOutput(Output.ALL)
-	private UInt256 amount;
-
-	public StakedTokensParticle() {
-		super();
-	}
+	private final RadixAddress delegateAddress;
+	private final RadixAddress address;
+	private final UInt256 amount;
 
 	public StakedTokensParticle(
 		RadixAddress delegateAddress,

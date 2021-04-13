@@ -17,35 +17,17 @@
 
 package com.radixdlt.atommodel.system;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
 
 import java.time.Instant;
 
-@SerializerId2("s")
 public final class SystemParticle extends Particle {
-	@JsonProperty("e")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final long epoch;
-
-	@JsonProperty("v")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final long view;
-
-	@JsonProperty("t")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final long timestamp;
 
-	@JsonCreator
-	public SystemParticle(
-		@JsonProperty("e") long epoch,
-		@JsonProperty("v") long view,
-		@JsonProperty("t") long timestamp
-	) {
+	public SystemParticle(long epoch, long view, long timestamp) {
 		this.epoch = epoch;
 		this.view = view;
 		this.timestamp = timestamp;
