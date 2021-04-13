@@ -451,13 +451,13 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address, id);
+		final var rri = RRI.of(address, id);
 		swap(
 			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			p -> p.getRri().equals(rri),
+			Optional.of(new RRIParticle(rri)),
 			"RRI not available"
-		).with(rri -> new UniqueParticle(id, address));
+		).with(r -> new UniqueParticle(r.getRri()));
 
 		particleGroup();
 

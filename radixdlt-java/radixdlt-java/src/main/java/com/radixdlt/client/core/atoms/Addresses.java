@@ -22,7 +22,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
@@ -59,9 +58,6 @@ public final class Addresses {
 		} else if (p instanceof TokenDefinitionParticle) {
 			var i = (TokenDefinitionParticle) p;
 			addresses.add(i.getRRI().getAddress());
-			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof UniqueParticle) {
-			var i = (UniqueParticle) p;
 			addresses.add(i.getRRI().getAddress());
 		}
 

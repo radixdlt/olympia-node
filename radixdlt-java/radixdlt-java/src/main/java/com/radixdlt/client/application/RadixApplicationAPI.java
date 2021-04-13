@@ -53,8 +53,6 @@ import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.core.BootstrapConfig;
@@ -126,7 +124,6 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addReducer(new TokenBalanceReducer());
 	}
 

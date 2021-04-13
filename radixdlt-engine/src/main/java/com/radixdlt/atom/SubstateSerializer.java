@@ -84,6 +84,8 @@ public final class SubstateSerializer {
 			return deserializeStakedTokensParticle(buf);
 		} else if (c == ValidatorParticle.class) {
 			return deserializeValidatorParticle(buf);
+		} else if (c == UniqueParticle.class) {
+			return deserializeUniqueParticle(buf);
 		} else {
 			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
 		}
@@ -103,6 +105,8 @@ public final class SubstateSerializer {
 			serializeData((StakedTokensParticle) p, buf);
 		} else if (p instanceof ValidatorParticle) {
 			serializeData((ValidatorParticle) p, buf);
+		} else if (p instanceof UniqueParticle) {
+			serializeData((UniqueParticle) p, buf);
 		} else {
 			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
 		}
@@ -259,4 +263,24 @@ public final class SubstateSerializer {
 		var url = new String(urlDest, RadixConstants.STANDARD_CHARSET);
 		return new ValidatorParticle(address, isRegistered, name, url);
 	}
+
+	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
+		var rri = uniqueParticle.getRri().toString().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (rri.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var length = (byte) rri.length;
+		buf.put(length); // length
+		buf.put(rri); // rri
+	}
+
+	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
+		var length = Byte.toUnsignedInt(buf.get()); // length
+		byte[] dst = new byte[length];
+		buf.get(dst, 0, length);
+		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
+		var rri = RRI.from(rriString);
+		return new UniqueParticle(rri);
+	}
+
 }
