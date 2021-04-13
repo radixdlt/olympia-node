@@ -182,9 +182,17 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 					if (compare == 0) {
 						return ReducerResult.complete(used.txAction);
 					}
-					return compare > 0
-						? ReducerResult.incomplete(new UsedAmount(true, o, used.txAction), true)
-						: ReducerResult.incomplete(new UsedAmount(false, i, used.txAction), false);
+
+					var keepInput = compare > 0;
+
+					final UInt256 nextUsedAmt;
+					if (keepInput == used.isInput) {
+						nextUsedAmt = used.getUsedAmount().add(keepInput ? o : i);
+					} else {
+						nextUsedAmt = keepInput ? o : i;
+					}
+
+					return ReducerResult.incomplete(new UsedAmount(keepInput, nextUsedAmt, used.txAction), keepInput);
 				};
 			}
 

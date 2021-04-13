@@ -210,7 +210,7 @@ public final class SubstateSerializer {
 		buf.get(amountDest);
 		var amount = UInt256.from(amountDest);
 
-		return new StakedTokensParticle(address, delegate, amount);
+		return new StakedTokensParticle(delegate, address, amount);
 	}
 
 
