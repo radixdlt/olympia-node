@@ -22,20 +22,28 @@ import org.junit.Test;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.api.HighLevelApiService;
+import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
+import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -115,6 +123,45 @@ public class HighLevelApiServiceTest {
 			.onFailureDo(Assert::fail);
 	}
 
+	@Test
+	public void testGetTransactionHistory() {
+		var entry = createTxHistoryEntry(AID.ZERO);
+
+		when(clientApiStore.getTransactionHistory(eq(OWNER), eq(1), eq(Optional.empty())))
+			.thenReturn(Result.ok(List.of(entry)));
+
+		highLevelApiService.getTransactionHistory(OWNER, 1, Optional.empty())
+			.onSuccess(tuple -> tuple.map((cursor, list) -> {
+				assertTrue(cursor.isPresent());
+				assertEquals(entry.timestamp(), cursor.get());
+
+				assertEquals(1, list.size());
+				assertEquals(entry, list.get(0));
+
+				return null;
+			}))
+			.onFailureDo(Assert::fail);
+	}
+
+	@Test
+	public void testGetSingleTransaction() {
+		var entry = createTxHistoryEntry(AID.ZERO);
+
+		when(clientApiStore.getSingleTransaction(AID.ZERO))
+			.thenReturn(Result.ok(entry));
+
+		highLevelApiService.getSingleTransaction(entry.getTxId())
+			.onSuccess(result -> assertEquals(entry, result))
+			.onFailureDo(Assert::fail);
+	}
+
+	private TxHistoryEntry createTxHistoryEntry(AID txId) {
+		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
+		var action = ActionEntry.unknown();
+		return TxHistoryEntry.create(
+			txId, now, UInt256.ONE, MessageEntry.create("text", "scheme"), List.of(action)
+		);
+	}
 
 	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {
 		return new MutableSupplyTokenDefinitionParticle(
