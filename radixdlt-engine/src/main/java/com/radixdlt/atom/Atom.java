@@ -69,10 +69,10 @@ public final class Atom {
 	}
 
 	static Atom create(
-		List<REInstruction> instructions,
+		List<byte[]> instructions,
 		ECDSASignature signature
 	) {
-		return new Atom(serializedInstructions(instructions).collect(Collectors.toList()), signature);
+		return new Atom(instructions, signature);
 	}
 
 	public HashCode computeHashToSign() {
@@ -86,17 +86,8 @@ public final class Atom {
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static HashCode computeHashToSign(List<REInstruction> instructions) {
-		return computeHashToSignFromBytes(serializedInstructions(instructions));
-	}
-
 	public Optional<ECDSASignature> getSignature() {
 		return Optional.ofNullable(this.signature);
-	}
-
-	private static Stream<byte[]> serializedInstructions(List<REInstruction> instructions) {
-		return instructions.stream()
-			.flatMap(i -> Stream.of(new byte[] {i.getMicroOp().opCode()}, i.getData()));
 	}
 
 	public List<byte[]> getInstructions() {
@@ -125,9 +116,5 @@ public final class Atom {
 		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
 			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
 		);
-	}
-
-	public String toInstructionsString() {
-		return this.instructions.stream().map(i -> Hex.toHexString(i) + "\n").collect(Collectors.joining());
 	}
 }
