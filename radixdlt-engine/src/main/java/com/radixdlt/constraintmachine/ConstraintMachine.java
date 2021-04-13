@@ -232,26 +232,22 @@ public final class ConstraintMachine {
 			this.reducerState = reducerState;
 		}
 
-		boolean isEmpty() {
-			return this.particleRemaining == null;
-		}
-
 		@Override
 		public String toString() {
 			StringBuilder builder = new StringBuilder();
-			builder.append("CMTrace:\n[\n");
+			builder.append("CMTrace:[");
 			if (particleRemaining != null) {
 				builder
-					.append("  Remaining (")
+					.append(" Remaining (")
 					.append(this.particleRemainingIsInput ? "input" : "output")
 					.append("): ")
 					.append(this.particleRemaining)
-					.append("\n  Used: ")
+					.append(" Used: ")
 					.append(this.reducerState);
 			} else {
-				builder.append("  Remaining: [empty]");
+				builder.append(" Remaining: [empty]");
 			}
-			builder.append("\n]");
+			builder.append("]");
 
 			return builder.toString();
 		}

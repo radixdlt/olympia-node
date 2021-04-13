@@ -87,6 +87,6 @@ public final class CMError {
 
 	@Override
 	public String toString() {
-		return instructionIndex + ": " + errorCode + " " + getErrMsg();
+		return instructionIndex + ": " + errorCode + " " + getErrMsg() + " " + cmValidationState;
 	}
 }
