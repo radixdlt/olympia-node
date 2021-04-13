@@ -101,7 +101,7 @@ public class TokenDefinitionRecord {
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			name, rri, description, currentSupply, iconUrl, url, mutable
+			name, rri, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
 		);
 	}
 
@@ -121,7 +121,7 @@ public class TokenDefinitionRecord {
 			definition.getName(),
 			definition.getRRI(),
 			definition.getDescription(),
-			definition.isMutable() ? UInt384.ZERO : UInt384.from(definition.getSupply()),
+			definition.getSupply().map(UInt384::from).orElse(UInt384.ZERO),
 			definition.getIconUrl(),
 			definition.getUrl(),
 			definition.isMutable()
@@ -172,6 +172,12 @@ public class TokenDefinitionRecord {
 		return create(name, rri, description, supply, iconUrl, url, true);
 	}
 
+	public String toString() {
+		return String.format("%s{%s:%s:%s:%s:%s:%s}",
+			this.getClass().getSimpleName(), name, rri, description, currentSupply, iconUrl, url
+		);
+	}
+
 	@Override
 	public final boolean equals(Object o) {
 		if (this == o) {
@@ -184,7 +190,7 @@ public class TokenDefinitionRecord {
 			return mutable == that.mutable
 				&& name.equals(that.name)
 				&& rri.equals(that.rri)
-				&& currentSupply.equals(that.currentSupply)
+				&& Objects.equals(currentSupply, that.currentSupply)
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url);

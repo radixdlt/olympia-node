@@ -65,14 +65,14 @@ public final class TokenDefinitionUtils {
 	}
 
 	private static Result validateUrl(String url) {
-		if (url != null && !OWASP_URL_REGEX.matcher(url).matches()) {
+		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 			return Result.error("URL: not a valid URL: " + url);
 		}
 		return Result.success();
 	}
 
 	private static Result validateIconUrl(String iconUrl) {
-		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
+		if (!iconUrl.isEmpty() && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
 			return Result.error("Icon: not a valid URL: " + iconUrl);
 		}
 		return Result.success();
@@ -96,7 +96,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	static Result validateDescription(String description) {
-		if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+		if (description.length() > MAX_DESCRIPTION_LENGTH) {
 			return Result.error("Description: invalid length, description must be shorter than or equal to "
 				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
 		}

@@ -17,49 +17,23 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Particle representing a fixed supply token definition
  */
-@SerializerId2("tkn")
 public final class TokenDefinitionParticle extends Particle {
-	@JsonProperty("r")
-	@DsonOutput(Output.ALL)
-	private RRI rri;
-
-	@JsonProperty("n")
-	@DsonOutput(Output.ALL)
-	private String name;
-
-	@JsonProperty("d")
-	@DsonOutput(Output.ALL)
-	private String description;
-
-	@JsonProperty("i")
-	@DsonOutput(Output.ALL)
-	private String iconUrl;
-
-	@JsonProperty("url")
-	@DsonOutput(Output.ALL)
-	private String url;
-
-	@JsonProperty("s")
-	@DsonOutput(Output.ALL)
-	private UInt256 supply;
-
-	TokenDefinitionParticle() {
-		// For serializer only
-		super();
-	}
+	private final RRI rri;
+	private final UInt256 supply;
+	private final String name;
+	private final String description;
+	private final String iconUrl;
+	private final String url;
 
 	public TokenDefinitionParticle(
 		RRI rri,
@@ -70,11 +44,11 @@ public final class TokenDefinitionParticle extends Particle {
 		UInt256 supply
 	) {
 		this.rri = Objects.requireNonNull(rri);
-		this.name = name;
-		this.description = description;
+		this.name = Objects.requireNonNull(name);
+		this.description = Objects.requireNonNull(description);
 		this.supply = supply;
-		this.iconUrl = iconUrl;
-		this.url = url;
+		this.iconUrl = Objects.requireNonNull(iconUrl);
+		this.url = Objects.requireNonNull(url);
 	}
 
 	public boolean isMutable() {
@@ -93,8 +67,8 @@ public final class TokenDefinitionParticle extends Particle {
 		return this.description;
 	}
 
-	public UInt256 getSupply() {
-		return this.supply;
+	public Optional<UInt256> getSupply() {
+		return Optional.ofNullable(this.supply);
 	}
 
 	public String getIconUrl() {

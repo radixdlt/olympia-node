@@ -53,14 +53,14 @@ public final class MutableTokenDefinition {
 	}
 
 	public String getDescription() {
-		return description;
+		return description == null ? "" : description;
 	}
 
 	public String getIconUrl() {
-		return iconUrl;
+		return iconUrl == null ? "" : iconUrl;
 	}
 
 	public String getTokenUrl() {
-		return tokenUrl;
+		return tokenUrl == null ? "" : tokenUrl;
 	}
 }

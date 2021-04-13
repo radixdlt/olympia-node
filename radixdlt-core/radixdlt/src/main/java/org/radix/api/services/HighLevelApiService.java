@@ -116,7 +116,7 @@ public class HighLevelApiService {
 				try {
 					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
-					throw new IllegalStateException("Cannot deserialize genesis");
+					throw new IllegalStateException("Cannot deserialize genesis", e);
 				}
 			})
 			.filter(TokenDefinitionParticle.class::isInstance)

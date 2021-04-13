@@ -20,7 +20,6 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
@@ -33,8 +32,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -43,7 +40,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public final class SubstateSerializer {
-	private static final Serialization serialization = DefaultSerialization.getInstance();
 	private static final BiMap<Class<? extends Particle>, Byte> classToByte = HashBiMap.create(Map.of(
 		RRIParticle.class, (byte) 0,
 		SystemParticle.class, (byte) 1,
@@ -86,8 +82,10 @@ public final class SubstateSerializer {
 			return deserializeValidatorParticle(buf);
 		} else if (c == UniqueParticle.class) {
 			return deserializeUniqueParticle(buf);
+		} else if (c == TokenDefinitionParticle.class) {
+			return deserializeTokenDefinitionParticle(buf);
 		} else {
-			return serialization.fromDson(bytes, 2, bytes.length - 2, Particle.class);
+			throw new DeserializeException("Unsupported type: " + c);
 		}
 	}
 
@@ -107,8 +105,10 @@ public final class SubstateSerializer {
 			serializeData((ValidatorParticle) p, buf);
 		} else if (p instanceof UniqueParticle) {
 			serializeData((UniqueParticle) p, buf);
+		} else if (p instanceof TokenDefinitionParticle) {
+			serializeData((TokenDefinitionParticle) p, buf);
 		} else {
-			buf.put(serialization.toDson(p, DsonOutput.Output.ALL));
+			throw new IllegalStateException("Unknown particle: " + p);
 		}
 
 		var position = buf.position();
@@ -265,22 +265,79 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
-		var rri = uniqueParticle.getRri().toString().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (rri.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var length = (byte) rri.length;
-		buf.put(length); // length
-		buf.put(rri); // rri
+		serializeRri(buf, uniqueParticle.getRri());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
+		var rri = deserializeRri(buf);
+		return new UniqueParticle(rri);
+	}
+
+	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
+		serializeRri(buf, p.getRRI());
+		p.getSupply().ifPresentOrElse(
+			i -> {
+				buf.put((byte) 0);
+				buf.put(i.toByteArray());
+			},
+			() -> {
+				buf.put((byte) 1);
+			}
+		);
+		serializeString(buf, p.getName());
+		serializeString(buf, p.getDescription());
+		serializeString(buf, p.getUrl());
+		serializeString(buf, p.getIconUrl());
+	}
+
+	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
+		var rri = deserializeRri(buf);
+		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
+		var name = deserializeString(buf);
+		var description = deserializeString(buf);
+		var url = deserializeString(buf);
+		var iconUrl = deserializeString(buf);
+		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply);
+	}
+
+	private static UInt256 deserializeUInt256(ByteBuffer buf) {
+		var amountDest = new byte[UInt256.BYTES]; // amount
+		buf.get(amountDest);
+		return UInt256.from(amountDest);
+	}
+
+	private static void serializeRri(ByteBuffer buf, RRI rri) {
+		var rriBytes = rri.toString().getBytes(RadixConstants.STANDARD_CHARSET);
+		if (rriBytes.length > 255) {
+			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
+		}
+		var length = (byte) rriBytes.length;
+		buf.put(length); // length
+		buf.put(rriBytes); // rri
+	}
+
+	private static RRI deserializeRri(ByteBuffer buf) {
 		var length = Byte.toUnsignedInt(buf.get()); // length
 		byte[] dst = new byte[length];
 		buf.get(dst, 0, length);
 		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
-		var rri = RRI.from(rriString);
-		return new UniqueParticle(rri);
+		return RRI.from(rriString);
 	}
 
+	private static void serializeString(ByteBuffer buf, String s) {
+		var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
+		if (sBytes.length > 255) {
+			throw new IllegalArgumentException("string cannot be greater than 255 chars");
+		}
+		var len = (byte) sBytes.length;
+		buf.put(len); // url length
+		buf.put(sBytes); // url
+	}
+
+	private static String deserializeString(ByteBuffer buf) {
+		var len = Byte.toUnsignedInt(buf.get()); // url
+		var dest = new byte[len];
+		buf.get(dest);
+		return new String(dest, RadixConstants.STANDARD_CHARSET);
+	}
 }

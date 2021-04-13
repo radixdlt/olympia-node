@@ -191,7 +191,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@VisibleForTesting
 	static Result checkCreateTransferrable(TokenDefinitionParticle tokDef, TokensParticle transferrable) {
-		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
+		if (!Objects.equals(tokDef.getSupply().orElseThrow(), transferrable.getAmount())) {
 			return Result.error("Supply and amount are not equal.");
 		}
 

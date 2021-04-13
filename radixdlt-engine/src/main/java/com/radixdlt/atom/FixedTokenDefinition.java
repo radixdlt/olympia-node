@@ -63,11 +63,11 @@ public final class FixedTokenDefinition {
 	}
 
 	public String getIconUrl() {
-		return iconUrl;
+		return iconUrl == null ? "" : iconUrl;
 	}
 
 	public String getTokenUrl() {
-		return tokenUrl;
+		return tokenUrl == null ? "" : tokenUrl;
 	}
 
 	public UInt256 getSupply() {
