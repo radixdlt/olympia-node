@@ -22,13 +22,13 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
-import org.radix.api.jsonrpc.ActionType;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -54,17 +54,13 @@ public final class TransactionParser {
 
 	private ActionEntry mapToEntry(RadixAddress user, TxAction txAction) {
 		if (txAction instanceof TransferToken) {
-			var transferToken = (TransferToken) txAction;
-			return ActionEntry.create(ActionType.TRANSFER, user, transferToken.to(), transferToken.amount(), transferToken.rri());
+			return ActionEntry.transfer(user, (TransferToken) txAction);
 		} else if (txAction instanceof BurnToken) {
-			var burnToken = (BurnToken) txAction;
-			return ActionEntry.create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
+			return ActionEntry.burn(user, (BurnToken) txAction);
 		} else if (txAction instanceof StakeNativeToken) {
-			var stakeToken = (StakeNativeToken) txAction;
-			return ActionEntry.create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), stakeToken.rri());
+			return ActionEntry.stake(user, (StakeNativeToken) txAction);
 		} else if (txAction instanceof UnstakeNativeToken) {
-			var unstakeToken = (UnstakeNativeToken) txAction;
-			return ActionEntry.create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), unstakeToken.rri());
+			return ActionEntry.unstake(user, (UnstakeNativeToken) txAction);
 		} else {
 			return ActionEntry.unknown();
 		}

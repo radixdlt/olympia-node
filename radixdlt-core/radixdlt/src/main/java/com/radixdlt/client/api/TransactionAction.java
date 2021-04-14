@@ -18,9 +18,8 @@
 package com.radixdlt.client.api;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.BurnNativeToken;
 import com.radixdlt.atom.actions.StakeNativeToken;
-import com.radixdlt.atom.actions.TransferNativeToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -71,7 +70,7 @@ public class TransactionAction {
 	public TxAction toAction(RRI nativeToken) {
 		switch (actionType) {
 			case TRANSFER:
-				return new TransferNativeToken(rriValue(), to, amount);
+				return new TransferToken(rriValue(), to, amount);
 			case STAKE:
 				return new StakeNativeToken(nativeToken, to, amount);
 			case UNSTAKE:

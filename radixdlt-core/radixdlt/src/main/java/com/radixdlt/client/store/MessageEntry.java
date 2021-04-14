@@ -20,7 +20,6 @@ package com.radixdlt.client.store;
 import org.json.JSONObject;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
@@ -44,8 +43,10 @@ public class MessageEntry {
 		return new MessageEntry(message, encryptionScheme);
 	}
 
-	public static Optional<MessageEntry> fromPlainString(String message) {
-		return Optional.ofNullable(message).map(text -> create(text, PLAIN));
+	public static MessageEntry fromPlainString(String message) {
+		requireNonNull(message);
+
+		return create(message, PLAIN);
 	}
 
 	public JSONObject asJson() {

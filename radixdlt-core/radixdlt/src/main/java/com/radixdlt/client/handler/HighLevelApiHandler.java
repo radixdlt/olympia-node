@@ -17,25 +17,21 @@
 
 package com.radixdlt.client.handler;
 
-import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.client.service.HighLevelApiService;
-
 import com.google.inject.Inject;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.TokenBalance;
-import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -53,8 +49,8 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 import static com.radixdlt.utils.functional.Optionals.allOf;
 

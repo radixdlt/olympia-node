@@ -45,11 +45,6 @@ public interface ClientApiStore {
 	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
 
 	/**
-	 * Flush intermediate storage and save particles into persistent DB.
-	 */
-	void storeCollected();
-
-	/**
 	 * Get current supply of the specified token.
 	 *
 	 * @param rri token for which supply is requested

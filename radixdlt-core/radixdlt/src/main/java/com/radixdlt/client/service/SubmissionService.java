@@ -57,7 +57,7 @@ public class SubmissionService {
 		try {
 			var blobs = radixEngine
 				.construct(address, actions)
-				.burnForFee(nativeToken, fixedFee)
+				.burn(nativeToken, fixedFee)
 				.buildForExternalSign();
 
 			return Result.ok(PreparedTransaction.create(blobs.getFirst(), blobs.getSecond().asBytes(), fixedFee));

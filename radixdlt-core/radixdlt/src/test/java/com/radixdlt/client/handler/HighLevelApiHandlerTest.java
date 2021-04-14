@@ -217,7 +217,7 @@ public class HighLevelApiHandlerTest {
 		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 		var action = ActionEntry.unknown();
 		return TxHistoryEntry.create(
-			txId, now, UInt256.ONE, MessageEntry.create("text", "scheme"), List.of(action)
+			txId, now, UInt256.ONE, MessageEntry.fromPlainString("text"), List.of(action)
 		);
 	}
 

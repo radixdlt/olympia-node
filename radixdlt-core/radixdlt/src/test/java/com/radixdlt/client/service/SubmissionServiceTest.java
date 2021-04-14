@@ -1,4 +1,4 @@
-package com.radixdlt.client.service;/*
+/*
  * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
@@ -14,6 +14,7 @@ package com.radixdlt.client.service;/*
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package com.radixdlt.client.service;
 
 import org.junit.Test;
 

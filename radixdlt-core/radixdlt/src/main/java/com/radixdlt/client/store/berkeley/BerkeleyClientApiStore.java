@@ -23,6 +23,8 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -194,23 +196,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public void storeCollected() {
-		synchronized (txCollector) {
-			log.debug("Storing collected transactions started");
-
-			var count = withTime(
-				() -> txCollector.consumeCollected(this::storeTransactionBatch),
-				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
-				ELAPSED_APIDB_FLUSH_TIME
-			);
-
-			inputCounter.addAndGet(-count);
-
-			log.debug("Storing collected transactions finished. {} transactions processed", count);
-		}
-	}
-
-	@Override
 	public Result<UInt384> getTokenSupply(RRI rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
@@ -259,6 +244,22 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				.map(Result::ok)
 				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
+	}
+
+	private void storeCollected() {
+		synchronized (txCollector) {
+			log.debug("Storing collected transactions started");
+
+			var count = withTime(
+				() -> txCollector.consumeCollected(this::storeTransactionBatch),
+				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
+				ELAPSED_APIDB_FLUSH_TIME
+			);
+
+			inputCounter.addAndGet(-count);
+
+			log.debug("Storing collected transactions finished. {} transactions processed", count);
+		}
 	}
 
 	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
@@ -323,7 +324,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.flatMap(this::retrieveTx)
 					.onFailure(this::reportError)
 					.map(txnParser::parseOrElseThrow)
-					.flatMap(txn -> new TransactionParser(nativeToken).parse(txn, instantFromKey(key)))
+					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key)))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -497,7 +498,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.forEach(a -> storeAction(reTxn.getUser(), a));
 	}
 
-
 	private void storeAction(RadixAddress user, REParsedAction action) {
 		if (action.getTxAction() instanceof TransferToken) {
 			var transferToken = (TransferToken) action.getTxAction();
@@ -555,8 +555,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else {
 			var tokDefs = action.getInstructions().stream()
-				.filter(i -> i.getParticle() instanceof TokenDefinitionParticle)
-				.map(i -> (TokenDefinitionParticle) i.getParticle())
+				.map(REParsedInstruction::getParticle)
+				.filter(TokenDefinitionParticle.class::isInstance)
+				.map(TokenDefinitionParticle.class::cast)
 				.collect(Collectors.toList());
 
 			tokDefs.forEach(this::storeTokenDefinition);
@@ -603,6 +604,16 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		storeTokenDefinition(record);
 	}
 
+	//TODO: cleanup this.
+/*
+private void storeTokenDefinition(TokenDefinitionSubstate substate) {
+		TokenDefinitionRecord.from(substate)
+			.onSuccess(this::storeTokenDefinition)
+			.onFailure(failure -> log.error("Unable to store token definition: {}", failure.message()));
+	}
+
+ */
+
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {
 		var key = asKey(tokenDefinition.rri());
 		var value = serializeTo(entry(), tokenDefinition);
@@ -647,11 +658,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private DatabaseEntry serializeTo(DatabaseEntry value, Object entry) {
 		value.setData(serialization.toDson(entry, Output.ALL));
 		return value;
-	}
-
-	private <T> T shouldNeverHappen(Failure f) {
-		log.error("Should never happen {}", f.message());
-		return null;
 	}
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {

@@ -21,8 +21,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.radixdlt.identifiers.AID;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

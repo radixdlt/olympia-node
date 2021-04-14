@@ -35,8 +35,10 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 
 import static com.radixdlt.utils.functional.Result.allOf;
 
-public class ActionParser {
+public final class ActionParser {
 	private static final Result<Optional<RRI>> EMPTY_RESULT = Result.ok(Optional.empty());
+
+	private ActionParser() { }
 
 	public static Result<List<TransactionAction>> parse(JSONArray actions) {
 		var list = new ArrayList<TransactionAction>();

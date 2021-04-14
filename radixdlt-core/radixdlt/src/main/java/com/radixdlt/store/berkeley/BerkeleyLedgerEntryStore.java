@@ -46,7 +46,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
@@ -718,23 +717,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		return Optional.of(deserializeOrElseFail(value.getData(), LedgerProof.class));
-	}
-
-
-	@Override
-	public SearchCursor search() {
-		return withTime(() -> {
-			try (var databaseCursor = atomDatabase.openCursor(null, null)) {
-				var pKey = entry();
-				var data = entry();
-
-				if (databaseCursor.getNext(pKey, data, DEFAULT) == SUCCESS) {
-					return new BerkeleySearchCursor(this, pKey.getData(), data.getData());
-				}
-
-				return null;
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
 	}
 
 

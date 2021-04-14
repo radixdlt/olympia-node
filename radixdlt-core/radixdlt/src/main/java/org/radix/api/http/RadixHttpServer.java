@@ -43,22 +43,15 @@ import static java.util.logging.Logger.getLogger;
 public final class RadixHttpServer {
 	public static final int DEFAULT_PORT = 8080;
 
-	private final AtomsService atomsService;
 	private final int port;
+	private final Set<Controller> controllers;
 
 	private Undertow server;
 
-	private Set<Controller> controllers;
-
 	@Inject
-	public RadixHttpServer(
-		Set<Controller> controllers,
-		RuntimeProperties properties,
-		AtomsService atomsService
-	) {
+	public RadixHttpServer(Set<Controller> controllers, RuntimeProperties properties) {
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 		this.controllers = controllers;
-		this.atomsService = atomsService;
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {

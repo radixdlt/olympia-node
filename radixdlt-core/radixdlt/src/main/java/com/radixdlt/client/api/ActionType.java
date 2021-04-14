@@ -33,8 +33,8 @@ public enum ActionType {
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
-	UNKNOWN("Other")
-	;
+	UNKNOWN("Other");
+
 	private final String text;
 
 	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(ActionType.values())

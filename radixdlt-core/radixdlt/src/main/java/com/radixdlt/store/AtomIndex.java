@@ -39,7 +39,4 @@ public interface AtomIndex {
 	 * @return The atom associated with the given aid (if any)
 	 */
 	Optional<Txn> get(AID aid);
-
-	// TODO: remove once we clean up API to not require searching
-	SearchCursor search();
 }
