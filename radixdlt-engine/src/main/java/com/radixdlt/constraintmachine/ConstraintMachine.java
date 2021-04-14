@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -341,17 +342,13 @@ public final class ConstraintMachine {
 
 	public static List<REInstruction> toInstructions(List<byte[]> bytesList) {
 		Objects.requireNonNull(bytesList);
-		ImmutableList.Builder<REInstruction> instructionsBuilder = ImmutableList.builder();
-
-		Iterator<byte[]> bytesIterator = bytesList.iterator();
-		while (bytesIterator.hasNext()) {
-			byte[] bytes = bytesIterator.next();
-			byte[] dataBytes = bytesIterator.next();
-			var instruction = REInstruction.create(bytes[0], dataBytes);
-			instructionsBuilder.add(instruction);
-		}
-
-		return instructionsBuilder.build();
+		return bytesList.stream()
+			.map(bytes -> {
+				var data = new byte[bytes.length - 1];
+				System.arraycopy(bytes, 1, data, 0, data.length);
+				return REInstruction.create(bytes[0], data);
+			})
+			.collect(Collectors.toList());
 	}
 
 	/**

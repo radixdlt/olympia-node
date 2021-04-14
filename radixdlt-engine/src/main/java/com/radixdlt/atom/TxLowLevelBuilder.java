@@ -54,13 +54,6 @@ public final class TxLowLevelBuilder {
 		return new TxLowLevelBuilder();
 	}
 
-	public TxLowLevelBuilder message(String message) {
-		var bytes = message.getBytes(StandardCharsets.UTF_8);
-		this.instructions.add(new byte[] { REInstruction.REOp.MSG.opCode() });
-		this.instructions.add(bytes);
-		return this;
-	}
-
 	public Set<SubstateId> remoteDownSubstate() {
 		return remoteDownSubstate;
 	}
@@ -69,23 +62,33 @@ public final class TxLowLevelBuilder {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
+	private void instruction(REInstruction.REOp op, byte[] data) {
+		var instruction = new byte[1 + data.length];
+		instruction[0] = op.opCode();
+		System.arraycopy(data, 0, instruction, 1, data.length);
+		this.instructions.add(instruction);
+		this.instructionIndex++;
+	}
+
+	public TxLowLevelBuilder message(String message) {
+		var bytes = message.getBytes(StandardCharsets.UTF_8);
+		instruction(REInstruction.REOp.MSG, bytes);
+		return this;
+	}
+
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = SubstateSerializer.serialize(particle);
-		this.instructions.add(new byte[] { REInstruction.REOp.UP.opCode() });
-		this.instructions.add(particleDson);
+		var bytes = SubstateSerializer.serialize(particle);
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
-		this.instructionIndex++;
+		instruction(REInstruction.REOp.UP, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleBytes = SubstateSerializer.serialize(particle);
-		this.instructions.add(new byte[] { REInstruction.REOp.VDOWN.opCode() });
-		this.instructions.add(particleBytes);
-		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(particleBytes));
-		this.instructionIndex++;
+		var bytes = SubstateSerializer.serialize(particle);
+		instruction(REInstruction.REOp.VDOWN, bytes);
+		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
 
@@ -94,24 +97,18 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		this.instructions.add(new byte[] { REInstruction.REOp.LDOWN.opCode() });
-		this.instructions.add(Ints.toByteArray(index));
-		this.instructionIndex++;
+		instruction(REInstruction.REOp.LDOWN, Ints.toByteArray(index));
 		return this;
 	}
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
-		this.instructions.add(new byte[] { REInstruction.REOp.DOWN.opCode() });
-		this.instructions.add(substateId.asBytes());
+		instruction(REInstruction.REOp.DOWN, substateId.asBytes());
 		this.remoteDownSubstate.add(substateId);
-		this.instructionIndex++;
 		return this;
 	}
 
 	public TxLowLevelBuilder read(SubstateId substateId) {
-		this.instructions.add(new byte[] { REInstruction.REOp.READ.opCode() });
-		this.instructions.add(substateId.asBytes());
-		this.instructionIndex++;
+		instruction(REInstruction.REOp.READ, substateId.asBytes());
 		return this;
 	}
 
@@ -120,17 +117,12 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		this.instructions.add(new byte[] { REInstruction.REOp.LREAD.opCode() });
-		this.instructions.add(Ints.toByteArray(index));
-		this.instructionIndex++;
+		instruction(REInstruction.REOp.LREAD, Ints.toByteArray(index));
 		return this;
 	}
 
-
 	public TxLowLevelBuilder particleGroup() {
-		this.instructions.add(new byte[] { REInstruction.REOp.END.opCode() });
-		this.instructions.add(new byte[0]);
-		this.instructionIndex++;
+		instruction(REInstruction.REOp.END, new byte[0]);
 		return this;
 	}
 
