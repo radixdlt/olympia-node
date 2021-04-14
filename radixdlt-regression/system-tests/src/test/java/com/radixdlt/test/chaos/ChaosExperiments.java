@@ -45,7 +45,7 @@ public class ChaosExperiments {
                 new NetworkAction(ansible, 0.4),
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
-                //new MempoolFillAction(ansible, 0.7, 300),
+                //new MempoolFillAction(ansible, 0.7, 300), TODO disabled because this brings down the node
                 new ValidatorUnregistrationAction(ansible, 1.0)
         );
 
