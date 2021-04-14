@@ -116,7 +116,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					@Override
 					public InputOutputReducer<TokenDefinitionParticle, TokensParticle, ReadOnlyData>
 						inputOutputReducer() {
-						return (inputParticle, outputParticle, outputUsed)
+						return (inputParticle, outputParticle, index, outputUsed)
 							-> ReducerResult.complete(new MintToken(
 								inputParticle.getRRI(), outputParticle.getAddress(), outputParticle.getAmount()
 						));
@@ -174,7 +174,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 					@Override
 					public InputOutputReducer<TokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
-						return (inputParticle, outputParticle, state) -> {
+						return (inputParticle, outputParticle, index, state) -> {
 							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
 							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
 						};

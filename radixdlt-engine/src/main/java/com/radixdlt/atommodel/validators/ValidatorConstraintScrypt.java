@@ -144,7 +144,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		@Override
 		public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-			return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
+			return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 		}
 
 		@Override

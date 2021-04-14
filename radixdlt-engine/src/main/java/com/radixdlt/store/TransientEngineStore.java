@@ -3,6 +3,7 @@ package com.radixdlt.store;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -64,5 +65,11 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 				s -> transientStore.getSpin(s.getId()) != Spin.DOWN
 			)
 		);
+	}
+
+	@Override
+	public Optional<Particle> loadRriId(Transaction dbTxn, RriId rriId) {
+		return transientStore.loadRriId(dbTxn, rriId)
+			.or(() -> base.loadRriId(dbTxn, rriId));
 	}
 }

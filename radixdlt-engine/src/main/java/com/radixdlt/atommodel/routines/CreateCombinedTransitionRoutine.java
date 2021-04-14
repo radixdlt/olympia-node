@@ -101,7 +101,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, outputUsed) ->
+				return (input, output, index, outputUsed) ->
 					includeSecondClass.test(output)
 						? ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true)
 						: ReducerResult.complete(Unknown.create());
@@ -123,7 +123,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override

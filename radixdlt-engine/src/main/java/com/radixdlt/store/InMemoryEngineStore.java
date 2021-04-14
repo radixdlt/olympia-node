@@ -22,6 +22,8 @@ import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -38,6 +40,7 @@ import java.util.function.BiFunction;
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
+	private final Map<RriId, Particle> rriParticles = new HashMap<>();
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
@@ -46,6 +49,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 			stateUpdates.stream()
 				.filter(REParsedInstruction::isStateUpdate)
 				.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
+			stateUpdates.stream()
+				.filter(REParsedInstruction::isBootUp)
+				.map(REParsedInstruction::getParticle)
+				.filter(TokenDefinitionParticle.class::isInstance)
+				.map(TokenDefinitionParticle.class::cast)
+				.forEach(p -> rriParticles.put(RriId.fromRri(p.getRRI()), p));
+
 			txnIds.add(txn.getId());
 		}
 	}
@@ -122,6 +132,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 
 			var particle = inst.getParticle();
 			return Optional.of(particle);
+		}
+	}
+
+	@Override
+	public Optional<Particle> loadRriId(Transaction dbTxn, RriId rriId) {
+		synchronized (lock) {
+			return Optional.ofNullable(rriParticles.get(rriId));
 		}
 	}
 }

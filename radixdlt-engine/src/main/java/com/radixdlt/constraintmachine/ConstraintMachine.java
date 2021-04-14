@@ -27,7 +27,9 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -35,6 +37,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.Pair;
 
 import java.util.ArrayList;
@@ -132,6 +135,17 @@ public final class ConstraintMachine {
 			this.permissionLevel = permissionLevel;
 			this.witness = witness;
 			this.signature = signature;
+		}
+
+		public ImmutableIndex immutableIndex() {
+			return (txn, rriId) ->
+				localUpParticles.values().stream()
+					.filter(TokenDefinitionParticle.class::isInstance)
+					.map(TokenDefinitionParticle.class::cast)
+					.filter(p -> RriId.fromRri(p.getRRI()).equals(rriId))
+					.findFirst()
+					.map(Particle.class::cast)
+					.or(() -> store.loadRriId(txn, rriId));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -303,7 +317,7 @@ public final class ConstraintMachine {
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
-		var result = reducer.reduce(inputParticle, outputParticle, used);
+		var result = reducer.reduce(inputParticle, outputParticle, validationState.immutableIndex(), used);
 		result.ifIncompleteElse(
 			(keepInput, state) -> {
 				if (isInput == keepInput) {

@@ -17,6 +17,8 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atomos.RriId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +48,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
@@ -88,6 +89,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String ATOM_ID_DB_NAME = "radix.atom_id_db";
 	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
 	private static final String ATOMS_DB_NAME = "radix.atom_db";
+	private static final String RRI_DB_NAME = "radix.rri_db";
 	private static final String PARTICLE_DB_NAME = "radix.particle_db";
 	private static final String UP_PARTICLE_DB_NAME = "radix.up_particle_db";
 	private static final String PROOF_DB_NAME = "radix.proof_db";
@@ -111,6 +113,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
 
+	private Database rriDatabase;
+
 	private AppendLog atomLog; //Atom data append only log
 
 	@Inject
@@ -130,6 +134,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	public void close() {
 		safeClose(atomDatabase);
+		safeClose(rriDatabase);
 
 		safeClose(atomIdDatabase);
 
@@ -277,6 +282,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void open() {
 		var primaryConfig = buildPrimaryConfig();
+		var rriConfig = buildRriConfig();
 		var pendingConfig = buildPendingConfig();
 		var upParticleConfig = buildUpParticleConfig();
 
@@ -287,6 +293,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var env = dbEnv.getEnvironment();
 			atomDatabase = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
 
+			rriDatabase = env.openDatabase(null, RRI_DB_NAME, rriConfig);
 			particleDatabase = env.openDatabase(null, PARTICLE_DB_NAME, primaryConfig);
 			upParticleDatabase = env.openSecondaryDatabase(null, UP_PARTICLE_DB_NAME, particleDatabase, upParticleConfig);
 
@@ -346,6 +353,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private DatabaseConfig buildPrimaryConfig() {
+		return new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator());
+	}
+
+	private DatabaseConfig buildRriConfig() {
 		return new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
@@ -563,6 +578,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		if (inst.isBootUp()) {
 			var buf = inst.getInstruction().getData();
 			upParticle(txn, buf, inst.getSubstate().getId());
+
+			if (inst.getParticle() instanceof TokenDefinitionParticle) {
+				var p = (TokenDefinitionParticle) inst.getParticle();
+				var rriId = RriId.fromRri(p.getRRI());
+				var buf2 = inst.getInstruction().getData();
+				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+				rriDatabase.putNoOverwrite(txn, entry(rriId.asBytes()), value);
+			}
 		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
 				downVirtualSubstate(txn, inst.getSubstate().getId());
@@ -673,6 +696,18 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
+	public Optional<Particle> loadRriId(Transaction tx, RriId rriId) {
+		var key = entry(rriId.asBytes());
+		var value = entry();
+		var status = rriDatabase.get(unwrap(tx), key, value, DEFAULT);
+		if (status != SUCCESS) {
+			return Optional.empty();
+		}
+
+		return entryToUpParticle(value);
+	}
+
+	@Override
 	public boolean isVirtualDown(Transaction tx, SubstateId substateId) {
 		var key = entry(substateId.asBytes());
 		var value = entry();
@@ -719,24 +754,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		return Optional.of(deserializeOrElseFail(value.getData(), LedgerProof.class));
 	}
-
-
-	@Override
-	public SearchCursor search() {
-		return withTime(() -> {
-			try (var databaseCursor = atomDatabase.openCursor(null, null)) {
-				var pKey = entry();
-				var data = entry();
-
-				if (databaseCursor.getNext(pKey, data, DEFAULT) == SUCCESS) {
-					return new BerkeleySearchCursor(this, pKey.getData(), data.getData());
-				}
-
-				return null;
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
-	}
-
 
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
 		return withTime(() -> {

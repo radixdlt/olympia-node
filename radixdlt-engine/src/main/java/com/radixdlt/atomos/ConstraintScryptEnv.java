@@ -147,7 +147,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
+					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
@@ -221,8 +221,8 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> procedure.inputOutputReducer()
-						.reduce((I) input, (O) output, (U) outputUsed);
+					return (input, output, index, outputUsed) -> procedure.inputOutputReducer()
+						.reduce((I) input, (O) output, index, (U) outputUsed);
 				}
 
 				@Override
