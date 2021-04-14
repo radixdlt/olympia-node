@@ -315,7 +315,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 						return false;
 					}
 
-					result.setData(data.getData(), 1 + data.getOffset(), 1);
+					// Index by substate type
+					result.setData(data.getData(), data.getOffset(), 1);
 					return true;
 				}
 			)
@@ -560,7 +561,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
 		if (inst.isBootUp()) {
-			var buf = ByteBuffer.wrap(inst.getInstruction().getBytes(), 1, inst.getInstruction().getBytes().length - 1);
+			var buf = inst.getInstruction().getData();
 			upParticle(txn, buf, inst.getSubstate().getId());
 		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {

@@ -17,34 +17,48 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.SubstateId;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 /**
  * Unparsed Low level instruction into Radix Engine
  */
 public final class REInstruction {
 	public enum REOp {
-		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, Spin.UP, Spin.DOWN),
-		LDOWN((byte) 4, Spin.UP, Spin.DOWN),
-		READ((byte) 5, Spin.UP, Spin.UP),
-		LREAD((byte) 6, Spin.UP, Spin.UP),
-		MSG((byte) 7, null, null),
-		END((byte) 0, null, null);
+		UP((byte) 1, OptionalInt.empty(), Spin.NEUTRAL, Spin.UP),
+		VDOWN((byte) 2, OptionalInt.empty(), Spin.UP, Spin.DOWN),
+		DOWN((byte) 3, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.DOWN),
+		LDOWN((byte) 4, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.DOWN),
+		READ((byte) 5, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.UP),
+		LREAD((byte) 6, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.UP),
+		MSG((byte) 7, OptionalInt.empty(), null, null),
+		END((byte) 0, OptionalInt.of(0), null, null);
 
+		private final OptionalInt fixedLength;
 		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		REOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, OptionalInt fixedLength, Spin checkSpin, Spin nextSpin) {
 			this.opCode = opCode;
+			this.fixedLength = fixedLength;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
+		}
+
+		public ByteBuffer toData(ByteBuffer buf) {
+			if (fixedLength.isPresent()) {
+				return buf.limit(buf.position() + fixedLength.getAsInt());
+			} else {
+				var lengthByte = buf.get();
+				int length = Byte.toUnsignedInt(lengthByte);
+				return buf.limit(buf.position() + length);
+			}
 		}
 
 		public byte opCode() {
@@ -75,7 +89,8 @@ public final class REInstruction {
 	}
 
 	public ByteBuffer getData() {
-		return ByteBuffer.wrap(fullBytes, 1, fullBytes.length - 1);
+		var b = ByteBuffer.wrap(fullBytes, 1, fullBytes.length - 1);
+		return operation.toData(b);
 	}
 
 	public byte[] getBytes() {

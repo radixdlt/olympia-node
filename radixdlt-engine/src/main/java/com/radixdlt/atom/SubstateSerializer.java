@@ -64,10 +64,6 @@ public final class SubstateSerializer {
 	}
 
 	public static Particle deserialize(ByteBuffer buf) throws DeserializeException {
-		var version = buf.get();
-		if (version != 1) {
-			throw new DeserializeException("Bad version: " + version);
-		}
 		var type = buf.get();
 		var c = classToByte.inverse().get(type);
 		if (c == null) {
@@ -95,7 +91,6 @@ public final class SubstateSerializer {
 
 	public static byte[] serialize(Particle p) {
 		var buf = ByteBuffer.allocate(ConstraintMachine.DATA_MAX_SIZE);
-		buf.put((byte) 1); // version
 		buf.put(classToByte.get(p.getClass())); // substate type
 		if (p instanceof RRIParticle) {
 			serializeData((RRIParticle) p, buf);

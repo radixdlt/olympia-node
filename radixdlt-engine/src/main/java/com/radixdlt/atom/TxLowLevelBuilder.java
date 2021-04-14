@@ -62,6 +62,17 @@ public final class TxLowLevelBuilder {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
+	// TODO: Remove array copies
+	private byte[] varLengthData(byte[] bytes) {
+		if (bytes.length > 255) {
+			throw new IllegalArgumentException();
+		}
+		var data = new byte[1 + bytes.length];
+		System.arraycopy(bytes, 0, data, 1, bytes.length);
+		data[0] = (byte) bytes.length;
+		return data;
+	}
+
 	private void instruction(REInstruction.REOp op, byte[] data) {
 		var instruction = new byte[1 + data.length];
 		instruction[0] = op.opCode();
@@ -72,22 +83,22 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder message(String message) {
 		var bytes = message.getBytes(StandardCharsets.UTF_8);
-		instruction(REInstruction.REOp.MSG, bytes);
+		instruction(REInstruction.REOp.MSG, varLengthData(bytes));
 		return this;
 	}
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var bytes = SubstateSerializer.serialize(particle);
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
-		instruction(REInstruction.REOp.UP, bytes);
+		var bytes = SubstateSerializer.serialize(particle);
+		instruction(REInstruction.REOp.UP, varLengthData(bytes));
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = SubstateSerializer.serialize(particle);
-		instruction(REInstruction.REOp.VDOWN, bytes);
+		instruction(REInstruction.REOp.VDOWN, varLengthData(bytes));
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
