@@ -56,7 +56,6 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryCursor;
@@ -753,25 +752,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		return Optional.of(deserializeOrElseFail(value.getData(), LedgerProof.class));
-	}
-
-	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
-		return withTime(() -> {
-			try (var databaseCursor = atomDatabase.openCursor(null, null)) {
-				var pKey = entry(cursor.getPrimary());
-				var data = entry();
-
-				return Optional.of(databaseCursor.getSearchKeyRange(pKey, data, DEFAULT))
-					.filter(status -> status == SUCCESS)
-					.map(status -> databaseCursor.getNext(pKey, data, LockMode.DEFAULT))
-					.filter(status -> status == SUCCESS)
-					.map(status -> new BerkeleySearchCursor(this, pKey.getData(), data.getData()))
-					.orElse(null);
-
-			} catch (Exception ex) {
-				throw new BerkeleyStoreException("Error while advancing cursor", ex);
-			}
-		}, CounterType.ELAPSED_BDB_LEDGER_GET_NEXT, CounterType.COUNT_BDB_LEDGER_GET_NEXT);
 	}
 
 	private <T> T deserializeOrElseFail(byte[] data, Class<T> c) {
