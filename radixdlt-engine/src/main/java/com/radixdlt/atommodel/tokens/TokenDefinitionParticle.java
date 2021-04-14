@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
@@ -55,8 +56,12 @@ public final class TokenDefinitionParticle implements Particle {
 		return this.supply == null;
 	}
 
-	public RRI getRRI() {
-		return this.rri;
+	public RRI getRri() {
+		return rri;
+	}
+
+	public RriId getRriId() {
+		return RriId.fromRri(rri);
 	}
 
 	public String getName() {
@@ -82,9 +87,7 @@ public final class TokenDefinitionParticle implements Particle {
 	@Override
 	public String toString() {
 		return String.format("%s[(%s:%s:%s), (%s)]", getClass().getSimpleName(),
-			String.valueOf(this.rri), String.valueOf(name),
-			String.valueOf(supply),
-			String.valueOf(description));
+			this.rri, name, supply, description);
 	}
 
 	@Override

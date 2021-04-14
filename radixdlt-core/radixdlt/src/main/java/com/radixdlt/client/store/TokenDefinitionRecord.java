@@ -119,7 +119,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
 		return create(
 			definition.getName(),
-			definition.getRRI(),
+			definition.getRri(),
 			definition.getDescription(),
 			definition.getSupply().map(UInt384::from).orElse(UInt384.ZERO),
 			definition.getIconUrl(),
@@ -131,7 +131,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord from(TokenDefinitionParticle definition, UInt384 supply) {
 		return create(
 			definition.getName(),
-			definition.getRRI(),
+			definition.getRri(),
 			definition.getDescription(),
 			supply,
 			definition.getIconUrl(),

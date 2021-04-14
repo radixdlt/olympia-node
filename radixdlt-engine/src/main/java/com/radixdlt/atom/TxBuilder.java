@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
@@ -452,12 +453,13 @@ public final class TxBuilder {
 		assertHasAddress("Must have address");
 
 		final var rri = RRI.of(address, id);
+		final var rriId = RriId.fromRri(rri);
 		swap(
 			RRIParticle.class,
 			p -> p.getRri().equals(rri),
 			Optional.of(new RRIParticle(rri)),
 			"RRI not available"
-		).with(r -> new UniqueParticle(r.getRri()));
+		).with(r -> new UniqueParticle(rriId));
 
 		particleGroup();
 
@@ -468,6 +470,7 @@ public final class TxBuilder {
 		assertHasAddress("Must have address");
 
 		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
+		final var rriId = RriId.fromRri(tokenRRI);
 
 		down(
 			RRIParticle.class,
@@ -488,7 +491,7 @@ public final class TxBuilder {
 		up(new TokensParticle(
 			address,
 			tokenDefinition.getSupply(),
-			tokenRRI,
+			rriId,
 			false)
 		);
 
@@ -521,12 +524,13 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
+		final var rriId = RriId.fromRri(rri);
 		read(
 			TokenDefinitionParticle.class,
-			p -> p.getRRI().equals(rri),
+			p -> p.getRriId().equals(rriId),
 			"Could not find mutable token rri " + rri
 		);
-		final var factory = TokDefParticleFactory.create(rri, true);
+		final var factory = TokDefParticleFactory.create(rriId, true);
 		up(factory.createTransferrable(to, amount));
 		particleGroup();
 
@@ -534,10 +538,11 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		final var factory = TokDefParticleFactory.create(rri, true);
+		final var rriId = RriId.fromRri(rri);
+		final var factory = TokDefParticleFactory.create(rriId, true);
 		swapFungible(
 			TokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
@@ -550,11 +555,12 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
-		final var factory = TokDefParticleFactory.create(rri, true);
+		final var rriId = RriId.fromRri(rri);
+		final var factory = TokDefParticleFactory.create(rriId, true);
 
 		deallocateFungible(
 			TokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
@@ -568,12 +574,14 @@ public final class TxBuilder {
 
 	public TxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
+
 		// HACK
-		var factory = TokDefParticleFactory.create(rri, true);
+		final var rriId = RriId.fromRri(rri);
+		var factory = TokDefParticleFactory.create(rriId, true);
 
 		swapFungible(
 			TokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
+			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,

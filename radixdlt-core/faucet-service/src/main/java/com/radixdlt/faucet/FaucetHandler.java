@@ -75,15 +75,6 @@ final class FaucetHandler {
 
 		log.info("Faucet token: {}", this.tokenRRI);
 
-		var currentFaucetBalance = new AtomicReference<>(BigDecimal.ZERO);
-
-		// Print out current balance of faucet
-		var balanceDisposable = this.api.observeBalance(this.tokenRRI)
-			.subscribe(
-				balance -> logBalance(currentFaucetBalance, balance),
-				e -> log.error("Error while tracking balance", e)
-			);
-
 		var leakDisposable = requestSource
 			.doOnNext(p -> log.info("Request {} from: {}", p.getSecond(), p.getFirst())) // Print out all messages
 			.subscribe(
@@ -91,7 +82,7 @@ final class FaucetHandler {
 				e -> log.error("Error while processing messages", e)
 			);
 
-		this.disposable = new CompositeDisposable(balanceDisposable, leakDisposable);
+		this.disposable = new CompositeDisposable(leakDisposable);
 	}
 
 	/**

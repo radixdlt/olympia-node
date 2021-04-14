@@ -25,6 +25,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
@@ -74,7 +75,8 @@ public final class UniqueTest {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var rri = RRI.of(address, "test");
 		var rriParticle = new RRIParticle(rri);
-		var uniqueParticle = new UniqueParticle(rri);
+		var rriId = RriId.fromRri(rri);
+		var uniqueParticle = new UniqueParticle(rriId);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(uniqueParticle)

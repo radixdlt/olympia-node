@@ -42,8 +42,6 @@ import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
@@ -117,8 +115,7 @@ public class RadixApplicationAPI {
 	 * @return an api builder instance
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
-		return new RadixApplicationAPIBuilder()
-			.addReducer(new TokenBalanceReducer());
+		return new RadixApplicationAPIBuilder();
 	}
 
 	private final RadixIdentity identity;
@@ -406,49 +403,6 @@ public class RadixApplicationAPI {
 	public Observable<TokenTransfer> observeTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return observeActions(TokenTransfer.class, address);
-	}
-
-	/**
-	 * Returns a stream of the latest balances at a given address.
-	 * pull() must be called to continually retrieve the latest balances.
-	 *
-	 * @param address the address to observe balances of
-	 * @return a cold observable of the latest balances at an address
-	 */
-	public Observable<Map<RRI, BigDecimal>> observeBalances(RadixAddress address) {
-		Objects.requireNonNull(address);
-		return observeState(TokenBalanceState.class, address)
-			.map(TokenBalanceState::getBalance);
-	}
-
-	/**
-	 * Returns a stream of the latest balances at the current address
-	 * pull() must be called to continually retrieve the latest balances.
-	 *
-	 * @param tokenRRI The symbol of the token
-	 * @return a cold observable of the latest balances at the current address
-	 * @deprecated The Java client access library has been deprecated
-	 */
-	@Deprecated(since = "beta.27")
-	public Observable<BigDecimal> observeBalance(RRI tokenRRI) {
-		return observeBalance(getAddress(), tokenRRI);
-	}
-
-	/**
-	 * Returns a stream of the latest balance of a given token at a given address
-	 * pull() must be called to continually retrieve the latest balance.
-	 *
-	 * @param address The address to observe balances of
-	 * @param token The symbol of the token
-	 * @return a cold observable of the latest balance of a token at a given address
-	 * @deprecated The Java client access library has been deprecated
-	 */
-	@Deprecated(since = "beta.27")
-	public Observable<BigDecimal> observeBalance(RadixAddress address, RRI token) {
-		Objects.requireNonNull(token);
-
-		return observeBalances(address)
-			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 
 	/**

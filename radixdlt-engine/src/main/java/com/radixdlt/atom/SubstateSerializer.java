@@ -27,6 +27,7 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
@@ -127,11 +128,11 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
-		serializeRri(buf, rriParticle.getRri());
+		serializeString(buf, rriParticle.getRri().toString());
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
-		var rri = deserializeRri(buf);
+		var rri = RRI.from(deserializeString(buf));
 		return new RRIParticle(rri);
 	}
 
@@ -150,19 +151,19 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		serializeRri(buf, tokensParticle.getTokDefRef());
+		serializeRriId(buf, tokensParticle.getRriId());
 		serializeAddress(buf, tokensParticle.getAddress());
 		buf.put(tokensParticle.getAmount().toByteArray());
 		buf.put((byte) (tokensParticle.isBurnable() ? 1 : 0)); // isBurnable
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
-		var rri = deserializeRri(buf);
+		var rriId = deserializeRriId(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
 		var isBurnable = buf.get() != 0; // isBurnable
 
-		return new TokensParticle(address, amount, rri, isBurnable);
+		return new TokensParticle(address, amount, rriId, isBurnable);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
@@ -194,16 +195,16 @@ public final class SubstateSerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
-		serializeRri(buf, uniqueParticle.getRri());
+		serializeRriId(buf, uniqueParticle.getRriId());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
-		var rri = deserializeRri(buf);
+		var rri = deserializeRriId(buf);
 		return new UniqueParticle(rri);
 	}
 
 	private static void serializeData(TokenDefinitionParticle p, ByteBuffer buf) {
-		serializeRri(buf, p.getRRI());
+		serializeString(buf, p.getRri().toString());
 		p.getSupply().ifPresentOrElse(
 			i -> {
 				buf.put((byte) 0);
@@ -220,7 +221,7 @@ public final class SubstateSerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
-		var rri = deserializeRri(buf);
+		var rri = RRI.from(deserializeString(buf));
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);
@@ -247,22 +248,12 @@ public final class SubstateSerializer {
 		return RadixAddress.from(addressDest);
 	}
 
-	private static void serializeRri(ByteBuffer buf, RRI rri) {
-		var rriBytes = rri.toString().getBytes(RadixConstants.STANDARD_CHARSET);
-		if (rriBytes.length > 255) {
-			throw new IllegalArgumentException("RRI cannot be greater than 255 chars");
-		}
-		var length = (byte) rriBytes.length;
-		buf.put(length); // length
-		buf.put(rriBytes); // rri
+	private static void serializeRriId(ByteBuffer buf, RriId rriId) {
+		buf.put(rriId.asBytes()); // rri
 	}
 
-	private static RRI deserializeRri(ByteBuffer buf) {
-		var length = Byte.toUnsignedInt(buf.get()); // length
-		byte[] dst = new byte[length];
-		buf.get(dst, 0, length);
-		var rriString = new String(dst, RadixConstants.STANDARD_CHARSET);
-		return RRI.from(rriString);
+	private static RriId deserializeRriId(ByteBuffer buf) {
+		return RriId.readFromBuf(buf);
 	}
 
 	private static void serializeString(ByteBuffer buf, String s) {

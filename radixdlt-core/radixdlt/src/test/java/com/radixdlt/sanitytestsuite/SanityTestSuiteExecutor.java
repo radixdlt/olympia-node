@@ -20,13 +20,11 @@ package com.radixdlt.sanitytestsuite;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.deserialization.DeserializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.radixhashing.RadixHashingTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.serialization.SerializationTestScenarioRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
@@ -49,9 +47,7 @@ public final class SanityTestSuiteExecutor {
 		new RadixHashingTestScenarioRunner(),
 		new KeyGenTestScenarioRunner(),
 		new KeySignTestScenarioRunner(),
-		new KeyVerifyTestScenarioRunner(),
-		new DeserializationTestScenarioRunner(),
-		new SerializationTestScenarioRunner()
+		new KeyVerifyTestScenarioRunner()
 	);
 
 	@Test

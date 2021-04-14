@@ -17,7 +17,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
@@ -28,7 +28,7 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensParticle implements Particle {
-	private final RRI tokenDefinitionReference;
+	private final RriId rriId;
 	private final RadixAddress address;
 	private final UInt256 amount;
 	private final boolean isBurnable;
@@ -36,11 +36,11 @@ public final class TokensParticle implements Particle {
 	public TokensParticle(
 		RadixAddress address,
 		UInt256 amount,
-		RRI tokenDefinitionReference,
+		RriId rriId,
 		boolean isBurnable
 	) {
 		this.address = Objects.requireNonNull(address);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
+		this.rriId = Objects.requireNonNull(rriId);
 		this.amount = Objects.requireNonNull(amount);
 		this.isBurnable = isBurnable;
 	}
@@ -53,15 +53,15 @@ public final class TokensParticle implements Particle {
 		return this.address;
 	}
 
-	public RRI getTokDefRef() {
-		return this.tokenDefinitionReference;
+	public RriId getRriId() {
+		return this.rriId;
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s]",
 			getClass().getSimpleName(),
-			tokenDefinitionReference,
+			rriId,
 			amount,
 			address,
 			isBurnable
@@ -82,13 +82,13 @@ public final class TokensParticle implements Particle {
 		}
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(address, that.address)
-			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+			&& Objects.equals(rriId, that.rriId)
 			&& Objects.equals(amount, that.amount)
 			&& isBurnable == that.isBurnable;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenDefinitionReference, amount, isBurnable);
+		return Objects.hash(address, rriId, amount, isBurnable);
 	}
 }

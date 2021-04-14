@@ -23,6 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
@@ -48,13 +49,14 @@ public final class BurnToken implements TxAction {
 		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
 
 		// HACK
+		var rriId = RriId.fromRri(rri);
 		var factory = TokDefParticleFactory.create(
-			rri,
+			rriId,
 			true
 		);
 		txBuilder.deallocateFungible(
 			TokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
+			p -> p.getRriId().equals(rriId) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(user, amt),
 			amount,

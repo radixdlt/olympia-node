@@ -69,7 +69,7 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRRI())
+		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRri())
 			.map(supply -> TokenDefinitionRecord.from(nativeTokenDefinition, supply));
 	}
 
@@ -125,7 +125,7 @@ public class HighLevelApiService {
 			})
 			.filter(TokenDefinitionParticle.class::isInstance)
 			.map(TokenDefinitionParticle.class::cast)
-			.filter(particle -> particle.getRRI().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
+			.filter(particle -> particle.getRri().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
 	}

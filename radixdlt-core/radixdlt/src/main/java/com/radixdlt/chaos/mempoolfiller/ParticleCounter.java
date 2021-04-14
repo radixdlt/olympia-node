@@ -3,6 +3,7 @@ package com.radixdlt.chaos.mempoolfiller;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.fees.NativeToken;
@@ -50,7 +51,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> outputReducer() {
 		return (count, p) -> {
 			if (p.getAddress().equals(address)
-				&& p.getTokDefRef().equals(tokenRRI)
+				&& p.getRriId().equals(RriId.fromRri(tokenRRI))
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count + 1;
 			}
@@ -62,7 +63,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> inputReducer() {
 		return (count, p) -> {
 			if (p.getAddress().equals(address)
-				&& p.getTokDefRef().equals(tokenRRI)
+				&& p.getRriId().equals(RriId.fromRri(tokenRRI))
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count - 1;
 			}

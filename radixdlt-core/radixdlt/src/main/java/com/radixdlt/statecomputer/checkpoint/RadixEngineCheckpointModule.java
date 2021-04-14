@@ -68,7 +68,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 			})
 			.filter(p -> p instanceof TokenDefinitionParticle)
 			.map(p -> (TokenDefinitionParticle) p)
-			.map(TokenDefinitionParticle::getRRI)
+			.map(TokenDefinitionParticle::getRri)
 			.filter(rri -> rri.getName().equals(tokenName))
 			.collect(ImmutableList.toImmutableList());
 		if (rris.isEmpty()) {

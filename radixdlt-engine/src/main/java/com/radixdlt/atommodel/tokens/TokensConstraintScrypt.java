@@ -58,7 +58,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokenDefinitionParticle::getRRI)
+				.rriMapper(TokenDefinitionParticle::getRriId)
 				.build()
 		);
 
@@ -67,7 +67,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			ParticleDefinition.<TokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokensParticle::getTokDefRef)
+				.rriMapper(TokensParticle::getRriId)
 				.build()
 		);
 
@@ -106,7 +106,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 							return Result.error("Must be able to burn mutable token.");
 						}
 
-						if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
+						if (!inputParticle.getRriId().equals(outputParticle.getRriId())) {
 							return Result.error("Minted token must be equivalent to token def.");
 						}
 
@@ -118,13 +118,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						inputOutputReducer() {
 						return (inputParticle, outputParticle, index, outputUsed)
 							-> ReducerResult.complete(new MintToken(
-								inputParticle.getRRI(), outputParticle.getAddress(), outputParticle.getAmount()
+								inputParticle.getRri(), outputParticle.getAddress(), outputParticle.getAmount()
 						));
 					}
 
 					@Override
 					public SignatureValidator<TokenDefinitionParticle> inputSignatureRequired() {
-						return i -> Optional.of(i.getRRI().getAddress());
+						return i -> Optional.of(i.getRri().getAddress());
 					}
 				}
 			);
@@ -142,7 +142,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				"Permissions not equal."
 			),
 			i -> Optional.of(i.getAddress()),
-			(i, o) -> new TransferToken(i.getTokDefRef(), o.getAddress(), o.getAmount()) // FIXME: This isn't 100% correct
+			(i, o, index) -> {
+				var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct
+			}
 		));
 
 
@@ -174,9 +177,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 					@Override
 					public InputOutputReducer<TokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
-						return (inputParticle, outputParticle, index, state) -> {
-							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
-							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
+						return (i, o, index, state) -> {
+							var amt = i.getAmount().subtract(state.getUsedAmount());
+							var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+							return ReducerResult.complete(new BurnToken(p.getRri(), amt));
 						};
 					}
 

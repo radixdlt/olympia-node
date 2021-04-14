@@ -75,7 +75,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getAddress().equals(self) && p.getTokDefRef().equals(tokenRRI)
+			p -> p.getAddress().equals(self) && p.getRriId().equals(tokenRRI)
 		);
 	}
 

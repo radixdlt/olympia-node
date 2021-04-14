@@ -25,6 +25,7 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.identifiers.RRI;
 
@@ -46,7 +47,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> stakingToken)
+				.rriMapper(p -> RriId.fromRri(stakingToken))
 				.build()
 		);
 
@@ -63,7 +64,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
-			(i, o) -> new StakeNativeToken(i.getTokDefRef(), o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index) -> new StakeNativeToken(stakingToken, o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Unstaking
@@ -74,7 +75,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
-			(i, o) -> new UnstakeNativeToken(o.getTokDefRef(), i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index) -> new UnstakeNativeToken(stakingToken, i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Stake movement
@@ -89,7 +90,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				"Can't send staked tokens to another address."
 			),
 			i -> Optional.of(i.getAddress()),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		));
 	}
 

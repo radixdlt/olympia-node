@@ -30,7 +30,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.HashMap;
@@ -108,14 +107,9 @@ final class ConstraintScryptEnv implements SysCalls {
 			.virtualizeUp(particleDefinition.getVirtualizeSpin())
 			.staticValidation(p -> {
 				if (particleDefinition.getRriMapper() != null) {
-					final RRI rri = particleDefinition.getRriMapper().apply(p);
-					if (rri == null) {
+					final var rriId = particleDefinition.getRriMapper().apply(p);
+					if (rriId == null) {
 						return Result.error("rri cannot be null");
-					}
-
-					final Result rriAddressResult = addressChecker.apply(rri.getAddress());
-					if (rriAddressResult.isError()) {
-						return rriAddressResult;
 					}
 				}
 
@@ -209,9 +203,9 @@ final class ConstraintScryptEnv implements SysCalls {
 				public Result precondition(Particle inputParticle, Particle outputParticle, ReducerState outputUsed) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
-						final RRI outputRRI = outputDefinition.getRriMapper().apply(outputParticle);
-						if (!inputRRI.equals(outputRRI)) {
+						final var inputRriId = inputDefinition.getRriMapper().apply(inputParticle);
+						final var outputRriId = outputDefinition.getRriMapper().apply(outputParticle);
+						if (!inputRriId.equals(outputRriId)) {
 							return Result.error("Input/Output RRIs not equal");
 						}
 					}

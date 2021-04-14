@@ -20,8 +20,6 @@ package com.radixdlt.client.store;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.ActionType;
 
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -51,35 +49,6 @@ public class ActionEntry {
 	public static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
 		requireNonNull(type);
 		return new ActionEntry(type, from, to, amount, rri);
-	}
-
-	public static ActionEntry fromStake(StakedTokensParticle stake, RRI nativeToken) {
-		return create(
-			ActionType.STAKE,
-			stake.getAddress(),
-			stake.getDelegateAddress(),
-			stake.getAmount(), nativeToken
-		);
-	}
-
-	public static ActionEntry fromUnstake(StakedTokensParticle unstake, RRI nativeToken) {
-		return create(
-			ActionType.UNSTAKE,
-			unstake.getAddress(),
-			unstake.getDelegateAddress(),
-			unstake.getAmount(),
-			nativeToken
-		);
-	}
-
-	public static ActionEntry transfer(TokensParticle transfer, RadixAddress owner) {
-		return create(
-			ActionType.TRANSFER,
-			owner,
-			transfer.getAddress(),
-			transfer.getAmount(),
-			transfer.getTokDefRef()
-		);
 	}
 
 	public static ActionEntry unknown() {
