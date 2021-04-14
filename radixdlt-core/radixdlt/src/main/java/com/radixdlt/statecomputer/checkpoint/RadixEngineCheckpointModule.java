@@ -27,7 +27,6 @@ import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
@@ -58,7 +57,7 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 					throw new IllegalStateException();
 				}
 			})
-			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+			.flatMap(a -> a.getInstructions().stream().map(REInstruction::create))
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {

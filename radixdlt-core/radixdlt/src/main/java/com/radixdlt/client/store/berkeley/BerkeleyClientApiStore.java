@@ -25,6 +25,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
@@ -181,7 +182,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				return store.get(txnId)
 					.flatMap(txn ->
 						restore(serialization, txn.getPayload(), Atom.class)
-							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
+							.map(a -> a.getInstructions().stream()
+								.map(REInstruction::create)
+								.collect(Collectors.toList()))
 							.map(i -> i.get(substateId.getIndex().orElseThrow()))
 							.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
 							.toOptional()

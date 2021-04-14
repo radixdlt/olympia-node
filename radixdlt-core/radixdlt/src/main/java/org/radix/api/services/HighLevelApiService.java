@@ -110,7 +110,7 @@ public class HighLevelApiService {
 					throw new IllegalStateException();
 				}
 			})
-			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+			.flatMap(a -> a.getInstructions().stream().map(REInstruction::create))
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {

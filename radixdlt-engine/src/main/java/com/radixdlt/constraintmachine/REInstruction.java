@@ -63,12 +63,10 @@ public final class REInstruction {
 	}
 
 	private final REOp operation;
-	private final byte[] data;
 	private final byte[] fullBytes;
 
-	private REInstruction(REOp operation, byte[] data, byte[] fullBytes) {
+	private REInstruction(REOp operation, byte[] fullBytes) {
 		this.operation = operation;
-		this.data = data;
 		this.fullBytes = fullBytes;
 	}
 
@@ -77,7 +75,7 @@ public final class REInstruction {
 	}
 
 	public ByteBuffer getData() {
-		return ByteBuffer.wrap(data);
+		return ByteBuffer.wrap(fullBytes, 1, fullBytes.length - 1);
 	}
 
 	public byte[] getBytes() {
@@ -101,23 +99,21 @@ public final class REInstruction {
 	}
 
 	public static REInstruction create(byte[] instruction) {
-		var data = new byte[instruction.length - 1];
-		System.arraycopy(instruction, 1, data, 0, data.length);
 		var microOp = REOp.fromByte(instruction[0]);
-		return new REInstruction(microOp, data, instruction);
+		return new REInstruction(microOp, instruction);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s %s",
 			operation,
-			Hex.toHexString(data)
+			Hex.toHexString(fullBytes)
 		);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, Arrays.hashCode(data), Arrays.hashCode(fullBytes));
+		return Objects.hash(operation, Arrays.hashCode(fullBytes));
 	}
 
 	@Override
@@ -128,7 +124,6 @@ public final class REInstruction {
 
 		var other = (REInstruction) o;
 		return Objects.equals(this.operation, other.operation)
-			&& Arrays.equals(this.fullBytes, other.fullBytes)
-			&& Arrays.equals(this.data, other.data);
+			&& Arrays.equals(this.fullBytes, other.fullBytes);
 	}
 }

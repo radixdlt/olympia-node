@@ -25,7 +25,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -37,6 +36,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
@@ -46,7 +46,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	private List<REParsedInstruction> toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
 		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
+		var rawInstructions = atom.getInstructions().stream().map(REInstruction::create).collect(Collectors.toList());
 		var instructions = new ArrayList<REParsedInstruction>();
 		for (int i = 0; i < rawInstructions.size(); i++) {
 			var instruction = rawInstructions.get(i);

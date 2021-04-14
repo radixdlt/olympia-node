@@ -27,6 +27,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.AtomIndex;
@@ -37,6 +38,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.radix.api.http.Controller;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static org.radix.api.http.RestUtils.respond;
@@ -71,7 +73,8 @@ public final class ConstructionController implements Controller {
 				return atomIndex.get(txnId)
 					.flatMap(txn ->
 						restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
-							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
+							.map(a -> a.getInstructions().stream().map(REInstruction::create)
+								.collect(Collectors.toList()))
 							.map(i -> i.get(substateId.getIndex().orElseThrow()))
 							.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
 							.toOptional()

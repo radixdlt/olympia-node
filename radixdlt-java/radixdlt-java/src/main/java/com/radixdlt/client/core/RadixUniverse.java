@@ -24,7 +24,6 @@ package com.radixdlt.client.core;
 
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
@@ -175,7 +174,8 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream().flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+		this.nativeToken = config.getGenesis().stream().flatMap(a -> a.getInstructions().stream())
+			.map(REInstruction::create)
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {

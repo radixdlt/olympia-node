@@ -42,12 +42,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -337,13 +335,6 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
-	public static List<REInstruction> toInstructions(List<byte[]> bytesList) {
-		Objects.requireNonNull(bytesList);
-		return bytesList.stream()
-			.map(REInstruction::create)
-			.collect(Collectors.toList());
-	}
-
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
@@ -356,19 +347,17 @@ public final class ConstraintMachine {
 		List<REParsedAction> parsedActions
 	) {
 		var parsedInstructions = new ArrayList<REParsedInstruction>();
-		var rawInstructions = toInstructions(atom.getInstructions());
 		long particleIndex = 0;
 		int instIndex = 0;
 		int numMessages = 0;
 		var expectEnd = false;
 
-		for (var inst : rawInstructions) {
-			/*
-			if (inst.getData().length > DATA_MAX_SIZE)	 {
-				var msg = "Length is " + inst.getData().length;
+		for (var bytes : atom.getInstructions()) {
+			if (bytes.length > DATA_MAX_SIZE + 1)	 {
+				var msg = "Length of data is " + (bytes.length - 1);
 				return Optional.of(new CMError(instIndex, CMErrorCode.DATA_TOO_LARGE, validationState, msg));
 			}
-			 */
+			var inst = REInstruction.create(bytes);
 
 			if (expectEnd && inst.getMicroOp() != REInstruction.REOp.END) {
 				return Optional.of(new CMError(instIndex, CMErrorCode.MISSING_PARTICLE_GROUP, validationState));
