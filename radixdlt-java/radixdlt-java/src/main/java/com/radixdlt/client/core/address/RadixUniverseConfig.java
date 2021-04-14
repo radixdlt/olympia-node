@@ -22,10 +22,12 @@
 
 package com.radixdlt.client.core.address;
 
+import org.bouncycastle.util.encoders.Base64;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -39,12 +41,12 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.RadixConstants;
-import org.bouncycastle.util.encoders.Base64;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @SerializerId2("radix.universe")
 public class RadixUniverseConfig {
@@ -80,7 +82,7 @@ public class RadixUniverseConfig {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private List<Atom> genesis;
+	private List<byte[]> genesis;
 
 	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
 		byte[] bytes = Base64.decode(dsonBase64);
@@ -108,7 +110,7 @@ public class RadixUniverseConfig {
 	}
 
 	RadixUniverseConfig(
-		List<Atom> genesis,
+		List<byte[]> genesis,
 		long port,
 		String name,
 		String description,
@@ -148,8 +150,8 @@ public class RadixUniverseConfig {
 		return this.timestamp;
 	}
 
-	public List<Atom> getGenesis() {
-		return genesis;
+	public List<Txn> getGenesis() {
+		return genesis.stream().map(Txn::create).collect(Collectors.toList());
 	}
 
 	public HashCode getHash() {

@@ -1048,7 +1048,7 @@ public class RadixApplicationAPI {
 	public static class RadixApplicationAPIBuilder {
 		private RadixIdentity identity;
 		private RadixUniverse universe;
-		private Function<RadixUniverse, FeeProcessor> feeProcessorBuilder;
+		private Function<RadixUniverse, FeeProcessor> feeProcessorBuilder = u -> (_1, _2, _3, _4) -> { };
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private ImmutableMap.Builder<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers
 			= new ImmutableMap.Builder<>();

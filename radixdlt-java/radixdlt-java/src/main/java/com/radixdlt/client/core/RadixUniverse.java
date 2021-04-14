@@ -96,6 +96,7 @@ public final class RadixUniverse {
 	 * @param config universe config
 	 * @param discoveryEpics epics which are responsible for peer discovery
 	 * @param initialNetwork nodes in initial network
+	 *
 	 * @return the created universe
 	 */
 	public static RadixUniverse create(
@@ -113,6 +114,7 @@ public final class RadixUniverse {
 	 * @param discoveryEpics epics which are responsible for peer discovery
 	 * @param initialNetwork nodes in initial network
 	 * @param webSockets web sockets
+	 *
 	 * @return the created universe
 	 */
 	public static RadixUniverse create(
@@ -122,12 +124,6 @@ public final class RadixUniverse {
 		WebSockets webSockets
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		var atoms = config.getGenesis();
-		for (var atom : atoms) {
-			Addresses.ofAtom(atom)
-				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())));
-		}
-
 		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);
 
 		RadixNetworkControllerBuilder builder = new RadixNetworkControllerBuilder()
@@ -174,6 +170,15 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
+		this.nativeToken = config.getGenesis().stream()
+			.map(txn -> {
+				try {
+					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
 		this.nativeToken = config.getGenesis().stream().flatMap(a -> a.getInstructions().stream())
 			.map(REInstruction::create)
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
@@ -226,6 +231,7 @@ public final class RadixUniverse {
 	 * Within a universe, a public key has a one to one bijective relationship to an address
 	 *
 	 * @param publicKey the key to get an address from
+	 *
 	 * @return the corresponding address to the key for this universe
 	 */
 	public RadixAddress getAddressFrom(ECPublicKey publicKey) {
@@ -238,6 +244,7 @@ public final class RadixUniverse {
 
 	/**
 	 * Retrieves the fee table for this universe.
+	 *
 	 * @return The fee table for the universe.
 	 */
 	public FeeTable feeTable() {
