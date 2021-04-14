@@ -17,20 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.Result;
+import com.google.common.reflect.TypeToken;
 
-/**
- * Application level "Bytecode" to be run per particle in the Constraint machine
- */
-public interface TransitionProcedure<I extends Particle, O extends Particle, U extends ReducerState> {
-	// TODO: move permission level to the "OS" level of paths rather than transitions
-	default PermissionLevel requiredPermissionLevel() {
-		return PermissionLevel.USER;
-	}
-
-	Result precondition(I inputParticle, O outputParticle, U outputUsed);
-
-	InputOutputReducer<I, O, U> inputOutputReducer();
-
-	SignatureValidator<I> inputSignatureRequired();
+public interface ReducerState {
+	TypeToken<? extends ReducerState> getTypeToken();
 }

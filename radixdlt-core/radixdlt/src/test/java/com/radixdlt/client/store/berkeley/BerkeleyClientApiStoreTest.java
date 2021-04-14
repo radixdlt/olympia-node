@@ -16,12 +16,13 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.radix.api.jsonrpc.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -34,7 +35,6 @@ import com.radixdlt.atom.FixedTokenDefinition;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -43,7 +43,7 @@ import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -73,10 +73,9 @@ import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.radix.api.jsonrpc.ActionType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -97,6 +96,9 @@ public class BerkeleyClientApiStoreTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
+
+	@Inject
+	private ConstraintMachine constraintMachine;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
@@ -131,7 +133,6 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.EIGHT)
 			.burn(TOKEN, UInt256.ONE)
-			.burnForFee(TOKEN, UInt256.ONE)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
@@ -140,7 +141,7 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.TWO, list.get(0).getAmount());
+				assertEquals(UInt384.THREE, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
@@ -148,7 +149,7 @@ public class BerkeleyClientApiStoreTest {
 		clientApiStore.getTokenBalances(OWNER)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
-				assertEquals(UInt256.FOUR, list.get(0).getAmount());
+				assertEquals(UInt384.FOUR, list.get(0).getAmount());
 				assertEquals(TOKEN, list.get(0).getRri());
 			})
 			.onFailureDo(() -> fail("Failure is not expected here"));
@@ -164,7 +165,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onSuccess(amount -> assertEquals(UInt256.ZERO, amount))
+			.onSuccess(amount -> assertEquals(UInt384.ZERO, amount))
 			.onFailure(this::failWithMessage);
 	}
 
@@ -174,14 +175,13 @@ public class BerkeleyClientApiStoreTest {
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
-			.burn(TOKEN, UInt256.ONE)
-			.burnForFee(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.TWO)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
-			.onSuccess(amount -> assertEquals(UInt256.EIGHT, amount))
+			.onSuccess(amount -> assertEquals(UInt384.EIGHT, amount))
 			.onFailure(this::failWithMessage);
 	}
 
@@ -235,7 +235,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
-			.burnForFee(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -249,9 +249,9 @@ public class BerkeleyClientApiStoreTest {
 				var entry = list.get(0);
 
 				assertEquals(UInt256.ONE, entry.getFee());
-				assertEquals(1, entry.getActions().size());
+				assertEquals(4, entry.getActions().size());
 
-				var action = entry.getActions().get(0);
+				var action = entry.getActions().get(2);
 
 				assertEquals(ActionType.TRANSFER, action.getType());
 				assertEquals(UInt256.FOUR, action.getAmount());
@@ -275,7 +275,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
-			.burnForFee(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var txMap = new HashMap<AID, Txn>();
@@ -296,7 +296,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.mint(TOKEN, TOKEN_ADDRESS, UInt256.TEN)
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
-			.burnForFee(TOKEN, UInt256.ONE)
+			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
@@ -314,7 +314,7 @@ public class BerkeleyClientApiStoreTest {
 	) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
-			.map(reTxn -> parsedToFull(keyPair, reTxn))
+			.map(REParsedTxn::getTxn)
 			.collect(Collectors.toList());
 
 		transactions.forEach(txn -> txMap.put(txn.getId(), txn));
@@ -336,6 +336,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
+			constraintMachine,
 			ledgerStore,
 			serialization,
 			mock(SystemCounters.class),
@@ -344,25 +345,6 @@ public class BerkeleyClientApiStoreTest {
 			TOKEN,
 			0
 		);
-	}
-
-	private Txn parsedToFull(ECKeyPair keyPair, RETxn reTxn) {
-		var builder = TxLowLevelBuilder.newBuilder();
-
-		reTxn.instructions().forEach(i -> {
-			switch (i.getSpin()) {
-				case NEUTRAL:
-					break;
-				case UP:
-					builder.up(i.getParticle());
-					break;
-				case DOWN:
-					builder.virtualDown(i.getParticle());
-					break;
-			}
-		});
-
-		return builder.signAndBuild(keyPair::sign);
 	}
 
 	private void failWithMessage(com.radixdlt.utils.functional.Failure failure) {

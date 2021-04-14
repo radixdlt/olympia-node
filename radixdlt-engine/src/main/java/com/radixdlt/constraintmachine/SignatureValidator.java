@@ -17,8 +17,14 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.Optional;
 
-public interface UsedCompute<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> {
-	Optional<UsedData> compute(I inputParticle, N inputUsed, O outputParticle, U outputUsed);
+/**
+ * Validates whether a specific transition procedure is permissible
+ * @param <P> particle class
+ */
+public interface SignatureValidator<P extends Particle> {
+	Optional<RadixAddress> requiredSignature(P particle);
 }

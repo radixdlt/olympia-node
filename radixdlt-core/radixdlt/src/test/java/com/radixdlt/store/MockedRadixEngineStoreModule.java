@@ -26,11 +26,9 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -47,19 +45,16 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 	}
 
-	private RETxn toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
+	private List<REParsedInstruction> toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
 		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
 		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
-
-		var instructions = new ArrayList<ParsedInstruction>();
+		var instructions = new ArrayList<REParsedInstruction>();
 		for (int i = 0; i < rawInstructions.size(); i++) {
 			var instruction = rawInstructions.get(i);
 
 			if (!instruction.isPush()) {
 				continue;
 			}
-
-			Spin nextSpin = instruction.getNextSpin();
 
 			final Particle particle;
 			final SubstateId substateId;
@@ -86,11 +81,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 				throw new IllegalStateException();
 			}
 
-			var parsed = ParsedInstruction.of(instruction, Substate.create(particle, substateId), nextSpin);
+			var parsed = REParsedInstruction.of(instruction, Substate.create(particle, substateId));
 			instructions.add(parsed);
 		}
 
-		return new RETxn(txn, instructions);
+		return instructions;
 	}
 
 	@Provides
@@ -102,10 +97,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		for (var genesisTxn : genesisTxns) {
 			if (!inMemoryEngineStore.containsTxn(genesisTxn.getId())) {
 				try {
-					var txn = inMemoryEngineStore.createTransaction();
-					var instruction = toParsed(genesisTxn, inMemoryEngineStore);
-					inMemoryEngineStore.storeAtom(txn, instruction);
-					txn.commit();
+					var dbTxn = inMemoryEngineStore.createTransaction();
+					var instructions = toParsed(genesisTxn, inMemoryEngineStore);
+					inMemoryEngineStore.storeAtom(dbTxn, genesisTxn, instructions);
+					dbTxn.commit();
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}

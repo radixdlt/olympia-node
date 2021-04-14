@@ -45,9 +45,9 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
-	@JsonProperty("m")
+	@JsonProperty("b")
 	@DsonOutput(Output.ALL)
-	private boolean isMutable;
+	private boolean isBurnable;
 
 	private TransferrableTokensParticle() {
 		super();
@@ -57,16 +57,16 @@ public final class TransferrableTokensParticle extends Particle {
 		RadixAddress address,
 		UInt256 amount,
 		RRI tokenDefinitionReference,
-		boolean isMutable
+		boolean isBurnable
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
-		this.isMutable = isMutable;
+		this.isBurnable = isBurnable;
 	}
 
-	public boolean isMutable() {
-		return isMutable;
+	public boolean isBurnable() {
+		return isBurnable;
 	}
 
 	public RadixAddress getAddress() {
@@ -84,7 +84,7 @@ public final class TransferrableTokensParticle extends Particle {
 			tokenDefinitionReference,
 			amount,
 			address,
-			isMutable
+			isBurnable
 		);
 	}
 
@@ -104,11 +104,11 @@ public final class TransferrableTokensParticle extends Particle {
 		return Objects.equals(address, that.address)
 			&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 			&& Objects.equals(amount, that.amount)
-			&& isMutable == that.isMutable;
+			&& isBurnable == that.isBurnable;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, tokenDefinitionReference, amount, isMutable);
+		return Objects.hash(address, tokenDefinitionReference, amount, isBurnable);
 	}
 }

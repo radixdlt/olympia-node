@@ -104,9 +104,9 @@ public class MempoolTest {
 			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address);
 			atomBuilder
 				.virtualDown(rriParticle)
-				.up(uniqueParticle);
+				.up(uniqueParticle)
+				.particleGroup();
 		}
-		atomBuilder.particleGroup();
 		return atomBuilder.signAndBuild(keyPair::sign);
 	}
 

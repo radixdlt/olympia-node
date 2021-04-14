@@ -70,7 +70,7 @@ public class NodeApplication {
 			this.inflightRequests.put(txn.getId(), request);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		} catch (TxBuilderException e) {
-			log.error("Faucet failed to fulfil request {}", request);
+			log.error("Failed to fulfil request {} reason: {}", request, e.getMessage());
 			request.onFailure(null, e.getMessage());
 		}
 	}

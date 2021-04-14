@@ -29,8 +29,8 @@ import com.radixdlt.engine.PostParsedChecker;
 public class EmptyTransactionCheckModule extends AbstractModule {
 	@ProvidesIntoSet
 	private PostParsedChecker emptyTxChecker() {
-		return (atom, permissionLevel, parsedTransaction) ->
-			parsedTransaction.instructions().isEmpty()
+		return (permissionLevel, reTxn) ->
+			reTxn.getActions().isEmpty()
 				? Result.error("atom has no instructions")
 				: Result.success();
 	}

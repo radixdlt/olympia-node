@@ -24,37 +24,37 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class TransferNativeToken implements TxAction {
+public final class SplitToken implements TxAction {
 	private final RRI rri;
-	private final RadixAddress to;
-	private final UInt256 amount;
+	private final UInt256 minSize;
 
-	public TransferNativeToken(RRI rri, RadixAddress to, UInt256 amount) {
+	public SplitToken(RRI rri, UInt256 minSize) {
 		this.rri = rri;
-		this.to = to;
-		this.amount = amount;
+		this.minSize = minSize;
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
+		var address = txBuilder.getAddressOrFail("Must have address");
 
 		// HACK
-		var factory = TokDefParticleFactory.create(
-			rri,
-			true
+		var factory = TokDefParticleFactory.create(rri, true);
+
+		var substate = txBuilder.findSubstate(
+			TransferrableTokensParticle.class,
+			p -> p.getTokDefRef().equals(rri)
+				&& p.getAddress().equals(address)
+				&& p.getAmount().compareTo(minSize) > 0,
+			"Could not find large particle greater than " + minSize
 		);
 
-		txBuilder.swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(user, amt),
-			amount,
-			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount));
+		txBuilder.down(substate.getId());
+		var particle = (TransferrableTokensParticle) substate.getParticle();
+		var amt1 = particle.getAmount().divide(UInt256.TWO);
+		var amt2 = particle.getAmount().subtract(amt1);
+		txBuilder.up(factory.createTransferrable(address, amt1));
+		txBuilder.up(factory.createTransferrable(address, amt2));
 	}
 }

@@ -24,7 +24,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -193,15 +192,6 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_unallocated_token_with_null_amount__result_has_error() {
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(unallocated.getAmount()).thenReturn(null);
-		assertThat(staticCheck.apply(unallocated).getErrorMessage())
-			.contains("null");
-	}
-
-	@Test
 	public void when_validating_staked_token_with_null_amount__result_has_error() {
 		StakedTokensParticle staked = mock(StakedTokensParticle.class);
 		when(staked.getAmount()).thenReturn(null);
@@ -215,15 +205,6 @@ public class TokensConstraintScryptTest {
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
-			.contains("zero");
-	}
-
-	@Test
-	public void when_validating_unallocated_token_with_zero_amount__result_has_error() {
-		UnallocatedTokensParticle burnedTokensParticle = mock(UnallocatedTokensParticle.class);
-		when(burnedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(staticCheck.apply(burnedTokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -260,37 +241,5 @@ public class TokensConstraintScryptTest {
 		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
 		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
 		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_validating_create_unallocated_with_non_max_unallocated__result_has_error() {
-		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE.decrement());
-		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
-	}
-
-	@Test
-	public void when_validating_create_unallocated__result_has_no_error() {
-		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE);
-		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_checking_signed_by_and_signed__result_has_no_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
-	}
-
-	@Test
-	public void when_checking_signed_by_and_not_signed__result_has_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
 	}
 }

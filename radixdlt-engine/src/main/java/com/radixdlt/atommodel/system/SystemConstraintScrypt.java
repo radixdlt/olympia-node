@@ -18,17 +18,19 @@
 package com.radixdlt.atommodel.system;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
-import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import java.util.Optional;
 
 /**
@@ -72,9 +74,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.createTransition(
 			new TransitionToken<>(
 				SystemParticle.class,
-				TypeToken.of(VoidUsedData.class),
 				SystemParticle.class,
-				TypeToken.of(VoidUsedData.class)
+				TypeToken.of(VoidReducerState.class)
 			),
 
 			new TransitionProcedure<>() {
@@ -85,8 +86,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 				@Override
 				public Result precondition(
-					SystemParticle inputParticle, VoidUsedData inputUsed, SystemParticle outputParticle,
-					VoidUsedData outputUsed
+					SystemParticle inputParticle, SystemParticle outputParticle,
+					VoidReducerState outputUsed
 				) {
 
 					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {
@@ -103,23 +104,17 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<SystemParticle, SystemParticle, VoidReducerState> inputOutputReducer() {
+					return (input, output, outputUsed) -> ReducerResult.complete(
+						input.getEpoch() == output.getEpoch()
+							? new SystemNextView(output.getView(), output.getTimestamp(), input.getEpoch())
+							: new SystemNextEpoch(output.getTimestamp(), output.getEpoch())
+					);
 				}
 
 				@Override
-				public UsedCompute<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public WitnessValidator<SystemParticle> inputWitnessValidator() {
-					return (i, w) -> WitnessValidatorResult.success();
-				}
-
-				@Override
-				public WitnessValidator<SystemParticle> outputWitnessValidator() {
-					return (msg, meta) -> WitnessValidatorResult.success();
+				public SignatureValidator<SystemParticle> inputSignatureRequired() {
+					return i -> Optional.empty();
 				}
 			}
 		);

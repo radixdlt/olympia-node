@@ -18,22 +18,21 @@
 package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UIntUtils;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -41,11 +40,20 @@ import java.util.function.Function;
  * Transition Procedure for one to one fungible types
  */
 public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
-	public static final class UsedAmount implements UsedData {
+	public static final class UsedAmount implements ReducerState {
 		private final UInt256 amount;
+		private final boolean isInput;
+		// FIXME: super hack
+		private final TxAction txAction;
 
-		public UsedAmount(UInt256 usedAmount) {
+		public UsedAmount(boolean isInput, UInt256 usedAmount, TxAction txAction) {
+			this.isInput = isInput;
 			this.amount = Objects.requireNonNull(usedAmount);
+			this.txAction = txAction;
+		}
+
+		public boolean isInput() {
+			return isInput;
 		}
 
 		public UInt256 getUsedAmount() {
@@ -53,13 +61,13 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		}
 
 		@Override
-		public TypeToken<? extends UsedData> getTypeToken() {
+		public TypeToken<? extends ReducerState> getTypeToken() {
 			return TypeToken.of(UsedAmount.class);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hashCode(amount);
+			return Objects.hash(isInput, amount, txAction);
 		}
 
 		@Override
@@ -69,7 +77,9 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			UsedAmount u = (UsedAmount) obj;
-			return Objects.equals(this.amount, u.amount);
+			return this.isInput == u.isInput
+				&& Objects.equals(this.amount, u.amount)
+				&& Objects.equals(this.txAction, u.txAction);
 		}
 
 		@Override
@@ -83,7 +93,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<I, UInt256> inputAmountMapper;
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
-	private final WitnessValidator<I> inputWitnessValidator;
+	private final SignatureValidator<I> inputSignatureValidator;
+	private final BiFunction<I, O, TxAction> txActionSupplier;
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
@@ -91,7 +102,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<I, UInt256> inputAmountMapper,
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
-		WitnessValidator<I> inputWitnessValidator
+		SignatureValidator<I> inputSignatureValidator,
+		BiFunction<I, O, TxAction> txActionSupplier
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -102,155 +114,92 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
-		this.inputWitnessValidator = inputWitnessValidator;
+		this.inputSignatureValidator = inputSignatureValidator;
+		this.txActionSupplier = txActionSupplier;
 	}
 
 	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass, TypeToken.of(VoidReducerState.class)),
 			getProcedure0()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(UsedAmount.class), outputClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass, TypeToken.of(UsedAmount.class)),
 			getProcedure1()
 		);
-
-		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass, TypeToken.of(UsedAmount.class)),
-			getProcedure2()
-		);
 	}
 
-	protected class FungibleTransitionProcedure<N extends UsedData, U extends UsedData> implements TransitionProcedure<I, N, O, U> {
-		private final Function<N, UInt256> inputUsedMapper;
-		private final Function<U, UInt256> outputUsedMapper;
-		private final UsedCompute<I, N, O, U> additionalOutputUsedCompute;
+	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
+		return new TransitionProcedure<I, O, VoidReducerState>() {
+			@Override
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
+				return transition.apply(inputParticle, outputParticle);
+			}
 
-		public FungibleTransitionProcedure(
-			Function<N, UInt256> inputUsedMapper,
-			Function<U, UInt256> outputUsedMapper
-		) {
-			this(inputUsedMapper,
-				outputUsedMapper,
-				(ip, iu, op, ou) -> Optional.empty()
-			);
-		}
+			@Override
+			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
+				return (input, output, v) -> {
+					var i = inputAmountMapper.apply(input);
+					var o = outputAmountMapper.apply(output);
+					var compare = i.compareTo(o);
+					var txAction = txActionSupplier.apply(input, output);
+					if (compare == 0) {
+						return ReducerResult.complete(txAction);
+					}
+					return compare > 0
+						? ReducerResult.incomplete(new UsedAmount(true, o, txAction), true)
+						: ReducerResult.incomplete(new UsedAmount(false, i, txAction), false);
+				};
+			}
 
-		public FungibleTransitionProcedure(
-			Function<N, UInt256> inputUsedMapper,
-			Function<U, UInt256> outputUsedMapper,
-			UsedCompute<I, N, O, U> additionalOutputUsedCompute
-		) {
-			this.inputUsedMapper = inputUsedMapper;
-			this.outputUsedMapper = outputUsedMapper;
-			this.additionalOutputUsedCompute = additionalOutputUsedCompute;
-		}
-
-		@Override
-		public Result precondition(I inputParticle, N inputUsed, O outputParticle, U outputUsed) {
-			return transition.apply(inputParticle, outputParticle);
-		}
-
-		@Override
-		public UsedCompute<I, N, O, U> inputUsedCompute() {
-			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
-				final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
-				final UInt256 inputAmount =
-					UIntUtils.subtractWithUnderflow(inputAmountMapper.apply(inputParticle), inputUsedAmount);
-				final UInt256 outputAmount =
-					UIntUtils.subtractWithUnderflow(outputAmountMapper.apply(outputParticle), outputUsedMapper.apply(outputUsed));
-				// Note that overflow is not possible in the addition below.
-				// Given
-				//   inputAmount > outputAmount                                  (comparison in java code below)
-				//   => inputParticle - inputUsed > outputParticle - outputUsed  (substitute equalities)
-				//   => outputParticle - outputUsed < inputParticle - inputUsed  (rearrange [1])
-				// and
-				//   inputUsed + outputAmount <= MAX_VALUE                       (otherwise overflow occurs)
-				//   => inputUsed + outputParticle - outputUsed <= MAX_VALUE     (substitute equalities [2])
-				//
-				// Assume that
-				//   inputUsed + outputParticle - outputUsed > MAX_VALUE         (contradiction of [2])
-				// but
-				//   outputParticle - outputUsed < inputParticle - inputUsed     (from [1])
-				// so this also must be true
-				//   inputUsed + inputParticle - inputUsed > MAX_VALUE           (substitute larger term)
-				//   => inputParticle > MAX_VALUE                                (combine terms)
-				// but this cannot be true, due to properties of variables, therefore
-				//   inputUsed + outputParticle - outputUsed <= MAX_VALUE
-				int compare = inputAmount.compareTo(outputAmount);
-				return compare > 0
-					? Optional.of(new UsedAmount(inputUsedAmount.add(outputAmount)))
-					: Optional.empty();
-			};
-		}
-
-		@Override
-		public UsedCompute<I, N, O, U> outputUsedCompute() {
-			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
-				final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
-				final UInt256 inputAmount =
-					UIntUtils.subtractWithUnderflow(inputAmountMapper.apply(inputParticle), inputUsedMapper.apply(inputUsed));
-				final UInt256 outputAmount =
-					UIntUtils.subtractWithUnderflow(outputAmountMapper.apply(outputParticle), outputUsedAmount);
-				// Note that overflow is not possible in the addition below.
-				// Given
-				//   inputAmount < outputAmount                                  (comparison in java code below)
-				//   => inputParticle - inputUsed < outputParticle - outputUsed  (substitute equalities [1])
-				//   => outputParticle - outputUsed > inputParticle - inputUsed  (rearrange [1])
-				// and
-				//   outputUsed + inputAmount <= MAX_VALUE                       (otherwise overflow occurs)
-				//   => outputUsed + inputParticle - inputUsed <= MAX_VALUE      (substitute equalities [2])
-				//
-				// Assume that
-				//   outputUsed + inputParticle - inputUsed > MAX_VALUE          (contradiction of [2])
-				// but
-				//   outputParticle - outputUsed > inputParticle - inputUsed     (from [1])
-				// so this also must be true
-				//   outputUsed + outputParticle - outputUsed > MAX_VALUE        (substitute larger term)
-				//   => outputParticle > MAX_VALUE                               (combine terms)
-				// but this cannot be true, due to properties of variables, therefore
-				//   outputUsed + inputParticle - inputUsed <= MAX_VALUE
-				int compare = inputAmount.compareTo(outputAmount);
-				return compare < 0
-					? Optional.of(new UsedAmount(UIntUtils.addWithOverflow(outputUsedAmount, inputAmount)))
-					: this.additionalOutputUsedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
-			};
-		}
-
-		@Override
-		public WitnessValidator<I> inputWitnessValidator() {
-			return inputWitnessValidator;
-		}
-
-		@Override
-		public WitnessValidator<O> outputWitnessValidator() {
-			return (p, witnessData) -> WitnessValidatorResult.success();
-		}
+			@Override
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
+			}
+		};
 	}
 
-	public TransitionProcedure<I, VoidUsedData, O, VoidUsedData> getProcedure0() {
-		return new FungibleTransitionProcedure<>(u -> UInt256.ZERO, u -> UInt256.ZERO);
-	}
+	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
+		return new TransitionProcedure<I, O, UsedAmount>() {
+			@Override
+			public Result precondition(I inputParticle, O outputParticle, UsedAmount used) {
+				return transition.apply(inputParticle, outputParticle);
+			}
 
-	public TransitionProcedure<I, UsedAmount, O, VoidUsedData> getProcedure1() {
-		return new FungibleTransitionProcedure<>(UsedAmount::getUsedAmount, u -> UInt256.ZERO);
-	}
+			@Override
+			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
+				return (input, output, used) -> {
+					var i = inputAmountMapper.apply(input);
+					var o = outputAmountMapper.apply(output);
+					if (used.isInput) {
+						i = i.subtract(used.getUsedAmount());
+					} else {
+						o = o.subtract(used.getUsedAmount());
+					}
+					var compare = i.compareTo(o);
+					if (compare == 0) {
+						return ReducerResult.complete(used.txAction);
+					}
 
-	public TransitionProcedure<I, VoidUsedData, O, UsedAmount> getProcedure2() {
-		return new FungibleTransitionProcedure<>(u -> UInt256.ZERO, UsedAmount::getUsedAmount);
-	}
+					var keepInput = compare > 0;
 
-	public Class<I> getInputClass() {
-		return inputClass;
-	}
+					final UInt256 nextUsedAmt;
+					if (keepInput == used.isInput) {
+						nextUsedAmt = used.getUsedAmount().add(keepInput ? o : i);
+					} else {
+						nextUsedAmt = keepInput ? o : i;
+					}
 
-	public Class<O> getOutputClass() {
-		return outputClass;
-	}
+					return ReducerResult.incomplete(new UsedAmount(keepInput, nextUsedAmt, used.txAction), keepInput);
+				};
+			}
 
-	public WitnessValidator<I> getInputWitnessValidator() {
-		return inputWitnessValidator;
+			@Override
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
+			}
+		};
 	}
 }

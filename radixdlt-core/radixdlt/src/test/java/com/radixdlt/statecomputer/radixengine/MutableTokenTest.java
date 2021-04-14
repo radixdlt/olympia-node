@@ -27,9 +27,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -47,8 +44,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class MutableTokenTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -74,25 +69,6 @@ public class MutableTokenTest {
 				}
 			}
 		);
-	}
-
-	@Test
-	public void token_with_no_unallocated_should_fail() {
-		createInjector().injectMembers(this);
-		var particle = new MutableSupplyTokenDefinitionParticle(
-			RRI.of(address, "JOSH"),
-			"Joshy Token",
-			"Best Token",
-			null,
-			null
-		);
-		var atom = TxLowLevelBuilder.newBuilder()
-			.virtualDown(new RRIParticle(RRI.of(address, "JOSH")))
-			.up(particle)
-			.particleGroup()
-			.signAndBuild(keyPair::sign);
-
-		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test

@@ -15,31 +15,8 @@
  * language governing permissions and limitations under the License.
  */
 
-group 'radix-engine-library'
-version '1.0-SNAPSHOT'
+package com.radixdlt.constraintmachine;
 
-apply plugin: 'java'
-
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-sonarqube {
-    skipProject = true
-}
-
-compileJava {
-    options.release = 11
-    options.compilerArgs += '-proc:none'
-}
-
-compileTestJava {
-    options.compilerArgs += '-proc:none'
-}
-
-dependencies {
-    implementation project(':radixdlt-engine')
-
-    testImplementation 'junit:junit:4.13'
+public interface InputOutputReducer<I extends Particle, O extends Particle, U extends ReducerState> {
+	ReducerResult reduce(I inputParticle, O outputParticle, U reducerState);
 }

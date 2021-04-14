@@ -16,6 +16,7 @@
  */
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.jsonrpc.handler.HighLevelApiHandler;
@@ -63,9 +64,9 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenBalance() {
-		var balance1 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "XYZ"), UInt256.TWO);
-		var balance2 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "YZX"), UInt256.FIVE);
-		var balance3 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "ZXY"), UInt256.EIGHT);
+		var balance1 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "XYZ"), UInt384.TWO);
+		var balance2 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "YZX"), UInt384.FIVE);
+		var balance3 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "ZXY"), UInt384.EIGHT);
 
 		when(highLevelApiService.getTokenBalances(any(RadixAddress.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -96,7 +97,7 @@ public class HighLevelApiHandlerTest {
 		assertNotNull(result);
 		assertEquals("XRD", result.getString("name"));
 		assertEquals("XRD XRD", result.getString("description"));
-		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
+		assertEquals(UInt384.EIGHT, result.get("currentSupply"));
 	}
 
 	@Test
@@ -112,7 +113,7 @@ public class HighLevelApiHandlerTest {
 		assertNotNull(result);
 		assertEquals("FOO", result.getString("name"));
 		assertEquals("FOO FOO", result.getString("description"));
-		assertEquals(UInt256.EIGHT, result.get("currentSupply"));
+		assertEquals(UInt384.EIGHT, result.get("currentSupply"));
 	}
 
 	@Test
@@ -216,7 +217,7 @@ public class HighLevelApiHandlerTest {
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt256.EIGHT,
+				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt384.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));

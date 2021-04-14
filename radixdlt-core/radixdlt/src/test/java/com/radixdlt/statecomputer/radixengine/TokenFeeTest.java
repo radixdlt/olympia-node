@@ -125,7 +125,7 @@ public class TokenFeeTest {
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		var atom = TxBuilder.newBuilder(address, engineStore)
 			.mutex("test")
-			.burnForFee(nativeToken, fee)
+			.burn(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -142,7 +142,7 @@ public class TokenFeeTest {
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var atom = TxBuilder.newBuilder(address, engineStore)
-			.burnForFee(nativeToken, fee)
+			.burn(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));

@@ -20,7 +20,7 @@ package com.radixdlt.atomos;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedData;
+import com.radixdlt.constraintmachine.ReducerState;
 
 public interface RoutineCalls {
 	/**
@@ -30,8 +30,8 @@ public interface RoutineCalls {
 	 * @param <I> input particle type
 	 * @param <U> output particle type
 	 */
-	<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> transitionProcedure
+	<I extends Particle, O extends Particle, U extends ReducerState> void createTransition(
+		TransitionToken<I, O, U> transitionToken,
+		TransitionProcedure<I, O, U> transitionProcedure
 	);
 }

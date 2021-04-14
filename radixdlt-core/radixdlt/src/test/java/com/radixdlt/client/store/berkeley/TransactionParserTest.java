@@ -22,8 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.radix.api.jsonrpc.ActionType;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
@@ -33,13 +31,10 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.store.ActionEntry;
-import com.radixdlt.client.store.ParsedTx;
-import com.radixdlt.client.store.ParticleWithSpin;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RRI;
@@ -47,17 +42,12 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-
-import static com.radixdlt.client.ClientApiUtils.extractCreator;
-import static com.radixdlt.serialization.SerializationUtils.restore;
 
 public class TransactionParserTest {
 	private static final byte MAGIC = (byte) 0;
@@ -81,6 +71,8 @@ public class TransactionParserTest {
 	);
 
 	private RadixEngine<Void> engine;
+
+	private TransactionParser parser = new TransactionParser(tokenRri);
 
 	@Before
 	public void setup() throws Exception {
@@ -112,10 +104,10 @@ public class TransactionParserTest {
 	@Test
 	public void stakeIsParsedCorrectly() throws Exception {
 		var txn = engine.construct(tokenOwnerAddress, nativeStake())
-			.burnForFee(tokenRri, UInt256.TWO)
+			.burn(tokenRri, UInt256.TWO)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.STAKE), UInt256.TWO, txn);
+		executeAndDecode(List.of(ActionType.STAKE, ActionType.BURN), UInt256.TWO, txn);
 	}
 
 	@Test
@@ -125,10 +117,10 @@ public class TransactionParserTest {
 		engine.execute(List.of(txn1));
 
 		var txn2 = engine.construct(tokenOwnerAddress, nativeUnstake())
-			.burnForFee(tokenRri, UInt256.FOUR)
+			.burn(tokenRri, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.UNSTAKE), UInt256.FOUR, txn2);
+		executeAndDecode(List.of(ActionType.UNSTAKE, ActionType.BURN), UInt256.FOUR, txn2);
 	}
 
 	@Test
@@ -138,10 +130,10 @@ public class TransactionParserTest {
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
 			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
-			.burnForFee(tokenRriII, UInt256.FOUR)
+			.burn(tokenRri, UInt256.FOUR)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		executeAndDecode(List.of(ActionType.TRANSFER), UInt256.FOUR, txn);
+		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER, ActionType.BURN), UInt256.FOUR, txn);
 	}
 
 	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {
@@ -154,13 +146,13 @@ public class TransactionParserTest {
 		var timestamp = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
 		list.stream()
-			.map(this::toParsedTx)
-			.map(result -> result.flatMap(parsedTx -> TransactionParser.parse(tokenRri, tokenOwnerAddress, parsedTx, timestamp)))
+			.map(txn -> parser.parse(txn, timestamp))
 			.forEach(entry -> entry
 				.onFailureDo(Assert::fail)
 				.onSuccess(historyEntry -> assertEquals(fee, historyEntry.getFee()))
 				.map(this::toActionTypes)
-				.onSuccess(types -> assertEquals(expectedActions, types)));
+				.onSuccess(types -> assertEquals(expectedActions, types))
+			);
 	}
 
 	private StakeNativeToken nativeStake() {
@@ -169,21 +161,6 @@ public class TransactionParserTest {
 
 	private UnstakeNativeToken nativeUnstake() {
 		return new UnstakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
-	}
-
-	private Result<ParsedTx> toParsedTx(RETxn reTxn) {
-		var particles = reTxn.instructions()
-			.stream()
-			.map(ParticleWithSpin::create)
-			.collect(Collectors.toList());
-
-		return restore(DefaultSerialization.getInstance(), reTxn.getTxn().getPayload(), Atom.class)
-			.map(atom -> ParsedTx.create(
-				reTxn.getTxn(),
-				particles,
-				Optional.empty(),
-				extractCreator(atom, MAGIC)
-			));
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

@@ -19,7 +19,6 @@ package com.radixdlt;
 
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -55,7 +54,6 @@ public class JsonAndDsonPrinter {
         logMutableSupplyTokenDefinitionParticle();
         logStakedTokensParticle();
         logTransferableTokensParticle();
-        logUnallocatedTokensParticle();
         logRRIParticle();
         logRegisteredValidatorParticle();
         logSystemParticle();
@@ -73,14 +71,6 @@ public class JsonAndDsonPrinter {
 
     private void logRRIParticle() {
         final var particle = new RRIParticle(TOKEN_RRI);
-        logParticle(particle);
-    }
-
-    private void logUnallocatedTokensParticle() {
-        final var particle = new UnallocatedTokensParticle(
-                UInt256.TEN,
-                TOKEN_RRI
-        );
         logParticle(particle);
     }
 

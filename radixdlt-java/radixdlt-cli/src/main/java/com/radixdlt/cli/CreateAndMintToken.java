@@ -112,8 +112,6 @@ public class CreateAndMintToken implements Runnable {
 				printfln("Minting token for %f", amount);
 				txBuilder.mint(tokenRRI, api.getAddress(), TokenUnitConversions.unitsToSubunits(amount));
 			}
-
-			txBuilder.burnForFee(api.getNativeTokenRef(), fee);
 		} catch (TxBuilderException e) {
 			throw new RuntimeException("Could not build transaction", e);
 		}

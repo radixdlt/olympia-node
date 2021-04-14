@@ -33,7 +33,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
@@ -61,7 +61,7 @@ public class RadixEngineModule extends AbstractModule {
 		bind(new TypeLiteral<BatchVerifier<LedgerAndBFTProof>>() { }).to(EpochProofVerifier.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<?>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<Mempool<RETxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<REParsedTxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?, ?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?, ?>>>() { });
 		Multibinder.newSetBinder(binder(), PostParsedChecker.class);
@@ -110,9 +110,9 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	PostParsedChecker checker(Set<PostParsedChecker> checkers) {
-		return (atom, permissionLevel, parsed) -> {
+		return (permissionLevel, reTxn) -> {
 			for (var checker : checkers) {
-				var result = checker.check(atom, permissionLevel, parsed);
+				var result = checker.check(permissionLevel, reTxn);
 				if (result.isError()) {
 					return result;
 				}

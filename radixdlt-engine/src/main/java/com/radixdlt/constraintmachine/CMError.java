@@ -25,27 +25,27 @@ import javax.annotation.Nullable;
  * An error with a pointer to the issue
  */
 public final class CMError {
-	private final DataPointer dataPointer;
+	private final int instructionIndex;
 	private final CMErrorCode errorCode;
 	private final String errMsg;
 	private final CMValidationState cmValidationState;
 
 	public CMError(
-		DataPointer dataPointer,
+		int instructionIndex,
 		CMErrorCode errorCode,
 		CMValidationState cmValidationState
 	) {
-		this(dataPointer, errorCode, cmValidationState, null);
+		this(instructionIndex, errorCode, cmValidationState, null);
 	}
 
 	public CMError(
-		DataPointer dataPointer,
+		int instructionIndex,
 		CMErrorCode errorCode,
 		CMValidationState cmValidationState,
 		String errMsg
 	) {
 		this.errorCode = Objects.requireNonNull(errorCode);
-		this.dataPointer = Objects.requireNonNull(dataPointer);
+		this.instructionIndex = instructionIndex;
 		this.errMsg = errMsg;
 		this.cmValidationState = cmValidationState;
 	}
@@ -53,10 +53,6 @@ public final class CMError {
 	@Nullable
 	public String getErrMsg() {
 		return errMsg;
-	}
-
-	public DataPointer getDataPointer() {
-		return dataPointer;
 	}
 
 	public CMErrorCode getErrorCode() {
@@ -73,7 +69,7 @@ public final class CMError {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(errMsg, dataPointer, errorCode, cmValidationState);
+		return Objects.hash(errMsg, instructionIndex, errorCode, cmValidationState);
 	}
 
 	@Override
@@ -84,13 +80,13 @@ public final class CMError {
 
 		CMError e = (CMError) o;
 		return Objects.equals(e.errMsg, this.errMsg)
-			&& Objects.equals(e.dataPointer, this.dataPointer)
+			&& e.instructionIndex == this.instructionIndex
 			&& Objects.equals(e.errorCode, this.errorCode)
 			&& Objects.equals(e.cmValidationState, this.cmValidationState);
 	}
 
 	@Override
 	public String toString() {
-		return dataPointer + ": " + errorCode + " " + getErrMsg();
+		return instructionIndex + ": " + errorCode + " " + getErrMsg() + " " + cmValidationState;
 	}
 }

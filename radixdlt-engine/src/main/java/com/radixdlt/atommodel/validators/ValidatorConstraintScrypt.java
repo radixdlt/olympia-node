@@ -19,17 +19,18 @@ package com.radixdlt.atommodel.validators;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
-import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
@@ -73,7 +74,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		Function<O, RadixAddress> outputAddressMapper
 	) {
 		os.createTransition(
-			new TransitionToken<>(inputParticle, TypeToken.of(VoidUsedData.class), outputParticle, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputParticle, outputParticle, TypeToken.of(VoidReducerState.class)),
 			new ValidatorTransitionProcedure<>(inputAddressMapper, outputAddressMapper)
 		);
 	}
@@ -114,7 +115,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 	@VisibleForTesting
 	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
-		implements TransitionProcedure<I, VoidUsedData, O, VoidUsedData> {
+		implements TransitionProcedure<I, O, VoidReducerState> {
 		private final Function<I, RadixAddress> inputAddressMapper;
 		private final Function<O, RadixAddress> outputAddressMapper;
 
@@ -127,7 +128,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
 			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
 			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address
@@ -142,30 +143,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-			return (input, inputUsed, output, outputUsed) -> Optional.empty();
+		public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
+			return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 		}
 
 		@Override
-		public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
-			return (input, inputUsed, output, outputUsed) -> Optional.empty();
-		}
-
-		@Override
-		public WitnessValidator<I> inputWitnessValidator() {
+		public SignatureValidator<I> inputSignatureRequired() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, meta) -> {
-				RadixAddress address = inputAddressMapper.apply(i);
-				return meta.isSignedBy(address.getPublicKey())
-					? WitnessValidatorResult.success()
-					: WitnessValidatorResult.error(String.format("validator %s not signed", address));
-			};
-		}
-
-		@Override
-		public WitnessValidator<O> outputWitnessValidator() {
-			// input.address == output.address, so no need to check signature twice
-			return (i, meta) -> WitnessValidatorResult.success();
+			return i -> Optional.of(inputAddressMapper.apply(i));
 		}
 	}
 }

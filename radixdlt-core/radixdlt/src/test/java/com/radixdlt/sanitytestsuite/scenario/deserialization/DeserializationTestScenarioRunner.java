@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -59,7 +58,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         mutableMap.put("radix.particles.mutable_supply_token_definition",
                 DeserializationTestScenarioRunner::assertMutableSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.staked_tokens", DeserializationTestScenarioRunner::assertStakedTokensParticle);
-        mutableMap.put("radix.particles.unallocated_tokens", DeserializationTestScenarioRunner::assertUnallocatedTokensParticle);
         mutableMap.put("radix.particles.rri", DeserializationTestScenarioRunner::assertRRIParticle);
         mutableMap.put("radix.particles.registered_validator", DeserializationTestScenarioRunner::assertRegisteredValidatorParticle);
         mutableMap.put("radix.particles.system_particle", DeserializationTestScenarioRunner::assertSystemParticle);
@@ -169,16 +167,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
         assertEquals(expected.getAddress(), argsExtractor.asRadixAddress("address"));
         assertEquals(expected.getDelegateAddress(), argsExtractor.asRadixAddress("delegateAddress"));
-
-        assertTrue(argsExtractor.isFinished());
-    }
-
-    private static void assertUnallocatedTokensParticle(final Map<String, Object> arguments, final Object expectedObject) {
-        UnallocatedTokensParticle expected = (UnallocatedTokensParticle) expectedObject;
-        ArgumentsExtractor argsExtractor = ArgumentsExtractor.from(arguments);
-
-        assertEquals(expected.getAmount(), argsExtractor.asUInt256("amount"));
-        assertEquals(expected.getTokDefRef(), argsExtractor.asRRI("tokenDefinitionReference"));
 
         assertTrue(argsExtractor.isFinished());
     }

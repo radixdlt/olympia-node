@@ -19,6 +19,9 @@ package com.radixdlt.constraintmachine;
 
 public final class VoidParticle extends Particle {
 	private VoidParticle() {
-		throw new IllegalStateException("Cannot instantiate.");
+	}
+
+	public static VoidParticle create() {
+		return new VoidParticle();
 	}
 }

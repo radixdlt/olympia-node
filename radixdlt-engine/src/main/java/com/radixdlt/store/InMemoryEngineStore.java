@@ -21,8 +21,8 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.constraintmachine.ParsedInstruction;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
@@ -37,17 +37,16 @@ import java.util.function.BiFunction;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateStore {
 	private final Object lock = new Object();
-	private final Map<SubstateId, ParsedInstruction> storedParticles = new HashMap<>();
+	private final Map<SubstateId, REParsedInstruction> storedParticles = new HashMap<>();
 	private final Set<AID> txnIds = new HashSet<>();
 
 	@Override
-	public void storeAtom(Transaction txn, RETxn parsed) {
+	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
 		synchronized (lock) {
-			for (var instruction : parsed.instructions()) {
-				storedParticles.put(instruction.getSubstate().getId(), instruction);
-			}
-
-			txnIds.add(parsed.getTxn().getId());
+			stateUpdates.stream()
+				.filter(REParsedInstruction::isStateUpdate)
+				.forEach(i -> storedParticles.put(i.getSubstate().getId(), i));
+			txnIds.add(txn.getId());
 		}
 	}
 
@@ -69,7 +68,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		V v = initial;
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (i.getSpin() != Spin.UP || !particleClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !particleClass.isInstance(i.getParticle())) {
 					continue;
 				}
 				v = outputReducer.apply(v, particleClass.cast(i.getParticle()));
@@ -83,7 +82,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 		final List<Substate> substates = new ArrayList<>();
 		synchronized (lock) {
 			for (var i : storedParticles.values()) {
-				if (i.getSpin() != Spin.UP || !substateClass.isInstance(i.getParticle())) {
+				if (!i.isBootUp() || !substateClass.isInstance(i.getParticle())) {
 					continue;
 				}
 				substates.add(i.getSubstate());
@@ -102,14 +101,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public boolean isVirtualDown(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst != null && inst.getSpin().equals(Spin.DOWN);
+			return inst != null && inst.isShutDown();
 		}
 	}
 
 	public Spin getSpin(SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			return inst == null ? Spin.NEUTRAL : inst.getSpin();
+			return inst == null ? Spin.NEUTRAL : inst.getNextSpin();
 		}
 	}
 
@@ -117,7 +116,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M>, SubstateSto
 	public Optional<Particle> loadUpParticle(Transaction txn, SubstateId substateId) {
 		synchronized (lock) {
 			var inst = storedParticles.get(substateId);
-			if (inst == null || inst.getSpin() != Spin.UP) {
+			if (inst == null || inst.getNextSpin() != Spin.UP) {
 				return Optional.empty();
 			}
 

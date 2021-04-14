@@ -71,4 +71,9 @@ public final class NodeApplicationRequest {
 	public void onFailure(Txn txn, String errorMessage) {
 		onError.accept(txn, errorMessage);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{%s}", this.getClass().getSimpleName(), this.actions);
+	}
 }

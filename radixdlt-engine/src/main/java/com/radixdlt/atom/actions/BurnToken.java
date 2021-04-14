@@ -26,38 +26,40 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
-public final class SplitNativeToken implements TxAction {
+public final class BurnToken implements TxAction {
 	private final RRI rri;
-	private final UInt256 minSize;
+	private final UInt256 amount;
 
-	public SplitNativeToken(RRI rri, UInt256 minSize) {
+	public BurnToken(RRI rri, UInt256 amount) {
 		this.rri = rri;
-		this.minSize = minSize;
+		this.amount = amount;
+	}
+
+	public RRI rri() {
+		return rri;
+	}
+
+	public UInt256 amount() {
+		return amount;
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have address");
+		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
 
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
 			true
 		);
-
-		var substate = txBuilder.findSubstate(
+		txBuilder.deallocateFungible(
 			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri)
-				&& p.getAddress().equals(address)
-				&& p.getAmount().compareTo(minSize) > 0,
-			"Could not find large particle greater than " + minSize
+			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
+			TransferrableTokensParticle::getAmount,
+			amt -> factory.createTransferrable(user, amt),
+			amount,
+			"Not enough balance to for fee burn."
 		);
-
-		txBuilder.down(substate.getId());
-		var particle = (TransferrableTokensParticle) substate.getParticle();
-		var amt1 = particle.getAmount().divide(UInt256.TWO);
-		var amt2 = particle.getAmount().subtract(amt1);
-		txBuilder.up(factory.createTransferrable(address, amt1));
-		txBuilder.up(factory.createTransferrable(address, amt2));
 	}
 }
+

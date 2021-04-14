@@ -2,10 +2,12 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.RETxn;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -19,8 +21,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public void storeAtom(Transaction txn, RETxn userTransaction) {
-		transientStore.storeAtom(txn, userTransaction);
+	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+		transientStore.storeAtom(dbTxn, txn, stateUpdates);
 	}
 
 	@Override

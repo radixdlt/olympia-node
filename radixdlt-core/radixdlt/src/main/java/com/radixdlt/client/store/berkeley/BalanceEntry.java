@@ -18,7 +18,6 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -26,7 +25,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
 import java.util.Objects;
 
@@ -50,42 +49,34 @@ public class BalanceEntry {
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 amount;
+	private final UInt384 amount;
 
 	@JsonProperty("negative")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean negative;
 
-	//Not persisted
-	@JsonIgnore
-	private final boolean supply;
-
 	private BalanceEntry(
 		RadixAddress owner, RadixAddress delegate, RRI rri,
-		UInt256 amount, boolean negative,
-		boolean supply
+		UInt384 amount, boolean negative
 	) {
 		this.owner = owner;
 		this.delegate = delegate;
 		this.rri = rri;
 		this.amount = amount;
 		this.negative = negative;
-		this.supply = supply;
 	}
 
 	public static BalanceEntry createFull(
 		RadixAddress owner,
 		RadixAddress delegate,
 		RRI rri,
-		UInt256 amount,
-		boolean negative,
-		boolean supply
+		UInt384 amount,
+		boolean negative
 	) {
-		Objects.requireNonNull(owner);
 		Objects.requireNonNull(rri);
 		Objects.requireNonNull(amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negative);
 	}
 
 	@JsonCreator
@@ -93,22 +84,16 @@ public class BalanceEntry {
 		@JsonProperty("owner") RadixAddress owner,
 		@JsonProperty("delegate") RadixAddress delegate,
 		@JsonProperty("rri") RRI rri,
-		@JsonProperty("amount") UInt256 amount,
+		@JsonProperty("amount") UInt384 amount,
 		@JsonProperty("negative") boolean negative
 	) {
-		return createFull(owner, delegate, rri, amount, negative, false);
+		return createFull(owner, delegate, rri, amount, negative);
 	}
 
 	public static BalanceEntry createBalance(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
+		RadixAddress owner, RadixAddress delegate, RRI rri, UInt384 amount
 	) {
-		return createFull(owner, delegate, rri, amount, false, false);
-	}
-
-	public static BalanceEntry createSupply(
-		RadixAddress owner, RadixAddress delegate, RRI rri, UInt256 amount
-	) {
-		return createFull(owner, delegate, rri, amount, false, true);
+		return createFull(owner, delegate, rri, amount, false);
 	}
 
 	public RadixAddress getOwner() {
@@ -123,12 +108,12 @@ public class BalanceEntry {
 		return rri;
 	}
 
-	public UInt256 getAmount() {
+	public UInt384 getAmount() {
 		return amount;
 	}
 
 	public boolean isSupply() {
-		return supply;
+		return owner == null;
 	}
 
 	public boolean isStake() {
@@ -140,11 +125,11 @@ public class BalanceEntry {
 	}
 
 	public BalanceEntry negate() {
-		return new BalanceEntry(owner, delegate, rri, amount, !negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, !negative);
 	}
 
 	public BalanceEntry add(BalanceEntry balanceEntry) {
-		assert this.owner.equals(balanceEntry.owner);
+		assert Objects.equals(this.owner, balanceEntry.owner);
 		assert this.rri.equals(balanceEntry.rri);
 
 		if (negative) {
@@ -189,10 +174,10 @@ public class BalanceEntry {
 					 ? this.amount.subtract(balanceEntry.amount)
 					 : balanceEntry.amount.subtract(this.amount);
 
-		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger, supply);
+		return new BalanceEntry(owner, delegate, rri, amount, negate == isBigger);
 	}
 
 	private BalanceEntry sum(BalanceEntry balanceEntry, boolean negative) {
-		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative, supply);
+		return new BalanceEntry(owner, delegate, rri, amount.add(balanceEntry.amount), negative);
 	}
 }

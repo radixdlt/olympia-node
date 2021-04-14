@@ -19,18 +19,19 @@ package com.radixdlt.atommodel.routines;
 
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import java.util.Optional;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.SignatureValidator;
+
 import java.util.function.BiFunction;
 
 /**
@@ -38,7 +39,7 @@ import java.util.function.BiFunction;
  */
 public final class CreateCombinedTransitionRoutine<I extends Particle, O extends Particle, V extends Particle> implements ConstraintRoutine {
 
-	public static class UsedParticle<P extends Particle> implements UsedData {
+	public static class UsedParticle<P extends Particle> implements ReducerState {
 		private final P usedParticle;
 		private final TypeToken<UsedParticle<P>> typeToken;
 		UsedParticle(TypeToken<UsedParticle<P>> typeToken, P usedParticle) {
@@ -47,7 +48,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		}
 
 		@Override
-		public TypeToken<? extends UsedData> getTypeToken() {
+		public TypeToken<? extends ReducerState> getTypeToken() {
 			return typeToken;
 		}
 	}
@@ -57,14 +58,14 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
 	private final TypeToken<UsedParticle<V>> typeToken1;
-	private final WitnessValidator<I> inputWitnessValidator;
+	private final SignatureValidator<I> inputSignatureValidator;
 
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
 		Class<V> outputClass1,
 		BiFunction<O, V, Result> combinedCheck,
-		WitnessValidator<I> inputWitnessValidator
+		SignatureValidator<I> inputSignatureValidator
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
@@ -73,144 +74,106 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
 		this.typeToken1 = new TypeToken<UsedParticle<V>>() { }.where(new TypeParameter<V>() { }, outputClass1);
 		this.combinedCheck = combinedCheck;
-		this.inputWitnessValidator = inputWitnessValidator;
+		this.inputSignatureValidator = inputSignatureValidator;
 	}
 
 	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass0, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass0, TypeToken.of(VoidReducerState.class)),
 			getProcedure0()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, typeToken1, outputClass0, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass0, typeToken1),
 			getProcedure2()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass1, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass1, TypeToken.of(VoidReducerState.class)),
 			getProcedure1()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, typeToken0, outputClass1, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(inputClass, outputClass1, typeToken0),
 			getProcedure3()
 		);
 	}
 
-	public TransitionProcedure<I, VoidUsedData, O, VoidUsedData> getProcedure0() {
-		return new TransitionProcedure<I, VoidUsedData, O, VoidUsedData>() {
+	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
+		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
 				return Result.success();
 			}
 
 			@Override
-			public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.of(new UsedParticle<>(typeToken0, output));
+			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
+				return (input, output, outputUsed)
+					-> ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true);
 			}
 
 			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				throw new IllegalStateException("Should never call here");
-			}
-
-			@Override
-			public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
-			}
-
-			@Override
-			public WitnessValidator<O> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}
 
-	public TransitionProcedure<I, VoidUsedData, V, VoidUsedData> getProcedure1() {
-		return new TransitionProcedure<I, VoidUsedData, V, VoidUsedData>() {
+	public TransitionProcedure<I, V, VoidReducerState> getProcedure1() {
+		return new TransitionProcedure<I, V, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, V outputParticle, VoidReducerState outputUsed) {
 				return Result.success();
 			}
 
 			@Override
-			public UsedCompute<I, VoidUsedData, V, VoidUsedData> inputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.of(new UsedParticle<>(typeToken1, output));
+			public InputOutputReducer<I, V, VoidReducerState> inputOutputReducer() {
+				return (input, output, outputUsed)
+					-> ReducerResult.incomplete(new UsedParticle<>(typeToken1, output), true);
 			}
 
 			@Override
-			public UsedCompute<I, VoidUsedData, V, VoidUsedData> outputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
-			}
-
-			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				throw new IllegalStateException("Should never call here");
-			}
-
-			@Override
-			public WitnessValidator<V> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}
 
-	public TransitionProcedure<I, UsedParticle<V>, O, VoidUsedData> getProcedure2() {
-		return new TransitionProcedure<I, UsedParticle<V>, O, VoidUsedData>() {
+	public TransitionProcedure<I, O, UsedParticle<V>> getProcedure2() {
+		return new TransitionProcedure<I, O, UsedParticle<V>>() {
 			@Override
-			public Result precondition(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, UsedParticle<V> inputUsed) {
 				return combinedCheck.apply(outputParticle, inputUsed.usedParticle);
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<V>, O, VoidUsedData> inputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
+			public InputOutputReducer<I, O, UsedParticle<V>> inputOutputReducer() {
+				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<V>, O, VoidUsedData> outputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
-			}
-
-			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				return inputWitnessValidator;
-			}
-
-			@Override
-			public WitnessValidator<O> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}
 
-	public TransitionProcedure<I, UsedParticle<O>, V, VoidUsedData> getProcedure3() {
-		return new TransitionProcedure<I, UsedParticle<O>, V, VoidUsedData>() {
+	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure3() {
+		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<O>, V, VoidUsedData> inputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
+			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
+				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override
-			public UsedCompute<I, UsedParticle<O>, V, VoidUsedData> outputUsedCompute() {
-				return (input, inputUsed, output, outputUsed) -> Optional.empty();
-			}
-
-			@Override
-			public WitnessValidator<I> inputWitnessValidator() {
-				return inputWitnessValidator;
-			}
-
-			@Override
-			public WitnessValidator<V> outputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
+			public SignatureValidator<I> inputSignatureRequired() {
+				return inputSignatureValidator;
 			}
 		};
 	}

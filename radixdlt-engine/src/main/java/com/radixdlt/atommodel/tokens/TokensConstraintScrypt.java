@@ -18,17 +18,26 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.ParticleDefinition;
+import com.radixdlt.constraintmachine.ReadOnlyData;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
-import com.radixdlt.constraintmachine.WitnessData;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.VoidParticle;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -62,14 +71,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.registerParticle(
-			UnallocatedTokensParticle.class,
-			ParticleDefinition.<UnallocatedTokensParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(UnallocatedTokensParticle::getTokDefRef)
-				.build()
-		);
-
-		os.registerParticle(
 			TransferrableTokensParticle.class,
 			ParticleDefinition.<TransferrableTokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
@@ -82,48 +83,58 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void defineTokenCreation(SysCalls os) {
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRICombined(
-			MutableSupplyTokenDefinitionParticle.class,
-			UnallocatedTokensParticle.class,
-			TokensConstraintScrypt::checkCreateUnallocated
-		);
+		os.createTransitionFromRRI(MutableSupplyTokenDefinitionParticle.class);
 
 		os.createTransitionFromRRICombined(
 			FixedSupplyTokenDefinitionParticle.class,
 			TransferrableTokensParticle.class,
 			TokensConstraintScrypt::checkCreateTransferrable
 		);
-
-		// Unallocated movement
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAmount,
-			UnallocatedTokensParticle::getAmount,
-			(i, o) -> Result.success(),
-			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		));
 	}
 
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			UnallocatedTokensParticle.class,
-			TransferrableTokensParticle.class,
-			UnallocatedTokensParticle::getAmount,
-			TransferrableTokensParticle::getAmount,
-			(i, o) -> {
-				if (!o.isMutable()) {
-					return Result.error("Output is not mutable");
-				}
+		os.executeRoutine(calls -> {
+			calls.createTransition(
+				new TransitionToken<>(
+					MutableSupplyTokenDefinitionParticle.class,
+					TransferrableTokensParticle.class,
+					TypeToken.of(ReadOnlyData.class)
+				),
+				new TransitionProcedure<>() {
+					@Override
+					public Result precondition(
+						MutableSupplyTokenDefinitionParticle inputParticle,
+						TransferrableTokensParticle outputParticle,
+						ReadOnlyData inputUsed
+					) {
+						if (!outputParticle.isBurnable()) {
+							return Result.error("Must be able to burn mutable token.");
+						}
 
-				return Result.success();
-			},
-			(in, meta) ->
-				meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
-					? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		));
+						if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
+							return Result.error("Minted token must be equivalent to token def.");
+						}
+
+						return Result.success();
+					}
+
+					@Override
+					public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData>
+						inputOutputReducer() {
+						return (inputParticle, outputParticle, outputUsed)
+							-> ReducerResult.complete(new MintToken(
+								inputParticle.getRRI(), outputParticle.getAddress(), outputParticle.getAmount()
+						));
+					}
+
+					@Override
+					public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
+						return i -> Optional.of(i.getRRI().getAddress());
+					}
+				}
+			);
+		});
 
 		// Transfers
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
@@ -132,34 +143,56 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			checkEquals(
-				TransferrableTokensParticle::isMutable,
-				TransferrableTokensParticle::isMutable,
+				TransferrableTokensParticle::isBurnable,
+				TransferrableTokensParticle::isBurnable,
 				"Permissions not equal."
 			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress()),
+			(i, o) -> new TransferToken(i.getTokDefRef(), o.getAddress(), o.getAmount()) // FIXME: This isn't 100% correct
 		));
+
 
 		// Burns
-		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TransferrableTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
-			UnallocatedTokensParticle::getAmount,
-			(i, o) -> {
-				if (!i.isMutable()) {
-					return Result.error("Input is not mutable");
-				}
+		os.executeRoutine(calls -> {
+			calls.createTransition(
+				new TransitionToken<>(
+					TransferrableTokensParticle.class,
+					VoidParticle.class,
+					TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
+				),
+				new TransitionProcedure<>() {
+					@Override
+					public Result precondition(
+						TransferrableTokensParticle inputParticle,
+						VoidParticle outputParticle,
+						CreateFungibleTransitionRoutine.UsedAmount inputUsed
+					) {
+						if (!inputUsed.isInput()) {
+							return Result.error("Broken state.");
+						}
 
-				return Result.success();
-			},
-			(in, meta) -> {
-				if (in.isMutable()) {
-					return WitnessValidatorResult.success();
-				} else {
-					return WitnessValidatorResult.error("Not allowed to burn fixed supply tokens.");
+						if (!inputParticle.isBurnable()) {
+							return Result.error("Cannot burn token.");
+						}
+
+						return Result.success();
+					}
+
+					@Override
+					public InputOutputReducer<TransferrableTokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
+						return (inputParticle, outputParticle, state) -> {
+							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
+							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
+						};
+					}
+
+					@Override
+					public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
+						return i -> Optional.of(i.getAddress());
+					}
 				}
-			}
-		));
+			);
+		});
 	}
 
 	@VisibleForTesting
@@ -168,27 +201,11 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			return Result.error("Supply and amount are not equal.");
 		}
 
-		if (transferrable.isMutable()) {
+		if (transferrable.isBurnable()) {
 			return Result.error("Tokens must be non-mutable.");
 		}
 
 		return Result.success();
-	}
-
-	@VisibleForTesting
-	static Result checkCreateUnallocated(MutableSupplyTokenDefinitionParticle tokDef, UnallocatedTokensParticle unallocated) {
-		if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
-			return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
-		}
-
-		return Result.success();
-	}
-
-	@VisibleForTesting
-	static WitnessValidatorResult checkSignedBy(WitnessData meta, RadixAddress address) {
-		return meta.isSignedBy(address.getPublicKey())
-			? WitnessValidatorResult.success()
-			: WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
 
 	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(

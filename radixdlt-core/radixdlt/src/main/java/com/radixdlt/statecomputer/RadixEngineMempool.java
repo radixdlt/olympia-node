@@ -22,8 +22,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.RETxn;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.constraintmachine.REParsedInstruction;
+import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
@@ -54,10 +54,10 @@ import java.util.stream.Collectors;
  * A mempool which uses internal radix engine to be more efficient.
  */
 @Singleton
-public final class RadixEngineMempool implements Mempool<RETxn> {
+public final class RadixEngineMempool implements Mempool<REParsedTxn> {
 	private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentHashMap<AID, Pair<RETxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<AID, Pair<REParsedTxn, MempoolMetadata>> data = new ConcurrentHashMap<>();
 	private final Map<SubstateId, Set<AID>> substateIndex = new ConcurrentHashMap<>();
 	private final MempoolConfig mempoolConfig;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -86,7 +86,7 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn.getId()));
 		}
 
-		final List<RETxn> radixEngineTxns;
+		final List<REParsedTxn> radixEngineTxns;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
 			radixEngineTxns = checker.execute(List.of(txn));
@@ -100,24 +100,22 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
 		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
 		this.data.put(txn.getId(), data);
-		for (var instruction : radixEngineTxns.get(0).instructions()) {
-			if (instruction.getSpin() == Spin.DOWN) {
-				var substateId = instruction.getSubstate().getId();
-				substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
-			}
-		}
+		radixEngineTxns.get(0).instructions().filter(REParsedInstruction::isShutDown).forEach(instruction -> {
+			var substateId = instruction.getSubstate().getId();
+			substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union);
+		});
 	}
 
 	@Override
-	public List<Pair<Txn, Exception>> committed(List<RETxn> transactions) {
+	public List<Pair<Txn, Exception>> committed(List<REParsedTxn> transactions) {
 		final var removed = new ArrayList<Pair<Txn, Exception>>();
 		final var committedIds = transactions.stream()
 			.map(p -> p.getTxn().getId())
 			.collect(Collectors.toSet());
 
 		transactions.stream()
-			.flatMap(t -> t.instructions().stream())
-			.filter(i -> i.getSpin() == Spin.DOWN)
+			.flatMap(REParsedTxn::instructions)
+			.filter(REParsedInstruction::isShutDown)
 			.forEach(instruction -> {
 				var substateId = instruction.getSubstate().getId();
 				Set<AID> txnIds = substateIndex.remove(substateId);
@@ -133,7 +131,6 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 							new RadixEngineMempoolException(
 								new RadixEngineException(
 									toRemove.getFirst().getTxn(),
-									toRemove.getFirst().instructions(),
 									RadixEngineErrorCode.CM_ERROR,
 									"Mempool evicted"
 								)
@@ -151,12 +148,12 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 	}
 
 	@Override
-	public List<Txn> getTxns(int count, List<RETxn> prepared) {
+	public List<Txn> getTxns(int count, List<REParsedTxn> prepared) {
 		// TODO: Order by highest fees paid
 		var copy = new TreeSet<>(data.keySet());
 		prepared.stream()
-			.flatMap(t -> t.instructions().stream())
-			.filter(i -> i.getSpin() == Spin.DOWN)
+			.flatMap(REParsedTxn::instructions)
+			.filter(REParsedInstruction::isShutDown)
 			.flatMap(i -> substateIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
@@ -167,7 +164,8 @@ public final class RadixEngineMempool implements Mempool<RETxn> {
 			var txId = copy.first();
 			copy.remove(txId);
 			var txnData = data.get(txId);
-			txnData.getFirst().instructions().stream().filter(inst -> inst.getSpin() == Spin.DOWN)
+			txnData.getFirst().instructions()
+				.filter(REParsedInstruction::isShutDown)
 				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);

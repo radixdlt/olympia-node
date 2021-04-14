@@ -31,9 +31,8 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.ParsedInstruction;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RETxn;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -66,6 +65,7 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -185,8 +185,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public void storeAtom(Transaction tx, RETxn radixEngineTxn) {
-		withTime(() -> doStore(radixEngineTxn, unwrap(tx)), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	public void storeAtom(Transaction dbTxn, Txn txn, List<REParsedInstruction> stateUpdates) {
+		withTime(() -> doStore(unwrap(dbTxn), txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	@Override
@@ -577,23 +577,24 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, ParsedInstruction inst) {
-		if (inst.getSpin() == Spin.UP) {
+	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
+		if (inst.isBootUp()) {
 			upParticle(txn, inst.getParticle().getClass(), inst.getInstruction().getData(), inst.getSubstate().getId());
-		} else if (inst.getSpin() == Spin.DOWN) {
+		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
 				downVirtualSubstate(txn, inst.getSubstate().getId());
 			} else {
 				downSubstate(txn, inst.getSubstate().getId());
 			}
 		} else {
-			throw new BerkeleyStoreException("Unknown op: " + inst.getSpin());
+			throw new IllegalStateException("Must bootup or shutdown to update particle.");
 		}
 	}
 
 	private void doStore(
-		RETxn radixEngineTxn,
-		com.sleepycat.je.Transaction transaction
+		com.sleepycat.je.Transaction transaction,
+		Txn txn,
+		List<REParsedInstruction> stateUpdates
 	) {
 		final long stateVersion;
 		try (var cursor = atomDatabase.openCursor(transaction, null)) {
@@ -607,9 +608,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
-			var aid = radixEngineTxn.getTxn().getId();
+			var aid = txn.getId();
 			// Write atom data as soon as possible
-			var offset = atomLog.write(radixEngineTxn.getTxn().getPayload());
+			var offset = atomLog.write(txn.getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -620,12 +621,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 
 			// Update particles
-			radixEngineTxn.instructions().forEach(i -> this.updateParticle(transaction, i));
+			stateUpdates.forEach(i -> this.updateParticle(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new BerkeleyStoreException("Unable to store atom:\n" + radixEngineTxn, e);
+			throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
 		}
 	}
 

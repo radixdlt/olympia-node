@@ -24,34 +24,49 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class BurnNativeToken implements TxAction {
+public final class TransferToken implements TxAction {
 	private final RRI rri;
+	private final RadixAddress to;
 	private final UInt256 amount;
 
-	public BurnNativeToken(RRI rri, UInt256 amount) {
+	public TransferToken(RRI rri, RadixAddress to, UInt256 amount) {
 		this.rri = rri;
+		this.to = to;
 		this.amount = amount;
+	}
+
+	public UInt256 amount() {
+		return amount;
+	}
+
+	public RRI rri() {
+		return rri;
+	}
+
+	public RadixAddress to() {
+		return to;
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
+		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
 
 		// HACK
 		var factory = TokDefParticleFactory.create(
 			rri,
 			true
 		);
+
 		txBuilder.swapFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(user),
 			TransferrableTokensParticle::getAmount,
 			amt -> factory.createTransferrable(user, amt),
 			amount,
-			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
+			"Not enough balance for transfer."
+		).with(amt -> factory.createTransferrable(to, amount));
 	}
 }
-

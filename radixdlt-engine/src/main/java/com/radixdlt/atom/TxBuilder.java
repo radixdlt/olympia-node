@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -101,6 +100,14 @@ public final class TxBuilder {
 
 	private void localDown(int index) {
 		lowLevelBuilder.localDown(index);
+	}
+
+	public void read(SubstateId substateId) {
+		lowLevelBuilder.read(substateId);
+	}
+
+	public void localRead(int index) {
+		lowLevelBuilder.localRead(index);
 	}
 
 	private SubstateCursor createRemoteSubstateCursor(Class<? extends Particle> particleClass) {
@@ -220,6 +227,46 @@ public final class TxBuilder {
 		}
 	}
 
+	public <T extends Particle> T read(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		String errorMessage
+	) throws TxBuilderException {
+		var localDown = lowLevelBuilder.localUpSubstate().stream()
+			.filter(s -> {
+				if (!particleClass.isInstance(s.getParticle())) {
+					return false;
+				}
+
+				return particlePredicate.test(particleClass.cast(s.getParticle()));
+			})
+			.peek(s -> this.localRead(s.getIndex()))
+			.map(LocalSubstate::getParticle)
+			.map(particleClass::cast)
+			.findFirst();
+
+		if (localDown.isPresent()) {
+			return localDown.get();
+		}
+
+
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			var substateDown = iteratorToStream(cursor)
+				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+				.peek(s -> this.read(s.getId()))
+				.map(Substate::getParticle)
+				.map(particleClass::cast)
+				.findFirst();
+
+			if (substateDown.isEmpty()) {
+				throw new TxBuilderException(errorMessage + " (Substate not found)");
+			}
+
+			return substateDown.get();
+		}
+	}
+
+
 	public interface Mapper<T extends Particle, U extends Particle> {
 		U map(T t) throws TxBuilderException;
 	}
@@ -292,6 +339,20 @@ public final class TxBuilder {
 		}
 
 		return spent.subtract(amount);
+	}
+
+	public <T extends Particle> void deallocateFungible(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate,
+		Function<T, UInt256> amountMapper,
+		FungibleMapper<T> remainderMapper,
+		UInt256 amount,
+		String errorMessage
+	) throws TxBuilderException {
+		var remainder = downFungible(particleClass, particlePredicate, amountMapper, amount, errorMessage);
+		if (!remainder.isZero()) {
+			up(remainderMapper.map(remainder));
+		}
 	}
 
 	public <T extends Particle, U extends Particle> FungibleReplacer<U> swapFungible(
@@ -447,8 +508,6 @@ public final class TxBuilder {
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
 		);
-		final var factory = TokDefParticleFactory.create(tokenRRI, true);
-		up(factory.createUnallocated(UInt256.MAX_VALUE));
 		up(new MutableSupplyTokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
@@ -462,23 +521,13 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		var tokenDefSubstate = find(
+		read(
 			MutableSupplyTokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
-			"Could not find token rri " + rri
+			"Could not find mutable token rri " + rri
 		);
-
 		final var factory = TokDefParticleFactory.create(rri, true);
-
-		swapFungible(
-			UnallocatedTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri),
-			UnallocatedTokensParticle::getAmount,
-			factory::createUnallocated,
-			amount,
-			"Not enough balance to for minting."
-		).with(amt -> factory.createTransferrable(to, amt));
-
+		up(factory.createTransferrable(to, amount));
 		particleGroup();
 
 		return this;
@@ -502,14 +551,15 @@ public final class TxBuilder {
 
 	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
 		final var factory = TokDefParticleFactory.create(rri, true);
-		swapFungible(
+
+		deallocateFungible(
 			TransferrableTokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
 			TransferrableTokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
-			"Not enough balance for burn."
-		).with(amt -> factory.createUnallocated(amount));
+			"Not enough balance to for burn."
+		);
 
 		particleGroup();
 
@@ -549,22 +599,6 @@ public final class TxBuilder {
 
 		particleGroup();
 
-		return this;
-	}
-
-	public TxBuilder burnForFee(RRI rri, UInt256 amount) throws TxBuilderException {
-		// HACK
-		var factory = TokDefParticleFactory.create(rri, true);
-		swapFungible(
-			TransferrableTokensParticle.class,
-			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
-			amount,
-			"Not enough balance to for fee burn."
-		).with(factory::createUnallocated);
-
-		particleGroup();
 		return this;
 	}
 

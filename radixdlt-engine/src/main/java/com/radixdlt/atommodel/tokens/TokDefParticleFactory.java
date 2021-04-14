@@ -38,13 +38,6 @@ public final class TokDefParticleFactory {
 		this.isMutable = isMutable;
 	}
 
-	public UnallocatedTokensParticle createUnallocated(UInt256 amount) {
-		return new UnallocatedTokensParticle(
-			amount,
-			tokDefRef
-		);
-	}
-
 	public TransferrableTokensParticle createTransferrable(RadixAddress address, UInt256 amount) {
 		return new TransferrableTokensParticle(
 			address,

@@ -19,7 +19,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedData;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.identifiers.RadixAddress;
@@ -52,7 +52,7 @@ public final class CMAtomOS {
 
 	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
-	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>>
+	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 
 	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
@@ -76,7 +76,7 @@ public final class CMAtomOS {
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
 	}
 
-	public Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
+	public Function<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> buildTransitionProcedures() {
 		final var procedures = proceduresBuilder.build();
 		return procedures::get;
 	}

@@ -26,7 +26,6 @@ import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 
 import java.util.Arrays;
@@ -69,7 +68,6 @@ public final class Serialize {
 				RRIParticle.class,
 				MutableSupplyTokenDefinitionParticle.class,
 				FixedSupplyTokenDefinitionParticle.class,
-				UnallocatedTokensParticle.class,
 				TransferrableTokensParticle.class,
 				StakedTokensParticle.class,
 				UniqueParticle.class,

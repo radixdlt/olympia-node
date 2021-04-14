@@ -19,16 +19,17 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.atom.actions.Unknown;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedCompute;
-import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.InputOutputReducer;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -49,7 +50,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
+	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -66,7 +67,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
+	public Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 
@@ -133,40 +134,24 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(RRIParticle.class, TypeToken.of(VoidUsedData.class), particleClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
 				public Result precondition(
 					RRIParticle inputParticle,
-					VoidUsedData inputUsed,
 					O outputParticle,
-					VoidUsedData outputUsed
+					VoidReducerState outputUsed
 				) {
 					return Result.success();
 				}
 
-				@Override
-				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
+					return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
-				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public WitnessValidator<RRIParticle> inputWitnessValidator() {
-					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getPublicKey())
-												 ? WitnessValidatorResult.success()
-												 : WitnessValidatorResult.error(
-												 	"Not signed by " + rri.getRri().getAddress()
-												 );
-				}
-
-				@Override
-				public WitnessValidator<O> outputWitnessValidator() {
-					return (o, witnessData) -> WitnessValidatorResult.success();
+				public SignatureValidator<RRIParticle> inputSignatureRequired() {
+					return rri -> Optional.of(rri.getRri().getAddress());
 				}
 			}
 		);
@@ -192,17 +177,16 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass0,
 			particleClass1,
 			combinedCheck,
-			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getPublicKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
+			in -> Optional.of(in.getRri().getAddress())
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
 	}
 
 	@Override
-	public <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> procedure
+	public <I extends Particle, O extends Particle, U extends ReducerState> void createTransition(
+		TransitionToken<I, O, U> transitionToken,
+		TransitionProcedure<I, O, U> procedure
 	) {
 		if (scryptTransitionProcedures.containsKey(transitionToken)) {
 			throw new IllegalStateException(transitionToken + " already created");
@@ -211,15 +195,15 @@ final class ConstraintScryptEnv implements SysCalls {
 		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
 		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
 
-		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transformedProcedure
-			= new TransitionProcedure<Particle, UsedData, Particle, UsedData>() {
+		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
+			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel() {
 					return procedure.requiredPermissionLevel();
 				}
 
 				@Override
-				public Result precondition(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
+				public Result precondition(Particle inputParticle, Particle outputParticle, ReducerState outputUsed) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
 						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
@@ -229,30 +213,18 @@ final class ConstraintScryptEnv implements SysCalls {
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
+					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed);
 				}
 
 				@Override
-				public UsedCompute<Particle, UsedData, Particle, UsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> procedure.inputUsedCompute()
-						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
+				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
+					return (input, output, outputUsed) -> procedure.inputOutputReducer()
+						.reduce((I) input, (O) output, (U) outputUsed);
 				}
 
 				@Override
-				public UsedCompute<Particle, UsedData, Particle, UsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> procedure.outputUsedCompute()
-						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
-				}
-
-
-				@Override
-				public WitnessValidator<Particle> inputWitnessValidator() {
-					return (i, w) -> procedure.inputWitnessValidator().validate((I) i, w);
-				}
-
-				@Override
-				public WitnessValidator<Particle> outputWitnessValidator() {
-					return (o, w) -> procedure.outputWitnessValidator().validate((O) o, w);
+				public SignatureValidator<Particle> inputSignatureRequired() {
+					return i -> procedure.inputSignatureRequired().requiredSignature((I) i);
 				}
 			};
 

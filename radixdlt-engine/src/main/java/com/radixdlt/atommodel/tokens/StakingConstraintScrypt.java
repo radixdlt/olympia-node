@@ -18,17 +18,18 @@
 
 package com.radixdlt.atommodel.tokens;
 
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.constraintmachine.WitnessData;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -61,7 +62,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress()),
+			(i, o) -> new StakeNativeToken(i.getTokDefRef(), o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Unstaking
@@ -71,7 +73,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TransferrableTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress()),
+			(i, o) -> new UnstakeNativeToken(o.getTokDefRef(), i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Stake movement
@@ -85,7 +88,8 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			i -> Optional.of(i.getAddress()),
+			(i, o) -> Unknown.create()
 		));
 	}
 
@@ -93,11 +97,5 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
 	) {
 		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
-	}
-
-	static WitnessValidator.WitnessValidatorResult checkSignedBy(WitnessData meta, RadixAddress address) {
-		return meta.isSignedBy(address.getPublicKey())
-			? WitnessValidator.WitnessValidatorResult.success()
-			: WitnessValidator.WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
 }

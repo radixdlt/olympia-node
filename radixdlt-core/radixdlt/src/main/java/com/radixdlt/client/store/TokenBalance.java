@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,7 +28,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
@@ -47,15 +47,15 @@ public class TokenBalance {
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final UInt256 amount;
+	private final UInt384 amount;
 
-	private TokenBalance(RRI rri, UInt256 amount) {
+	private TokenBalance(RRI rri, UInt384 amount) {
 		this.rri = rri;
 		this.amount = amount;
 	}
 
 	@JsonCreator
-	public static TokenBalance create(RRI rri, UInt256 amount) {
+	public static TokenBalance create(RRI rri, UInt384 amount) {
 		requireNonNull(rri);
 		requireNonNull(amount);
 
@@ -70,7 +70,7 @@ public class TokenBalance {
 		return rri;
 	}
 
-	public UInt256 getAmount() {
+	public UInt384 getAmount() {
 		return amount;
 	}
 

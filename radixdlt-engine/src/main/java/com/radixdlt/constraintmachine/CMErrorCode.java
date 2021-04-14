@@ -22,19 +22,22 @@ package com.radixdlt.constraintmachine;
  * TODO: add numeric codes
  */
 public enum CMErrorCode {
+	INCORRECT_SIGNATURE("Incorrect signature"),
+	TOO_MANY_REQUIRED_SIGNATURES("Too many required signatures"),
 	TOO_MANY_MESSAGES("Too many messages"),
 	DATA_TOO_LARGE("Data is too large"),
 	HOOK_ERROR("Hook error"),
 	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),
+	UNKNOWN_OP("Unknown op"),
 	SPIN_CONFLICT("Spin conflict"),
+	READ_FAILURE("Substate read fail (does not exist)"),
 	LOCAL_NONEXISTENT("Local non-existent"),
 	INVALID_PARTICLE("Invalid particle"),
 	PARTICLE_REGISTER_SPIN_CLASH("Particle spin clashes with current particle in register"),
 	MISSING_TRANSITION_PROCEDURE("Transition procedure missing"),
 	UNEQUAL_INPUT_OUTPUT("Inputs and outputs do not match"),
 	NO_FULL_POP_ERROR("Neither input nor output are fully popped"),
-	WITNESS_ERROR("Witness error"),
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error"),
 	ARITHMETIC_ERROR("Arithmetic error"),

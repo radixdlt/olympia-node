@@ -113,6 +113,21 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	public TxLowLevelBuilder read(SubstateId substateId) {
+		this.instructions.add(REInstruction.create(REInstruction.REOp.READ.opCode(), substateId.asBytes()));
+		return this;
+	}
+
+	public TxLowLevelBuilder localRead(int index) {
+		var particle = localUpParticles.get(index);
+		if (particle == null) {
+			throw new IllegalStateException("Local particle does not exist: " + index);
+		}
+		this.instructions.add(REInstruction.create(REInstruction.REOp.LREAD.opCode(), Ints.toByteArray(index)));
+		return this;
+	}
+
+
 	public TxLowLevelBuilder particleGroup() {
 		this.instructions.add(REInstruction.particleGroup());
 		return this;
