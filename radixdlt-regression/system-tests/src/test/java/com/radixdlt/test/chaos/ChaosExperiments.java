@@ -45,12 +45,15 @@ public class ChaosExperiments {
                 new NetworkAction(ansible, 0.4),
                 new RestartAction(ansible, 0.7),
                 new ShutdownAction(ansible, 0.1),
-                new MempoolFillAction(ansible, 0.7, 300),
+                //new MempoolFillAction(ansible, 0.7, 300),
                 new ValidatorUnregistrationAction(ansible, 1.0)
         );
 
         actions.forEach(Action::teardown);
-        actions.forEach(Action::setup);
+        actions.forEach(action -> {
+            action.setup();
+            ChaosExperimentUtils.waitSeconds(20);
+        });
 
         ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
     }

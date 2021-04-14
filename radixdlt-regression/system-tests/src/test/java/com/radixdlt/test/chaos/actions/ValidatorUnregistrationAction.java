@@ -22,7 +22,7 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
         String host = getAnsible().getRandomNodeHost();
 
         String address = httpClient.getNodeAddress(host);
-        httpClient.callFaucetForAddress(address);
+        httpClient.callFaucet(address);
         logger.info("Got tokens");
         ChaosExperimentUtils.waitSeconds(5);
 
