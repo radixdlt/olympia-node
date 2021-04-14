@@ -138,7 +138,6 @@ public final class DeserializationTestScenarioRunner extends SanityTestScenarioR
         assertEquals(expected.getName(), argsExtractor.asString("name"));
         assertEquals(expected.getDescription(), argsExtractor.asString("description"));
         assertEquals(expected.getIconUrl(), argsExtractor.asString("iconUrl"));
-        assertEquals(expected.getSupply(), argsExtractor.asUInt256("supply"));
         assertEquals(expected.getUrl(), argsExtractor.asString("url"));
 
         assertTrue(argsExtractor.isFinished());
