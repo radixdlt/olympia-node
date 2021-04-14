@@ -15,31 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.services;
+package com.radixdlt.client.api;
 
-import org.radix.api.jsonrpc.AtomStatus;
+import org.json.JSONObject;
 
-public enum ApiAtomStatus {
+public enum TransactionStatus {
 	PENDING,
 	CONFIRMED,
-	FAILED;
+	FAILED,
+	TRANSACTION_NOT_FOUND;
 
+	public JSONObject asJson(JSONObject input) {
+		var key = this == TRANSACTION_NOT_FOUND ? "failure" : "status";
 
-	public static ApiAtomStatus fromAtomStatus(AtomStatus atomStatus) {
-		switch (atomStatus) {
-			case DOES_NOT_EXIST:
-			case EVICTED_FAILED_CM_VERIFICATION:
-			case MISSING_DEPENDENCY:
-			case MEMPOOL_FULL:
-			case MEMPOOL_DUPLICATE:
-			case CONFLICT_LOSER:
-				return FAILED;
-			case PENDING_CM_VERIFICATION:
-				return PENDING;
-			case STORED:
-				return CONFIRMED;
-			default:
-				throw new IllegalStateException("Unknown atom status " + atomStatus);
-		}
+		return input.put(key, name());
 	}
 }

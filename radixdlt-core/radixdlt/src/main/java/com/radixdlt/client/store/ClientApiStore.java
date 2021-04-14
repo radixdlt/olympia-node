@@ -19,6 +19,7 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
@@ -76,6 +77,15 @@ public interface ClientApiStore {
 	 * @return list of transaction history entries.
 	 */
 	Result<List<TxHistoryEntry>> getTransactionHistory(RadixAddress address, int size, Optional<Instant> cursor);
+
+	/**
+	 * Retrieve single transaction history entry.
+	 *
+	 * @param txId transaction id
+	 *
+	 * @return transaction history entry.
+	 */
+	Result<TxHistoryEntry> getSingleTransaction(AID txId);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }

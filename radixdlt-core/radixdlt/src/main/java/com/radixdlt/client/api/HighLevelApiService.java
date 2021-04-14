@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.services;
+package com.radixdlt.client.api;
 
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
@@ -28,8 +28,8 @@ import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TxHistoryEntry;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
@@ -83,6 +83,10 @@ public class HighLevelApiService {
 	) {
 		return clientApiStore.getTransactionHistory(address, size, cursor)
 			.map(response -> tuple(calculateNewCursor(response), response));
+	}
+
+	public Result<TxHistoryEntry> getSingleTransaction(AID txId) {
+		return clientApiStore.getSingleTransaction(txId);
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {
