@@ -17,17 +17,52 @@
 
 package com.radixdlt.client.service;
 
-import com.radixdlt.atom.TxActionListBuilder;
+import com.google.inject.Inject;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class SubmissionService {
+	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final RRI nativeToken;
+
+	@Inject
+	public SubmissionService(RadixEngine<LedgerAndBFTProof> radixEngine, @NativeToken RRI nativeToken) {
+		this.radixEngine = radixEngine;
+		this.nativeToken = nativeToken;
+	}
+
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
-		TxActionListBuilder
-		throw new IllegalStateException("Not implemented yet");
+		var addresses = steps.stream().map(TransactionAction::getFrom).collect(Collectors.toSet());
+
+		if (addresses.size() != 1) {
+			return Result.fail("Source addresses in all actions must be the same");
+		}
+
+		var address = addresses.iterator().next();
+		var actions = steps.stream().map(step -> step.toAction(nativeToken)).collect(Collectors.toList());
+
+		try {
+			var blobs = radixEngine
+				.construct(address, actions)
+				.burnForFee(nativeToken, fixedFee)
+				.buildForExternalSign();
+
+			return Result.ok(PreparedTransaction.create(blobs.getFirst(), blobs.getSecond().asBytes(), fixedFee));
+		} catch (Exception e) {
+			return Result.fail(e.getMessage());
+		}
 	}
 }

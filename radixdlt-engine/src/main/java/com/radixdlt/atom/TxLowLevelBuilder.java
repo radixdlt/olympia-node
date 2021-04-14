@@ -26,6 +26,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Pair;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -156,6 +157,10 @@ public final class TxLowLevelBuilder {
 	public Txn buildWithoutSignature() {
 		var atom = Atom.create(instructions, null);
 		return atomToTxn(atom);
+	}
+
+	public Pair<byte[], HashCode> buildForExternalSign() {
+		return Pair.of(Atom.computeBlobToSign(instructions), computeHashToSign());
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {

@@ -79,10 +79,21 @@ public final class Atom {
 	}
 
 	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
+		return computeHashToSignFromBytes(computeBlobToSign(instructions));
+	}
+
+	public static HashCode computeHashToSignFromBytes(byte[] blob) {
+		return HashUtils.sha256(HashUtils.sha256(blob).asBytes());
+	}
+
+	public static byte[] computeBlobToSign(List<REInstruction> instructions) {
+		return computeBlobToSign(serializedInstructions(instructions));
+	}
+
+	public static byte[] computeBlobToSign(Stream<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
 		instructions.forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
+		return outputStream.toByteArray();
 	}
 
 	public Optional<ECDSASignature> getSignature() {

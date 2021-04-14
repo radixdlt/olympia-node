@@ -17,6 +17,11 @@
 
 package com.radixdlt.client.api;
 
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.BurnNativeToken;
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.TransferNativeToken;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -55,7 +60,27 @@ public class TransactionAction {
 		return new TransactionAction(actionType, from, to, amount, rri);
 	}
 
+	public RadixAddress getFrom() {
+		return from;
+	}
+
 	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<RRI>> mapper) {
 		return mapper.apply(actionType, from, to, amount, rri);
+	}
+
+	public TxAction toAction(RRI nativeToken) {
+		switch (actionType) {
+			case TRANSFER:
+				return new TransferNativeToken(rriValue(), to, amount);
+			case STAKE:
+				return new StakeNativeToken(nativeToken, to, amount);
+			case UNSTAKE:
+				return new UnstakeNativeToken(nativeToken, to, amount);
+		}
+		throw new IllegalStateException("Unsupported action type " + actionType);
+	}
+
+	private RRI rriValue() {
+		return rri.orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }

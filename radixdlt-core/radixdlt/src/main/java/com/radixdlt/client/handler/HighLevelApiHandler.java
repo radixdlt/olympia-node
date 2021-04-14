@@ -24,6 +24,7 @@ import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.service.HighLevelApiService;
 
 import com.google.inject.Inject;
@@ -32,6 +33,7 @@ import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
@@ -204,14 +206,16 @@ public class HighLevelApiHandler {
 
 	private Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
 		//TODO: finish
+		return null;
 	}
 
 	private Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
 		//TODO: finish
+		return null;
 	}
 
 	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
-		//TODO: finish
+		return ECKeyUtils.toRecoverable(signature, Atom.computeHashToSignFromBytes(blob).asBytes(), publicKey);
 	}
 
 	private Result<byte[]> parseBlob(JSONObject request) {

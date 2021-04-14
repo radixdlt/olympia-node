@@ -249,6 +249,17 @@ public interface Result<T> {
 	}
 
 	/**
+	 * Create an instance of simple failure operation result from exception.
+	 *
+	 * @param throwable Exception to convert
+	 *
+	 * @return created instance
+	 */
+	static <R> Result<R> fail(final Throwable throwable) {
+		return new ResultFail<R>(Failure.failure(throwable.getMessage()));
+	}
+
+	/**
 	 * Create an instance of simple failure operation result.
 	 *
 	 * @param format Error message format string

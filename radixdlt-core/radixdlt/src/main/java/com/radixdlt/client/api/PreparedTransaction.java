@@ -24,15 +24,25 @@ import com.radixdlt.utils.UInt256;
 import static org.bouncycastle.util.encoders.Hex.toHexString;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
+import static java.util.Objects.requireNonNull;
+
 public class PreparedTransaction {
 	private final byte[] blob;
 	private final byte[] hashToSign;
 	private final UInt256 fee;
 
-	public PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee) {
+	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee) {
 		this.blob = blob;
 		this.hashToSign = hashToSign;
 		this.fee = fee;
+	}
+
+	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee) {
+		requireNonNull(blob);
+		requireNonNull(hashToSign);
+		requireNonNull(fee);
+
+		return new PreparedTransaction(blob, hashToSign, fee);
 	}
 
 	public JSONObject asJson() {
