@@ -34,7 +34,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.utils.Ints;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,11 +65,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 					particle = SubstateSerializer.deserialize(instruction.getData());
 					substateId = SubstateId.ofVirtualSubstate(instruction.getData());
 				} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
-					substateId = SubstateId.fromBytes(instruction.getData());
+					substateId = SubstateId.fromBuffer(instruction.getData());
 					var storedParticle = store.loadUpParticle(null, substateId);
 					particle = storedParticle.orElseThrow();
 				} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
-					int index = Ints.fromByteArray(instruction.getData());
+					int index = instruction.getData().getInt();
 					var dson = rawInstructions.get(index).getData();
 					particle = SubstateSerializer.deserialize(dson);
 					substateId = SubstateId.ofSubstate(atom, index);

@@ -58,8 +58,12 @@ public final class SubstateSerializer {
 		return classToByte.get(particleClass);
 	}
 
+
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
-		var buf = ByteBuffer.wrap(bytes);
+		return deserialize(ByteBuffer.wrap(bytes));
+	}
+
+	public static Particle deserialize(ByteBuffer buf) throws DeserializeException {
 		var version = buf.get();
 		if (version != 1) {
 			throw new DeserializeException("Bad version: " + version);
@@ -119,9 +123,9 @@ public final class SubstateSerializer {
 		return bytes;
 	}
 
-	public static Result<Particle> deserializeToResult(byte[] bytes) {
+	public static Result<Particle> deserializeToResult(ByteBuffer buf) {
 		try {
-			return Result.ok(deserialize(bytes));
+			return Result.ok(deserialize(buf));
 		} catch (DeserializeException e) {
 			return Result.fail("Unable to deserialize {0}", Particle.class.getSimpleName());
 		}

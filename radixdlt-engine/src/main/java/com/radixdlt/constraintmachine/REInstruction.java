@@ -19,6 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import org.bouncycastle.util.encoders.Hex;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -63,18 +64,24 @@ public final class REInstruction {
 
 	private final REOp operation;
 	private final byte[] data;
+	private final byte[] fullBytes;
 
-	private REInstruction(REOp operation, byte[] data) {
+	private REInstruction(REOp operation, byte[] data, byte[] fullBytes) {
 		this.operation = operation;
 		this.data = data;
+		this.fullBytes = fullBytes;
 	}
 
 	public REOp getMicroOp() {
 		return operation;
 	}
 
-	public byte[] getData() {
-		return data;
+	public ByteBuffer getData() {
+		return ByteBuffer.wrap(data);
+	}
+
+	public byte[] getBytes() {
+		return fullBytes;
 	}
 
 	public boolean hasSubstate() {
@@ -93,13 +100,11 @@ public final class REInstruction {
 		return operation.nextSpin;
 	}
 
-	public static REInstruction create(byte op, byte[] data) {
-		var microOp = REOp.fromByte(op);
-		return new REInstruction(microOp, data);
-	}
-
-	public static REInstruction particleGroup() {
-		return new REInstruction(REOp.END, new byte[0]);
+	public static REInstruction create(byte[] instruction) {
+		var data = new byte[instruction.length - 1];
+		System.arraycopy(instruction, 1, data, 0, data.length);
+		var microOp = REOp.fromByte(instruction[0]);
+		return new REInstruction(microOp, data, instruction);
 	}
 
 	@Override
@@ -112,7 +117,7 @@ public final class REInstruction {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, Arrays.hashCode(data));
+		return Objects.hash(operation, Arrays.hashCode(data), Arrays.hashCode(fullBytes));
 	}
 
 	@Override
@@ -123,6 +128,7 @@ public final class REInstruction {
 
 		var other = (REInstruction) o;
 		return Objects.equals(this.operation, other.operation)
+			&& Arrays.equals(this.fullBytes, other.fullBytes)
 			&& Arrays.equals(this.data, other.data);
 	}
 }

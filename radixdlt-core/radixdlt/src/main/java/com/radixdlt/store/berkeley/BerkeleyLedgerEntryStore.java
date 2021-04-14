@@ -63,6 +63,7 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -314,7 +315,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 						return false;
 					}
 
-					result.setData(data.getData(), 1, 1);
+					result.setData(data.getData(), 1 + data.getOffset(), 1);
 					return true;
 				}
 			)
@@ -509,11 +510,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void upParticle(
 		com.sleepycat.je.Transaction txn,
-		byte[] substateBytes,
+		ByteBuffer bytes,
 		SubstateId substateId
 	) {
 		byte[] particleKey = substateId.asBytes();
-		particleDatabase.putNoOverwrite(txn, entry(particleKey), entry(substateBytes));
+		var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
+		particleDatabase.putNoOverwrite(txn, entry(particleKey), value);
 	}
 
 	private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -558,7 +560,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
 		if (inst.isBootUp()) {
-			upParticle(txn, inst.getInstruction().getData(), inst.getSubstate().getId());
+			var buf = ByteBuffer.wrap(inst.getInstruction().getBytes(), 1, inst.getInstruction().getBytes().length - 1);
+			upParticle(txn, buf, inst.getSubstate().getId());
 		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
 				downVirtualSubstate(txn, inst.getSubstate().getId());

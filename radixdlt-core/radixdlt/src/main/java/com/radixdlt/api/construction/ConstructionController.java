@@ -21,27 +21,63 @@ package com.radixdlt.api.construction;
 import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.AtomIndex;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.store.CMStore;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
 import org.radix.api.http.Controller;
 
+import java.util.Optional;
+
+import static com.radixdlt.serialization.SerializationUtils.restore;
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class ConstructionController implements Controller {
-	private final AtomIndex atomIndex;
+	private final ConstraintMachine constraintMachine;
+	private final CMStore readLogStore;
 
 	@Inject
-	public ConstructionController(AtomIndex atomIndex) {
-		this.atomIndex = atomIndex;
+	public ConstructionController(
+		AtomIndex atomIndex,
+		ConstraintMachine constraintMachine
+	) {
+		this.constraintMachine = constraintMachine;
+		this.readLogStore = new CMStore() {
+			@Override
+			public Transaction createTransaction() {
+				return null;
+			}
+
+			@Override
+			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
+				return false;
+			}
+
+			@Override
+			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
+				var txnId = substateId.getTxnId();
+				return atomIndex.get(txnId)
+					.flatMap(txn ->
+						restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
+							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
+							.map(i -> i.get(substateId.getIndex().orElseThrow()))
+							.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
+							.toOptional()
+					);
+			}
+		};
 	}
 
 	@Override
@@ -49,42 +85,29 @@ public final class ConstructionController implements Controller {
 		handler.post("/node/parse", this::handleParse);
 	}
 
+	private REParsedTxn parseTxn(Txn txn) {
+		try {
+			return constraintMachine.validate(null, readLogStore, txn, PermissionLevel.SUPER_USER);
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	void handleParse(HttpServerExchange exchange) {
 		withBodyAsync(exchange, values -> {
 			var transactionHex = values.getString("transaction");
 			var transactionBytes = Hex.decode(transactionHex);
-			var txn = DefaultSerialization.getInstance().fromDson(transactionBytes, Atom.class);
+			REParsedTxn parsedTxn = parseTxn(Txn.create(transactionBytes));
 			var ops = jsonArray();
 			var response = jsonObject().put("operations", ops);
 
-			for (int i = 0; i < txn.getInstructions().size(); i += 2) {
-				var b = txn.getInstructions().get(i);
-				var payload = txn.getInstructions().get(i + 1);
-				var instruction = REInstruction.create(b[0], payload);
-				var op = instruction.getMicroOp();
+			parsedTxn.instructions().forEach(i -> {
 				var jsonOp = jsonObject()
-					.put("type", op.toString())
-					.put("data", Hex.toHexString(instruction.getData()));
-				if (op == REInstruction.REOp.DOWN) {
-					var prevTxnBytes = atomIndex.get(AID.from(instruction.getData(), 0)).orElseThrow();
-					var index = Ints.fromByteArray(instruction.getData(), AID.BYTES);
-					var prevTxn = DefaultSerialization.getInstance().fromDson(prevTxnBytes.getPayload(), Atom.class);
-					var particleBytes = prevTxn.getInstructions().get(index * 2 + 1);
-					var particle = DefaultSerialization.getInstance().fromDson(particleBytes, Particle.class);
-					jsonOp.put("parsedData", particle.toString());
-				} else if (op == REInstruction.REOp.UP) {
-					var particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
-					jsonOp.put("parsedData", particle.toString());
-				} else if (op == REInstruction.REOp.VDOWN) {
-					var particle = DefaultSerialization.getInstance().fromDson(instruction.getData(), Particle.class);
-					jsonOp.put("parsedData", particle.toString());
-				} else if (op == REInstruction.REOp.LDOWN) {
-					var index = Ints.fromByteArray(instruction.getData());
-					jsonOp.put("parsedData", index);
-				}
+					.put("type", i.getInstruction().getMicroOp())
+					.put("parsed", i.getParticle());
 
 				ops.put(jsonOp);
-			}
+			});
 
 			respond(exchange, response);
 		});
