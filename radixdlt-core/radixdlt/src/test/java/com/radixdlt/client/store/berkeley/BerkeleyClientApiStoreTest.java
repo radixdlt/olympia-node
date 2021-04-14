@@ -16,7 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -96,7 +96,7 @@ public class BerkeleyClientApiStoreTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private ConstraintMachine constraintMachine;
+	private TxnParser txnParser;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
@@ -334,7 +334,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
-			constraintMachine,
+			txnParser,
 			ledgerStore,
 			serialization,
 			mock(SystemCounters.class),

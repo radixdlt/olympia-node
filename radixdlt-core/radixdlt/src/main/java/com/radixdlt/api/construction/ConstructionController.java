@@ -19,68 +19,24 @@
 package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.store.AtomIndex;
-import com.radixdlt.store.CMStore;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
 import org.radix.api.http.Controller;
 
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static com.radixdlt.serialization.SerializationUtils.restore;
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.http.RestUtils.withBodyAsync;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class ConstructionController implements Controller {
-	private final ConstraintMachine constraintMachine;
-	private final CMStore readLogStore;
+	private final TxnParser txnParser;
 
 	@Inject
-	public ConstructionController(
-		AtomIndex atomIndex,
-		ConstraintMachine constraintMachine
-	) {
-		this.constraintMachine = constraintMachine;
-		this.readLogStore = new CMStore() {
-			@Override
-			public Transaction createTransaction() {
-				return null;
-			}
-
-			@Override
-			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
-				return false;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
-				var txnId = substateId.getTxnId();
-				return atomIndex.get(txnId)
-					.flatMap(txn ->
-						restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
-							.map(a -> a.getInstructions().stream().map(REInstruction::create)
-								.collect(Collectors.toList()))
-							.map(i -> i.get(substateId.getIndex().orElseThrow()))
-							.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
-							.toOptional()
-					);
-			}
-		};
+	public ConstructionController(TxnParser txnParser) {
+		this.txnParser = txnParser;
 	}
 
 	@Override
@@ -88,19 +44,11 @@ public final class ConstructionController implements Controller {
 		handler.post("/node/parse", this::handleParse);
 	}
 
-	private REParsedTxn parseTxn(Txn txn) {
-		try {
-			return constraintMachine.validate(null, readLogStore, txn, PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	void handleParse(HttpServerExchange exchange) {
 		withBodyAsync(exchange, values -> {
 			var transactionHex = values.getString("transaction");
 			var transactionBytes = Hex.decode(transactionHex);
-			REParsedTxn parsedTxn = parseTxn(Txn.create(transactionBytes));
+			REParsedTxn parsedTxn = txnParser.parse(Txn.create(transactionBytes));
 			var ops = jsonArray();
 			var response = jsonObject().put("operations", ops);
 
