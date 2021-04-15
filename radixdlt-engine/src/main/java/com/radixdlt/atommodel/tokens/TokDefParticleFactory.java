@@ -42,8 +42,7 @@ public final class TokDefParticleFactory {
 		return new TokensParticle(
 			address,
 			amount,
-			tokDefRef,
-			isMutable
+			tokDefRef
 		);
 	}
 

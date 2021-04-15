@@ -31,6 +31,8 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.store.ImmutableIndex;
+
 import java.util.Optional;
 
 /**
@@ -86,8 +88,10 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 				@Override
 				public Result precondition(
-					SystemParticle inputParticle, SystemParticle outputParticle,
-					VoidReducerState outputUsed
+					SystemParticle inputParticle,
+					SystemParticle outputParticle,
+					VoidReducerState outputUsed,
+					ImmutableIndex immutableIndex
 				) {
 
 					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {

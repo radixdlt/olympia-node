@@ -32,6 +32,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -128,7 +129,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
+		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
 			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address

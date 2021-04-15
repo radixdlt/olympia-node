@@ -310,7 +310,8 @@ public final class ConstraintMachine {
 		final Result preconditionCheckResult = transitionProcedure.precondition(
 			inputParticle,
 			outputParticle,
-			used
+			used,
+			validationState.immutableIndex()
 		);
 		if (preconditionCheckResult.isError()) {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));

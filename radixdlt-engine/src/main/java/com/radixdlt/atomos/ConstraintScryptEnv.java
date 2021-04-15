@@ -31,6 +31,7 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -135,7 +136,8 @@ final class ConstraintScryptEnv implements SysCalls {
 				public Result precondition(
 					RRIParticle inputParticle,
 					O outputParticle,
-					VoidReducerState outputUsed
+					VoidReducerState outputUsed,
+					ImmutableIndex index
 				) {
 					return Result.success();
 				}
@@ -200,7 +202,12 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public Result precondition(Particle inputParticle, Particle outputParticle, ReducerState outputUsed) {
+				public Result precondition(
+					Particle inputParticle,
+					Particle outputParticle,
+					ReducerState outputUsed,
+					ImmutableIndex index
+				) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
 						final var inputRriId = inputDefinition.getRriMapper().apply(inputParticle);
@@ -210,7 +217,7 @@ final class ConstraintScryptEnv implements SysCalls {
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed);
+					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed, index);
 				}
 
 				@Override

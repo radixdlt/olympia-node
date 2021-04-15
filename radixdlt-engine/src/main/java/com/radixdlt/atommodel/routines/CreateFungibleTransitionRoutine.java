@@ -140,7 +140,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 				return transition.apply(inputParticle, outputParticle);
 			}
 
@@ -170,7 +170,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, UsedAmount used) {
+			public Result precondition(I inputParticle, O outputParticle, UsedAmount used, ImmutableIndex index) {
 				return transition.apply(inputParticle, outputParticle);
 			}
 

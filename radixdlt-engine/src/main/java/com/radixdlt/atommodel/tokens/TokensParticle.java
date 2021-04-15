@@ -31,22 +31,15 @@ public final class TokensParticle implements Particle {
 	private final RriId rriId;
 	private final RadixAddress address;
 	private final UInt256 amount;
-	private final boolean isBurnable;
 
 	public TokensParticle(
 		RadixAddress address,
 		UInt256 amount,
-		RriId rriId,
-		boolean isBurnable
+		RriId rriId
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.rriId = Objects.requireNonNull(rriId);
 		this.amount = Objects.requireNonNull(amount);
-		this.isBurnable = isBurnable;
-	}
-
-	public boolean isBurnable() {
-		return isBurnable;
 	}
 
 	public RadixAddress getAddress() {
@@ -59,12 +52,11 @@ public final class TokensParticle implements Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
 			rriId,
 			amount,
-			address,
-			isBurnable
+			address
 		);
 	}
 
@@ -83,12 +75,11 @@ public final class TokensParticle implements Particle {
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(address, that.address)
 			&& Objects.equals(rriId, that.rriId)
-			&& Objects.equals(amount, that.amount)
-			&& isBurnable == that.isBurnable;
+			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, rriId, amount, isBurnable);
+		return Objects.hash(address, rriId, amount);
 	}
 }

@@ -491,8 +491,7 @@ public final class TxBuilder {
 		up(new TokensParticle(
 			address,
 			tokenDefinition.getSupply(),
-			rriId,
-			false)
+			rriId)
 		);
 
 		particleGroup();
@@ -530,8 +529,7 @@ public final class TxBuilder {
 			p -> p.getRriId().equals(rriId),
 			"Could not find mutable token rri " + rri
 		);
-		final var factory = TokDefParticleFactory.create(rriId, true);
-		up(factory.createTransferrable(to, amount));
+		up(new TokensParticle(to, amount, rriId));
 		particleGroup();
 
 		return this;
@@ -539,15 +537,14 @@ public final class TxBuilder {
 
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		final var rriId = RriId.fromRri(rri);
-		final var factory = TokDefParticleFactory.create(rriId, true);
 		swapFungible(
 			TokensParticle.class,
 			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
+			amt -> new TokensParticle(address, amt, rriId),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> factory.createTransferrable(to, amount));
+		).with(amt -> new TokensParticle(to, amount, rriId));
 
 		particleGroup();
 

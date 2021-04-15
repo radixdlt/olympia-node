@@ -154,16 +154,14 @@ public final class SubstateSerializer {
 		serializeRriId(buf, tokensParticle.getRriId());
 		serializeAddress(buf, tokensParticle.getAddress());
 		buf.put(tokensParticle.getAmount().toByteArray());
-		buf.put((byte) (tokensParticle.isBurnable() ? 1 : 0)); // isBurnable
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
 		var rriId = deserializeRriId(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
-		var isBurnable = buf.get() != 0; // isBurnable
 
-		return new TokensParticle(address, amount, rriId, isBurnable);
+		return new TokensParticle(address, amount, rriId);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
