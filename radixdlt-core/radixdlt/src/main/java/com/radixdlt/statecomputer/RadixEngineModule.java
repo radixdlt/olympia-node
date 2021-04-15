@@ -40,8 +40,6 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -81,8 +79,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(
-		@Named("magic") int magic,
-		@NativeToken RRI nativeToken
+		@Named("magic") int magic
 	) {
 		final CMAtomOS os = new CMAtomOS(
 			addr -> {
@@ -96,7 +93,7 @@ public class RadixEngineModule extends AbstractModule {
 		);
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
-		os.load(new StakingConstraintScrypt(nativeToken));
+		os.load(new StakingConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new SystemConstraintScrypt());
 		return new ConstraintMachine.Builder()

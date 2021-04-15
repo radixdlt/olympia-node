@@ -18,22 +18,16 @@
 package com.radixdlt.client.api;
 
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TxHistoryEntry;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -47,17 +41,17 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class HighLevelApiService {
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
-	private final TokenDefinitionParticle nativeTokenDefinition;
+	private final ImmutableIndex immutableIndex;
 
 	@Inject
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis List<Txn> genesisAtoms
+		ImmutableIndex immutableIndex
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
-		this.nativeTokenDefinition = nativeToken(genesisAtoms);
+		this.immutableIndex = immutableIndex;
 	}
 
 	public int getUniverseMagic() {
@@ -69,8 +63,15 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRri())
-			.map(supply -> TokenDefinitionRecord.from(nativeTokenDefinition, supply));
+		return Result.fromOptional(
+			immutableIndex.loadRriId(null, RriId.nativeToken()),
+			"Unable to find native token"
+		)
+			.map(p -> (TokenDefinitionParticle) p)
+			.flatMap(p ->
+				clientApiStore.getTokenSupply(p.getRri())
+					.map(supply -> TokenDefinitionRecord.from(p, supply))
+			);
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(RRI rri) {
@@ -103,30 +104,5 @@ public class HighLevelApiService {
 		return definition.isMutable()
 			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
 			   : Result.ok(definition);
-	}
-
-	private static TokenDefinitionParticle nativeToken(List<Txn> genesisAtoms) {
-		return genesisAtoms.stream()
-			.map(txn -> {
-				try {
-					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.flatMap(a -> a.getInstructions().stream().map(REInstruction::create))
-			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
-			.map(i -> {
-				try {
-					return SubstateSerializer.deserialize(i.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException("Cannot deserialize genesis", e);
-				}
-			})
-			.filter(TokenDefinitionParticle.class::isInstance)
-			.map(TokenDefinitionParticle.class::cast)
-			.filter(particle -> particle.getRri().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
 	}
 }

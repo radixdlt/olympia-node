@@ -18,28 +18,26 @@
 
 package com.radixdlt.atom.actions;
 
+import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class UnstakeNativeToken implements TxAction {
-	private final RRI nativeToken;
+public final class StakeTokens implements TxAction {
 	private final RadixAddress delegateAddress;
 	private final UInt256 amount;
 
-	public UnstakeNativeToken(RRI nativeToken, RadixAddress delegateAddress, UInt256 amount) {
-		this.nativeToken = nativeToken;
+	public StakeTokens(RadixAddress delegateAddress, UInt256 amount) {
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
 	}
 
-	public RadixAddress from() {
+	public RadixAddress to() {
 		return delegateAddress;
 	}
 
@@ -47,20 +45,19 @@ public final class UnstakeNativeToken implements TxAction {
 		return amount;
 	}
 
-	public RRI rri() {
-		return nativeToken;
-	}
-
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address),
-			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(delegateAddress, address, amt),
+			TokensParticle.class,
+			p -> p.getRriId().isNativeToken()
+				&& p.getAddress().equals(address)
+				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
+				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
+			TokensParticle::getAmount,
+			amt -> new TokensParticle(address, amt, RriId.nativeToken()),
 			amount,
-			"Not enough staked."
-		).with(amt -> new TokensParticle(address, amt, RriId.nativeToken()));
+			"Not enough balance for staking."
+		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 	}
 }

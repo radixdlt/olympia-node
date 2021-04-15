@@ -28,14 +28,12 @@ import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -77,10 +75,6 @@ public class StakingTest {
 	@Inject
 	@LastStoredProof
 	private LedgerProof ledgerProof;
-
-	@Inject
-	@NativeToken
-	private RRI nativeToken;
 
 	private ECKeyPair staker = ECKeyPair.generateNew();
 
@@ -143,7 +137,7 @@ public class StakingTest {
 		// Act
 		var nextTxn = sut.construct(
 			stakerAddress,
-			new UnstakeNativeToken(nativeToken, delegateAddress, UInt256.THREE)
+			new UnstakeTokens(delegateAddress, UInt256.THREE)
 		).signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));
 

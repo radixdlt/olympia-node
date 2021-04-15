@@ -27,9 +27,9 @@ import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.RegisterAsValidator;
-import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnregisterAsValidator;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
@@ -128,14 +128,14 @@ public final class NodeController implements Controller {
 				var delegate = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeNativeToken(nativeToken, delegate, subunits);
+				return new StakeTokens(delegate, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
 				var delegate = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new UnstakeNativeToken(nativeToken, delegate, subunits);
+				return new UnstakeTokens(delegate, subunits);
 			}
 			case "RegisterAsValidator":
 				return new RegisterAsValidator();

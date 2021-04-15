@@ -18,33 +18,25 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class StakeNativeToken implements TxAction {
-	private final RRI nativeToken;
+public final class UnstakeTokens implements TxAction {
 	private final RadixAddress delegateAddress;
 	private final UInt256 amount;
 
-	public StakeNativeToken(RRI nativeToken, RadixAddress delegateAddress, UInt256 amount) {
-		this.nativeToken = nativeToken;
+	public UnstakeTokens(RadixAddress delegateAddress, UInt256 amount) {
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
 	}
 
-	public RRI rri() {
-		return nativeToken;
-	}
-
-	public RadixAddress to() {
+	public RadixAddress from() {
 		return delegateAddress;
 	}
 
@@ -56,15 +48,12 @@ public final class StakeNativeToken implements TxAction {
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
-			TokensParticle.class,
-			p -> p.getRriId().isNativeToken()
-				&& p.getAddress().equals(address)
-				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
-				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
-			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, RriId.nativeToken()),
+			StakedTokensParticle.class,
+			p -> p.getAddress().equals(address),
+			StakedTokensParticle::getAmount,
+			amt -> new StakedTokensParticle(delegateAddress, address, amt),
 			amount,
-			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
+			"Not enough staked."
+		).with(amt -> new TokensParticle(address, amt, RriId.nativeToken()));
 	}
 }
