@@ -144,12 +144,12 @@ public class ECKeyUtils {
 		switch (pubkey0) {
 			case 2:
 			case 3:
-				if (publicKey.length != ECPublicKey.BYTES + 1) {
+				if (publicKey.length != ECPublicKey.COMPRESSED_BYTES) {
 					throw new PublicKeyException("Public key has invalid compressed size");
 				}
 				break;
 			case 4:
-				if (publicKey.length != (ECPublicKey.BYTES * 2) + 1) {
+				if (publicKey.length != ECPublicKey.UNCOMPRESSED_BYTES) {
 					throw new PublicKeyException("Public key has invalid uncompressed size");
 				}
 				break;

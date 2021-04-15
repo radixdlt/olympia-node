@@ -98,49 +98,49 @@ public class ECKeyUtilsTest {
 
 	@Test
 	public void testValidatePublicPassForType2Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES];
 		key[0] = 0x02;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType2Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
 		key[0] = 0x02;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test
 	public void testValidatePublicPassForType3Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES];
 		key[0] = 0x03;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType3Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
 		key[0] = 0x03;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test
 	public void testValidatePublicPassForType4Key() throws PublicKeyException {
-		var key = new byte[(ECPublicKey.BYTES * 2) + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES];
 		key[0] = 0x04;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType4Key() throws PublicKeyException {
-		var key = new byte[(ECPublicKey.BYTES * 2) + 1 + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES + 1];
 		key[0] = 0x04;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForUnknownTypeKey() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES];
 		key[0] = 0x05;
 		ECKeyUtils.validatePublic(key);
 	}

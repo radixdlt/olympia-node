@@ -70,7 +70,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
 			ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
 
-			final ECPublicKey publicKey = ECPublicKey.fromBytes(pubParams.getQ().getEncoded(true));
+			final ECPublicKey publicKey = new ECPublicKey(pubParams.getQ());
 			byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
 			ECKeyUtils.validatePrivate(privateKeyBytes);
 
@@ -137,7 +137,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 	@Override
 	public ECDSASignature sign(byte[] hash) {
-		return ECKeyUtils.keyHandler.sign(hash, privateKey, publicKey.decompressedBytes());
+		return ECKeyUtils.keyHandler.sign(hash, privateKey, publicKey.getBytes());
 	}
 
 	/**
@@ -151,7 +151,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 * @return An ECDSA Signature.
 	 */
 	public ECDSASignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
-		return ECKeyUtils.keyHandler.sign(data, privateKey, publicKey.decompressedBytes(), enforceLowS, beDeterministic);
+		return ECKeyUtils.keyHandler.sign(data, privateKey, publicKey.getBytes(), enforceLowS, beDeterministic);
 	}
 
 	@Override
