@@ -34,8 +34,10 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
+import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MockedKeyModule;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -277,7 +279,7 @@ public class SimulationTest {
 				}
 			};
 
-			modules.add(new AbstractModule() {
+			genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
@@ -546,10 +548,14 @@ public class SimulationTest {
 						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					}
 				});
+				modules.add(new LedgerRecoveryModule());
+				modules.add(new ConsensusRecoveryModule());
+			} else {
+				modules.addAll(genesisModules);
+				modules.add(new MockedRecoveryModule());
 			}
 
 			modules.add(new MockedPersistenceStoreModule());
-			modules.add(new MockedRecoveryModule());
 
 			// Testing
 			modules.add(new SimulationNodeEventsModule());
