@@ -18,19 +18,23 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -44,18 +48,24 @@ public class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	private final Serialization serialization;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final RRI nativeToken;
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final RadixEngineStateComputer stateComputer;
+	private final BFTNode self;
 
 	@Inject
 	public SubmissionService(
 		Serialization serialization,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@NativeToken RRI nativeToken
+		@NativeToken RRI nativeToken,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		RadixEngineStateComputer stateComputer,
+		@Self BFTNode self
 	) {
 		this.serialization = serialization;
-		this.radixEngine = radixEngine;
 		this.nativeToken = nativeToken;
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.stateComputer = stateComputer;
+		this.self = self;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
@@ -65,17 +75,19 @@ public class SubmissionService {
 			return Result.fail("Source addresses in all actions must be the same");
 		}
 
-		var address = addresses.iterator().next();
-		var actions = steps.stream().map(step -> step.toAction(nativeToken)).collect(Collectors.toList());
-
 		try {
-			var blobs = radixEngine
-				.construct(address, actions)
-				.burn(nativeToken, fixedFee)
-				.message(message)
-				.buildForExternalSign();
+			var address = addresses.iterator().next();
+			var actions = steps
+				.stream()
+				.map(step -> step.toAction(nativeToken))
+				.collect(Collectors.toList());
 
-			return Result.ok(PreparedTransaction.create(blobs.getFirst(), blobs.getSecond().asBytes(), fixedFee));
+			return Result.ok(stateComputer.getEngine()
+								 .construct(address, actions)
+								 .burn(nativeToken, fixedFee)
+								 .message(message)
+								 .buildForExternalSign()
+								 .map(this::toPreparedTx));
 		} catch (Exception e) {
 			return Result.fail(e.getMessage());
 		}
@@ -89,8 +101,14 @@ public class SubmissionService {
 	}
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
+		return restore(serialization, blob, Atom.class)
+			.map(atom -> atom.toSigned(recoverable))
+			.map(Txn::fromAtom)
+			.filter(txn -> txn.getId().equals(txId), "Provided txID does not match provided transaction")
+			.onSuccess(txn -> stateComputer.addToMempool(txn, self)).map(Txn::getId);
+	}
 
-		//TODO: finish
-		throw new IllegalStateException();
+	private PreparedTransaction toPreparedTx(byte[] first, com.google.common.hash.HashCode second) {
+		return PreparedTransaction.create(first, second.asBytes(), fixedFee);
 	}
 }

@@ -16,14 +16,218 @@
  */
 package com.radixdlt.client.service;
 
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
+import com.google.inject.name.Names;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.ClientUtils;
+import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
+import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.MaxValidators;
+import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.RegisteredValidators;
+import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.TypedMocks;
+import com.radixdlt.utils.UInt256;
+
+import java.util.List;
+import java.util.Optional;
+
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class SubmissionServiceTest {
+	@Inject
+	@Genesis
+	private List<Txn> genesisTxns;
+
+	@Inject
+	@Named("universeKey")
+	ECKeyPair universeKey; // TODO: Remove
+
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
+
+	@Inject
+	private RadixEngineStateComputer sut;
+
+	@Inject
+	private ValidatorSetBuilder validatorSetBuilder;
+
+	@Inject
+	private SubmissionService submissionService;
+
+	private RRI nativeToken;
+
+	private final InMemoryEngineStore<LedgerAndBFTProof> engineStore = new InMemoryEngineStore<>();
+	private final Serialization serialization = DefaultSerialization.getInstance();
+	private final ImmutableList<ECKeyPair> registeredNodes = ImmutableList.of(
+		ECKeyPair.generateNew(),
+		ECKeyPair.generateNew()
+	);
+
+	private static final BFTNode NODE = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress ALICE = new RadixAddress((byte) 0, OWNER_KEYPAIR.getPublicKey());
+	private static final ECKeyPair OTHER_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress BOB = new RadixAddress((byte) 0, OTHER_KEYPAIR.getPublicKey());
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
+	private Module localModule() {
+		return new AbstractModule() {
+
+			@Override
+			public void configure() {
+				bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
+				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+					.toInstance(registeredNodes);
+				bind(Serialization.class).toInstance(serialization);
+				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
+				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
+				bindConstant().annotatedWith(Names.named("magic")).to(0);
+				bindConstant().annotatedWith(MinValidators.class).to(1);
+				bindConstant().annotatedWith(MaxValidators.class).to(100);
+				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
+
+				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
+					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+
+				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
+
+				bind(SystemCounters.class).to(SystemCountersImpl.class);
+			}
+		};
+	}
+
+	private void setupGenesis() throws RadixEngineException, TxBuilderException {
+		var branch = radixEngine.transientBranch();
+		branch.execute(genesisTxns, PermissionLevel.SYSTEM);
+		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
+			branch.getComputedState(RegisteredValidators.class),
+			branch.getComputedState(Stakes.class)
+		);
+		radixEngine.deleteBranches();
+
+		var genesisLedgerHeader = LedgerProof.genesis(
+			new AccumulatorState(0, hasher.hash(genesisTxns.get(0).getId())),
+			genesisValidatorSet
+		);
+
+		if (!genesisLedgerHeader.isEndOfEpoch()) {
+			throw new IllegalStateException("Genesis must be end of epoch");
+		}
+
+		radixEngine.execute(genesisTxns, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		nativeToken = ClientUtils.nativeToken(genesisTxns).getRRI();
+	}
+
+	@Before
+	public void setup() throws Exception {
+		var injector = Guice.createInjector(
+			new RadixEngineCheckpointModule(),
+			new RadixEngineModule(),
+			new EmptyTransactionCheckModule(),
+			new MockedGenesisAtomModule(),
+			localModule()
+		);
+		injector.injectMembers(this);
+		setupGenesis();
+	}
+
 	@Test
-	public void testPrepareTransaction() {
-		fail("Not implemented");
+	public void testPrepareTransaction() throws Exception {
+		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), UInt256.TEN);
+		var action2 = new TransferToken(nativeToken, ALICE, UInt256.TEN);
+
+		var tx = radixEngine.construct(nativeToken.getAddress(), List.of(action1, action2))
+			.signAndBuild(universeKey::sign);
+
+		radixEngine.execute(List.of(tx));
+
+		var steps = List.of(
+			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken))
+		);
+
+		var result = submissionService.prepareTransaction(steps, Optional.of("message"));
+
+		result
+			.onFailureDo(Assert::fail)
+			.onSuccess(prepared -> {
+				assertNotNull(prepared);
+			});
 	}
 
 	@Test

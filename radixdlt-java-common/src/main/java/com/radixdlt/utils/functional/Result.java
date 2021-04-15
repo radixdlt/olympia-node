@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.radixdlt.utils.functional.Tuple.tuple;
@@ -179,6 +180,33 @@ public interface Result<T> {
 	}
 
 	/**
+	 * Filter contained value with given predicate. Provided string is passed as failure reason if predicate returns {@code false}.
+	 *
+	 * @param predicate Predicate to check
+	 * @param message Message which will be used in case if predicate returns {@code false}
+	 *
+	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
+	 */
+	default Result<T> filter(Predicate<T> predicate, String message) {
+		return flatMap(v -> predicate.test(v) ? this : fail(message));
+	}
+
+	/**
+	 * Filter contained value with given predicate. Provided string and parameters are passed as failure reason if predicate returns {@code false}.
+	 *
+	 * @param predicate Predicate to check
+	 * @param message Message which will be used in case if predicate returns {@code false}
+	 * @param values Message parameters
+	 *
+	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
+	 *
+	 * @see Failure#failure(String, Object...) for more details
+	 */
+	default Result<T> filter(Predicate<T> predicate, String message, Object... values) {
+		return flatMap(v -> predicate.test(v) ? this : fail(message, values));
+	}
+
+	/**
 	 * Convert instance into {@link Optional} of the same type. Successful instance
 	 * is converted into present {@link Optional} and failure - into empty {@link Optional}.
 	 * Note that during such a conversion error information may get lost.
@@ -210,6 +238,8 @@ public interface Result<T> {
 	 * @param args additional arguments for the message format
 	 *
 	 * @return created instance
+	 *
+	 * @see Failure#failure(String, Object...) for more details
 	 */
 	static <T> Result<T> fromOptional(Optional<T> source, String format, Object... args) {
 		return source.map(Result::ok).orElseGet(() -> fail(format, args));

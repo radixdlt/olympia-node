@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
@@ -35,13 +34,15 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.annotation.concurrent.Immutable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * An atom to be processed by radix engine
@@ -78,10 +79,10 @@ public final class Atom {
 	}
 
 	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(getInstructions().stream());
+		return computeHashToSignFromBytes(getInstructions());
 	}
 
-	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
+	public static HashCode computeHashToSignFromBytes(Collection<byte[]> instructions) {
 		return computeHashToSignFromBytes(computeBlobToSign(instructions));
 	}
 
@@ -89,11 +90,7 @@ public final class Atom {
 		return HashUtils.sha256(HashUtils.sha256(blob).asBytes());
 	}
 
-	public static byte[] computeBlobToSign(List<REInstruction> instructions) {
-		return computeBlobToSign(serializedInstructions(instructions));
-	}
-
-	public static byte[] computeBlobToSign(Stream<byte[]> instructions) {
+	public static byte[] computeBlobToSign(Collection<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
 		instructions.forEach(outputStream::writeBytes);
 		return outputStream.toByteArray();
@@ -127,7 +124,7 @@ public final class Atom {
 	@Override
 	public String toString() {
 		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
-			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
+							 getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
 		);
 	}
 

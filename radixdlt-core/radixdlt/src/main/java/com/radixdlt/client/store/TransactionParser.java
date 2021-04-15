@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store;
 
+import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeNativeToken;
@@ -25,6 +26,7 @@ import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -36,7 +38,8 @@ import java.util.stream.Collectors;
 public final class TransactionParser {
 	private final RRI nativeToken;
 
-	public TransactionParser(RRI nativeToken) {
+	@Inject
+	public TransactionParser(@NativeToken RRI nativeToken) {
 		this.nativeToken = nativeToken;
 	}
 

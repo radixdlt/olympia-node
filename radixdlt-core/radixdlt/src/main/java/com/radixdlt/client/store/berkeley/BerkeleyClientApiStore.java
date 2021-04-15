@@ -129,9 +129,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
-	private final RRI nativeToken;
 	private final byte universeMagic;
 	private final TxnParser txnParser;
+	private final TransactionParser transactionParser;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -147,7 +147,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
-		@NativeToken RRI nativeToken,
+		TransactionParser transactionParser,
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
@@ -157,8 +157,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.ledgerCommitted = ledgerCommitted;
-		this.nativeToken = nativeToken;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
+		this.transactionParser = transactionParser;
 
 		open();
 	}
@@ -276,8 +276,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
 					return Result.ok(txn)
-						.map(txnParser::parseOrElseThrow)
-						.flatMap(t -> new TransactionParser(nativeToken).parse(t, instantFromKey(key)));
+						.flatMap(txnParser::parseTxn)
+						.flatMap(t -> transactionParser.parse(t, instantFromKey(key)));
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -323,7 +323,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				AID.fromBytes(data.getData())
 					.flatMap(this::retrieveTx)
 					.onFailure(this::reportError)
-					.map(txnParser::parseOrElseThrow)
+					.flatMap(txnParser::parseTxn)
 					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key)))
 					.onSuccess(list::add);
 
@@ -475,7 +475,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-		store.forEach(txn -> processRETransaction(txnParser.parseOrElseThrow(txn)));
+		store.forEach(txn -> txnParser.parseTxn(txn).onSuccess(this::processRETransaction));
 		log.info("Database rebuilding is finished successfully");
 	}
 
