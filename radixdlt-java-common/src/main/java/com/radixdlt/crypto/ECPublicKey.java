@@ -122,7 +122,7 @@ public final class ECPublicKey {
 	}
 
 	public String toHex() {
-		return Bytes.toHexString(this.publicKey);
+		return Bytes.toHexString(this.getBytes());
 	}
 
 	@Override

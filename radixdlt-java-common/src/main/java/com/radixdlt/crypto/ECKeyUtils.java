@@ -213,7 +213,7 @@ public class ECKeyUtils {
 	 */
 	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
 		try {
-			var v = calculateV(signature.getR(), signature.getS(), publicKey.decompressedBytes(), hash);
+			var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
 
 			return Result.ok(ECDSASignature.create(signature.getR(), signature.getS(), v));
 		} catch (IllegalStateException e) {
