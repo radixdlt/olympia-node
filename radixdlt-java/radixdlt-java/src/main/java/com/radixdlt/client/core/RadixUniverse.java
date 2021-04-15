@@ -22,23 +22,13 @@
 
 package com.radixdlt.client.core;
 
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.TokenUnitConversions;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.client.fees.FeeEntry;
-import com.radixdlt.client.fees.FeeTable;
-import com.radixdlt.client.fees.PerBytesFeeEntry;
-import com.radixdlt.client.fees.PerParticleFeeEntry;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
@@ -60,6 +50,16 @@ import com.radixdlt.client.core.network.epics.WebSocketEventsEpic;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import com.radixdlt.client.core.network.selector.RandomSelector;
+import com.radixdlt.client.fees.FeeEntry;
+import com.radixdlt.client.fees.FeeTable;
+import com.radixdlt.client.fees.PerBytesFeeEntry;
+import com.radixdlt.client.fees.PerParticleFeeEntry;
+import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Set;
@@ -178,8 +178,7 @@ public final class RadixUniverse {
 					throw new IllegalStateException();
 				}
 			})
-			.flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
-		this.nativeToken = config.getGenesis().stream().flatMap(a -> a.getInstructions().stream())
+			.flatMap(a -> a.getInstructions().stream())
 			.map(REInstruction::create)
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
@@ -189,8 +188,9 @@ public final class RadixUniverse {
 					throw new IllegalStateException();
 				}
 			})
-			.filter(p -> p instanceof TokenDefinitionParticle)
-			.map(p -> ((TokenDefinitionParticle) p).getRRI())
+			.filter(TokenDefinitionParticle.class::isInstance)
+			.map(TokenDefinitionParticle.class::cast)
+			.map(TokenDefinitionParticle::getRRI)
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;
@@ -252,7 +252,7 @@ public final class RadixUniverse {
 		// fee table, you will need to change the one there also.
 		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
 			// 1 millirad per byte after the first three kilobytes
-			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
+			PerBytesFeeEntry.of(1, 3072, milliRads(1L)),
 			// 1,000 millirads per token definition
 			PerParticleFeeEntry.of(TokenDefinitionParticle.class, 0, milliRads(1000L))
 		);
