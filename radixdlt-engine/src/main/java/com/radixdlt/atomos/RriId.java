@@ -25,6 +25,9 @@ import com.radixdlt.utils.RadixConstants;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+/**
+ * Hashed Rri used for uniqueness/identification
+ */
 public final class RriId {
 	public static final int BYTES = 32;
 	private final byte[] id;

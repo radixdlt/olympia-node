@@ -23,6 +23,9 @@ import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Optional;
 
+/**
+ * Index into immutable substates
+ */
 public interface ImmutableIndex {
 	Optional<Particle> loadRriId(CMStore.Transaction dbTxn, RriId rriId);
 }
