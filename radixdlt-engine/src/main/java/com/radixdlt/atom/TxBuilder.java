@@ -603,6 +603,12 @@ public final class TxBuilder {
 		return this;
 	}
 
+	public TxBuilder message(Optional<String> message) {
+		message.ifPresent(lowLevelBuilder::message);
+
+		return this;
+	}
+
 	public Txn signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer

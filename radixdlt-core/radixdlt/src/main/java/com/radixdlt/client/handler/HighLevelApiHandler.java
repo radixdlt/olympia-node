@@ -103,10 +103,6 @@ public class HighLevelApiHandler {
 		);
 	}
 
-	public JSONObject handleTransactionHistory(JSONObject request) {
-		return withRequiredParameters(request, Set.of("address", "size"), __ -> respondWithTransactionHistory(request));
-	}
-
 	public JSONObject handleTransactionStatus(JSONObject request) {
 		return withRequiredStringParameter(request, "txID", (params, idString) ->
 			AID.fromString(idString)
@@ -132,11 +128,19 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleTransactionHistory(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			Set.of("address", "size"),
+			params -> respondWithTransactionHistory(params, request)
+		);
+	}
+
 	public JSONObject handleFinalizeTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
 			Set.of("transaction", "signatureDER", "publicKeyOfSigner"),
-			__ -> respondFinalizationResult(request)
+			params -> respondFinalizationResult(params, request)
 		);
 	}
 
@@ -144,7 +148,7 @@ public class HighLevelApiHandler {
 		return withRequiredParameters(
 			request,
 			Set.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
-			__ -> respondSubmissionResult(request)
+			params -> respondSubmissionResult(params, request)
 		);
 	}
 
@@ -161,8 +165,8 @@ public class HighLevelApiHandler {
 			);
 	}
 
-	private JSONObject respondWithTransactionHistory(JSONObject request) {
-		return allOf(Optional.of(request), parseAddress(request), parseSize(request))
+	private JSONObject respondWithTransactionHistory(JSONObject params, JSONObject request) {
+		return allOf(Optional.of(request), parseAddress(params), parseSize(params))
 			.map(this::formatTransactionHistory)
 			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
 	}
@@ -178,36 +182,26 @@ public class HighLevelApiHandler {
 			);
 	}
 
-	private JSONObject respondFinalizationResult(JSONObject request) {
-		return Result.allOf(parseBlob(request), parseSignatureDer(request), parsePublicKey(request))
+	private JSONObject respondFinalizationResult(JSONObject params, JSONObject request) {
+		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
 			.flatMap((blob, signature, publicKey) ->
 						 toRecoverable(blob, signature, publicKey)
-							 .flatMap(recoverable -> calculateTxId(blob, recoverable)))
+							 .flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
 			.fold(
 				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
 				txId -> response(request, jsonObject().put("txID", txId.toString()))
 			);
 	}
 
-	private JSONObject respondSubmissionResult(JSONObject request) {
-		return Result.allOf(parseBlob(request), parseSignatureDer(request), parsePublicKey(request), parseTxId(request))
+	private JSONObject respondSubmissionResult(JSONObject params, JSONObject request) {
+		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
 			.flatMap((blob, signature, publicKey, txId) ->
 						 toRecoverable(blob, signature, publicKey)
-							 .flatMap(recoverable -> submitTx(blob, recoverable, txId)))
+							 .flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
 			.fold(
 				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
 				txId -> response(request, jsonObject().put("txID", txId.toString()))
 			);
-	}
-
-	private Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		//TODO: finish
-		return null;
-	}
-
-	private Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		//TODO: finish
-		return null;
 	}
 
 	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
@@ -291,13 +285,12 @@ public class HighLevelApiHandler {
 		}
 	}
 
-	private static Optional<Integer> parseSize(JSONObject request) {
-		return safeInteger(JsonRpcUtil.params(request), "size")
-			.filter(value -> value > 0);
+	private static Optional<Integer> parseSize(JSONObject params) {
+		return safeInteger(params, "size").filter(value -> value > 0);
 	}
 
-	private static Optional<RadixAddress> parseAddress(JSONObject request) {
-		return RadixAddress.fromString(JsonRpcUtil.params(request).getString("address"));
+	private static Optional<RadixAddress> parseAddress(JSONObject params) {
+		return RadixAddress.fromString(params.getString("address"));
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {

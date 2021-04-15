@@ -16,7 +16,18 @@
  */
 package com.radixdlt.client.handler;
 
+import com.radixdlt.atom.Atom;
+import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.api.PreparedTransaction;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.UInt384;
+
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OutputStream;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -36,10 +47,12 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,12 +63,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static com.radixdlt.client.api.TransactionStatus.*;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {
+	private static final byte MAGIC = (byte) 0;
 	private static final String KNOWN_ADDRESS_STRING = "JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor";
 	private static final RadixAddress KNOWN_ADDRESS = RadixAddress.from(KNOWN_ADDRESS_STRING);
 
@@ -144,12 +159,13 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testLookupTransaction() {
-		var txId = AID.from(HashUtils.random256().asBytes());
+		var txId = AID.from(randomBytes());
 		var entry = createTxHistoryEntry(txId);
 
 		when(highLevelApiService.getTransaction(txId)).thenReturn(Result.ok(entry));
 
-		var response = handler.handleLookupTransaction(requestWith(jsonObject().put("txID", txId.toString())));
+		var params = requestWith(jsonObject().put("txID", txId.toString()));
+		var response = handler.handleLookupTransaction(params);
 
 		assertNotNull(response);
 		validateHistoryEntry(entry, response.getJSONObject("result"));
@@ -157,7 +173,7 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTransactionStatus() {
-		var txId = AID.from(HashUtils.random256().asBytes());
+		var txId = AID.from(randomBytes());
 
 		when(transactionStatusService.getTransactionStatus(any()))
 			.thenReturn(PENDING, CONFIRMED, FAILED, TRANSACTION_NOT_FOUND);
@@ -172,17 +188,153 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testBuildTransaction() {
-		fail("Not implemented");
+		when(submissionService.prepareTransaction(any(), any()))
+			.thenReturn(Result.ok(PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.EIGHT)));
+
+		var actions = jsonArray().put(randomAction()).put(randomAction()).put(randomAction());
+		var params = jsonObject().put("actions", actions).put("message", "message text");
+		var request = requestWith(params);
+
+		var response = handler.handleBuildTransaction(request);
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("fee"));
+		assertEquals("8", result.get("fee"));
+
+		assertTrue(result.has("transaction"));
+
+		var transaction = result.getJSONObject("transaction");
+
+		assertTrue(transaction.has("blob"));
+		assertTrue(transaction.has("hashOfBlobToSign"));
 	}
 
 	@Test
 	public void testFinalizeTransaction() {
-		fail("Not implemented");
+		var aid = AID.from(randomBytes());
+
+		when(submissionService.calculateTxId(any(), any()))
+			.thenReturn(Result.ok(aid));
+
+		var blob = randomBytes();
+		var hash = Atom.computeHashToSignFromBytes(blob).asBytes();
+
+		var transaction = jsonObject()
+			.put("blob", Hex.toHexString(blob))
+			.put("hashOfBlobToSign", Hex.toHexString(hash));
+
+		var keyPair = ECKeyPair.generateNew();
+
+		var signature = keyPair.sign(hash);
+		var params = jsonObject()
+			.put("transaction", transaction)
+			.put("signatureDER", encodeToDer(signature))
+			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex());
+
+		var response = handler.handleFinalizeTransaction(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("txID"));
+
+		assertEquals(aid, AID.from(result.getString("txID")));
 	}
 
 	@Test
 	public void testSubmitTransaction() {
-		fail("Not implemented");
+		var aid = AID.from(randomBytes());
+
+		when(submissionService.submitTx(any(), any(), any()))
+			.thenReturn(Result.ok(aid));
+
+		var blob = randomBytes();
+		var hash = Atom.computeHashToSignFromBytes(blob).asBytes();
+
+		var transaction = jsonObject()
+			.put("blob", Hex.toHexString(blob))
+			.put("hashOfBlobToSign", Hex.toHexString(hash));
+
+		var keyPair = ECKeyPair.generateNew();
+
+		var signature = keyPair.sign(hash);
+		var params = jsonObject()
+			.put("transaction", transaction)
+			.put("signatureDER", encodeToDer(signature))
+			.put("publicKeyOfSigner", keyPair.getPublicKey().toHex())
+			.put("txID", aid.toString());
+
+		var response = handler.handleSubmitTransaction(requestWith(params));
+
+		assertNotNull(response);
+		assertTrue(response.has("result"));
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("txID"));
+
+		assertEquals(aid, AID.from(result.getString("txID")));
+	}
+
+	private String encodeToDer(ECDSASignature signature) {
+		try {
+			ASN1EncodableVector vector = new ASN1EncodableVector();
+			vector.add(new ASN1Integer(signature.getR()));
+			vector.add(new ASN1Integer(signature.getS()));
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ASN1OutputStream asnOS = ASN1OutputStream.create(baos);
+
+			asnOS.writeObject(new DERSequence(vector));
+			asnOS.flush();
+
+			return Hex.toHexString(baos.toByteArray());
+		} catch (Exception e) {
+			fail();
+			return null;
+		}
+	}
+
+	private final Random random = new Random();
+
+	private JSONObject randomAction() {
+		var toAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+		var tokenAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
+		var token = RRI.of(tokenAddress, "COOKIE");
+
+		switch (random.nextInt(3)) {
+			case 0:    //transfer
+				return jsonObject()
+					.put("type", ActionType.TRANSFER)
+					.put("from", KNOWN_ADDRESS_STRING)
+					.put("to", toAddress.toString())
+					.put("amount", UInt256.SEVEN)
+					.put("rri", token.toString());
+			case 1: //stake
+				return jsonObject()
+					.put("type", ActionType.STAKE)
+					.put("from", KNOWN_ADDRESS_STRING)
+					.put("validator", toAddress.toString())
+					.put("amount", UInt256.FIVE);
+			case 2: //unstake
+				return jsonObject()
+					.put("type", ActionType.UNSTAKE)
+					.put("from", KNOWN_ADDRESS_STRING)
+					.put("validator", toAddress.toString())
+					.put("amount", UInt256.FOUR);
+		}
+
+		throw new IllegalStateException("Should not happen");
+	}
+
+	private byte[] randomBytes() {
+		return HashUtils.random256().asBytes();
 	}
 
 	private void validateTransactionStatusResponse(TransactionStatus status, AID txId, JSONObject response) {

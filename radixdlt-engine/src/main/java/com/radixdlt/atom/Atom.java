@@ -18,10 +18,13 @@
 
 package com.radixdlt.atom;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
@@ -29,7 +32,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -115,7 +118,7 @@ public final class Atom {
 			return false;
 		}
 
-		Atom other = (Atom) o;
+		var other = (Atom) o;
 		var thisDson = DefaultSerialization.getInstance().toDson(this, Output.ALL);
 		var otherDson = DefaultSerialization.getInstance().toDson(other, Output.ALL);
 		return Arrays.equals(thisDson, otherDson);
@@ -126,5 +129,11 @@ public final class Atom {
 		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
 			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
 		);
+	}
+
+	public Atom toSigned(ECDSASignature recoverable) {
+		requireNonNull(recoverable);
+
+		return new Atom(instructions, recoverable);
 	}
 }

@@ -25,4 +25,14 @@ public class SubmissionServiceTest {
 	public void testPrepareTransaction() {
 		fail("Not implemented");
 	}
+
+	@Test
+	public void testSubmitTx() {
+		fail("Not implemented");
+	}
+
+	@Test
+	public void testCalculateTxId() {
+		fail("Not implemented");
+	}
 }
