@@ -25,15 +25,12 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -65,18 +62,15 @@ public final class NodeApplicationModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
+	private SubstateCacheRegister<?> registeredValidator(@Self RadixAddress self) {
 		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getAddress().equals(self));
 	}
 
 	@ProvidesIntoSet
-	private SubstateCacheRegister<?> registeredSubstate(
-		@NativeToken RRI tokenRRI,
-		@Self RadixAddress self
-	) {
+	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getAddress().equals(self) && p.getRriId().equals(RriId.fromRri(tokenRRI))
+			p -> p.getAddress().equals(self) && p.getRriId().isNativeToken()
 		);
 	}
 

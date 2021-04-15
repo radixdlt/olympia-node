@@ -21,14 +21,13 @@ package com.radixdlt.statecomputer.transaction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.PostParsedChecker;
 import com.radixdlt.fees.FeeTable;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
 import javax.inject.Inject;
@@ -43,15 +42,12 @@ public class TokenFeeChecker implements PostParsedChecker {
 	private static final int MAX_ATOM_SIZE = 1024 * 1024;
 
 	private final FeeTable feeTable;
-	private final RRI feeTokenRri;
 
 	@Inject
 	public TokenFeeChecker(
-		FeeTable feeTable,
-		@NativeToken RRI feeTokenRri
+		FeeTable feeTable
 	) {
 		this.feeTable = feeTable;
-		this.feeTokenRri = feeTokenRri;
 	}
 
 	@Override
@@ -96,7 +92,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> t.rri().equals(feeTokenRri))
+			.filter(t -> RriId.fromRri(t.rri()).isNativeToken())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);

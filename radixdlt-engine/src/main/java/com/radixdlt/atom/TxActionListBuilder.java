@@ -58,7 +58,7 @@ public class TxActionListBuilder {
 		return this;
 	}
 
-	public TxActionListBuilder transferNative(RRI rri, RadixAddress to, UInt256 amount) {
+	public TxActionListBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) {
 		var action = new TransferToken(rri, to, amount);
 		actions.add(action);
 		return this;
