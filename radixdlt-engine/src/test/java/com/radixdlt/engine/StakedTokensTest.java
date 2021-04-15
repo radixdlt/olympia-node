@@ -18,8 +18,9 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.actions.MoveStake;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
@@ -38,7 +39,6 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
@@ -78,8 +78,7 @@ public class StakedTokensTest {
 			.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN);
 		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
 
-		var validatorBuilder = TxBuilder.newBuilder(this.validatorAddress)
-			.registerAsValidator();
+		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
 		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
 		this.engine.execute(List.of(atom0, atom1));
@@ -127,16 +126,12 @@ public class StakedTokensTest {
 
 	@Test
 	public void move_staked_tokens() throws Exception {
-		var upSubstate = new AtomicReference<SubstateStore>();
-		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
-			.stakeTo(this.validatorAddress, UInt256.TEN)
-			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
-		this.engine.execute(List.of(atom));
-
-		var atom2 = TxBuilder.newBuilder(this.tokenOwnerAddress, upSubstate.get())
-			.moveStake(this.validatorAddress, newAddress(), UInt256.SEVEN)
+		var txn = this.engine.construct(this.tokenOwnerAddress, new StakeTokens(validatorAddress, UInt256.TEN))
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
+		this.engine.execute(List.of(txn));
 
+		var atom2 = this.engine.construct(this.tokenOwnerAddress, new MoveStake(validatorAddress, newAddress(), UInt256.FIVE))
+			.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom2));
 	}
 

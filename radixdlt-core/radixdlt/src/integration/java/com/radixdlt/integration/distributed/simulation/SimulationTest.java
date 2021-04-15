@@ -279,11 +279,17 @@ public class SimulationTest {
 				}
 			};
 
-			genesisModules.add(new AbstractModule() {
+			this.modules.add(new AbstractModule() {
 				@Override
-				protected void configure() {
+				public void configure() {
 					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
 					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
+				}
+			});
+
+			this.genesisModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});

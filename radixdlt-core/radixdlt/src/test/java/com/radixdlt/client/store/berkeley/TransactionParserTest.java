@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
 import org.junit.Before;
@@ -94,8 +95,7 @@ public class TransactionParserTest {
 			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN)
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
-		var txn2 = TxBuilder.newBuilder(validatorAddress)
-			.registerAsValidator()
+		var txn2 = engine.construct(validatorAddress, new RegisterValidator())
 			.signAndBuild(validatorKeyPair::sign);
 
 		engine.execute(List.of(txn1, txn2));

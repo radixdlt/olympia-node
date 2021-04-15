@@ -34,6 +34,9 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.atom.actions.SystemNextView;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
@@ -194,11 +197,11 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
-		var builder = TxBuilder.newSystemBuilder(this.engineStore);
+		TxBuilder builder;
 		if (nextEpoch >= 2) {
-			builder.systemNextEpoch(0, nextEpoch - 1);
+			builder = radixEngine.construct(new SystemNextEpoch(0, nextEpoch - 1));
 		} else {
-			builder.systemNextView(nextView, 0, nextEpoch);
+			builder = radixEngine.construct(new SystemNextView(nextView, 0, nextEpoch));
 		}
 
 		return builder.buildWithoutSignature();
@@ -208,10 +211,9 @@ public class RadixEngineStateComputerTest {
 		return systemUpdateTxn(nextView, nextEpoch);
 	}
 
-	private static Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+	private Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		return TxBuilder.newBuilder(address)
-			.registerAsValidator()
+		return radixEngine.construct(address, new RegisterValidator())
 			.signAndBuild(keyPair::sign);
 	}
 

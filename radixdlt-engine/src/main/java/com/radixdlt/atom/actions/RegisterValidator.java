@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.validators.ValidatorParticle;
 
 import java.util.Optional;
 
-public final class RegisterAsValidator implements TxAction {
+public final class RegisterValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address to register.");

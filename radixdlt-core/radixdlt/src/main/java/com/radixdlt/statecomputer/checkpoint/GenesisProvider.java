@@ -23,11 +23,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
@@ -48,7 +50,7 @@ import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
 
 /**
  * Generates a genesis atom
@@ -106,50 +108,46 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			}
 		});
 
+		var branch = radixEngine.transientBranch();
 		var genesisTxns = new ArrayList<Txn>();
 		var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
 		try {
 			// Network token
-			var tokenBuilder = TxBuilder.newBuilder(universeAddress)
+			var createTokenActions = TxActionListBuilder.create()
 				.createMutableToken(tokenDefinition);
-
 			for (var e : issuances.entrySet()) {
 				var to = new RadixAddress(magic, e.getKey());
-				tokenBuilder.mint(rri, to, e.getValue());
+				createTokenActions.mint(rri, to, e.getValue());
 			}
-			var upSubstate = new AtomicReference<SubstateStore>();
-			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
-			genesisTxns.add(tokenAtom);
+
+			var tokenTxn = branch.construct(universeAddress, createTokenActions.build()).signAndBuild(universeKey::sign);
+			branch.execute(List.of(tokenTxn), PermissionLevel.SYSTEM);
+			genesisTxns.add(tokenTxn);
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upSubstate.get());
-				var validatorAtom = validatorBuilder
-					.registerAsValidator()
-					.signAndBuild(validatorKey::sign, upSubstate::set);
-				genesisTxns.add(validatorAtom);
+				var validatorTxn = branch.construct(validatorAddress, new RegisterValidator())
+					.signAndBuild(validatorKey::sign);
+				branch.execute(List.of(validatorTxn), PermissionLevel.SYSTEM);
+				genesisTxns.add(validatorTxn);
 			}
 
+			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
 				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
-				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
-					.stakeTo(delegateAddress, stakeDelegation.amount());
-				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
-				genesisTxns.add(stakeAtom);
+				var stakerTxn = branch.construct(stakerAddress, new StakeTokens(delegateAddress, stakeDelegation.amount()))
+					.signAndBuild(stakeDelegation.staker()::sign);
+				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
+				genesisTxns.add(stakerTxn);
 			}
 
-			var epochUpdateBuilder = TxBuilder.newSystemBuilder().systemNextEpoch(0, 0);
-			genesisTxns.add(epochUpdateBuilder.buildWithoutSignature());
-		} catch (TxBuilderException e) {
-			throw new IllegalStateException(e);
-		}
-
-		try {
-			var branch = radixEngine.transientBranch();
-			branch.execute(genesisTxns, PermissionLevel.SYSTEM);
+			var systemTxn = branch.construct(new SystemNextEpoch(0, 0))
+				.buildWithoutSignature();
+			branch.execute(List.of(systemTxn), PermissionLevel.SYSTEM);
+			genesisTxns.add(systemTxn);
 			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 				branch.getComputedState(RegisteredValidators.class),
 				branch.getComputedState(Stakes.class)
@@ -175,8 +173,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			}
 
 			return VerifiedTxnsAndProof.create(genesisTxns, genesisProof);
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException();
+		} catch (TxBuilderException | RadixEngineException e) {
+			throw new IllegalStateException(e);
 		}
 	}
 }

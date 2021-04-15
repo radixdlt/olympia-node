@@ -19,10 +19,12 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.RegisterAsValidator;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterAsValidator;
+import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -40,14 +42,26 @@ public class TxActionListBuilder {
 		return new TxActionListBuilder();
 	}
 
+	public TxActionListBuilder createMutableToken(MutableTokenDefinition def) {
+		var action = new CreateMutableToken(
+			def.getSymbol(),
+			def.getName(),
+			def.getDescription(),
+			def.getTokenUrl(),
+			def.getIconUrl()
+		);
+		actions.add(action);
+		return this;
+	}
+
 	public TxActionListBuilder registerAsValidator() {
-		var action = new RegisterAsValidator();
+		var action = new RegisterValidator();
 		actions.add(action);
 		return this;
 	}
 
 	public TxActionListBuilder unregisterAsValidator() {
-		var action = new UnregisterAsValidator();
+		var action = new UnregisterValidator();
 		actions.add(action);
 		return this;
 	}
@@ -60,6 +74,12 @@ public class TxActionListBuilder {
 
 	public TxActionListBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) {
 		var action = new TransferToken(rri, to, amount);
+		actions.add(action);
+		return this;
+	}
+
+	public TxActionListBuilder mint(RRI rri, RadixAddress to, UInt256 amount) {
+		var action = new MintToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
