@@ -67,7 +67,7 @@ public class HttpClient {
      */
     public void callFaucet(String addressToSendTokensTo) {
         String json = "{\"params\":{\"address\":\"" + addressToSendTokensTo + "\"}}";
-        RequestBody body = RequestBody.create(MediaType.parse("application/json"),json);
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), json);
         try (Response response = okHttpClient.newCall(new Request.Builder()
                 .url(faucetUrl + FAUCET_REQUEST_PATH)
                 .method("POST", body)
