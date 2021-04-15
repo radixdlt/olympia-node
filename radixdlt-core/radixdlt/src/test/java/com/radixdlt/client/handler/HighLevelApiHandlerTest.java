@@ -16,13 +16,6 @@
  */
 package com.radixdlt.client.handler;
 
-import com.radixdlt.atom.Atom;
-import com.radixdlt.client.api.ActionType;
-import com.radixdlt.client.api.PreparedTransaction;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.utils.UInt384;
-
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -31,20 +24,26 @@ import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.client.service.HighLevelApiService;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionStatus;
+import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.ByteArrayOutputStream;
@@ -66,7 +65,10 @@ import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
-import static com.radixdlt.client.api.TransactionStatus.*;
+import static com.radixdlt.client.api.TransactionStatus.CONFIRMED;
+import static com.radixdlt.client.api.TransactionStatus.FAILED;
+import static com.radixdlt.client.api.TransactionStatus.PENDING;
+import static com.radixdlt.client.api.TransactionStatus.TRANSACTION_NOT_FOUND;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiHandlerTest {

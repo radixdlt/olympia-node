@@ -24,9 +24,6 @@ import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.client.api.ActionType;
-
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;

@@ -17,8 +17,6 @@
 
 package org.radix.api.http;
 
-import org.radix.api.services.AtomsService;
-
 import com.google.inject.Inject;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
