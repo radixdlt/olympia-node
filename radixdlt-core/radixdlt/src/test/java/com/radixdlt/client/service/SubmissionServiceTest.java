@@ -138,11 +138,11 @@ public class SubmissionServiceTest {
 			@Override
 			public void configure() {
 				bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
-				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() {}).annotatedWith(Genesis.class)
+				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
-				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
+				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
@@ -150,19 +150,19 @@ public class SubmissionServiceTest {
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 
-				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
+				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() {})
+				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
+				bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() {})
+				bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() {})
+				bind(new TypeLiteral<EventDispatcher<AtomsCommittedToLedger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
+				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
+				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
@@ -246,9 +246,9 @@ public class SubmissionServiceTest {
 
 		result
 			.onFailureDo(Assert::fail)
-			.flatMap(prepared ->
-						 signature.flatMap(recoverable ->
-											   submissionService.calculateTxId(prepared.getBlob(), recoverable)))
+			.flatMap(prep ->
+						 signature.flatMap(sig ->
+											   submissionService.calculateTxId(prep.getBlob(), sig)))
 			.onFailureDo(Assert::fail)
 			.onSuccess(Assert::assertNotNull);
 	}

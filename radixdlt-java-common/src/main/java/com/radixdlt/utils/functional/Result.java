@@ -180,7 +180,8 @@ public interface Result<T> {
 	}
 
 	/**
-	 * Filter contained value with given predicate. Provided string is passed as failure reason if predicate returns {@code false}.
+	 * Filter contained value with given predicate. Provided string is passed as failure reason
+	 * if predicate returns {@code false}.
 	 *
 	 * @param predicate Predicate to check
 	 * @param message Message which will be used in case if predicate returns {@code false}
@@ -192,7 +193,8 @@ public interface Result<T> {
 	}
 
 	/**
-	 * Filter contained value with given predicate. Provided string and parameters are passed as failure reason if predicate returns {@code false}.
+	 * Filter contained value with given predicate. Provided string and parameters are passed
+	 * as failure reason if predicate returns {@code false}.
 	 *
 	 * @param predicate Predicate to check
 	 * @param message Message which will be used in case if predicate returns {@code false}
