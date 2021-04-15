@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 /**
  * Genesis atom to be used with tests
  */
-public final class MockedGenesisAtomModule extends AbstractModule {
+public final class MockedGenesisModule extends AbstractModule {
 	@Override
 	public void configure() {
 	    install(new RadixNativeTokenModule());

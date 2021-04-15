@@ -17,8 +17,15 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -62,7 +69,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -102,7 +109,7 @@ public class RecoveryLivenessTest {
 
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
@@ -133,11 +140,15 @@ public class RecoveryLivenessTest {
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		Guice.createInjector(
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new CryptoModule(),
+			new RadixEngineModule(),
+			RadixEngineConfig.createModule(1, 100, epochCeilingView),
 			new AbstractModule() {
 				@Override
 				public void configure() {
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
@@ -177,7 +188,7 @@ public class RecoveryLivenessTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
+					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);

@@ -25,6 +25,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.MockedCryptoModule;
+import com.radixdlt.MockedKeyModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
@@ -81,6 +82,7 @@ public final class MempoolRunnerTest {
 				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+				install(new MockedKeyModule());
 				install(new MockedCryptoModule());
 				install(new RxEnvironmentModule());
 				install(new DispatcherModule());

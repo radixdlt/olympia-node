@@ -64,7 +64,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -154,7 +154,7 @@ public class MempoolRelayTest {
 		/* Using injector to create a valid genesis atoms using the modules, and inject it to this instance */
 		final var validatorsKeys = this.validators.stream().map(nodeKeys::get).collect(ImmutableList.toImmutableList());
 		Guice.createInjector(
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new CryptoModule(),
 			new RadixEngineModule(),
 			RadixEngineConfig.createModule(1, 100, 100),

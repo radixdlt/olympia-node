@@ -29,6 +29,7 @@ import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.atom.Atom;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -90,10 +91,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAndBFTProof> engineStore(
-		@Genesis List<Txn> genesisTxns
+		@Genesis VerifiedTxnsAndProof genesisTxns
 	) {
 		var inMemoryEngineStore = new InMemoryEngineStore<LedgerAndBFTProof>();
-		for (var genesisTxn : genesisTxns) {
+		for (var genesisTxn : genesisTxns.getTxns()) {
 			if (!inMemoryEngineStore.containsTxn(genesisTxn.getId())) {
 				try {
 					var dbTxn = inMemoryEngineStore.createTransaction();

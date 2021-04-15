@@ -25,6 +25,7 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
+import com.radixdlt.MockedKeyModule;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -221,6 +222,7 @@ public final class DeterministicTest {
 						.toInstance(unlimitedRateLimiter());
 				}
 			});
+			modules.add(new MockedKeyModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());

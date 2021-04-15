@@ -24,7 +24,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -58,7 +57,7 @@ public class MempoolFillTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.fullFunctionNodes(View.of(10), SyncConfig.of(800L, 10, 5000L))
+		.fullFunctionNodes(10L, SyncConfig.of(800L, 10, 5000L))
 		.addNodeModule(new AbstractModule() {
 			@Override
 			protected void configure() {

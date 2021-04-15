@@ -43,7 +43,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -97,7 +97,7 @@ public class TokenFeeTest {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new TokenFeeModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

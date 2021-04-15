@@ -82,7 +82,7 @@ import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
@@ -186,7 +186,7 @@ public class RadixEngineStateComputerTest {
 			new RadixEngineStateComputerModule(),
 			new RadixEngineModule(),
 			new EmptyTransactionCheckModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			getExternalModule()
 		);
 		injector.injectMembers(this);

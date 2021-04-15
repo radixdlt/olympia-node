@@ -25,17 +25,13 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
-import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -49,6 +45,7 @@ public class MockedCryptoModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
+		bind(HashFunction.class).toInstance(hashFunction);
 	}
 
 	@Provides
@@ -60,23 +57,6 @@ public class MockedCryptoModule extends AbstractModule {
 			long hashCode = hashFunction.hashBytes(concat).asLong();
 			counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
 			return sig.getR().longValue() == hashCode;
-		};
-	}
-
-	@Provides
-	private HashSigner hashSigner(
-		@Self BFTNode node,
-		SystemCounters counters
-	) {
-		return h -> {
-			var concat = new byte[64];
-			System.arraycopy(h, 0, concat, 0, 32);
-			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
-
-			var hashCode = hashFunction.hashBytes(concat).asLong();
-			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
-
-			return ECDSASignature.create(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode), 0);
 		};
 	}
 
