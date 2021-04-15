@@ -22,8 +22,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -35,7 +35,6 @@ import org.radix.utils.IOUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Module which manages universe configuration
@@ -73,7 +72,7 @@ public final class UniverseModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	List<Txn> genesisAtoms(Universe universe) {
+	VerifiedTxnsAndProof genesis(Universe universe) {
 		return universe.getGenesis();
 	}
 }

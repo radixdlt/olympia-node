@@ -24,15 +24,13 @@ import com.google.inject.Singleton;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DeserializeException;
-
-import java.util.List;
 
 /**
  * Configures the module in charge of "weak-subjectivity" or checkpoints
@@ -47,9 +45,9 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Provides
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
-	private RRI nativeToken(@Genesis List<Txn> genesisTxns) {
+	private RRI nativeToken(@Genesis VerifiedTxnsAndProof genesisTxns) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
-		ImmutableList<RRI> rris = genesisTxns.stream()
+		ImmutableList<RRI> rris = genesisTxns.getTxns().stream()
 			.map(txn -> {
 				try {
 					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);

@@ -119,12 +119,14 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	) {
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
-		this.currentLedgerHeader = initialLedgerState;
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
+
+
+		this.currentLedgerHeader = initialLedgerState;
 	}
 
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
@@ -236,7 +238,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 				.map(PreparedTxn::txn)
 				.collect(ImmutableList.toImmutableList());
 			var proof = committedUpdate.getVertexStoreState().getRootHeader();
-			var verifiedTxnsAndProof = new VerifiedTxnsAndProof(txns, proof);
+			var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(txns, proof);
 
 			// TODO: Make these two atomic (RPNV1-827)
 			this.commit(verifiedTxnsAndProof, committedUpdate.getVertexStoreState());
@@ -272,18 +274,16 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 				this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, txns.size());
 			}
 
-			VerifiedTxnsAndProof commandsToStore = new VerifiedTxnsAndProof(
-				txns, verifiedTxnsAndProof.getProof()
-			);
+			var txnsAndProof = VerifiedTxnsAndProof.create(txns, verifiedTxnsAndProof.getProof());
 
 			// persist
-			this.stateComputer.commit(commandsToStore, vertexStoreState);
+			this.stateComputer.commit(txnsAndProof, vertexStoreState);
 
 			// TODO: move all of the following to post-persist event handling
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			LedgerUpdate ledgerUpdate = new LedgerUpdate(commandsToStore);
+			LedgerUpdate ledgerUpdate = new LedgerUpdate(txnsAndProof);
 			ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 		}
 	}

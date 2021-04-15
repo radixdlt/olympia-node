@@ -40,7 +40,7 @@ public class VerifiedTxnsAndProofTest {
 		this.stateAndProof = mock(LedgerProof.class);
 		when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
 
-		this.emptyCommandsAndProof = new VerifiedTxnsAndProof(ImmutableList.of(), stateAndProof);
+		this.emptyCommandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(), stateAndProof);
 	}
 
 	@Test

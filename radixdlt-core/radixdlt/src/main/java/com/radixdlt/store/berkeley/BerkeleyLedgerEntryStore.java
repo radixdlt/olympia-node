@@ -686,7 +686,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				count++;
 			} while (count < atomCount);
 
-			return new VerifiedTxnsAndProof(txns.build(), nextHeader);
+			return VerifiedTxnsAndProof.create(txns.build(), nextHeader);
 		} catch (IOException e) {
 			throw new BerkeleyStoreException("Unable to read from atom store.", e);
 		} finally {

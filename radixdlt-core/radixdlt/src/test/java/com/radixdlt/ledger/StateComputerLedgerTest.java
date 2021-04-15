@@ -233,7 +233,7 @@ public class StateComputerLedgerTest {
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(List.of(nextTxn), header);
+		var verified = VerifiedTxnsAndProof.create(List.of(nextTxn), header);
 
 		// Act
 		sut.syncEventProcessor().process(verified);

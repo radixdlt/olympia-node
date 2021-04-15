@@ -129,7 +129,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 				signatures
 			);
 
-			return new VerifiedTxnsAndProof(txns, headerAndProof);
+			return VerifiedTxnsAndProof.create(txns, headerAndProof);
 		}
 	}
 

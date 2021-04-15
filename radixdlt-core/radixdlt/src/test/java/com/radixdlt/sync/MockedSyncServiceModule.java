@@ -105,10 +105,10 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 
 			private void syncTo(LedgerProof proof) {
-				var commands = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+				var txns = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, proof));
+				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
 				currentVersion = proof.getStateVersion();
 				if (proof.isEndOfEpoch()) {
 					currentEpoch = proof.getEpoch() + 1;
@@ -129,11 +129,11 @@ public class MockedSyncServiceModule extends AbstractModule {
 				syncTo(request.getTarget());
 
 				final long targetVersion = request.getTarget().getStateVersion();
-				ImmutableList<Txn> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
+				var txns = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 
-				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, request.getTarget()));
+				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, request.getTarget()));
 				currentVersion = targetVersion;
 				currentEpoch = request.getTarget().getEpoch();
 			}

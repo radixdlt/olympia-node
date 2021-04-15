@@ -20,24 +20,22 @@ package org.radix;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.Hasher;
 
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Pair;
 
-import java.util.List;
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
 	private final Hasher hasher;
 	private final long universeTimestamp;
 	private final ECKeyPair universeKey;
-	private final Provider<List<Txn>> genesisAtomProvider;
+	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
@@ -45,13 +43,13 @@ public final class RadixUniverseBuilder {
 		@Named("universeKey") ECKeyPair universeKey,
 		@UniverseConfig long universeTimestamp,
 		UniverseConfiguration universeConfiguration,
-		Provider<List<Txn>> genesisAtomProvider,
+		Provider<VerifiedTxnsAndProof> genesisProvider,
 		Hasher hasher
 	) {
 		this.universeKey = Objects.requireNonNull(universeKey);
 		this.universeTimestamp = universeTimestamp;
 		this.universeConfiguration = universeConfiguration;
-		this.genesisAtomProvider = Objects.requireNonNull(genesisAtomProvider);
+		this.genesisProvider = Objects.requireNonNull(genesisProvider);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
@@ -59,7 +57,7 @@ public final class RadixUniverseBuilder {
 		final var port = universeConfiguration.getPort();
 		final var name = universeConfiguration.getName();
 		final var description = universeConfiguration.getDescription();
-		final var universeAtom = genesisAtomProvider.get();
+		final var universeAtom = genesisProvider.get();
 
 		final var universe = Universe.newBuilder()
 			.port(port)
@@ -68,7 +66,7 @@ public final class RadixUniverseBuilder {
 			.type(this.universeConfiguration.getUniverseType())
 			.timestamp(this.universeTimestamp)
 			.creator(this.universeKey.getPublicKey())
-			.setAtoms(universeAtom)
+			.setTxnsAndProof(universeAtom)
 			.build();
 
 		Universe.sign(universe, this.universeKey, this.hasher);

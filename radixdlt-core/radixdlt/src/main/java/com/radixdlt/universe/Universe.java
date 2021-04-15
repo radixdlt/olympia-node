@@ -19,11 +19,13 @@ package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializeWithHid;
@@ -54,6 +56,7 @@ public class Universe {
 		private Long timestamp;
 		private ECPublicKey creator;
 		private List<Txn> txns;
+		private LedgerProof proof;
 
 		private Builder() {
 			// Nothing to do here
@@ -146,9 +149,11 @@ public class Universe {
 		 *
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder setAtoms(List<Txn> genesisTxns) {
+		public Builder setTxnsAndProof(VerifiedTxnsAndProof genesisTxns) {
 			requireNonNull(genesisTxns);
-			this.txns = genesisTxns;
+			this.txns = genesisTxns.getTxns();
+			this.proof = genesisTxns.getProof();
+
 			return this;
 		}
 
@@ -230,6 +235,10 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private List<byte[]> genesis;
 
+	@JsonProperty("proof")
+	@DsonOutput(Output.ALL)
+	private LedgerProof proof;
+
 	private ECPublicKey creator;
 
 	private ECDSASignature signature;
@@ -248,6 +257,7 @@ public class Universe {
 		this.type = builder.type;
 		this.timestamp = builder.timestamp;
 		this.creator = builder.creator;
+		this.proof = builder.proof;
 		this.genesis = builder.txns == null
 			? List.of()
 			: builder.txns.stream().map(Txn::getPayload).collect(Collectors.toList());
@@ -314,8 +324,9 @@ public class Universe {
 	/**
 	 * Gets this Universe's immutable Genesis collection.
 	 */
-	public List<Txn> getGenesis() {
-		return genesis.stream().map(Txn::create).collect(Collectors.toList());
+	public VerifiedTxnsAndProof getGenesis() {
+		var txns = genesis.stream().map(Txn::create).collect(Collectors.toList());
+		return VerifiedTxnsAndProof.create(txns, proof);
 	}
 
 	/**

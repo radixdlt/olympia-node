@@ -58,6 +58,8 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAddFailure;
@@ -75,6 +77,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
+import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
@@ -97,7 +100,7 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -136,6 +139,7 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
+				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
@@ -157,7 +161,7 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns, PermissionLevel.SYSTEM);
+		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -165,13 +169,13 @@ public class RadixEngineStateComputerTest {
 		radixEngine.deleteBranches();
 
 		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
-			new AccumulatorState(0, hasher.hash(genesisTxns.get(0).getId())),
+			new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
 			genesisValidatorSet
 		);
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(genesisTxns, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
 	}
 
 	@Before
@@ -179,6 +183,7 @@ public class RadixEngineStateComputerTest {
 		this.engineStore = new InMemoryEngineStore<>();
 		Injector injector = Guice.createInjector(
 			new RadixEngineCheckpointModule(),
+			new RadixEngineStateComputerModule(),
 			new RadixEngineModule(),
 			new EmptyTransactionCheckModule(),
 			new MockedGenesisAtomModule(),
@@ -296,7 +301,7 @@ public class RadixEngineStateComputerTest {
 			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
+		var commandsAndProof = VerifiedTxnsAndProof.create(
 			ImmutableList.of(cmd0),
 			ledgerProof
 		);
@@ -322,7 +327,7 @@ public class RadixEngineStateComputerTest {
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
+		var commandsAndProof = VerifiedTxnsAndProof.create(
 			ImmutableList.of(cmd0, cmd1),
 			ledgerProof
 		);
@@ -350,7 +355,7 @@ public class RadixEngineStateComputerTest {
 			),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
+		var commandsAndProof = VerifiedTxnsAndProof.create(
 			ImmutableList.of(cmd1, cmd0),
 			ledgerProof
 		);
@@ -376,7 +381,7 @@ public class RadixEngineStateComputerTest {
 			),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof commandsAndProof = new VerifiedTxnsAndProof(
+		var commandsAndProof = VerifiedTxnsAndProof.create(
 			ImmutableList.of(cmd0),
 			ledgerProof
 		);
