@@ -43,7 +43,6 @@ public final class TokenDefinitionUtils {
 	public static final int MAX_SYMBOL_LENGTH = 14;
 	public static final String VALID_SYMBOL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
-	public static final int MAX_ICON_DIMENSION = 32;
 
 	private TokenDefinitionUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
