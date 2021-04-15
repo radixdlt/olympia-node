@@ -109,7 +109,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
-	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final List<ECKeyPair> nodeKeys;
 
 	@Inject
@@ -148,7 +147,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
@@ -209,7 +207,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
 					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);

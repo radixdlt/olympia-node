@@ -376,6 +376,11 @@ public final class TxBuilder {
 		};
 	}
 
+
+	public Optional<RadixAddress> getAddress() {
+		return Optional.ofNullable(address);
+	}
+
 	public RadixAddress getAddressOrFail(String errorMessage) throws TxBuilderException {
 		if (address == null) {
 			throw new TxBuilderException(errorMessage);

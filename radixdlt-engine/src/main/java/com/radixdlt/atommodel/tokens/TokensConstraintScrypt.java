@@ -139,7 +139,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 					@Override
 					public SignatureValidator<TokenDefinitionParticle> inputSignatureRequired() {
-						return i -> Optional.of(i.getRri().getAddress());
+						return i -> i.getRri().getAddress();
 					}
 				}
 			);

@@ -59,7 +59,6 @@ public class SystemControllerTest {
 			.description("Description")
 			.port(30000)
 			.timestamp(System.currentTimeMillis())
-			.creator(ECKeyPair.generateNew().getPublicKey())
 			.build();
 	private final SystemController systemController =
 		new SystemController(systemService, inMemorySystemInfo, universe);

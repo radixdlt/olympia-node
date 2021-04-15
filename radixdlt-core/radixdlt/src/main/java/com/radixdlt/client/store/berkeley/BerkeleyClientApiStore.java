@@ -24,6 +24,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.fees.NativeToken;
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -682,8 +683,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static ByteBuf writeRRI(ByteBuf buf, RRI rri) {
 		return buf
-			.writeBytes(rri.getAddress().toByteArray())
-			.writeBytes(rri.getName().getBytes());
+			.writeBytes(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
 	private static ByteBuf buffer() {

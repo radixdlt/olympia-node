@@ -43,7 +43,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
-import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
@@ -68,7 +67,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Completable;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
@@ -350,19 +348,6 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Observable<TokenDefinitionsState> observeTokenDefs() {
 		return observeTokenDefs(getAddress());
-	}
-
-	/**
-	 * Returns a stream of the latest state of a given token
-	 *
-	 * @param tokenRRI The symbol of the token
-	 * @return a cold observable of the latest state of the token
-	 * @deprecated The Java client access library has been deprecated
-	 */
-	@Deprecated(since = "beta.27")
-	public Observable<TokenState> observeTokenDef(RRI tokenRRI) {
-		return this.observeTokenDefs(tokenRRI.getAddress())
-			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
 	/**

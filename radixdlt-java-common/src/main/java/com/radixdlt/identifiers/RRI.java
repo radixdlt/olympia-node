@@ -20,6 +20,7 @@ package com.radixdlt.identifiers;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -34,12 +35,12 @@ public final class RRI {
 	private final String name;
 
 	RRI(RadixAddress address, String name) {
-		this.address = Objects.requireNonNull(address);
+		this.address = address;
 		this.name = Objects.requireNonNull(name);
 	}
 
-	public RadixAddress getAddress() {
-		return address;
+	public Optional<RadixAddress> getAddress() {
+		return Optional.ofNullable(address);
 	}
 
 	public String getName() {
@@ -47,19 +48,31 @@ public final class RRI {
 	}
 
 	public static RRI of(RadixAddress address, String name) {
+		Objects.requireNonNull(address);
 		return new RRI(address, name);
 	}
 
 	public static RRI from(String s) {
-		String[] split = s.split("/", 3);
-		if (split.length != 3 || split[0].length() != 0) {
+		String[] split = s.split("\\.", 2);
+		if (split.length > 2 || split.length < 1) {
 			throw new IllegalArgumentException(
-				"RRI does not have enough components and must be of the format /:address/:name (" + s + ")"
+				"RRI does not have enough components and must be of the format :address.:name or :name (" + s + ")"
 			);
 		}
 
-		RadixAddress address = RadixAddress.from(split[1]);
-		String name = split[2];
+		final RadixAddress address;
+		final String name;
+		if (split.length == 2) {
+			try {
+				address = RadixAddress.from(split[0]);
+			} catch (Exception e) {
+				throw new IllegalArgumentException("Invalid address", e);
+			}
+			name = split[1];
+		} else {
+			address = null;
+			name = split[0];
+		}
 
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + s);
@@ -78,7 +91,7 @@ public final class RRI {
 
 	@Override
 	public String toString() {
-		return "/" + address.toString() + "/" + name;
+		return (address != null ? address.toString() + "." : "") + name;
 	}
 
 	@Override

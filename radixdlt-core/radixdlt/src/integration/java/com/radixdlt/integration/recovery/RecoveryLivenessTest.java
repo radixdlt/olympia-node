@@ -114,7 +114,6 @@ public class RecoveryLivenessTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
-	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
 	private MessageMutator messageMutator;
@@ -150,7 +149,6 @@ public class RecoveryLivenessTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(nodeKeys);
 				}
 			}

@@ -57,7 +57,6 @@ import java.util.List;
  */
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final byte magic;
-	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
@@ -72,7 +71,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		ValidatorSetBuilder validatorSetBuilder,
 		LedgerAccumulator ledgerAccumulator,
 		@Named("magic") int magic,
-		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
 		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
@@ -82,7 +80,6 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		this.validatorSetBuilder = validatorSetBuilder;
 		this.ledgerAccumulator = ledgerAccumulator;
 		this.magic = (byte) magic;
-		this.universeKey = universeKey;
 		this.tokenDefinition = tokenDefinition;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
@@ -110,8 +107,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 		var branch = radixEngine.transientBranch();
 		var genesisTxns = new ArrayList<Txn>();
-		var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
-		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
+		var rri = RRI.from("XRD");
 		try {
 			// Network token
 			var createTokenActions = TxActionListBuilder.create()
@@ -121,7 +117,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				createTokenActions.mint(rri, to, e.getValue());
 			}
 
-			var tokenTxn = branch.construct(universeAddress, createTokenActions.build()).signAndBuild(universeKey::sign);
+			var tokenTxn = branch.construct(createTokenActions.build()).buildWithoutSignature();
 			branch.execute(List.of(tokenTxn), PermissionLevel.SYSTEM);
 			genesisTxns.add(tokenTxn);
 

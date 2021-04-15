@@ -36,7 +36,6 @@ import com.radixdlt.store.ImmutableIndex;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -139,6 +138,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				@Override
 				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle) {
 					return systemNames.contains(inputParticle.getRri().getName())
+						|| inputParticle.getRri().getAddress().isEmpty()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
@@ -158,7 +158,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public SignatureValidator<RRIParticle> inputSignatureRequired() {
-					return rri -> Optional.of(rri.getRri().getAddress());
+					return rri -> rri.getRri().getAddress();
 				}
 			}
 		);
@@ -183,11 +183,13 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getRri().getName()) ? PermissionLevel.SYSTEM : PermissionLevel.USER,
+			(rri, p) -> systemNames.contains(rri.getRri().getName())
+				|| rri.getRri().getAddress().isEmpty()
+				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			in -> Optional.of(in.getRri().getAddress())
+			in -> in.getRri().getAddress()
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);

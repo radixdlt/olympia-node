@@ -370,7 +370,6 @@ public class SimulationTest {
 				}
 			});
 
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
 			this.genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -378,7 +377,6 @@ public class SimulationTest {
 					install(new RadixEngineModule());
 					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
@@ -441,11 +439,9 @@ public class SimulationTest {
 				}
 			});
 
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
 			this.genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);

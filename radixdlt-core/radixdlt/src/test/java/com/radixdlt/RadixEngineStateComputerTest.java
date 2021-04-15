@@ -130,7 +130,6 @@ public class RadixEngineStateComputerTest {
 
 			@Override
 			public void configure() {
-				bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);

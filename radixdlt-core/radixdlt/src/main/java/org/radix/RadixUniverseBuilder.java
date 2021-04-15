@@ -19,62 +19,44 @@ package org.radix;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.name.Named;
 import com.radixdlt.crypto.Hasher;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Pair;
 
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
-	private final Hasher hasher;
 	private final long universeTimestamp;
-	private final ECKeyPair universeKey;
 	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
 	public RadixUniverseBuilder(
-		@Named("universeKey") ECKeyPair universeKey,
 		@UniverseConfig long universeTimestamp,
 		UniverseConfiguration universeConfiguration,
-		Provider<VerifiedTxnsAndProof> genesisProvider,
-		Hasher hasher
+		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
-		this.universeKey = Objects.requireNonNull(universeKey);
 		this.universeTimestamp = universeTimestamp;
 		this.universeConfiguration = universeConfiguration;
 		this.genesisProvider = Objects.requireNonNull(genesisProvider);
-		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	public Pair<ECKeyPair, Universe> build() {
+	public Universe build() {
 		final var port = universeConfiguration.getPort();
 		final var name = universeConfiguration.getName();
 		final var description = universeConfiguration.getDescription();
 		final var universeAtom = genesisProvider.get();
 
-		final var universe = Universe.newBuilder()
+		return Universe.newBuilder()
 			.port(port)
 			.name(name)
 			.description(description)
 			.type(this.universeConfiguration.getUniverseType())
 			.timestamp(this.universeTimestamp)
-			.creator(this.universeKey.getPublicKey())
 			.setTxnsAndProof(universeAtom)
 			.build();
-
-		Universe.sign(universe, this.universeKey, this.hasher);
-		if (!Universe.verify(universe, this.universeKey.getPublicKey(), this.hasher)) {
-			throw new IllegalStateException(
-				String.format("Signature verification failed for %s universe with key %s", name, this.universeKey)
-			);
-		}
-		return Pair.of(this.universeKey, universe);
 	}
 }

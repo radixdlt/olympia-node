@@ -108,7 +108,6 @@ public class MempoolRelayTest {
 	@Genesis
 	private VerifiedTxnsAndProof genesisTxns;
 
-	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final ImmutableList<Integer> validators;
 	private final ImmutableList<Integer> fullNodes;
 
@@ -162,7 +161,6 @@ public class MempoolRelayTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());

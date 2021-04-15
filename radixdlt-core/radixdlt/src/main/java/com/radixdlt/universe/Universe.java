@@ -20,11 +20,6 @@ package com.radixdlt.universe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -32,9 +27,7 @@ import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,7 +47,6 @@ public class Universe {
 		private String description;
 		private UniverseType type;
 		private Long timestamp;
-		private ECPublicKey creator;
 		private List<Txn> txns;
 		private LedgerProof proof;
 
@@ -131,18 +123,6 @@ public class Universe {
 		}
 
 		/**
-		 * Sets the universe creators public key.
-		 *
-		 * @param creator The universe creators public key.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder creator(ECPublicKey creator) {
-			this.creator = requireNonNull(creator);
-			return this;
-		}
-
-		/**
 		 * Adds an atom to the genesis atom list.
 		 *
 		 * @param genesisTxns The atoms to add to the genesis atom list.
@@ -168,7 +148,6 @@ public class Universe {
 			require(this.description, "Description");
 			require(this.type, "Universe type");
 			require(this.timestamp, "Timestamp");
-			require(this.creator, "Creator");
 			return new Universe(this);
 		}
 
@@ -191,15 +170,14 @@ public class Universe {
 	/**
 	 * Computes universe magic number from specified parameters.
 	 *
-	 * @param creator {@link ECPublicKey} of universe creator to use when calculating universe magic
 	 * @param timestamp universe timestamp to use when calculating universe magic
 	 * @param port universe port to use when calculating universe magic
 	 * @param type universe type to use when calculating universe magic
 	 *
 	 * @return The universe magic
 	 */
-	public static int computeMagic(ECPublicKey creator, long timestamp, int port, UniverseType type) {
-		return 31 * ((int) creator.euid().getLow()) * 13 * (int) timestamp * 7 * port + type.ordinal();
+	public static int computeMagic(long timestamp, int port, UniverseType type) {
+		return 13 * (int) timestamp * 7 * port + type.ordinal();
 	}
 
 	// Placeholder for the serializer ID
@@ -239,13 +217,6 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private LedgerProof proof;
 
-	private ECPublicKey creator;
-
-	private ECDSASignature signature;
-	private BigInteger sigR;
-	private BigInteger sigS;
-	private Byte sigV;
-
 	Universe() {
 		// No-arg constructor for serializer
 	}
@@ -256,7 +227,6 @@ public class Universe {
 		this.description = builder.description;
 		this.type = builder.type;
 		this.timestamp = builder.timestamp;
-		this.creator = builder.creator;
 		this.proof = builder.proof;
 		this.genesis = builder.txns == null
 			? List.of()
@@ -269,7 +239,7 @@ public class Universe {
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
 	public int getMagic() {
-		return computeMagic(creator, timestamp, port, type);
+		return computeMagic(timestamp, port, type);
 	}
 
 	/**
@@ -329,29 +299,6 @@ public class Universe {
 		return VerifiedTxnsAndProof.create(txns, proof);
 	}
 
-	/**
-	 * Get creator key.
-	 */
-	public ECPublicKey getCreator() {
-		return creator;
-	}
-
-	public ECDSASignature getSignature() {
-		return signature;
-	}
-
-	public void setSignature(ECDSASignature signature) {
-		this.signature = signature;
-	}
-
-	public static void sign(Universe universe, ECKeyPair key, Hasher hasher) {
-		universe.setSignature(key.sign(hasher.hash(universe)));
-	}
-
-	public static boolean verify(Universe universe, ECPublicKey key, Hasher hasher) {
-		return key.verify(hasher.hash(universe), universe.getSignature());
-	}
-
 	// Type - 1 getter, 1 setter
 	@JsonProperty("type")
 	@DsonOutput(Output.ALL)
@@ -362,65 +309,5 @@ public class Universe {
 	@JsonProperty("type")
 	private void setJsonType(int type) {
 		this.type = UniverseType.values()[type];
-	}
-
-	// Signature - 1 getter, 1 setter.
-	@JsonProperty("creator")
-	@DsonOutput(Output.ALL)
-	private byte[] getJsonCreator() {
-		return this.creator.getBytes();
-	}
-
-	@JsonProperty("creator")
-	private void setJsonCreator(byte[] bytes) throws PublicKeyException {
-		this.creator = ECPublicKey.fromBytes(bytes);
-	}
-
-	// Signature - 3 getters, 3 setters.
-	@JsonProperty("signature.r")
-	@DsonOutput(value = Output.HASH, include = false)
-	private byte[] getJsonSignatureR() {
-		return Bytes.trimLeadingZeros(signature.getR().toByteArray());
-	}
-
-	@JsonProperty("signature.s")
-	@DsonOutput(value = Output.HASH, include = false)
-	private byte[] getJsonSignatureS() {
-		return Bytes.trimLeadingZeros(signature.getS().toByteArray());
-	}
-
-	@JsonProperty("signature.v")
-	@DsonOutput(value = Output.HASH, include = false)
-	private byte getJsonSignatureV() {
-		return signature.getV();
-	}
-
-	@JsonProperty("signature.r")
-	private void setJsonSignatureR(byte[] r) {
-		// Set sign to positive to stop BigInteger interpreting high bit as sign
-		this.sigR = new BigInteger(1, r);
-		restoreSignature();
-	}
-
-	@JsonProperty("signature.s")
-	private void setJsonSignatureS(byte[] s) {
-		// Set sign to positive to stop BigInteger interpreting high bit as sign
-		this.sigS = new BigInteger(1, s);
-		restoreSignature();
-	}
-
-	@JsonProperty("signature.v")
-	private void setJsonSignatureV(byte v) {
-		this.sigV = v;
-		restoreSignature();
-	}
-
-	private void restoreSignature() {
-		if (this.sigR != null && this.sigS != null && this.sigV != null) {
-			signature = ECDSASignature.create(this.sigR, this.sigS, this.sigV);
-			this.sigS = null;
-			this.sigR = null;
-			this.sigV = null;
-		}
 	}
 }
