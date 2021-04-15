@@ -57,9 +57,9 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 	private void defineStaking(SysCalls os) {
 		// Staking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			StakedTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
@@ -69,9 +69,9 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 		// Unstaking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			StakedTokensParticle.class,
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			StakedTokensParticle::getAmount,
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
 			(i, o) -> new UnstakeNativeToken(o.getTokDefRef(), i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct

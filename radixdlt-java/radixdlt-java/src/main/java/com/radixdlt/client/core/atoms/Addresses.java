@@ -20,10 +20,8 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
@@ -51,20 +49,15 @@ public final class Addresses {
 		if (p instanceof RRIParticle) {
 			var a = (RRIParticle) p;
 			addresses.add(a.getRri().getAddress());
-		} else if (p instanceof TransferrableTokensParticle) {
-			var a = (TransferrableTokensParticle) p;
+		} else if (p instanceof TokensParticle) {
+			var a = (TokensParticle) p;
 			addresses.add(a.getAddress());
 		} else if (p instanceof ValidatorParticle) {
 			var a = (ValidatorParticle) p;
 			addresses.add(a.getAddress());
-		} else if (p instanceof FixedSupplyTokenDefinitionParticle) {
-			var i = (FixedSupplyTokenDefinitionParticle) p;
+		} else if (p instanceof TokenDefinitionParticle) {
+			var i = (TokenDefinitionParticle) p;
 			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof MutableSupplyTokenDefinitionParticle) {
-			var i = (MutableSupplyTokenDefinitionParticle) p;
-			addresses.add(i.getRRI().getAddress());
-		} else if (p instanceof UniqueParticle) {
-			var i = (UniqueParticle) p;
 			addresses.add(i.getRRI().getAddress());
 		}
 

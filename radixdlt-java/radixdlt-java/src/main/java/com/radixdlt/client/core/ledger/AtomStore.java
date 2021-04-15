@@ -27,7 +27,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 
-import com.radixdlt.atom.ParticleGroup;
 import io.reactivex.Observable;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -77,14 +76,6 @@ public interface AtomStore {
 	 * @return a stream of all up particles of the current local view
 	 */
 	Stream<Substate> getUpParticles(RadixAddress address, @Nullable String uuid);
-
-	/**
-	 * Adds the particle group to the staging area for the given uuid
-	 *
-	 * @param uuid the uuid to add the particle group to
-	 * @param particleGroup the particle group to add to staging area
-	 */
-	void stageParticleGroup(String uuid, ParticleGroup particleGroup);
 
 	/**
 	 * Retrieves all staged particle groups and clears the staging area

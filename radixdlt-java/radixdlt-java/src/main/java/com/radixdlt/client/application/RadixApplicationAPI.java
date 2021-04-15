@@ -23,7 +23,6 @@
 package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.atom.Atom;
@@ -40,8 +39,6 @@ import com.radixdlt.client.application.translate.FeeProcessor;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
-import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
@@ -53,8 +50,6 @@ import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.core.BootstrapConfig;
@@ -65,7 +60,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.atom.ParticleGroup;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -92,11 +86,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The Radix Application API, a high level api which hides the complexity of atoms, cryptography, and
@@ -126,7 +118,6 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addReducer(new TokenBalanceReducer());
 	}
 
@@ -135,7 +126,6 @@ public class RadixApplicationAPI {
 	private final Map<Class<?>, AtomToExecutedActionsMapper<?>> actionStores;
 	private final Map<Class<? extends ApplicationState>, ParticleReducer<?>> applicationStores;
 	private final ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers;
-	private final ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers;
 	/**
 	 * Mapper of atom submission errors to application level errors
 	 */
@@ -148,7 +138,6 @@ public class RadixApplicationAPI {
 		RadixUniverse universe,
 		FeeProcessor feeProcessor,
 		ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers,
-		ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
 		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers,
 		List<AtomErrorToExceptionReasonMapper> atomErrorMappers
@@ -157,7 +146,6 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(feeProcessor);
 		Objects.requireNonNull(requiredStateMappers);
-		Objects.requireNonNull(actionMappers);
 		Objects.requireNonNull(particleReducers);
 		Objects.requireNonNull(atomErrorMappers);
 
@@ -168,7 +156,6 @@ public class RadixApplicationAPI {
 			m -> m
 		));
 		this.applicationStores = particleReducers.stream().collect(Collectors.toMap(ParticleReducer::stateClass, r -> r));
-		this.actionMappers = actionMappers;
 		this.requiredStateMappers = requiredStateMappers;
 		this.atomErrorMappers = atomErrorMappers;
 		this.feeProcessor = feeProcessor;
@@ -1065,35 +1052,10 @@ public class RadixApplicationAPI {
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private ImmutableMap.Builder<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers
 			= new ImmutableMap.Builder<>();
-		private ImmutableMap.Builder<Class<? extends Action>, BiFunction<Action, Stream<Substate>, List<ParticleGroup>>> actionMappers
-			= new ImmutableMap.Builder<>();
 		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
 		private List<AtomErrorToExceptionReasonMapper> atomErrorMappers = new ArrayList<>();
 
 		public RadixApplicationAPIBuilder() {
-		}
-
-		public RadixApplicationAPIBuilder addAtomMapper(AtomToExecutedActionsMapper<? extends Object> atomMapper) {
-			this.atomMappers.add(atomMapper);
-			return this;
-		}
-
-		public <T extends Action> RadixApplicationAPIBuilder addStatelessParticlesMapper(
-			Class<? extends T> actionClass,
-			StatelessActionToParticleGroupsMapper<T> mapper
-		) {
-			this.requiredStateMappers.put(actionClass, a -> ImmutableSet.of());
-			this.actionMappers.put(actionClass, (a, p) -> mapper.mapToParticleGroups(actionClass.cast(a)));
-			return this;
-		}
-
-		public <T extends Action> RadixApplicationAPIBuilder addStatefulParticlesMapper(
-			Class<T> actionClass,
-			StatefulActionToParticleGroupsMapper<T> mapper
-		) {
-			this.requiredStateMappers.put(actionClass, a -> mapper.requiredState(actionClass.cast(a)));
-			this.actionMappers.put(actionClass, (a, p) -> mapper.mapToParticleGroups(actionClass.cast(a), p));
-			return this;
 		}
 
 		public <T extends ApplicationState> RadixApplicationAPIBuilder addReducer(ParticleReducer<T> reducer) {
@@ -1130,7 +1092,6 @@ public class RadixApplicationAPI {
 				universe,
 				feeProcessor,
 				requiredStateMappers.build(),
-				actionMappers.build(),
 				reducers,
 				atomMappers,
 				atomErrorMappers
@@ -1167,24 +1128,6 @@ public class RadixApplicationAPI {
 		 * @param action action to add to staging area.
 		 */
 		public void stage(Action action) throws StageActionException {
-			BiFunction<Action, Stream<Substate>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
-			if (statefulMapper == null) {
-				throw new IllegalArgumentException(
-						String.format("Unknown action class: %s. Available: %s", action.getClass(), actionMappers.keySet())
-				);
-			}
-
-			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
-			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
-			Stream<Substate> particles = required.stream()
-				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid)
-					.filter(ctx.particleClass()::isInstance)
-				);
-
-			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
-			for (ParticleGroup pg : pgs) {
-				universe.getAtomStore().stageParticleGroup(uuid, pg);
-			}
 		}
 
 		/**

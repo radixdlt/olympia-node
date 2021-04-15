@@ -17,16 +17,13 @@
 
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.atom.SubstateId;
+import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +33,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenBalance;
@@ -133,8 +129,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final RRI nativeToken;
 	private final byte universeMagic;
-	private final CMStore readLogStore;
-	private final ConstraintMachine constraintMachine;
+	private final TxnParser txnParser;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -144,7 +139,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		ConstraintMachine constraintMachine,
+		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
@@ -154,7 +149,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
-		this.constraintMachine = constraintMachine;
+		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
@@ -162,30 +157,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.ledgerCommitted = ledgerCommitted;
 		this.nativeToken = nativeToken;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
-		this.readLogStore = new CMStore() {
-			@Override
-			public Transaction createTransaction() {
-				return null;
-			}
-
-			@Override
-			public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
-				return false;
-			}
-
-			@Override
-			public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
-				var txnId = substateId.getTxnId();
-				return store.get(txnId)
-					.flatMap(txn ->
-						restore(serialization, txn.getPayload(), Atom.class)
-							.map(a -> ConstraintMachine.toInstructions(a.getInstructions()))
-							.map(i -> i.get(substateId.getIndex().orElseThrow()))
-							.flatMap(i -> restore(serialization, i.getData(), Particle.class))
-							.toOptional()
-					);
-			}
-		};
 
 		open();
 	}
@@ -304,7 +275,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
 					return Result.ok(txn)
-						.map(this::parseTxn)
+						.map(txnParser::parseOrElseThrow)
 						.flatMap(t -> new TransactionParser(nativeToken).parse(t, instantFromKey(key)));
 				}
 
@@ -351,7 +322,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				AID.fromBytes(data.getData())
 					.flatMap(this::retrieveTx)
 					.onFailure(this::reportError)
-					.map(this::parseTxn)
+					.map(txnParser::parseOrElseThrow)
 					.flatMap(txn -> new TransactionParser(nativeToken).parse(txn, instantFromKey(key)))
 					.onSuccess(list::add);
 
@@ -501,17 +472,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private REParsedTxn parseTxn(Txn txn) {
-		try {
-			return constraintMachine.validate(null, readLogStore, txn, PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-		store.forEach(txn -> processRETransaction(parseTxn(txn)));
+		store.forEach(txn -> processRETransaction(txnParser.parseOrElseThrow(txn)));
 		log.info("Database rebuilding is finished successfully");
 	}
 
@@ -592,8 +555,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else {
 			var tokDefs = action.getInstructions().stream()
-				.filter(i -> i.getParticle() instanceof TokenDefinitionSubstate)
-				.map(i -> (TokenDefinitionSubstate) i.getParticle())
+				.filter(i -> i.getParticle() instanceof TokenDefinitionParticle)
+				.map(i -> (TokenDefinitionParticle) i.getParticle())
 				.collect(Collectors.toList());
 
 			tokDefs.forEach(this::storeTokenDefinition);
@@ -635,10 +598,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	private void storeTokenDefinition(TokenDefinitionSubstate substate) {
-		TokenDefinitionRecord.from(substate)
-			.onSuccess(this::storeTokenDefinition)
-			.onFailure(failure -> log.error("Unable to store token definition: {}", failure.message()));
+	private void storeTokenDefinition(TokenDefinitionParticle substate) {
+		var record = TokenDefinitionRecord.from(substate);
+		storeTokenDefinition(record);
 	}
 
 	private void storeTokenDefinition(TokenDefinitionRecord tokenDefinition) {

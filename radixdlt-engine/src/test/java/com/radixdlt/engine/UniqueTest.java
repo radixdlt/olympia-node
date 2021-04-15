@@ -66,10 +66,11 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var otherRadixAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
+		var rri = RRI.of(otherRadixAddress, "thisisauniquestring");
 		var atom = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
-			.virtualDown(new RRIParticle(RRI.of(otherRadixAddress, "thisisauniquestring")))
-			.up(new UniqueParticle("thisisauniquestring", otherRadixAddress))
+			.virtualDown(new RRIParticle(rri))
+			.up(new UniqueParticle(rri))
 			.particleGroup()
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))

@@ -22,18 +22,15 @@
 
 package com.radixdlt.client.core;
 
-import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -177,17 +174,18 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream().flatMap(a -> ConstraintMachine.toInstructions(a.getInstructions()).stream())
+		this.nativeToken = config.getGenesis().stream().flatMap(a -> a.getInstructions().stream())
+			.map(REInstruction::create)
 			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
 			.map(i -> {
 				try {
-					return DefaultSerialization.getInstance().fromDson(i.getData(), Particle.class);
+					return SubstateSerializer.deserialize(i.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}
 			})
-			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
-			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
+			.filter(p -> p instanceof TokenDefinitionParticle)
+			.map(p -> ((TokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;
@@ -248,10 +246,8 @@ public final class RadixUniverse {
 		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
 			// 1 millirad per byte after the first three kilobytes
 			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
-			// 1,000 millirads per fixed supply token definition
-			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, milliRads(1000L)),
-			// 1,000 millirads per mutable supply token definition
-			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, milliRads(1000L))
+			// 1,000 millirads per token definition
+			PerParticleFeeEntry.of(TokenDefinitionParticle.class, 0, milliRads(1000L))
 		);
 
 		// Minimum fee of 40 millirads

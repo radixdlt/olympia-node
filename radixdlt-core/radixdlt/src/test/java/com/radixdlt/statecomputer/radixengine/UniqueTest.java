@@ -74,7 +74,7 @@ public final class UniqueTest {
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var rri = RRI.of(address, "test");
 		var rriParticle = new RRIParticle(rri);
-		var uniqueParticle = new UniqueParticle("test", address);
+		var uniqueParticle = new UniqueParticle(rri);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(uniqueParticle)

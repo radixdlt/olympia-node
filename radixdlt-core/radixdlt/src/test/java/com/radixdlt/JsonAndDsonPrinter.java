@@ -19,9 +19,8 @@ package com.radixdlt;
 
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -51,7 +50,6 @@ public class JsonAndDsonPrinter {
     @Test
     public void logAllParticles() {
         logFixedSupplyTokenDefinitionParticle();
-        logMutableSupplyTokenDefinitionParticle();
         logStakedTokensParticle();
         logTransferableTokensParticle();
         logRRIParticle();
@@ -75,7 +73,7 @@ public class JsonAndDsonPrinter {
     }
 
     private void logTransferableTokensParticle() {
-        final var particle = new TransferrableTokensParticle(
+        final var particle = new TokensParticle(
             ADDRESS,
             UInt256.EIGHT,
             TOKEN_RRI,
@@ -93,25 +91,14 @@ public class JsonAndDsonPrinter {
         logParticle(particle);
     }
 
-    private void logMutableSupplyTokenDefinitionParticle() {
-        final var particle = new MutableSupplyTokenDefinitionParticle(
+    private void logFixedSupplyTokenDefinitionParticle() {
+        final var particle = new TokenDefinitionParticle(
             TOKEN_RRI,
             "TEST",
             "description",
             "http://somewhere.com/icon.jpg",
-            "http://somewhere.com"
-        );
-        logParticle(particle);
-    }
-
-    private void logFixedSupplyTokenDefinitionParticle() {
-        final var particle = new FixedSupplyTokenDefinitionParticle(
-                TOKEN_RRI,
-                "TEST",
-                "description",
-                UInt256.TEN,
-                "http://somewhere.com/icon.jpg",
-                "http://somewhere.com"
+            "http://somewhere.com",
+            UInt256.TEN
         );
         logParticle(particle);
     }

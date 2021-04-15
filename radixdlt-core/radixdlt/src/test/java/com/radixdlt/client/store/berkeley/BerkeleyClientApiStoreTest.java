@@ -16,7 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
-import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,9 +36,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
@@ -98,7 +96,7 @@ public class BerkeleyClientApiStoreTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject
-	private ConstraintMachine constraintMachine;
+	private TxnParser txnParser;
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
@@ -193,7 +191,7 @@ public class BerkeleyClientApiStoreTest {
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createMutableToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
-				try (var cursor = store.openIndexedCursor(MutableSupplyTokenDefinitionParticle.class)) {
+				try (var cursor = store.openIndexedCursor(TokenDefinitionParticle.class)) {
 					while (cursor.hasNext()) {
 						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
 					}
@@ -214,7 +212,7 @@ public class BerkeleyClientApiStoreTest {
 		var tx = TxBuilder.newBuilder(TOKEN_ADDRESS)
 			.createFixedToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign, store -> {
-				try (var cursor = store.openIndexedCursor(FixedSupplyTokenDefinitionParticle.class)) {
+				try (var cursor = store.openIndexedCursor(TokenDefinitionParticle.class)) {
 					while (cursor.hasNext()) {
 						toTokenDefinitionRecord(cursor.next().getParticle()).ifPresent(fooDef::set);
 					}
@@ -336,7 +334,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
-			constraintMachine,
+			txnParser,
 			ledgerStore,
 			serialization,
 			mock(SystemCounters.class),
@@ -352,8 +350,8 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	private Optional<TokenDefinitionRecord> toTokenDefinitionRecord(Particle particle) {
-		if (particle instanceof TokenDefinitionSubstate) {
-			return TokenDefinitionRecord.from((TokenDefinitionSubstate) particle).toOptional();
+		if (particle instanceof TokenDefinitionParticle) {
+			return Optional.of(TokenDefinitionRecord.from((TokenDefinitionParticle) particle));
 		} else {
 			return Optional.empty();
 		}

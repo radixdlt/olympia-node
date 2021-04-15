@@ -17,56 +17,42 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.utils.UInt256;
+
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * Particle representing a mutable supply token definition
+ * Particle representing a fixed supply token definition
  */
-@SerializerId2("m_tkn")
-public final class MutableSupplyTokenDefinitionParticle extends Particle implements TokenDefinitionSubstate {
-	@JsonProperty("rri")
-	@DsonOutput(Output.ALL)
-	private RRI rri;
+public final class TokenDefinitionParticle implements Particle {
+	private final RRI rri;
+	private final UInt256 supply;
+	private final String name;
+	private final String description;
+	private final String iconUrl;
+	private final String url;
 
-	@JsonProperty("n")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String name;
-
-	@JsonProperty("d")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String description;
-
-	@JsonProperty("i")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String iconUrl;
-
-	@JsonProperty("url")
-	@DsonOutput(Output.ALL)
-	private String url;
-
-	MutableSupplyTokenDefinitionParticle() {
-		// Serializer only
-		super();
-	}
-
-	public MutableSupplyTokenDefinitionParticle(
+	public TokenDefinitionParticle(
 		RRI rri,
 		String name,
 		String description,
 		String iconUrl,
-		String url
+		String url,
+		UInt256 supply
 	) {
-		this.rri = rri;
-		this.name = name;
-		this.description = description;
-		this.iconUrl = iconUrl;
-		this.url = url;
+		this.rri = Objects.requireNonNull(rri);
+		this.name = Objects.requireNonNull(name);
+		this.description = Objects.requireNonNull(description);
+		this.supply = supply;
+		this.iconUrl = Objects.requireNonNull(iconUrl);
+		this.url = Objects.requireNonNull(url);
+	}
+
+	public boolean isMutable() {
+		return this.supply == null;
 	}
 
 	public RRI getRRI() {
@@ -81,6 +67,10 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		return this.description;
 	}
 
+	public Optional<UInt256> getSupply() {
+		return Optional.ofNullable(this.supply);
+	}
+
 	public String getIconUrl() {
 		return this.iconUrl;
 	}
@@ -89,11 +79,11 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		return url;
 	}
 
-
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s), (am%s)]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(rri),
+		return String.format("%s[(%s:%s:%s), (%s)]", getClass().getSimpleName(),
+			String.valueOf(this.rri), String.valueOf(name),
+			String.valueOf(supply),
 			String.valueOf(description));
 	}
 
@@ -102,19 +92,20 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle impleme
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof MutableSupplyTokenDefinitionParticle)) {
+		if (!(o instanceof TokenDefinitionParticle)) {
 			return false;
 		}
-		MutableSupplyTokenDefinitionParticle that = (MutableSupplyTokenDefinitionParticle) o;
+		TokenDefinitionParticle that = (TokenDefinitionParticle) o;
 		return Objects.equals(rri, that.rri)
 				&& Objects.equals(name, that.name)
 				&& Objects.equals(description, that.description)
+				&& Objects.equals(supply, that.supply)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, iconUrl, url);
+		return Objects.hash(rri, name, description, supply, iconUrl, url);
 	}
 }

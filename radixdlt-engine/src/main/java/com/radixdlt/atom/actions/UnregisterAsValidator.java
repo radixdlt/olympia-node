@@ -33,7 +33,7 @@ public final class UnregisterAsValidator implements TxAction {
 			p -> p.getAddress().equals(address) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
-			substateDown -> new ValidatorParticle(address, false, substateDown.getUrl())
+			substateDown -> new ValidatorParticle(address, false, substateDown.getName(), substateDown.getUrl())
 		);
 	}
 }

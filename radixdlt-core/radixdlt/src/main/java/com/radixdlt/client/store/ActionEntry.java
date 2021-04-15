@@ -21,7 +21,7 @@ import org.json.JSONObject;
 import org.radix.api.jsonrpc.ActionType;
 
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -72,7 +72,7 @@ public class ActionEntry {
 		);
 	}
 
-	public static ActionEntry transfer(TransferrableTokensParticle transfer, RadixAddress owner) {
+	public static ActionEntry transfer(TokensParticle transfer, RadixAddress owner) {
 		return create(
 			ActionType.TRANSFER,
 			owner,

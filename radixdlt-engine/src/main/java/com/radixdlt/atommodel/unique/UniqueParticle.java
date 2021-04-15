@@ -17,45 +17,24 @@
 
 package com.radixdlt.atommodel.unique;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
-@SerializerId2("radix.particles.unique")
-public final class UniqueParticle extends Particle {
-	@JsonProperty("name")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String name;
+public final class UniqueParticle implements Particle {
+	private final RRI rri;
 
-	@JsonProperty("address")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
-
-	UniqueParticle() {
-		// For serializer
-		super();
+	public UniqueParticle(RRI rri) {
+		this.rri = Objects.requireNonNull(rri);
 	}
 
-	public UniqueParticle(String name, RadixAddress address) {
-		this.name = Objects.requireNonNull(name);
-		this.address = address;
-	}
-
-	public RRI getRRI() {
-		return RRI.of(address, name);
-	}
-
-	public RadixAddress getAddress() {
-		return address;
+	public RRI getRri() {
+		return rri;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.name, this.address);
+		return Objects.hash(this.rri);
 	}
 
 	@Override
@@ -64,12 +43,11 @@ public final class UniqueParticle extends Particle {
 			return false;
 		}
 		final var that = (UniqueParticle) obj;
-		return Objects.equals(this.name, that.name)
-			&& Objects.equals(this.address, that.address);
+		return Objects.equals(this.rri, that.rri);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), String.valueOf(name), String.valueOf(address));
+		return String.format("%s[%s]", getClass().getSimpleName(), rri);
 	}
 }

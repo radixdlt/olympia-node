@@ -19,7 +19,7 @@ package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
 import com.radixdlt.serialization.DsonOutput;
@@ -45,10 +45,10 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		return JsonSerializationTestVector.class;
 	}
 
-	private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
+	private static TokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
 		var argsExtractor = ArgumentsExtractor.from(arguments);
 
-		var ttp = new TransferrableTokensParticle(
+		var ttp = new TokensParticle(
 			argsExtractor.asRadixAddress("address"),
 			argsExtractor.asUInt256("amount"),
 			argsExtractor.asRRI("tokenDefinitionReference"),

@@ -25,7 +25,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -34,10 +33,10 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.utils.Ints;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
@@ -47,7 +46,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	private List<REParsedInstruction> toParsed(Txn txn, InMemoryEngineStore<LedgerAndBFTProof> store) throws DeserializeException {
 		var atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-		var rawInstructions = ConstraintMachine.toInstructions(atom.getInstructions());
+		var rawInstructions = atom.getInstructions().stream().map(REInstruction::create).collect(Collectors.toList());
 		var instructions = new ArrayList<REParsedInstruction>();
 		for (int i = 0; i < rawInstructions.size(); i++) {
 			var instruction = rawInstructions.get(i);
@@ -66,11 +65,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 					particle = SubstateSerializer.deserialize(instruction.getData());
 					substateId = SubstateId.ofVirtualSubstate(instruction.getData());
 				} else if (instruction.getMicroOp() == REInstruction.REOp.DOWN) {
-					substateId = SubstateId.fromBytes(instruction.getData());
+					substateId = SubstateId.fromBuffer(instruction.getData());
 					var storedParticle = store.loadUpParticle(null, substateId);
 					particle = storedParticle.orElseThrow();
 				} else if (instruction.getMicroOp() == REInstruction.REOp.LDOWN) {
-					int index = Ints.fromByteArray(instruction.getData());
+					int index = instruction.getData().getInt();
 					var dson = rawInstructions.get(index).getData();
 					particle = SubstateSerializer.deserialize(dson);
 					substateId = SubstateId.ofSubstate(atom, index);

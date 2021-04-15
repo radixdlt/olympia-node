@@ -101,7 +101,7 @@ public class MempoolTest {
 		for (int i = 0; i < numParticles; i++) {
 			RRI rri = RRI.of(address, "test" + i);
 			RRIParticle rriParticle = new RRIParticle(rri);
-			UniqueParticle uniqueParticle = new UniqueParticle("test" + i, address);
+			UniqueParticle uniqueParticle = new UniqueParticle(rri);
 			atomBuilder
 				.virtualDown(rriParticle)
 				.up(uniqueParticle)

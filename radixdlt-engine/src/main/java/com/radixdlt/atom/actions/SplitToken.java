@@ -22,7 +22,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 
@@ -43,7 +43,7 @@ public final class SplitToken implements TxAction {
 		var factory = TokDefParticleFactory.create(rri, true);
 
 		var substate = txBuilder.findSubstate(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri)
 				&& p.getAddress().equals(address)
 				&& p.getAmount().compareTo(minSize) > 0,
@@ -51,7 +51,7 @@ public final class SplitToken implements TxAction {
 		);
 
 		txBuilder.down(substate.getId());
-		var particle = (TransferrableTokensParticle) substate.getParticle();
+		var particle = (TokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
 		txBuilder.up(factory.createTransferrable(address, amt1));

@@ -20,6 +20,7 @@ package com.radixdlt.atomos;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * The interface in which a constraint scrypt can be programmed against.
@@ -49,6 +50,7 @@ public interface SysCalls extends RoutineCalls {
 	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> outputClass0,
 		Class<U> outputClass1,
+		Predicate<T> includeSecondClass,
 		BiFunction<T, U, Result> combinedCheck
 	);
 

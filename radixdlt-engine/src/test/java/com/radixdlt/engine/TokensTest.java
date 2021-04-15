@@ -1,9 +1,9 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
@@ -47,15 +47,15 @@ public class TokensTest {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RRI rri = RRI.of(address, "TEST");
 		RRIParticle rriParticle = new RRIParticle(rri);
-		FixedSupplyTokenDefinitionParticle tokenDefinitionParticle = new FixedSupplyTokenDefinitionParticle(
+		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,
 			"TEST",
 			"description",
-			UInt256.TEN,
-			null,
-			null
+			"",
+			"",
+			UInt256.TEN
 		);
-		TransferrableTokensParticle transferrableTokensParticle = new TransferrableTokensParticle(
+		TokensParticle tokensParticle = new TokensParticle(
 			address,
 			UInt256.TEN,
 			rri,
@@ -64,7 +64,7 @@ public class TokensTest {
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(tokenDefinitionParticle)
-			.up(transferrableTokensParticle)
+			.up(tokensParticle)
 			.particleGroup();
 		var atom = builder.signAndBuild(keyPair::sign);
 

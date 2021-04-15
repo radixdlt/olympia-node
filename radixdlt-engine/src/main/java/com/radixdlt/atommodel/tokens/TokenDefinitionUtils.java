@@ -65,14 +65,14 @@ public final class TokenDefinitionUtils {
 	}
 
 	private static Result validateUrl(String url) {
-		if (url != null && !OWASP_URL_REGEX.matcher(url).matches()) {
+		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 			return Result.error("URL: not a valid URL: " + url);
 		}
 		return Result.success();
 	}
 
 	private static Result validateIconUrl(String iconUrl) {
-		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
+		if (!iconUrl.isEmpty() && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
 			return Result.error("Icon: not a valid URL: " + iconUrl);
 		}
 		return Result.success();
@@ -96,7 +96,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	static Result validateDescription(String description) {
-		if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+		if (description.length() > MAX_DESCRIPTION_LENGTH) {
 			return Result.error("Description: invalid length, description must be shorter than or equal to "
 				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
 		}
@@ -118,7 +118,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TransferrableTokensParticle tokensParticle) {
+	public static Result staticCheck(TokensParticle tokensParticle) {
 		if (tokensParticle.getAmount() == null) {
 			return Result.error("amount must not be null");
 		}
@@ -129,31 +129,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
-		if (symbolResult.isError()) {
-			return symbolResult;
-		}
-
-		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
-		if (descriptionResult.isError()) {
-			return descriptionResult;
-		}
-
-		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
-		if (iconResult.isError()) {
-			return iconResult;
-		}
-
-		final Result urlResult = validateUrl(tokenDefParticle.getUrl());
-		if (urlResult.isError()) {
-			return urlResult;
-		}
-
-		return Result.success();
-	}
-
-	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
+	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;

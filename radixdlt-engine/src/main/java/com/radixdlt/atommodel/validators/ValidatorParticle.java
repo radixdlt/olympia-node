@@ -17,42 +17,31 @@
 
 package com.radixdlt.atommodel.validators;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
-@SerializerId2("v")
-public final class ValidatorParticle extends Particle {
-	@JsonProperty("o")
-	@DsonOutput(DsonOutput.Output.ALL)
+public final class ValidatorParticle implements Particle {
 	private final RadixAddress address;
-
-	@JsonProperty("r")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final boolean registeredForNextEpoch;
-
-	@JsonProperty("u")
-	@DsonOutput(DsonOutput.Output.ALL)
+	private final String name;
 	private final String url;
 
 	public ValidatorParticle(RadixAddress address, boolean registeredForNextEpoch) {
-		this(address, registeredForNextEpoch, null);
+		this(address, registeredForNextEpoch, "", "");
 	}
 
-	@JsonCreator
 	public ValidatorParticle(
-		@JsonProperty("o") RadixAddress address,
-		@JsonProperty("r") boolean registeredForNextEpoch,
-		@JsonProperty("u") String url
+		RadixAddress address,
+		boolean registeredForNextEpoch,
+		String name,
+		String url
 	) {
 		this.address = Objects.requireNonNull(address);
 		this.registeredForNextEpoch = registeredForNextEpoch;
-		this.url = url;
+		this.name = Objects.requireNonNull(name);
+		this.url = Objects.requireNonNull(url);
 	}
 
 	public boolean isRegisteredForNextEpoch() {
@@ -63,13 +52,17 @@ public final class ValidatorParticle extends Particle {
 		return address;
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	public String getUrl() {
 		return url;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.registeredForNextEpoch, this.url);
+		return Objects.hash(this.address, this.registeredForNextEpoch, this.name, this.url);
 	}
 
 	@Override
@@ -83,6 +76,7 @@ public final class ValidatorParticle extends Particle {
 		final var that = (ValidatorParticle) obj;
 		return Objects.equals(this.address, that.address)
 			&& this.registeredForNextEpoch == that.registeredForNextEpoch
+			&& Objects.equals(this.name, that.name)
 			&& Objects.equals(this.url, that.url);
 	}
 

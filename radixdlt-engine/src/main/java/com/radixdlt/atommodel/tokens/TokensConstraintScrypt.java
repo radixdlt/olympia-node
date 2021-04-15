@@ -55,39 +55,29 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void registerParticles(SysCalls os) {
 		os.registerParticle(
-			MutableSupplyTokenDefinitionParticle.class,
-			ParticleDefinition.<MutableSupplyTokenDefinitionParticle>builder()
+			TokenDefinitionParticle.class,
+			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(MutableSupplyTokenDefinitionParticle::getRRI)
+				.rriMapper(TokenDefinitionParticle::getRRI)
 				.build()
 		);
 
 		os.registerParticle(
-			FixedSupplyTokenDefinitionParticle.class,
-			ParticleDefinition.<FixedSupplyTokenDefinitionParticle>builder()
-				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(FixedSupplyTokenDefinitionParticle::getRRI)
-				.build()
-		);
-
-		os.registerParticle(
-			TransferrableTokensParticle.class,
-			ParticleDefinition.<TransferrableTokensParticle>builder()
+			TokensParticle.class,
+			ParticleDefinition.<TokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TransferrableTokensParticle::getTokDefRef)
+				.rriMapper(TokensParticle::getTokDefRef)
 				.build()
 		);
 
 	}
 
 	private void defineTokenCreation(SysCalls os) {
-		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRI(MutableSupplyTokenDefinitionParticle.class);
-
 		os.createTransitionFromRRICombined(
-			FixedSupplyTokenDefinitionParticle.class,
-			TransferrableTokensParticle.class,
+			TokenDefinitionParticle.class,
+			TokensParticle.class,
+			t -> !t.isMutable(),
 			TokensConstraintScrypt::checkCreateTransferrable
 		);
 	}
@@ -97,17 +87,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(calls -> {
 			calls.createTransition(
 				new TransitionToken<>(
-					MutableSupplyTokenDefinitionParticle.class,
-					TransferrableTokensParticle.class,
+					TokenDefinitionParticle.class,
+					TokensParticle.class,
 					TypeToken.of(ReadOnlyData.class)
 				),
 				new TransitionProcedure<>() {
 					@Override
 					public Result precondition(
-						MutableSupplyTokenDefinitionParticle inputParticle,
-						TransferrableTokensParticle outputParticle,
+						TokenDefinitionParticle inputParticle,
+						TokensParticle outputParticle,
 						ReadOnlyData inputUsed
 					) {
+						if (!inputParticle.isMutable()) {
+							return Result.error("Can only mint mutable tokens.");
+						}
+
 						if (!outputParticle.isBurnable()) {
 							return Result.error("Must be able to burn mutable token.");
 						}
@@ -120,7 +114,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public InputOutputReducer<MutableSupplyTokenDefinitionParticle, TransferrableTokensParticle, ReadOnlyData>
+					public InputOutputReducer<TokenDefinitionParticle, TokensParticle, ReadOnlyData>
 						inputOutputReducer() {
 						return (inputParticle, outputParticle, outputUsed)
 							-> ReducerResult.complete(new MintToken(
@@ -129,7 +123,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public SignatureValidator<MutableSupplyTokenDefinitionParticle> inputSignatureRequired() {
+					public SignatureValidator<TokenDefinitionParticle> inputSignatureRequired() {
 						return i -> Optional.of(i.getRRI().getAddress());
 					}
 				}
@@ -138,13 +132,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		// Transfers
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
-			TransferrableTokensParticle.class,
-			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
-			TransferrableTokensParticle::getAmount,
+			TokensParticle.class,
+			TokensParticle.class,
+			TokensParticle::getAmount,
+			TokensParticle::getAmount,
 			checkEquals(
-				TransferrableTokensParticle::isBurnable,
-				TransferrableTokensParticle::isBurnable,
+				TokensParticle::isBurnable,
+				TokensParticle::isBurnable,
 				"Permissions not equal."
 			),
 			i -> Optional.of(i.getAddress()),
@@ -156,14 +150,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.executeRoutine(calls -> {
 			calls.createTransition(
 				new TransitionToken<>(
-					TransferrableTokensParticle.class,
+					TokensParticle.class,
 					VoidParticle.class,
 					TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
 				),
 				new TransitionProcedure<>() {
 					@Override
 					public Result precondition(
-						TransferrableTokensParticle inputParticle,
+						TokensParticle inputParticle,
 						VoidParticle outputParticle,
 						CreateFungibleTransitionRoutine.UsedAmount inputUsed
 					) {
@@ -179,7 +173,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public InputOutputReducer<TransferrableTokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
+					public InputOutputReducer<TokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
 						return (inputParticle, outputParticle, state) -> {
 							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
 							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
@@ -187,7 +181,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public SignatureValidator<TransferrableTokensParticle> inputSignatureRequired() {
+					public SignatureValidator<TokensParticle> inputSignatureRequired() {
 						return i -> Optional.of(i.getAddress());
 					}
 				}
@@ -196,8 +190,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@VisibleForTesting
-	static Result checkCreateTransferrable(FixedSupplyTokenDefinitionParticle tokDef, TransferrableTokensParticle transferrable) {
-		if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
+	static Result checkCreateTransferrable(TokenDefinitionParticle tokDef, TokensParticle transferrable) {
+		if (!Objects.equals(tokDef.getSupply().orElseThrow(), transferrable.getAmount())) {
 			return Result.error("Supply and amount are not equal.");
 		}
 

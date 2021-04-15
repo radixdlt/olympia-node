@@ -17,33 +17,48 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.SubstateId;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 /**
  * Unparsed Low level instruction into Radix Engine
  */
 public final class REInstruction {
 	public enum REOp {
-		UP((byte) 1, Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, Spin.UP, Spin.DOWN),
-		LDOWN((byte) 4, Spin.UP, Spin.DOWN),
-		READ((byte) 5, Spin.UP, Spin.UP),
-		LREAD((byte) 6, Spin.UP, Spin.UP),
-		MSG((byte) 7, null, null),
-		END((byte) 0, null, null);
+		UP((byte) 1, OptionalInt.empty(), Spin.NEUTRAL, Spin.UP),
+		VDOWN((byte) 2, OptionalInt.empty(), Spin.UP, Spin.DOWN),
+		DOWN((byte) 3, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.DOWN),
+		LDOWN((byte) 4, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.DOWN),
+		READ((byte) 5, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.UP),
+		LREAD((byte) 6, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.UP),
+		MSG((byte) 7, OptionalInt.empty(), null, null),
+		END((byte) 0, OptionalInt.of(0), null, null);
 
+		private final OptionalInt fixedLength;
 		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		REOp(byte opCode, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, OptionalInt fixedLength, Spin checkSpin, Spin nextSpin) {
 			this.opCode = opCode;
+			this.fixedLength = fixedLength;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
+		}
+
+		public ByteBuffer toData(ByteBuffer buf) {
+			if (fixedLength.isPresent()) {
+				return buf.limit(buf.position() + fixedLength.getAsInt());
+			} else {
+				var lengthByte = buf.get();
+				int length = Byte.toUnsignedInt(lengthByte);
+				return buf.limit(buf.position() + length);
+			}
 		}
 
 		public byte opCode() {
@@ -62,19 +77,24 @@ public final class REInstruction {
 	}
 
 	private final REOp operation;
-	private final byte[] data;
+	private final byte[] fullBytes;
 
-	private REInstruction(REOp operation, byte[] data) {
+	private REInstruction(REOp operation, byte[] fullBytes) {
 		this.operation = operation;
-		this.data = data;
+		this.fullBytes = fullBytes;
 	}
 
 	public REOp getMicroOp() {
 		return operation;
 	}
 
-	public byte[] getData() {
-		return data;
+	public ByteBuffer getData() {
+		var b = ByteBuffer.wrap(fullBytes, 1, fullBytes.length - 1);
+		return operation.toData(b);
+	}
+
+	public byte[] getBytes() {
+		return fullBytes;
 	}
 
 	public boolean hasSubstate() {
@@ -93,26 +113,22 @@ public final class REInstruction {
 		return operation.nextSpin;
 	}
 
-	public static REInstruction create(byte op, byte[] data) {
-		var microOp = REOp.fromByte(op);
-		return new REInstruction(microOp, data);
-	}
-
-	public static REInstruction particleGroup() {
-		return new REInstruction(REOp.END, new byte[0]);
+	public static REInstruction create(byte[] instruction) {
+		var microOp = REOp.fromByte(instruction[0]);
+		return new REInstruction(microOp, instruction);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s %s",
 			operation,
-			Hex.toHexString(data)
+			Hex.toHexString(fullBytes)
 		);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(operation, Arrays.hashCode(data));
+		return Objects.hash(operation, Arrays.hashCode(fullBytes));
 	}
 
 	@Override
@@ -123,6 +139,6 @@ public final class REInstruction {
 
 		var other = (REInstruction) o;
 		return Objects.equals(this.operation, other.operation)
-			&& Arrays.equals(this.data, other.data);
+			&& Arrays.equals(this.fullBytes, other.fullBytes);
 	}
 }

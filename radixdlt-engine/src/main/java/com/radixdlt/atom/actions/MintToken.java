@@ -21,8 +21,8 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -53,7 +53,7 @@ public final class MintToken implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.read(
-			MutableSupplyTokenDefinitionParticle.class,
+			TokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
 			"Could not find mutable token rri " + rri
 		);

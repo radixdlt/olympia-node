@@ -25,6 +25,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,8 +67,18 @@ public final class SubstateId {
 		return new SubstateId(transactionIdHash(particleBytes).asBytes());
 	}
 
+	public static SubstateId ofVirtualSubstate(ByteBuffer buf) {
+		return new SubstateId(transactionIdHash(buf).asBytes());
+	}
+
 	public static SubstateId fromBytes(byte[] bytes) {
 		return new SubstateId(bytes);
+	}
+
+	public static SubstateId fromBuffer(ByteBuffer buf) {
+		byte[] id = new byte[BYTES];
+		buf.get(id);
+		return fromBytes(id);
 	}
 
 	public boolean isVirtual() {

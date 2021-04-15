@@ -19,21 +19,11 @@ package com.radixdlt.atomos;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("radix.particles.rri")
-public final class RRIParticle extends Particle {
-	@JsonProperty("rri")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RRI rri;
-
-	RRIParticle() {
-		// Serializer only
-	}
+public final class RRIParticle implements Particle {
+	private final RRI rri;
 
 	public RRIParticle(RRI rri) {
 		this.rri = rri;

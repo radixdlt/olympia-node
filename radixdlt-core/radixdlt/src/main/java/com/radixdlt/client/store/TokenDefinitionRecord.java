@@ -22,15 +22,12 @@ import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionSubstate;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
@@ -104,7 +101,7 @@ public class TokenDefinitionRecord {
 		Objects.requireNonNull(currentSupply);
 
 		return new TokenDefinitionRecord(
-			name, rri, description, currentSupply, iconUrl, url, mutable
+			name, rri, description, currentSupply, iconUrl == null ? "" : iconUrl, url == null ? "" : url, mutable
 		);
 	}
 
@@ -119,17 +116,19 @@ public class TokenDefinitionRecord {
 		return create(name, rri, description, UInt384.ZERO, iconUrl, url, mutable);
 	}
 
-	public static Result<TokenDefinitionRecord> from(TokenDefinitionSubstate substate) {
-		if (substate instanceof MutableSupplyTokenDefinitionParticle) {
-			return Result.ok(from((MutableSupplyTokenDefinitionParticle) substate, UInt384.ZERO));
-		} else if (substate instanceof FixedSupplyTokenDefinitionParticle) {
-			return Result.ok(from((FixedSupplyTokenDefinitionParticle) substate));
-		}
-
-		return Result.fail("Unknown token definition substate: {0}", substate);
+	public static TokenDefinitionRecord from(TokenDefinitionParticle definition) {
+		return create(
+			definition.getName(),
+			definition.getRRI(),
+			definition.getDescription(),
+			definition.getSupply().map(UInt384::from).orElse(UInt384.ZERO),
+			definition.getIconUrl(),
+			definition.getUrl(),
+			definition.isMutable()
+		);
 	}
 
-	public static TokenDefinitionRecord from(MutableSupplyTokenDefinitionParticle definition, UInt384 supply) {
+	public static TokenDefinitionRecord from(TokenDefinitionParticle definition, UInt384 supply) {
 		return create(
 			definition.getName(),
 			definition.getRRI(),
@@ -137,19 +136,7 @@ public class TokenDefinitionRecord {
 			supply,
 			definition.getIconUrl(),
 			definition.getUrl(),
-			true
-		);
-	}
-
-	public static TokenDefinitionRecord from(FixedSupplyTokenDefinitionParticle definition) {
-		return create(
-			definition.getName(),
-			definition.getRRI(),
-			definition.getDescription(),
-			UInt384.from(definition.getSupply()),
-			definition.getIconUrl(),
-			definition.getUrl(),
-			false
+			definition.isMutable()
 		);
 	}
 
@@ -185,6 +172,12 @@ public class TokenDefinitionRecord {
 		return create(name, rri, description, supply, iconUrl, url, true);
 	}
 
+	public String toString() {
+		return String.format("%s{%s:%s:%s:%s:%s:%s}",
+			this.getClass().getSimpleName(), name, rri, description, currentSupply, iconUrl, url
+		);
+	}
+
 	@Override
 	public final boolean equals(Object o) {
 		if (this == o) {
@@ -197,7 +190,7 @@ public class TokenDefinitionRecord {
 			return mutable == that.mutable
 				&& name.equals(that.name)
 				&& rri.equals(that.rri)
-				&& currentSupply.equals(that.currentSupply)
+				&& Objects.equals(currentSupply, that.currentSupply)
 				&& Objects.equals(description, that.description)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url);

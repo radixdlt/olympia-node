@@ -17,7 +17,7 @@
 
 package com.radixdlt.constraintmachine;
 
-public final class VoidParticle extends Particle {
+public final class VoidParticle implements Particle {
 	private VoidParticle() {
 	}
 

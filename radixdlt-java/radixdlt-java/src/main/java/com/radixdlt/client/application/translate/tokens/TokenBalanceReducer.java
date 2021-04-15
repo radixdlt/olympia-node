@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.constraintmachine.Particle;
 
 /**
@@ -43,8 +43,8 @@ public class TokenBalanceReducer implements ParticleReducer<TokenBalanceState> {
 
 	@Override
 	public TokenBalanceState reduce(TokenBalanceState state, Particle p) {
-		if (p instanceof TransferrableTokensParticle) {
-			return TokenBalanceState.merge(state, (TransferrableTokensParticle) p);
+		if (p instanceof TokensParticle) {
+			return TokenBalanceState.merge(state, (TokensParticle) p);
 		}
 
 		return state;

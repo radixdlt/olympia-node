@@ -22,9 +22,8 @@ import com.google.common.collect.Maps;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
@@ -51,8 +50,6 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         Map<String, Function<Map<String, Object>, Object>> mutableMap = Maps.newHashMap();
         mutableMap.put("radix.particles.transferrable_tokens", SerializationTestScenarioRunner::makeTransferrableTokensParticle);
         mutableMap.put("radix.particles.fixed_supply_token_definition", SerializationTestScenarioRunner::makeFixedSupplyTokenDefinitionParticle);
-        mutableMap.put("radix.particles.mutable_supply_token_definition",
-                SerializationTestScenarioRunner::makeMutableSupplyTokenDefinitionParticle);
         mutableMap.put("radix.particles.staked_tokens", SerializationTestScenarioRunner::makeStakedTokensParticle);
         mutableMap.put("radix.particles.rri", SerializationTestScenarioRunner::makeRRIParticle);
         mutableMap.put("radix.particles.registered_validator", SerializationTestScenarioRunner::makeRegisteredValidatorParticle);
@@ -70,29 +67,16 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         return SerializationTestVector.class;
     }
 
-    private static FixedSupplyTokenDefinitionParticle makeFixedSupplyTokenDefinitionParticle(final Map<String, Object> arguments) {
+    private static TokenDefinitionParticle makeFixedSupplyTokenDefinitionParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var ttp = new FixedSupplyTokenDefinitionParticle(
+        var ttp = new TokenDefinitionParticle(
                 argsExtractor.asRRI("rri"),
                 argsExtractor.asString("name"),
                 argsExtractor.asString("description"),
-                argsExtractor.asUInt256("supply"),
                 argsExtractor.asString("iconUrl"),
-                argsExtractor.asString("url")
-        );
-        assertTrue(argsExtractor.isFinished());
-        return ttp;
-    }
-
-    private static MutableSupplyTokenDefinitionParticle makeMutableSupplyTokenDefinitionParticle(final Map<String, Object> arguments) {
-        var argsExtractor = ArgumentsExtractor.from(arguments);
-        var ttp = new MutableSupplyTokenDefinitionParticle(
-            argsExtractor.asRRI("rri"),
-            argsExtractor.asString("name"),
-            argsExtractor.asString("description"),
-            argsExtractor.asString("iconUrl"),
-            argsExtractor.asString("url")
-        );
+                argsExtractor.asString("url"),
+                argsExtractor.asUInt256("supply")
+            );
         assertTrue(argsExtractor.isFinished());
         return ttp;
     }
@@ -109,9 +93,9 @@ public final class SerializationTestScenarioRunner extends SanityTestScenarioRun
         return ttp;
     }
 
-    private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
+    private static TokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
         var argsExtractor = ArgumentsExtractor.from(arguments);
-        var ttp = new TransferrableTokensParticle(
+        var ttp = new TokensParticle(
             argsExtractor.asRadixAddress("address"),
             argsExtractor.asUInt256("amount"),
             argsExtractor.asRRI("tokenDefinitionReference"),

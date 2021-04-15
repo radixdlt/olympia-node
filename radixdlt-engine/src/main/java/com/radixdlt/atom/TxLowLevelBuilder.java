@@ -23,9 +23,11 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,26 +42,16 @@ import java.util.function.Function;
  * Low level builder class for transactions
  */
 public final class TxLowLevelBuilder {
-	private final List<REInstruction> instructions = new ArrayList<>();
+	private final List<byte[]> instructions = new ArrayList<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
+	private int instructionIndex = 0;
 
 	TxLowLevelBuilder() {
 	}
 
 	public static TxLowLevelBuilder newBuilder() {
 		return new TxLowLevelBuilder();
-	}
-
-	public TxLowLevelBuilder message(String message) {
-		var bytes = message.getBytes(StandardCharsets.UTF_8);
-		this.instructions.add(
-			REInstruction.create(
-				REInstruction.REOp.MSG.opCode(),
-				bytes
-			)
-		);
-		return this;
 	}
 
 	public Set<SubstateId> remoteDownSubstate() {
@@ -70,30 +62,44 @@ public final class TxLowLevelBuilder {
 		return new ArrayList<>(localUpParticles.values());
 	}
 
+	// TODO: Remove array copies
+	private byte[] varLengthData(byte[] bytes) {
+		if (bytes.length > 255) {
+			throw new IllegalArgumentException();
+		}
+		var data = new byte[1 + bytes.length];
+		System.arraycopy(bytes, 0, data, 1, bytes.length);
+		data[0] = (byte) bytes.length;
+		return data;
+	}
+
+	private void instruction(REInstruction.REOp op, byte[] data) {
+		var instruction = new byte[1 + data.length];
+		instruction[0] = op.opCode();
+		System.arraycopy(data, 0, instruction, 1, data.length);
+		this.instructions.add(instruction);
+		this.instructionIndex++;
+	}
+
+	public TxLowLevelBuilder message(String message) {
+		var bytes = message.getBytes(StandardCharsets.UTF_8);
+		instruction(REInstruction.REOp.MSG, varLengthData(bytes));
+		return this;
+	}
+
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleDson = SubstateSerializer.serialize(particle);
-		var nextIndex = this.instructions.size();
-		this.instructions.add(
-			REInstruction.create(
-				REInstruction.REOp.UP.opCode(),
-				particleDson
-			)
-		);
-		localUpParticles.put(nextIndex, LocalSubstate.create(nextIndex, particle));
+		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
+		var bytes = SubstateSerializer.serialize(particle);
+		instruction(REInstruction.REOp.UP, varLengthData(bytes));
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		var particleBytes = SubstateSerializer.serialize(particle);
-		this.instructions.add(
-			REInstruction.create(
-				REInstruction.REOp.VDOWN.opCode(),
-				particleBytes
-			)
-		);
-		remoteDownSubstate.add(SubstateId.ofVirtualSubstate(particleBytes));
+		var bytes = SubstateSerializer.serialize(particle);
+		instruction(REInstruction.REOp.VDOWN, varLengthData(bytes));
+		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
 
@@ -102,19 +108,18 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		this.instructions.add(REInstruction.create(REInstruction.REOp.LDOWN.opCode(), Ints.toByteArray(index)));
-
+		instruction(REInstruction.REOp.LDOWN, Ints.toByteArray(index));
 		return this;
 	}
 
 	public TxLowLevelBuilder down(SubstateId substateId) {
-		this.instructions.add(REInstruction.create(REInstruction.REOp.DOWN.opCode(), substateId.asBytes()));
-		remoteDownSubstate.add(substateId);
+		instruction(REInstruction.REOp.DOWN, substateId.asBytes());
+		this.remoteDownSubstate.add(substateId);
 		return this;
 	}
 
 	public TxLowLevelBuilder read(SubstateId substateId) {
-		this.instructions.add(REInstruction.create(REInstruction.REOp.READ.opCode(), substateId.asBytes()));
+		instruction(REInstruction.REOp.READ, substateId.asBytes());
 		return this;
 	}
 
@@ -123,18 +128,20 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		this.instructions.add(REInstruction.create(REInstruction.REOp.LREAD.opCode(), Ints.toByteArray(index)));
+		instruction(REInstruction.REOp.LREAD, Ints.toByteArray(index));
 		return this;
 	}
 
-
 	public TxLowLevelBuilder particleGroup() {
-		this.instructions.add(REInstruction.particleGroup());
+		instruction(REInstruction.REOp.END, new byte[0]);
 		return this;
 	}
 
 	private HashCode computeHashToSign() {
-		return Atom.computeHashToSign(instructions);
+		var outputStream = new ByteArrayOutputStream();
+		instructions.forEach(outputStream::writeBytes);
+		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		return HashUtils.sha256(firstHash.asBytes());
 	}
 
 	private static Txn atomToTxn(Atom atom) {
@@ -143,29 +150,18 @@ public final class TxLowLevelBuilder {
 	}
 
 	public Atom buildAtomWithoutSignature() {
-		return Atom.create(
-			instructions,
-			null
-		);
+		return Atom.create(instructions, null);
 	}
 
 	public Txn buildWithoutSignature() {
-		var atom = Atom.create(
-			instructions,
-			null
-		);
-
+		var atom = Atom.create(instructions, null);
 		return atomToTxn(atom);
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
 		var hashToSign = computeHashToSign();
 		var signature = signatureProvider.apply(hashToSign);
-		var atom = Atom.create(
-			instructions,
-			signature
-		);
-
+		var atom = Atom.create(instructions, signature);
 		return atomToTxn(atom);
 	}
 }

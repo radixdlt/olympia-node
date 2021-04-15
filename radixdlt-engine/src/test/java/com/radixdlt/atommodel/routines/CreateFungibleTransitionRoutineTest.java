@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 
 public class CreateFungibleTransitionRoutineTest {
 
-	private static final class Fungible extends Particle {
+	private static final class Fungible implements Particle {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
 			this.amount = amount;

@@ -21,11 +21,10 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -442,7 +441,7 @@ public final class TxBuilder {
 			Optional.of(new ValidatorParticle(address, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(address, true, substateDown.getUrl())
+			substateDown -> new ValidatorParticle(address, true, substateDown.getName(), substateDown.getUrl())
 		);
 
 		particleGroup();
@@ -452,13 +451,13 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address, id);
+		final var rri = RRI.of(address, id);
 		swap(
 			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			p -> p.getRri().equals(rri),
+			Optional.of(new RRIParticle(rri)),
 			"RRI not available"
-		).with(rri -> new UniqueParticle(id, address));
+		).with(r -> new UniqueParticle(r.getRri()));
 
 		particleGroup();
 
@@ -477,21 +476,21 @@ public final class TxBuilder {
 			"RRI not available"
 		);
 
-		up(new TransferrableTokensParticle(
+		up(new TokenDefinitionParticle(
+			tokenRRI,
+			tokenDefinition.getName(),
+			tokenDefinition.getDescription(),
+			tokenDefinition.getIconUrl(),
+			tokenDefinition.getTokenUrl(),
+			tokenDefinition.getSupply()
+		));
+
+		up(new TokensParticle(
 			address,
 			tokenDefinition.getSupply(),
 			tokenRRI,
 			false)
 		);
-
-		up(new FixedSupplyTokenDefinitionParticle(
-			tokenRRI,
-			tokenDefinition.getName(),
-			tokenDefinition.getDescription(),
-			tokenDefinition.getSupply(),
-			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl()
-		));
 
 		particleGroup();
 
@@ -508,12 +507,13 @@ public final class TxBuilder {
 			Optional.of(new RRIParticle(tokenRRI)),
 			"RRI not available"
 		);
-		up(new MutableSupplyTokenDefinitionParticle(
+		up(new TokenDefinitionParticle(
 			tokenRRI,
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
 			tokenDefinition.getIconUrl(),
-			tokenDefinition.getTokenUrl()
+			tokenDefinition.getTokenUrl(),
+			null
 		));
 		particleGroup();
 
@@ -522,7 +522,7 @@ public final class TxBuilder {
 
 	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		read(
-			MutableSupplyTokenDefinitionParticle.class,
+			TokenDefinitionParticle.class,
 			p -> p.getRRI().equals(rri),
 			"Could not find mutable token rri " + rri
 		);
@@ -536,9 +536,9 @@ public final class TxBuilder {
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		final var factory = TokDefParticleFactory.create(rri, true);
 		swapFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for transfer."
@@ -553,9 +553,9 @@ public final class TxBuilder {
 		final var factory = TokDefParticleFactory.create(rri, true);
 
 		deallocateFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance to for burn."
@@ -572,9 +572,9 @@ public final class TxBuilder {
 		var factory = TokDefParticleFactory.create(rri, true);
 
 		swapFungible(
-			TransferrableTokensParticle.class,
+			TokensParticle.class,
 			p -> p.getTokDefRef().equals(rri) && p.getAddress().equals(address),
-			TransferrableTokensParticle::getAmount,
+			TokensParticle::getAmount,
 			amt -> factory.createTransferrable(address, amt),
 			amount,
 			"Not enough balance for staking."

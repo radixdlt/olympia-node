@@ -15,6 +15,8 @@ package org.radix.api.services;/*
  * language governing permissions and limitations under the License.
  */
 
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,7 +24,6 @@ import org.junit.Test;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.api.HighLevelApiService;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
@@ -34,7 +35,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -60,8 +60,8 @@ public class HighLevelApiServiceTest {
 
 	@Before
 	public void setup() {
-		var nativeTokenParticle = new MutableSupplyTokenDefinitionParticle(
-			TOKEN, "XRD", "XRD XRD", "", ""
+		var nativeTokenParticle = new TokenDefinitionParticle(
+			TOKEN, "XRD", "XRD XRD", "", "", null
 		);
 
 		genesisAtom = TxLowLevelBuilder.newBuilder()
@@ -114,7 +114,7 @@ public class HighLevelApiServiceTest {
 		var definition = TokenDefinitionRecord.from(mutableTokenDef("FOO"));
 
 		when(clientApiStore.getTokenDefinition(token))
-			.thenReturn(definition);
+			.thenReturn(Result.ok(definition));
 		when(clientApiStore.getTokenSupply(token))
 			.thenReturn(Result.ok(UInt384.NINE));
 
@@ -164,13 +164,14 @@ public class HighLevelApiServiceTest {
 		);
 	}
 
-	private MutableSupplyTokenDefinitionParticle mutableTokenDef(String symbol) {
-		return new MutableSupplyTokenDefinitionParticle(
+	private TokenDefinitionParticle mutableTokenDef(String symbol) {
+		return new TokenDefinitionParticle(
 			RRI.of(TOKEN_ADDRESS, symbol),
 			symbol,
 			description(symbol),
 			iconUrl(symbol),
-			homeUrl(symbol)
+			homeUrl(symbol),
+			null
 		);
 	}
 
