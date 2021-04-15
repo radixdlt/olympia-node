@@ -17,6 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.jsonrpc.handler.AtomHandler;
@@ -44,6 +46,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
  */
 public final class RadixJsonRpcServer {
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+	private static final Logger log = LogManager.getLogger();
 
 	/**
 	 * Maximum request size in bytes
@@ -141,6 +144,8 @@ public final class RadixJsonRpcServer {
 	 * @return The response to the request, could be a JSON-RPC error
 	 */
 	String handleRpc(String requestString) {
+		log.debug("RPC: input {}", requestString);
+
 		int length = requestString.getBytes(StandardCharsets.UTF_8).length;
 
 		if (length > maxRequestSizeBytes) {
@@ -150,20 +155,28 @@ public final class RadixJsonRpcServer {
 		return jsonObject(requestString)
 			.map(this::handle)
 			.map(Object::toString)
+			.map(value -> logValue("result", value))
 			.orElseGet(() -> errorResponse(RpcError.PARSE_ERROR, "unable to parse input").toString());
+	}
+
+	private static <T> T logValue(String message, T value) {
+		log.debug("RPC: {} {}", message, value);
+		return value;
 	}
 
 	private JSONObject handle(JSONObject request) {
 		if (!request.has("id")) {
+			log.debug("RPC: error, no id");
 			return errorResponse(RpcError.INVALID_PARAMS, "id missing");
 		}
 
 		if (!request.has("method")) {
+			log.debug("RPC: error, no method");
 			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
 		}
 
 		try {
-			return Optional.ofNullable(handlers.get(request.getString("method")))
+			return Optional.ofNullable(handlers.get(logValue("method", request.getString("method"))))
 				.map(handler -> handler.execute(request))
 				.orElseGet(() -> errorResponse(request, RpcError.METHOD_NOT_FOUND, "Method not found"));
 
