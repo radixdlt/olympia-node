@@ -56,7 +56,7 @@ public final class RadixAddress {
 	public RadixAddress(byte magic, ECPublicKey publicKey) {
 		this.publicKey = Objects.requireNonNull(publicKey);
 
-		byte[] digest = publicKey.getBytes();
+		byte[] digest = publicKey.getCompressedBytes();
 		byte[] addressBytes = new byte[1 + digest.length + 4];
 		addressBytes[0] = magic;
 		System.arraycopy(digest, 0, addressBytes, 1, digest.length);

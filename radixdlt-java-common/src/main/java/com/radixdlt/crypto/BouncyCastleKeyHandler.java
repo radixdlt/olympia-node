@@ -33,6 +33,7 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import org.bouncycastle.math.ec.ECPoint;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
@@ -71,10 +72,10 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 	}
 
 	@Override
-	public boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) {
+	public boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint) {
 		var verifier = new ECDSASigner();
 
-		verifier.init(false, new ECPublicKeyParameters(spec.getCurve().decodePoint(publicKey), domain));
+		verifier.init(false, new ECPublicKeyParameters(publicKeyPoint, domain));
 
 		return verifier.verifySignature(hash, signature.getR(), signature.getS());
 	}
