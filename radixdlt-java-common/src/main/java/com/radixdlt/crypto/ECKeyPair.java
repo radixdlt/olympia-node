@@ -70,7 +70,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
 			ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
 
-			final ECPublicKey publicKey = new ECPublicKey(pubParams.getQ());
+			final ECPublicKey publicKey = ECPublicKey.fromEcPoint(pubParams.getQ());
 			byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
 			ECKeyUtils.validatePrivate(privateKeyBytes);
 

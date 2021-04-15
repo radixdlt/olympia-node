@@ -48,7 +48,7 @@ public final class ECPublicKey {
 	private final Supplier<EUID> uid;
 	private final int hashCode;
 
-	ECPublicKey(ECPoint ecPoint) {
+	private ECPublicKey(ECPoint ecPoint) {
 		this.ecPoint = Objects.requireNonNull(ecPoint);
 		this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
 		this.uid = Suppliers.memoize(this::computeUID);
@@ -57,6 +57,10 @@ public final class ECPublicKey {
 
 	private int computeHashCode() {
 		return Arrays.hashCode(uncompressedBytes.get());
+	}
+
+	public static ECPublicKey fromEcPoint(ECPoint ecPoint) {
+		return new ECPublicKey(ecPoint);
 	}
 
 	@JsonCreator
