@@ -19,9 +19,11 @@
 package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 
@@ -144,7 +146,11 @@ public final class TxLowLevelBuilder {
 	}
 
 	public Pair<byte[], HashCode> buildForExternalSign() {
-		return Pair.of(Atom.computeBlobToSign(instructions), Atom.computeHashToSignFromBytes(instructions));
+		//TODO: fix blob generation as for now it is not verifiable by client side
+		var blob = DefaultSerialization.getInstance()
+			.toDson(Atom.create(instructions, null), DsonOutput.Output.ALL);
+
+		return Pair.of(blob, Atom.computeHashToSignFromBytes(instructions));
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {

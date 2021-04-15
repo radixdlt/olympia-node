@@ -45,6 +45,18 @@ public class PreparedTransaction {
 		return new PreparedTransaction(blob, hashToSign, fee);
 	}
 
+	public byte[] getBlob() {
+		return blob;
+	}
+
+	public byte[] getHashToSign() {
+		return hashToSign;
+	}
+
+	public UInt256 getFee() {
+		return fee;
+	}
+
 	public JSONObject asJson() {
 		return jsonObject()
 			.put(

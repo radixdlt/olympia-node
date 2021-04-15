@@ -30,17 +30,13 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SubstateSerializer;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.ClientUtils;
 import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -49,7 +45,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -57,7 +52,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
@@ -66,7 +60,6 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -88,12 +81,16 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+
+import static com.radixdlt.serialization.SerializationUtils.restore;
 
 public class SubmissionServiceTest {
 	@Inject
@@ -125,12 +122,15 @@ public class SubmissionServiceTest {
 		ECKeyPair.generateNew()
 	);
 
+	private static final ECKeyPair ALICE_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress ALICE = new RadixAddress((byte) 0, ALICE_KEYPAIR.getPublicKey());
+
+	private static final ECKeyPair BOB_KEYPAIR = ECKeyPair.generateNew();
+	private static final RadixAddress BOB = new RadixAddress((byte) 0, BOB_KEYPAIR.getPublicKey());
+
 	private static final BFTNode NODE = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress ALICE = new RadixAddress((byte) 0, OWNER_KEYPAIR.getPublicKey());
-	private static final ECKeyPair OTHER_KEYPAIR = ECKeyPair.generateNew();
-	private static final RadixAddress BOB = new RadixAddress((byte) 0, OTHER_KEYPAIR.getPublicKey());
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+	private static final UInt256 BIG_AMOUNT = UInt256.TEN.pow(20);
 
 	private Module localModule() {
 		return new AbstractModule() {
@@ -209,8 +209,8 @@ public class SubmissionServiceTest {
 
 	@Test
 	public void testPrepareTransaction() throws Exception {
-		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), UInt256.TEN);
-		var action2 = new TransferToken(nativeToken, ALICE, UInt256.TEN);
+		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), BIG_AMOUNT);
+		var action2 = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
 
 		var tx = radixEngine.construct(nativeToken.getAddress(), List.of(action1, action2))
 			.signAndBuild(universeKey::sign);
@@ -226,17 +226,63 @@ public class SubmissionServiceTest {
 		result
 			.onFailureDo(Assert::fail)
 			.onSuccess(prepared -> {
-				assertNotNull(prepared);
+				var json = prepared.asJson();
+
+				assertTrue(json.has("fee"));
+				assertEquals("50000000000000000", json.get("fee"));
+
+				assertTrue(json.has("transaction"));
+
+				var transaction = json.getJSONObject("transaction");
+				assertTrue(transaction.has("blob"));
+				assertTrue(transaction.has("hashOfBlobToSign"));
 			});
 	}
 
 	@Test
-	public void testSubmitTx() {
-		fail("Not implemented");
+	public void testCalculateTxId() throws Exception {
+		var result = buildTransaction();
+		var signature = result.map(prepared -> ALICE_KEYPAIR.sign(prepared.getHashToSign()));
+
+		result
+			.onFailureDo(Assert::fail)
+			.flatMap(prepared ->
+						 signature.flatMap(recoverable ->
+											   submissionService.calculateTxId(prepared.getBlob(), recoverable)))
+			.onFailureDo(Assert::fail)
+			.onSuccess(Assert::assertNotNull);
 	}
 
 	@Test
-	public void testCalculateTxId() {
-		fail("Not implemented");
+	public void testSubmitTx() throws Exception {
+		var result = buildTransaction();
+		var signature = result.map(prepared -> ALICE_KEYPAIR.sign(prepared.getHashToSign()));
+
+		result
+			.onFailureDo(Assert::fail)
+			.flatMap(prepared ->
+						 signature.flatMap(recoverable -> restore(serialization, prepared.getBlob(), Atom.class)
+							 .map(atom -> atom.toSigned(recoverable))
+							 .map(Txn::fromAtom)
+							 .map(Txn::getId)
+							 .flatMap(txId -> submissionService.submitTx(prepared.getBlob(), recoverable, txId))))
+			.onFailureDo(Assert::fail)
+			.onSuccess(Assert::assertNotNull);
+	}
+
+	private Result<PreparedTransaction> buildTransaction() throws TxBuilderException, RadixEngineException {
+		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), BIG_AMOUNT);
+		var action2 = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+
+		var tx = radixEngine.construct(nativeToken.getAddress(), List.of(action1, action2))
+			.signAndBuild(universeKey::sign);
+
+		radixEngine.execute(List.of(tx));
+
+		var steps = List.of(
+			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken))
+		);
+
+		return submissionService.prepareTransaction(steps, Optional.of("message"));
 	}
 }
