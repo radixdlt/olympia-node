@@ -23,7 +23,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
@@ -553,13 +552,12 @@ public final class TxBuilder {
 
 	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
 		final var rriId = RriId.fromRri(rri);
-		final var factory = TokDefParticleFactory.create(rriId, true);
 
 		deallocateFungible(
 			TokensParticle.class,
 			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
+			amt -> new TokensParticle(address, amt, rriId),
 			amount,
 			"Not enough balance to for burn."
 		);
@@ -569,18 +567,14 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder stakeTo(RRI rri, RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
+	public TxBuilder stakeTo(RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
 		assertHasAddress("Must have an address.");
-
-		// HACK
-		final var rriId = RriId.fromRri(rri);
-		var factory = TokDefParticleFactory.create(rriId, true);
 
 		swapFungible(
 			TokensParticle.class,
-			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
+			p -> p.getRriId().isNativeToken() && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> factory.createTransferrable(address, amt),
+			amt -> new TokensParticle(address, amt, RriId.nativeToken()),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));

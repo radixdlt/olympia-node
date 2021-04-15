@@ -43,6 +43,10 @@ public final class RriId {
 		this.id = id;
 	}
 
+	public static RriId nativeToken() {
+		return NATIVE_TOKEN_RRI_ID;
+	}
+
 	public static RriId readFromBuf(ByteBuffer buf) {
 		var type = buf.get();
 		if (type == 1) {

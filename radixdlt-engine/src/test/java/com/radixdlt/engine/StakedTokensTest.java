@@ -129,7 +129,7 @@ public class StakedTokensTest {
 	public void move_staked_tokens() throws Exception {
 		var upSubstate = new AtomicReference<SubstateStore>();
 		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
-			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.stakeTo(this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
 		this.engine.execute(List.of(atom));
 

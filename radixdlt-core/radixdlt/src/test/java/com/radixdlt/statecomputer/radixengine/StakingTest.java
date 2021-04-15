@@ -117,7 +117,7 @@ public class StakingTest {
 
 		// Act
 		var atom = TxBuilder.newBuilder(stakerAddress, engineStore)
-			.stakeTo(nativeToken, delegateAddress, UInt256.FIVE)
+			.stakeTo(delegateAddress, UInt256.FIVE)
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
@@ -136,7 +136,7 @@ public class StakingTest {
 		var delegateAddress = new RadixAddress((byte) magic, self.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
 		var txn = TxBuilder.newBuilder(stakerAddress, engineStore)
-			.stakeTo(nativeToken, delegateAddress, UInt256.FIVE)
+			.stakeTo(delegateAddress, UInt256.FIVE)
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(txn));
 
