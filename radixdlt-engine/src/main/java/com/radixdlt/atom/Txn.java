@@ -18,8 +18,10 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.serialization.DsonOutput;
 
 import java.util.Objects;
 
@@ -34,6 +36,11 @@ public final class Txn {
 
 	public static Txn create(byte[] payload) {
 		return new Txn(payload);
+	}
+
+	public static Txn fromAtom(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return create(payload);
 	}
 
 	public AID getId() {

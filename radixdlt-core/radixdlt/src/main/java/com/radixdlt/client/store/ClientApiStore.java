@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
@@ -42,11 +43,6 @@ public interface ClientApiStore {
 	 * @return list of token balances
 	 */
 	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
-
-	/**
-	 * Flush intermediate storage and save particles into persistent DB.
-	 */
-	void storeCollected();
 
 	/**
 	 * Get current supply of the specified token.
@@ -85,7 +81,7 @@ public interface ClientApiStore {
 	 *
 	 * @return transaction history entry.
 	 */
-	Result<TxHistoryEntry> getSingleTransaction(AID txId);
+	Result<TxHistoryEntry> getTransaction(AID txId);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 }

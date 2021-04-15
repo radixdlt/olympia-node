@@ -18,10 +18,12 @@
 package com.radixdlt.client.store;
 
 import org.json.JSONObject;
-import org.radix.api.jsonrpc.ActionType;
 
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokensParticle;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.client.api.ActionType;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -48,38 +50,25 @@ public class ActionEntry {
 		this.rri = rri;
 	}
 
-	public static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
+	private static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
 		requireNonNull(type);
 		return new ActionEntry(type, from, to, amount, rri);
 	}
 
-	public static ActionEntry fromStake(StakedTokensParticle stake, RRI nativeToken) {
-		return create(
-			ActionType.STAKE,
-			stake.getAddress(),
-			stake.getDelegateAddress(),
-			stake.getAmount(), nativeToken
-		);
+	public static ActionEntry transfer(RadixAddress user, TransferToken transferToken) {
+		return create(ActionType.TRANSFER, user, transferToken.to(), transferToken.amount(), transferToken.rri());
 	}
 
-	public static ActionEntry fromUnstake(StakedTokensParticle unstake, RRI nativeToken) {
-		return create(
-			ActionType.UNSTAKE,
-			unstake.getAddress(),
-			unstake.getDelegateAddress(),
-			unstake.getAmount(),
-			nativeToken
-		);
+	public static ActionEntry burn(RadixAddress user, BurnToken burnToken) {
+		return create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
 	}
 
-	public static ActionEntry transfer(TokensParticle transfer, RadixAddress owner) {
-		return create(
-			ActionType.TRANSFER,
-			owner,
-			transfer.getAddress(),
-			transfer.getAmount(),
-			transfer.getTokDefRef()
-		);
+	public static ActionEntry stake(RadixAddress user, StakeNativeToken stakeToken) {
+		return create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), stakeToken.rri());
+	}
+
+	public static ActionEntry unstake(RadixAddress user, UnstakeNativeToken unstakeToken) {
+		return create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), unstakeToken.rri());
 	}
 
 	public static ActionEntry unknown() {

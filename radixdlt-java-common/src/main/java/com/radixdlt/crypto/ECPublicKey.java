@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import org.bouncycastle.math.ec.ECPoint;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Suppliers;
@@ -27,8 +29,6 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Base58;
 import com.radixdlt.utils.Bytes;
-
-import org.bouncycastle.math.ec.ECPoint;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -111,6 +111,10 @@ public final class ECPublicKey {
 		return Bytes.toBase64String(this.publicKey);
 	}
 
+	public String toHex() {
+		return Bytes.toHexString(this.publicKey);
+	}
+
 	@Override
 	public int hashCode() {
 		return this.hashCode;
@@ -136,5 +140,4 @@ public final class ECPublicKey {
 	private EUID computeUID() {
 		return EUID.sha256(getBytes());
 	}
-
 }

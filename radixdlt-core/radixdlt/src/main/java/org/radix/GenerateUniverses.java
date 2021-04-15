@@ -25,7 +25,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
