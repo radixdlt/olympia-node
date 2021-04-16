@@ -38,6 +38,7 @@ public class HttpClient {
 
     private static final String MEMPOOL_FILLER_PATH = "/api/chaos/mempool-filler";
     private static final String NODE_INFO_PATH = "/node";
+    private static final String FAUCET_REQUEST_PATH = "/faucet/request";
     private static final String VALIDATOR_REGISTRATION_PATH = "/node/validator";
 
     private final OkHttpClient okHttpClient;
@@ -54,16 +55,22 @@ public class HttpClient {
         protocol = isHttps ? "https://" : "http://";
         String basicAuthCredentials = System.getenv("HTTP_API_BASIC_AUTH");
         faucetUrl = Optional.ofNullable(System.getenv("FAUCET_URL"))
-                .orElse("https://milestonenet-faucet.radixdlt.com/faucet/api/v1/getTokens/");
+                .orElse("https://rcnet-node0-faucet.radixdlt.com");
         if (StringUtils.isNotBlank(basicAuthCredentials)) {
             this.encodedBasicAuthCredentials = Base64.getEncoder()
                     .encodeToString(basicAuthCredentials.getBytes(StandardCharsets.UTF_8));
         }
     }
 
-    public void callFaucetForAddress(String address) {
+    /**
+     * Will send 10XRD to the given address
+     */
+    public void callFaucet(String addressToSendTokensTo) {
+        String json = "{\"params\":{\"address\":\"" + addressToSendTokensTo + "\"}}";
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), json);
         try (Response response = okHttpClient.newCall(new Request.Builder()
-                .url(faucetUrl + address)
+                .url(faucetUrl + FAUCET_REQUEST_PATH)
+                .method("POST", body)
                 .build()).execute()) {
             if (!response.isSuccessful()) {
                 throw new RuntimeException("Could not call faucet, request: " + response);

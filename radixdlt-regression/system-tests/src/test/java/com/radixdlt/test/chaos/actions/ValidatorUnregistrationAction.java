@@ -21,11 +21,6 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
     public void setupImplementation() {
         String host = getAnsible().getRandomNodeHost();
 
-        String address = httpClient.getNodeAddress(host);
-        httpClient.callFaucetForAddress(address);
-        logger.info("Got tokens");
-        ChaosExperimentUtils.waitSeconds(5);
-
         try {
             httpClient.unregisterValidator(host);
             logger.info("Unregistered node {} as a validator", host);
