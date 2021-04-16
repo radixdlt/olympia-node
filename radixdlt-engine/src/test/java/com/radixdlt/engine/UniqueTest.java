@@ -68,13 +68,14 @@ public class UniqueTest {
 	public void using_someone_elses_mutex_should_fail() {
 		var otherRadixAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		var rri = RRI.of(otherRadixAddress, "thisisauniquestring");
-		var atom = TxBuilder.newBuilder(address)
+		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri))
 			.up(new UniqueParticle(RriId.fromRri(rri)))
-			.particleGroup()
-			.signAndBuild(keyPair::sign);
-		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))
+			.particleGroup();
+		var sig = keyPair.sign(builder.hashToSign());
+		var txn = builder.sig(sig).build();
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
 			.isInstanceOf(RadixEngineException.class);
 	}
 }

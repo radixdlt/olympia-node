@@ -548,7 +548,8 @@ public final class TxBuilder {
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer
 	) {
-		var txn = lowLevelBuilder.signAndBuild(signer);
+		var hashToSign = lowLevelBuilder.hashToSign();
+		var txn = lowLevelBuilder.sig(signer.apply(hashToSign)).build();
 		SubstateStore upSubstate = c -> SubstateCursor.concat(
 			createRemoteSubstateCursor(c),
 			() -> SubstateCursor.wrapIterator(lowLevelBuilder.localUpSubstate().stream()
@@ -562,14 +563,15 @@ public final class TxBuilder {
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signer) {
-		return lowLevelBuilder.signAndBuild(signer);
+		var hashToSign = lowLevelBuilder.hashToSign();
+		return lowLevelBuilder.sig(signer.apply(hashToSign)).build();
 	}
 
 	public Txn buildWithoutSignature() {
-		return lowLevelBuilder.buildWithoutSignature();
+		return lowLevelBuilder.build();
 	}
 
 	public Pair<byte[], HashCode> buildForExternalSign() {
-		return lowLevelBuilder.buildForExternalSign();
+		return Pair.of(lowLevelBuilder.blob(), lowLevelBuilder.hashToSign());
 	}
 }

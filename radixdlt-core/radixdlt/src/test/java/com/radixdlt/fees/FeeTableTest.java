@@ -53,7 +53,7 @@ public class FeeTableTest {
 	@Test
 	public void testFeeForAtomMinimum() {
 		FeeTable ft = get();
-		Txn txn = TxLowLevelBuilder.newBuilder().buildWithoutSignature();
+		Txn txn = TxLowLevelBuilder.newBuilder().build();
 		UInt256 fee = ft.feeFor(txn, ImmutableSet.of(), 0);
 		assertEquals(UInt256.FIVE, fee);
 	}

@@ -18,6 +18,7 @@ package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.client.store.TransactionParser;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
@@ -103,6 +104,9 @@ public class BerkeleyClientApiStoreTest {
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
+
+	@Inject
+	private ConstraintMachine constraintMachine;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -335,6 +339,7 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
+			constraintMachine,
 			txnParser,
 			ledgerStore,
 			serialization,

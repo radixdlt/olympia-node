@@ -270,7 +270,7 @@ public class RadixEngineStateComputerTest {
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new SystemParticle(1, 2, 0))
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), List.of(illegalTxn), 1, View.of(1), 0);

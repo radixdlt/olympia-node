@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
@@ -99,14 +100,12 @@ public class SubmissionService {
 	}
 
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		return Result.ok(Atom.create(blob, recoverable))
-			.map(SubmissionService::atomToTxn)
+		return Result.ok(TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build())
 			.map(Txn::getId);
 	}
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		var atom = Atom.create(blob, recoverable);
-		var txn = atomToTxn(atom);
+		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
 		return Result.ok(txn)
 			.filter(t -> t.getId().equals(txId), "Provided txID does not match provided transaction")
 			.onSuccess(t -> stateComputer.addToMempool(txn, self)).map(Txn::getId);

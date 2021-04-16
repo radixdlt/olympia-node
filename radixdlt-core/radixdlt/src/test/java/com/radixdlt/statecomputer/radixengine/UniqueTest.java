@@ -81,7 +81,8 @@ public final class UniqueTest {
 			.virtualDown(rriParticle)
 			.up(uniqueParticle)
 			.particleGroup();
-		return atomBuilder.signAndBuild(keyPair::sign);
+		var sig = keyPair.sign(atomBuilder.hashToSign());
+		return atomBuilder.sig(sig).build();
 	}
 
 	@Test

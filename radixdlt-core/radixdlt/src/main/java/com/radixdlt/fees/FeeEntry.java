@@ -19,7 +19,7 @@ package com.radixdlt.fees;
 
 import java.util.Set;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 
@@ -30,10 +30,9 @@ public interface FeeEntry {
 	/**
 	 * Compute the fee for the specified atom with the specified outputs.
 	 *
-	 * @param atom The atom to compute the partial fee for
 	 * @param feeSize The size of the atom for fee calculation purposes
 	 * @param outputs The atom's output particles
 	 * @return The fee
 	 */
-	UInt256 feeFor(Atom atom, int feeSize, Set<Particle> outputs);
+	UInt256 feeFor(Txn txn, int feeSize, Set<Particle> outputs);
 }

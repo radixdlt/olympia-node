@@ -66,10 +66,11 @@ public class TokensTest {
 			.up(tokenDefinitionParticle)
 			.up(tokensParticle)
 			.particleGroup();
-		var atom = builder.signAndBuild(keyPair::sign);
+		var sig = keyPair.sign(builder.hashToSign().asBytes());
+		var txn = builder.sig(sig).build();
 
 		// Act
 		// Assert
-		this.engine.execute(List.of(atom));
+		this.engine.execute(List.of(txn));
 	}
 }

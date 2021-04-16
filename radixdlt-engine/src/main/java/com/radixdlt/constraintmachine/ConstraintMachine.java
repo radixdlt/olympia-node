@@ -20,8 +20,6 @@ package com.radixdlt.constraintmachine;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxAction;
@@ -31,6 +29,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
@@ -349,10 +348,16 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
-	private static class StatelessVerificationResult {
+	public static HashCode computeHashToSignFromBytes(byte[] blob) {
+		var firstHash = HashUtils.sha256(blob);
+		return HashUtils.sha256(firstHash.asBytes());
+	}
+
+	public static class StatelessVerificationResult {
 		private final List<REInstruction> instructions;
 		private ECDSASignature signature;
 		private HashCode hashToSign;
+		private ECPublicKey publicKey;
 
 		StatelessVerificationResult() {
 			this.instructions = new ArrayList<>();
@@ -362,32 +367,33 @@ public final class ConstraintMachine {
 			this.instructions.add(instruction);
 		}
 
-		void hashToSign(HashCode hashToSign) {
+		void signatureData(HashCode hashToSign, ECDSASignature signature, ECPublicKey publicKey) {
 			this.hashToSign = hashToSign;
-		}
-
-		void signature(ECDSASignature signature) {
 			this.signature = signature;
+			this.publicKey = publicKey;
 		}
 
+		public Optional<ECPublicKey> getRecovered() {
+			return Optional.ofNullable(publicKey);
+		}
 	}
 
-	StatelessVerificationResult statelessVerify(Txn txn) throws RadixEngineException {
-		final Atom atom;
-		try {
-			atom = DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-		} catch (DeserializeException e) {
-			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Cannot deserialize txn");
-		}
-
+	public StatelessVerificationResult statelessVerify(Txn txn) throws RadixEngineException {
 		var statelessVerification = new StatelessVerificationResult();
 
 		long particleIndex = 0;
 		int instIndex = 0;
 		int numMessages = 0;
+		ECDSASignature sig = null;
+		int sigPosition = 0;
 
-		var buf = ByteBuffer.wrap(atom.getUnsignedBlob());
+		var buf = ByteBuffer.wrap(txn.getPayload());
 		while (buf.hasRemaining()) {
+			if (sig != null) {
+				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": signature must be last");
+			}
+
+			int curPos = buf.position();
 			final REInstruction inst;
 			try {
 				inst = REInstruction.readFrom(txn, instIndex, buf);
@@ -413,12 +419,14 @@ public final class ConstraintMachine {
 				if (numMessages > MAX_NUM_MESSAGES) {
 					throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Too many messages.");
 				}
-			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
+			} else if (inst.getMicroOp() == REInstruction.REOp.END) {
 				if (particleIndex == 0) {
 					throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Empty group.");
 				}
-
 				particleIndex = 0;
+			} else if (inst.getMicroOp() == REInstruction.REOp.SIG) {
+				sigPosition = curPos;
+				sig = inst.getData();
 			} else {
 				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR,
 					instIndex + ": Unknown CM Operation " + inst.getMicroOp());
@@ -431,9 +439,13 @@ public final class ConstraintMachine {
 			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Missing group");
 		}
 
-		var hashToSign = atom.computeHashToSign();
-		statelessVerification.hashToSign(hashToSign);
-		atom.getSignature().ifPresent(statelessVerification::signature);
+		if (sig != null) {
+			var firstHash = HashUtils.sha256(txn.getPayload(), 0, sigPosition);
+			var hashToSign = HashUtils.sha256(firstHash.asBytes());
+			var pubKey = ECPublicKey.recoverFrom(hashToSign, sig)
+				.orElseThrow(() -> new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature"));
+			statelessVerification.signatureData(hashToSign, sig, pubKey);
+		}
 
 		return statelessVerification;
 	}
