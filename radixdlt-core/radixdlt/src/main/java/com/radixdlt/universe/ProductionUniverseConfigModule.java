@@ -26,9 +26,7 @@ public final class ProductionUniverseConfigModule extends AbstractModule {
 	@Provides
 	UniverseConfiguration universeConfiguration() {
 		return new UniverseConfiguration(
-			UniverseType.PRODUCTION,
-			"Radix Mainnet",
-			"The Radix public Universe"
+			UniverseType.PRODUCTION
 		);
 	}
 }

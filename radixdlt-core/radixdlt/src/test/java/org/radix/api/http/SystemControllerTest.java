@@ -55,8 +55,6 @@ public class SystemControllerTest {
 	private final Universe universe =
 		Universe.newBuilder()
 			.type(UniverseType.DEVELOPMENT)
-			.name("Name")
-			.description("Description")
 			.build();
 	private final SystemController systemController =
 		new SystemController(systemService, inMemorySystemInfo, universe);

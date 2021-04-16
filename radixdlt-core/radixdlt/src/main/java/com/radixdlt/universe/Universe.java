@@ -23,7 +23,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -35,47 +34,17 @@ import static java.util.Objects.requireNonNull;
 
 //TODO: cleanup and refactor this
 @SerializerId2("radix.universe")
-@SerializeWithHid
 public class Universe {
-
 	/**
 	 * Universe builder.
 	 */
 	public static class Builder {
-		private String name;
-		private String description;
 		private UniverseType type;
 		private List<Txn> txns;
 		private LedgerProof proof;
 
 		private Builder() {
 			// Nothing to do here
-		}
-
-		/**
-		 * Sets the name of the universe.
-		 * Ideally the universe name is a short identifier for the universe.
-		 *
-		 * @param name The name of the universe.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder name(String name) {
-			this.name = requireNonNull(name);
-			return this;
-		}
-
-		/**
-		 * Set the description of the universe.
-		 * The universe description is a longer description of the universe.
-		 *
-		 * @param description The description of the universe.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder description(String description) {
-			this.description = requireNonNull(description);
-			return this;
 		}
 
 		/**
@@ -111,8 +80,6 @@ public class Universe {
 		 * @return The freshly build universe object.
 		 */
 		public Universe build() {
-			require(this.name, "Name");
-			require(this.description, "Description");
 			require(this.type, "Universe type");
 			return new Universe(this);
 		}
@@ -155,14 +122,6 @@ public class Universe {
 		DEVELOPMENT
 	}
 
-	@JsonProperty("name")
-	@DsonOutput(Output.ALL)
-	private String name;
-
-	@JsonProperty("description")
-	@DsonOutput(Output.ALL)
-	private String description;
-
 	private UniverseType type;
 
 	@JsonProperty("genesis")
@@ -178,8 +137,6 @@ public class Universe {
 	}
 
 	private Universe(Builder builder) {
-		this.name = builder.name;
-		this.description = builder.description;
 		this.type = builder.type;
 		this.proof = builder.proof;
 		this.genesis = builder.txns == null
@@ -194,20 +151,6 @@ public class Universe {
 	@DsonOutput(value = Output.HASH, include = false)
 	public int getMagic() {
 		return computeMagic(type);
-	}
-
-	/**
-	 * The name of Universe.
-	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
-	 * The Universe description.
-	 */
-	public String getDescription() {
-		return description;
 	}
 
 	/**

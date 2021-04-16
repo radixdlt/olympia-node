@@ -27,28 +27,14 @@ import com.radixdlt.universe.Universe.UniverseType;
  */
 public final class UniverseConfiguration {
 	private final UniverseType universeType;
-	private final String name;
-	private final String description;
 
 	public UniverseConfiguration(
-		UniverseType universeType,
-		String name,
-		String description
+		UniverseType universeType
 	) {
 	    this.universeType = universeType;
-		this.name = name;
-		this.description = description;
 	}
 
 	public UniverseType getUniverseType() {
 		return universeType;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getDescription() {
-		return description;
 	}
 }

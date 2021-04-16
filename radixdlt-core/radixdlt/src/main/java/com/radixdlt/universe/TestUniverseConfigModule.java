@@ -25,9 +25,7 @@ public final class TestUniverseConfigModule extends AbstractModule {
 	@Provides
 	UniverseConfiguration universeConfiguration() {
 		return new UniverseConfiguration(
-			Universe.UniverseType.TEST,
-			"Radix Testnet",
-			"The Radix test Universe"
+			Universe.UniverseType.TEST
 		);
 	}
 }

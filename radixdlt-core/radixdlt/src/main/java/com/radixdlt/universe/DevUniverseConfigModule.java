@@ -25,9 +25,7 @@ public final class DevUniverseConfigModule extends AbstractModule {
 	@Provides
 	UniverseConfiguration universeConfiguration() {
 		return new UniverseConfiguration(
-			Universe.UniverseType.DEVELOPMENT,
-			"Radix Devnet",
-			"The Radix dev Universe"
+			Universe.UniverseType.DEVELOPMENT
 		);
 	}
 }
