@@ -24,6 +24,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A 256-bit unsigned integer, with comparison and some basic arithmetic
@@ -60,17 +61,17 @@ public final class UInt256 implements Comparable<UInt256> {
 	public static final UInt256 MAX_VALUE = new UInt256(UInt128.MAX_VALUE, UInt128.MAX_VALUE);
 
 	// Some commonly used values
-	public static final UInt256 ZERO      = new UInt256(UInt128.ZERO, UInt128.ZERO);
-	public static final UInt256 ONE       = new UInt256(UInt128.ZERO, UInt128.ONE);
-	public static final UInt256 TWO       = new UInt256(UInt128.ZERO, UInt128.TWO);
-	public static final UInt256 THREE     = new UInt256(UInt128.ZERO, UInt128.THREE);
-	public static final UInt256 FOUR      = new UInt256(UInt128.ZERO, UInt128.FOUR);
-	public static final UInt256 FIVE      = new UInt256(UInt128.ZERO, UInt128.FIVE);
-	public static final UInt256 SIX       = new UInt256(UInt128.ZERO, UInt128.SIX);
-	public static final UInt256 SEVEN     = new UInt256(UInt128.ZERO, UInt128.SEVEN);
-	public static final UInt256 EIGHT     = new UInt256(UInt128.ZERO, UInt128.EIGHT);
-	public static final UInt256 NINE      = new UInt256(UInt128.ZERO, UInt128.NINE);
-	public static final UInt256 TEN       = new UInt256(UInt128.ZERO, UInt128.TEN);
+	public static final UInt256 ZERO = new UInt256(UInt128.ZERO, UInt128.ZERO);
+	public static final UInt256 ONE = new UInt256(UInt128.ZERO, UInt128.ONE);
+	public static final UInt256 TWO = new UInt256(UInt128.ZERO, UInt128.TWO);
+	public static final UInt256 THREE = new UInt256(UInt128.ZERO, UInt128.THREE);
+	public static final UInt256 FOUR = new UInt256(UInt128.ZERO, UInt128.FOUR);
+	public static final UInt256 FIVE = new UInt256(UInt128.ZERO, UInt128.FIVE);
+	public static final UInt256 SIX = new UInt256(UInt128.ZERO, UInt128.SIX);
+	public static final UInt256 SEVEN = new UInt256(UInt128.ZERO, UInt128.SEVEN);
+	public static final UInt256 EIGHT = new UInt256(UInt128.ZERO, UInt128.EIGHT);
+	public static final UInt256 NINE = new UInt256(UInt128.ZERO, UInt128.NINE);
+	public static final UInt256 TEN = new UInt256(UInt128.ZERO, UInt128.TEN);
 
 	// Numbers in order.  This is used by factory methods.
 	private static final UInt256[] numbers = {
@@ -91,6 +92,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * value.
 	 *
 	 * @param value The value to be represented as an {@link UInt256}.
+	 *
 	 * @return {@code value} as an {@link UInt256} type.
 	 */
 	public static UInt256 from(short value) {
@@ -101,6 +103,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Factory method for materialising an {@link UInt256} from an {@code int} value.
 	 *
 	 * @param value The value to be represented as an {@link UInt256}.
+	 *
 	 * @return {@code value} as an {@link UInt256} type.
 	 */
 	public static UInt256 from(int value) {
@@ -112,6 +115,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Note that values are zero extended into the 256 bit value.
 	 *
 	 * @param value The value to be represented as an {@link UInt256}.
+	 *
 	 * @return {@code value} as an {@link UInt256} type.
 	 */
 	public static UInt256 from(long value) {
@@ -122,7 +126,8 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Factory method for materialising an {@link UInt256} from an {@link UInt128}
 	 * value. Note that values are zero extended into the 256 bit value.
 	 *
-	 * @param value  The least significant word of the value.
+	 * @param value The least significant word of the value.
+	 *
 	 * @return the specified value as an {@link UInt256} type.
 	 */
 	public static UInt256 from(UInt128 value) {
@@ -135,6 +140,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @param high The most significant word of the value.
 	 * @param low The least significant word of the value.
+	 *
 	 * @return the specified values as an {@link UInt256} type.
 	 */
 	public static UInt256 from(UInt128 high, UInt128 low) {
@@ -151,13 +157,15 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * {@link #BYTES} and beyond are ignored.
 	 *
 	 * @param bytes The array of bytes to be used.
+	 *
 	 * @return {@code bytes} as an {@link UInt256} type.
+	 *
 	 * @throws IllegalArgumentException if {@code bytes} is 0 length.
 	 * @see #toByteArray()
 	 */
 	public static UInt256 from(byte[] bytes) {
 		Objects.requireNonNull(bytes);
-		if (bytes.length ==  0) {
+		if (bytes.length == 0) {
 			throw new IllegalArgumentException("bytes is 0 bytes long");
 		}
 		byte[] newBytes = extend(bytes);
@@ -170,12 +178,14 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @param bytes The array of bytes to be used.
 	 * @param offset The offset within the array to be used.
+	 *
 	 * @return {@code bytes} from {@code offset} as an {@link UInt256} type.
+	 *
 	 * @see #toByteArray()
 	 */
 	public static UInt256 from(byte[] bytes, int offset) {
 		UInt128 high = UInt128.from(bytes, offset);
-		UInt128 low  = UInt128.from(bytes, offset + UInt128.BYTES);
+		UInt128 low = UInt128.from(bytes, offset + UInt128.BYTES);
 		return from(high, low);
 	}
 
@@ -185,9 +195,10 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * permitted.
 	 *
 	 * @param s The array of bytes to be used.
+	 *
 	 * @return {@code s} as an {@link UInt256} type.
-	 * @throws NumberFormatException if {@code s} is not a valid
-	 * 			integer number.
+	 *
+	 * @throws NumberFormatException if {@code s} is not a valid integer number.
 	 */
 	public static UInt256 from(String s) {
 		Objects.requireNonNull(s);
@@ -214,6 +225,22 @@ public final class UInt256 implements Comparable<UInt256> {
 			return result;
 		} else {
 			throw new NumberFormatException(s);
+		}
+	}
+
+	/**
+	 * Functional style friendly version of {@link #from(String)}. Instead of throwing exceptions
+	 * this method returns {@link Optional#empty()}.
+	 *
+	 * @param input The string to parse
+	 *
+	 * @return Present {@link Optional} if value can be parsed and {@link Optional#empty()} otherwise.
+	 */
+	public static Optional<UInt256> fromString(String input) {
+		try {
+			return Optional.of(from(input));
+		} catch (Exception e) {
+			return Optional.empty();
 		}
 	}
 
@@ -246,7 +273,7 @@ public final class UInt256 implements Comparable<UInt256> {
 			byteIndex -= intLen;
 		}
 		this.high = UInt128.from(ints[0], ints[1], ints[2], ints[3]);
-		this.low  = UInt128.from(ints[4], ints[5], ints[6], ints[7]);
+		this.low = UInt128.from(ints[4], ints[5], ints[6], ints[7]);
 	}
 
 	/**
@@ -256,7 +283,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * will be zero filled to suit the actual value.
 	 *
 	 * @return An array of {@link #BYTES} bytes representing the
-	 * 			value of this {@link UInt256}.
+	 * 	value of this {@link UInt256}.
 	 */
 	public byte[] toByteArray() {
 		return toByteArray(new byte[BYTES], 0);
@@ -269,6 +296,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 *
 	 * @param bytes The array to place the bytes in.
 	 * @param offset The offset within the array to place the bytes.
+	 *
 	 * @return The passed-in value of {@code bytes}.
 	 */
 	public byte[] toByteArray(byte[] bytes, int offset) {
@@ -281,6 +309,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Adds {@code other} to {@code this}, returning the result.
 	 *
 	 * @param other The addend.
+	 *
 	 * @return An {@link UInt256} with the value {@code this + other}.
 	 */
 	public UInt256 add(UInt256 other) {
@@ -293,14 +322,16 @@ public final class UInt256 implements Comparable<UInt256> {
 		long partial6 = (this.high.midHigh & INT_MASK) + (other.high.midHigh & INT_MASK) + (partial5 >>> Integer.SIZE);
 		long partial7 = (this.high.high & INT_MASK) + (other.high.high & INT_MASK) + (partial6 >>> Integer.SIZE);
 		return UInt256.from(
-				UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
-				UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0));
+			UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
+			UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0)
+		);
 	}
 
 	/**
 	 * Adds {@code other} to {@code this}, returning the result.
 	 *
 	 * @param other The addend.
+	 *
 	 * @return An {@link UInt256} with the value {@code this + other}.
 	 */
 	public UInt256 add(UInt128 other) {
@@ -313,14 +344,16 @@ public final class UInt256 implements Comparable<UInt256> {
 		long partial6 = (this.high.midHigh & INT_MASK) + (partial5 >>> Integer.SIZE);
 		long partial7 = (this.high.high & INT_MASK) + (partial6 >>> Integer.SIZE);
 		return UInt256.from(
-				UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
-				UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0));
+			UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
+			UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0)
+		);
 	}
 
 	/**
 	 * Subtracts {@code other} from {@code this}, returning the result.
 	 *
 	 * @param other The subtrahend.
+	 *
 	 * @return An {@link UInt256} with the value {@code this - other}.
 	 */
 	public UInt256 subtract(UInt256 other) {
@@ -333,14 +366,16 @@ public final class UInt256 implements Comparable<UInt256> {
 		long partial6 = (this.high.midHigh & INT_MASK) - (other.high.midHigh & INT_MASK) + (partial5 >> Integer.SIZE);
 		long partial7 = (this.high.high & INT_MASK) - (other.high.high & INT_MASK) + (partial6 >> Integer.SIZE);
 		return UInt256.from(
-				UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
-				UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0));
+			UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
+			UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0)
+		);
 	}
 
 	/**
 	 * Subtracts {@code other} from {@code this}, returning the result.
 	 *
 	 * @param other The subtrahend.
+	 *
 	 * @return An {@link UInt256} with the value {@code this - other}.
 	 */
 	public UInt256 subtract(UInt128 other) {
@@ -353,8 +388,9 @@ public final class UInt256 implements Comparable<UInt256> {
 		long partial6 = (this.high.midHigh & INT_MASK) + (partial5 >> Integer.SIZE);
 		long partial7 = (this.high.high & INT_MASK) + (partial6 >> Integer.SIZE);
 		return UInt256.from(
-				UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
-				UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0));
+			UInt128.from((int) partial7, (int) partial6, (int) partial5, (int) partial4),
+			UInt128.from((int) partial3, (int) partial2, (int) partial1, (int) partial0)
+		);
 	}
 
 	/**
@@ -385,6 +421,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Multiplies {@code this} by the specified multiplicand.
 	 *
 	 * @param multiplicand The multiplicand to multiply {@code this} by.
+	 *
 	 * @return The result {@code this * multiplicand}.
 	 */
 	public UInt256 multiply(UInt256 multiplicand) {
@@ -456,15 +493,18 @@ public final class UInt256 implements Comparable<UInt256> {
 			+ (partial25 & INT_MASK) + (partial16 & INT_MASK) + (partial07 & INT_MASK) + (i6 >>> Integer.SIZE);
 
 		return UInt256.from(
-				UInt128.from((int) i7, (int) i6, (int) i5, (int) i4),
-				UInt128.from((int) i3, (int) i2, (int) i1, (int) i0));
+			UInt128.from((int) i7, (int) i6, (int) i5, (int) i4),
+			UInt128.from((int) i3, (int) i2, (int) i1, (int) i0)
+		);
 	}
 
 	/**
 	 * Divides {@code this} by the specified divisor.
 	 *
 	 * @param divisor The divisor to divide {@code this} by.
+	 *
 	 * @return The result {@code floor(this / divisor)}.
+	 *
 	 * @throws IllegalArgumentException if {@code divisor} is zero
 	 */
 	public UInt256 divide(UInt256 divisor) {
@@ -481,6 +521,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * the specified divisor.
 	 *
 	 * @param divisor The divisor to divide {@code this} by.
+	 *
 	 * @return The remainder of the division {@code this / divisor}.
 	 */
 	public UInt256 remainder(UInt256 divisor) {
@@ -496,6 +537,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * Calculates {@code this}<sup>{@code exp}</sup>.
 	 *
 	 * @param exp the exponent to raise {@code this} to
+	 *
 	 * @return {@code this}<sup>{@code exp}</sup>
 	 */
 	public UInt256 pow(int exp) {
@@ -507,15 +549,15 @@ public final class UInt256 implements Comparable<UInt256> {
 		UInt256 result = UInt256.ONE;
 		UInt256 base = this;
 
-	    while (exp != 0) {
-	        if ((exp & 1) != 0) {
-	            result = result.multiply(base);
-	        }
+		while (exp != 0) {
+			if ((exp & 1) != 0) {
+				result = result.multiply(base);
+			}
 
-	        base = base.multiply(base);
-	        exp >>>= 1;
-	    }
-	    return result;
+			base = base.multiply(base);
+			exp >>>= 1;
+		}
+		return result;
 	}
 
 	/**
@@ -668,6 +710,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * ({@code this | other}).
 	 *
 	 * @param other The value to inclusive-or with {@code this}.
+	 *
 	 * @return {@code this | other}
 	 */
 	public UInt256 or(UInt256 other) {
@@ -679,6 +722,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * ({@code this & other}).
 	 *
 	 * @param other The value to and with {@code this}.
+	 *
 	 * @return {@code this & other}
 	 */
 	public UInt256 and(UInt256 other) {
@@ -690,6 +734,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * ({@code this ^ other}).
 	 *
 	 * @param other The value to exclusive-or with {@code this}.
+	 *
 	 * @return {@code this ^ other}
 	 */
 	public UInt256 xor(UInt256 other) {
@@ -711,14 +756,14 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * </ul>
 	 *
 	 * @return the number of zero bits preceding the highest-order
-	 *     ("leftmost") one-bit in the two's complement binary representation
-	 *     of the specified {@code long} value, or 256 if the value
-	 *     is equal to zero.
+	 * 	("leftmost") one-bit in the two's complement binary representation
+	 * 	of the specified {@code long} value, or 256 if the value
+	 * 	is equal to zero.
 	 */
 	public int numberOfLeadingZeros() {
 		return this.high.isZero()
-				? UInt128.SIZE + this.low.numberOfLeadingZeros()
-				: this.high.numberOfLeadingZeros();
+			   ? UInt128.SIZE + this.low.numberOfLeadingZeros()
+			   : this.high.numberOfLeadingZeros();
 	}
 
 	/**
@@ -794,20 +839,22 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * The following ASCII characters are used as digits:
 	 *
 	 * <blockquote>
-	 *   {@code 0123456789abcdefghijklmnopqrstuvwxyz}
+	 * {@code 0123456789abcdefghijklmnopqrstuvwxyz}
 	 * </blockquote>
-	 *
+	 * <p>
 	 * If {@code radix} is <var>N</var>, then the first <var>N</var> of these
 	 * characters are used as radix-<var>N</var> digits in the order shown,
 	 * i.e. the digits for hexadecimal (radix 16) are {@code 0123456789abcdef}.
 	 *
-	 * @param   radix   the radix to use in the string representation.
-	 * @return  a string representation of the argument in the specified radix.
-	 * @see     Character#MAX_RADIX
-	 * @throws  IllegalArgumentException if {@code radix} is less than
-	 *          {@code Character.MIN_RADIX} or greater than
-	 *          {@code Character.MAX_RADIX}.
-	 * @see     Character#MIN_RADIX
+	 * @param radix the radix to use in the string representation.
+	 *
+	 * @return a string representation of the argument in the specified radix.
+	 *
+	 * @throws IllegalArgumentException if {@code radix} is less than
+	 *    {@code Character.MIN_RADIX} or greater than
+	 *    {@code Character.MAX_RADIX}.
+	 * @see Character#MAX_RADIX
+	 * @see Character#MIN_RADIX
 	 */
 	public String toString(int radix) {
 		if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {

@@ -52,7 +52,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void address_from_key_and_magical() throws PublicKeyException {
-		String publicKeyHexString = "03000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
+		String publicKeyHexString = "033fedae769522b862ad738874b6690ad78b166c6358cf20e316008465cb5f1562";
 		ECPublicKey key = ECPublicKey.fromBytes(Bytes.fromHexString(publicKeyHexString));
 		RadixAddress address = new RadixAddress((byte) 2, key);
 
@@ -61,7 +61,7 @@ public class RadixAddressTest {
 		// RadixStack/1_Subatomic/SubatomicModels/Address/AddressTests.swift
 		String expectedAddressHexString = "02" // magic byte
 				+ publicKeyHexString
-				+ "175341a9"; // checksum
+				+ "d1478c49"; // checksum
 
 		assertThat(expectedAddressHexString).isEqualToIgnoringCase(Bytes.toHexString(address.toByteArray()));
 	}

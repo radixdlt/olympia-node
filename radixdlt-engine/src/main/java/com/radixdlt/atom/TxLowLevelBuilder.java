@@ -23,11 +23,10 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Pair;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,31 +136,27 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	private HashCode computeHashToSign() {
-		var outputStream = new ByteArrayOutputStream();
-		instructions.forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
-	}
-
-	private static Txn atomToTxn(Atom atom) {
-		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return Txn.create(payload);
-	}
-
 	public Atom buildAtomWithoutSignature() {
 		return Atom.create(instructions, null);
 	}
 
 	public Txn buildWithoutSignature() {
 		var atom = Atom.create(instructions, null);
-		return atomToTxn(atom);
+		return Txn.fromAtom(atom);
+	}
+
+	public Pair<byte[], HashCode> buildForExternalSign() {
+		//TODO: fix blob generation as for now it is not verifiable by client side
+		var blob = DefaultSerialization.getInstance()
+			.toDson(Atom.create(instructions, null), DsonOutput.Output.ALL);
+
+		return Pair.of(blob, Atom.computeHashToSignFromBytes(instructions));
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
-		var hashToSign = computeHashToSign();
+		var hashToSign = Atom.computeHashToSignFromBytes(instructions);
 		var signature = signatureProvider.apply(hashToSign);
 		var atom = Atom.create(instructions, signature);
-		return atomToTxn(atom);
+		return Txn.fromAtom(atom);
 	}
 }

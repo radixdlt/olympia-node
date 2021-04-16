@@ -128,7 +128,7 @@ public final class HashUtils {
 	}
 
 	/**
-	 * Calculate hash which can serve as transation ID.
+	 * Calculate hash which can serve as transaction ID.
 	 *
 	 * @param payload input bytes to hash
 	 *

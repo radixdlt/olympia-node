@@ -15,10 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.store;
+package com.radixdlt.client.api;
 
 import org.json.JSONObject;
 
+import com.radixdlt.client.store.ActionEntry;
+import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;
 

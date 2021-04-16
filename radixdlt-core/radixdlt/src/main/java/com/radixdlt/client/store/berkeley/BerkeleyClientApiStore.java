@@ -23,7 +23,6 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.constraintmachine.REParsedAction;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -34,13 +33,14 @@ import com.google.inject.name.Named;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.client.store.TxHistoryEntry;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -128,9 +128,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong inputCounter = new AtomicLong();
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
-	private final RRI nativeToken;
 	private final byte universeMagic;
 	private final TxnParser txnParser;
+	private final TransactionParser transactionParser;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -146,7 +146,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		Observable<AtomsCommittedToLedger> ledgerCommitted,
-		@NativeToken RRI nativeToken,
+		TransactionParser transactionParser,
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
@@ -156,8 +156,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.ledgerCommitted = ledgerCommitted;
-		this.nativeToken = nativeToken;
 		this.universeMagic = (byte) (universeMagic & 0xFF);
+		this.transactionParser = transactionParser;
 
 		open();
 	}
@@ -191,23 +191,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			while (status == OperationStatus.SUCCESS);
 
 			return Result.ok(list);
-		}
-	}
-
-	@Override
-	public void storeCollected() {
-		synchronized (txCollector) {
-			log.debug("Storing collected transactions started");
-
-			var count = withTime(
-				() -> txCollector.consumeCollected(this::storeTransactionBatch),
-				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
-				ELAPSED_APIDB_FLUSH_TIME
-			);
-
-			inputCounter.addAndGet(-count);
-
-			log.debug("Storing collected transactions finished. {} transactions processed", count);
 		}
 	}
 
@@ -254,12 +237,28 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TxHistoryEntry> getSingleTransaction(AID txId) {
+	public Result<TxHistoryEntry> getTransaction(AID txId) {
 		return retrieveTx(txId)
 			.flatMap(txn -> extractCreator(txn, universeMagic)
 				.map(Result::ok)
 				.orElseGet(() -> Result.fail("Unable to restore creator from transaction {0}", txn.getId()))
 				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
+	}
+
+	private void storeCollected() {
+		synchronized (txCollector) {
+			log.debug("Storing collected transactions started");
+
+			var count = withTime(
+				() -> txCollector.consumeCollected(this::storeTransactionBatch),
+				() -> systemCounters.increment(COUNT_APIDB_FLUSH_COUNT),
+				ELAPSED_APIDB_FLUSH_TIME
+			);
+
+			inputCounter.addAndGet(-count);
+
+			log.debug("Storing collected transactions finished. {} transactions processed", count);
+		}
 	}
 
 	private Result<TxHistoryEntry> lookupTransactionInHistory(RadixAddress creator, Txn txn) {
@@ -276,8 +275,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			do {
 				if (AID.fromBytes(data.getData()).fold(__ -> false, aid -> aid.equals(txn.getId()))) {
 					return Result.ok(txn)
-						.map(txnParser::parseOrElseThrow)
-						.flatMap(t -> new TransactionParser(nativeToken).parse(t, instantFromKey(key)));
+						.flatMap(txnParser::parseTxn)
+						.flatMap(t -> transactionParser.parse(t, instantFromKey(key)));
 				}
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -323,8 +322,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				AID.fromBytes(data.getData())
 					.flatMap(this::retrieveTx)
 					.onFailure(this::reportError)
-					.map(txnParser::parseOrElseThrow)
-					.flatMap(txn -> new TransactionParser(nativeToken).parse(txn, instantFromKey(key)))
+					.flatMap(txnParser::parseTxn)
+					.flatMap(txn -> transactionParser.parse(txn, instantFromKey(key)))
 					.onSuccess(list::add);
 
 				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
@@ -475,7 +474,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void rebuildDatabase() {
 		log.info("Database rebuilding is started");
-		store.forEach(txn -> processRETransaction(txnParser.parseOrElseThrow(txn)));
+		store.forEach(txn -> txnParser.parseTxn(txn).onSuccess(this::processRETransaction));
 		log.info("Database rebuilding is finished successfully");
 	}
 
@@ -497,7 +496,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		reTxn.getActions()
 			.forEach(a -> storeAction(reTxn.getUser(), a));
 	}
-
 
 	private void storeAction(RadixAddress user, REParsedAction action) {
 		if (action.getTxAction() instanceof TransferToken) {
@@ -556,8 +554,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			storeBalanceEntry(entry1);
 		} else {
 			var tokDefs = action.getInstructions().stream()
-				.filter(i -> i.getParticle() instanceof TokenDefinitionParticle)
-				.map(i -> (TokenDefinitionParticle) i.getParticle())
+				.map(REParsedInstruction::getParticle)
+				.filter(TokenDefinitionParticle.class::isInstance)
+				.map(TokenDefinitionParticle.class::cast)
 				.collect(Collectors.toList());
 
 			tokDefs.forEach(this::storeTokenDefinition);
@@ -648,11 +647,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private DatabaseEntry serializeTo(DatabaseEntry value, Object entry) {
 		value.setData(serialization.toDson(entry, Output.ALL));
 		return value;
-	}
-
-	private <T> T shouldNeverHappen(Failure f) {
-		log.error("Should never happen {}", f.message());
-		return null;
 	}
 
 	private static DatabaseEntry asKey(BalanceEntry balanceEntry) {

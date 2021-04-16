@@ -17,12 +17,34 @@
 
 package com.radixdlt.utils.functional;
 
+import com.radixdlt.utils.functional.Functions.FN1;
+import com.radixdlt.utils.functional.Functions.FN2;
+import com.radixdlt.utils.functional.Functions.FN3;
+import com.radixdlt.utils.functional.Functions.FN4;
+import com.radixdlt.utils.functional.Functions.FN5;
+import com.radixdlt.utils.functional.Functions.FN6;
+import com.radixdlt.utils.functional.Functions.FN7;
+import com.radixdlt.utils.functional.Functions.FN8;
+import com.radixdlt.utils.functional.Functions.FN9;
+import com.radixdlt.utils.functional.Tuple.Tuple1;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
+import com.radixdlt.utils.functional.Tuple.Tuple3;
+import com.radixdlt.utils.functional.Tuple.Tuple4;
+import com.radixdlt.utils.functional.Tuple.Tuple5;
+import com.radixdlt.utils.functional.Tuple.Tuple6;
+import com.radixdlt.utils.functional.Tuple.Tuple7;
+import com.radixdlt.utils.functional.Tuple.Tuple8;
+import com.radixdlt.utils.functional.Tuple.Tuple9;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
  * Representation of the operation result. The result can be either success or failure.
@@ -158,6 +180,35 @@ public interface Result<T> {
 	}
 
 	/**
+	 * Filter contained value with given predicate. Provided string is passed as failure reason
+	 * if predicate returns {@code false}.
+	 *
+	 * @param predicate Predicate to check
+	 * @param message Message which will be used in case if predicate returns {@code false}
+	 *
+	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
+	 */
+	default Result<T> filter(Predicate<T> predicate, String message) {
+		return flatMap(v -> predicate.test(v) ? this : fail(message));
+	}
+
+	/**
+	 * Filter contained value with given predicate. Provided string and parameters are passed
+	 * as failure reason if predicate returns {@code false}.
+	 *
+	 * @param predicate Predicate to check
+	 * @param message Message which will be used in case if predicate returns {@code false}
+	 * @param values Message parameters
+	 *
+	 * @return the same instance if predicate returns {@code true} or new failure result with provided message.
+	 *
+	 * @see Failure#failure(String, Object...) for more details
+	 */
+	default Result<T> filter(Predicate<T> predicate, String message, Object... values) {
+		return flatMap(v -> predicate.test(v) ? this : fail(message, values));
+	}
+
+	/**
 	 * Convert instance into {@link Optional} of the same type. Successful instance
 	 * is converted into present {@link Optional} and failure - into empty {@link Optional}.
 	 * Note that during such a conversion error information may get lost.
@@ -189,6 +240,8 @@ public interface Result<T> {
 	 * @param args additional arguments for the message format
 	 *
 	 * @return created instance
+	 *
+	 * @see Failure#failure(String, Object...) for more details
 	 */
 	static <T> Result<T> fromOptional(Optional<T> source, String format, Object... args) {
 		return source.map(Result::ok).orElseGet(() -> fail(format, args));
@@ -225,6 +278,17 @@ public interface Result<T> {
 	 */
 	static <R> Result<R> fail(final String message) {
 		return new ResultFail<R>(Failure.failure(message));
+	}
+
+	/**
+	 * Create an instance of simple failure operation result from exception.
+	 *
+	 * @param throwable Exception to convert
+	 *
+	 * @return created instance
+	 */
+	static <R> Result<R> fail(final Throwable throwable) {
+		return new ResultFail<R>(Failure.failure(throwable.getMessage()));
 	}
 
 	/**
@@ -358,6 +422,207 @@ public interface Result<T> {
 		public Result<R> onFailureDo(final Runnable action) {
 			action.run();
 			return this;
+		}
+	}
+
+	static <T1> Mapper1<T1> allOf(Result<T1> op1) {
+		return () -> op1.flatMap(v1 -> Result.ok(tuple(v1)));
+	}
+
+	static <T1, T2> Mapper2<T1, T2> allOf(Result<T1> op1, Result<T2> op2) {
+		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> Result.ok(tuple(v1, v2))));
+	}
+
+	static <T1, T2, T3> Mapper3<T1, T2, T3> allOf(Result<T1> op1, Result<T2> op2, Result<T3> op3) {
+		return () -> op1.flatMap(v1 -> op2.flatMap(v2 -> op3.flatMap(v3 -> Result.ok(tuple(v1, v2, v3)))));
+	}
+
+	static <T1, T2, T3, T4> Mapper4<T1, T2, T3, T4> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3, Result<T4> op4
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> Result.ok(tuple(v1, v2, v3, v4))))));
+	}
+
+	static <T1, T2, T3, T4, T5> Mapper5<T1, T2, T3, T4, T5> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3, Result<T4> op4, Result<T5> op5
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> op5.flatMap(
+							v5 -> Result.ok(tuple(v1, v2, v3, v4, v5)))))));
+	}
+
+	static <T1, T2, T3, T4, T5, T6> Mapper6<T1, T2, T3, T4, T5, T6> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3,
+		Result<T4> op4, Result<T5> op5, Result<T6> op6
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> op5.flatMap(
+							v5 -> op6.flatMap(
+								v6 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6))))))));
+	}
+
+	static <T1, T2, T3, T4, T5, T6, T7> Mapper7<T1, T2, T3, T4, T5, T6, T7> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3, Result<T4> op4,
+		Result<T5> op5, Result<T6> op6, Result<T7> op7
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> op5.flatMap(
+							v5 -> op6.flatMap(
+								v6 -> op7.flatMap(
+									v7 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6, v7)))))))));
+	}
+
+	static <T1, T2, T3, T4, T5, T6, T7, T8> Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3, Result<T4> op4,
+		Result<T5> op5, Result<T6> op6, Result<T7> op7, Result<T8> op8
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> op5.flatMap(
+							v5 -> op6.flatMap(
+								v6 -> op7.flatMap(
+									v7 -> op8.flatMap(
+										v8 -> Result.ok(tuple(v1, v2, v3, v4, v5, v6, v7, v8))))))))));
+	}
+
+	static <T1, T2, T3, T4, T5, T6, T7, T8, T9> Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> allOf(
+		Result<T1> op1, Result<T2> op2, Result<T3> op3, Result<T4> op4, Result<T5> op5,
+		Result<T6> op6, Result<T7> op7, Result<T8> op8, Result<T9> op9
+	) {
+		return () -> op1.flatMap(
+			v1 -> op2.flatMap(
+				v2 -> op3.flatMap(
+					v3 -> op4.flatMap(
+						v4 -> op5.flatMap(
+							v5 -> op6.flatMap(
+								v6 -> op7.flatMap(
+									v7 -> op8.flatMap(
+										v8 -> op9.flatMap(
+											v9 -> Result.ok(
+												tuple(v1, v2, v3, v4, v5, v6, v7, v8, v9)
+											))))))))));
+	}
+
+	interface Mapper1<T1> {
+		Result<Tuple1<T1>> id();
+
+		default <R> Result<R> map(FN1<R, T1> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN1<Result<R>, T1> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper2<T1, T2> {
+		Result<Tuple2<T1, T2>> id();
+
+		default <R> Result<R> map(FN2<R, T1, T2> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN2<Result<R>, T1, T2> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper3<T1, T2, T3> {
+		Result<Tuple3<T1, T2, T3>> id();
+
+		default <R> Result<R> map(FN3<R, T1, T2, T3> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN3<Result<R>, T1, T2, T3> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper4<T1, T2, T3, T4> {
+		Result<Tuple4<T1, T2, T3, T4>> id();
+
+		default <R> Result<R> map(FN4<R, T1, T2, T3, T4> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN4<Result<R>, T1, T2, T3, T4> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper5<T1, T2, T3, T4, T5> {
+		Result<Tuple5<T1, T2, T3, T4, T5>> id();
+
+		default <R> Result<R> map(FN5<R, T1, T2, T3, T4, T5> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN5<Result<R>, T1, T2, T3, T4, T5> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper6<T1, T2, T3, T4, T5, T6> {
+		Result<Tuple6<T1, T2, T3, T4, T5, T6>> id();
+
+		default <R> Result<R> map(FN6<R, T1, T2, T3, T4, T5, T6> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN6<Result<R>, T1, T2, T3, T4, T5, T6> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper7<T1, T2, T3, T4, T5, T6, T7> {
+		Result<Tuple7<T1, T2, T3, T4, T5, T6, T7>> id();
+
+		default <R> Result<R> map(FN7<R, T1, T2, T3, T4, T5, T6, T7> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN7<Result<R>, T1, T2, T3, T4, T5, T6, T7> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> {
+		Result<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> id();
+
+		default <R> Result<R> map(FN8<R, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN8<Result<R>, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
+		}
+	}
+
+	interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+		Result<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> id();
+
+		default <R> Result<R> map(FN9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+			return id().map(tuple -> tuple.map(mapper));
+		}
+
+		default <R> Result<R> flatMap(FN9<Result<R>, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+			return id().flatMap(tuple -> tuple.map(mapper));
 		}
 	}
 }

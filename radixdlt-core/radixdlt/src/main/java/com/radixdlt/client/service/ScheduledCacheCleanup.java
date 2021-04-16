@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -15,23 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.serialization;
+package com.radixdlt.client.service;
 
-import com.fasterxml.jackson.databind.JavaType;
-import java.util.Objects;
+public enum ScheduledCacheCleanup {
+	INSTANCE;
 
-/**
- * Opaque wrapper for {@link JavaType} to allow distinguishing between
- * JSON and DSON mapper.
- */
-public class DsonJavaType {
-	private final JavaType type;
-
-	DsonJavaType(JavaType type) {
-		this.type = Objects.requireNonNull(type);
-	}
-
-	JavaType javaType() {
-		return this.type;
+	public static ScheduledCacheCleanup create() {
+		return INSTANCE;
 	}
 }

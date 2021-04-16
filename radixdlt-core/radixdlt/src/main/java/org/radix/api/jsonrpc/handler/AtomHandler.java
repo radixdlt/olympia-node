@@ -29,7 +29,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withParameters;
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 public class AtomHandler {
 	private final AtomsService atomsService;
@@ -48,7 +48,7 @@ public class AtomHandler {
 	}
 
 	public JSONObject handleGetAtom(JSONObject request) {
-		return withRequiredParameter(
+		return withRequiredStringParameter(
 			request,
 			"aid",
 			(params, aid) -> AID.fromString(aid)

@@ -17,13 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.RuntimeUtils;
-
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -34,6 +27,14 @@ import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointUtil;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.RuntimeUtils;
+import com.radixdlt.utils.functional.Result;
 
 import java.math.BigInteger;
 import java.security.Provider;
@@ -144,12 +145,12 @@ public class ECKeyUtils {
 		switch (pubkey0) {
 			case 2:
 			case 3:
-				if (publicKey.length != ECPublicKey.BYTES + 1) {
+				if (publicKey.length != ECPublicKey.COMPRESSED_BYTES) {
 					throw new PublicKeyException("Public key has invalid compressed size");
 				}
 				break;
 			case 4:
-				if (publicKey.length != (ECPublicKey.BYTES * 2) + 1) {
+				if (publicKey.length != ECPublicKey.UNCOMPRESSED_BYTES) {
 					throw new PublicKeyException("Public key has invalid uncompressed size");
 				}
 				break;
@@ -189,8 +190,35 @@ public class ECKeyUtils {
 			.map(__ -> v);
 	}
 
+	/**
+	 * Restore public key from recoverable signature.
+	 *
+	 * @param signature recoverable signature (with correct bit 'v')
+	 * @param hash hash from which signature was created
+	 *
+	 * @return recovered public key
+	 */
 	static Optional<ECPoint> recoverFromSignature(ECDSASignature signature, byte[] hash) {
 		return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
+	}
+
+	/**
+	 * Restore recoverable signature from non-recoverable signature and public key.
+	 *
+	 * @param signature original non-recoverable signature
+	 * @param hash hash from which signature was created
+	 * @param publicKey corresponding public key from the private key used to sign hash.
+	 *
+	 * @return recoverable signature
+	 */
+	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
+		try {
+			var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
+
+			return Result.ok(ECDSASignature.create(signature.getR(), signature.getS(), v));
+		} catch (IllegalStateException e) {
+			return Result.fail(e);
+		}
 	}
 
 	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {

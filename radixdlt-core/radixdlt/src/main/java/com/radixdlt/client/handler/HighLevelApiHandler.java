@@ -15,21 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.api.jsonrpc.handler;
+package com.radixdlt.client.handler;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
-import com.radixdlt.client.api.HighLevelApiService;
 
 import com.google.inject.Inject;
-import com.radixdlt.client.api.TransactionStatusService;
+import com.radixdlt.atom.Atom;
+import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.service.HighLevelApiService;
+import com.radixdlt.client.service.SubmissionService;
+import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.store.TokenBalance;
-import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -40,21 +47,27 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
+import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 import static com.radixdlt.utils.functional.Optionals.allOf;
 
 public class HighLevelApiHandler {
 	private final HighLevelApiService highLevelApiService;
-	private TransactionStatusService transactionStatusService;
+	private final TransactionStatusService transactionStatusService;
+	private final SubmissionService submissionService;
 
 	@Inject
 	public HighLevelApiHandler(
-		HighLevelApiService highLevelApiService, TransactionStatusService transactionStatusService
+		HighLevelApiService highLevelApiService,
+		TransactionStatusService transactionStatusService,
+		SubmissionService submissionService
 	) {
 		this.highLevelApiService = highLevelApiService;
 		this.transactionStatusService = transactionStatusService;
+		this.submissionService = submissionService;
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
@@ -70,7 +83,7 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {
-		return withRequiredParameter(
+		return withRequiredStringParameter(
 			request, "resourceIdentifier",
 			(params, tokenId) -> RRI.fromString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
@@ -82,7 +95,7 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTokenBalances(JSONObject request) {
-		return withRequiredParameter(
+		return withRequiredStringParameter(
 			request, "address",
 			(params, address) -> RadixAddress.fromString(address)
 				.map(radixAddress -> response(request, formatTokenBalances(request, radixAddress)))
@@ -90,22 +103,53 @@ public class HighLevelApiHandler {
 		);
 	}
 
-	public JSONObject handleTransactionHistory(JSONObject request) {
-		return withRequiredParameters(request, Set.of("address", "size"), __ -> respondWithTransactionHistory(request));
-	}
-
 	public JSONObject handleTransactionStatus(JSONObject request) {
-		return withRequiredParameter(request, "txID", (params, idString) ->
+		return withRequiredStringParameter(request, "txID", (params, idString) ->
 			AID.fromString(idString)
 				.map(txId -> response(request, formatTransactionStatus(txId)))
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {
-		return withRequiredParameter(request, "txID", (params, idString) ->
+		return withRequiredStringParameter(request, "txID", (params, idString) ->
 			AID.fromString(idString)
 				.map(txId -> respondWithTransactionLookupResult(request, txId))
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
+	}
+
+	public JSONObject handleBuildTransaction(JSONObject request) {
+		return withRequiredArrayParameter(request, "actions", (params, actions) ->
+			ActionParser.parse(actions)
+				.flatMap(steps -> submissionService.prepareTransaction(steps, safeString(params, "message")))
+				.fold(
+					failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+					value -> response(request, value.asJson())
+				)
+		);
+	}
+
+	public JSONObject handleTransactionHistory(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			Set.of("address", "size"),
+			params -> respondWithTransactionHistory(params, request)
+		);
+	}
+
+	public JSONObject handleFinalizeTransaction(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			Set.of("transaction", "signatureDER", "publicKeyOfSigner"),
+			params -> respondFinalizationResult(params, request)
+		);
+	}
+
+	public JSONObject handleSubmitTransaction(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			Set.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
+			params -> respondSubmissionResult(params, request)
+		);
 	}
 
 	private JSONObject formatTransactionStatus(AID txId) {
@@ -114,15 +158,15 @@ public class HighLevelApiHandler {
 	}
 
 	private JSONObject respondWithTransactionLookupResult(JSONObject request, AID txId) {
-		return highLevelApiService.getSingleTransaction(txId)
+		return highLevelApiService.getTransaction(txId)
 			.fold(
 				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
 				value -> response(request, value.asJson())
 			);
 	}
 
-	private JSONObject respondWithTransactionHistory(JSONObject request) {
-		return allOf(Optional.of(request), parseAddress(request), parseSize(request))
+	private JSONObject respondWithTransactionHistory(JSONObject params, JSONObject request) {
+		return allOf(Optional.of(request), parseAddress(params), parseSize(params))
 			.map(this::formatTransactionHistory)
 			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
 	}
@@ -136,6 +180,70 @@ public class HighLevelApiHandler {
 					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
 					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
 			);
+	}
+
+	private JSONObject respondFinalizationResult(JSONObject params, JSONObject request) {
+		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
+			.flatMap((blob, signature, publicKey) ->
+						 toRecoverable(blob, signature, publicKey)
+							 .flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
+			.fold(
+				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				txId -> response(request, jsonObject().put("txID", txId.toString()))
+			);
+	}
+
+	private JSONObject respondSubmissionResult(JSONObject params, JSONObject request) {
+		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params), parseTxId(params))
+			.flatMap((blob, signature, publicKey, txId) ->
+						 toRecoverable(blob, signature, publicKey)
+							 .flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
+			.fold(
+				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				txId -> response(request, jsonObject().put("txID", txId.toString()))
+			);
+	}
+
+	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
+		return ECKeyUtils.toRecoverable(signature, Atom.computeHashToSignFromBytes(blob).asBytes(), publicKey);
+	}
+
+	private Result<byte[]> parseBlob(JSONObject request) {
+		try {
+			var blob = Hex.decodeStrict(request.getJSONObject("transaction").getString("blob"));
+
+			return Result.ok(blob);
+		} catch (Exception e) {
+			return Result.fail(e.getMessage());
+		}
+	}
+
+	private Result<ECDSASignature> parseSignatureDer(JSONObject request) {
+		try {
+			var signature = Hex.decodeStrict(request.getString("signatureDER"));
+
+			return Result.ok(ECDSASignature.decodeFromDER(signature));
+		} catch (Exception e) {
+			return Result.fail(e.getMessage());
+		}
+	}
+
+	private Result<ECPublicKey> parsePublicKey(JSONObject request) {
+		try {
+			var pubKeyBytes = Hex.decodeStrict(request.getString("publicKeyOfSigner"));
+
+			return Result.ok(ECPublicKey.fromBytes(pubKeyBytes));
+		} catch (Exception e) {
+			return Result.fail(e.getMessage());
+		}
+	}
+
+	private Result<AID> parseTxId(JSONObject request) {
+		try {
+			return AID.fromBytes(Hex.decodeStrict(request.getString("txID")));
+		} catch (Exception e) {
+			return Result.fail(e.getMessage());
+		}
 	}
 
 	private static String asCursor(Instant instant) {
@@ -177,13 +285,12 @@ public class HighLevelApiHandler {
 		}
 	}
 
-	private static Optional<Integer> parseSize(JSONObject request) {
-		return safeInteger(JsonRpcUtil.params(request), "size")
-			.filter(value -> value > 0);
+	private static Optional<Integer> parseSize(JSONObject params) {
+		return safeInteger(params, "size").filter(value -> value > 0);
 	}
 
-	private static Optional<RadixAddress> parseAddress(JSONObject request) {
-		return RadixAddress.fromString(JsonRpcUtil.params(request).getString("address"));
+	private static Optional<RadixAddress> parseAddress(JSONObject params) {
+		return RadixAddress.fromString(params.getString("address"));
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {

@@ -18,6 +18,8 @@
 
 package com.radixdlt.atom;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
@@ -29,16 +31,18 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 import javax.annotation.concurrent.Immutable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * An atom to be processed by radix engine
@@ -75,14 +79,21 @@ public final class Atom {
 	}
 
 	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(getInstructions().stream());
+		return computeHashToSignFromBytes(getInstructions());
 	}
 
-	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
+	public static HashCode computeHashToSignFromBytes(Collection<byte[]> instructions) {
+		return computeHashToSignFromBytes(computeBlobToSign(instructions));
+	}
+
+	public static HashCode computeHashToSignFromBytes(byte[] blob) {
+		return HashUtils.sha256(HashUtils.sha256(blob).asBytes());
+	}
+
+	public static byte[] computeBlobToSign(Collection<byte[]> instructions) {
 		var outputStream = new ByteArrayOutputStream();
 		instructions.forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
-		return HashUtils.sha256(firstHash.asBytes());
+		return outputStream.toByteArray();
 	}
 
 	public Optional<ECDSASignature> getSignature() {
@@ -104,7 +115,7 @@ public final class Atom {
 			return false;
 		}
 
-		Atom other = (Atom) o;
+		var other = (Atom) o;
 		var thisDson = DefaultSerialization.getInstance().toDson(this, Output.ALL);
 		var otherDson = DefaultSerialization.getInstance().toDson(other, Output.ALL);
 		return Arrays.equals(thisDson, otherDson);
@@ -113,7 +124,13 @@ public final class Atom {
 	@Override
 	public String toString() {
 		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
-			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
+							 getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
 		);
+	}
+
+	public Atom toSigned(ECDSASignature recoverable) {
+		requireNonNull(recoverable);
+
+		return new Atom(instructions, recoverable);
 	}
 }

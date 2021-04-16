@@ -100,6 +100,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
+	public RadixEngine<LedgerAndBFTProof> getEngine() {
+		return radixEngine;
+	}
+
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
 		private final REParsedTxn transaction;
