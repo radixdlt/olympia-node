@@ -26,10 +26,15 @@ import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
 import com.google.inject.Inject;
+import com.radixdlt.application.ValidatorInfo;
+import com.radixdlt.atom.Atom;
 import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.client.api.ValidatorDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
+import com.radixdlt.client.service.ValidatorInfoService;
+import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -58,16 +63,19 @@ public class HighLevelApiHandler {
 	private final HighLevelApiService highLevelApiService;
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
+	private final ValidatorInfoService validatorInfoService;
 
 	@Inject
 	public HighLevelApiHandler(
 		HighLevelApiService highLevelApiService,
 		TransactionStatusService transactionStatusService,
-		SubmissionService submissionService
+		SubmissionService submissionService,
+		ValidatorInfoService validatorInfoService
 	) {
 		this.highLevelApiService = highLevelApiService;
 		this.transactionStatusService = transactionStatusService;
 		this.submissionService = submissionService;
+		this.validatorInfoService = validatorInfoService;
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
@@ -142,7 +150,7 @@ public class HighLevelApiHandler {
 			request,
 			List.of("address", "size"),
 			List.of("cursor"),
-			params -> respondWithTransactionHistory(params, request)
+			params -> respondWithTransactionHistory(request, params)
 		);
 	}
 
@@ -164,6 +172,14 @@ public class HighLevelApiHandler {
 		);
 	}
 
+	public JSONObject handleValidators(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"size",
+			(params, sizeStr) -> respondWithValidators(request, params)
+		);
+	}
+
 	private JSONObject formatTransactionStatus(AID txId) {
 		return transactionStatusService.getTransactionStatus(txId)
 			.asJson(jsonObject().put("txID", txId));
@@ -177,21 +193,38 @@ public class HighLevelApiHandler {
 			);
 	}
 
-	private JSONObject respondWithTransactionHistory(JSONObject params, JSONObject request) {
+	private JSONObject respondWithTransactionHistory(JSONObject request, JSONObject params) {
 		//TODO: switch to Result
 		return allOf(Optional.of(request), parseAddress(params), parseSize(params))
 			.map(this::formatTransactionHistory)
 			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
 	}
 
+	private JSONObject respondWithValidators(JSONObject request, JSONObject params) {
+		return allOf(Optional.of(request), parseSize(params))
+			.map(this::formatValidators)
+			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
+	}
+
 	private JSONObject formatTransactionHistory(JSONObject request, RadixAddress address, int size) {
 		return highLevelApiService
-			.getTransactionHistory(address, size, parseCursor(request))
+			.getTransactionHistory(address, size, parseInstantCursor(request))
 			.fold(
 				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
 				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
 					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
 					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
+			);
+	}
+
+	private JSONObject formatValidators(JSONObject request, int size) {
+		return validatorInfoService
+			.getValidators(size, parseAddressCursor(request))
+			.fold(
+				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
+				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+					.put("cursor", cursor.map(RadixAddress::toString).orElse(""))
+					.put("validators", fromList(transactions, ValidatorDetails::asJson))))
 			);
 	}
 
@@ -263,7 +296,15 @@ public class HighLevelApiHandler {
 		return "" + instant.getEpochSecond() + ":" + instant.getNano();
 	}
 
-	private static Optional<Instant> parseCursor(JSONObject request) {
+	private static Optional<RadixAddress> parseAddressCursor(JSONObject request) {
+		var params = JsonRpcUtil.params(request);
+
+		return !params.has("cursor")
+			   ? Optional.empty()
+			   : Optional.of(params.getString("cursor")).flatMap(RadixAddress::fromString);
+	}
+
+	private static Optional<Instant> parseInstantCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
 		return params.isEmpty()
 			   ? Optional.empty()

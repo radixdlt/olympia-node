@@ -33,6 +33,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
+import com.radixdlt.client.service.ValidatorInfoService;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
@@ -80,8 +81,9 @@ public class HighLevelApiHandlerTest {
 	private final HighLevelApiService highLevelApiService = mock(HighLevelApiService.class);
 	private final TransactionStatusService transactionStatusService = mock(TransactionStatusService.class);
 	private final SubmissionService submissionService = mock(SubmissionService.class);
+	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
 	private final HighLevelApiHandler handler = new HighLevelApiHandler(
-		highLevelApiService, transactionStatusService, submissionService
+		highLevelApiService, transactionStatusService, submissionService, validatorInfoService
 	);
 
 	@Test
