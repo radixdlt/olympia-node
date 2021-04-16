@@ -21,30 +21,28 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.universe.UniverseConfiguration;
 import com.radixdlt.universe.Universe;
 
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
+	private final Universe.UniverseType type;
 	private final Provider<VerifiedTxnsAndProof> genesisProvider;
-	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
 	public RadixUniverseBuilder(
-		UniverseConfiguration universeConfiguration,
+		Universe.UniverseType type,
 		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
-		this.universeConfiguration = universeConfiguration;
+		this.type = type;
 		this.genesisProvider = Objects.requireNonNull(genesisProvider);
 	}
 
 	public Universe build() {
-		final var universeAtom = genesisProvider.get();
-
+		final var genesis = genesisProvider.get();
 		return Universe.newBuilder()
-			.type(this.universeConfiguration.getUniverseType())
-			.setTxnsAndProof(universeAtom)
+			.type(this.type)
+			.setTxnsAndProof(genesis)
 			.build();
 	}
 }

@@ -42,12 +42,8 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.universe.DevUniverseConfigModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
-import com.radixdlt.universe.ProductionUniverseConfigModule;
-import com.radixdlt.universe.TestUniverseConfigModule;
-import com.radixdlt.universe.UniverseConfiguration;
 import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -232,19 +228,7 @@ public final class GenerateUniverses {
 			RadixUniverseBuilder radixUniverseBuilder = Guice.createInjector(new AbstractModule() {
 				@Override
 				protected void configure() {
-					switch (universeType) {
-						case PRODUCTION:
-							install(new ProductionUniverseConfigModule());
-							break;
-						case TEST:
-							install(new TestUniverseConfigModule());
-							break;
-						case DEVELOPMENT:
-							install(new DevUniverseConfigModule());
-							break;
-						default:
-							throw new IllegalArgumentException("Unknown universe type: " + universeType);
-					}
+					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
 					install(RadixEngineConfig.createModule(1, 100, 10000L));
@@ -265,8 +249,8 @@ public final class GenerateUniverses {
 
 				@Provides
 				@Named("magic")
-				int magic(UniverseConfiguration universeConfiguration) {
-					return Universe.computeMagic(universeConfiguration.getUniverseType());
+				int magic(UniverseType universeType) {
+					return Universe.computeMagic(universeType);
 				}
 			}).getInstance(RadixUniverseBuilder.class);
 

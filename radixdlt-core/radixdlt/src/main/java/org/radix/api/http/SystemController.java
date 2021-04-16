@@ -39,17 +39,14 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 public final class SystemController implements Controller {
 	private final SystemService systemService;
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final boolean enableTestRoutes;
 
 	@Inject
 	public SystemController(
 		SystemService systemService,
-		InMemorySystemInfo inMemorySystemInfo,
-		Universe universe
+		InMemorySystemInfo inMemorySystemInfo
 	) {
 		this.systemService = systemService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.enableTestRoutes = universe.isDevelopment() || universe.isTest();
 	}
 
 	@Override
@@ -62,10 +59,6 @@ public final class SystemController implements Controller {
 		handler.put("/api/bft/0", this::handleBftState);
 		// Universe routes
 		handler.get("/api/universe", this::respondWithUniverse);
-		// if we are in a development universe, add the dev only routes
-		if (enableTestRoutes) {
-			handler.get("/api/vertices/highestqc", this::respondWithHighestQC);
-		}
 	}
 
 	@VisibleForTesting

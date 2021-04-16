@@ -154,27 +154,6 @@ public class Universe {
 	}
 
 	/**
-	 * Whether this is a production Universe.
-	 */
-	public boolean isProduction() {
-		return type.equals(UniverseType.PRODUCTION);
-	}
-
-	/**
-	 * Whether this is a test Universe.
-	 */
-	public boolean isTest() {
-		return type.equals(UniverseType.TEST);
-	}
-
-	/**
-	 * Whether this is a development Universe.
-	 */
-	public boolean isDevelopment() {
-		return type.equals(UniverseType.DEVELOPMENT);
-	}
-
-	/**
 	 * Gets this Universe's immutable Genesis collection.
 	 */
 	public VerifiedTxnsAndProof getGenesis() {
