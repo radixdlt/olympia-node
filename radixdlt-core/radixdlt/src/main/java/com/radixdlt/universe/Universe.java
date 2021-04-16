@@ -42,7 +42,6 @@ public class Universe {
 	 * Universe builder.
 	 */
 	public static class Builder {
-		private Integer port;
 		private String name;
 		private String description;
 		private UniverseType type;
@@ -51,21 +50,6 @@ public class Universe {
 
 		private Builder() {
 			// Nothing to do here
-		}
-
-		/**
-		 * Sets the TCP/UDP port for the universe.
-		 *
-		 * @param port The TCP/UDP port for the universe to use, {@code 0 <= port <= 65,535}.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder port(int port) {
-			if (port < 0 || port > 65535) {
-				throw new IllegalArgumentException("Invalid port number: " + port);
-			}
-			this.port = port;
-			return this;
 		}
 
 		/**
@@ -127,7 +111,6 @@ public class Universe {
 		 * @return The freshly build universe object.
 		 */
 		public Universe build() {
-			require(this.port, "Port number");
 			require(this.name, "Name");
 			require(this.description, "Description");
 			require(this.type, "Universe type");
@@ -153,13 +136,12 @@ public class Universe {
 	/**
 	 * Computes universe magic number from specified parameters.
 	 *
-	 * @param port universe port to use when calculating universe magic
 	 * @param type universe type to use when calculating universe magic
 	 *
 	 * @return The universe magic
 	 */
-	public static int computeMagic(int port, UniverseType type) {
-		return 7 * port + type.ordinal();
+	public static int computeMagic(UniverseType type) {
+		return type.ordinal();
 	}
 
 	// Placeholder for the serializer ID
@@ -181,10 +163,6 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private String description;
 
-	@JsonProperty("port")
-	@DsonOutput(Output.ALL)
-	private int port;
-
 	private UniverseType type;
 
 	@JsonProperty("genesis")
@@ -200,7 +178,6 @@ public class Universe {
 	}
 
 	private Universe(Builder builder) {
-		this.port = builder.port;
 		this.name = builder.name;
 		this.description = builder.description;
 		this.type = builder.type;
@@ -216,7 +193,7 @@ public class Universe {
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
 	public int getMagic() {
-		return computeMagic(port, type);
+		return computeMagic(type);
 	}
 
 	/**
@@ -231,13 +208,6 @@ public class Universe {
 	 */
 	public String getDescription() {
 		return description;
-	}
-
-	/**
-	 * The default TCP/UDP port for the Universe.
-	 */
-	public int getPort() {
-		return port;
 	}
 
 	/**

@@ -159,7 +159,7 @@ public final class GenerateUniverses {
 
 			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
 			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
-			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
+			final long timestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
 			final String listOfValidatorsEnv= Optional
 				.ofNullable(
@@ -227,7 +227,7 @@ public final class GenerateUniverses {
 				.addAll(getTokenIssuances(stakeDelegations))
 				.build();
 
-			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
+			final long timestamp = TimeUnit.SECONDS.toMillis(timestampSeconds);
 
 			RadixUniverseBuilder radixUniverseBuilder = Guice.createInjector(new AbstractModule() {
 				@Override
@@ -254,7 +254,7 @@ public final class GenerateUniverses {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
-					bindConstant().annotatedWith(Genesis.class).to(universeTimestamp);
+					bindConstant().annotatedWith(Genesis.class).to(timestamp);
 					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuances);
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
@@ -265,13 +265,8 @@ public final class GenerateUniverses {
 
 				@Provides
 				@Named("magic")
-				int magic(
-					UniverseConfiguration universeConfiguration
-				) {
-					return Universe.computeMagic(
-						universeConfiguration.getPort(),
-						universeConfiguration.getUniverseType()
-					);
+				int magic(UniverseConfiguration universeConfiguration) {
+					return Universe.computeMagic(universeConfiguration.getUniverseType());
 				}
 			}).getInstance(RadixUniverseBuilder.class);
 

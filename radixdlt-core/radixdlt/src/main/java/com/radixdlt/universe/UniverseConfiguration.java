@@ -23,24 +23,21 @@ import com.radixdlt.universe.Universe.UniverseType;
 /**
  * Universe configuration
  * TODO: This seems unnecessary and should be removed at some point.
- * TODO: name/description should move into genesis atom, port into config option
+ * TODO: name/description should move into genesis atom
  */
 public final class UniverseConfiguration {
 	private final UniverseType universeType;
 	private final String name;
 	private final String description;
-	private final int port;
 
 	public UniverseConfiguration(
 		UniverseType universeType,
 		String name,
-		String description,
-		int port
+		String description
 	) {
 	    this.universeType = universeType;
 		this.name = name;
 		this.description = description;
-		this.port = port;
 	}
 
 	public UniverseType getUniverseType() {
@@ -53,9 +50,5 @@ public final class UniverseConfiguration {
 
 	public String getDescription() {
 		return description;
-	}
-
-	public int getPort() {
-		return port;
 	}
 }

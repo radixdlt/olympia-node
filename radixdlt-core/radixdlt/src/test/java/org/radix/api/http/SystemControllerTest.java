@@ -57,7 +57,6 @@ public class SystemControllerTest {
 			.type(UniverseType.DEVELOPMENT)
 			.name("Name")
 			.description("Description")
-			.port(30000)
 			.build();
 	private final SystemController systemController =
 		new SystemController(systemService, inMemorySystemInfo, universe);

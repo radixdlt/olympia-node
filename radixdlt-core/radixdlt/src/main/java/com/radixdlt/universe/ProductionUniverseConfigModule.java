@@ -28,8 +28,7 @@ public final class ProductionUniverseConfigModule extends AbstractModule {
 		return new UniverseConfiguration(
 			UniverseType.PRODUCTION,
 			"Radix Mainnet",
-			"The Radix public Universe",
-			10000
+			"The Radix public Universe"
 		);
 	}
 }

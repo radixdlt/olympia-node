@@ -40,13 +40,11 @@ public final class RadixUniverseBuilder {
 	}
 
 	public Universe build() {
-		final var port = universeConfiguration.getPort();
 		final var name = universeConfiguration.getName();
 		final var description = universeConfiguration.getDescription();
 		final var universeAtom = genesisProvider.get();
 
 		return Universe.newBuilder()
-			.port(port)
 			.name(name)
 			.description(description)
 			.type(this.universeConfiguration.getUniverseType())
