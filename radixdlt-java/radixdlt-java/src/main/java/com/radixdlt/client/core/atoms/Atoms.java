@@ -18,7 +18,6 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atom.Atom;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;

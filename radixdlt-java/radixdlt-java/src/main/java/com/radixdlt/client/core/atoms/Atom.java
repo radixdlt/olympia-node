@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.client.core.atoms;
 
 import org.bouncycastle.util.encoders.Hex;
 

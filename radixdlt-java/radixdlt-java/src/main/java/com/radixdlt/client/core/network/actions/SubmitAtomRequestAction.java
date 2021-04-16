@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 import java.util.UUID;
