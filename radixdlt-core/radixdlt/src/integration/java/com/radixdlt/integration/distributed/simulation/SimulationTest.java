@@ -39,7 +39,9 @@ import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MockedKeyModule;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
+import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -59,6 +61,7 @@ import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -433,6 +436,26 @@ public class SimulationTest {
 				}
 
 				@Provides
+				CommittedReader committedReader() {
+					return new CommittedReader() {
+						@Override
+						public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+							return null;
+						}
+
+						@Override
+						public Optional<LedgerProof> getEpochProof(long epoch) {
+							return Optional.empty();
+						}
+
+						@Override
+						public Optional<LedgerProof> getLastProof() {
+							return Optional.empty();
+						}
+					};
+				}
+
+				@Provides
 				@Self
 				private RadixAddress radixAddress(@Named("magic") int magic, @Self BFTNode self) {
 					return new RadixAddress((byte) magic, self.getKey());
@@ -549,6 +572,8 @@ public class SimulationTest {
 						bindConstant().annotatedWith(Names.named("magic")).to(0);
 						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					}
+
+
 				});
 				modules.add(new LedgerRecoveryModule());
 				modules.add(new ConsensusRecoveryModule());
