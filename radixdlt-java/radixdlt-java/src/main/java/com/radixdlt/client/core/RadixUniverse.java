@@ -22,11 +22,8 @@
 
 package com.radixdlt.client.core;
 
-import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.client.core.atoms.Addresses;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.TokenUnitConversions;
@@ -174,20 +171,7 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream().flatMap(a -> a.getInstructions().stream())
-			.map(REInstruction::create)
-			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
-			.map(i -> {
-				try {
-					return SubstateSerializer.deserialize(i.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.filter(p -> p instanceof TokenDefinitionParticle)
-			.map(p -> ((TokenDefinitionParticle) p).getRri())
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
+		this.nativeToken = RRI.from("XRD");
 		this.atomStore = atomStore;
 		this.puller = new RadixAtomPuller(networkController);
 	}

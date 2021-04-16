@@ -74,6 +74,12 @@ public final class Atom {
 		return new Atom(instructions, signature);
 	}
 
+	public byte[] getUnsignedTxnBlob() {
+		var outputStream = new ByteArrayOutputStream();
+		getInstructions().forEach(outputStream::writeBytes);
+		return outputStream.toByteArray();
+	}
+
 	public HashCode computeHashToSign() {
 		return computeHashToSignFromBytes(getInstructions().stream());
 	}

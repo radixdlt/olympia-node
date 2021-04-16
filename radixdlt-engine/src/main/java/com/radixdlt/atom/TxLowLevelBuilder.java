@@ -91,14 +91,14 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
 		var bytes = SubstateSerializer.serialize(particle);
-		instruction(REInstruction.REOp.UP, varLengthData(bytes));
+		instruction(REInstruction.REOp.UP, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = SubstateSerializer.serialize(particle);
-		instruction(REInstruction.REOp.VDOWN, varLengthData(bytes));
+		instruction(REInstruction.REOp.VDOWN, bytes);
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}

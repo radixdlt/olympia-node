@@ -17,48 +17,55 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import org.bouncycastle.util.encoders.Hex;
+import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.OptionalInt;
 
 /**
  * Unparsed Low level instruction into Radix Engine
  */
 public final class REInstruction {
-	public enum REOp {
-		UP((byte) 1, OptionalInt.empty(), Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, OptionalInt.empty(), Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.DOWN),
-		LDOWN((byte) 4, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.DOWN),
-		READ((byte) 5, OptionalInt.of(SubstateId.BYTES), Spin.UP, Spin.UP),
-		LREAD((byte) 6, OptionalInt.of(Integer.BYTES), Spin.UP, Spin.UP),
-		MSG((byte) 7, OptionalInt.empty(), null, null),
-		END((byte) 0, OptionalInt.of(0), null, null);
+	private interface ReadData {
+		Object read(ByteBuffer buf) throws DeserializeException;
+	}
 
-		private final OptionalInt fixedLength;
+	public enum REOp {
+		UP((byte) 1, SubstateSerializer::deserialize, Spin.NEUTRAL, Spin.UP),
+		VDOWN((byte) 2, b -> {
+			int pos = b.position();
+			var p = SubstateSerializer.deserialize(b);
+			int length = b.position() - pos;
+			var buf = ByteBuffer.wrap(b.array(), pos, length);
+			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
+		}, Spin.UP, Spin.DOWN),
+		DOWN((byte) 3, SubstateId::fromBuffer, Spin.UP, Spin.DOWN),
+		LDOWN((byte) 4, ByteBuffer::getInt, Spin.UP, Spin.DOWN),
+		READ((byte) 5, SubstateId::fromBuffer, Spin.UP, Spin.UP),
+		LREAD((byte) 6, ByteBuffer::getInt, Spin.UP, Spin.UP),
+		MSG((byte) 7, b -> {
+			var length = Byte.toUnsignedInt(b.get());
+			b.get(new byte[length]);
+			return null;
+		}, null, null),
+		END((byte) 0, b -> null, null, null);
+
+		private final ReadData readData;
 		private final Spin checkSpin;
 		private final Spin nextSpin;
 		private final byte opCode;
 
-		REOp(byte opCode, OptionalInt fixedLength, Spin checkSpin, Spin nextSpin) {
+		REOp(byte opCode, ReadData readData, Spin checkSpin, Spin nextSpin) {
 			this.opCode = opCode;
-			this.fixedLength = fixedLength;
+			this.readData =  readData;
 			this.checkSpin = checkSpin;
 			this.nextSpin = nextSpin;
 		}
 
-		public ByteBuffer toData(ByteBuffer buf) {
-			if (fixedLength.isPresent()) {
-				return buf.limit(buf.position() + fixedLength.getAsInt());
-			} else {
-				var lengthByte = buf.get();
-				int length = Byte.toUnsignedInt(lengthByte);
-				return buf.limit(buf.position() + length);
-			}
+		public Object readData(ByteBuffer buf) throws DeserializeException {
+			return readData.read(buf);
 		}
 
 		public byte opCode() {
@@ -77,24 +84,29 @@ public final class REInstruction {
 	}
 
 	private final REOp operation;
-	private final byte[] fullBytes;
+	private final Object data;
+	private final byte[] array;
+	private final int offset;
+	private final int length;
 
-	private REInstruction(REOp operation, byte[] fullBytes) {
+	private REInstruction(REOp operation, Object data, byte[] array, int offset, int length) {
 		this.operation = operation;
-		this.fullBytes = fullBytes;
+		this.data = data;
+		this.array = array;
+		this.offset = offset;
+		this.length = length;
 	}
 
 	public REOp getMicroOp() {
 		return operation;
 	}
 
-	public ByteBuffer getData() {
-		var b = ByteBuffer.wrap(fullBytes, 1, fullBytes.length - 1);
-		return operation.toData(b);
+	public ByteBuffer getDataByteBuffer() {
+		return ByteBuffer.wrap(array, offset, length);
 	}
 
-	public byte[] getBytes() {
-		return fullBytes;
+	public <T> T getData() {
+		return (T) data;
 	}
 
 	public boolean hasSubstate() {
@@ -113,32 +125,16 @@ public final class REInstruction {
 		return operation.nextSpin;
 	}
 
-	public static REInstruction create(byte[] instruction) {
-		var microOp = REOp.fromByte(instruction[0]);
-		return new REInstruction(microOp, instruction);
+	public static REInstruction readFrom(ByteBuffer buf) throws DeserializeException {
+		var microOp = REOp.fromByte(buf.get());
+		var pos = buf.position();
+		var data = microOp.readData(buf);
+		var length = buf.position() - pos;
+		return new REInstruction(microOp, data, buf.array(), pos, length);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s %s",
-			operation,
-			Hex.toHexString(fullBytes)
-		);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(operation, Arrays.hashCode(fullBytes));
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof REInstruction)) {
-			return false;
-		}
-
-		var other = (REInstruction) o;
-		return Objects.equals(this.operation, other.operation)
-			&& Arrays.equals(this.fullBytes, other.fullBytes);
+		return String.format("%s", operation);
 	}
 }
