@@ -100,9 +100,7 @@ public class SystemTest {
 			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test
@@ -116,9 +114,7 @@ public class SystemTest {
 			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test
@@ -132,9 +128,7 @@ public class SystemTest {
 			.buildWithoutSignature();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
-			.isInstanceOf(RadixEngineException.class)
-			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
-			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test

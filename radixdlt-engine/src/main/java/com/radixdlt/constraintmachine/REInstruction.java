@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.nio.ByteBuffer;
@@ -29,28 +30,43 @@ import java.nio.ByteBuffer;
  */
 public final class REInstruction {
 	private interface ReadData {
-		Object read(ByteBuffer buf) throws DeserializeException;
+		Object read(Txn txn, int i, ByteBuffer buf) throws DeserializeException;
 	}
 
 	public enum REOp {
-		UP((byte) 1, SubstateSerializer::deserialize, Spin.NEUTRAL, Spin.UP),
-		VDOWN((byte) 2, b -> {
+		UP((byte) 1, (txn, i, b) -> {
+			var p = SubstateSerializer.deserialize(b);
+			return Substate.create(p, SubstateId.ofSubstate(txn.getId(), i));
+		}, Spin.NEUTRAL, Spin.UP),
+		VDOWN((byte) 2, (txn, i, b) -> {
 			int pos = b.position();
 			var p = SubstateSerializer.deserialize(b);
 			int length = b.position() - pos;
 			var buf = ByteBuffer.wrap(b.array(), pos, length);
 			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
 		}, Spin.UP, Spin.DOWN),
-		DOWN((byte) 3, SubstateId::fromBuffer, Spin.UP, Spin.DOWN),
-		LDOWN((byte) 4, ByteBuffer::getInt, Spin.UP, Spin.DOWN),
-		READ((byte) 5, SubstateId::fromBuffer, Spin.UP, Spin.UP),
-		LREAD((byte) 6, ByteBuffer::getInt, Spin.UP, Spin.UP),
-		MSG((byte) 7, b -> {
+		DOWN((byte) 3, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.DOWN),
+		LDOWN((byte) 4, (txn, i, b) -> {
+			var index = b.getInt();
+			if (index < 0 || index >= i) {
+				throw new DeserializeException("Bad local index: " + index);
+			}
+			return SubstateId.ofSubstate(txn.getId(), index);
+		}, Spin.UP, Spin.DOWN),
+		READ((byte) 5, (txn, i, b) -> SubstateId.fromBuffer(b), Spin.UP, Spin.UP),
+		LREAD((byte) 6, (txn, i, b) -> {
+			var index = b.getInt();
+			if (index < 0 || index >= i) {
+				throw new DeserializeException("Bad local index: " + index);
+			}
+			return SubstateId.ofSubstate(txn.getId(), index);
+		}, Spin.UP, Spin.UP),
+		MSG((byte) 7, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
 			b.get(new byte[length]);
 			return null;
 		}, null, null),
-		END((byte) 0, b -> null, null, null);
+		END((byte) 0, (txn, i, b) -> null, null, null);
 
 		private final ReadData readData;
 		private final Spin checkSpin;
@@ -64,8 +80,8 @@ public final class REInstruction {
 			this.nextSpin = nextSpin;
 		}
 
-		public Object readData(ByteBuffer buf) throws DeserializeException {
-			return readData.read(buf);
+		public Object readData(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
+			return readData.read(txn, index, buf);
 		}
 
 		public byte opCode() {
@@ -125,10 +141,10 @@ public final class REInstruction {
 		return operation.nextSpin;
 	}
 
-	public static REInstruction readFrom(ByteBuffer buf) throws DeserializeException {
+	public static REInstruction readFrom(Txn txn, int index, ByteBuffer buf) throws DeserializeException {
 		var microOp = REOp.fromByte(buf.get());
 		var pos = buf.position();
-		var data = microOp.readData(buf);
+		var data = microOp.readData(txn, index, buf);
 		var length = buf.position() - pos;
 		return new REInstruction(microOp, data, buf.array(), pos, length);
 	}

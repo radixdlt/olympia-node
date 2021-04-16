@@ -79,7 +79,7 @@ public final class LogCMStore implements CMStore {
 						int cur = 0;
 						while (buf.hasRemaining()) {
 							try {
-								var i = REInstruction.readFrom(buf);
+								var i = REInstruction.readFrom(txn, cur, buf);
 								if (cur == index) {
 									Particle p = i.getData();
 									return Result.ok(p);
