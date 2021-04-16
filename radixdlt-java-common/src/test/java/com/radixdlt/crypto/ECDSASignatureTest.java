@@ -124,7 +124,7 @@ public class ECDSASignatureTest {
 			var keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.get("privateKey")));
 			var publicKey = keyPair.getPublicKey();
 
-			assertEquals(vector.get("expectedPublicKeyCompressed"), Bytes.toHexString(publicKey.getBytes()));
+			assertEquals(vector.get("expectedPublicKeyCompressed"), Bytes.toHexString(publicKey.getCompressedBytes()));
 
 			var messageUnhashedPlaintext = vector.get("message");
 			var messageUnhashed = messageUnhashedPlaintext.getBytes(StandardCharsets.UTF_8);

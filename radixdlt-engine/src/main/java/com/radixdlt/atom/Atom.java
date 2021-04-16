@@ -18,6 +18,8 @@
 
 package com.radixdlt.atom;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
@@ -29,11 +31,11 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -63,7 +65,7 @@ public final class Atom {
 		this.signature = signature;
 	}
 
-	static Atom create(
+	public static Atom create(
 		byte[] unsignedBlob,
 		ECDSASignature signature
 	) {
@@ -74,13 +76,17 @@ public final class Atom {
 		return unsignedBlob;
 	}
 
-	public HashCode computeHashToSign() {
-		var firstHash = HashUtils.sha256(unsignedBlob);
+	public static HashCode computeHashToSignFromBytes(byte[] blob) {
+		var firstHash = HashUtils.sha256(blob);
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
+	public HashCode computeHashToSign() {
+		return computeHashToSignFromBytes(unsignedBlob);
+	}
+
 	public Optional<ECDSASignature> getSignature() {
-		return Optional.ofNullable(this.signature);
+		return Optional.ofNullable(signature);
 	}
 
 	@Override
@@ -94,7 +100,7 @@ public final class Atom {
 			return false;
 		}
 
-		Atom other = (Atom) o;
+		var other = (Atom) o;
 		var thisDson = DefaultSerialization.getInstance().toDson(this, Output.ALL);
 		var otherDson = DefaultSerialization.getInstance().toDson(other, Output.ALL);
 		return Arrays.equals(thisDson, otherDson);

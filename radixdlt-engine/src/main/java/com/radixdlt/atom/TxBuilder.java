@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Iterator;
@@ -537,6 +538,12 @@ public final class TxBuilder {
 		return this;
 	}
 
+	public TxBuilder message(Optional<String> message) {
+		message.ifPresent(lowLevelBuilder::message);
+
+		return this;
+	}
+
 	public Txn signAndBuild(
 		Function<HashCode, ECDSASignature> signer,
 		Consumer<SubstateStore> upSubstateConsumer
@@ -560,5 +567,9 @@ public final class TxBuilder {
 
 	public Txn buildWithoutSignature() {
 		return lowLevelBuilder.buildWithoutSignature();
+	}
+
+	public Pair<byte[], HashCode> buildForExternalSign() {
+		return lowLevelBuilder.buildForExternalSign();
 	}
 }

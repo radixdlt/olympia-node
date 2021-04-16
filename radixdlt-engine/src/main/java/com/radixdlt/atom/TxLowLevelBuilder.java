@@ -26,6 +26,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Pair;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -166,5 +167,12 @@ public final class TxLowLevelBuilder {
 		var signature = signatureProvider.apply(hashToSign);
 		var atom = Atom.create(blob, signature);
 		return atomToTxn(atom);
+	}
+
+	public Pair<byte[], HashCode> buildForExternalSign() {
+		var blob = blobStream.toByteArray();
+		var hashToSign = computeHashToSign(blob);
+
+		return Pair.of(blob, hashToSign);
 	}
 }

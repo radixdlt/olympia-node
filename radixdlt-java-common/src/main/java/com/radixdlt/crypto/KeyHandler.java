@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * Interface for signature and public key computation functions.
@@ -50,11 +51,11 @@ interface KeyHandler {
 	 *
 	 * @param hash The hash to verify against
 	 * @param signature The signature to verify
-	 * @param publicKey The public key to verify the signature with
+	 * @param publicKeyPoint The public key point to verify the signature with
 	 *
 	 * @return An boolean indicating whether the signature could be successfully validated
 	 */
-	boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey);
+	boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint);
 
 	/**
 	 * Compute a public key for the specified private key.

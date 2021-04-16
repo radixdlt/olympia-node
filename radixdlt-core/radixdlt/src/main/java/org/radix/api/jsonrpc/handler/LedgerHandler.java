@@ -22,7 +22,7 @@ import org.radix.api.services.LedgerService;
 
 import com.google.inject.Inject;
 
-import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameter;
+import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 public class LedgerHandler {
 	private final LedgerService ledgerService;
@@ -33,6 +33,6 @@ public class LedgerHandler {
 	}
 
 	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
+		return withRequiredStringParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
 	}
 }

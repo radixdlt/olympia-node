@@ -23,6 +23,7 @@
 package com.radixdlt.utils;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -31,19 +32,20 @@ import java.util.function.Function;
  * Note that in reality, as for all containers,
  * instances of this class are only immutable
  * if their contained objects are also immutable.
+ *
  * @param <F> Type of the first element
  * @param <S> Type of the second element
  */
 public final class Pair<F, S> {
-
 	private final F first;
 	private final S second;
 
 	/**
 	 * Create a pair from the specified arguments.
 	 *
-	 * @param first  The first element of the pair.
+	 * @param first The first element of the pair.
 	 * @param second The second element of the pair.
+	 *
 	 * @return A {@link Pair} containing {@code first} and {@code second}.
 	 */
 	public static <A, B> Pair<A, B> of(final A first, final B second) {
@@ -56,7 +58,7 @@ public final class Pair<F, S> {
 	 * Please consider using the factory method {@link #of(Object, Object)}
 	 * instead of this constructor.
 	 *
-	 * @param first  The first element of the pair.
+	 * @param first The first element of the pair.
 	 * @param second The second element of the pair.
 	 */
 	public Pair(final F first, final S second) {
@@ -87,6 +89,7 @@ public final class Pair<F, S> {
 	 * element, and the original second element.
 	 *
 	 * @param mapper the mapper to apply to the first element
+	 *
 	 * @return the new pair
 	 */
 	public <R> Pair<R, S> mapFirst(Function<? super F, ? extends R> mapper) {
@@ -98,10 +101,22 @@ public final class Pair<F, S> {
 	 * element, and the mapped second element.
 	 *
 	 * @param mapper the mapper to apply to the second element
+	 *
 	 * @return the new pair
 	 */
 	public <R> Pair<F, R> mapSecond(Function<? super S, ? extends R> mapper) {
 		return Pair.of(this.first, mapper.apply(this.second));
+	}
+
+	/**
+	 * Maps both elements into single result.
+	 *
+	 * @param mapper the mapper to apply to both elements
+	 *
+	 * @return result of the mapping
+	 */
+	public <R> R map(BiFunction<? super F, ? super S, ? extends R> mapper) {
+		return mapper.apply(first, second);
 	}
 
 	/**
@@ -154,11 +169,13 @@ public final class Pair<F, S> {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof Pair<?, ?>) {
-			Pair<?, ?> p = (Pair<?, ?>) obj;
-			return Objects.equals(this.first, p.first) && Objects.equals(this.second, p.second);
+
+		if (!(obj instanceof Pair<?, ?>)) {
+			return false;
 		}
-		return false;
+
+		var p = (Pair<?, ?>) obj;
+		return Objects.equals(this.first, p.first) && Objects.equals(this.second, p.second);
 	}
 
 	@Override
