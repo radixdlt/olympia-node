@@ -35,6 +35,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -97,15 +98,16 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Singleton
 	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		@LastEpochProof LedgerProof genesis,
 		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return new EventProcessor<>() {
-			long currentVersion = 0;
-			long currentEpoch = 1;
-
+			long currentVersion = genesis.getStateVersion();
+			long currentEpoch = genesis.getEpoch() + 1;
 
 			private void syncTo(LedgerProof proof) {
 				var txns = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+					.peek(v -> logger.info("{} {}", v, sharedCommittedCommands.get(v)))
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
@@ -123,6 +125,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 					if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
 						throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
 					}
+
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}
 
@@ -139,7 +142,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 			}
 		};
 	}
-
 
 	@ProvidesIntoSet
 	private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
