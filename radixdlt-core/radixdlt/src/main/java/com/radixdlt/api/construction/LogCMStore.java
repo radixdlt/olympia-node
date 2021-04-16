@@ -74,7 +74,7 @@ public final class LogCMStore implements CMStore {
 			.flatMap(txn ->
 				restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
 					.flatMap(a -> {
-						var buf = ByteBuffer.wrap(a.getUnsignedTxnBlob());
+						var buf = ByteBuffer.wrap(a.getUnsignedBlob());
 						var index = substateId.getIndex().orElseThrow();
 						int cur = 0;
 						while (buf.hasRemaining()) {

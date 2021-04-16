@@ -31,13 +31,9 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -52,7 +48,7 @@ public final class Atom {
 
 	@JsonProperty("i")
 	@DsonOutput({Output.ALL})
-	private final List<byte[]> instructions;
+	private final byte[] unsignedBlob;
 
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
@@ -60,34 +56,26 @@ public final class Atom {
 
 	@JsonCreator
 	private Atom(
-		@JsonProperty("i") List<byte[]> byteInstructions,
+		@JsonProperty("i") byte[] unsignedBlob,
 		@JsonProperty("s") ECDSASignature signature
 	) {
-		this.instructions = byteInstructions;
+		this.unsignedBlob = unsignedBlob;
 		this.signature = signature;
 	}
 
 	static Atom create(
-		List<byte[]> instructions,
+		byte[] unsignedBlob,
 		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature);
+		return new Atom(unsignedBlob, signature);
 	}
 
-	public byte[] getUnsignedTxnBlob() {
-		var outputStream = new ByteArrayOutputStream();
-		getInstructions().forEach(outputStream::writeBytes);
-		return outputStream.toByteArray();
+	public byte[] getUnsignedBlob() {
+		return unsignedBlob;
 	}
 
 	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(getInstructions().stream());
-	}
-
-	public static HashCode computeHashToSignFromBytes(Stream<byte[]> instructions) {
-		var outputStream = new ByteArrayOutputStream();
-		instructions.forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+		var firstHash = HashUtils.sha256(unsignedBlob);
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
@@ -95,13 +83,9 @@ public final class Atom {
 		return Optional.ofNullable(this.signature);
 	}
 
-	public List<byte[]> getInstructions() {
-		return this.instructions == null ? List.of() : this.instructions;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, instructions);
+		return Objects.hash(signature, unsignedBlob);
 	}
 
 	@Override
@@ -118,8 +102,9 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
-			getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
+		return String.format("%s {blob=%s}",
+			this.getClass().getSimpleName(),
+			Hex.toHexString(unsignedBlob)
 		);
 	}
 }

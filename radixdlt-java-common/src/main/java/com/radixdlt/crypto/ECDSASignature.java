@@ -39,7 +39,7 @@ import java.util.Objects;
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signature represented as
  * a tuple of {@link BigInteger}s {@code (R, S)}/
  */
-@SerializerId2("crypto.ecdsa_signature")
+@SerializerId2("sig")
 public final class ECDSASignature implements Signature {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)

@@ -28,6 +28,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ import java.util.function.Function;
  * Low level builder class for transactions
  */
 public final class TxLowLevelBuilder {
-	private final List<byte[]> instructions = new ArrayList<>();
+	private final ByteArrayOutputStream blobStream = new ByteArrayOutputStream();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private int instructionIndex = 0;
@@ -74,10 +75,12 @@ public final class TxLowLevelBuilder {
 	}
 
 	private void instruction(REInstruction.REOp op, byte[] data) {
-		var instruction = new byte[1 + data.length];
-		instruction[0] = op.opCode();
-		System.arraycopy(data, 0, instruction, 1, data.length);
-		this.instructions.add(instruction);
+		blobStream.write(op.opCode());
+		try {
+			blobStream.write(data);
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to write data.");
+		}
 		this.instructionIndex++;
 	}
 
@@ -137,10 +140,8 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	private HashCode computeHashToSign() {
-		var outputStream = new ByteArrayOutputStream();
-		instructions.forEach(outputStream::writeBytes);
-		var firstHash = HashUtils.sha256(outputStream.toByteArray());
+	private HashCode computeHashToSign(byte[] blob) {
+		var firstHash = HashUtils.sha256(blob);
 		return HashUtils.sha256(firstHash.asBytes());
 	}
 
@@ -150,18 +151,20 @@ public final class TxLowLevelBuilder {
 	}
 
 	public Atom buildAtomWithoutSignature() {
-		return Atom.create(instructions, null);
+		var blob = blobStream.toByteArray();
+		return Atom.create(blob, null);
 	}
 
 	public Txn buildWithoutSignature() {
-		var atom = Atom.create(instructions, null);
+		var atom = buildAtomWithoutSignature();
 		return atomToTxn(atom);
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
-		var hashToSign = computeHashToSign();
+		var blob = blobStream.toByteArray();
+		var hashToSign = computeHashToSign(blob);
 		var signature = signatureProvider.apply(hashToSign);
-		var atom = Atom.create(instructions, signature);
+		var atom = Atom.create(blob, signature);
 		return atomToTxn(atom);
 	}
 }

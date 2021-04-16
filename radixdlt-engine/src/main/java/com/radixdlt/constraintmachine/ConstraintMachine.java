@@ -366,7 +366,7 @@ public final class ConstraintMachine {
 		int numMessages = 0;
 		var expectEnd = false;
 
-		var buf = ByteBuffer.wrap(atom.getUnsignedTxnBlob());
+		var buf = ByteBuffer.wrap(atom.getUnsignedBlob());
 		while (buf.hasRemaining()) {
 			final REInstruction inst;
 			try {
