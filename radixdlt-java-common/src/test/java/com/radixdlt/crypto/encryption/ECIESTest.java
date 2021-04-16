@@ -127,7 +127,7 @@ public class ECIESTest {
 		byte[] bytesToEncrypt = stringToEncrypt.getBytes(StandardCharsets.US_ASCII);
 		byte[] encrypted = ECIES.encrypt(
 			bytesToEncrypt,
-			this.testEncryptionKey.getPublicKey().getPublicPoint(),
+			this.testEncryptionKey.getPublicKey().getEcPoint(),
 			this.testEphemeralKey,
 			this.testIV
 		);

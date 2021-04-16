@@ -17,12 +17,14 @@
 
 package com.radixdlt.crypto;
 
-import java.math.BigInteger;
-import java.util.Arrays;
+import org.junit.Assert;
+import org.junit.Test;
 
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import org.junit.Test;
+
+import java.math.BigInteger;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,7 +47,7 @@ public class ECKeyUtilsTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-    public void testGreaterOrEqualModulusFail() {
+	public void testGreaterOrEqualModulusFail() {
 		ECKeyUtils.greaterOrEqualOrder(new byte[1]);
 	}
 
@@ -79,7 +81,7 @@ public class ECKeyUtilsTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-    public void testAdjustArrayFail() {
+	public void testAdjustArrayFail() {
 		// Test that longer length without leading zeros throws exception
 		byte[] testArray = new byte[ECKeyPair.BYTES + 1];
 		Arrays.fill(testArray, (byte) 1);
@@ -93,54 +95,54 @@ public class ECKeyUtilsTest {
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForEmptyInput() throws PublicKeyException {
-		ECKeyUtils.validatePublic(new byte[] {});
+		ECKeyUtils.validatePublic(new byte[]{});
 	}
 
 	@Test
 	public void testValidatePublicPassForType2Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES];
 		key[0] = 0x02;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType2Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
 		key[0] = 0x02;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test
 	public void testValidatePublicPassForType3Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES];
 		key[0] = 0x03;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType3Key() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		var key = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
 		key[0] = 0x03;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test
 	public void testValidatePublicPassForType4Key() throws PublicKeyException {
-		var key = new byte[(ECPublicKey.BYTES * 2) + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES];
 		key[0] = 0x04;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForType4Key() throws PublicKeyException {
-		var key = new byte[(ECPublicKey.BYTES * 2) + 1 + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES + 1];
 		key[0] = 0x04;
 		ECKeyUtils.validatePublic(key);
 	}
 
 	@Test(expected = PublicKeyException.class)
 	public void testValidatePublicFailForUnknownTypeKey() throws PublicKeyException {
-		var key = new byte[ECPublicKey.BYTES + 1];
+		var key = new byte[ECPublicKey.UNCOMPRESSED_BYTES];
 		key[0] = 0x05;
 		ECKeyUtils.validatePublic(key);
 	}
@@ -152,7 +154,7 @@ public class ECKeyUtilsTest {
 
 	@Test(expected = PrivateKeyException.class)
 	public void testValidatePrivateFailForEmptyInput() throws PrivateKeyException {
-		ECKeyUtils.validatePrivate(new byte[] {});
+		ECKeyUtils.validatePrivate(new byte[]{});
 	}
 
 	@Test(expected = PrivateKeyException.class)
@@ -170,5 +172,19 @@ public class ECKeyUtilsTest {
 		var key = new byte[ECKeyPair.BYTES];
 		Arrays.fill(key, (byte) -1);
 		ECKeyUtils.validatePrivate(key);
+	}
+
+	@Test
+	public void testToRecoverable() throws PublicKeyException {
+		var keyPair = ECKeyPair.generateNew();
+		var hash = HashUtils.transactionIdHash("123456".getBytes());
+		var signature = keyPair.sign(hash);
+
+		ECKeyUtils.toRecoverable(signature, hash.asBytes(), keyPair.getPublicKey())
+			.onFailureDo(Assert::fail)
+			.onSuccess(sig -> ECPublicKey.recoverFrom(hash, sig).ifPresentOrElse(
+				recovered -> assertEquals(recovered, keyPair.getPublicKey()),
+				Assert::fail
+			));
 	}
 }

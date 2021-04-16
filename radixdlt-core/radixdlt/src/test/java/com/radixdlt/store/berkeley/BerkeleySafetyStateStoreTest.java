@@ -17,6 +17,9 @@
 
 package com.radixdlt.store.berkeley;
 
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -27,17 +30,19 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.OperationStatus;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomView;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 public class BerkeleySafetyStateStoreTest {
 
@@ -75,6 +80,9 @@ public class BerkeleySafetyStateStoreTest {
 			return OperationStatus.SUCCESS;
 		});
 
-		assertEquals(safetyState, store.get().get());
+		var state = store.get();
+
+		assertTrue(state.isPresent());
+		assertEquals(safetyState, state.get());
 	}
 }

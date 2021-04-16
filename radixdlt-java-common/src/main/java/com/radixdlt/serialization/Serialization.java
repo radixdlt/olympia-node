@@ -205,23 +205,6 @@ public class Serialization {
 	}
 
 	/**
-	 * Convert the specified DSON encoded byte array to an instance of the
-	 * specified class.
-	 *
-	 * @param bytes The DSON encoded object to deserialize
-	 * @param valueType The class of the object to deserialize
-	 * @return The deserialized object
-	 * @throws DeserializeException if something goes wrong with serialization
-	 */
-	public <T> T fromDson(byte[] bytes, DsonJavaType valueType) throws DeserializeException {
-		try {
-			return dsonMapper(Output.ALL).readValue(bytes, valueType.javaType());
-		} catch (IOException ex) {
-			throw new DeserializeException("Error converting from DSON", ex);
-		}
-	}
-
-	/**
 	 * Convert the specified JSON encoded string to an instance of the
 	 * specified class.
 	 *
@@ -265,19 +248,6 @@ public class Serialization {
 	 */
 	public <T> T fromJsonObject(JSONObject json, Class<T> valueType) {
 		return jsonMapper(Output.ALL).convertValue(json, valueType);
-	}
-
-	/**
-	 * Return a collection type for use with the {@link #fromDson(byte[], DsonJavaType)} method.
-	 *
-	 * @param collectionClass The collection class to deserialize.
-	 * @param elementClass The collection element type.
-	 * @return The deserialized collection.
-	 */
-	@SuppressWarnings("rawtypes")
-	public DsonJavaType dsonCollectionType(Class<? extends Collection> collectionClass, Class<?> elementClass) {
-		JavaType type = dsonMappers.get(Output.ALL).getTypeFactory().constructCollectionType(collectionClass, elementClass);
-		return new DsonJavaType(type);
 	}
 
 	/**

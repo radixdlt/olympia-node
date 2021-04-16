@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
@@ -41,6 +42,14 @@ public final class TxnParser {
 		return constraintMachine.validate(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.USER);
 	}
 
+	public Result<REParsedTxn> parseTxn(Txn txn) {
+		try {
+			return Result.ok(parse(txn));
+		} catch (RadixEngineException e) {
+			return Result.fail(e);
+		}
+
+	}
 	public REParsedTxn parseOrElseThrow(Txn txn) {
 		try {
 			return parse(txn);

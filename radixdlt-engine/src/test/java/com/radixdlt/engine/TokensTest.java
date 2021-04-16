@@ -59,8 +59,7 @@ public class TokensTest {
 		TokensParticle tokensParticle = new TokensParticle(
 			address,
 			UInt256.TEN,
-			RriId.fromRri(rri),
-			false
+			RriId.fromRri(rri)
 		);
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)

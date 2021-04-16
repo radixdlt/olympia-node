@@ -45,18 +45,6 @@ public final class AID implements Comparable<AID> {
 	}
 
 	/**
-	 * Checks whether this AID is zero.
-	 */
-	public boolean isZero() {
-		for (byte aByte : value) {
-			if (aByte != 0) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
 	 * Copies this AID to a byte array with some offset.
 	 * Note that the array must fit the offset + AID.BYTES.
 	 *

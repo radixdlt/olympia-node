@@ -18,7 +18,7 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.client.api.ScheduledCacheCleanup;
+import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;

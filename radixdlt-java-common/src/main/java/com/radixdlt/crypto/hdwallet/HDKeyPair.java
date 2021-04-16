@@ -87,7 +87,7 @@ public final class HDKeyPair {
 
 	@VisibleForTesting
 	String publicKeyHex() {
-		return Bytes.toHexString(ecKeyPair.getPublicKey().getBytes());
+		return Bytes.toHexString(ecKeyPair.getPublicKey().getCompressedBytes());
 	}
 
 	@VisibleForTesting

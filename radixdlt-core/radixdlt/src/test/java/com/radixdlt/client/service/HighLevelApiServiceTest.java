@@ -1,4 +1,4 @@
-package org.radix.api.services;/*
+/*
  * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
@@ -14,6 +14,7 @@ package org.radix.api.services;/*
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
+package com.radixdlt.client.service;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.utils.UInt256;
@@ -24,13 +25,12 @@ import org.junit.Test;
 
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.client.api.HighLevelApiService;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.MessageEntry;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
-import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -145,13 +145,13 @@ public class HighLevelApiServiceTest {
 	}
 
 	@Test
-	public void testGetSingleTransaction() {
+	public void testGetTransaction() {
 		var entry = createTxHistoryEntry(AID.ZERO);
 
-		when(clientApiStore.getSingleTransaction(AID.ZERO))
+		when(clientApiStore.getTransaction(AID.ZERO))
 			.thenReturn(Result.ok(entry));
 
-		highLevelApiService.getSingleTransaction(entry.getTxId())
+		highLevelApiService.getTransaction(entry.getTxId())
 			.onSuccess(result -> assertEquals(entry, result))
 			.onFailureDo(Assert::fail);
 	}
@@ -160,7 +160,7 @@ public class HighLevelApiServiceTest {
 		var now = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 		var action = ActionEntry.unknown();
 		return TxHistoryEntry.create(
-			txId, now, UInt256.ONE, MessageEntry.create("text", "scheme"), List.of(action)
+			txId, now, UInt256.ONE, MessageEntry.fromPlainString("text"), List.of(action)
 		);
 	}
 

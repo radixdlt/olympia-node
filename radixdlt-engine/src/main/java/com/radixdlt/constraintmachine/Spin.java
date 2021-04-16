@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 /**
  * The state of a {@link Particle}
  */
+//TODO: clean up unused 'intValue'
 public enum Spin {
 	NEUTRAL(0),
 	UP(1),

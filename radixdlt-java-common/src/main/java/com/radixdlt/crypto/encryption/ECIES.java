@@ -75,7 +75,7 @@ public final class ECIES {
 			ECPublicKey ephemeralPublicKey = ECPublicKey.fromBytes(publicKeyRaw);
 
 			// 3. Do an EC point multiply with this.getPrivateKey() and ephemeral public key. This gives you a point M.
-			ECPoint m = multiplicationScalar.multiply(ephemeralPublicKey.getPublicPoint());
+			ECPoint m = multiplicationScalar.multiply(ephemeralPublicKey.getEcPoint());
 
 			// 4. Use the X component of point M and calculate the Hash H.
 			byte[] h = hash(m.getXCoord().getEncoded());
@@ -109,7 +109,7 @@ public final class ECIES {
 	public static byte[] encrypt(byte[] data, ECPublicKey publicKey) throws ECIESException {
 		byte[] iv = new byte[16];
 		secureRandom.nextBytes(iv);
-		return encrypt(data, publicKey.getPublicPoint(), ECKeyPair.generateNew(), iv);
+		return encrypt(data, publicKey.getEcPoint(), ECKeyPair.generateNew(), iv);
 	}
 
 	@VisibleForTesting
@@ -143,11 +143,12 @@ public final class ECIES {
 			byte[] mac = calculateMAC(keyM, iv, ephemeral.getPublicKey(), encrypted);
 
 			// 10. Write out the encryption result IV + ephemeral.pub + encrypted + MAC
+			final var ephemeralBytes = ephemeral.getPublicKey().getCompressedBytes();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(baos);
 			outputStream.write(iv);
-			outputStream.writeByte(ephemeral.getPublicKey().length());
-			outputStream.write(ephemeral.getPublicKey().getBytes());
+			outputStream.writeByte(ephemeralBytes.length);
+			outputStream.write(ephemeralBytes);
 			outputStream.writeInt(encrypted.length);
 			outputStream.write(encrypted);
 			outputStream.write(mac);
@@ -163,7 +164,7 @@ public final class ECIES {
 		DataOutputStream outputStream = new DataOutputStream(baos);
 
 		outputStream.write(iv);
-		outputStream.write(publicKey.getBytes());
+		outputStream.write(publicKey.getCompressedBytes());
 		outputStream.write(cipherText);
 
 		try {
