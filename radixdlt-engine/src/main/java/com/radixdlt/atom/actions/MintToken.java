@@ -21,8 +21,8 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -59,7 +59,6 @@ public final class MintToken implements TxAction {
 			p -> p.getRriId().equals(rriId),
 			"Could not find mutable token rri " + rriId
 		);
-		final var factory = TokDefParticleFactory.create(rriId, true);
-		txBuilder.up(factory.createTransferrable(to, amount));
+		txBuilder.up(new TokensParticle(to, amount, rriId));
 	}
 }

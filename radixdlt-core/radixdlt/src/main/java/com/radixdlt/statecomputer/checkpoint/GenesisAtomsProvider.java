@@ -117,7 +117,7 @@ public final class GenesisAtomsProvider implements Provider<List<Txn>> {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
 				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
 				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
-					.stakeTo(rri, delegateAddress, stakeDelegation.amount());
+					.stakeTo(delegateAddress, stakeDelegation.amount());
 				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
 				genesisTxns.add(stakeAtom);
 			}

@@ -17,12 +17,12 @@
 
 package com.radixdlt.client.store;
 
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import org.json.JSONObject;
 
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.StakeNativeToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -63,12 +63,12 @@ public class ActionEntry {
 		return create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
 	}
 
-	public static ActionEntry stake(RadixAddress user, StakeNativeToken stakeToken) {
-		return create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), stakeToken.rri());
+	public static ActionEntry stake(RadixAddress user, StakeTokens stakeToken, RRI nativeToken) {
+		return create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), nativeToken);
 	}
 
-	public static ActionEntry unstake(RadixAddress user, UnstakeNativeToken unstakeToken) {
-		return create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), unstakeToken.rri());
+	public static ActionEntry unstake(RadixAddress user, UnstakeTokens unstakeToken, RRI nativeToken) {
+		return create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), nativeToken);
 	}
 
 	public static ActionEntry unknown() {

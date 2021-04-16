@@ -25,6 +25,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.identifiers.RadixAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
@@ -54,22 +55,28 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
+	private final Set<String> systemNames;
 
-	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
+	public CMAtomOS(
+		Function<RadixAddress, Result> addressChecker,
+		Set<String> systemNames
+	) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleDefinitions.put(VoidParticle.class, VOID_PARTICLE_DEF);
 		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
 		this.addressChecker = addressChecker;
+		this.systemNames = systemNames;
 	}
 
 	public CMAtomOS() {
-		this(address -> Result.success());
+		this(address -> Result.success(), Set.of());
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		ConstraintScryptEnv constraintScryptEnv = new ConstraintScryptEnv(
+		var constraintScryptEnv = new ConstraintScryptEnv(
 			ImmutableMap.copyOf(particleDefinitions),
-			addressChecker
+			addressChecker,
+			systemNames
 		);
 		constraintScrypt.main(constraintScryptEnv);
 		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
@@ -108,7 +115,6 @@ public final class CMAtomOS {
 		return p -> {
 			var virtualizer = virtualizedParticles.get(p.getClass());
 			return virtualizer != null && virtualizer.test(p);
-
 		};
 	}
 }

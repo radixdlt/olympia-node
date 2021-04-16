@@ -27,6 +27,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
@@ -39,8 +40,6 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.SubstateCacheRegister;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -79,28 +78,24 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CMAtomOS buildCMAtomOS(
-		@Named("magic") int magic,
-		@NativeToken RRI nativeToken
+	private ConstraintMachine buildConstraintMachine(
+		@Named("magic") int magic
 	) {
-		final CMAtomOS os = new CMAtomOS(addr -> {
-			final int universeMagic = magic & 0xff;
-			if (addr.getMagic() != universeMagic) {
-				return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
-			}
-			return Result.success();
-		});
+		final CMAtomOS os = new CMAtomOS(
+			addr -> {
+				final int universeMagic = magic & 0xff;
+				if (addr.getMagic() != universeMagic) {
+					return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
+				}
+				return Result.success();
+			},
+			Set.of(TokenDefinitionUtils.getNativeTokenShortCode())
+		);
 		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
-		os.load(new StakingConstraintScrypt(nativeToken));
+		os.load(new StakingConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new SystemConstraintScrypt());
-		return os;
-	}
-
-	@Provides
-	@Singleton
-	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
 		return new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(os.virtualizedUpParticles())
 			.setParticleTransitionProcedures(os.buildTransitionProcedures())

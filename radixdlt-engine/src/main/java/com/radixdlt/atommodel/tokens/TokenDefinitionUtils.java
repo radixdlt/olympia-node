@@ -20,6 +20,8 @@ package com.radixdlt.atommodel.tokens;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -41,7 +43,6 @@ public final class TokenDefinitionUtils {
 	public static final int MAX_SYMBOL_LENGTH = 14;
 	public static final String VALID_SYMBOL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	public static final int MAX_DESCRIPTION_LENGTH = 200;
-	public static final int MAX_ICON_DIMENSION = 32;
 
 	private TokenDefinitionUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
@@ -129,10 +130,14 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
+	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle, Set<String> disallowedTokenNames) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getRri().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
+		}
+
+		if (disallowedTokenNames.contains(tokenDefParticle.getRri().getName())) {
+			return Result.error("Not allowed to use name: " + tokenDefParticle.getRri().getName());
 		}
 
 		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());

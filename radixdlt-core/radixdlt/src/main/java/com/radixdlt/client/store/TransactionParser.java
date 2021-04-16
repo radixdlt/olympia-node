@@ -20,9 +20,9 @@ package com.radixdlt.client.store;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
@@ -59,11 +59,12 @@ public final class TransactionParser {
 		if (txAction instanceof TransferToken) {
 			return ActionEntry.transfer(user, (TransferToken) txAction);
 		} else if (txAction instanceof BurnToken) {
-			return ActionEntry.burn(user, (BurnToken) txAction);
-		} else if (txAction instanceof StakeNativeToken) {
-			return ActionEntry.stake(user, (StakeNativeToken) txAction);
-		} else if (txAction instanceof UnstakeNativeToken) {
-			return ActionEntry.unstake(user, (UnstakeNativeToken) txAction);
+			var burnToken = (BurnToken) txAction;
+			return ActionEntry.burn(user, burnToken);
+		} else if (txAction instanceof StakeTokens) {
+			return ActionEntry.stake(user, (StakeTokens) txAction, nativeToken);
+		} else if (txAction instanceof UnstakeTokens) {
+			return ActionEntry.unstake(user, (UnstakeTokens) txAction, nativeToken);
 		} else {
 			return ActionEntry.unknown();
 		}

@@ -18,17 +18,17 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.ClientUtils;
-import com.radixdlt.client.api.TxHistoryEntry;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.client.api.TxHistoryEntry;
+
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -42,17 +42,17 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 public class HighLevelApiService {
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
-	private final TokenDefinitionParticle nativeTokenDefinition;
+	private final ImmutableIndex immutableIndex;
 
 	@Inject
 	public HighLevelApiService(
 		Universe universe,
 		ClientApiStore clientApiStore,
-		@Genesis List<Txn> genesisTxns
+		ImmutableIndex immutableIndex
 	) {
 		this.universe = universe;
 		this.clientApiStore = clientApiStore;
-		this.nativeTokenDefinition = ClientUtils.nativeToken(genesisTxns);
+		this.immutableIndex = immutableIndex;
 	}
 
 	public int getUniverseMagic() {
@@ -64,8 +64,15 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRri())
-			.map(supply -> TokenDefinitionRecord.from(nativeTokenDefinition, supply));
+		return Result.fromOptional(
+			immutableIndex.loadRriId(null, RriId.nativeToken()),
+			"Unable to find native token"
+		)
+			.map(TokenDefinitionParticle.class::cast)
+			.flatMap(p ->
+				clientApiStore.getTokenSupply(p.getRri())
+					.map(supply -> TokenDefinitionRecord.from(p, supply))
+			);
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(RRI rri) {

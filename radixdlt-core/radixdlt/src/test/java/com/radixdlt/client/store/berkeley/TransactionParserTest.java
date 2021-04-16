@@ -25,8 +25,8 @@ import com.radixdlt.client.api.ActionType;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.StakeNativeToken;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -60,9 +60,9 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "TEST");
+	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "XRD");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
-		"TEST", "Test", "description", null, null
+		"XRD", "Test", "description", null, null
 	);
 
 	private final RRI tokenRriII = RRI.of(tokenOwnerAddress, "TEST2");
@@ -79,7 +79,7 @@ public class TransactionParserTest {
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt(tokenRri));
+		cmAtomOS.load(new StakingConstraintScrypt());
 
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
@@ -155,12 +155,12 @@ public class TransactionParserTest {
 			);
 	}
 
-	private StakeNativeToken nativeStake() {
-		return new StakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
+	private StakeTokens nativeStake() {
+		return new StakeTokens(validatorAddress, UInt256.FIVE);
 	}
 
-	private UnstakeNativeToken nativeUnstake() {
-		return new UnstakeNativeToken(tokenRri, validatorAddress, UInt256.FIVE);
+	private UnstakeTokens nativeUnstake() {
+		return new UnstakeTokens(validatorAddress, UInt256.FIVE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

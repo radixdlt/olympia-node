@@ -24,6 +24,7 @@ import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
@@ -56,6 +57,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	}
 	private final Class<I> inputClass;
 	private final Class<O> outputClass0;
+	private final BiFunction<I, O, PermissionLevel> permissionLevel;
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
@@ -65,6 +67,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public CreateCombinedTransitionRoutine(
 		Class<I> inputClass,
 		Class<O> outputClass0,
+		BiFunction<I, O, PermissionLevel> permissionLevel,
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
@@ -72,6 +75,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
+		this.permissionLevel = permissionLevel;
 		this.outputClass1 = outputClass1;
 		this.includeSecondClass = includeSecondClass;
 
@@ -95,6 +99,11 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
+			@Override
+			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle) {
+				return permissionLevel.apply(inputParticle, outputParticle);
+			}
+
 			@Override
 			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 				return Result.success();

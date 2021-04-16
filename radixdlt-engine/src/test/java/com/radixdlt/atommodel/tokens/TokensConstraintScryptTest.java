@@ -24,8 +24,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
@@ -38,14 +36,13 @@ import org.junit.Test;
 
 public class TokensConstraintScryptTest {
 	private static Function<Particle, Result> staticCheck;
-	private static RRI stakedToken = RRI.of(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()), "TOK");
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt(stakedToken));
+		cmAtomOS.load(new StakingConstraintScrypt());
 		staticCheck = cmAtomOS.buildParticleStaticCheck();
 	}
 

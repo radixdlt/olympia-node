@@ -18,9 +18,11 @@
 
 package com.radixdlt.atomos;
 
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.RadixConstants;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -29,16 +31,34 @@ import java.util.Arrays;
  * Hashed Rri used for uniqueness/identification
  */
 public final class RriId {
-	public static final int BYTES = 32;
+	private static final byte[] NATIVE_TOKEN_ID = new byte[] {1};
+	private static final RriId NATIVE_TOKEN_RRI_ID = new RriId(NATIVE_TOKEN_ID);
+	private static final int BYTES = 32 + 1;
 	private final byte[] id;
+
 	private RriId(byte[] id) {
+		if (!(id.length == BYTES && id[0] == 0) && !Arrays.equals(id, NATIVE_TOKEN_ID)) {
+			throw new IllegalArgumentException("RriId must be " + BYTES + " length or be native: " + Hex.toHexString(id));
+		}
 		this.id = id;
 	}
 
+	public static RriId nativeToken() {
+		return NATIVE_TOKEN_RRI_ID;
+	}
+
 	public static RriId readFromBuf(ByteBuffer buf) {
-		var bytes = new byte[BYTES];
-		buf.get(bytes);
-		return RriId.from(bytes);
+		var type = buf.get();
+		if (type == 1) {
+			return NATIVE_TOKEN_RRI_ID;
+		} else if (type == 0) {
+			var bytes = new byte[BYTES];
+			bytes[0] = 0;
+			buf.get(bytes, 1, BYTES - 1);
+			return RriId.from(bytes);
+		} else {
+			throw new IllegalArgumentException();
+		}
 	}
 
 	public static RriId from(byte[] id) {
@@ -46,9 +66,20 @@ public final class RriId {
 	}
 
 	public static RriId fromRri(RRI rri) {
+		if (rri.getName().equals(TokenDefinitionUtils.getNativeTokenShortCode())) {
+			return NATIVE_TOKEN_RRI_ID;
+		}
+
+		var id = new byte[BYTES];
+		id[0] = (byte) 0;
+
 		var firstHash = HashUtils.sha256(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return new RriId(secondHash.asBytes());
+		firstHash.writeBytesTo(id, 1, 32);
+		return new RriId(id);
+	}
+
+	public boolean isNativeToken() {
+		return id[0] == 1;
 	}
 
 	public byte[] asBytes() {

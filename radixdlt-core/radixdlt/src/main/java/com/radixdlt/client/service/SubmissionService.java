@@ -88,7 +88,7 @@ public class SubmissionService {
 
 	private List<TxAction> toActions(List<TransactionAction> steps) {
 		return steps.stream()
-			.map(step -> step.toAction(nativeToken))
+			.map(TransactionAction::toAction)
 			.collect(Collectors.toList());
 	}
 

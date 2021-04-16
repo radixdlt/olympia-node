@@ -18,9 +18,9 @@
 package com.radixdlt.client.api;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeNativeToken;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -67,14 +67,14 @@ public class TransactionAction {
 		return mapper.apply(actionType, from, to, amount, rri);
 	}
 
-	public TxAction toAction(RRI nativeToken) {
+	public TxAction toAction() {
 		switch (actionType) {
 			case TRANSFER:
 				return new TransferToken(rriValue(), to, amount);
 			case STAKE:
-				return new StakeNativeToken(nativeToken, to, amount);
+				return new StakeTokens(to, amount);
 			case UNSTAKE:
-				return new UnstakeNativeToken(nativeToken, to, amount);
+				return new UnstakeTokens(to, amount);
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}

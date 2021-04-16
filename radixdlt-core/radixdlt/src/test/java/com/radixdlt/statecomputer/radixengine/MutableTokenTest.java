@@ -45,6 +45,9 @@ import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+
 public class MutableTokenTest {
 	private ECKeyPair keyPair = ECKeyPair.generateNew();
 	private RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
@@ -69,6 +72,25 @@ public class MutableTokenTest {
 				}
 			}
 		);
+	}
+
+	@Test
+	public void cannot_create_xrd_token() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+		var tokDef = new MutableTokenDefinition(
+			"XRD",
+			"XRD",
+			"XRD",
+			null,
+			null
+		);
+		var atom = TxBuilder.newBuilder(address)
+			.createMutableToken(tokDef)
+			.signAndBuild(keyPair::sign);
+
+		// Act/Assert
+		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test

@@ -20,8 +20,8 @@ package com.radixdlt.engine;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.actions.StakeNativeToken;
-import com.radixdlt.atom.actions.UnstakeNativeToken;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,12 +52,12 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = RRI.of(this.tokenOwnerAddress, "TEST");
+		this.tokenRri = RRI.of(this.tokenOwnerAddress, "XRD");
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
 		cmAtomOS.load(new TokensConstraintScrypt());
-		cmAtomOS.load(new StakingConstraintScrypt(tokenRri));
+		cmAtomOS.load(new StakingConstraintScrypt());
 		final var cm = new ConstraintMachine.Builder()
 			.setVirtualStoreLayer(cmAtomOS.virtualizedUpParticles())
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
@@ -67,7 +67,7 @@ public class StakedTokensTest {
 		this.engine = new RadixEngine<>(cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
-			"TEST",
+			"XRD",
 			"Test",
 			"description",
 			null,
@@ -89,7 +89,7 @@ public class StakedTokensTest {
 	public void stake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeNativeToken(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress, UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(txn));
@@ -99,13 +99,13 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeNativeToken(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress, UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerAddress,
-			new UnstakeNativeToken(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			new UnstakeTokens(this.validatorAddress, UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -114,13 +114,13 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeNativeToken(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress, UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerAddress,
-			new UnstakeNativeToken(this.tokenRri, this.validatorAddress, UInt256.SEVEN)
+			new UnstakeTokens(this.validatorAddress, UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -129,7 +129,7 @@ public class StakedTokensTest {
 	public void move_staked_tokens() throws Exception {
 		var upSubstate = new AtomicReference<SubstateStore>();
 		var atom = TxBuilder.newBuilder(this.tokenOwnerAddress, this.store)
-			.stakeTo(this.tokenRri, this.validatorAddress, UInt256.TEN)
+			.stakeTo(this.validatorAddress, UInt256.TEN)
 			.signAndBuild(this.tokenOwnerKeyPair::sign, upSubstate::set);
 		this.engine.execute(List.of(atom));
 

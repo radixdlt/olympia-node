@@ -22,19 +22,16 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokDefParticleFactory;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
-public final class UnstakeNativeToken implements TxAction {
-	private final RRI nativeToken;
+public final class UnstakeTokens implements TxAction {
 	private final RadixAddress delegateAddress;
 	private final UInt256 amount;
 
-	public UnstakeNativeToken(RRI nativeToken, RadixAddress delegateAddress, UInt256 amount) {
-		this.nativeToken = nativeToken;
+	public UnstakeTokens(RadixAddress delegateAddress, UInt256 amount) {
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
 	}
@@ -47,20 +44,9 @@ public final class UnstakeNativeToken implements TxAction {
 		return amount;
 	}
 
-	public RRI rri() {
-		return nativeToken;
-	}
-
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address.");
-		// HACK
-		var rriId = RriId.fromRri(nativeToken);
-		var factory = TokDefParticleFactory.create(
-			rriId,
-			true
-		);
-
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
 			p -> p.getAddress().equals(address),
@@ -68,6 +54,6 @@ public final class UnstakeNativeToken implements TxAction {
 			amt -> new StakedTokensParticle(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> factory.createTransferrable(address, amt));
+		).with(amt -> new TokensParticle(address, amt, RriId.nativeToken()));
 	}
 }

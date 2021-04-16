@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -52,13 +53,16 @@ final class ConstraintScryptEnv implements SysCalls {
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<TransitionToken, TransitionProcedure<Particle, Particle, ReducerState>> scryptTransitionProcedures;
+	private final Set<String> systemNames;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
-		Function<RadixAddress, Result> addressChecker
+		Function<RadixAddress, Result> addressChecker,
+		Set<String> systemNames
 	) {
 		this.particleDefinitions = particleDefinitions;
 		this.addressChecker = addressChecker;
+		this.systemNames = systemNames;
 
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
@@ -133,6 +137,12 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
+				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle) {
+					return systemNames.contains(inputParticle.getRri().getName())
+						? PermissionLevel.SYSTEM : PermissionLevel.USER;
+				}
+
+				@Override
 				public Result precondition(
 					RRIParticle inputParticle,
 					O outputParticle,
@@ -173,6 +183,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
+			(rri, p) -> systemNames.contains(rri.getRri().getName()) ? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
@@ -197,8 +208,8 @@ final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel() {
-					return procedure.requiredPermissionLevel();
+				public PermissionLevel requiredPermissionLevel(Particle i, Particle o) {
+					return procedure.requiredPermissionLevel((I) i, (O) o);
 				}
 
 				@Override
