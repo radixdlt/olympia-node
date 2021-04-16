@@ -46,7 +46,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		HashCode id = HashUtils.random256();
 
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
+		LedgerHeader ledgerHeader = LedgerHeader.mocked();
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

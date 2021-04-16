@@ -170,9 +170,10 @@ public class RadixEngineStateComputerTest {
 		);
 		radixEngine.deleteBranches();
 
-		LedgerProof genesisLedgerHeader = LedgerProof.genesis(
+		var genesisLedgerHeader = LedgerProof.genesis(
 			new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
-			genesisValidatorSet
+			genesisValidatorSet,
+			0
 		);
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");

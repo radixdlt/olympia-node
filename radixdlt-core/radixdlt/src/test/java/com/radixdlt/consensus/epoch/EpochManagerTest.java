@@ -216,25 +216,25 @@ public class EpochManagerTest {
 			@LastProof
 			LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
 				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-				return LedgerProof.genesis(accumulatorState, validatorSet);
+				return LedgerProof.genesis(accumulatorState, validatorSet, 0);
 			}
 
 			@Provides
 			@LastEpochProof
 			LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
 				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-				return LedgerProof.genesis(accumulatorState, validatorSet);
+				return LedgerProof.genesis(accumulatorState, validatorSet, 0);
 			}
 
 			@Provides
 			BFTConfiguration bftConfiguration(@Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
 				var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
 				UnverifiedVertex unverifiedVertex = UnverifiedVertex.createGenesis(
-					LedgerHeader.genesis(accumulatorState, validatorSet)
+					LedgerHeader.genesis(accumulatorState, validatorSet, 0)
 				);
 				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
-				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet));
+				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
 				return new BFTConfiguration(
 					validatorSet,
 					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty())
@@ -260,7 +260,7 @@ public class EpochManagerTest {
 		epochManager.start();
 		BFTValidatorSet nextValidatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet);
+		LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header);
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(

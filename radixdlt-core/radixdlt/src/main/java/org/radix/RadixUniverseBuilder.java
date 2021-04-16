@@ -19,27 +19,22 @@ package org.radix;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.crypto.Hasher;
 
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import com.radixdlt.universe.Universe;
 
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
-	private final long universeTimestamp;
 	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 	private final UniverseConfiguration universeConfiguration;
 
 	@Inject
 	public RadixUniverseBuilder(
-		@UniverseConfig long universeTimestamp,
 		UniverseConfiguration universeConfiguration,
 		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
-		this.universeTimestamp = universeTimestamp;
 		this.universeConfiguration = universeConfiguration;
 		this.genesisProvider = Objects.requireNonNull(genesisProvider);
 	}
@@ -55,7 +50,6 @@ public final class RadixUniverseBuilder {
 			.name(name)
 			.description(description)
 			.type(this.universeConfiguration.getUniverseType())
-			.timestamp(this.universeTimestamp)
 			.setTxnsAndProof(universeAtom)
 			.build();
 	}

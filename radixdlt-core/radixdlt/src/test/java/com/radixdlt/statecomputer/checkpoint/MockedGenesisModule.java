@@ -48,6 +48,12 @@ public final class MockedGenesisModule extends AbstractModule {
 
 	@Provides
 	@Genesis
+	public long timestamp() {
+		return 1234L;
+	}
+
+	@Provides
+	@Genesis
 	public ImmutableList<StakeDelegation> stakeDelegations(
 		@Genesis ImmutableList<ECKeyPair> initialValidators
 	) {

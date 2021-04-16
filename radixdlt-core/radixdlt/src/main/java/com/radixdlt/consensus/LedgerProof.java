@@ -93,8 +93,8 @@ public final class LedgerProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static LedgerProof genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators) {
-		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators);
+	public static LedgerProof genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
+		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators, timestamp);
 		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
 		return new LedgerProof(
 			header,

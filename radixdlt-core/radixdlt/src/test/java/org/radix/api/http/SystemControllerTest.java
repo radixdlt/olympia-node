@@ -58,7 +58,6 @@ public class SystemControllerTest {
 			.name("Name")
 			.description("Description")
 			.port(30000)
-			.timestamp(System.currentTimeMillis())
 			.build();
 	private final SystemController systemController =
 		new SystemController(systemService, inMemorySystemInfo, universe);

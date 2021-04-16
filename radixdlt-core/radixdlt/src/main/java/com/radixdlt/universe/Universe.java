@@ -46,7 +46,6 @@ public class Universe {
 		private String name;
 		private String description;
 		private UniverseType type;
-		private Long timestamp;
 		private List<Txn> txns;
 		private LedgerProof proof;
 
@@ -108,21 +107,6 @@ public class Universe {
 		}
 
 		/**
-		 * Sets the creation timestamp of the universe.
-		 *
-		 * @param timestamp The creation timestamp of the universe.
-		 *
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder timestamp(long timestamp) {
-			if (timestamp < 0) {
-				throw new IllegalArgumentException("Invalid timestamp: " + timestamp);
-			}
-			this.timestamp = timestamp;
-			return this;
-		}
-
-		/**
 		 * Adds an atom to the genesis atom list.
 		 *
 		 * @param genesisTxns The atoms to add to the genesis atom list.
@@ -147,7 +131,6 @@ public class Universe {
 			require(this.name, "Name");
 			require(this.description, "Description");
 			require(this.type, "Universe type");
-			require(this.timestamp, "Timestamp");
 			return new Universe(this);
 		}
 
@@ -170,14 +153,13 @@ public class Universe {
 	/**
 	 * Computes universe magic number from specified parameters.
 	 *
-	 * @param timestamp universe timestamp to use when calculating universe magic
 	 * @param port universe port to use when calculating universe magic
 	 * @param type universe type to use when calculating universe magic
 	 *
 	 * @return The universe magic
 	 */
-	public static int computeMagic(long timestamp, int port, UniverseType type) {
-		return 13 * (int) timestamp * 7 * port + type.ordinal();
+	public static int computeMagic(int port, UniverseType type) {
+		return 7 * port + type.ordinal();
 	}
 
 	// Placeholder for the serializer ID
@@ -198,10 +180,6 @@ public class Universe {
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
 	private String description;
-
-	@JsonProperty("timestamp")
-	@DsonOutput(Output.ALL)
-	private long timestamp;
 
 	@JsonProperty("port")
 	@DsonOutput(Output.ALL)
@@ -226,7 +204,6 @@ public class Universe {
 		this.name = builder.name;
 		this.description = builder.description;
 		this.type = builder.type;
-		this.timestamp = builder.timestamp;
 		this.proof = builder.proof;
 		this.genesis = builder.txns == null
 			? List.of()
@@ -239,7 +216,7 @@ public class Universe {
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
 	public int getMagic() {
-		return computeMagic(timestamp, port, type);
+		return computeMagic(port, type);
 	}
 
 	/**
@@ -261,13 +238,6 @@ public class Universe {
 	 */
 	public int getPort() {
 		return port;
-	}
-
-	/**
-	 * The UTC 'BigBang' timestamp for the Universe.
-	 */
-	public long getTimestamp() {
-		return timestamp;
 	}
 
 	/**

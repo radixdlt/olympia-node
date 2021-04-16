@@ -64,9 +64,11 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final LedgerAccumulator ledgerAccumulator;
+	private final long timestamp;
 
 	@Inject
 	public GenesisProvider(
+		@Genesis long timestamp,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ValidatorSetBuilder validatorSetBuilder,
 		LedgerAccumulator ledgerAccumulator,
@@ -76,6 +78,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
 	) {
+		this.timestamp = timestamp;
 		this.radixEngine = radixEngine;
 		this.validatorSetBuilder = validatorSetBuilder;
 		this.ledgerAccumulator = ledgerAccumulator;
@@ -162,7 +165,8 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 			var genesisProof = LedgerProof.genesis(
 				accumulatorState,
-				genesisValidatorSet
+				genesisValidatorSet,
+				timestamp
 			);
 			if (!genesisProof.isEndOfEpoch()) {
 				throw new IllegalStateException("Genesis must be end of epoch");

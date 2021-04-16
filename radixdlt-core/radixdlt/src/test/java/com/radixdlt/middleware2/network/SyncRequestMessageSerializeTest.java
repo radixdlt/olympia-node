@@ -29,7 +29,7 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
 
 	private static SyncRequestMessage get() {
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new SyncRequestMessage(1234, LedgerProof.genesis(accumulatorState, null).toDto());
+		return new SyncRequestMessage(1234, LedgerProof.genesis(accumulatorState, null, 0).toDto());
 	}
 
 }

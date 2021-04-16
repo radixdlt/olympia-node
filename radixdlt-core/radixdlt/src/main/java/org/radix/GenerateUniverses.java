@@ -47,7 +47,6 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import com.radixdlt.universe.ProductionUniverseConfigModule;
 import com.radixdlt.universe.TestUniverseConfigModule;
-import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
 import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -255,7 +254,7 @@ public final class GenerateUniverses {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
-					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
+					bindConstant().annotatedWith(Genesis.class).to(universeTimestamp);
 					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
 						.toInstance(tokenIssuances);
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
@@ -267,11 +266,9 @@ public final class GenerateUniverses {
 				@Provides
 				@Named("magic")
 				int magic(
-					@UniverseConfig long universeTimestamp,
 					UniverseConfiguration universeConfiguration
 				) {
 					return Universe.computeMagic(
-						universeTimestamp,
 						universeConfiguration.getPort(),
 						universeConfiguration.getUniverseType()
 					);
