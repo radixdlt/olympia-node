@@ -19,8 +19,6 @@ package com.radixdlt.client.service;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
@@ -33,8 +31,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -46,19 +42,16 @@ import java.util.stream.Collectors;
 public class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
-	private final Serialization serialization;
 	private final RRI nativeToken;
 	private final RadixEngineStateComputer stateComputer;
 	private final BFTNode self;
 
 	@Inject
 	public SubmissionService(
-		Serialization serialization,
 		@NativeToken RRI nativeToken,
 		RadixEngineStateComputer stateComputer,
 		@Self BFTNode self
 	) {
-		this.serialization = serialization;
 		this.nativeToken = nativeToken;
 		this.stateComputer = stateComputer;
 		this.self = self;
@@ -91,12 +84,6 @@ public class SubmissionService {
 		return steps.stream()
 			.map(TransactionAction::toAction)
 			.collect(Collectors.toList());
-	}
-
-
-	private static Txn atomToTxn(Atom atom) {
-		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return Txn.create(payload);
 	}
 
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {

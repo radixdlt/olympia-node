@@ -18,7 +18,6 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
-import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -46,10 +45,6 @@ public class StakingTest {
 		RadixApplicationAPI delegate = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI delegator1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI delegator2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-
-		TokenUtilities.requestTokensFor(delegate);
-		TokenUtilities.requestTokensFor(delegator1);
-		TokenUtilities.requestTokensFor(delegator2);
 
 		delegate.discoverNodes();
 		delegator1.discoverNodes();

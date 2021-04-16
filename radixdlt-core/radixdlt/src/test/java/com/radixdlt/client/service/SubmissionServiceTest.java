@@ -21,7 +21,6 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,7 +34,6 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.TransferToken;
@@ -257,11 +255,6 @@ public class SubmissionServiceTest {
 											   submissionService.calculateTxId(prep.getBlob(), sig)))
 			.onFailureDo(Assert::fail)
 			.onSuccess(Assert::assertNotNull);
-	}
-
-	private static Txn atomToTxn(Atom atom) {
-		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return Txn.create(payload);
 	}
 
 	@Test

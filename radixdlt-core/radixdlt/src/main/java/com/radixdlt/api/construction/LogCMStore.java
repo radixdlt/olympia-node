@@ -19,8 +19,6 @@
 package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
@@ -28,12 +26,9 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
-import com.radixdlt.utils.functional.Result;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
-
-import static com.radixdlt.serialization.SerializationUtils.restore;
 
 /**
  * CMStore which allows one to parse transactions given
@@ -71,28 +66,24 @@ public final class LogCMStore implements CMStore {
 	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
 		var txnId = substateId.getTxnId();
 		return atomIndex.get(txnId)
-			.flatMap(txn ->
-				restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
-					.flatMap(a -> {
-						var buf = ByteBuffer.wrap(a.getUnsignedBlob());
-						var index = substateId.getIndex().orElseThrow();
-						int cur = 0;
-						while (buf.hasRemaining()) {
-							try {
-								var i = REInstruction.readFrom(txn, cur, buf);
-								if (cur == index) {
-									Particle p = i.getData();
-									return Result.ok(p);
-								}
-							} catch (Exception e) {
-								return Result.fail(e.getMessage());
-							}
-							cur++;
+			.flatMap(txn -> {
+				var buf = ByteBuffer.wrap(txn.getPayload());
+				var index = substateId.getIndex().orElseThrow();
+				int cur = 0;
+				while (buf.hasRemaining()) {
+					try {
+						var i = REInstruction.readFrom(txn, cur, buf);
+						if (cur == index) {
+							Particle p = i.getData();
+							return Optional.of(p);
 						}
+					} catch (Exception e) {
+						return Optional.empty();
+					}
+					cur++;
+				}
 
-						return Result.fail("Not found.");
-					})
-					.toOptional()
-			);
+				return Optional.empty();
+			});
 	}
 }
