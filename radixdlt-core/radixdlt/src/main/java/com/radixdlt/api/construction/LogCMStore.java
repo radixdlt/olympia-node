@@ -23,7 +23,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
 
@@ -35,15 +35,15 @@ import java.util.Optional;
  * the append log as the backend store.
  */
 public final class LogCMStore implements CMStore {
-	private final AtomIndex atomIndex;
+	private final TxnIndex txnIndex;
 	private final ImmutableIndex immutableIndex;
 
 	@Inject
 	public LogCMStore(
-		AtomIndex atomIndex,
+		TxnIndex txnIndex,
 		ImmutableIndex immutableIndex
 	) {
-		this.atomIndex = atomIndex;
+		this.txnIndex = txnIndex;
 		this.immutableIndex = immutableIndex;
 	}
 
@@ -65,7 +65,7 @@ public final class LogCMStore implements CMStore {
 	@Override
 	public Optional<Particle> loadUpParticle(Transaction dbTxn, SubstateId substateId) {
 		var txnId = substateId.getTxnId();
-		return atomIndex.get(txnId)
+		return txnIndex.get(txnId)
 			.flatMap(txn -> {
 				var buf = ByteBuffer.wrap(txn.getPayload());
 				var index = substateId.getIndex().orElseThrow();

@@ -23,16 +23,16 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 
 import java.util.Objects;
 import java.util.Optional;
 
 public class AtomsService {
-	private final AtomIndex store;
+	private final TxnIndex store;
 
 	@Inject
-	public AtomsService(AtomIndex store) {
+	public AtomsService(TxnIndex store) {
 		this.store = Objects.requireNonNull(store);
 	}
 

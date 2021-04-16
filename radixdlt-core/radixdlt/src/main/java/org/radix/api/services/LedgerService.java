@@ -21,7 +21,7 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 
 import static org.radix.api.jsonrpc.AtomStatus.DOES_NOT_EXIST;
 import static org.radix.api.jsonrpc.AtomStatus.STORED;
@@ -29,10 +29,10 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 
 public class LedgerService {
-	private final AtomIndex ledger;
+	private final TxnIndex ledger;
 
 	@Inject
-	public LedgerService(final AtomIndex ledger) {
+	public LedgerService(final TxnIndex ledger) {
 		this.ledger = ledger;
 	}
 

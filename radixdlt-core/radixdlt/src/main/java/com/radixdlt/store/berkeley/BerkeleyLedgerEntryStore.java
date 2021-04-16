@@ -45,7 +45,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
@@ -81,7 +81,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, AtomIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, TxnIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
