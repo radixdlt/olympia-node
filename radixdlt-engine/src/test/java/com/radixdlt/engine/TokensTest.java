@@ -7,6 +7,7 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
@@ -58,8 +59,7 @@ public class TokensTest {
 		TokensParticle tokensParticle = new TokensParticle(
 			address,
 			UInt256.TEN,
-			rri,
-			false
+			RriId.fromRri(rri)
 		);
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)

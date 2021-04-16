@@ -27,6 +27,7 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -99,9 +100,10 @@ public class MempoolTest {
 
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			RRI rri = RRI.of(address, "test" + i);
-			RRIParticle rriParticle = new RRIParticle(rri);
-			UniqueParticle uniqueParticle = new UniqueParticle(rri);
+			var rri = RRI.of(address, "test" + i);
+			var rriParticle = new RRIParticle(rri);
+			var rriId = RriId.fromRri(rri);
+			UniqueParticle uniqueParticle = new UniqueParticle(rriId);
 			atomBuilder
 				.virtualDown(rriParticle)
 				.up(uniqueParticle)

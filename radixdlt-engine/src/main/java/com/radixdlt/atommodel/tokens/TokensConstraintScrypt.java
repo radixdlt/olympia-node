@@ -35,11 +35,10 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidParticle;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Scrypt which defines how tokens are managed.
@@ -58,7 +57,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokenDefinitionParticle::getRRI)
+				.rriMapper(TokenDefinitionParticle::getRriId)
 				.build()
 		);
 
@@ -67,7 +66,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			ParticleDefinition.<TokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokensParticle::getTokDefRef)
+				.rriMapper(TokensParticle::getRriId)
 				.build()
 		);
 
@@ -96,17 +95,23 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					public Result precondition(
 						TokenDefinitionParticle inputParticle,
 						TokensParticle outputParticle,
-						ReadOnlyData inputUsed
+						ReadOnlyData inputUsed,
+						ImmutableIndex immutableIndex
 					) {
 						if (!inputParticle.isMutable()) {
 							return Result.error("Can only mint mutable tokens.");
 						}
 
-						if (!outputParticle.isBurnable()) {
-							return Result.error("Must be able to burn mutable token.");
+						var p = immutableIndex.loadRriId(null, outputParticle.getRriId());
+						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
+							return Result.error("Bad rriId");
+						}
+						var token = (TokenDefinitionParticle) p.get();
+						if (!token.isMutable())	{
+							return Result.error("Cannot mint Fixed supply token.");
 						}
 
-						if (!inputParticle.getRRI().equals(outputParticle.getTokDefRef())) {
+						if (!inputParticle.getRriId().equals(outputParticle.getRriId())) {
 							return Result.error("Minted token must be equivalent to token def.");
 						}
 
@@ -116,15 +121,15 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					@Override
 					public InputOutputReducer<TokenDefinitionParticle, TokensParticle, ReadOnlyData>
 						inputOutputReducer() {
-						return (inputParticle, outputParticle, outputUsed)
+						return (inputParticle, outputParticle, index, outputUsed)
 							-> ReducerResult.complete(new MintToken(
-								inputParticle.getRRI(), outputParticle.getAddress(), outputParticle.getAmount()
+								inputParticle.getRri(), outputParticle.getAddress(), outputParticle.getAmount()
 						));
 					}
 
 					@Override
 					public SignatureValidator<TokenDefinitionParticle> inputSignatureRequired() {
-						return i -> Optional.of(i.getRRI().getAddress());
+						return i -> Optional.of(i.getRri().getAddress());
 					}
 				}
 			);
@@ -136,13 +141,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle.class,
 			TokensParticle::getAmount,
 			TokensParticle::getAmount,
-			checkEquals(
-				TokensParticle::isBurnable,
-				TokensParticle::isBurnable,
-				"Permissions not equal."
-			),
+			(i, o) -> Result.success(),
 			i -> Optional.of(i.getAddress()),
-			(i, o) -> new TransferToken(i.getTokDefRef(), o.getAddress(), o.getAmount()) // FIXME: This isn't 100% correct
+			(i, o, index) -> {
+				var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct
+			}
 		));
 
 
@@ -159,14 +163,20 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					public Result precondition(
 						TokensParticle inputParticle,
 						VoidParticle outputParticle,
-						CreateFungibleTransitionRoutine.UsedAmount inputUsed
+						CreateFungibleTransitionRoutine.UsedAmount inputUsed,
+						ImmutableIndex immutableIndex
 					) {
 						if (!inputUsed.isInput()) {
 							return Result.error("Broken state.");
 						}
 
-						if (!inputParticle.isBurnable()) {
-							return Result.error("Cannot burn token.");
+						var p = immutableIndex.loadRriId(null, inputParticle.getRriId());
+						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
+							return Result.error("Bad rriId");
+						}
+						var token = (TokenDefinitionParticle) p.get();
+						if (!token.isMutable())	{
+							return Result.error("Cannot burn Fixed supply token.");
 						}
 
 						return Result.success();
@@ -174,9 +184,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 					@Override
 					public InputOutputReducer<TokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
-						return (inputParticle, outputParticle, state) -> {
-							var amt = inputParticle.getAmount().subtract(state.getUsedAmount());
-							return ReducerResult.complete(new BurnToken(inputParticle.getTokDefRef(), amt));
+						return (i, o, index, state) -> {
+							var amt = i.getAmount().subtract(state.getUsedAmount());
+							var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+							return ReducerResult.complete(new BurnToken(p.getRri(), amt));
 						};
 					}
 
@@ -195,17 +206,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			return Result.error("Supply and amount are not equal.");
 		}
 
-		if (transferrable.isBurnable()) {
-			return Result.error("Tokens must be non-mutable.");
-		}
-
 		return Result.success();
 	}
-
-	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
-		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0
-	) {
-		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0);
-	}
-
 }

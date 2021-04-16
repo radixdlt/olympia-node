@@ -191,7 +191,7 @@ public class SubmissionServiceTest {
 		}
 
 		radixEngine.execute(genesisTxns, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
-		nativeToken = ClientUtils.nativeToken(genesisTxns).getRRI();
+		nativeToken = ClientUtils.nativeToken(genesisTxns).getRri();
 	}
 
 	@Before

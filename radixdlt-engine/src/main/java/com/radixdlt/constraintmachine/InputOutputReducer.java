@@ -17,6 +17,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.store.ImmutableIndex;
+
 public interface InputOutputReducer<I extends Particle, O extends Particle, U extends ReducerState> {
-	ReducerResult reduce(I inputParticle, O outputParticle, U reducerState);
+	ReducerResult reduce(I inputParticle, O outputParticle, ImmutableIndex index, U reducerState);
 }

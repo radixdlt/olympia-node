@@ -18,6 +18,7 @@
 package com.radixdlt.atommodel.routines;
 
 import com.radixdlt.atom.actions.Unknown;
+import com.radixdlt.store.ImmutableIndex;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
@@ -82,12 +83,13 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.ONE),
+			mock(ImmutableIndex.class),
 			null
 		).isComplete()).isTrue();
 
@@ -95,6 +97,7 @@ public class CreateFungibleTransitionRoutineTest {
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.ONE),
+			mock(ImmutableIndex.class),
 			null
 		).isComplete()).isTrue();
 	}
@@ -105,12 +108,13 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
+			mock(ImmutableIndex.class),
 			null
 		).getIncomplete().get();
 
@@ -126,12 +130,13 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		var state = procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
+			mock(ImmutableIndex.class),
 			null
 		).getIncomplete().get();
 
@@ -147,12 +152,13 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		).getProcedure0();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.TWO),
+			mock(ImmutableIndex.class),
 			null
 		).getIncomplete()).isEmpty();
 	}
@@ -163,18 +169,20 @@ public class CreateFungibleTransitionRoutineTest {
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(SignatureValidatorFungible.class),
-			(i, o) -> Unknown.create()
+			(i, o, index) -> Unknown.create()
 		).getProcedure1();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
+			mock(ImmutableIndex.class),
 			new UsedAmount(false, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 
 		assertThat(procedure.inputOutputReducer().reduce(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
+			mock(ImmutableIndex.class),
 			new UsedAmount(true, UInt256.ONE, Unknown.create())
 		).getIncomplete()).isEmpty();
 	}

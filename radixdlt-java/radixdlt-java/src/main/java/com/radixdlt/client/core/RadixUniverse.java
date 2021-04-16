@@ -190,7 +190,7 @@ public final class RadixUniverse {
 			})
 			.filter(TokenDefinitionParticle.class::isInstance)
 			.map(TokenDefinitionParticle.class::cast)
-			.map(TokenDefinitionParticle::getRRI)
+			.map(TokenDefinitionParticle::getRri)
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;

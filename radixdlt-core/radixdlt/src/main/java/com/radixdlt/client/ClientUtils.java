@@ -52,7 +52,7 @@ public interface ClientUtils {
 			})
 			.filter(TokenDefinitionParticle.class::isInstance)
 			.map(TokenDefinitionParticle.class::cast)
-			.filter(particle -> particle.getRRI().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
+			.filter(particle -> particle.getRri().getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("Unable to retrieve native token definition"));
 	}

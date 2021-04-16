@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
@@ -70,7 +71,7 @@ public class UniqueTest {
 		var atom = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri))
-			.up(new UniqueParticle(rri))
+			.up(new UniqueParticle(RriId.fromRri(rri)))
 			.particleGroup()
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom)))

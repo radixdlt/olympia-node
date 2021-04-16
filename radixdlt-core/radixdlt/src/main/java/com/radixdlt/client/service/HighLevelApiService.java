@@ -64,7 +64,7 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRRI())
+		return clientApiStore.getTokenSupply(nativeTokenDefinition.getRri())
 			.map(supply -> TokenDefinitionRecord.from(nativeTokenDefinition, supply));
 	}
 

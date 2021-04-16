@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -40,6 +41,10 @@ import java.util.function.Function;
  * Transition Procedure for one to one fungible types
  */
 public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
+	public interface ActionMapper<I, O> {
+		TxAction map(I i, O o, ImmutableIndex index);
+	}
+
 	public static final class UsedAmount implements ReducerState {
 		private final UInt256 amount;
 		private final boolean isInput;
@@ -94,7 +99,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
 	private final SignatureValidator<I> inputSignatureValidator;
-	private final BiFunction<I, O, TxAction> txActionSupplier;
+	private final ActionMapper<I, O> actionMapper;
+
 
 	public CreateFungibleTransitionRoutine(
 		Class<I> inputClass,
@@ -103,7 +109,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
 		SignatureValidator<I> inputSignatureValidator,
-		BiFunction<I, O, TxAction> txActionSupplier
+		ActionMapper<I, O> actionMapper
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -115,7 +121,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
 		this.inputSignatureValidator = inputSignatureValidator;
-		this.txActionSupplier = txActionSupplier;
+		this.actionMapper = actionMapper;
 	}
 
 	@Override
@@ -134,17 +140,17 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 				return transition.apply(inputParticle, outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, v) -> {
+				return (input, output, index, v) -> {
 					var i = inputAmountMapper.apply(input);
 					var o = outputAmountMapper.apply(output);
 					var compare = i.compareTo(o);
-					var txAction = txActionSupplier.apply(input, output);
+					var txAction = actionMapper.map(input, output, index);
 					if (compare == 0) {
 						return ReducerResult.complete(txAction);
 					}
@@ -164,13 +170,13 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	public TransitionProcedure<I, O, UsedAmount> getProcedure1() {
 		return new TransitionProcedure<I, O, UsedAmount>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, UsedAmount used) {
+			public Result precondition(I inputParticle, O outputParticle, UsedAmount used, ImmutableIndex index) {
 				return transition.apply(inputParticle, outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, O, UsedAmount> inputOutputReducer() {
-				return (input, output, used) -> {
+				return (input, output, index, used) -> {
 					var i = inputAmountMapper.apply(input);
 					var o = outputAmountMapper.apply(output);
 					if (used.isInput) {

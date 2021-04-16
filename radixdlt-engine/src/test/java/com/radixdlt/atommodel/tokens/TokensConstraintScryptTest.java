@@ -23,6 +23,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -32,11 +33,8 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.powermock.api.mockito.PowerMockito;
 
 public class TokensConstraintScryptTest {
 	private static Function<Particle, Result> staticCheck;
@@ -52,56 +50,9 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_fixed_token_class_particle_with_too_long_symbol__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Symbol: invalid length");
-	}
-
-	@Test
-	public void when_validating_fixed_token_class_particle_with_too_short_symbol__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Symbol: invalid length");
-	}
-
-	@Test
-	public void when_validating_fixed_token_class_particle_with_too_long_description__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
-		when(token.getDescription()).thenReturn(
-			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Description: invalid length");
-	}
-
-	@Test
-	public void when_validating_fixed_token_class_particle_with_invalid_icon_url__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(token.getDescription()).thenReturn("Hello");
-		when(token.getIconUrl()).thenReturn("this is not a url");
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Icon: not a valid URL");
-	}
-
-	@Test
-	public void when_validating_fixed_token_class_particle_with_invalid_url__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		when(token.getDescription()).thenReturn("Hello");
-		when(token.getUrl()).thenReturn("this is not a url");
-		when(token.getIconUrl()).thenReturn("");
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("not a valid URL");
-	}
-
-	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(tokensParticle.getRriId()).thenReturn(mock(RriId.class));
 		when(tokensParticle.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("null");
@@ -118,7 +69,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(tokensParticle.getRriId()).thenReturn(mock(RriId.class));
 		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("zero");

@@ -17,7 +17,7 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -27,11 +27,11 @@ import java.util.Objects;
  * Factory to more easily create token particles given a token definition.
  */
 public final class TokDefParticleFactory {
-	private final RRI tokDefRef;
+	private final RriId tokDefRef;
 	private final boolean isMutable;
 
 	private TokDefParticleFactory(
-		RRI tokDefRef,
+		RriId tokDefRef,
 		boolean isMutable
 	) {
 		this.tokDefRef = tokDefRef;
@@ -42,13 +42,12 @@ public final class TokDefParticleFactory {
 		return new TokensParticle(
 			address,
 			amount,
-			tokDefRef,
-			isMutable
+			tokDefRef
 		);
 	}
 
 	public static TokDefParticleFactory create(
-		RRI tokDefRef,
+		RriId tokDefRef,
 		boolean isMutable
 	) {
 		Objects.requireNonNull(tokDefRef);

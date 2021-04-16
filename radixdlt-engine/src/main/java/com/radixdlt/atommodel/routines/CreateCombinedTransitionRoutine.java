@@ -31,6 +31,7 @@ import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -95,13 +96,13 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed) {
+			public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
 				return Result.success();
 			}
 
 			@Override
 			public InputOutputReducer<I, O, VoidReducerState> inputOutputReducer() {
-				return (input, output, outputUsed) ->
+				return (input, output, index, outputUsed) ->
 					includeSecondClass.test(output)
 						? ReducerResult.incomplete(new UsedParticle<>(typeToken0, output), true)
 						: ReducerResult.complete(Unknown.create());
@@ -117,13 +118,13 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, V, UsedParticle<O>> getProcedure2() {
 		return new TransitionProcedure<I, V, UsedParticle<O>>() {
 			@Override
-			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed) {
+			public Result precondition(I inputParticle, V outputParticle, UsedParticle<O> inputUsed, ImmutableIndex index) {
 				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
 			@Override
 			public InputOutputReducer<I, V, UsedParticle<O>> inputOutputReducer() {
-				return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
+				return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 			}
 
 			@Override

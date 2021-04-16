@@ -18,6 +18,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.Result;
+import com.radixdlt.store.ImmutableIndex;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
@@ -28,7 +29,7 @@ public interface TransitionProcedure<I extends Particle, O extends Particle, U e
 		return PermissionLevel.USER;
 	}
 
-	Result precondition(I inputParticle, O outputParticle, U outputUsed);
+	Result precondition(I inputParticle, O outputParticle, U outputUsed, ImmutableIndex immutableIndex);
 
 	InputOutputReducer<I, O, U> inputOutputReducer();
 

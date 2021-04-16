@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
@@ -75,7 +76,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getAddress().equals(self) && p.getTokDefRef().equals(tokenRRI)
+			p -> p.getAddress().equals(self) && p.getRriId().equals(RriId.fromRri(tokenRRI))
 		);
 	}
 

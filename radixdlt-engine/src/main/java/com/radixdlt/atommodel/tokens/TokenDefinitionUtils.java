@@ -130,7 +130,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
+		final Result symbolResult = validateSymbol(tokenDefParticle.getRri().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
 		}

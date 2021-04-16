@@ -23,10 +23,12 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,10 +41,15 @@ import static com.radixdlt.serialization.SerializationUtils.restore;
  */
 public final class LogCMStore implements CMStore {
 	private final AtomIndex atomIndex;
+	private final ImmutableIndex immutableIndex;
 
 	@Inject
-	public LogCMStore(AtomIndex atomIndex) {
+	public LogCMStore(
+		AtomIndex atomIndex,
+		ImmutableIndex immutableIndex
+	) {
 		this.atomIndex = atomIndex;
+		this.immutableIndex = immutableIndex;
 	}
 
 	@Override
@@ -53,6 +60,11 @@ public final class LogCMStore implements CMStore {
 	@Override
 	public boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
 		return false;
+	}
+
+	@Override
+	public Optional<Particle> loadRriId(Transaction tx, RriId rriId) {
+		return immutableIndex.loadRriId(tx, rriId);
 	}
 
 	@Override

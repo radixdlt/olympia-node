@@ -79,7 +79,6 @@ public class FaucetHandlerTest {
 		this.handler = new FaucetHandler(this.api, this.tokenRRI, BigDecimal.valueOf(1), this.rateLimiter);
 
 		when(this.api.getAddress()).thenReturn(this.from);
-		when(this.api.observeBalance(any())).thenReturn(Observable.just(BigDecimal.valueOf(1)));
 		when(this.api.createTransaction()).thenReturn(this.transaction);
 
 		when(this.transaction.commitAndPush()).thenReturn(this.result);

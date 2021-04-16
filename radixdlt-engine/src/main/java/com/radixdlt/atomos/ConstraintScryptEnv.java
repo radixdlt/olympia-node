@@ -30,8 +30,8 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -108,14 +108,9 @@ final class ConstraintScryptEnv implements SysCalls {
 			.virtualizeUp(particleDefinition.getVirtualizeSpin())
 			.staticValidation(p -> {
 				if (particleDefinition.getRriMapper() != null) {
-					final RRI rri = particleDefinition.getRriMapper().apply(p);
-					if (rri == null) {
+					final var rriId = particleDefinition.getRriMapper().apply(p);
+					if (rriId == null) {
 						return Result.error("rri cannot be null");
-					}
-
-					final Result rriAddressResult = addressChecker.apply(rri.getAddress());
-					if (rriAddressResult.isError()) {
-						return rriAddressResult;
 					}
 				}
 
@@ -141,13 +136,14 @@ final class ConstraintScryptEnv implements SysCalls {
 				public Result precondition(
 					RRIParticle inputParticle,
 					O outputParticle,
-					VoidReducerState outputUsed
+					VoidReducerState outputUsed,
+					ImmutableIndex index
 				) {
 					return Result.success();
 				}
 
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> ReducerResult.complete(Unknown.create());
+					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
@@ -206,23 +202,28 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public Result precondition(Particle inputParticle, Particle outputParticle, ReducerState outputUsed) {
+				public Result precondition(
+					Particle inputParticle,
+					Particle outputParticle,
+					ReducerState outputUsed,
+					ImmutableIndex index
+				) {
 					// RRIs must be the same across RRI particle transitions
 					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
-						final RRI outputRRI = outputDefinition.getRriMapper().apply(outputParticle);
-						if (!inputRRI.equals(outputRRI)) {
+						final var inputRriId = inputDefinition.getRriMapper().apply(inputParticle);
+						final var outputRriId = outputDefinition.getRriMapper().apply(outputParticle);
+						if (!inputRriId.equals(outputRriId)) {
 							return Result.error("Input/Output RRIs not equal");
 						}
 					}
 
-					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed);
+					return procedure.precondition((I) inputParticle, (O) outputParticle, (U) outputUsed, index);
 				}
 
 				@Override
 				public InputOutputReducer<Particle, Particle, ReducerState> inputOutputReducer() {
-					return (input, output, outputUsed) -> procedure.inputOutputReducer()
-						.reduce((I) input, (O) output, (U) outputUsed);
+					return (input, output, index, outputUsed) -> procedure.inputOutputReducer()
+						.reduce((I) input, (O) output, index, (U) outputUsed);
 				}
 
 				@Override
