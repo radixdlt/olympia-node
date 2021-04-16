@@ -17,12 +17,14 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.utils.UInt384;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import com.radixdlt.client.api.ActionType;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -71,9 +73,10 @@ import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.radix.api.jsonrpc.ActionType;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -134,7 +137,7 @@ public class BerkeleyClientApiStoreTest {
 			.transfer(TOKEN, OWNER, UInt256.FOUR)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenBalances(TOKEN_ADDRESS)
 			.onSuccess(list -> {
@@ -160,7 +163,7 @@ public class BerkeleyClientApiStoreTest {
 			.createMutableToken(tokenDef)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
 			.onSuccess(amount -> assertEquals(UInt384.ZERO, amount))
@@ -176,7 +179,7 @@ public class BerkeleyClientApiStoreTest {
 			.burn(TOKEN, UInt256.TWO)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenSupply(TOKEN)
 			.onSuccess(amount -> assertEquals(UInt384.EIGHT, amount))
@@ -198,7 +201,7 @@ public class BerkeleyClientApiStoreTest {
 				}
 			});
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
 			.onSuccess(tokDef -> assertEquals(fooDef.get(), tokDef))
@@ -219,7 +222,7 @@ public class BerkeleyClientApiStoreTest {
 				}
 			});
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 
 		clientApiStore.getTokenDefinition(TOKEN)
 			.onFailure(this::failWithMessage)
@@ -236,7 +239,7 @@ public class BerkeleyClientApiStoreTest {
 			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 		var newCursor = new AtomicReference<Instant>();
 
 		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 1, Optional.empty())
@@ -277,10 +280,10 @@ public class BerkeleyClientApiStoreTest {
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var txMap = new HashMap<AID, Txn>();
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx, txMap);
+		var clientApiStore = prepareApiStore(tx, txMap);
 		var txId = txMap.entrySet().stream().findFirst().map(Map.Entry::getKey).orElse(AID.ZERO);
 
-		clientApiStore.getSingleTransaction(txId)
+		clientApiStore.getTransaction(txId)
 			.onFailure(this::failWithMessage)
 			.onSuccess(entry -> {
 				assertEquals(txId, entry.getTxId());
@@ -297,19 +300,17 @@ public class BerkeleyClientApiStoreTest {
 			.burn(TOKEN, UInt256.ONE)
 			.signAndBuild(TOKEN_KEYPAIR::sign);
 
-		var clientApiStore = prepareApiStore(TOKEN_KEYPAIR, tx);
+		var clientApiStore = prepareApiStore(tx);
 		clientApiStore.getTransactionHistory(TOKEN_ADDRESS, 0, Optional.empty())
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 
-	private BerkeleyClientApiStore prepareApiStore(ECKeyPair keyPair, Txn tx) throws RadixEngineException {
-		return prepareApiStore(keyPair, tx, new HashMap<>());
+	private BerkeleyClientApiStore prepareApiStore(Txn tx) throws RadixEngineException {
+		return prepareApiStore(tx, new HashMap<>());
 	}
 
 	@SuppressWarnings("unchecked")
-	private BerkeleyClientApiStore prepareApiStore(
-		ECKeyPair keyPair, Txn tx, Map<AID, Txn> txMap
-	) throws RadixEngineException {
+	private BerkeleyClientApiStore prepareApiStore(Txn tx, Map<AID, Txn> txMap) throws RadixEngineException {
 		var transactions = engine.execute(List.of(tx), null, PermissionLevel.USER)
 			.stream()
 			.map(REParsedTxn::getTxn)
@@ -340,7 +341,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			TOKEN,
+			new TransactionParser(TOKEN),
 			0
 		);
 	}

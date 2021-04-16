@@ -20,14 +20,12 @@ package org.radix;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.crypto.Hasher;
-
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.UniverseConfig;
 import com.radixdlt.universe.UniverseConfiguration;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Pair;
 
 import java.util.List;

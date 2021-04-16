@@ -30,6 +30,31 @@ public final class Failure {
 		this.message = message;
 	}
 
+	/**
+	 * Create instance of Failure with given message.
+	 *
+	 * @param message failure message
+	 *
+	 * @return created instance of Failure
+	 */
+	public static Failure failure(final String message) {
+		return new Failure(message);
+	}
+
+	/**
+	 * Create instance of Failure with given message and parameters.
+	 *
+	 * @param format format string
+	 * @param values parameters
+	 *
+	 * @return created instance of Failure
+	 *
+	 * @see MessageFormat for supported format string options
+	 */
+	public static Failure failure(final String format, Object... values) {
+		return new Failure(MessageFormat.format(format, values));
+	}
+
 	public String message() {
 		return message;
 	}
@@ -51,13 +76,5 @@ public final class Failure {
 	@Override
 	public String toString() {
 		return message;
-	}
-
-	public static Failure failure(final String message) {
-		return new Failure(message);
-	}
-
-	public static Failure failure(final String format, Object... values) {
-		return new Failure(MessageFormat.format(format, values));
 	}
 }

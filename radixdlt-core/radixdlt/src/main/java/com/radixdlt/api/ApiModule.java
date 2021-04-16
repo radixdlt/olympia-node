@@ -24,7 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.construction.ConstructionController;
-import com.radixdlt.client.api.ScheduledCacheCleanup;
+import com.radixdlt.client.service.ScheduledCacheCleanup;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.mempool.MempoolAddFailure;

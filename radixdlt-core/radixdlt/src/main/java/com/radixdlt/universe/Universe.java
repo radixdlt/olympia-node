@@ -357,7 +357,7 @@ public class Universe {
 	@JsonProperty("creator")
 	@DsonOutput(Output.ALL)
 	private byte[] getJsonCreator() {
-		return this.creator.getBytes();
+		return this.creator.getCompressedBytes();
 	}
 
 	@JsonProperty("creator")

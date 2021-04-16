@@ -20,7 +20,7 @@ import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.api.jsonrpc.ActionType;
+import com.radixdlt.client.api.ActionType;
 
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilder;
@@ -32,7 +32,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.client.store.ActionEntry;
 import com.radixdlt.client.store.TransactionParser;
-import com.radixdlt.client.store.TxHistoryEntry;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;

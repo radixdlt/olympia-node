@@ -15,10 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.api;
+package com.radixdlt.client.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.client.api.TransactionStatus;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
