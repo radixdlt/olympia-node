@@ -20,6 +20,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import org.junit.Assert;
 import org.junit.Before;
@@ -91,8 +92,6 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
-import static com.radixdlt.serialization.SerializationUtils.restore;
 
 public class SubmissionServiceTest {
 	@Inject
@@ -259,6 +258,11 @@ public class SubmissionServiceTest {
 			.onSuccess(Assert::assertNotNull);
 	}
 
+	private static Txn atomToTxn(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return Txn.create(payload);
+	}
+
 	@Test
 	public void testSubmitTx() throws Exception {
 		var result = buildTransaction();
@@ -267,9 +271,8 @@ public class SubmissionServiceTest {
 		result
 			.onFailureDo(Assert::fail)
 			.flatMap(prepared ->
-						 signature.flatMap(recoverable -> restore(serialization, prepared.getBlob(), Atom.class)
-							 .map(atom -> atom.toSigned(recoverable))
-							 .map(Txn::fromAtom)
+						 signature.flatMap(recoverable -> Result.ok(Atom.create(prepared.getBlob(), recoverable))
+							 .map(SubmissionServiceTest::atomToTxn)
 							 .map(Txn::getId)
 							 .flatMap(txId -> submissionService.submitTx(prepared.getBlob(), recoverable, txId))))
 			.onFailureDo(Assert::fail)

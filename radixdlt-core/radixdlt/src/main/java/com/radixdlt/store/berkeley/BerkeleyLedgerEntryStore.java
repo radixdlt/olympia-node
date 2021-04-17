@@ -575,13 +575,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void updateParticle(com.sleepycat.je.Transaction txn, REParsedInstruction inst) {
 		if (inst.isBootUp()) {
-			var buf = inst.getInstruction().getData();
+			var buf = inst.getInstruction().getDataByteBuffer();
 			upParticle(txn, buf, inst.getSubstate().getId());
 
 			if (inst.getParticle() instanceof TokenDefinitionParticle) {
 				var p = (TokenDefinitionParticle) inst.getParticle();
 				var rriId = p.getRriId();
-				var buf2 = inst.getInstruction().getData();
+				var buf2 = inst.getInstruction().getDataByteBuffer();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				rriDatabase.putNoOverwrite(txn, entry(rriId.asBytes()), value);
 			}

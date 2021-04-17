@@ -22,16 +22,16 @@ import com.google.inject.Inject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.store.AtomIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.utils.functional.Result;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.serialization.SerializationUtils.restore;
 
@@ -73,10 +73,25 @@ public final class LogCMStore implements CMStore {
 		return atomIndex.get(txnId)
 			.flatMap(txn ->
 				restore(DefaultSerialization.getInstance(), txn.getPayload(), Atom.class)
-					.map(a -> a.getInstructions().stream().map(REInstruction::create)
-						.collect(Collectors.toList()))
-					.map(i -> i.get(substateId.getIndex().orElseThrow()))
-					.flatMap(i -> SubstateSerializer.deserializeToResult(i.getData()))
+					.flatMap(a -> {
+						var buf = ByteBuffer.wrap(a.getUnsignedBlob());
+						var index = substateId.getIndex().orElseThrow();
+						int cur = 0;
+						while (buf.hasRemaining()) {
+							try {
+								var i = REInstruction.readFrom(txn, cur, buf);
+								if (cur == index) {
+									Particle p = i.getData();
+									return Result.ok(p);
+								}
+							} catch (Exception e) {
+								return Result.fail(e.getMessage());
+							}
+							cur++;
+						}
+
+						return Result.fail("Not found.");
+					})
 					.toOptional()
 			);
 	}

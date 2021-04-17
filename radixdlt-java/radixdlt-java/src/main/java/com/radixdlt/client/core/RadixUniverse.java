@@ -22,11 +22,10 @@
 
 package com.radixdlt.client.core;
 
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Atom;
-import com.radixdlt.atom.SubstateSerializer;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.ledger.AtomPuller;
@@ -54,12 +53,8 @@ import com.radixdlt.client.fees.FeeEntry;
 import com.radixdlt.client.fees.FeeTable;
 import com.radixdlt.client.fees.PerBytesFeeEntry;
 import com.radixdlt.client.fees.PerParticleFeeEntry;
-import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.UInt256;
 
 import java.util.List;
 import java.util.Set;
@@ -170,29 +165,7 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = config.getGenesis().stream()
-			.map(txn -> {
-				try {
-					return DefaultSerialization.getInstance().fromDson(txn.getPayload(), Atom.class);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.flatMap(a -> a.getInstructions().stream())
-			.map(REInstruction::create)
-			.filter(i -> i.getMicroOp() == REInstruction.REOp.UP)
-			.map(i -> {
-				try {
-					return SubstateSerializer.deserialize(i.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.filter(TokenDefinitionParticle.class::isInstance)
-			.map(TokenDefinitionParticle.class::cast)
-			.map(TokenDefinitionParticle::getRri)
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
+		this.nativeToken = RRI.from("XRD");
 		this.atomStore = atomStore;
 		this.puller = new RadixAtomPuller(networkController);
 	}

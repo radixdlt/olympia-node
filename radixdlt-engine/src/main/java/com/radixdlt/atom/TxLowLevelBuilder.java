@@ -23,10 +23,13 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +44,7 @@ import java.util.function.Function;
  * Low level builder class for transactions
  */
 public final class TxLowLevelBuilder {
-	private final List<byte[]> instructions = new ArrayList<>();
+	private final ByteArrayOutputStream blobStream = new ByteArrayOutputStream();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private int instructionIndex = 0;
@@ -73,10 +76,12 @@ public final class TxLowLevelBuilder {
 	}
 
 	private void instruction(REInstruction.REOp op, byte[] data) {
-		var instruction = new byte[1 + data.length];
-		instruction[0] = op.opCode();
-		System.arraycopy(data, 0, instruction, 1, data.length);
-		this.instructions.add(instruction);
+		blobStream.write(op.opCode());
+		try {
+			blobStream.write(data);
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to write data.");
+		}
 		this.instructionIndex++;
 	}
 
@@ -90,14 +95,14 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(instructionIndex, LocalSubstate.create(instructionIndex, particle));
 		var bytes = SubstateSerializer.serialize(particle);
-		instruction(REInstruction.REOp.UP, varLengthData(bytes));
+		instruction(REInstruction.REOp.UP, bytes);
 		return this;
 	}
 
 	public TxLowLevelBuilder virtualDown(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		var bytes = SubstateSerializer.serialize(particle);
-		instruction(REInstruction.REOp.VDOWN, varLengthData(bytes));
+		instruction(REInstruction.REOp.VDOWN, bytes);
 		this.remoteDownSubstate.add(SubstateId.ofVirtualSubstate(bytes));
 		return this;
 	}
@@ -136,27 +141,38 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
+	private HashCode computeHashToSign(byte[] blob) {
+		var firstHash = HashUtils.sha256(blob);
+		return HashUtils.sha256(firstHash.asBytes());
+	}
+
+	private static Txn atomToTxn(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return Txn.create(payload);
+	}
+
 	public Atom buildAtomWithoutSignature() {
-		return Atom.create(instructions, null);
+		var blob = blobStream.toByteArray();
+		return Atom.create(blob, null);
 	}
 
 	public Txn buildWithoutSignature() {
-		var atom = Atom.create(instructions, null);
-		return Txn.fromAtom(atom);
-	}
-
-	public Pair<byte[], HashCode> buildForExternalSign() {
-		//TODO: fix blob generation as for now it is not verifiable by client side
-		var blob = DefaultSerialization.getInstance()
-			.toDson(Atom.create(instructions, null), DsonOutput.Output.ALL);
-
-		return Pair.of(blob, Atom.computeHashToSignFromBytes(instructions));
+		var atom = buildAtomWithoutSignature();
+		return atomToTxn(atom);
 	}
 
 	public Txn signAndBuild(Function<HashCode, ECDSASignature> signatureProvider) {
-		var hashToSign = Atom.computeHashToSignFromBytes(instructions);
+		var blob = blobStream.toByteArray();
+		var hashToSign = computeHashToSign(blob);
 		var signature = signatureProvider.apply(hashToSign);
-		var atom = Atom.create(instructions, signature);
-		return Txn.fromAtom(atom);
+		var atom = Atom.create(blob, signature);
+		return atomToTxn(atom);
+	}
+
+	public Pair<byte[], HashCode> buildForExternalSign() {
+		var blob = blobStream.toByteArray();
+		var hashToSign = computeHashToSign(blob);
+
+		return Pair.of(blob, hashToSign);
 	}
 }

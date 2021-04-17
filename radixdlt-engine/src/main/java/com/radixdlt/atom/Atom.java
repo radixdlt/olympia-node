@@ -32,17 +32,11 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * An atom to be processed by radix engine
@@ -56,7 +50,7 @@ public final class Atom {
 
 	@JsonProperty("i")
 	@DsonOutput({Output.ALL})
-	private final List<byte[]> instructions;
+	private final byte[] unsignedBlob;
 
 	@JsonProperty("s")
 	@DsonOutput({Output.ALL})
@@ -64,49 +58,40 @@ public final class Atom {
 
 	@JsonCreator
 	private Atom(
-		@JsonProperty("i") List<byte[]> byteInstructions,
+		@JsonProperty("i") byte[] unsignedBlob,
 		@JsonProperty("s") ECDSASignature signature
 	) {
-		this.instructions = byteInstructions;
+		this.unsignedBlob = unsignedBlob;
 		this.signature = signature;
 	}
 
-	static Atom create(
-		List<byte[]> instructions,
+	public static Atom create(
+		byte[] unsignedBlob,
 		ECDSASignature signature
 	) {
-		return new Atom(instructions, signature);
+		return new Atom(unsignedBlob, signature);
 	}
 
-	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(getInstructions());
-	}
-
-	public static HashCode computeHashToSignFromBytes(Collection<byte[]> instructions) {
-		return computeHashToSignFromBytes(computeBlobToSign(instructions));
+	public byte[] getUnsignedBlob() {
+		return unsignedBlob;
 	}
 
 	public static HashCode computeHashToSignFromBytes(byte[] blob) {
-		return HashUtils.sha256(HashUtils.sha256(blob).asBytes());
+		var firstHash = HashUtils.sha256(blob);
+		return HashUtils.sha256(firstHash.asBytes());
 	}
 
-	public static byte[] computeBlobToSign(Collection<byte[]> instructions) {
-		var outputStream = new ByteArrayOutputStream();
-		instructions.forEach(outputStream::writeBytes);
-		return outputStream.toByteArray();
+	public HashCode computeHashToSign() {
+		return computeHashToSignFromBytes(unsignedBlob);
 	}
 
 	public Optional<ECDSASignature> getSignature() {
-		return Optional.ofNullable(this.signature);
-	}
-
-	public List<byte[]> getInstructions() {
-		return this.instructions == null ? List.of() : this.instructions;
+		return Optional.ofNullable(signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, instructions);
+		return Objects.hash(signature, unsignedBlob);
 	}
 
 	@Override
@@ -123,14 +108,9 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return String.format("%s {instructions=%s}", this.getClass().getSimpleName(),
-							 getInstructions().stream().map(Hex::toHexString).collect(Collectors.toList())
+		return String.format("%s {blob=%s}",
+			this.getClass().getSimpleName(),
+			Hex.toHexString(unsignedBlob)
 		);
-	}
-
-	public Atom toSigned(ECDSASignature recoverable) {
-		requireNonNull(recoverable);
-
-		return new Atom(instructions, recoverable);
 	}
 }

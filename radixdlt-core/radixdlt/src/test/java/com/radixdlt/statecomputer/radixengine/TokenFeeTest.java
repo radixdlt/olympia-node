@@ -138,7 +138,6 @@ public class TokenFeeTest {
 			.isInstanceOf(RadixEngineException.class);
 	}
 
-
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
 		var atom = TxBuilder.newBuilder(address, engineStore)

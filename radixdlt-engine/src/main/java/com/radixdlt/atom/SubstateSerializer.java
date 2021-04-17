@@ -28,7 +28,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -91,7 +90,7 @@ public final class SubstateSerializer {
 	}
 
 	public static byte[] serialize(Particle p) {
-		var buf = ByteBuffer.allocate(ConstraintMachine.DATA_MAX_SIZE);
+		var buf = ByteBuffer.allocate(1024);
 		buf.put(classToByte.get(p.getClass())); // substate type
 		if (p instanceof RRIParticle) {
 			serializeData((RRIParticle) p, buf);

@@ -19,6 +19,7 @@ package com.radixdlt.client.service;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
@@ -31,6 +32,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
@@ -39,8 +41,6 @@ import com.radixdlt.utils.functional.Result;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.radixdlt.serialization.SerializationUtils.restore;
 
 public class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
@@ -92,19 +92,24 @@ public class SubmissionService {
 			.collect(Collectors.toList());
 	}
 
+
+	private static Txn atomToTxn(Atom atom) {
+		var payload = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
+		return Txn.create(payload);
+	}
+
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		return restore(serialization, blob, Atom.class)
-			.map(atom -> atom.toSigned(recoverable))
-			.map(Txn::fromAtom)
+		return Result.ok(Atom.create(blob, recoverable))
+			.map(SubmissionService::atomToTxn)
 			.map(Txn::getId);
 	}
 
 	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		return restore(serialization, blob, Atom.class)
-			.map(atom -> atom.toSigned(recoverable))
-			.map(Txn::fromAtom)
-			.filter(txn -> txn.getId().equals(txId), "Provided txID does not match provided transaction")
-			.onSuccess(txn -> stateComputer.addToMempool(txn, self)).map(Txn::getId);
+		var atom = Atom.create(blob, recoverable);
+		var txn = atomToTxn(atom);
+		return Result.ok(txn)
+			.filter(t -> t.getId().equals(txId), "Provided txID does not match provided transaction")
+			.onSuccess(t -> stateComputer.addToMempool(txn, self)).map(Txn::getId);
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {

@@ -87,6 +87,11 @@ public final class RriId {
 	}
 
 	@Override
+	public String toString() {
+		return String.format("%s{%s}", this.getClass().getSimpleName(), Hex.toHexString(id));
+	}
+
+	@Override
 	public int hashCode() {
 		return Arrays.hashCode(id);
 	}

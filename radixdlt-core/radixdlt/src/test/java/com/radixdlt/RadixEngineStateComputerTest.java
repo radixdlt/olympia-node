@@ -269,6 +269,7 @@ public class RadixEngineStateComputerTest {
 		var illegalTxn = TxLowLevelBuilder.newBuilder()
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new SystemParticle(1, 2, 0))
+			.particleGroup()
 			.buildWithoutSignature();
 
 		// Act
