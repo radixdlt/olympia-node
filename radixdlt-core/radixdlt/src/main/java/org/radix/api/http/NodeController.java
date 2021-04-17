@@ -26,9 +26,9 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.RegisterAsValidator;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UnregisterAsValidator;
+import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
@@ -138,9 +138,9 @@ public final class NodeController implements Controller {
 				return new UnstakeTokens(delegate, subunits);
 			}
 			case "RegisterAsValidator":
-				return new RegisterAsValidator();
+				return new RegisterValidator();
 			case "UnregisterAsValidator":
-				return new UnregisterAsValidator();
+				return new UnregisterValidator();
 			default:
 				throw new IllegalArgumentException("Bad action object: " + actionObject);
 		}

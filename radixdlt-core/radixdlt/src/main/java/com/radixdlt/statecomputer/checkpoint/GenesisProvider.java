@@ -23,45 +23,66 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.SystemNextEpoch;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RegisteredValidators;
+import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Generates a genesis atom
  */
-public final class GenesisAtomsProvider implements Provider<List<Txn>> {
+public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 	private final byte magic;
-	private final ECKeyPair universeKey;
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final ImmutableList<ECKeyPair> validatorKeys;
 	private final ImmutableList<StakeDelegation> stakeDelegations;
 	private final MutableTokenDefinition tokenDefinition;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final ValidatorSetBuilder validatorSetBuilder;
+	private final LedgerAccumulator ledgerAccumulator;
+	private final long timestamp;
 
 	@Inject
-	public GenesisAtomsProvider(
+	public GenesisProvider(
+		@Genesis long timestamp,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		ValidatorSetBuilder validatorSetBuilder,
+		LedgerAccumulator ledgerAccumulator,
 		@Named("magic") int magic,
-		@Named("universeKey") ECKeyPair universeKey, // TODO: Remove
 		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
 		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
 		@Genesis ImmutableList<ECKeyPair> validatorKeys // TODO: Remove private keys, replace with public keys
 	) {
+		this.timestamp = timestamp;
+		this.radixEngine = radixEngine;
+		this.validatorSetBuilder = validatorSetBuilder;
+		this.ledgerAccumulator = ledgerAccumulator;
 		this.magic = (byte) magic;
-		this.universeKey = universeKey;
 		this.tokenDefinition = tokenDefinition;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
@@ -69,7 +90,7 @@ public final class GenesisAtomsProvider implements Provider<List<Txn>> {
 	}
 
 	@Override
-	public List<Txn> get() {
+	public VerifiedTxnsAndProof get() {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
@@ -87,47 +108,73 @@ public final class GenesisAtomsProvider implements Provider<List<Txn>> {
 			}
 		});
 
+		var branch = radixEngine.transientBranch();
 		var genesisTxns = new ArrayList<Txn>();
-		var universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
-		var rri = RRI.of(universeAddress, tokenDefinition.getSymbol());
+		var rri = RRI.from("XRD");
 		try {
 			// Network token
-			var tokenBuilder = TxBuilder.newBuilder(universeAddress)
+			var createTokenActions = TxActionListBuilder.create()
 				.createMutableToken(tokenDefinition);
-
 			for (var e : issuances.entrySet()) {
 				var to = new RadixAddress(magic, e.getKey());
-				tokenBuilder.mint(rri, to, e.getValue());
+				createTokenActions.mint(rri, to, e.getValue());
 			}
-			var upSubstate = new AtomicReference<SubstateStore>();
-			var tokenAtom = tokenBuilder.signAndBuild(universeKey::sign, upSubstate::set);
-			genesisTxns.add(tokenAtom);
+
+			var tokenTxn = branch.construct(createTokenActions.build()).buildWithoutSignature();
+			branch.execute(List.of(tokenTxn), PermissionLevel.SYSTEM);
+			genesisTxns.add(tokenTxn);
 
 			// Initial validator registration
 			for (var validatorKey : validatorKeys) {
 				var validatorAddress = new RadixAddress(magic, validatorKey.getPublicKey());
-				var validatorBuilder = TxBuilder.newBuilder(validatorAddress, upSubstate.get());
-				var validatorAtom = validatorBuilder
-					.registerAsValidator()
-					.signAndBuild(validatorKey::sign, upSubstate::set);
-				genesisTxns.add(validatorAtom);
+				var validatorTxn = branch.construct(validatorAddress, new RegisterValidator())
+					.signAndBuild(validatorKey::sign);
+				branch.execute(List.of(validatorTxn), PermissionLevel.SYSTEM);
+				genesisTxns.add(validatorTxn);
 			}
 
+			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
 				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
-				var stakesBuilder = TxBuilder.newBuilder(stakerAddress, upSubstate.get())
-					.stakeTo(delegateAddress, stakeDelegation.amount());
-				var stakeAtom = stakesBuilder.signAndBuild(stakeDelegation.staker()::sign, upSubstate::set);
-				genesisTxns.add(stakeAtom);
+				var stakerTxn = branch.construct(stakerAddress, new StakeTokens(delegateAddress, stakeDelegation.amount()))
+					.signAndBuild(stakeDelegation.staker()::sign);
+				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
+				genesisTxns.add(stakerTxn);
 			}
 
-			var epochUpdateBuilder = TxBuilder.newSystemBuilder().systemNextEpoch(0, 0);
-			genesisTxns.add(epochUpdateBuilder.buildWithoutSignature());
-		} catch (TxBuilderException e) {
+			var systemTxn = branch.construct(new SystemNextEpoch(0, 0))
+				.buildWithoutSignature();
+			branch.execute(List.of(systemTxn), PermissionLevel.SYSTEM);
+			genesisTxns.add(systemTxn);
+			final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
+				branch.getComputedState(RegisteredValidators.class),
+				branch.getComputedState(Stakes.class)
+			);
+			radixEngine.deleteBranches();
+
+			AccumulatorState accumulatorState = null;
+
+			for (var txn : genesisTxns) {
+				if (accumulatorState == null) {
+					accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
+				} else {
+					accumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getId().asHashCode());
+				}
+			}
+
+			var genesisProof = LedgerProof.genesis(
+				accumulatorState,
+				genesisValidatorSet,
+				timestamp
+			);
+			if (!genesisProof.isEndOfEpoch()) {
+				throw new IllegalStateException("Genesis must be end of epoch");
+			}
+
+			return VerifiedTxnsAndProof.create(genesisTxns, genesisProof);
+		} catch (TxBuilderException | RadixEngineException e) {
 			throw new IllegalStateException(e);
 		}
-
-		return genesisTxns;
 	}
 }

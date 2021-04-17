@@ -39,7 +39,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -66,7 +66,7 @@ public class MempoolFillerTest {
 	private Injector getInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

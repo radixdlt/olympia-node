@@ -21,19 +21,32 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 
-public final class UnregisterAsValidator implements TxAction {
+public final class MoveStake implements TxAction {
+	private final RadixAddress from;
+	private final RadixAddress to;
+	private final UInt256 amount;
+
+	public MoveStake(RadixAddress from, RadixAddress to, UInt256 amount) {
+		this.from = from;
+		this.to = to;
+		this.amount = amount;
+	}
+
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var address = txBuilder.getAddressOrFail("Must have address");
+		var address = txBuilder.getAddressOrFail("Must have an address.");
 
-		txBuilder.swap(
-			ValidatorParticle.class,
-			p -> p.getAddress().equals(address) && p.isRegisteredForNextEpoch(),
-			"Already unregistered."
-		).with(
-			substateDown -> new ValidatorParticle(address, false, substateDown.getName(), substateDown.getUrl())
-		);
+		txBuilder.swapFungible(
+			StakedTokensParticle.class,
+			p -> p.getAddress().equals(address) && p.getDelegateAddress().equals(from),
+			StakedTokensParticle::getAmount,
+			amt -> new StakedTokensParticle(from, address, amt),
+			amount,
+			"Not enough staked."
+		).with(amt -> new StakedTokensParticle(to, address, amt));
 	}
 }

@@ -19,7 +19,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.atom.Atom;
-import com.radixdlt.atomos.RRIParticle;
+
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
@@ -45,10 +45,7 @@ public final class Addresses {
 	public static Set<RadixAddress> getShardables(Particle p) {
 		Set<RadixAddress> addresses = new HashSet<>();
 
-		if (p instanceof RRIParticle) {
-			var a = (RRIParticle) p;
-			addresses.add(a.getRri().getAddress());
-		} else if (p instanceof TokensParticle) {
+		if (p instanceof TokensParticle) {
 			var a = (TokensParticle) p;
 			addresses.add(a.getAddress());
 		} else if (p instanceof ValidatorParticle) {

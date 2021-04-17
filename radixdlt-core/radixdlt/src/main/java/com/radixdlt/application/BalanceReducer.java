@@ -20,11 +20,8 @@ package com.radixdlt.application;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -36,15 +33,10 @@ import java.util.function.Supplier;
  * Balance reducer for local node
  */
 public final class BalanceReducer implements StateReducer<UInt256, TokensParticle> {
-	private final RRI tokenRRI;
 	private final RadixAddress address;
 
 	@Inject
-	public BalanceReducer(
-		@NativeToken RRI tokenRRI,
-		@Self RadixAddress address
-	) {
-		this.tokenRRI = Objects.requireNonNull(tokenRRI);
+	public BalanceReducer(@Self RadixAddress address) {
 		this.address = Objects.requireNonNull(address);
 	}
 
@@ -66,7 +58,7 @@ public final class BalanceReducer implements StateReducer<UInt256, TokensParticl
 	@Override
 	public BiFunction<UInt256, TokensParticle, UInt256> outputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(address) && p.getRriId().equals(RriId.fromRri(tokenRRI))) {
+			if (p.getAddress().equals(address) && p.getRriId().isNativeToken()) {
 				return balance.add(p.getAmount());
 			}
 			return balance;
@@ -76,7 +68,7 @@ public final class BalanceReducer implements StateReducer<UInt256, TokensParticl
 	@Override
 	public BiFunction<UInt256, TokensParticle, UInt256> inputReducer() {
 		return (balance, p) -> {
-			if (p.getAddress().equals(address) && p.getRriId().equals(RriId.fromRri(tokenRRI))) {
+			if (p.getAddress().equals(address) && p.getRriId().isNativeToken()) {
 				return balance.subtract(p.getAmount());
 			}
 			return balance;

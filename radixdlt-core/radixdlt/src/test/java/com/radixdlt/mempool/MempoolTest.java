@@ -47,7 +47,7 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,7 +66,7 @@ public class MempoolTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	@Inject @Self private BFTNode self;
-	@Inject @Genesis private List<Txn> genesisTxns;
+	@Inject @Genesis private VerifiedTxnsAndProof genesisTxns;
 	@Inject private DeterministicProcessor processor;
 	@Inject private DeterministicNetwork network;
 	@Inject private RadixEngineStateComputer stateComputer;
@@ -77,7 +77,7 @@ public class MempoolTest {
 	private Injector getInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -231,9 +231,9 @@ public class MempoolTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		var txn = createTxn(keyPair);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Act
@@ -256,9 +256,9 @@ public class MempoolTest {
 		// Act
 		var txn2 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn2), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
@@ -279,9 +279,9 @@ public class MempoolTest {
 		// Act
 		var txn3 = createTxn(keyPair, 1);
 		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.size(), HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.size());
-		var commandsAndProof = new VerifiedTxnsAndProof(List.of(txn3), proof);
+		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size(), HashUtils.random256()));
+		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size());
+		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert

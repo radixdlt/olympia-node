@@ -3,11 +3,8 @@ package com.radixdlt.chaos.mempoolfiller;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -19,16 +16,13 @@ import java.util.function.Supplier;
  * Counts the number of UP substate which pass a predicate
  */
 public final class ParticleCounter implements StateReducer<Integer, TokensParticle> {
-	private final RRI tokenRRI;
 	private final RadixAddress address;
 	private final UInt256 fee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
 	@Inject
 	public ParticleCounter(
-		@NativeToken RRI tokenRRI,
 		@Self RadixAddress address
 	) {
-		this.tokenRRI = Objects.requireNonNull(tokenRRI);
 		this.address = Objects.requireNonNull(address);
 	}
 
@@ -51,7 +45,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> outputReducer() {
 		return (count, p) -> {
 			if (p.getAddress().equals(address)
-				&& p.getRriId().equals(RriId.fromRri(tokenRRI))
+				&& p.getRriId().isNativeToken()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count + 1;
 			}
@@ -63,7 +57,7 @@ public final class ParticleCounter implements StateReducer<Integer, TokensPartic
 	public BiFunction<Integer, TokensParticle, Integer> inputReducer() {
 		return (count, p) -> {
 			if (p.getAddress().equals(address)
-				&& p.getRriId().equals(RriId.fromRri(tokenRRI))
+				&& p.getRriId().isNativeToken()
 				&& p.getAmount().compareTo(fee.multiply(UInt256.TWO)) > 0) {
 				return count - 1;
 			}

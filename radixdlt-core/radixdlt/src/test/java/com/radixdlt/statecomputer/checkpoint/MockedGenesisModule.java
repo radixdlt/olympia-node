@@ -24,27 +24,32 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.utils.UInt256;
 import org.radix.StakeDelegation;
 import org.radix.TokenIssuance;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Genesis atom to be used with tests
  */
-public final class MockedGenesisAtomModule extends AbstractModule {
+public final class MockedGenesisModule extends AbstractModule {
 	@Override
 	public void configure() {
 	    install(new RadixNativeTokenModule());
 		bindConstant().annotatedWith(Names.named("magic")).to(0);
 		Multibinder.newSetBinder(binder(), TokenIssuance.class);
-		bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Genesis
+	public long timestamp() {
+		return 1234L;
 	}
 
 	@Provides

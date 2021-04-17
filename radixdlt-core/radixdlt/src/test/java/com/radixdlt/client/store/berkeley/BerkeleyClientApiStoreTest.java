@@ -56,7 +56,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -107,7 +107,7 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

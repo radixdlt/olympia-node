@@ -17,8 +17,15 @@
 
 package com.radixdlt.recovery;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.MaxValidators;
+import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +77,7 @@ import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
@@ -104,12 +111,11 @@ public class RecoveryTest {
 	private DeterministicNetwork network;
 	private Injector currentInjector;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final long epochCeilingView;
 
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
 	public RecoveryTest(long epochCeilingView) {
 		this.epochCeilingView = epochCeilingView;
@@ -123,15 +129,20 @@ public class RecoveryTest {
 	@Before
 	public void setup() {
 		Guice.createInjector(
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new CryptoModule(),
+			new RadixEngineModule(),
 			new AbstractModule() {
 				@Override
 				public void configure() {
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(ImmutableList.of(ecKeyPair));
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+					bindConstant().annotatedWith(MaxValidators.class).to(100);
+					bindConstant().annotatedWith(MinValidators.class).to(1);
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 				}
 			}
 		).injectMembers(this);
@@ -160,10 +171,9 @@ public class RecoveryTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
+					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(PeersView.class).toInstance(List::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));

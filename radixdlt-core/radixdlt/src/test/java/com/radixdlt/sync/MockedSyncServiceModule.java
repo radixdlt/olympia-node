@@ -35,6 +35,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -97,18 +98,19 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Singleton
 	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		@LastEpochProof LedgerProof genesis,
 		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return new EventProcessor<>() {
-			long currentVersion = 0;
-			long currentEpoch = 1;
-
+			long currentVersion = genesis.getStateVersion();
+			long currentEpoch = genesis.getEpoch() + 1;
 
 			private void syncTo(LedgerProof proof) {
-				var commands = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+				var txns = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+					.peek(v -> logger.info("{} {}", v, sharedCommittedCommands.get(v)))
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, proof));
+				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
 				currentVersion = proof.getStateVersion();
 				if (proof.isEndOfEpoch()) {
 					currentEpoch = proof.getEpoch() + 1;
@@ -123,23 +125,23 @@ public class MockedSyncServiceModule extends AbstractModule {
 					if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
 						throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
 					}
+
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}
 
 				syncTo(request.getTarget());
 
 				final long targetVersion = request.getTarget().getStateVersion();
-				ImmutableList<Txn> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
+				var txns = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 
-				syncCommandsDispatcher.dispatch(new VerifiedTxnsAndProof(commands, request.getTarget()));
+				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, request.getTarget()));
 				currentVersion = targetVersion;
 				currentEpoch = request.getTarget().getEpoch();
 			}
 		};
 	}
-
 
 	@ProvidesIntoSet
 	private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(

@@ -16,20 +16,20 @@
  *
  */
 
-package com.radixdlt.universe;
+package com.radixdlt.statecomputer;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.universe.Universe.UniverseType;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.Mempool;
 
-public final class ProductionUniverseConfigModule extends AbstractModule {
-	@Provides
-	UniverseConfiguration universeConfiguration() {
-		return new UniverseConfiguration(
-			UniverseType.PRODUCTION,
-			"Radix Mainnet",
-			"The Radix public Universe",
-			10000
-		);
+public class RadixEngineStateComputerModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		bind(StateComputerLedger.StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<?>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Mempool<REParsedTxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 	}
 }

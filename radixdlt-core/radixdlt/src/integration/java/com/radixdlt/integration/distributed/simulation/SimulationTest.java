@@ -34,13 +34,23 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.FunctionalNodeModule;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.LedgerRecoveryModule;
+import com.radixdlt.MockedKeyModule;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.consensus.bft.Self;
@@ -48,7 +58,10 @@ import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedAddressBookModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.MockedCommittedReaderModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -74,8 +87,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
@@ -271,11 +282,17 @@ public class SimulationTest {
 				}
 			};
 
-			modules.add(new AbstractModule() {
+			this.modules.add(new AbstractModule() {
 				@Override
-				protected void configure() {
+				public void configure() {
 					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
 					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
+				}
+			});
+
+			this.genesisModules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
 					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});
@@ -337,17 +354,15 @@ public class SimulationTest {
 		}
 
 		public Builder fullFunctionNodes(
-			View epochHighView,
+			long epochHighView,
 			SyncConfig syncConfig
 		) {
 			this.ledgerType = LedgerType.FULL_FUNCTION;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
 					bind(SyncConfig.class).toInstance(syncConfig);
-					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
-					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 				}
 
@@ -358,13 +373,17 @@ public class SimulationTest {
 				}
 			});
 
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
 			this.genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
+					install(new MockedCryptoModule());
+					install(new RadixEngineModule());
+					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				}
 			});
 
@@ -406,16 +425,34 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
+		public Builder ledgerAndRadixEngineWithEpochHighView(long epochHighView) {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 10L));
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
-					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
+				}
+
+				@Provides
+				CommittedReader committedReader() {
+					return new CommittedReader() {
+						@Override
+						public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+							return null;
+						}
+
+						@Override
+						public Optional<LedgerProof> getEpochProof(long epoch) {
+							return Optional.empty();
+						}
+
+						@Override
+						public Optional<LedgerProof> getLastProof() {
+							return Optional.empty();
+						}
+					};
 				}
 
 				@Provides
@@ -425,13 +462,17 @@ public class SimulationTest {
 				}
 			});
 
-			final ECKeyPair universeKey = ECKeyPair.generateNew();
 			this.genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 						.toInstance(nodes);
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+					install(new MockedCryptoModule());
+					install(new RadixEngineModule());
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					install(RadixEngineConfig.createModule(minValidators, maxValidators, epochHighView));
 				}
 			});
 
@@ -502,6 +543,7 @@ public class SimulationTest {
 				}
 			});
 			modules.add(new MockedSystemModule());
+			modules.add(new MockedKeyModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedAddressBookModule(this.addressBookNodes));
 
@@ -520,21 +562,27 @@ public class SimulationTest {
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
 				// Hack to get nodes to have the same genesis atom
-				genesisModules.add(new MockedGenesisAtomModule());
+				genesisModules.add(new MockedGenesisModule());
 				var genesis = Guice.createInjector(genesisModules)
-					.getInstance(Key.get(new TypeLiteral<List<Txn>>() { }, Genesis.class));
+					.getInstance(Key.get(VerifiedTxnsAndProof.class, Genesis.class));
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
 						install(new RadixNativeTokenModule());
 						bindConstant().annotatedWith(Names.named("magic")).to(0);
-						bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesis);
+						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					}
+
+
 				});
+				modules.add(new LedgerRecoveryModule());
+				modules.add(new ConsensusRecoveryModule());
+			} else {
+				modules.addAll(genesisModules);
+				modules.add(new MockedRecoveryModule());
 			}
 
 			modules.add(new MockedPersistenceStoreModule());
-			modules.add(new MockedRecoveryModule());
 
 			// Testing
 			modules.add(new SimulationNodeEventsModule());

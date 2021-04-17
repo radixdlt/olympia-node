@@ -16,6 +16,11 @@
  */
 package com.radixdlt.client.service;
 
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,15 +31,12 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.client.ClientUtils;
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
@@ -74,7 +76,6 @@ import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
 import com.radixdlt.store.EngineStore;
@@ -82,6 +83,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
+import org.radix.TokenIssuance;
 
 import java.util.List;
 import java.util.Optional;
@@ -95,11 +97,9 @@ import static com.radixdlt.serialization.SerializationUtils.restore;
 public class SubmissionServiceTest {
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
-	@Inject
-	@Named("universeKey")
-	ECKeyPair universeKey; // TODO: Remove
+	private ECKeyPair key = ECKeyPair.generateNew();
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -137,7 +137,6 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
-				bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(ECKeyPair.generateNew());
 				bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
 					.toInstance(registeredNodes);
 				bind(Serialization.class).toInstance(serialization);
@@ -150,6 +149,7 @@ public class SubmissionServiceTest {
 				bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 
+				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
@@ -169,12 +169,17 @@ public class SubmissionServiceTest {
 
 				bind(SystemCounters.class).to(SystemCountersImpl.class);
 			}
+
+			@ProvidesIntoSet
+			TokenIssuance tokenIssuance() {
+				return TokenIssuance.of(key.getPublicKey(), BIG_AMOUNT.multiply(BIG_AMOUNT));
+			}
 		};
 	}
 
 	private void setupGenesis() throws RadixEngineException, TxBuilderException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns, PermissionLevel.SYSTEM);
+		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
 		final var genesisValidatorSet = validatorSetBuilder.buildValidatorSet(
 			branch.getComputedState(RegisteredValidators.class),
 			branch.getComputedState(Stakes.class)
@@ -182,16 +187,17 @@ public class SubmissionServiceTest {
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
-			new AccumulatorState(0, hasher.hash(genesisTxns.get(0).getId())),
-			genesisValidatorSet
+			new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
+			genesisValidatorSet,
+			0
 		);
 
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
 
-		radixEngine.execute(genesisTxns, LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
-		nativeToken = ClientUtils.nativeToken(genesisTxns).getRri();
+		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		nativeToken = RRI.from("XRD");
 	}
 
 	@Before
@@ -200,7 +206,7 @@ public class SubmissionServiceTest {
 			new RadixEngineCheckpointModule(),
 			new RadixEngineModule(),
 			new EmptyTransactionCheckModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			localModule()
 		);
 		injector.injectMembers(this);
@@ -209,11 +215,11 @@ public class SubmissionServiceTest {
 
 	@Test
 	public void testPrepareTransaction() throws Exception {
-		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), BIG_AMOUNT);
-		var action2 = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+		var address = new RadixAddress((byte) 0, key.getPublicKey());
+		var action = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
 
-		var tx = radixEngine.construct(nativeToken.getAddress(), List.of(action1, action2))
-			.signAndBuild(universeKey::sign);
+		var tx = radixEngine.construct(address, List.of(action))
+			.signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 
@@ -271,11 +277,12 @@ public class SubmissionServiceTest {
 	}
 
 	private Result<PreparedTransaction> buildTransaction() throws TxBuilderException, RadixEngineException {
-		var action1 = new MintToken(nativeToken, nativeToken.getAddress(), BIG_AMOUNT);
-		var action2 = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+		var address = new RadixAddress((byte) 0, key.getPublicKey());
 
-		var tx = radixEngine.construct(nativeToken.getAddress(), List.of(action1, action2))
-			.signAndBuild(universeKey::sign);
+		var action = new TransferToken(nativeToken, ALICE, BIG_AMOUNT);
+
+		var tx = radixEngine.construct(address, List.of(action))
+			.signAndBuild(key::sign);
 
 		radixEngine.execute(List.of(tx));
 

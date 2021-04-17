@@ -20,12 +20,10 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
@@ -184,7 +182,7 @@ public final class TxBuilder {
 		return down(particleClass, particlePredicate, Optional.empty(), errorMessage);
 	}
 
-	private <T extends Particle> T down(
+	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		Optional<T> virtualParticle,
@@ -379,6 +377,11 @@ public final class TxBuilder {
 		};
 	}
 
+
+	public Optional<RadixAddress> getAddress() {
+		return Optional.ofNullable(address);
+	}
+
 	public RadixAddress getAddressOrFail(String errorMessage) throws TxBuilderException {
 		if (address == null) {
 			throw new TxBuilderException(errorMessage);
@@ -397,56 +400,6 @@ public final class TxBuilder {
 		if (address != null) {
 			throw new TxBuilderException(message);
 		}
-	}
-
-	public TxBuilder systemNextView(long view, long timestamp, long currentEpoch) throws TxBuilderException {
-		assertIsSystem("Not permitted as user to execute system next view");
-
-		swap(
-			SystemParticle.class,
-			p -> p.getEpoch() == currentEpoch,
-			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
-			"No System particle available"
-		).with(substateDown -> {
-			if (view <= substateDown.getView()) {
-				throw new TxBuilderException("Next view isn't higher than current view.");
-			}
-			return new SystemParticle(substateDown.getEpoch(), view, timestamp);
-		});
-
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder systemNextEpoch(long timestamp, long currentEpoch) throws TxBuilderException {
-		assertIsSystem("Not permitted as user to execute system next epoch");
-
-		swap(
-			SystemParticle.class,
-			p -> p.getEpoch() == currentEpoch,
-			currentEpoch == 0 ? Optional.of(new SystemParticle(0, 0, 0)) : Optional.empty(),
-			"No System particle available"
-		).with(substateDown -> new SystemParticle(substateDown.getEpoch() + 1, 0, timestamp));
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder registerAsValidator() throws TxBuilderException {
-		assertHasAddress("Must have address");
-
-		swap(
-			ValidatorParticle.class,
-			p -> p.getAddress().equals(address) && !p.isRegisteredForNextEpoch(),
-			Optional.of(new ValidatorParticle(address, false)),
-			"Already a validator"
-		).with(
-			substateDown -> new ValidatorParticle(address, true, substateDown.getName(), substateDown.getUrl())
-		);
-
-		particleGroup();
-		return this;
 	}
 
 	public TxBuilder mutex(String id) throws TxBuilderException {
@@ -579,23 +532,6 @@ public final class TxBuilder {
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
-
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder moveStake(RadixAddress from, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		assertHasAddress("Must have an address.");
-
-		swapFungible(
-			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address),
-			StakedTokensParticle::getAmount,
-			amt -> new StakedTokensParticle(from, address, amt),
-			amount,
-			"Not enough staked."
-		).with(amt -> new StakedTokensParticle(to, address, amt));
 
 		particleGroup();
 

@@ -19,62 +19,30 @@ package org.radix;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.name.Named;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.universe.Universe;
-import com.radixdlt.universe.UniverseConfig;
-import com.radixdlt.universe.UniverseConfiguration;
-import com.radixdlt.utils.Pair;
 
-import java.util.List;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.universe.Universe;
+
 import java.util.Objects;
 
 public final class RadixUniverseBuilder {
-	private final Hasher hasher;
-	private final long universeTimestamp;
-	private final ECKeyPair universeKey;
-	private final Provider<List<Txn>> genesisAtomProvider;
-	private final UniverseConfiguration universeConfiguration;
+	private final Universe.UniverseType type;
+	private final Provider<VerifiedTxnsAndProof> genesisProvider;
 
 	@Inject
 	public RadixUniverseBuilder(
-		@Named("universeKey") ECKeyPair universeKey,
-		@UniverseConfig long universeTimestamp,
-		UniverseConfiguration universeConfiguration,
-		Provider<List<Txn>> genesisAtomProvider,
-		Hasher hasher
+		Universe.UniverseType type,
+		Provider<VerifiedTxnsAndProof> genesisProvider
 	) {
-		this.universeKey = Objects.requireNonNull(universeKey);
-		this.universeTimestamp = universeTimestamp;
-		this.universeConfiguration = universeConfiguration;
-		this.genesisAtomProvider = Objects.requireNonNull(genesisAtomProvider);
-		this.hasher = Objects.requireNonNull(hasher);
+		this.type = type;
+		this.genesisProvider = Objects.requireNonNull(genesisProvider);
 	}
 
-	public Pair<ECKeyPair, Universe> build() {
-		final var port = universeConfiguration.getPort();
-		final var name = universeConfiguration.getName();
-		final var description = universeConfiguration.getDescription();
-		final var universeAtom = genesisAtomProvider.get();
-
-		final var universe = Universe.newBuilder()
-			.port(port)
-			.name(name)
-			.description(description)
-			.type(this.universeConfiguration.getUniverseType())
-			.timestamp(this.universeTimestamp)
-			.creator(this.universeKey.getPublicKey())
-			.setAtoms(universeAtom)
+	public Universe build() {
+		final var genesis = genesisProvider.get();
+		return Universe.newBuilder()
+			.type(this.type)
+			.setTxnsAndProof(genesis)
 			.build();
-
-		Universe.sign(universe, this.universeKey, this.hasher);
-		if (!Universe.verify(universe, this.universeKey.getPublicKey(), this.hasher)) {
-			throw new IllegalStateException(
-				String.format("Signature verification failed for %s universe with key %s", name, this.universeKey)
-			);
-		}
-		return Pair.of(this.universeKey, universe);
 	}
 }

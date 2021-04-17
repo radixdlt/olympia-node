@@ -38,9 +38,7 @@ import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportOutboundConnection;
-import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class NettyTCPTransportTest {
@@ -52,13 +50,9 @@ public class NettyTCPTransportTest {
 
 	private AtomicLong packetCounter;
 	private AtomicLong byteCounter;
-	private Universe universe;
 
 	@Before
 	public void setup() {
-		universe = mock(Universe.class);
-		doReturn(30000).when(universe).getPort();
-
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);
 
@@ -74,7 +68,6 @@ public class NettyTCPTransportTest {
 		if (transport1 != null) {
 			transport1.close();
 		}
-		universe = null;
 		// Delay to allow O/S to transition sockets through FIN_WAIT
 		Thread.sleep(500);
 	}

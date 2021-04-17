@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -43,7 +42,7 @@ public class IncreasingValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.numNodes(50, 2, 50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
+		.ledgerAndRadixEngineWithEpochHighView(10)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

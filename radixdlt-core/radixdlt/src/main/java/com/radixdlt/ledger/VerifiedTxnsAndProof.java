@@ -30,12 +30,16 @@ public final class VerifiedTxnsAndProof {
 	private final List<Txn> txns;
 	private final LedgerProof proof;
 
-	public VerifiedTxnsAndProof(
+	private VerifiedTxnsAndProof(
 		List<Txn> txns,
 		LedgerProof proof
 	) {
 		this.txns = Objects.requireNonNull(txns);
 		this.proof = Objects.requireNonNull(proof);
+	}
+
+	public static VerifiedTxnsAndProof create(List<Txn> txns, LedgerProof proof) {
+		return new VerifiedTxnsAndProof(txns, proof);
 	}
 
 	public List<Txn> getTxns() {

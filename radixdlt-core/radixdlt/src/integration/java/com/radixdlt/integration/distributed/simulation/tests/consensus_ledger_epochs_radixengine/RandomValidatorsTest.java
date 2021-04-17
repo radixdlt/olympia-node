@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -43,7 +42,7 @@ public class RandomValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
+		.ledgerAndRadixEngineWithEpochHighView(10)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

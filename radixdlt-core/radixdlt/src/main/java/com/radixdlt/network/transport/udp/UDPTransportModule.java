@@ -71,7 +71,7 @@ public class UDPTransportModule extends AbstractModule {
 					throw new IllegalStateException("Could not determine host IP address", ex);
 				}
 			})
-			.map(hostAddress -> NatHandlerRemoteImpl.create(hostAddress, universe.getPort(), System::currentTimeMillis))
+			.map(hostAddress -> NatHandlerRemoteImpl.create(hostAddress, config.networkPort(30000), System::currentTimeMillis))
 			.orElseThrow(() -> new IllegalStateException("Could not determine host IP address"));
 	}
 

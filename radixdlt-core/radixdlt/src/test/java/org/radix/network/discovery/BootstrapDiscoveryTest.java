@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
 
+import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -43,15 +45,16 @@ public class BootstrapDiscoveryTest {
 	private RuntimeProperties config;
 	private URL url;
 	private URLConnection conn;
-	private Universe universe;
+	private TCPConfiguration tcpConfiguration;
 
 	@Before
 	public void setUp() throws IOException {
 		// create stubs
 		config = defaultProperties();
-		universe = mock(Universe.class);
 		url = mock(URL.class);
 		conn = mock(URLConnection.class);
+		tcpConfiguration = mock(TCPConfiguration.class);
+		when(tcpConfiguration.listenPort(anyInt())).thenReturn(30000);
 
 		// initialize stubs
 		doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
@@ -64,8 +67,6 @@ public class BootstrapDiscoveryTest {
 		when(config.get(eq("network.discovery.connection.timeout"), anyInt())).thenReturn(60000);
 		when(config.get(eq("network.discovery.read.timeout"), anyInt())).thenReturn(60000);
 		when(config.get(eq("network.discovery.allow_tls_bypass"), anyInt())).thenReturn(0);
-
-		when(universe.getPort()).thenReturn(30000);
 
 		when(url.openConnection()).thenReturn(conn);
 	}
@@ -99,41 +100,41 @@ public class BootstrapDiscoveryTest {
 		String expected = "1.1.1.1";
 		doReturn(expected.length()).when(conn).getContentLength();
 		doReturn(new ByteArrayInputStream(expected.getBytes(StandardCharsets.US_ASCII))).when(conn).getInputStream();
-		assertEquals(expected, new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
+		assertEquals(expected, new BootstrapDiscovery(config, tcpConfiguration).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	@Test
 	public void testGetNextNode_RuntimeException() throws IOException {
 		doThrow(new RuntimeException("Test exception")).when(conn).connect();
-		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
+		assertNull(new BootstrapDiscovery(config, tcpConfiguration).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	public void testGetNextNode_InterruptedException() throws InterruptedException {
 		doThrow(new InterruptedException()).when(Thread.class);
 		Thread.sleep(anyLong());
-		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
+		assertNull(new BootstrapDiscovery(config, tcpConfiguration).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	@Test
 	public void testConstructor_Seeds() {
 		doReturn("").when(config).get("network.discovery.urls", "");
 		doReturn("1.1.1.1").when(config).get("network.seeds", "");
-		BootstrapDiscovery testSubject = new BootstrapDiscovery(config, universe);
+		BootstrapDiscovery testSubject = new BootstrapDiscovery(config, tcpConfiguration);
 		Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");
 		assertEquals(1, hosts.size());
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testConstructor_NeedHTTPS() {
 		doReturn("http://example.com").when(config).get("network.discovery.urls", "");
-		assertNotNull(new BootstrapDiscovery(config, universe));
+		assertThatThrownBy(() -> new BootstrapDiscovery(config, tcpConfiguration)).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	public void testDiscovery() {
 		doReturn("").when(config).get("network.discovery.urls", "");
 		doReturn("1.1.1.1").when(config).get("network.seeds", "");
-		BootstrapDiscovery discovery = new BootstrapDiscovery(config, universe);
+		BootstrapDiscovery discovery = new BootstrapDiscovery(config, tcpConfiguration);
 
 		TransportInfo ti = discovery.toDefaultTransportInfo("1.1.1.1").get();
 

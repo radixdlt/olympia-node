@@ -37,7 +37,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -62,7 +62,7 @@ public class PacemakerTest {
 
 	private Injector createRunner() {
 		return Guice.createInjector(
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new AbstractModule() {
 				@Override

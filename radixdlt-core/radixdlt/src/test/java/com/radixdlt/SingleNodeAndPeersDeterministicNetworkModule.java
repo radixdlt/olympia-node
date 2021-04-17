@@ -48,12 +48,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     }
 
     @Provides
-    @Named("universeKey")
-    public ECKeyPair universeKey(@Self ECKeyPair self) {
-        return self;
-    }
-
-    @Provides
     @Singleton
     public PeersView peers(@Named("numPeers") int numPeers) {
         List<BFTNode> peers = Stream.generate(BFTNode::random).limit(numPeers).collect(Collectors.toList());

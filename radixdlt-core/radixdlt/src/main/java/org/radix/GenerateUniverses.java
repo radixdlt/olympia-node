@@ -23,9 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,14 +33,17 @@ import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.RadixNativeTokenModule;
-import com.radixdlt.universe.DevUniverseConfigModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.GenesisAtomsProvider;
-import com.radixdlt.universe.ProductionUniverseConfigModule;
-import com.radixdlt.universe.TestUniverseConfigModule;
-import com.radixdlt.universe.UniverseConfig;
-import com.radixdlt.universe.UniverseConfiguration;
+import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
 import org.apache.logging.log4j.util.Strings;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -54,7 +55,6 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -62,7 +62,6 @@ import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 
@@ -144,7 +143,6 @@ public final class GenerateUniverses {
 
 			final boolean suppressCborOutput = cmd.hasOption('c');
 			final boolean suppressJsonOutput = cmd.hasOption('j');
-			final String universeKeyFile = getOption(cmd, 'k').orElse(DEFAULT_KEYSTORE);
 			final boolean outputPrivateKeys = cmd.hasOption('p');
 
 			final boolean outputHelmValues = Boolean.parseBoolean(cmd.getOptionValue("hc"));
@@ -157,7 +155,7 @@ public final class GenerateUniverses {
 
 			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
 			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
-			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
+			final long timestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
 			final int validatorsCount = cmd.getOptionValue("v") !=null ?  Integer.parseInt(cmd.getOptionValue("v")) : 0;
 			final String listOfValidatorsEnv= Optional
 				.ofNullable(
@@ -225,46 +223,24 @@ public final class GenerateUniverses {
 				.addAll(getTokenIssuances(stakeDelegations))
 				.build();
 
-			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
-			final ECKeyPair universeKey = Keys.readKey(
-				universeKeyFile,
-				"universe",
-				"RADIX_UNIVERSE_KEYSTORE_PASSWORD",
-				"RADIX_UNIVERSE_KEY_PASSWORD"
-			);
+			final long timestamp = TimeUnit.SECONDS.toMillis(timestampSeconds);
 
 			RadixUniverseBuilder radixUniverseBuilder = Guice.createInjector(new AbstractModule() {
 				@Override
 				protected void configure() {
-					switch (universeType) {
-						case PRODUCTION:
-							install(new ProductionUniverseConfigModule());
-							break;
-						case TEST:
-							install(new TestUniverseConfigModule());
-							break;
-						case DEVELOPMENT:
-							install(new DevUniverseConfigModule());
-							break;
-						default:
-							throw new IllegalArgumentException("Unknown universe type: " + universeType);
-					}
+					bind(UniverseType.class).toInstance(universeType);
 					install(new CryptoModule());
 					install(new RadixNativeTokenModule());
+					install(RadixEngineConfig.createModule(1, 100, 10000L));
+					install(new RadixEngineModule());
 
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
-					bind(new TypeLiteral<List<Txn>>() { }).toProvider(GenesisAtomsProvider.class).in(Scopes.SINGLETON);
-					bindConstant().annotatedWith(UniverseConfig.class).to(universeTimestamp);
-					var selfIssuance = TokenIssuance.of(
-						universeKey.getPublicKey(), UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9)
-					);
-					var allTokenIssuances = Stream.concat(
-						tokenIssuances.stream(),
-						Stream.of(selfIssuance)
-					).collect(ImmutableList.toImmutableList());
+					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
+					bindConstant().annotatedWith(Genesis.class).to(timestamp);
 					bind(new TypeLiteral<ImmutableList<TokenIssuance>>() { }).annotatedWith(Genesis.class)
-						.toInstance(allTokenIssuances);
+						.toInstance(tokenIssuances);
 					bind(new TypeLiteral<ImmutableList<StakeDelegation>>() { }).annotatedWith(Genesis.class)
 						.toInstance(stakeDelegations);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class)
@@ -273,24 +249,14 @@ public final class GenerateUniverses {
 
 				@Provides
 				@Named("magic")
-				int magic(
-					@Named("universeKey") ECKeyPair universeKey,
-					@UniverseConfig long universeTimestamp,
-					UniverseConfiguration universeConfiguration
-				) {
-					return Universe.computeMagic(
-						universeKey.getPublicKey(),
-						universeTimestamp,
-						universeConfiguration.getPort(),
-						universeConfiguration.getUniverseType()
-					);
+				int magic(UniverseType universeType) {
+					return Universe.computeMagic(universeType);
 				}
 			}).getInstance(RadixUniverseBuilder.class);
 
-			final Pair<ECKeyPair, Universe> universe = radixUniverseBuilder.build();
+			final var universe = radixUniverseBuilder.build();
 
 			if (outputPrivateKeys) {
-				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
 				outputNumberedKeys("VALIDATOR_%s", keysDetailsWithStakeDelegation, helmUniverseOutput, awsSecretsOutputOptions);
 				outputNumberedKeys("STAKER_%s", keysDetailsWithStakeDelegation, helmUniverseOutput,
 					awsSecretsOutputOptions);
@@ -298,9 +264,6 @@ public final class GenerateUniverses {
 			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe, helmUniverseOutput, awsSecretsOutputOptions);
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
-			usage(options);
-		} catch (IOException | CryptoException e) {
-			System.err.println("Error while reading key: " + e.getMessage());
 			usage(options);
 		}
 	}
@@ -470,33 +433,25 @@ public final class GenerateUniverses {
 		boolean suppressDson,
 		boolean suppressJson,
 		UniverseType type,
-		Pair<ECKeyPair, Universe> p,
+		Universe u,
 		HelmUniverseOutput helmUniverseOutput,
 		AWSSecretsOutputOptions awsSecretsOutputOptions
 	) {
 		final Serialization serialization = DefaultSerialization.getInstance();
-		final ECKeyPair k = p.getFirst();
-		final Universe u = p.getSecond();
 		if (!suppressDson) {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
-			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
+			RRI tokenRri = RRI.from(TokenDefinitionUtils.getNativeTokenShortCode());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
-				System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
-				System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
 				System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
 			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
 				universe.put("type", type);
-				universe.put("privKey", Bytes.toBase64String(p.getFirst().getPrivateKey()));
-				universe.put("pubkey", k.getPublicKey().toBase64());
-				universe.put("address", universeAddress.toString());
 				universe.put("token", tokenRri.toString());
 
-				JSONObject universeJson = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+				JSONObject universeJson = new JSONObject(serialization.toJson(u, Output.WIRE));
 				universe.put("value", universeJson.toString());
 
 				config.put("universe", universe);
@@ -512,7 +467,7 @@ public final class GenerateUniverses {
 			}
 		}
 		if (!suppressJson) {
-			JSONObject json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+			JSONObject json = new JSONObject(serialization.toJson(u, Output.WIRE));
 			System.out.println(json.toString(4));
 		}
 	}

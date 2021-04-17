@@ -121,7 +121,7 @@ public class SyncServiceModule extends AbstractModule {
 				txnsAndProof.getTail().getSignatures()
 			);
 
-			VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(
+			var verified = VerifiedTxnsAndProof.create(
 				txnsAndProof.getTxns(),
 				nextHeader
 			);

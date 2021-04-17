@@ -19,6 +19,8 @@ package com.radixdlt;
 
 import com.radixdlt.api.ApiModule;
 
+import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.radixdlt.statecomputer.transaction.EmptyTransactionCheckModule;
@@ -37,7 +39,6 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -53,9 +54,6 @@ import com.radixdlt.network.transport.tcp.TCPConfiguration;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineValidatorComputersModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
@@ -83,10 +81,6 @@ public final class RadixNodeModule extends AbstractModule {
 		final long syncPatience = properties.get("sync.patience", 2000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
-		bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
-		bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
-		bind(View.class).annotatedWith(EpochCeilingView.class)
-			.toInstance(View.of(properties.get("epochs.views_per_epoch", 10000L)));
 
 		// Default values mean that pacemakers will sync if they are within 5 views of each other.
 		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
@@ -132,6 +126,8 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsSyncModule());
 
 		// State Computer
+		install(new RadixEngineStateComputerModule());
+		install(RadixEngineConfig.createModule(1, 100, 10000L));
 		install(new RadixEngineModule());
 		install(new RadixEngineValidatorComputersModule());
 		install(new RadixEngineStoreModule());

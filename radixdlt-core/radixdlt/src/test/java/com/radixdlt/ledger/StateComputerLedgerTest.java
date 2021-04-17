@@ -105,7 +105,7 @@ public class StateComputerLedgerTest {
 		this.accumulatorVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
 
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
+		this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0);
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
@@ -233,7 +233,7 @@ public class StateComputerLedgerTest {
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
-		VerifiedTxnsAndProof verified = new VerifiedTxnsAndProof(List.of(nextTxn), header);
+		var verified = VerifiedTxnsAndProof.create(List.of(nextTxn), header);
 
 		// Act
 		sut.syncEventProcessor().process(verified);

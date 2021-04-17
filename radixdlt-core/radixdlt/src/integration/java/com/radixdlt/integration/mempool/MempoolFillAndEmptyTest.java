@@ -39,7 +39,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,7 +68,7 @@ public final class MempoolFillAndEmptyTest {
     private Injector createInjector() {
         return Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(),
-            new MockedGenesisAtomModule(),
+            new MockedGenesisModule(),
             new MempoolFillerModule(),
             new AbstractModule() {
                 @Override

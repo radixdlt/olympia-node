@@ -85,20 +85,6 @@ public class GenerateUniversesTest {
 	}
 
 	@Test
-	public void testBadKeyfile() throws IOException {
-		final String out;
-		final String err;
-		try (Capture stdOut = Capture.forOut();
-			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-k", "/dev/null", "-v", "1"));
-			out = stdOut.toString();
-			err = stdErr.toString();
-		}
-		assertThat(err).startsWith("Error while reading key");
-		assertThat(out).startsWith("usage: GenerateUniverses");
-	}
-
-	@Test
 	public void testNoDsonNoJson() throws IOException {
 		final String out;
 		final String err;
@@ -124,14 +110,11 @@ public class GenerateUniversesTest {
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(8)
+			.hasLineCount(5)
 			.containsSubsequence(
-				"RADIXDLT_UNIVERSE_PRIVKEY=", "\n",
 				"RADIXDLT_VALIDATOR_0_PRIVKEY=", "\n",
 				"RADIXDLT_STAKER_0_PRIVKEY=", "\n",
 				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-				"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
-				"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
 				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
 				"RADIXDLT_UNIVERSE=", "\n"
 			);
@@ -149,11 +132,9 @@ public class GenerateUniversesTest {
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(5)
+			.hasLineCount(3)
 			.containsSubsequence(
 				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-				"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
-				"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
 				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
 				"RADIXDLT_UNIVERSE=", "\n"
 			);

@@ -19,11 +19,18 @@ package com.radixdlt.integration.mempool;
 
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineConfig;
+import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +64,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.addressbook.PeersView;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
@@ -99,9 +106,8 @@ public class MempoolRelayTest {
 
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
-	private final ECKeyPair universeKey = ECKeyPair.generateNew();
 	private final ImmutableList<Integer> validators;
 	private final ImmutableList<Integer> fullNodes;
 
@@ -147,14 +153,17 @@ public class MempoolRelayTest {
 		/* Using injector to create a valid genesis atoms using the modules, and inject it to this instance */
 		final var validatorsKeys = this.validators.stream().map(nodeKeys::get).collect(ImmutableList.toImmutableList());
 		Guice.createInjector(
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new CryptoModule(),
+			new RadixEngineModule(),
+			RadixEngineConfig.createModule(1, 100, 100),
 			new AbstractModule() {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(ECKeyPair.class).annotatedWith(Names.named("universeKey")).toInstance(universeKey);
 					bind(new TypeLiteral<ImmutableList<ECKeyPair>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
+					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 				}
 
 				@ProvidesIntoSet
@@ -176,7 +185,7 @@ public class MempoolRelayTest {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(new TypeLiteral<List<Txn>>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
+					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(() -> allNodes);

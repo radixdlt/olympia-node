@@ -30,8 +30,7 @@ public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
 
 	private static BFTHeader get() {
 		View view = View.of(1234567890L);
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
+		LedgerHeader ledgerHeader = LedgerHeader.mocked();
 		return new BFTHeader(view, HashUtils.random256(), ledgerHeader);
 	}
 }

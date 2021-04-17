@@ -29,7 +29,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -39,11 +38,12 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisAtomModule;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.transaction.TokenFeeModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.EngineStore;
@@ -77,7 +77,7 @@ public class TokenFeeTest {
 
 	@Inject
 	@Genesis
-	private List<Txn> genesisTxns;
+	private VerifiedTxnsAndProof genesisTxns;
 
 	@Inject
 	@Named("magic")
@@ -97,7 +97,7 @@ public class TokenFeeTest {
 		return Guice.createInjector(
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new TokenFeeModule(),
-			new MockedGenesisAtomModule(),
+			new MockedGenesisModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

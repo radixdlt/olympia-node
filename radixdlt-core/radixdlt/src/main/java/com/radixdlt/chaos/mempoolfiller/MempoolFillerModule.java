@@ -27,8 +27,6 @@ import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 /**
@@ -58,7 +56,7 @@ public final class MempoolFillerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private StateReducer<?, ?> particleCounter(@NativeToken RRI tokenRRI, @Self RadixAddress self) {
-		return new ParticleCounter(tokenRRI, self);
+	private StateReducer<?, ?> particleCounter(@Self RadixAddress self) {
+		return new ParticleCounter(self);
 	}
 }

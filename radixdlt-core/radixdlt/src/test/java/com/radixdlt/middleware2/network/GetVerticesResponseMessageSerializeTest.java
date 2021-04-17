@@ -20,8 +20,6 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
@@ -30,8 +28,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	}
 
 	private static GetVerticesResponseMessage get() {
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(accumulatorState, null);
+		LedgerHeader ledgerHeader = LedgerHeader.mocked();
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
 		return new GetVerticesResponseMessage(1234, ImmutableList.of(genesisVertex));
 	}

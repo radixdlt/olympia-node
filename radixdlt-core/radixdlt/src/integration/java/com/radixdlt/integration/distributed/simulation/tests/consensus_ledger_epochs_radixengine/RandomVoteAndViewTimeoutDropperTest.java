@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -48,7 +47,7 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
+		.ledgerAndRadixEngineWithEpochHighView(10)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),

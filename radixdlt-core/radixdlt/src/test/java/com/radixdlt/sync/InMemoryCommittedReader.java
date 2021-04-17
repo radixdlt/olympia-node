@@ -61,7 +61,7 @@ class InMemoryCommittedReader implements CommittedReader {
 					int index = (int) (version - firstVersion);
 					commandsAndProof.put(
 						version,
-						new VerifiedTxnsAndProof(
+						VerifiedTxnsAndProof.create(
 							commands.subList(index, commands.size()),
 							update.getTail()
 						)
@@ -90,7 +90,7 @@ class InMemoryCommittedReader implements CommittedReader {
 						entry.getValue().getProof().getAccumulatorState()
 					).orElseThrow(() -> new RuntimeException());
 
-				return new VerifiedTxnsAndProof(txns, entry.getValue().getProof());
+				return VerifiedTxnsAndProof.create(txns, entry.getValue().getProof());
 			}
 
 			return null;

@@ -71,7 +71,7 @@ public class MockedRecoveryModule extends AbstractModule {
 		BFTValidatorSet validatorSet
 	) {
 		var accumulatorState = new AccumulatorState(0, genesisHash);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet));
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
@@ -90,7 +90,7 @@ public class MockedRecoveryModule extends AbstractModule {
 	@LastEpochProof
 	public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return LedgerProof.genesis(accumulatorState, validatorSet);
+		return LedgerProof.genesis(accumulatorState, validatorSet, 0);
 	}
 
 	@Provides

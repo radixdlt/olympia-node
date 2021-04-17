@@ -22,10 +22,7 @@ import org.mockito.stubbing.Answer;
 import org.radix.api.services.SystemService;
 import org.radix.time.Time;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.universe.Universe;
-import com.radixdlt.universe.Universe.UniverseType;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -52,17 +49,8 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 public class SystemControllerTest {
 	private final SystemService systemService = mock(SystemService.class);
 	private final InMemorySystemInfo inMemorySystemInfo = mock(InMemorySystemInfo.class);
-	private final Universe universe =
-		Universe.newBuilder()
-			.type(UniverseType.DEVELOPMENT)
-			.name("Name")
-			.description("Description")
-			.port(30000)
-			.timestamp(System.currentTimeMillis())
-			.creator(ECKeyPair.generateNew().getPublicKey())
-			.build();
 	private final SystemController systemController =
-		new SystemController(systemService, inMemorySystemInfo, universe);
+		new SystemController(systemService, inMemorySystemInfo);
 
 	@Test
 	public void routesAreConfigured() {
@@ -73,7 +61,6 @@ public class SystemControllerTest {
 		verify(handler).get(eq("/api/ping"), any());
 		verify(handler).put(eq("/api/bft/0"), any());
 		verify(handler).get(eq("/api/universe"), any());
-		verify(handler).get(eq("/api/vertices/highestqc"), any());
 	}
 
 	@Test

@@ -279,6 +279,18 @@ public final class RadixEngine<M> {
 			return engine.construct(action);
 		}
 
+		public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+			return engine.construct(actions);
+		}
+
+		public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {
+			return engine.construct(address, action);
+		}
+
+		public TxBuilder construct(RadixAddress address, List<TxAction> actions) throws TxBuilderException {
+			return engine.construct(address, actions);
+		}
+
 		public <U> U getComputedState(Class<U> applicationStateClass) {
 			return engine.getComputedState(applicationStateClass);
 		}
@@ -433,6 +445,10 @@ public final class RadixEngine<M> {
 
 	public TxBuilder construct(TxAction action) throws TxBuilderException {
 		return construct(null, List.of(action));
+	}
+
+	public TxBuilder construct(List<TxAction> actions) throws TxBuilderException {
+		return construct(null, actions);
 	}
 
 	public TxBuilder construct(RadixAddress address, TxAction action) throws TxBuilderException {

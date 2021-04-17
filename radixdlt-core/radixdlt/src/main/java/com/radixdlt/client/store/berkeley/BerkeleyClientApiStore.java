@@ -17,19 +17,22 @@
 
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.utils.RadixConstants;
+import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.api.construction.TxnParser;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.ClientApiStoreException;
@@ -37,7 +40,6 @@ import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.store.TransactionParser;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
@@ -52,7 +54,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import com.sleepycat.je.Database;
@@ -676,8 +677,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private static ByteBuf writeRRI(ByteBuf buf, RRI rri) {
 		return buf
-			.writeBytes(rri.getAddress().toByteArray())
-			.writeBytes(rri.getName().getBytes());
+			.writeBytes(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
 	private static ByteBuf buffer() {
