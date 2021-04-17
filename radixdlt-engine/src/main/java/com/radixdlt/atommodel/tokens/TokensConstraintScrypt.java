@@ -18,25 +18,14 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atommodel.routines.AllocateTokensRoutine;
+import com.radixdlt.atommodel.routines.DeallocateTokensRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
-import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.SignatureValidator;
-import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.InputOutputReducer;
-import com.radixdlt.constraintmachine.VoidParticle;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -94,67 +83,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
-		os.executeRoutine(calls -> {
-			calls.createTransition(
-				new TransitionToken<>(
-					VoidParticle.class,
-					TokensParticle.class,
-					TypeToken.of(VoidReducerState.class)
-				),
-				new TransitionProcedure<>() {
-					@Override
-					public Result precondition(
-						VoidParticle inputParticle,
-						TokensParticle outputParticle,
-						VoidReducerState inputUsed,
-						ImmutableIndex immutableIndex
-					) {
-						var p = immutableIndex.loadRriId(null, outputParticle.getRriId());
-						if (p.isEmpty()) {
-							return Result.error("Token does not exist.");
-						}
-
-						var particle = p.get();
-						if (!(particle instanceof TokenDefinitionParticle)) {
-							return Result.error("Rri is not a token");
-						}
-
-						var tokenDef = (TokenDefinitionParticle) particle;
-
-						if (!tokenDef.isMutable()) {
-							return Result.error("Can only mint mutable tokens.");
-						}
-
-						return Result.success();
-					}
-
-					@Override
-					public PermissionLevel requiredPermissionLevel(VoidParticle i, TokensParticle o, ImmutableIndex index) {
-						var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-						return tokenDef.getRri().getAddress().map(a -> PermissionLevel.USER).orElse(PermissionLevel.SYSTEM);
-					}
-
-					@Override
-					public InputOutputReducer<VoidParticle, TokensParticle, VoidReducerState>
-						inputOutputReducer() {
-						return (i, o, index, outputUsed) -> {
-							var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-							return ReducerResult.complete(
-								new MintToken(tokenDef.getRri(), o.getAddress(), o.getAmount())
-							);
-						};
-					}
-
-					@Override
-					public SignatureValidator<VoidParticle, TokensParticle> signatureRequired() {
-						return (i, o, index) -> {
-							var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-							return tokenDef.getRri().getAddress();
-						};
-					}
-				}
-			);
-		});
+		os.executeRoutine(new AllocateTokensRoutine());
 
 		// Transfers
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
@@ -170,55 +99,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 
-
 		// Burns
-		os.executeRoutine(calls -> {
-			calls.createTransition(
-				new TransitionToken<>(
-					TokensParticle.class,
-					VoidParticle.class,
-					TypeToken.of(CreateFungibleTransitionRoutine.UsedAmount.class)
-				),
-				new TransitionProcedure<>() {
-					@Override
-					public Result precondition(
-						TokensParticle inputParticle,
-						VoidParticle outputParticle,
-						CreateFungibleTransitionRoutine.UsedAmount inputUsed,
-						ImmutableIndex immutableIndex
-					) {
-						if (!inputUsed.isInput()) {
-							return Result.error("Broken state.");
-						}
-
-						var p = immutableIndex.loadRriId(null, inputParticle.getRriId());
-						if ((p.isEmpty() || !(p.get() instanceof TokenDefinitionParticle))) {
-							return Result.error("Bad rriId");
-						}
-						var token = (TokenDefinitionParticle) p.get();
-						if (!token.isMutable())	{
-							return Result.error("Cannot burn Fixed supply token.");
-						}
-
-						return Result.success();
-					}
-
-					@Override
-					public InputOutputReducer<TokensParticle, VoidParticle, UsedAmount> inputOutputReducer() {
-						return (i, o, index, state) -> {
-							var amt = i.getAmount().subtract(state.getUsedAmount());
-							var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
-							return ReducerResult.complete(new BurnToken(p.getRri(), amt));
-						};
-					}
-
-					@Override
-					public SignatureValidator<TokensParticle, VoidParticle> signatureRequired() {
-						return (i, o, index) -> Optional.of(i.getAddress());
-					}
-				}
-			);
-		});
+		os.executeRoutine(new DeallocateTokensRoutine());
 	}
 
 	@VisibleForTesting
