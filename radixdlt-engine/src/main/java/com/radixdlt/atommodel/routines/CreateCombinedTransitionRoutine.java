@@ -101,7 +101,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle) {
+			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
 				return permissionLevel.apply(inputParticle, outputParticle);
 			}
 

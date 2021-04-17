@@ -28,6 +28,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -125,6 +126,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						return Result.success();
+					}
+
+					@Override
+					public PermissionLevel requiredPermissionLevel(VoidParticle i, TokensParticle o, ImmutableIndex index) {
+						var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
+						return tokenDef.getRri().getAddress().map(a -> PermissionLevel.USER).orElse(PermissionLevel.SYSTEM);
 					}
 
 					@Override

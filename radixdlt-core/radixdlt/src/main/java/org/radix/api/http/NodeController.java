@@ -26,8 +26,11 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -53,7 +56,7 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
-	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
 	private final RRI nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -123,6 +126,36 @@ public final class NodeController implements Controller {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
 		switch (actionString) {
+			case "CreateMutableToken": {
+				var symbol = paramsObject.getString("symbol");
+				var name = paramsObject.getString("name");
+				var description = paramsObject.getString("description");
+				var iconUrl = paramsObject.getString("iconUrl");
+				var url = paramsObject.getString("url");
+				return new CreateMutableToken(symbol, name, description, iconUrl, url);
+			}
+			case "TransferTokens": {
+				var rri = RRI.from(paramsObject.getString("rri"));
+				var addressString = paramsObject.getString("to");
+				var to = RadixAddress.from(addressString);
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new TransferToken(rri, to, subunits);
+			}
+			case "MintTokens": {
+				var rri = RRI.from(paramsObject.getString("rri"));
+				var addressString = paramsObject.getString("to");
+				var to = RadixAddress.from(addressString);
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new MintToken(rri, to, subunits);
+			}
+			case "BurnTokens": {
+				var rri = RRI.from(paramsObject.getString("rri"));
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new BurnToken(rri, subunits);
+			}
 			case "StakeTokens": {
 				var addressString = paramsObject.getString("to");
 				var delegate = RadixAddress.from(addressString);

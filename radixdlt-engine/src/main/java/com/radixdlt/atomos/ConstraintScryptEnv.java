@@ -136,7 +136,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle) {
+				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
 					return systemNames.contains(inputParticle.getRri().getName())
 						|| inputParticle.getRri().getAddress().isEmpty()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
@@ -210,8 +210,8 @@ final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(Particle i, Particle o) {
-					return procedure.requiredPermissionLevel((I) i, (O) o);
+				public PermissionLevel requiredPermissionLevel(Particle i, Particle o, ImmutableIndex index) {
+					return procedure.requiredPermissionLevel((I) i, (O) o, index);
 				}
 
 				@Override

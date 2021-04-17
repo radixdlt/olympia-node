@@ -290,11 +290,6 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
 		}
 
-		final PermissionLevel requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(inputParticle, outputParticle);
-		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
 		final var used = validationState.getReducerState();
 
 		// Precondition check
@@ -306,6 +301,13 @@ public final class ConstraintMachine {
 		);
 		if (preconditionCheckResult.isError()) {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
+		}
+
+		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
+			inputParticle, outputParticle, validationState.immutableIndex()
+		);
+		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
