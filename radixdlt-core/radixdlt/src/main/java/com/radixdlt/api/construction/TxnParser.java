@@ -39,7 +39,7 @@ public final class TxnParser {
 	}
 
 	public REParsedTxn parse(Txn txn) throws RadixEngineException {
-		return constraintMachine.validate(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.USER);
+		return constraintMachine.validate(logCMStore.createTransaction(), logCMStore, txn, PermissionLevel.SYSTEM);
 	}
 
 	public Result<REParsedTxn> parseTxn(Txn txn) {
@@ -47,14 +47,6 @@ public final class TxnParser {
 			return Result.ok(parse(txn));
 		} catch (RadixEngineException e) {
 			return Result.fail(e);
-		}
-
-	}
-	public REParsedTxn parseOrElseThrow(Txn txn) {
-		try {
-			return parse(txn);
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException(e);
 		}
 	}
 }

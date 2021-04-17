@@ -33,5 +33,5 @@ public interface TransitionProcedure<I extends Particle, O extends Particle, U e
 
 	InputOutputReducer<I, O, U> inputOutputReducer();
 
-	SignatureValidator<I> inputSignatureRequired();
+	SignatureValidator<I, O> signatureRequired();
 }

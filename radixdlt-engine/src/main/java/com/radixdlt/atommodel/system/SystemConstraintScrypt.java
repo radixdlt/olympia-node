@@ -117,8 +117,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle> inputSignatureRequired() {
-					return i -> Optional.empty();
+				public SignatureValidator<SystemParticle, SystemParticle> signatureRequired() {
+					return (i, o, index) -> Optional.empty();
 				}
 			}
 		);

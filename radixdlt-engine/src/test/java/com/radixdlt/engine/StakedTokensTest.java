@@ -18,7 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -73,15 +73,17 @@ public class StakedTokensTest {
 			null,
 			null
 		);
-		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
-			.createMutableToken(tokDef)
-			.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN);
-		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
-
+		var txn0 = engine.construct(
+			this.tokenOwnerAddress,
+			TxActionListBuilder.create()
+				.createMutableToken(tokDef)
+				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.build()
+		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
-		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
+		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		this.engine.execute(List.of(atom0, atom1));
+		this.engine.execute(List.of(txn0, txn1));
 	}
 
 	@Test

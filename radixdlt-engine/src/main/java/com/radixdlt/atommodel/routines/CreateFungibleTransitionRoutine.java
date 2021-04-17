@@ -98,7 +98,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 	private final Function<I, UInt256> inputAmountMapper;
 	private final Function<O, UInt256> outputAmountMapper;
 	private final BiFunction<I, O, Result> transition;
-	private final SignatureValidator<I> inputSignatureValidator;
+	private final SignatureValidator<I, O> signatureValidator;
 	private final ActionMapper<I, O> actionMapper;
 
 
@@ -108,7 +108,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		Function<I, UInt256> inputAmountMapper,
 		Function<O, UInt256> outputAmountMapper,
 		BiFunction<I, O, Result> transition,
-		SignatureValidator<I> inputSignatureValidator,
+		SignatureValidator<I, O> signatureValidator,
 		ActionMapper<I, O> actionMapper
 	) {
 		Objects.requireNonNull(inputAmountMapper);
@@ -120,7 +120,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
-		this.inputSignatureValidator = inputSignatureValidator;
+		this.signatureValidator = signatureValidator;
 		this.actionMapper = actionMapper;
 	}
 
@@ -161,8 +161,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
+			public SignatureValidator<I, O> signatureRequired() {
+				return signatureValidator;
 			}
 		};
 	}
@@ -203,8 +203,8 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
+			public SignatureValidator<I, O> signatureRequired() {
+				return signatureValidator;
 			}
 		};
 	}

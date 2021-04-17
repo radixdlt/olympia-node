@@ -37,7 +37,6 @@ import static com.radixdlt.cli.Utils.println;
 			GetMessages.class,
 			GetDetails.class,
 			GetStoredAtoms.class,
-			CreateAndMintToken.class,
 			RegisterValidator.class,
 			UnregisterValidator.class,
 			ShowValidatorConfig.class,
