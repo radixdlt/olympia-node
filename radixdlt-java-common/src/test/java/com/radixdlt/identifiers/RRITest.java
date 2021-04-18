@@ -44,13 +44,9 @@ public class RRITest {
 	public void when_parsing_a_correctly_formed_rri__exception_is_not_thrown() {
 		List<String> correctRRIs = Arrays.asList(
 			"xrd",
-			"XRD",
 			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.name-",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.-name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.NAME",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.name123456",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.1"
+			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.nam",
+			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.n"
 		);
 
 		correctRRIs.forEach(rriStr -> assertThat(RRI.from(rriStr)).isNotNull());

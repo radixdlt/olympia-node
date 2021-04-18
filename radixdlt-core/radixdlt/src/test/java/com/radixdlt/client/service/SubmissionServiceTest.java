@@ -111,7 +111,7 @@ public class SubmissionServiceTest {
 	@Inject
 	private SubmissionService submissionService;
 
-	private RRI nativeToken;
+	private RRI nativeToken = RRI.from("xrd");
 
 	private final InMemoryEngineStore<LedgerAndBFTProof> engineStore = new InMemoryEngineStore<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
@@ -195,7 +195,6 @@ public class SubmissionServiceTest {
 		}
 
 		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
-		nativeToken = RRI.from("XRD");
 	}
 
 	@Before

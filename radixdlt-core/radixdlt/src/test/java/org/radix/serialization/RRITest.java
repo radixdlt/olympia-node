@@ -28,7 +28,7 @@ public class RRITest extends SerializeValue<RRI> {
 	private static RRI get() {
 		return RRI.of(
 			RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"),
-			"JOSH"
+			"jsh"
 		);
 	}
 }

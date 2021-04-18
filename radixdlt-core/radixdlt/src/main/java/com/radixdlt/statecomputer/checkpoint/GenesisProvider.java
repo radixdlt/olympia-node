@@ -110,7 +110,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 		var branch = radixEngine.transientBranch();
 		var genesisTxns = new ArrayList<Txn>();
-		var rri = RRI.from("XRD");
+		var rri = RRI.from("xrd");
 		try {
 			// Network token
 			var createTokenActions = TxActionListBuilder.create()

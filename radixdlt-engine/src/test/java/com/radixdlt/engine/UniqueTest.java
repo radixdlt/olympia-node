@@ -59,7 +59,7 @@ public class UniqueTest {
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
 		var atom = TxBuilder.newBuilder(address)
-			.mutex("thisisauniquestring")
+			.mutex("np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
 	}
@@ -67,7 +67,7 @@ public class UniqueTest {
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
 		var otherRadixAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var rri = RRI.of(otherRadixAddress, "thisisauniquestring");
+		var rri = RRI.of(otherRadixAddress, "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri))

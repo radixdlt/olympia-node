@@ -100,7 +100,7 @@ public class MempoolTest {
 
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			var rri = RRI.of(address, "test" + i);
+			var rri = RRI.of(address, "test" + (char) ('c' + i));
 			var rriParticle = new RRIParticle(rri);
 			var rriId = RriId.fromRri(rri);
 			UniqueParticle uniqueParticle = new UniqueParticle(rriId);

@@ -42,7 +42,7 @@ public final class CreateMutableToken implements TxAction {
 		String iconUrl,
 		String tokenUrl
 	) {
-		this.symbol = Objects.requireNonNull(symbol);
+		this.symbol = symbol.toLowerCase();
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
 		this.iconUrl = iconUrl;

@@ -52,7 +52,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = RRI.of(this.tokenOwnerAddress, "XRD");
+		this.tokenRri = RRI.of(this.tokenOwnerAddress, "xrd");
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());

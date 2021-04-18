@@ -28,16 +28,19 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class RRI {
-	private static final String NAME_REGEX = "[-0-9A-Za-z]+";
+	private static final String NAME_REGEX = "[ac-hj-np-z]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
-	// TODO: Will replace this with shardable at some point
 	private final RadixAddress address;
 	private final String name;
 
 	RRI(RadixAddress address, String name) {
+		if (!NAME_PATTERN.matcher(name).matches()) {
+			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
+		}
+
 		this.address = address;
-		this.name = Objects.requireNonNull(name);
+		this.name = name;
 	}
 
 	public boolean ownedBy(ECPublicKey publicKey) {
@@ -77,10 +80,6 @@ public final class RRI {
 		} else {
 			address = null;
 			name = split[0];
-		}
-
-		if (!NAME_PATTERN.matcher(name).matches()) {
-			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + s);
 		}
 
 		return new RRI(address, name);

@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 
 public class BalanceEntryTest {
 	private static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-	private static final RRI TOKEN_RRI = RRI.of(ADDRESS, "XRD");
+	private static final RRI TOKEN_RRI = RRI.of(ADDRESS, "xrd");
 
 	@Test
 	public void verifyBalanceCalculation() {

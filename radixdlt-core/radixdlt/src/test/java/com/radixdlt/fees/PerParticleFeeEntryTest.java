@@ -63,11 +63,11 @@ public class PerParticleFeeEntryTest {
     	Set<Particle> outputs = Sets.newHashSet();
 
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 1"));
+    	outputs.add(makeParticle("partclee"));
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 2"));
+    	outputs.add(makeParticle("partcleee"));
     	assertEquals(FEE, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 3"));
+    	outputs.add(makeParticle("partcleeee"));
     	assertEquals(FEE.multiply(UInt256.TWO), f.feeFor(null, 0, outputs));
     }
 
@@ -81,8 +81,8 @@ public class PerParticleFeeEntryTest {
     	// Fee overflow
     	PerParticleFeeEntry f = PerParticleFeeEntry.of(TYPE, 0, UInt256.MAX_VALUE);
     	ImmutableSet<Particle> outputs = ImmutableSet.of(
-    		makeParticle("Particle 1"),
-    		makeParticle("Particle 2")
+    		makeParticle("partcleee"),
+    		makeParticle("partclene")
     	);
     	assertThatThrownBy(() -> f.feeFor(null, 2, outputs))
     		.isInstanceOf(ArithmeticException.class)

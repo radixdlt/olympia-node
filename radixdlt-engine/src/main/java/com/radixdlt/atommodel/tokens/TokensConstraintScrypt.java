@@ -28,22 +28,11 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Scrypt which defines how tokens are managed.
  */
 public class TokensConstraintScrypt implements ConstraintScrypt {
-	private final Set<String> systemNames;
-
-	public TokensConstraintScrypt(Set<String> systemNames) {
-		this.systemNames = Objects.requireNonNull(systemNames);
-	}
-
-	public TokensConstraintScrypt() {
-		this(Set.of());
-	}
-
 	@Override
 	public void main(SysCalls os) {
 		registerParticles(os);
@@ -55,7 +44,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
-				.staticValidation(p -> TokenDefinitionUtils.staticCheck(p, systemNames))
+				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(TokenDefinitionParticle::getRriId)
 				.build()
 		);
