@@ -61,12 +61,12 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "xrd");
+	private final RRI tokenRri = RRI.of(tokenOwnerKeyPair.getPublicKey(), "xrd");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
 		"xrd", "Test", "description", null, null
 	);
 
-	private final RRI tokenRriII = RRI.of(tokenOwnerAddress, "tst");
+	private final RRI tokenRriII = RRI.of(tokenOwnerKeyPair.getPublicKey(), "tst");
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
 		"tst", "Test2", "description2", null, null
 	);

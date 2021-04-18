@@ -40,7 +40,6 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
@@ -96,11 +95,9 @@ public class MempoolTest {
 	}
 
 	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			var rri = RRI.of(address, "test" + (char) ('c' + i));
+			var rri = RRI.of(keyPair.getPublicKey(), "test" + (char) ('c' + i));
 			var rriParticle = new RRIParticle(rri);
 			var rriId = RriId.fromRri(rri);
 			UniqueParticle uniqueParticle = new UniqueParticle(rriId);

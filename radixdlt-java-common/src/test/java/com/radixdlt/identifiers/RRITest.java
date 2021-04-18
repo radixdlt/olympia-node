@@ -43,60 +43,21 @@ public class RRITest {
 	@Test
 	public void when_parsing_a_correctly_formed_rri__exception_is_not_thrown() {
 		List<String> correctRRIs = Arrays.asList(
-			"xrd",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.nam",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.n"
+			"xrd1l4hlf5",
+			"test1qfthlphlwt6gx22p27a7223h040jtkp9pr3atqeqrm52h0hmwcaqkkkp5s6"
 		);
 
-		correctRRIs.forEach(rriStr -> assertThat(RRI.from(rriStr)).isNotNull());
+		correctRRIs.forEach(rriStr -> assertThat(RRI.fromBech32(rriStr)).isNotNull());
 	}
 
 	@Test
 	public void when_parsing_bad_structure__illegal_argument_exception_should_occur() {
 		List<String> badTypeRRIs = Arrays.asList(
-			"a.JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type.name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type.",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.."
+			"xrd"
 		);
 
 		badTypeRRIs.forEach(rriStr ->
-			assertThatThrownBy(() -> RRI.from(rriStr))
-				.isInstanceOf(IllegalArgumentException.class)
-		);
-	}
-
-
-	@Test
-	public void when_parsing_bad_type__illegal_argument_exception_should_occur() {
-		List<String> badTypeRRIs = Arrays.asList(
-			".JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor. .name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor. type.NAME",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor._type.name123456",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.:e.1",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor..1"
-		);
-
-		badTypeRRIs.forEach(rriStr ->
-			assertThatThrownBy(() -> RRI.from(rriStr))
-				.isInstanceOf(IllegalArgumentException.class)
-		);
-	}
-
-	@Test
-	public void when_parsing_bad_name__illegal_argument_exception_should_occur() {
-		List<String> badTypeRRIs = Arrays.asList(
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type.#",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type.a b",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type.*",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type. name",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type. ",
-			"JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor.type."
-		);
-
-		badTypeRRIs.forEach(rriStr ->
-			assertThatThrownBy(() -> RRI.from(rriStr))
+			assertThatThrownBy(() -> RRI.fromBech32(rriStr))
 				.isInstanceOf(IllegalArgumentException.class)
 		);
 	}

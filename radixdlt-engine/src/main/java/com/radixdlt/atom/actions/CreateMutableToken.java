@@ -71,8 +71,8 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var tokenRRI = txBuilder.getAddress().map(a -> RRI.of(a, symbol))
-			.orElse(RRI.from(symbol));
+		final var tokenRRI = txBuilder.getAddress().map(a -> RRI.of(a.getPublicKey(), symbol))
+			.orElse(RRI.ofSystem(symbol));
 
 		txBuilder.down(
 			RRIParticle.class,

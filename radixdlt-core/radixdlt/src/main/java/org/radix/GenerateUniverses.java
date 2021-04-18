@@ -440,7 +440,7 @@ public final class GenerateUniverses {
 		final Serialization serialization = DefaultSerialization.getInstance();
 		if (!suppressDson) {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			RRI tokenRri = RRI.from(TokenDefinitionUtils.getNativeTokenShortCode());
+			RRI tokenRri = RRI.ofSystem(TokenDefinitionUtils.getNativeTokenShortCode());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);

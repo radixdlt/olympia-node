@@ -150,7 +150,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addDeserializer(RRI.class, new JacksonJsonObjectStringDeserializer<>(
 				RRI.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				RRI::from
+				RRI::fromBech32
 		));
 		jsonModule.addDeserializer(AID.class, new JacksonJsonObjectStringDeserializer<>(
 				AID.class,

@@ -405,7 +405,7 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var rri = RRI.of(address, id);
+		final var rri = RRI.of(address.getPublicKey(), id);
 		final var rriId = RriId.fromRri(rri);
 		swap(
 			RRIParticle.class,
@@ -422,7 +422,7 @@ public final class TxBuilder {
 	public TxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
+		final var tokenRRI = RRI.of(address.getPublicKey(), tokenDefinition.getSymbol());
 		final var rriId = RriId.fromRri(tokenRRI);
 
 		down(
@@ -455,7 +455,7 @@ public final class TxBuilder {
 	public TxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address, tokenDefinition.getSymbol());
+		final var tokenRRI = RRI.of(address.getPublicKey(), tokenDefinition.getSymbol());
 		down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),

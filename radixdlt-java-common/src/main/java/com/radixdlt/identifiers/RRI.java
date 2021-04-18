@@ -18,76 +18,116 @@
 package com.radixdlt.identifiers;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.functional.Result;
+import org.bitcoinj.core.AddressFormatException;
+import org.bitcoinj.core.Bech32;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class RRI {
-	private static final String NAME_REGEX = "[ac-hj-np-z]+";
+	private static final String NAME_REGEX = "[a-z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
-	private final RadixAddress address;
+	private final byte[] hash;
 	private final String name;
 
-	RRI(RadixAddress address, String name) {
+	RRI(byte[] hash, String name) {
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
 		}
 
-		this.address = address;
+		this.hash = hash;
 		this.name = name;
 	}
 
-	public boolean ownedBy(ECPublicKey publicKey) {
-		return getAddress().map(RadixAddress::getPublicKey).map(publicKey::equals).orElse(false);
+	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
+		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
+		var dataToHash = new byte[33 + nameBytes.length];
+		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
+		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
+		var firstHash = HashUtils.sha256(dataToHash);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
 	}
 
-	public Optional<RadixAddress> getAddress() {
-		return Optional.ofNullable(address);
+	public boolean ownedBy(ECPublicKey publicKey) {
+		if (hash.length == 0) {
+			return false;
+		}
+
+		return Arrays.equals(hash, pkToHash(name, publicKey));
+	}
+
+	public boolean isSystem() {
+		return hash.length == 0;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public static RRI of(RadixAddress address, String name) {
-		Objects.requireNonNull(address);
-		return new RRI(address, name);
+	public static RRI of(ECPublicKey key, String name) {
+		Objects.requireNonNull(key);
+		return new RRI(pkToHash(name, key), name);
 	}
 
-	public static RRI from(String s) {
-		String[] split = s.split("\\.", 2);
-		if (split.length > 2 || split.length < 1) {
-			throw new IllegalArgumentException(
-				"RRI does not have enough components and must be of the format :address.:name or :name (" + s + ")"
-			);
-		}
+	public static RRI ofSystem(String name) {
+		return new RRI(new byte[0], name);
+	}
 
-		final RadixAddress address;
-		final String name;
-		if (split.length == 2) {
-			try {
-				address = RadixAddress.from(split[0]);
-			} catch (Exception e) {
-				throw new IllegalArgumentException("Invalid address", e);
+	public static RRI fromBech32(String s) {
+		var d = Bech32.decode(s);
+		var hash = d.data;
+		if (hash.length > 0) {
+			hash = convertBits(hash, 0, hash.length, 5, 8, false);
+		}
+		if (!d.hrp.endsWith("_rr")) {
+			throw new IllegalArgumentException("Rri must end in _rr");
+		}
+		return new RRI(hash, d.hrp.substring(0, d.hrp.length() - 3));
+	}
+
+	private static byte[] convertBits(final byte[] in, final int inStart, final int inLen, final int fromBits,
+									  final int toBits, final boolean pad) throws AddressFormatException {
+		int acc = 0;
+		int bits = 0;
+		ByteArrayOutputStream out = new ByteArrayOutputStream(64);
+		final int maxv = (1 << toBits) - 1;
+		final int maxAcc = (1 << (fromBits + toBits - 1)) - 1;
+		for (int i = 0; i < inLen; i++) {
+			int value = in[i + inStart] & 0xff;
+			if ((value >>> fromBits) != 0) {
+				throw new AddressFormatException(
+					String.format("Input value '%X' exceeds '%d' bit size", value, fromBits));
 			}
-			name = split[1];
-		} else {
-			address = null;
-			name = split[0];
+			acc = ((acc << fromBits) | value) & maxAcc;
+			bits += fromBits;
+			while (bits >= toBits) {
+				bits -= toBits;
+				out.write((acc >>> bits) & maxv);
+			}
 		}
-
-		return new RRI(address, name);
+		if (pad) {
+			if (bits > 0) {
+				out.write((acc << (toBits - bits)) & maxv);
+			}
+		} else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) != 0) {
+			throw new AddressFormatException("Could not convert bits, invalid padding");
+		}
+		return out.toByteArray();
 	}
 
 	public static Result<RRI> fromString(String s) {
 		try {
-			return Result.ok(from(s));
+			return Result.ok(fromBech32(s));
 		} catch (RuntimeException e) {
 			return Result.fail("Error while parsing RRI: {0}", e.getMessage());
 		}
@@ -95,7 +135,13 @@ public final class RRI {
 
 	@Override
 	public String toString() {
-		return (address != null ? address.toString() + "." : "") + name;
+		final byte[] convert;
+		if (hash.length != 0) {
+			convert = convertBits(hash, 0, hash.length, 8, 5, true);
+		} else {
+			convert = hash;
+		}
+		return Bech32.encode(name + "_rr", convert);
 	}
 
 	@Override
@@ -105,11 +151,11 @@ public final class RRI {
 		}
 
 		RRI rri = (RRI) o;
-		return Objects.equals(rri.address, address) && Objects.equals(rri.name, name);
+		return Arrays.equals(rri.hash, hash) && Objects.equals(rri.name, name);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, name);
+		return Objects.hash(Arrays.hashCode(hash), name);
 	}
 }

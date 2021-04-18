@@ -37,6 +37,6 @@ public class RadixEngineCheckpointModule extends AbstractModule {
 	@Singleton // Don't want to recompute on each use
 	@NativeToken
 	private RRI nativeToken() {
-		return RRI.from("xrd");
+		return RRI.ofSystem("xrd");
 	}
 }

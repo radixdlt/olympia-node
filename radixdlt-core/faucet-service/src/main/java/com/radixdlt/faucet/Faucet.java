@@ -147,7 +147,7 @@ public class Faucet {
 
 	private static RRI retrieveTokenRRI() {
 		return envVar(FAUCET_TOKEN_RRI_ENV_NAME)
-			.map(RRI::from)
+			.map(RRI::fromBech32)
 			.orElseGet(() -> fail("Token RRI must be set via env var: {}=<rri-of-token>", FAUCET_TOKEN_RRI_ENV_NAME));
 	}
 

@@ -117,15 +117,11 @@ public final class NodeController implements Controller {
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
-		var balancesJson = new JSONArray();
+		var balancesJson = new JSONObject();
 		balances.forEach((rriId, balance) -> {
-			var balanceJson = new JSONObject();
 			var tokDef = (TokenDefinitionParticle) immutableIndex.loadRriId(null, rriId).orElseThrow();
 			var rri = tokDef.getRri().toString();
-			balanceJson
-				.put("balance", TokenUnitConversions.subunitsToUnits(balance))
-				.put("rri", rri);
-			balancesJson.put(balanceJson);
+			balancesJson.put(rri, TokenUnitConversions.subunitsToUnits(balance));
 		});
 
 		return new JSONObject()
@@ -164,7 +160,7 @@ public final class NodeController implements Controller {
 				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
 			}
 			case "TransferTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = RRI.fromBech32(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -172,7 +168,7 @@ public final class NodeController implements Controller {
 				return new TransferToken(rri, to, subunits);
 			}
 			case "MintTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = RRI.fromBech32(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -180,7 +176,7 @@ public final class NodeController implements Controller {
 				return new MintToken(rri, to, subunits);
 			}
 			case "BurnTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = RRI.fromBech32(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new BurnToken(rri, subunits);

@@ -82,7 +82,7 @@ public class CreateFixedToken implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		final var address = txBuilder.getAddressOrFail("Required address for fixed token.");
-		final var tokenRRI = RRI.of(address, symbol);
+		final var tokenRRI = RRI.of(address.getPublicKey(), symbol);
 		txBuilder.down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),

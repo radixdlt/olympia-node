@@ -164,7 +164,7 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addDeserializer(RRI.class, new JacksonCborObjectBytesDeserializer<>(
 				RRI.class,
 				JacksonCodecConstants.RRI_VALUE,
-				b -> RRI.from(new String(b, RadixConstants.STANDARD_CHARSET))
+				b -> RRI.fromBech32(new String(b, RadixConstants.STANDARD_CHARSET))
 		));
 		cborModule.addDeserializer(AID.class, new JacksonCborObjectBytesDeserializer<>(
 				AID.class,

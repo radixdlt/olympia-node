@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
@@ -98,8 +97,7 @@ public class PerParticleFeeEntryTest {
 
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
-    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-		final var rri = RRI.of(address, message);
+		final var rri = RRI.of(kp.getPublicKey(), message);
     	return new UniqueParticle(RriId.fromRri(rri));
     }
 

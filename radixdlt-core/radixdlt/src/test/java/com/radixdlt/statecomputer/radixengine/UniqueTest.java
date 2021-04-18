@@ -27,7 +27,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -72,8 +71,7 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var rri = RRI.of(address, "test");
+		var rri = RRI.of(keyPair.getPublicKey(), "test");
 		var rriParticle = new RRIParticle(rri);
 		var rriId = RriId.fromRri(rri);
 		var uniqueParticle = new UniqueParticle(rriId);

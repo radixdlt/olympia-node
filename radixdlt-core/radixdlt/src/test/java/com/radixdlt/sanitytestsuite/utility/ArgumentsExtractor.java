@@ -99,7 +99,7 @@ public final class ArgumentsExtractor {
 	}
 
 	public RRI asRRI(String named) {
-		return extractAndMap(named, RRI::from);
+		return extractAndMap(named, RRI::fromBech32);
 	}
 
 	public RadixAddress asRadixAddress(String named) {

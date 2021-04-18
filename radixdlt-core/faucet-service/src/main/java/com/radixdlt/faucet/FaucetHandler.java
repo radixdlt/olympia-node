@@ -104,20 +104,12 @@ final class FaucetHandler {
 	 */
 	private void leakFaucet(RadixAddress recipient, EUID actionId) {
 		try {
-			var mutexAcquire = RRI.of(api.getAddress(), UNIQUE_TX_PREFIX + actionId);
-
-			if (!this.rateLimiter.tryAcquire()) {
-				handleRateLimiting(recipient, actionId, mutexAcquire);
-				return;
-			}
-
 			log.info("Sending tokens to {}", recipient);
 			long start = System.currentTimeMillis();
 
 			var transaction = this.api.createTransaction();
 			transaction.setMessage(String.format("Sent you %s %s", amountToSend, tokenRRI.getName()));
 			transaction.stage(TransferTokensAction.create(tokenRRI, api.getAddress(), recipient, amountToSend));
-			transaction.stage(PutUniqueIdAction.create(mutexAcquire));
 
 			long now1 = System.currentTimeMillis() - start;
 			log.info("Built transaction in {}ms", now1);
@@ -129,22 +121,11 @@ final class FaucetHandler {
 
 			result.toCompletable().subscribe(
 				() -> log.info("Sent tokens to {}", recipient),
-				e -> handleErrorSendingTokens(recipient, actionId, mutexAcquire, e)
+				e -> { }
 			);
 		} catch (Exception e) {
 			log.error("While sending tokens", e);
 		}
-	}
-
-	private void handleErrorSendingTokens(final RadixAddress recipient, final EUID actionId, final RRI mutexAcquire, final Throwable e) {
-		log.info("Error sending tokens", e);
-		var sentRadsMsg = this.api.createTransaction();
-		sentRadsMsg.setMessage(String.format("Could not send you any (Reason: %s)", e.getMessage()));
-		sentRadsMsg.stage(PutUniqueIdAction.create(mutexAcquire));
-		sentRadsMsg.commitAndPush().toObservable().subscribe(
-			saa -> log.debug("Send tokens error message to {} for {}: {}", recipient, actionId, saa),
-			ex -> log.error("Count not send tokens error message", ex)
-		);
 	}
 
 	private void handleRateLimiting(final RadixAddress recipient, final EUID actionId, final RRI mutexAcquire) {

@@ -144,7 +144,7 @@ public final class RESerializer {
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
-		var rri = RRI.from(deserializeString(buf));
+		var rri = RRI.fromBech32(deserializeString(buf));
 		return new RRIParticle(rri);
 	}
 
@@ -231,7 +231,7 @@ public final class RESerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
-		var rri = RRI.from(deserializeString(buf));
+		var rri = RRI.fromBech32(deserializeString(buf));
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);

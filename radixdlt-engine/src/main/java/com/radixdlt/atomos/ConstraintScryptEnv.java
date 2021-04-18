@@ -137,8 +137,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionProcedure<>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
-					return systemNames.contains(inputParticle.getRri().getName())
-						|| inputParticle.getRri().getAddress().isEmpty()
+					return systemNames.contains(inputParticle.getRri().getName()) || inputParticle.getRri().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
@@ -184,8 +183,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getRri().getName())
-				|| rri.getRri().getAddress().isEmpty()
+			(rri, p) -> systemNames.contains(rri.getRri().getName()) || rri.getRri().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,

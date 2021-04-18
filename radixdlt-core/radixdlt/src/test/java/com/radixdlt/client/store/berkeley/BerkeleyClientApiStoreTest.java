@@ -90,7 +90,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
 
-	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS, "cfee");
+	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS.getPublicKey(), "cfee");
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);

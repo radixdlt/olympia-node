@@ -66,8 +66,7 @@ public class UniqueTest {
 
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
-		var otherRadixAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var rri = RRI.of(otherRadixAddress, "smthng");
+		var rri = RRI.of(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri))

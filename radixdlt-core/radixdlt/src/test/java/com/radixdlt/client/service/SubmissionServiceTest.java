@@ -111,7 +111,7 @@ public class SubmissionServiceTest {
 	@Inject
 	private SubmissionService submissionService;
 
-	private RRI nativeToken = RRI.from("xrd");
+	private RRI nativeToken = RRI.ofSystem("xrd");
 
 	private final InMemoryEngineStore<LedgerAndBFTProof> engineStore = new InMemoryEngineStore<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
