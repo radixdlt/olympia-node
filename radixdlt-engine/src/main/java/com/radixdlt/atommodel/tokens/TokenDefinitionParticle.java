@@ -17,7 +17,6 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
@@ -58,10 +57,6 @@ public final class TokenDefinitionParticle implements Particle {
 
 	public Rri getRri() {
 		return rri;
-	}
-
-	public RriId getRriId() {
-		return RriId.fromRri(rri);
 	}
 
 	public String getName() {

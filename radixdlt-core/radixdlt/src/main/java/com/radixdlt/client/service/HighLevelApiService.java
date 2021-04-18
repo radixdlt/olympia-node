@@ -19,7 +19,6 @@ package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -65,7 +64,7 @@ public class HighLevelApiService {
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		return Result.fromOptional(
-			immutableIndex.loadRriId(null, RriId.nativeToken()),
+			immutableIndex.loadRri(null, Rri.ofSystem("xrd")),
 			"Unable to find native token"
 		)
 			.map(p -> (TokenDefinitionParticle) p)

@@ -25,7 +25,6 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -73,8 +72,7 @@ public final class UniqueTest {
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var rri = Rri.of(keyPair.getPublicKey(), "test");
 		var rriParticle = new RRIParticle(rri);
-		var rriId = RriId.fromRri(rri);
-		var uniqueParticle = new UniqueParticle(rriId);
+		var uniqueParticle = new UniqueParticle(rri);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)
 			.up(uniqueParticle)

@@ -27,7 +27,6 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.Rri;
@@ -188,17 +187,17 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		serializeRriId(buf, tokensParticle.getRriId());
+		serializeRri(buf, tokensParticle.getRri());
 		serializeAddress(buf, tokensParticle.getAddress());
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
-		var rriId = deserializeRriId(buf);
+		var rri = deserializeRri(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
 
-		return new TokensParticle(address, amount, rriId);
+		return new TokensParticle(address, amount, rri);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
@@ -230,11 +229,11 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
-		serializeRriId(buf, uniqueParticle.getRriId());
+		serializeRri(buf, uniqueParticle.getRri());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
-		var rri = deserializeRriId(buf);
+		var rri = deserializeRri(buf);
 		return new UniqueParticle(rri);
 	}
 
@@ -281,14 +280,6 @@ public final class RESerializer {
 		var addressDest = new byte[addressLength]; // address
 		buf.get(addressDest);
 		return RadixAddress.from(addressDest);
-	}
-
-	private static void serializeRriId(ByteBuffer buf, RriId rriId) {
-		buf.put(rriId.asBytes()); // rri
-	}
-
-	private static RriId deserializeRriId(ByteBuffer buf) {
-		return RriId.readFromBuf(buf);
 	}
 
 	private static void serializeString(ByteBuffer buf, String s) {

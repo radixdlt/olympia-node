@@ -118,10 +118,8 @@ public final class NodeController implements Controller {
 			)
 		);
 		var balancesJson = new JSONObject();
-		balances.forEach((rriId, balance) -> {
-			var tokDef = (TokenDefinitionParticle) immutableIndex.loadRriId(null, rriId).orElseThrow();
-			var rri = tokDef.getRri().toString();
-			balancesJson.put(rri, TokenUnitConversions.subunitsToUnits(balance));
+		balances.forEach((rri, balance) -> {
+			balancesJson.put(rri.toString(), TokenUnitConversions.subunitsToUnits(balance));
 		});
 
 		return new JSONObject()

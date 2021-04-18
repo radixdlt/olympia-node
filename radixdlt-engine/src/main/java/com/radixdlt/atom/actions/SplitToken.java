@@ -22,7 +22,6 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
@@ -38,10 +37,9 @@ public final class SplitToken implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have address");
-		var rriId = RriId.fromRri(rri);
 		var substate = txBuilder.findSubstate(
 			TokensParticle.class,
-			p -> p.getRriId().equals(rriId)
+			p -> p.getRri().equals(rri)
 				&& p.getAddress().equals(address)
 				&& p.getAmount().compareTo(minSize) > 0,
 			"Could not find large particle greater than " + minSize
@@ -51,7 +49,7 @@ public final class SplitToken implements TxAction {
 		var particle = (TokensParticle) substate.getParticle();
 		var amt1 = particle.getAmount().divide(UInt256.TWO);
 		var amt2 = particle.getAmount().subtract(amt1);
-		txBuilder.up(new TokensParticle(address, amt1, rriId));
-		txBuilder.up(new TokensParticle(address, amt2, rriId));
+		txBuilder.up(new TokensParticle(address, amt1, rri));
+		txBuilder.up(new TokensParticle(address, amt2, rri));
 	}
 }

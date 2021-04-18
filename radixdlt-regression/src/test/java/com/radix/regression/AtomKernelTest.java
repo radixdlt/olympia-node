@@ -19,7 +19,6 @@ package com.radix.regression;
 
 import com.google.common.base.Strings;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -83,13 +82,13 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		final var rri = Rri.of(this.address, "toobig");
+		final var rri = Rri.of(this.address.getPublicKey(), "toobig");
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
-				.up(new UniqueParticle(RriId.fromRri(rri)))
+				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);
 
@@ -100,13 +99,13 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		final var rri = Rri.of(this.address, "nofee");
+		final var rri = Rri.of(this.address.getPublicKey(), "nofee");
 		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
 			10,
 			false,
 			TxLowLevelBuilder.newBuilder()
 				.virtualDown(new RRIParticle(rri))
-				.up(new UniqueParticle(RriId.fromRri(rri)))
+				.up(new UniqueParticle(rri))
 				.particleGroup()
 		);
 		observer.awaitCount(1);

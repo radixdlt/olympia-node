@@ -25,7 +25,6 @@ import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.Rri;
@@ -406,13 +405,12 @@ public final class TxBuilder {
 		assertHasAddress("Must have address");
 
 		final var rri = Rri.of(address.getPublicKey(), id);
-		final var rriId = RriId.fromRri(rri);
 		swap(
 			RRIParticle.class,
 			p -> p.getRri().equals(rri),
 			Optional.of(new RRIParticle(rri)),
 			"RRI not available"
-		).with(r -> new UniqueParticle(rriId));
+		).with(r -> new UniqueParticle(rri));
 
 		particleGroup();
 
@@ -422,18 +420,17 @@ public final class TxBuilder {
 	public TxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
-		final var rriId = RriId.fromRri(tokenRRI);
+		final var tokenRri = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
 
 		down(
 			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			p -> p.getRri().equals(tokenRri),
+			Optional.of(new RRIParticle(tokenRri)),
 			"RRI not available"
 		);
 
 		up(new TokenDefinitionParticle(
-			tokenRRI,
+			tokenRri,
 			tokenDefinition.getName(),
 			tokenDefinition.getDescription(),
 			tokenDefinition.getIconUrl(),
@@ -444,7 +441,7 @@ public final class TxBuilder {
 		up(new TokensParticle(
 			address,
 			tokenDefinition.getSupply(),
-			rriId)
+			tokenRri)
 		);
 
 		particleGroup();
@@ -476,15 +473,14 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder transfer(Rri rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		final var rriId = RriId.fromRri(rri);
 		swapFungible(
 			TokensParticle.class,
-			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
+			p -> p.getRri().equals(rri) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, rriId),
+			amt -> new TokensParticle(address, amt, rri),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(to, amount, rriId));
+		).with(amt -> new TokensParticle(to, amount, rri));
 
 		particleGroup();
 
@@ -492,13 +488,11 @@ public final class TxBuilder {
 	}
 
 	public TxBuilder burn(Rri rri, UInt256 amount) throws TxBuilderException {
-		final var rriId = RriId.fromRri(rri);
-
 		deallocateFungible(
 			TokensParticle.class,
-			p -> p.getRriId().equals(rriId) && p.getAddress().equals(address),
+			p -> p.getRri().equals(rri) && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, rriId),
+			amt -> new TokensParticle(address, amt, rri),
 			amount,
 			"Not enough balance to for burn."
 		);
@@ -513,9 +507,9 @@ public final class TxBuilder {
 
 		swapFungible(
 			TokensParticle.class,
-			p -> p.getRriId().isNativeToken() && p.getAddress().equals(address),
+			p -> p.getRri().isSystem() && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, RriId.nativeToken()),
+			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));

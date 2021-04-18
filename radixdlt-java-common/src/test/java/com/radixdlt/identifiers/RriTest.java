@@ -43,8 +43,7 @@ public class RriTest {
 	@Test
 	public void when_parsing_a_correctly_formed_rri__exception_is_not_thrown() {
 		List<String> correctRRIs = Arrays.asList(
-			"xrd1l4hlf5",
-			"test1qfthlphlwt6gx22p27a7223h040jtkp9pr3atqeqrm52h0hmwcaqkkkp5s6"
+			"xrd_rr1gd5j68"
 		);
 
 		correctRRIs.forEach(rriStr -> assertThat(Rri.fromBech32(rriStr)).isNotNull());
@@ -53,7 +52,9 @@ public class RriTest {
 	@Test
 	public void when_parsing_bad_structure__illegal_argument_exception_should_occur() {
 		List<String> badTypeRRIs = Arrays.asList(
-			"xrd"
+			"xrd",
+			"xrd1l4hlf5",
+			"test1qfthlphlwt6gx22p27a7223h040jtkp9pr3atqeqrm52h0hmwcaqkkkp5s6"
 		);
 
 		badTypeRRIs.forEach(rriStr ->

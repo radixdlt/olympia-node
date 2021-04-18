@@ -18,7 +18,7 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.atomos.RriId;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -27,22 +27,22 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public final class Balances {
-	private final Map<RriId, UInt384> balances = new HashMap<>();
+	private final Map<Rri, UInt384> balances = new HashMap<>();
 
-	public Balances add(RriId rriId, UInt256 amount) {
-		balances.merge(rriId, UInt384.from(amount), UInt384::add);
+	public Balances add(Rri rri, UInt256 amount) {
+		balances.merge(rri, UInt384.from(amount), UInt384::add);
 		return this;
 	}
 
-	public Balances remove(RriId rriId, UInt256 amount) {
-		balances.computeIfPresent(rriId, ((rriId1, uInt384) -> {
+	public Balances remove(Rri rri, UInt256 amount) {
+		balances.computeIfPresent(rri, ((rriId1, uInt384) -> {
 			var bal = uInt384.subtract(amount);
 			return bal.isZero() ? null : bal;
 		}));
 		return this;
 	}
 
-	public void forEach(BiConsumer<RriId, UInt384> consumer) {
+	public void forEach(BiConsumer<Rri, UInt384> consumer) {
 		balances.forEach(consumer);
 	}
 }

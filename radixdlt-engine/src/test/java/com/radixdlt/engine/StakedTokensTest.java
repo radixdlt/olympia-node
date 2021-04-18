@@ -24,6 +24,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,7 +53,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = Rri.of(this.tokenOwnerKeyPair.getPublicKey(), "xrd");
+		this.tokenRri = Rri.ofSystem("xrd");
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
@@ -67,23 +68,22 @@ public class StakedTokensTest {
 		this.engine = new RadixEngine<>(cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
-			"XRD",
+			"xrd",
 			"Test",
 			"description",
 			null,
 			null
 		);
 		var txn0 = engine.construct(
-			this.tokenOwnerAddress,
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
 				.build()
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
+		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		this.engine.execute(List.of(txn0, txn1));
+		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

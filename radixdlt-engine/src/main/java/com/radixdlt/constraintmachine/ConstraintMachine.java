@@ -26,7 +26,6 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -131,14 +130,14 @@ public final class ConstraintMachine {
 		}
 
 		public ImmutableIndex immutableIndex() {
-			return (txn, rriId) ->
+			return (txn, rri) ->
 				localUpParticles.values().stream()
 					.filter(TokenDefinitionParticle.class::isInstance)
 					.map(TokenDefinitionParticle.class::cast)
-					.filter(p -> RriId.fromRri(p.getRri()).equals(rriId))
+					.filter(p -> p.getRri().equals(rri))
 					.findFirst()
 					.map(Particle.class::cast)
-					.or(() -> store.loadRriId(txn, rriId));
+					.or(() -> store.loadRri(txn, rri));
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {

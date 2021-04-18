@@ -160,7 +160,8 @@ public final class Rri {
 		}
 
 		Rri rri = (Rri) o;
-		return Arrays.equals(rri.hash, hash) && Objects.equals(rri.name, name);
+		return Arrays.equals(rri.hash, hash)
+			&& Objects.equals(rri.name, name);
 	}
 
 	@Override

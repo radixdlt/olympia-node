@@ -45,7 +45,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokenDefinitionParticle::getRriId)
+				.rriMapper(TokenDefinitionParticle::getRri)
 				.build()
 		);
 
@@ -54,7 +54,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			ParticleDefinition.<TokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokensParticle::getRriId)
+				.rriMapper(TokensParticle::getRri)
 				.build()
 		);
 
@@ -82,7 +82,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(i, o) -> Result.success(),
 			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> {
-				var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+				var p = (TokenDefinitionParticle) index.loadRri(null, i.getRri()).orElseThrow();
 				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct
 			}
 		));

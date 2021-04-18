@@ -61,7 +61,7 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final Rri tokenRri = Rri.of(tokenOwnerKeyPair.getPublicKey(), "xrd");
+	private final Rri tokenRri = Rri.ofSystem("xrd");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
 		"xrd", "Test", "description", null, null
 	);
@@ -91,16 +91,15 @@ public class TransactionParserTest {
 		engine = new RadixEngine<>(cm, store);
 
 		var txn0 = engine.construct(
-			this.tokenOwnerAddress,
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
 				.build()
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
+		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		engine.execute(List.of(txn0, txn1));
+		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

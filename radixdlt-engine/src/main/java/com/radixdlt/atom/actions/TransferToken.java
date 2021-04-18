@@ -22,7 +22,6 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -53,14 +52,13 @@ public final class TransferToken implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var user = txBuilder.getAddressOrFail("Must have an address to transfer.");
-		var rriId = RriId.fromRri(rri);
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRriId().equals(rriId) && p.getAddress().equals(user),
+			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(user, amt, rriId),
+			amt -> new TokensParticle(user, amt, rri),
 			amount,
 			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(to, amount, rriId));
+		).with(amt -> new TokensParticle(to, amount, rri));
 	}
 }
