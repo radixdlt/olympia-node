@@ -89,10 +89,10 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public SignatureValidator<VoidParticle, TokensParticle> signatureRequired() {
-					return (i, o, index) -> {
+				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
+					return (i, o, index, publicKey) -> {
 						var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-						return tokenDef.getRri().getAddress();
+						return publicKey.map(tokenDef.getRri()::ownedBy).orElse(false);
 					};
 				}
 			}

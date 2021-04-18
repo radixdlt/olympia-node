@@ -35,7 +35,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -149,9 +148,9 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		}
 
 		@Override
-		public SignatureValidator<I, O> signatureRequired() {
+		public SignatureValidator<I, O> signatureValidator() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, o, index) -> Optional.of(inputAddressMapper.apply(i));
+			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i)::ownedBy).orElse(false);
 		}
 	}
 }

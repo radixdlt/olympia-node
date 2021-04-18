@@ -28,7 +28,6 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -92,7 +91,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index) -> Optional.of(i.getAddress()),
+			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> {
 				var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
 				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct

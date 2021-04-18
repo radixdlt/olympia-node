@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
@@ -37,6 +38,10 @@ public final class RRI {
 	RRI(RadixAddress address, String name) {
 		this.address = address;
 		this.name = Objects.requireNonNull(name);
+	}
+
+	public boolean ownedBy(ECPublicKey publicKey) {
+		return getAddress().map(RadixAddress::getPublicKey).map(publicKey::equals).orElse(false);
 	}
 
 	public Optional<RadixAddress> getAddress() {

@@ -352,7 +352,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			new TransactionParser(TOKEN),
+			new TransactionParser(TOKEN, 0),
 			0
 		);
 	}

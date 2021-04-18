@@ -73,7 +73,7 @@ public class TransactionParserTest {
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri);
+	private TransactionParser parser = new TransactionParser(tokenRri, 0);
 
 	@Before
 	public void setup() throws Exception {

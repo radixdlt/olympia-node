@@ -32,7 +32,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
@@ -115,7 +114,6 @@ public final class ConstraintMachine {
 		private final CMStore store;
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
-		private RadixAddress signatureRequired;
 		private TxAction txAction;
 
 		CMValidationState(
@@ -323,21 +321,15 @@ public final class ConstraintMachine {
 			validationState::popAndComplete
 		);
 
-		var addressMaybe = transitionProcedure.signatureRequired()
-			.requiredSignature(inputParticle, outputParticle, validationState.immutableIndex());
-		if (addressMaybe.isPresent()) {
-			var address = addressMaybe.get();
-			if (validationState.signatureRequired != null) {
-				if (!validationState.signatureRequired.equals(address)) {
-					return Optional.of(Pair.of(CMErrorCode.TOO_MANY_REQUIRED_SIGNATURES, null));
-				}
-			} else {
-				if (!validationState.verifySignedWith(address.getPublicKey())) {
-					return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
-				}
+		// System permissions don't require signatures
+		if (validationState.permissionLevel == PermissionLevel.SYSTEM) {
+			return Optional.empty();
+		}
 
-				validationState.signatureRequired = address;
-			}
+		var signatureVerified = transitionProcedure.signatureValidator()
+			.verify(inputParticle, outputParticle, validationState.immutableIndex(), validationState.signedBy);
+		if (!signatureVerified) {
+			return Optional.of(Pair.of(CMErrorCode.INCORRECT_SIGNATURE, null));
 		}
 
 		return Optional.empty();
@@ -584,8 +576,8 @@ public final class ConstraintMachine {
 			throw new RadixEngineException(txn, RadixEngineErrorCode.CM_ERROR, error.get().getErrorDescription(), error.get());
 		}
 
-		var address = validationState.signatureRequired;
+		var signedBy = validationState.signedBy;
 
-		return new REParsedTxn(txn, address, parsedActions);
+		return new REParsedTxn(txn, signedBy, parsedActions);
 	}
 }
