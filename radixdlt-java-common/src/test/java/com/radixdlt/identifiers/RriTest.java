@@ -28,7 +28,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class RRITest {
+public class RriTest {
 	@BeforeClass
 	public static void setup() {
 		TestSetupUtils.installBouncyCastleProvider();
@@ -36,7 +36,7 @@ public class RRITest {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(RRI.class)
+		EqualsVerifier.forClass(Rri.class)
 				.verify();
 	}
 
@@ -47,7 +47,7 @@ public class RRITest {
 			"test1qfthlphlwt6gx22p27a7223h040jtkp9pr3atqeqrm52h0hmwcaqkkkp5s6"
 		);
 
-		correctRRIs.forEach(rriStr -> assertThat(RRI.fromBech32(rriStr)).isNotNull());
+		correctRRIs.forEach(rriStr -> assertThat(Rri.fromBech32(rriStr)).isNotNull());
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class RRITest {
 		);
 
 		badTypeRRIs.forEach(rriStr ->
-			assertThatThrownBy(() -> RRI.fromBech32(rriStr))
+			assertThatThrownBy(() -> Rri.fromBech32(rriStr))
 				.isInstanceOf(IllegalArgumentException.class)
 		);
 	}

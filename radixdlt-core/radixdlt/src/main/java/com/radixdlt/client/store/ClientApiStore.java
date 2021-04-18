@@ -21,7 +21,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.store.berkeley.ScheduledQueueFlush;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
@@ -51,17 +51,17 @@ public interface ClientApiStore {
 	 *
 	 * @return eventually consistent token supply
 	 */
-	Result<UInt384> getTokenSupply(RRI rri);
+	Result<UInt384> getTokenSupply(Rri rri);
 
 	/**
 	 * Retrieve token definition. Note that for mutable supply tokens supply is returned zero.
-	 * If actual token supply value is necessary then {@link #getTokenSupply(RRI)} should be used.
+	 * If actual token supply value is necessary then {@link #getTokenSupply(Rri)} should be used.
 	 *
 	 * @param rri token for which definition is requested
 	 *
 	 * @return token definition.
 	 */
-	Result<TokenDefinitionRecord> getTokenDefinition(RRI rri);
+	Result<TokenDefinitionRecord> getTokenDefinition(Rri rri);
 
 	/**
 	 * Retrieve transaction history for provided address.

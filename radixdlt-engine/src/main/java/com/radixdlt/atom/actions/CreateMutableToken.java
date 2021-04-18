@@ -23,7 +23,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -71,8 +71,8 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var tokenRRI = txBuilder.getAddress().map(a -> RRI.of(a.getPublicKey(), symbol))
-			.orElse(RRI.ofSystem(symbol));
+		final var tokenRRI = txBuilder.getAddress().map(a -> Rri.of(a.getPublicKey(), symbol))
+			.orElse(Rri.ofSystem(symbol));
 
 		txBuilder.down(
 			RRIParticle.class,

@@ -41,7 +41,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
@@ -71,7 +71,7 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var rri = RRI.of(keyPair.getPublicKey(), "test");
+		var rri = Rri.of(keyPair.getPublicKey(), "test");
 		var rriParticle = new RRIParticle(rri);
 		var rriId = RriId.fromRri(rri);
 		var uniqueParticle = new UniqueParticle(rriId);

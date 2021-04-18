@@ -26,7 +26,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
@@ -48,7 +48,7 @@ public class MintAndBurnTest {
 			.map(s -> s.iterator().next())
 			.firstOrError()
 			.blockingGet();
-		RRI token = RRI.of(api.getAddress(), "JOSH");
+		Rri token = Rri.of(api.getAddress(), "JOSH");
 
 		CreateTokenAction createTokenAction = CreateTokenAction.create(
 			token,

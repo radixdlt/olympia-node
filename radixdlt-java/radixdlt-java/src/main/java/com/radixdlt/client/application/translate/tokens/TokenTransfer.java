@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.math.BigDecimal;
 import java.util.Optional;
 import com.radixdlt.utils.RadixConstants;
@@ -31,14 +31,14 @@ import com.radixdlt.utils.RadixConstants;
 public class TokenTransfer {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final RRI tokenDefinition;
+	private final Rri tokenDefinition;
 	private final BigDecimal amount;
 	private final byte[] attachment;
 
 	public TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
-		RRI tokenDefinition,
+		Rri tokenDefinition,
 		BigDecimal amount,
 		byte[] attachment
 	) {
@@ -61,7 +61,7 @@ public class TokenTransfer {
 		return to;
 	}
 
-	public RRI getTokenClass() {
+	public Rri getTokenClass() {
 		return tokenDefinition;
 	}
 

@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
@@ -35,12 +35,12 @@ import java.math.BigDecimal;
 public class StakeTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress delegate;
-	private final RRI rri;
+	private final Rri rri;
 	private final BigDecimal amount;
 
 	private StakeTokensAction(
 		BigDecimal amount,
-		RRI rri,
+		Rri rri,
 		RadixAddress from,
 		RadixAddress delegate
 	) {
@@ -56,7 +56,7 @@ public class StakeTokensAction implements Action {
 
 	public static StakeTokensAction create(
 		BigDecimal amount,
-		RRI rri,
+		Rri rri,
 		RadixAddress from,
 		RadixAddress delegate
 	) {
@@ -76,7 +76,7 @@ public class StakeTokensAction implements Action {
 		return delegate;
 	}
 
-	public RRI getRRI() {
+	public Rri getRRI() {
 		return rri;
 	}
 

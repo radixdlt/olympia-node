@@ -34,7 +34,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -108,7 +108,7 @@ public class MutableTokenTest {
 		createInjector().injectMembers(this);
 
 		// Act/Assert
-		var txn = sut.construct(address, List.of(new MintToken(RRI.ofSystem("xrd"), address, UInt256.SEVEN)))
+		var txn = sut.construct(address, List.of(new MintToken(Rri.ofSystem("xrd"), address, UInt256.SEVEN)))
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
@@ -127,8 +127,8 @@ public class MutableTokenTest {
 
 		var txn = sut.construct(address, TxActionListBuilder.create()
 			.createMutableToken(tokDef)
-			.mint(RRI.of(address.getPublicKey(), "test"), address, UInt256.SEVEN)
-			.transfer(RRI.of(address.getPublicKey(), "test"), address, UInt256.FIVE)
+			.mint(Rri.of(address.getPublicKey(), "test"), address, UInt256.SEVEN)
+			.transfer(Rri.of(address.getPublicKey(), "test"), address, UInt256.FIVE)
 			.build()
 		).signAndBuild(keyPair::sign);
 

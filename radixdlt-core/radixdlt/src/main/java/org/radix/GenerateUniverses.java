@@ -54,7 +54,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -440,7 +440,7 @@ public final class GenerateUniverses {
 		final Serialization serialization = DefaultSerialization.getInstance();
 		if (!suppressDson) {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			RRI tokenRri = RRI.ofSystem(TokenDefinitionUtils.getNativeTokenShortCode());
+			Rri tokenRri = Rri.ofSystem(TokenDefinitionUtils.getNativeTokenShortCode());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);

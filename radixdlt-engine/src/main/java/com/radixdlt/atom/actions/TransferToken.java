@@ -23,16 +23,16 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 public final class TransferToken implements TxAction {
-	private final RRI rri;
+	private final Rri rri;
 	private final RadixAddress to;
 	private final UInt256 amount;
 
-	public TransferToken(RRI rri, RadixAddress to, UInt256 amount) {
+	public TransferToken(Rri rri, RadixAddress to, UInt256 amount) {
 		this.rri = rri;
 		this.to = to;
 		this.amount = amount;
@@ -42,7 +42,7 @@ public final class TransferToken implements TxAction {
 		return amount;
 	}
 
-	public RRI rri() {
+	public Rri rri() {
 		return rri;
 	}
 

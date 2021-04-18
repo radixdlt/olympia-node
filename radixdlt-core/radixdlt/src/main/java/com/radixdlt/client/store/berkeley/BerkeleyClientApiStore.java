@@ -48,7 +48,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -198,7 +198,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<UInt384> getTokenSupply(RRI rri) {
+	public Result<UInt384> getTokenSupply(Rri rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -220,7 +220,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(RRI rri) {
+	public Result<TokenDefinitionRecord> getTokenDefinition(Rri rri) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -664,7 +664,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(RRI rri) {
+	private static DatabaseEntry asKey(Rri rri) {
 		return entry(writeRRI(buffer(), rri));
 	}
 
@@ -679,7 +679,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 						 .writeInt(timestamp.getNano()));
 	}
 
-	private static ByteBuf writeRRI(ByteBuf buf, RRI rri) {
+	private static ByteBuf writeRRI(ByteBuf buf, Rri rri) {
 		return buf
 			.writeBytes(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
 	}

@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.client.api.ActionType;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -40,9 +40,9 @@ public class ActionEntry {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final UInt256 amount;
-	private final RRI rri;
+	private final Rri rri;
 
-	private ActionEntry(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
+	private ActionEntry(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, Rri rri) {
 		this.type = type;
 		this.from = from;
 		this.to = to;
@@ -50,7 +50,7 @@ public class ActionEntry {
 		this.rri = rri;
 	}
 
-	private static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, RRI rri) {
+	private static ActionEntry create(ActionType type, RadixAddress from, RadixAddress to, UInt256 amount, Rri rri) {
 		requireNonNull(type);
 		return new ActionEntry(type, from, to, amount, rri);
 	}
@@ -63,11 +63,11 @@ public class ActionEntry {
 		return create(ActionType.BURN, user, null, burnToken.amount(), burnToken.rri());
 	}
 
-	public static ActionEntry stake(RadixAddress user, StakeTokens stakeToken, RRI nativeToken) {
+	public static ActionEntry stake(RadixAddress user, StakeTokens stakeToken, Rri nativeToken) {
 		return create(ActionType.STAKE, user, stakeToken.to(), stakeToken.amount(), nativeToken);
 	}
 
-	public static ActionEntry unstake(RadixAddress user, UnstakeTokens unstakeToken, RRI nativeToken) {
+	public static ActionEntry unstake(RadixAddress user, UnstakeTokens unstakeToken, Rri nativeToken) {
 		return create(ActionType.UNSTAKE, unstakeToken.from(), user, unstakeToken.amount(), nativeToken);
 	}
 

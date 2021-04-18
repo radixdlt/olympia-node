@@ -31,7 +31,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -145,9 +145,9 @@ public class Faucet {
 		}
 	}
 
-	private static RRI retrieveTokenRRI() {
+	private static Rri retrieveTokenRRI() {
 		return envVar(FAUCET_TOKEN_RRI_ENV_NAME)
-			.map(RRI::fromBech32)
+			.map(Rri::fromBech32)
 			.orElseGet(() -> fail("Token RRI must be set via env var: {}=<rri-of-token>", FAUCET_TOKEN_RRI_ENV_NAME));
 	}
 

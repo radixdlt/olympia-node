@@ -21,7 +21,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
@@ -39,7 +39,7 @@ public class ActionParserTest {
 	private static final byte MAGIC = (byte) 0;
 	private final RadixAddress from = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final RadixAddress to = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-	private final RRI rri = RRI.of(ECKeyPair.generateNew().getPublicKey(), "ckee");
+	private final Rri rri = Rri.of(ECKeyPair.generateNew().getPublicKey(), "ckee");
 
 	@Test
 	public void transferActionIsParsedCorrectly() {

@@ -36,7 +36,7 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import io.reactivex.observers.TestObserver;
@@ -83,7 +83,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		final var rri = RRI.of(this.address, "toobig");
+		final var rri = Rri.of(this.address, "toobig");
 		TestObserver<?> observer = submitAtom(
 			1 << 20,
 			true,
@@ -100,7 +100,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		final var rri = RRI.of(this.address, "nofee");
+		final var rri = Rri.of(this.address, "nofee");
 		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(
 			10,
 			false,

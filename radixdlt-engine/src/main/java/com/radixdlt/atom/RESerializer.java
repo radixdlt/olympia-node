@@ -30,7 +30,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
@@ -139,7 +139,7 @@ public final class RESerializer {
 		return bytes;
 	}
 
-	public static void serializeRri(ByteBuffer buf, RRI rri) {
+	public static void serializeRri(ByteBuffer buf, Rri rri) {
 		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
 		serializeString(buf, rri.getName());
 		if (!rri.isSystem()) {
@@ -147,7 +147,7 @@ public final class RESerializer {
 		}
 	}
 
-	public static RRI deserializeRri(ByteBuffer buf) {
+	public static Rri deserializeRri(ByteBuffer buf) {
 		var v = buf.get(); // version
 		if (v != 0 && v != 1) {
 			throw new IllegalArgumentException();
@@ -155,11 +155,11 @@ public final class RESerializer {
 		var isSystem = v == 0;
 		var name = deserializeString(buf);
 		if (isSystem) {
-			return RRI.ofSystem(name);
+			return Rri.ofSystem(name);
 		} else {
 			var hash = new byte[20];
 			buf.get(hash);
-			return RRI.of(hash, name);
+			return Rri.of(hash, name);
 		}
 	}
 
@@ -256,7 +256,7 @@ public final class RESerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
-		var rri = RRI.fromBech32(deserializeString(buf));
+		var rri = Rri.fromBech32(deserializeString(buf));
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);

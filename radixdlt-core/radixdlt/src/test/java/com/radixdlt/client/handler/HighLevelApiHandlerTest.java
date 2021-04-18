@@ -40,7 +40,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -85,9 +85,9 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenBalance() {
-		var balance1 = TokenBalance.create(RRI.of(KNOWN_ADDRESS.getPublicKey(), "xyz"), UInt384.TWO);
-		var balance2 = TokenBalance.create(RRI.of(KNOWN_ADDRESS.getPublicKey(), "yzs"), UInt384.FIVE);
-		var balance3 = TokenBalance.create(RRI.of(KNOWN_ADDRESS.getPublicKey(), "zxy"), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "xyz"), UInt384.TWO);
+		var balance2 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "yzs"), UInt384.FIVE);
+		var balance3 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "zxy"), UInt384.EIGHT);
 
 		when(highLevelApiService.getTokenBalances(any(RadixAddress.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -123,10 +123,10 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenInfo() {
-		when(highLevelApiService.getTokenDescription(any(RRI.class)))
+		when(highLevelApiService.getTokenDescription(any(Rri.class)))
 			.thenReturn(buildToken("fyy"));
 
-		var params = jsonObject().put("resourceIdentifier", RRI.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());
+		var params = jsonObject().put("resourceIdentifier", Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());
 		var response = handler.handleTokenInfo(requestWith(params));
 		assertNotNull(response);
 
@@ -307,7 +307,7 @@ public class HighLevelApiHandlerTest {
 
 	private JSONObject randomAction() {
 		var toAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-		var token = RRI.of(ECKeyPair.generateNew().getPublicKey(), "cfee");
+		var token = Rri.of(ECKeyPair.generateNew().getPublicKey(), "cfee");
 
 		switch (random.nextInt(3)) {
 			case 0:    //transfer
@@ -389,7 +389,7 @@ public class HighLevelApiHandlerTest {
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, RRI.of(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
+				name, Rri.of(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));

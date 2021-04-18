@@ -20,7 +20,7 @@ package com.radixdlt.fees;
 import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,7 +97,7 @@ public class PerParticleFeeEntryTest {
 
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
-		final var rri = RRI.of(kp.getPublicKey(), message);
+		final var rri = Rri.of(kp.getPublicKey(), message);
     	return new UniqueParticle(RriId.fromRri(rri));
     }
 

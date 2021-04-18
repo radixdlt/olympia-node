@@ -36,7 +36,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
@@ -73,7 +73,7 @@ public class TokenFeeTest {
 
 	@Inject
 	@NativeToken
-	private RRI nativeToken;
+	private Rri nativeToken;
 
 	@Inject
 	@Genesis

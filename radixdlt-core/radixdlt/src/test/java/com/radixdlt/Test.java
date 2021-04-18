@@ -18,14 +18,16 @@
 
 package com.radixdlt;
 
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 public class Test {
 	@org.junit.Test
 	public void test() {
 		var pub = RadixAddress.from("JEpAhWjWN3dgdNNopdnsiycLooXaTv1sRLmYPUcRMy1YUu7NH7X").getPublicKey();
-		var str = RRI.of(pub, "test");
+		var str = Rri.of(pub, "jp");
 		System.out.println(str);
+		var str2 = Rri.of(pub, "usdc");
+		System.out.println(str2);
 	}
 }

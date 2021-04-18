@@ -28,7 +28,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -405,7 +405,7 @@ public final class TxBuilder {
 	public TxBuilder mutex(String id) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var rri = RRI.of(address.getPublicKey(), id);
+		final var rri = Rri.of(address.getPublicKey(), id);
 		final var rriId = RriId.fromRri(rri);
 		swap(
 			RRIParticle.class,
@@ -422,7 +422,7 @@ public final class TxBuilder {
 	public TxBuilder createFixedToken(FixedTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address.getPublicKey(), tokenDefinition.getSymbol());
+		final var tokenRRI = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
 		final var rriId = RriId.fromRri(tokenRRI);
 
 		down(
@@ -455,7 +455,7 @@ public final class TxBuilder {
 	public TxBuilder createMutableToken(MutableTokenDefinition tokenDefinition) throws TxBuilderException {
 		assertHasAddress("Must have address");
 
-		final var tokenRRI = RRI.of(address.getPublicKey(), tokenDefinition.getSymbol());
+		final var tokenRRI = Rri.of(address.getPublicKey(), tokenDefinition.getSymbol());
 		down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),
@@ -475,7 +475,7 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
+	public TxBuilder transfer(Rri rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		final var rriId = RriId.fromRri(rri);
 		swapFungible(
 			TokensParticle.class,
@@ -491,7 +491,7 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder burn(RRI rri, UInt256 amount) throws TxBuilderException {
+	public TxBuilder burn(Rri rri, UInt256 amount) throws TxBuilderException {
 		final var rriId = RriId.fromRri(rri);
 
 		deallocateFungible(

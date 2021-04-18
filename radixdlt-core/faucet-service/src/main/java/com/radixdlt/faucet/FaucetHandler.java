@@ -30,7 +30,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 
@@ -52,14 +52,14 @@ final class FaucetHandler {
 	private static final String UNIQUE_TX_PREFIX = "faucet-tx-";
 
 	private final RadixApplicationAPI api;
-	private final RRI tokenRRI;
+	private final Rri tokenRri;
 	private final BigDecimal amountToSend;
 	private final RateLimiter rateLimiter;
 
 	private Disposable disposable;
 
-	FaucetHandler(RadixApplicationAPI api, RRI tokenRRI, BigDecimal amountToSend, RateLimiter rateLimiter) {
-		this.tokenRRI = Objects.requireNonNull(tokenRRI);
+	FaucetHandler(RadixApplicationAPI api, Rri tokenRri, BigDecimal amountToSend, RateLimiter rateLimiter) {
+		this.tokenRri = Objects.requireNonNull(tokenRri);
 		this.api = Objects.requireNonNull(api);
 		this.amountToSend = Objects.requireNonNull(amountToSend);
 		this.rateLimiter = Objects.requireNonNull(rateLimiter);
@@ -73,7 +73,7 @@ final class FaucetHandler {
 			return;
 		}
 
-		log.info("Faucet token: {}", this.tokenRRI);
+		log.info("Faucet token: {}", this.tokenRri);
 
 		var leakDisposable = requestSource
 			.doOnNext(p -> log.info("Request {} from: {}", p.getSecond(), p.getFirst())) // Print out all messages
@@ -108,8 +108,8 @@ final class FaucetHandler {
 			long start = System.currentTimeMillis();
 
 			var transaction = this.api.createTransaction();
-			transaction.setMessage(String.format("Sent you %s %s", amountToSend, tokenRRI.getName()));
-			transaction.stage(TransferTokensAction.create(tokenRRI, api.getAddress(), recipient, amountToSend));
+			transaction.setMessage(String.format("Sent you %s %s", amountToSend, tokenRri.getName()));
+			transaction.stage(TransferTokensAction.create(tokenRri, api.getAddress(), recipient, amountToSend));
 
 			long now1 = System.currentTimeMillis() - start;
 			log.info("Built transaction in {}ms", now1);
@@ -128,7 +128,7 @@ final class FaucetHandler {
 		}
 	}
 
-	private void handleRateLimiting(final RadixAddress recipient, final EUID actionId, final RRI mutexAcquire) {
+	private void handleRateLimiting(final RadixAddress recipient, final EUID actionId, final Rri mutexAcquire) {
 		log.info("Rate limiting requests from {}", recipient);
 		var hastyMsg = this.api.createTransaction();
 		hastyMsg.setMessage(

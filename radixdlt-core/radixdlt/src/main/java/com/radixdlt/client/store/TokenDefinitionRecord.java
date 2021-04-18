@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -45,7 +45,7 @@ public class TokenDefinitionRecord {
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final RRI rri;
+	private final Rri rri;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -69,7 +69,7 @@ public class TokenDefinitionRecord {
 
 	private TokenDefinitionRecord(
 		String name,
-		RRI rri,
+		Rri rri,
 		String description,
 		UInt384 currentSupply,
 		String iconUrl,
@@ -88,7 +88,7 @@ public class TokenDefinitionRecord {
 	@JsonCreator
 	public static TokenDefinitionRecord create(
 		@JsonProperty("name") String name,
-		@JsonProperty("rri") RRI rri,
+		@JsonProperty("rri") Rri rri,
 		@JsonProperty("description") String description,
 		@JsonProperty("currentSupply") UInt384 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
@@ -107,7 +107,7 @@ public class TokenDefinitionRecord {
 
 	public static TokenDefinitionRecord create(
 		String name,
-		RRI rri,
+		Rri rri,
 		String description,
 		String iconUrl,
 		String url,
@@ -156,7 +156,7 @@ public class TokenDefinitionRecord {
 		return mutable;
 	}
 
-	public RRI rri() {
+	public Rri rri() {
 		return rri;
 	}
 

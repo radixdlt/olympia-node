@@ -25,7 +25,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -82,7 +82,7 @@ public class CreateFixedToken implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		final var address = txBuilder.getAddressOrFail("Required address for fixed token.");
-		final var tokenRRI = RRI.of(address.getPublicKey(), symbol);
+		final var tokenRRI = Rri.of(address.getPublicKey(), symbol);
 		txBuilder.down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRRI),

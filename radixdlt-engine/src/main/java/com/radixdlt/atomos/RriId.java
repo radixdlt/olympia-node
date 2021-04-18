@@ -20,7 +20,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.RadixConstants;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -65,7 +65,7 @@ public final class RriId {
 		return new RriId(id);
 	}
 
-	public static RriId fromRri(RRI rri) {
+	public static RriId fromRri(Rri rri) {
 		if (rri.getName().equals(TokenDefinitionUtils.getNativeTokenShortCode())) {
 			return NATIVE_TOKEN_RRI_ID;
 		}

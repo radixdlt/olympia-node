@@ -32,14 +32,14 @@ import java.util.regex.Pattern;
 /**
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
-public final class RRI {
+public final class Rri {
 	private static final String NAME_REGEX = "[a-z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
 	private final byte[] hash;
 	private final String name;
 
-	RRI(byte[] hash, String name) {
+	Rri(byte[] hash, String name) {
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
 		}
@@ -78,21 +78,21 @@ public final class RRI {
 		return name;
 	}
 
-	public static RRI of(byte[] hash, String name) {
+	public static Rri of(byte[] hash, String name) {
 		Objects.requireNonNull(hash);
-		return new RRI(hash, name);
+		return new Rri(hash, name);
 	}
 
-	public static RRI of(ECPublicKey key, String name) {
+	public static Rri of(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
-		return new RRI(pkToHash(name, key), name);
+		return new Rri(pkToHash(name, key), name);
 	}
 
-	public static RRI ofSystem(String name) {
-		return new RRI(new byte[0], name);
+	public static Rri ofSystem(String name) {
+		return new Rri(new byte[0], name);
 	}
 
-	public static RRI fromBech32(String s) {
+	public static Rri fromBech32(String s) {
 		var d = Bech32.decode(s);
 		var hash = d.data;
 		if (hash.length > 0) {
@@ -101,7 +101,7 @@ public final class RRI {
 		if (!d.hrp.endsWith("_rr")) {
 			throw new IllegalArgumentException("Rri must end in _rr");
 		}
-		return new RRI(hash, d.hrp.substring(0, d.hrp.length() - 3));
+		return new Rri(hash, d.hrp.substring(0, d.hrp.length() - 3));
 	}
 
 	private static byte[] convertBits(final byte[] in, final int inStart, final int inLen, final int fromBits,
@@ -134,7 +134,7 @@ public final class RRI {
 		return out.toByteArray();
 	}
 
-	public static Result<RRI> fromString(String s) {
+	public static Result<Rri> fromString(String s) {
 		try {
 			return Result.ok(fromBech32(s));
 		} catch (RuntimeException e) {
@@ -155,11 +155,11 @@ public final class RRI {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RRI)) {
+		if (!(o instanceof Rri)) {
 			return false;
 		}
 
-		RRI rri = (RRI) o;
+		Rri rri = (Rri) o;
 		return Arrays.equals(rri.hash, hash) && Objects.equals(rri.name, name);
 	}
 

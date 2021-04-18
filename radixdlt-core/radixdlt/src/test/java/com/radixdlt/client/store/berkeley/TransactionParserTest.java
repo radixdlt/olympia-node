@@ -38,7 +38,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -61,12 +61,12 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final RRI tokenRri = RRI.of(tokenOwnerKeyPair.getPublicKey(), "xrd");
+	private final Rri tokenRri = Rri.of(tokenOwnerKeyPair.getPublicKey(), "xrd");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
 		"xrd", "Test", "description", null, null
 	);
 
-	private final RRI tokenRriII = RRI.of(tokenOwnerKeyPair.getPublicKey(), "tst");
+	private final Rri tokenRriII = Rri.of(tokenOwnerKeyPair.getPublicKey(), "tst");
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
 		"tst", "Test2", "description2", null, null
 	);
