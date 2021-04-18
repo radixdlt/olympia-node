@@ -70,8 +70,17 @@ public final class RRI {
 		return hash.length == 0;
 	}
 
+	public byte[] getHash() {
+		return hash;
+	}
+
 	public String getName() {
 		return name;
+	}
+
+	public static RRI of(byte[] hash, String name) {
+		Objects.requireNonNull(hash);
+		return new RRI(hash, name);
 	}
 
 	public static RRI of(ECPublicKey key, String name) {

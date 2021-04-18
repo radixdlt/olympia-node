@@ -139,12 +139,37 @@ public final class RESerializer {
 		return bytes;
 	}
 
+	public static void serializeRri(ByteBuffer buf, RRI rri) {
+		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
+		serializeString(buf, rri.getName());
+		if (!rri.isSystem()) {
+			buf.put(rri.getHash());
+		}
+	}
+
+	public static RRI deserializeRri(ByteBuffer buf) {
+		var v = buf.get(); // version
+		if (v != 0 && v != 1) {
+			throw new IllegalArgumentException();
+		}
+		var isSystem = v == 0;
+		var name = deserializeString(buf);
+		if (isSystem) {
+			return RRI.ofSystem(name);
+		} else {
+			var hash = new byte[20];
+			buf.get(hash);
+			return RRI.of(hash, name);
+		}
+	}
+
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
-		serializeString(buf, rriParticle.getRri().toString());
+		var rri = rriParticle.getRri();
+		serializeRri(buf, rri);
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
-		var rri = RRI.fromBech32(deserializeString(buf));
+		var rri = deserializeRri(buf);
 		return new RRIParticle(rri);
 	}
 
