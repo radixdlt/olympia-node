@@ -26,7 +26,6 @@ import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
