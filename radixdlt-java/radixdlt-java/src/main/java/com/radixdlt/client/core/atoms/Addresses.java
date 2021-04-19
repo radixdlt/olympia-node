@@ -19,7 +19,6 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -45,9 +44,6 @@ public final class Addresses {
 
 		if (p instanceof TokensParticle) {
 			var a = (TokensParticle) p;
-			addresses.add(a.getAddress());
-		} else if (p instanceof ValidatorParticle) {
-			var a = (ValidatorParticle) p;
 			addresses.add(a.getAddress());
 		}
 

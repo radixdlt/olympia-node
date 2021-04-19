@@ -63,7 +63,7 @@ public final class NodeApplicationModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private SubstateCacheRegister<?> registeredValidator(@Self RadixAddress self) {
-		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getAddress().equals(self));
+		return new SubstateCacheRegister<>(ValidatorParticle.class, p -> p.getKey().equals(self.getPublicKey()));
 	}
 
 	@ProvidesIntoSet
