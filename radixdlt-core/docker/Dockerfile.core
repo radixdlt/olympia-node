@@ -20,7 +20,7 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_DB_LOCATION=./RADIXDB \
     RADIXDLT_ENABLE_FAUCET=false \
     RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks \
-    RADIXDLT_ENABLE_CLIENT_API=false
+    RADIXDLT_ENABLE_CLIENT_API=true
 
 # install the radixdlt package
 COPY *.deb /tmp/

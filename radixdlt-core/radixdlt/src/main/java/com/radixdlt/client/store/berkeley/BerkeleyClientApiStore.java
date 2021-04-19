@@ -62,7 +62,6 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -571,10 +570,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			.map(SystemParticle.class::cast)
 			.findFirst()
 			.map(SystemParticle::asInstant)
-			.ifPresent(timestamp -> {
-				log.debug("Timestamp set to {}", DateTimeFormatter.ISO_INSTANT.format(timestamp));
-				currentTimestamp.set(timestamp);
-			});
+			.ifPresent(currentTimestamp::set);
 	}
 
 	private Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {

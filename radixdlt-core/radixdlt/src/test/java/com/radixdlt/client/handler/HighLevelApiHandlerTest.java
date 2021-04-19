@@ -316,7 +316,7 @@ public class HighLevelApiHandlerTest {
 					.put("from", KNOWN_ADDRESS_STRING)
 					.put("to", toAddress.toString())
 					.put("amount", UInt256.SEVEN)
-					.put("rri", token.toString());
+					.put("rri", token.toSpecString());
 			case 1: //stake
 				return jsonObject()
 					.put("type", ActionType.STAKE)

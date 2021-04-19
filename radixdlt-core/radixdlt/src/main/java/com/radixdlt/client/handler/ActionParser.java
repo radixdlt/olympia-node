@@ -119,8 +119,7 @@ public final class ActionParser {
 
 	private static Result<RadixAddress> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.flatMap(RadixAddress::fromString)
-			.map(Result::ok)
+			.map(RadixAddress::fromString)
 			.orElseGet(() -> fail(element, name));
 	}
 

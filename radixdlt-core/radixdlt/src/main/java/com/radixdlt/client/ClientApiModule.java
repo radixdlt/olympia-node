@@ -47,7 +47,7 @@ public class ClientApiModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
-	@StringMapKey("radix.universeMagic")
+	@StringMapKey("radix.networkId")
 	public JsonRpcHandler universeMagicHandler(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleUniverseMagic;
 	}

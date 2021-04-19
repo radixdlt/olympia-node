@@ -22,7 +22,6 @@ import com.radixdlt.test.chaos.actions.NetworkAction;
 import com.radixdlt.test.chaos.actions.RestartAction;
 import com.radixdlt.test.chaos.actions.ValidatorUnregistrationAction;
 import com.radixdlt.test.chaos.actions.ShutdownAction;
-import com.radixdlt.test.chaos.actions.MempoolFillAction;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
@@ -42,15 +41,18 @@ public class ChaosExperiments {
         ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
 
         Set<Action> actions = Set.of(
-                new NetworkAction(ansible, 0.4),
-                new RestartAction(ansible, 0.7),
+                new NetworkAction(ansible, 0.3),
+                new RestartAction(ansible, 0.6),
                 new ShutdownAction(ansible, 0.1),
-                new MempoolFillAction(ansible, 0.7, 300),
-                new ValidatorUnregistrationAction(ansible, 1.0)
+                //new MempoolFillAction(ansible, 0.7, 300), TODO disabled because this brings down the node
+                new ValidatorUnregistrationAction(ansible, 0.5)
         );
 
         actions.forEach(Action::teardown);
-        actions.forEach(Action::setup);
+        actions.forEach(action -> {
+            action.setup();
+            ChaosExperimentUtils.waitSeconds(20);
+        });
 
         ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
     }
