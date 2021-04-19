@@ -67,6 +67,12 @@ public class NodeApplication {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously
 			var txBuilder = radixEngine.construct(self, request.getActions());
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
+			if (this.inflightRequests.containsKey(txn.getId())) {
+				// TODO: use mempool to prevent double spending of substates so
+				// TODO: that this occurs less frequently
+				request.onFailure(txn, "Transaction already in flight.");
+				return;
+			}
 			this.inflightRequests.put(txn.getId(), request);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		} catch (TxBuilderException e) {
