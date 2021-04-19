@@ -26,7 +26,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 
-public class ValidatorDetails {
+public class ValidatorInfoDetails {
 	private final RadixAddress address;
 	private final RadixAddress owner;
 	private final String name;
@@ -35,7 +35,7 @@ public class ValidatorDetails {
 	private final UInt256 ownerStake;
 	private final boolean externalStakesAllowed;
 
-	private ValidatorDetails(
+	private ValidatorInfoDetails(
 		RadixAddress address,
 		RadixAddress owner,
 		String name,
@@ -53,7 +53,7 @@ public class ValidatorDetails {
 		this.externalStakesAllowed = externalStakesAllowed;
 	}
 
-	public static ValidatorDetails create(
+	public static ValidatorInfoDetails create(
 		RadixAddress address,
 		RadixAddress owner,
 		String name,
@@ -68,7 +68,11 @@ public class ValidatorDetails {
 		requireNonNull(totalStake);
 		requireNonNull(ownerStake);
 
-		return new ValidatorDetails(address, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
+		return new ValidatorInfoDetails(address, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
+	}
+
+	public RadixAddress getAddress() {
+		return address;
 	}
 
 	public JSONObject asJson() {

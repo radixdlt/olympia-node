@@ -18,19 +18,24 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.client.api.ValidatorDetails;
+import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RegisteredValidators;
 import com.radixdlt.statecomputer.Stakes;
+import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -40,18 +45,34 @@ public class ValidatorInfoService {
 		this.radixEngine = radixEngine;
 	}
 
-	public Result<Tuple2<Optional<RadixAddress>, List<ValidatorDetails>>> getValidators(
+	public Result<Tuple2<Optional<RadixAddress>, List<ValidatorInfoDetails>>> getValidators(
 		int size, Optional<RadixAddress> cursor
 	) {
 		var validators = radixEngine.getComputedState(RegisteredValidators.class);
 		var stakes = radixEngine.getComputedState(Stakes.class);
 
-		var result = validators.map((address, details) -> {
-			return ValidatorDetails.create(address, address, details.getName(), details.getUrl(), UInt256.ZERO, UInt256.ZERO, true);
-		});
+		var result = validators.map((address, details) -> fillDetails(address, details, stakes));
+		result.sort(Comparator.comparing(v -> v.getAddress().toString()));
 
-		result.sort(Comparator.comparing(Object::toString));
+		var paged = cursor
+			.map(address -> FunctionalUtils.skipUntil(result, v -> v.getAddress().equals(address)))
+			.orElse(result);
 
-		return Result.fail("Not implemented");
+		var list = paged.stream().limit(size).collect(Collectors.toList());
+		var newCursor = list.stream().reduce(FunctionalUtils::findLast).map(ValidatorInfoDetails::getAddress);
+
+		return Result.ok(tuple(newCursor, list));
+	}
+
+	private static ValidatorInfoDetails fillDetails(RadixAddress address, ValidatorDetails details, Stakes stakes) {
+		return ValidatorInfoDetails.create(
+			address,
+			address,
+			details.getName(),
+			details.getUrl(),
+			stakes.getStake(address.getPublicKey()).orElse(UInt256.ZERO),
+			UInt256.ZERO,
+			true
+		);
 	}
 }

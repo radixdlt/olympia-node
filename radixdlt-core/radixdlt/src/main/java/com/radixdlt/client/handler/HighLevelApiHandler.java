@@ -26,10 +26,9 @@ import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.Atom;
 import com.radixdlt.client.api.TxHistoryEntry;
-import com.radixdlt.client.api.ValidatorDetails;
+import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
@@ -104,12 +103,31 @@ public class HighLevelApiHandler {
 
 	public JSONObject handleTokenBalances(JSONObject request) {
 		return withRequiredStringParameter(
+			request, "address",
+			(params, address) -> RadixAddress.fromString(address)
+				.flatMap(this::formatTokenBalances)
+				.fold(failure -> toErrorResponse(request, failure), response -> response(request, response))
+		);
+	}
+
+	public JSONObject handleTokenBalances(JSONObject request) {
+		return withRequiredStringParameter(
 			request,
 			(params, address) -> RadixAddress.fromString(address)
 				.fold(
 					failure -> toErrorResponse(request, failure),
 					radixAddress -> response(request, formatTokenBalances(request, radixAddress))
 				)
+		);
+	}
+	
+	//TODO: fix me
+	public JSONObject handleTokenBalances(JSONObject request) {
+		return withRequiredStringParameter(
+			request, "address",
+			(params, address) -> RadixAddress.fromString(address)
+				.flatMap(this::formatTokenBalances)
+				.fold(failure -> toErrorResponse(request, failure), response -> response(request, response))
 		);
 	}
 
@@ -194,39 +212,45 @@ public class HighLevelApiHandler {
 	}
 
 	private JSONObject respondWithTransactionHistory(JSONObject request, JSONObject params) {
-		//TODO: switch to Result
-		return allOf(Optional.of(request), parseAddress(params), parseSize(params))
-			.map(this::formatTransactionHistory)
-			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
+		return Result.allOf(Result.ok(request), parseAddress(params), parseSize(params))
+			.flatMap(this::formatTransactionHistory)
+			.fold(failure -> toErrorResponse(request, failure), v -> v);
 	}
 
 	private JSONObject respondWithValidators(JSONObject request, JSONObject params) {
-		return allOf(Optional.of(request), parseSize(params))
-			.map(this::formatValidators)
-			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
+		return Result.allOf(Result.ok(request), parseSize(params))
+			.flatMap(this::formatValidators)
+			.fold(failure -> toErrorResponse(request, failure), v -> v);
 	}
 
-	private JSONObject formatTransactionHistory(JSONObject request, RadixAddress address, int size) {
-		return highLevelApiService
-			.getTransactionHistory(address, size, parseInstantCursor(request))
-			.fold(
-				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
-				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
-					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
-					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
-			);
-	}
-
-	private JSONObject formatValidators(JSONObject request, int size) {
-		return validatorInfoService
-			.getValidators(size, parseAddressCursor(request))
-			.fold(
-				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
-				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
-					.put("cursor", cursor.map(RadixAddress::toString).orElse(""))
-					.put("validators", fromList(transactions, ValidatorDetails::asJson))))
-			);
-	}
+	//FIXME
+//	private JSONObject respondWithValidators(JSONObject request, JSONObject params) {
+//		return allOf(Optional.of(request), parseSize(params))
+//			.map(this::formatValidators)
+//			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
+//	}
+//
+//	private JSONObject formatTransactionHistory(JSONObject request, RadixAddress address, int size) {
+//		return highLevelApiService
+//			.getTransactionHistory(address, size, parseInstantCursor(request))
+//			.fold(
+//				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
+//				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+//					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
+//					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
+//			);
+//	}
+//
+//	private JSONObject formatValidators(JSONObject request, int size) {
+//		return validatorInfoService
+//			.getValidators(size, parseAddressCursor(request))
+//			.fold(
+//				failure -> errorResponse(request, RpcError.SERVER_ERROR, failure.message()),
+//				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+//					.put("cursor", cursor.map(RadixAddress::toString).orElse(""))
+//					.put("validators", fromList(transactions, ValidatorDetails::asJson))))
+//			);
+//	}
 
 	private JSONObject respondFinalizationResult(JSONObject params, JSONObject request) {
 		return Result.allOf(parseBlob(params), parseSignatureDer(params), parsePublicKey(params))
@@ -247,6 +271,40 @@ public class HighLevelApiHandler {
 			.fold(
 				failure -> toErrorResponse(request, failure),
 				txId -> response(request, jsonObject().put("txID", txId.toString()))
+			);
+	}
+
+	private Result<JSONObject> formatTokenBalances(RadixAddress radixAddress) {
+		return highLevelApiService.getTokenBalances(radixAddress)
+			.map(
+				list -> jsonObject()
+					.put("owner", radixAddress.toString())
+					.put("tokenBalances", fromList(list, TokenBalance::asJson))
+			);
+	}
+
+	private JSONObject formatTransactionStatus(AID txId) {
+		return transactionStatusService.getTransactionStatus(txId)
+			.asJson(jsonObject().put("txID", txId));
+	}
+
+	private Result<JSONObject> formatTransactionHistory(JSONObject request, RadixAddress address, int size) {
+		return highLevelApiService
+			.getTransactionHistory(address, size, parseInstantCursor(request))
+			.map(
+				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
+					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
+			);
+	}
+
+	private Result<JSONObject> formatValidators(JSONObject request, int size) {
+		return validatorInfoService
+			.getValidators(size, parseAddressCursor(request))
+			.map(
+				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
+					.put("cursor", cursor.map(RadixAddress::toString).orElse(""))
+					.put("validators", fromList(transactions, ValidatorInfoDetails::asJson))))
 			);
 	}
 
@@ -301,13 +359,16 @@ public class HighLevelApiHandler {
 
 		return !params.has("cursor")
 			   ? Optional.empty()
-			   : Optional.of(params.getString("cursor")).flatMap(RadixAddress::fromString);
+			   : Optional.of(params.getString("cursor"))
+				   .flatMap(address -> RadixAddress.fromString(address).toOptional());
 	}
 
 	private static Optional<Instant> parseInstantCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
 		return params.isEmpty()
 			   ? Optional.empty()
+			   : Optional.of(params.getString("cursor"))
+				   .flatMap(HighLevelApiHandler::instantFromString);
 			   : Optional.of(params.getString(0)).flatMap(HighLevelApiHandler::instantFromString);
 	}
 
@@ -338,12 +399,15 @@ public class HighLevelApiHandler {
 		}
 	}
 
-	private static Optional<Integer> parseSize(JSONObject params) {
-		return safeInteger(params, "size").filter(value -> value > 0);
+	private static Result<Integer> parseSize(JSONObject params) {
+		return safeInteger(params, "size")
+			.map(Result::ok)
+			.orElseGet(() -> Result.fail("Size parameter is not a valid integer"))
+			.filter(value -> value > 0, "Size parameter must be greater than zero");
 	}
 
-	private static Optional<RadixAddress> parseAddress(JSONObject params) {
-		return RadixAddress.fromString(params.getString("address")).toOptional();
+	private static Result<RadixAddress> parseAddress(JSONObject params) {
+		return RadixAddress.fromString(params.getString("address"));
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
