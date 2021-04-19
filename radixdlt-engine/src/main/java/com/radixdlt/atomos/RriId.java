@@ -21,7 +21,6 @@ package com.radixdlt.atomos;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.utils.RadixConstants;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
