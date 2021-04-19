@@ -50,7 +50,7 @@ public class StakingTest {
 		delegator1.discoverNodes();
 		delegator2.discoverNodes();
 
-		Rri token = Rri.of(delegate.getAddress(), "COOKIE");
+		Rri token = Rri.of(delegate.getAddress().getPublicKey(), "COOKIE");
 		RadixNode originNode = delegate.getNetworkState()
 			.map(RadixNetworkState::getNodes)
 			.filter(s -> !s.isEmpty())

@@ -48,7 +48,7 @@ public class MintAndBurnTest {
 			.map(s -> s.iterator().next())
 			.firstOrError()
 			.blockingGet();
-		Rri token = Rri.of(api.getAddress(), "JOSH");
+		Rri token = Rri.of(api.getAddress().getPublicKey(), "JOSH");
 
 		CreateTokenAction createTokenAction = CreateTokenAction.create(
 			token,

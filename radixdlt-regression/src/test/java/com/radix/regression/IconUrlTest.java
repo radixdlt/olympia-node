@@ -47,7 +47,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress(), "RLAU");
+		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createMultiIssuanceToken(
 			token,
 			"RLAU Token Name",
@@ -78,7 +78,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress(), "RLAU");
+		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createFixedSupplyToken(
 			token,
 			"RLAU Token Name",
@@ -111,7 +111,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress(), "RLAU");
+		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createToken(
 			token,
 			"RLAU Token Name",
