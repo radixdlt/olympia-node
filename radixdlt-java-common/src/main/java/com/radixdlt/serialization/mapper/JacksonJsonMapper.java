@@ -37,7 +37,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
@@ -105,10 +105,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_STR_VALUE,
 				UInt384::toString
 		));
-		jsonModule.addSerializer(RRI.class, new JacksonJsonObjectStringSerializer<>(
-				RRI.class,
+		jsonModule.addSerializer(Rri.class, new JacksonJsonObjectStringSerializer<>(
+				Rri.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				RRI::toString
+				Rri::toString
 		));
 		jsonModule.addSerializer(AID.class, new JacksonJsonObjectStringSerializer<>(
 				AID.class,
@@ -147,10 +147,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 				JacksonCodecConstants.U30_STR_VALUE,
 				UInt384::from
 		));
-		jsonModule.addDeserializer(RRI.class, new JacksonJsonObjectStringDeserializer<>(
-				RRI.class,
+		jsonModule.addDeserializer(Rri.class, new JacksonJsonObjectStringDeserializer<>(
+				Rri.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				RRI::from
+				Rri::fromBech32
 		));
 		jsonModule.addDeserializer(AID.class, new JacksonJsonObjectStringDeserializer<>(
 				AID.class,

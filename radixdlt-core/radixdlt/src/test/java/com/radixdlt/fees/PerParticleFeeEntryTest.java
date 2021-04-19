@@ -19,8 +19,7 @@ package com.radixdlt.fees;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +29,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Set;
@@ -63,11 +61,11 @@ public class PerParticleFeeEntryTest {
     	Set<Particle> outputs = Sets.newHashSet();
 
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 1"));
+    	outputs.add(makeParticle("partclee"));
     	assertEquals(UInt256.ZERO, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 2"));
+    	outputs.add(makeParticle("partcleee"));
     	assertEquals(FEE, f.feeFor(null, 0, outputs));
-    	outputs.add(makeParticle("Particle 3"));
+    	outputs.add(makeParticle("partcleeee"));
     	assertEquals(FEE.multiply(UInt256.TWO), f.feeFor(null, 0, outputs));
     }
 
@@ -81,8 +79,8 @@ public class PerParticleFeeEntryTest {
     	// Fee overflow
     	PerParticleFeeEntry f = PerParticleFeeEntry.of(TYPE, 0, UInt256.MAX_VALUE);
     	ImmutableSet<Particle> outputs = ImmutableSet.of(
-    		makeParticle("Particle 1"),
-    		makeParticle("Particle 2")
+    		makeParticle("partcleee"),
+    		makeParticle("partclene")
     	);
     	assertThatThrownBy(() -> f.feeFor(null, 2, outputs))
     		.isInstanceOf(ArithmeticException.class)
@@ -98,9 +96,8 @@ public class PerParticleFeeEntryTest {
 
     private static UniqueParticle makeParticle(String message) {
     	final var kp = ECKeyPair.generateNew();
-    	final var address = new RadixAddress((byte) 0, kp.getPublicKey());
-		final var rri = RRI.of(address, message);
-    	return new UniqueParticle(RriId.fromRri(rri));
+		final var rri = Rri.of(kp.getPublicKey(), message);
+    	return new UniqueParticle(rri);
     }
 
     private static PerParticleFeeEntry get() {

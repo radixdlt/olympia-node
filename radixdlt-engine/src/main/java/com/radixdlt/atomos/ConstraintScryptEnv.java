@@ -137,8 +137,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionProcedure<>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
-					return systemNames.contains(inputParticle.getRri().getName())
-						|| inputParticle.getRri().getAddress().isEmpty()
+					return systemNames.contains(inputParticle.getRri().getName()) || inputParticle.getRri().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
@@ -152,13 +151,14 @@ final class ConstraintScryptEnv implements SysCalls {
 					return Result.success();
 				}
 
+				@Override
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
-				public SignatureValidator<RRIParticle, O> signatureRequired() {
-					return (rri, o, index) -> rri.getRri().getAddress();
+				public SignatureValidator<RRIParticle, O> signatureValidator() {
+					return (rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false);
 				}
 			}
 		);
@@ -183,13 +183,12 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getRri().getName())
-				|| rri.getRri().getAddress().isEmpty()
+			(rri, p) -> systemNames.contains(rri.getRri().getName()) || rri.getRri().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			(i, o, index) -> i.getRri().getAddress()
+			(rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -240,8 +239,8 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public SignatureValidator<Particle, Particle> signatureRequired() {
-					return (i, o, index) -> procedure.signatureRequired().requiredSignature((I) i, (O) o, index);
+				public SignatureValidator<Particle, Particle> signatureValidator() {
+					return (i, o, index, pubKey) -> procedure.signatureValidator().verify((I) i, (O) o, index, pubKey);
 				}
 			};
 

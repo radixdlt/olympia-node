@@ -23,15 +23,15 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.StageActionException;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.math.BigDecimal;
 
 public class InsufficientFundsException extends StageActionException {
-	private final RRI tokenDefinitionReference;
+	private final Rri tokenDefinitionReference;
 	private final BigDecimal available;
 	private final BigDecimal requestedAmount;
 
-	public InsufficientFundsException(RRI tokenDefinitionReference, BigDecimal available, BigDecimal requestedAmount) {
+	public InsufficientFundsException(Rri tokenDefinitionReference, BigDecimal available, BigDecimal requestedAmount) {
 		super("Requested " + requestedAmount
 			+ " but only " + available + " " + tokenDefinitionReference.getName() + " available.");
 		this.tokenDefinitionReference = tokenDefinitionReference;

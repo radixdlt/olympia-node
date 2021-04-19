@@ -33,8 +33,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.store.ImmutableIndex;
 
-import java.util.Optional;
-
 /**
  * Allows for the update of the epoch, timestamp and view state.
  * Currently there is only a single system particle that should be in
@@ -117,8 +115,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle, SystemParticle> signatureRequired() {
-					return (i, o, index) -> Optional.empty();
+				public SignatureValidator<SystemParticle, SystemParticle> signatureValidator() {
+					return (i, o, index, pubKey) -> pubKey.isEmpty(); // Must not be signed
 				}
 			}
 		);

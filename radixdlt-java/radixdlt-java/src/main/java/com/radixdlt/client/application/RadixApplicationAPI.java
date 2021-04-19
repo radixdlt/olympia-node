@@ -69,7 +69,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
@@ -287,7 +287,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public RRI getNativeTokenRef() {
+	public Rri getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
 
@@ -413,7 +413,7 @@ public class RadixApplicationAPI {
 	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply and 10^-18 granularity
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 *
@@ -423,18 +423,18 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description
 	) {
-		return createMultiIssuanceToken(tokenRRI, name, description, null, null);
+		return createMultiIssuanceToken(tokenRri, name, description, null, null);
 	}
 
 	/**
 	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply and 10^-18 granularity
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 * @param iconUrl The URL for the token's icon
@@ -446,14 +446,14 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createMultiIssuanceToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		String iconUrl,
 		String url
 	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			tokenRRI,
+			tokenRri,
 			name,
 			description,
 			iconUrl,
@@ -469,7 +469,7 @@ public class RadixApplicationAPI {
 	 * Creates a fixed-supply token registered into the user's account with
 	 * 10^-18 granularity
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 * @param supply The supply of the created token
@@ -480,19 +480,19 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		BigDecimal supply
 	) {
-		return createFixedSupplyToken(tokenRRI, name, description, null, null, supply);
+		return createFixedSupplyToken(tokenRri, name, description, null, null, supply);
 	}
 
 	/**
 	 * Creates a fixed-supply token registered into the user's account with
 	 * 10^-18 granularity
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 * @param iconUrl The URL for the token's icon
@@ -505,7 +505,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createFixedSupplyToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -513,7 +513,7 @@ public class RadixApplicationAPI {
 		BigDecimal supply
 	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			tokenRRI,
+			tokenRri,
 			name,
 			description,
 			iconUrl,
@@ -528,7 +528,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Creates a token registered into the user's account
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 * @param initialSupply The initial amount of supply for this token
@@ -541,20 +541,20 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		BigDecimal initialSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		return createToken(tokenRRI, name, description, null, null, initialSupply, granularity, tokenSupplyType);
+		return createToken(tokenRri, name, description, null, null, initialSupply, granularity, tokenSupplyType);
 	}
 
 	/**
 	 * Creates a token registered into the user's account
 	 *
-	 * @param tokenRRI The symbol of the token to create
+	 * @param tokenRri The symbol of the token to create
 	 * @param name The name of the token to create
 	 * @param description A description of the token
 	 * @param iconUrl The URL for the token's icon
@@ -569,7 +569,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result createToken(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -579,7 +579,7 @@ public class RadixApplicationAPI {
 		TokenSupplyType tokenSupplyType
 	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			tokenRRI,
+			tokenRri,
 			name,
 			description,
 			iconUrl,
@@ -603,7 +603,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
+	public Result sendTokens(Rri token, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, getAddress(), to, amount);
 	}
 
@@ -620,7 +620,7 @@ public class RadixApplicationAPI {
 	 * @deprecated The Java client access library has been deprecated
 	 */
 	@Deprecated(since = "beta.27")
-	public Result sendTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
+	public Result sendTokens(Rri token, RadixAddress from, RadixAddress to, BigDecimal amount) {
 		return sendTokens(token, from, to, amount, null);
 	}
 
@@ -640,7 +640,7 @@ public class RadixApplicationAPI {
 	 */
 	@Deprecated(since = "beta.27")
 	public Result sendTokens(
-		RRI token,
+		Rri token,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -671,7 +671,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
-		RRI token,
+		Rri token,
 		RadixAddress delegate
 	) {
 		return stakeTokens(amount, token, getAddress(), delegate);
@@ -692,7 +692,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result stakeTokens(
 		BigDecimal amount,
-		RRI token,
+		Rri token,
 		RadixAddress from,
 		RadixAddress delegate
 	) {
@@ -718,7 +718,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
-		RRI token,
+		Rri token,
 		RadixAddress delegate
 	) {
 		return unstakeTokens(amount, token, getAddress(), delegate);
@@ -739,7 +739,7 @@ public class RadixApplicationAPI {
 	@Deprecated(since = "beta.27")
 	public Result unstakeTokens(
 		BigDecimal amount,
-		RRI token,
+		Rri token,
 		RadixAddress from,
 		RadixAddress delegate
 	) {

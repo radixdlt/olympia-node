@@ -24,7 +24,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -34,17 +34,17 @@ import java.util.Map;
  * The tokens delegated to an address at a given point in time.
  */
 public class DelegatedTokenBalanceState implements ApplicationState {
-	private final ImmutableMap<RRI, BigDecimal> balance;
+	private final ImmutableMap<Rri, BigDecimal> balance;
 
 	public DelegatedTokenBalanceState() {
 		this.balance = ImmutableMap.of();
 	}
 
-	private DelegatedTokenBalanceState(Map<RRI, BigDecimal> balance) {
+	private DelegatedTokenBalanceState(Map<Rri, BigDecimal> balance) {
 		this.balance = ImmutableMap.copyOf(balance);
 	}
 
-	public Map<RRI, BigDecimal> getBalance() {
+	public Map<Rri, BigDecimal> getBalance() {
 		return balance;
 	}
 
@@ -57,13 +57,13 @@ public class DelegatedTokenBalanceState implements ApplicationState {
 			return state0;
 		}
 
-		HashMap<RRI, BigDecimal> balance = new HashMap<>(state0.balance);
+		HashMap<Rri, BigDecimal> balance = new HashMap<>(state0.balance);
 		state1.balance.forEach((rri, bal) -> balance.merge(rri, bal, BigDecimal::add));
 		return new DelegatedTokenBalanceState(balance);
 	}
 
-	public static DelegatedTokenBalanceState merge(DelegatedTokenBalanceState state, RRI tokenRri, BigDecimal amount) {
-		HashMap<RRI, BigDecimal> balance = new HashMap<>(state.balance);
+	public static DelegatedTokenBalanceState merge(DelegatedTokenBalanceState state, Rri tokenRri, BigDecimal amount) {
+		HashMap<Rri, BigDecimal> balance = new HashMap<>(state.balance);
 		balance.merge(tokenRri, amount, BigDecimal::add);
 		return new DelegatedTokenBalanceState(balance);
 	}

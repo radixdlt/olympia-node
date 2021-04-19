@@ -32,7 +32,7 @@ import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 public class HighLevelApiServiceTest {
 	private static final RadixAddress OWNER = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 	private static final RadixAddress TOKEN_ADDRESS = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
-	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS, "XRD");
+	private static final Rri TOKEN = Rri.of(TOKEN_ADDRESS.getPublicKey(), "xrd");
 
 	private final Universe universe = mock(Universe.class);
 	private final ClientApiStore clientApiStore = mock(ClientApiStore.class);
@@ -76,8 +76,8 @@ public class HighLevelApiServiceTest {
 
 	@Test
 	public void testGetTokenBalances() {
-		var balance1 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "FOO"), UInt384.FIVE);
-		var balance2 = TokenBalance.create(RRI.of(TOKEN_ADDRESS, "BAR"), UInt384.NINE);
+		var balance1 = TokenBalance.create(Rri.of(TOKEN_ADDRESS.getPublicKey(), "fff"), UInt384.FIVE);
+		var balance2 = TokenBalance.create(Rri.of(TOKEN_ADDRESS.getPublicKey(), "rar"), UInt384.NINE);
 		var balances = Result.ok(List.of(balance1, balance2));
 
 		when(clientApiStore.getTokenBalances(OWNER))
@@ -106,8 +106,8 @@ public class HighLevelApiServiceTest {
 
 	@Test
 	public void testGetTokenDescription() {
-		var token = RRI.of(TOKEN_ADDRESS, "FOO");
-		var definition = TokenDefinitionRecord.from(mutableTokenDef("FOO"));
+		var token = Rri.of(TOKEN_ADDRESS.getPublicKey(), "fff");
+		var definition = TokenDefinitionRecord.from(mutableTokenDef("fff"));
 
 		when(clientApiStore.getTokenDefinition(token))
 			.thenReturn(Result.ok(definition));
@@ -162,7 +162,7 @@ public class HighLevelApiServiceTest {
 
 	private TokenDefinitionParticle mutableTokenDef(String symbol) {
 		return new TokenDefinitionParticle(
-			RRI.of(TOKEN_ADDRESS, symbol),
+			Rri.of(TOKEN_ADDRESS.getPublicKey(), symbol),
 			symbol,
 			description(symbol),
 			iconUrl(symbol),

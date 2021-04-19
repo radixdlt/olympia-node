@@ -52,7 +52,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.serialization.Serialization;
@@ -90,7 +90,7 @@ public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
 	private static final RadixAddress TOKEN_ADDRESS = new RadixAddress((byte) 0, TOKEN_KEYPAIR.getPublicKey());
 
-	private static final RRI TOKEN = RRI.of(TOKEN_ADDRESS, "COFFEE");
+	private static final Rri TOKEN = Rri.of(TOKEN_ADDRESS.getPublicKey(), "cfee");
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final BerkeleyLedgerEntryStore ledgerStore = mock(BerkeleyLedgerEntryStore.class);
@@ -352,7 +352,7 @@ public class BerkeleyClientApiStoreTest {
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),
 			ledgerCommitted,
-			new TransactionParser(TOKEN),
+			new TransactionParser(TOKEN, 0),
 			0
 		);
 	}

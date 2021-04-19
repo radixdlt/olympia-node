@@ -30,7 +30,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -42,13 +42,13 @@ import java.util.stream.Collectors;
 public class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
-	private final RRI nativeToken;
+	private final Rri nativeToken;
 	private final RadixEngineStateComputer stateComputer;
 	private final BFTNode self;
 
 	@Inject
 	public SubmissionService(
-		@NativeToken RRI nativeToken,
+		@NativeToken Rri nativeToken,
 		RadixEngineStateComputer stateComputer,
 		@Self BFTNode self
 	) {

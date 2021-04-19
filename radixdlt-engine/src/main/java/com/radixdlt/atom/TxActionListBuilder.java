@@ -25,7 +25,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -66,25 +66,25 @@ public class TxActionListBuilder {
 		return this;
 	}
 
-	public TxActionListBuilder splitNative(RRI rri, UInt256 minSize) {
+	public TxActionListBuilder splitNative(Rri rri, UInt256 minSize) {
 		var action = new SplitToken(rri, minSize);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) {
+	public TxActionListBuilder transfer(Rri rri, RadixAddress to, UInt256 amount) {
 		var action = new TransferToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder mint(RRI rri, RadixAddress to, UInt256 amount) {
+	public TxActionListBuilder mint(Rri rri, RadixAddress to, UInt256 amount) {
 		var action = new MintToken(rri, to, amount);
 		actions.add(action);
 		return this;
 	}
 
-	public TxActionListBuilder burn(RRI rri, UInt256 amount) {
+	public TxActionListBuilder burn(Rri rri, UInt256 amount) {
 		var action = new BurnToken(rri, amount);
 		actions.add(action);
 		return this;

@@ -34,7 +34,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
 import com.radixdlt.store.ImmutableIndex;
 
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
@@ -119,7 +118,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureRequired() {
+			public SignatureValidator<I, O> signatureValidator() {
 				return signatureValidator;
 			}
 		};
@@ -138,8 +137,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I, V> signatureRequired() {
-				return (i, o, index) -> Optional.empty();
+			public SignatureValidator<I, V> signatureValidator() {
+				return (i, o, index, pubKey) -> true;
 			}
 		};
 	}

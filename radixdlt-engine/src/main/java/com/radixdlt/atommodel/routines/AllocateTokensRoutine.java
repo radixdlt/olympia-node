@@ -52,7 +52,7 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 					VoidReducerState inputUsed,
 					ImmutableIndex immutableIndex
 				) {
-					var p = immutableIndex.loadRriId(null, outputParticle.getRriId());
+					var p = immutableIndex.loadRri(null, outputParticle.getRri());
 					if (p.isEmpty()) {
 						return Result.error("Token does not exist.");
 					}
@@ -73,15 +73,15 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 
 				@Override
 				public PermissionLevel requiredPermissionLevel(VoidParticle i, TokensParticle o, ImmutableIndex index) {
-					var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-					return tokenDef.getRri().getAddress().map(a -> PermissionLevel.USER).orElse(PermissionLevel.SYSTEM);
+					var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
+					return tokenDef.getRri().isSystem() ? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
 				@Override
 				public InputOutputReducer<VoidParticle, TokensParticle, VoidReducerState>
 				inputOutputReducer() {
 					return (i, o, index, outputUsed) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
+						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
 						return ReducerResult.complete(
 							new MintToken(tokenDef.getRri(), o.getAddress(), o.getAmount())
 						);
@@ -89,10 +89,10 @@ public final class AllocateTokensRoutine implements ConstraintRoutine {
 				}
 
 				@Override
-				public SignatureValidator<VoidParticle, TokensParticle> signatureRequired() {
-					return (i, o, index) -> {
-						var tokenDef = (TokenDefinitionParticle) index.loadRriId(null, o.getRriId()).orElseThrow();
-						return tokenDef.getRri().getAddress();
+				public SignatureValidator<VoidParticle, TokensParticle> signatureValidator() {
+					return (i, o, index, publicKey) -> {
+						var tokenDef = (TokenDefinitionParticle) index.loadRri(null, o.getRri()).orElseThrow();
+						return publicKey.map(tokenDef.getRri()::ownedBy).orElse(false);
 					};
 				}
 			}

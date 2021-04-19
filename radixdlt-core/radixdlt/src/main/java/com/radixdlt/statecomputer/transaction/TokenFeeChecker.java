@@ -21,7 +21,6 @@ package com.radixdlt.statecomputer.transaction;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
@@ -92,7 +91,7 @@ public class TokenFeeChecker implements PostParsedChecker {
 			.map(REParsedAction::getTxAction)
 			.filter(BurnToken.class::isInstance)
 			.map(BurnToken.class::cast)
-			.filter(t -> RriId.fromRri(t.rri()).isNativeToken())
+			.filter(t -> t.rri().isSystem())
 			.map(BurnToken::amount)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);

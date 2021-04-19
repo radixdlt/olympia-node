@@ -41,7 +41,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -86,9 +86,9 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenBalance() {
-		var balance1 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "XYZ"), UInt384.TWO);
-		var balance2 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "YZX"), UInt384.FIVE);
-		var balance3 = TokenBalance.create(RRI.of(KNOWN_ADDRESS, "ZXY"), UInt384.EIGHT);
+		var balance1 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "xyz"), UInt384.TWO);
+		var balance2 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "yzs"), UInt384.FIVE);
+		var balance3 = TokenBalance.create(Rri.of(KNOWN_ADDRESS.getPublicKey(), "zxy"), UInt384.EIGHT);
 
 		when(highLevelApiService.getTokenBalances(any(RadixAddress.class)))
 			.thenReturn(Result.ok(List.of(balance1, balance2, balance3)));
@@ -117,24 +117,24 @@ public class HighLevelApiHandlerTest {
 
 		var result = response.getJSONObject("result");
 		assertNotNull(result);
-		assertEquals("XRD", result.getString("name"));
-		assertEquals("XRD XRD", result.getString("description"));
+		assertEquals("xrd", result.getString("name"));
+		assertEquals("xrd xrd", result.getString("description"));
 		assertEquals(UInt384.EIGHT, result.get("currentSupply"));
 	}
 
 	@Test
 	public void testTokenInfo() {
-		when(highLevelApiService.getTokenDescription(any(RRI.class)))
-			.thenReturn(buildToken("FOO"));
+		when(highLevelApiService.getTokenDescription(any(Rri.class)))
+			.thenReturn(buildToken("fyy"));
 
-		var params = jsonArray().put(RRI.of(KNOWN_ADDRESS, "FOO").toSpecString());
+		var params = jsonArray().put(Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toSpecString(MAGIC));
 		var response = handler.handleTokenInfo(requestWith(params));
 		assertNotNull(response);
 
 		var result = response.getJSONObject("result");
 		assertNotNull(result);
-		assertEquals("FOO", result.getString("name"));
-		assertEquals("FOO FOO", result.getString("description"));
+		assertEquals("fyy", result.getString("name"));
+		assertEquals("fyy fyy", result.getString("description"));
 		assertEquals(UInt384.EIGHT, result.get("currentSupply"));
 	}
 
@@ -308,8 +308,7 @@ public class HighLevelApiHandlerTest {
 
 	private JSONObject randomAction() {
 		var toAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-		var tokenAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
-		var token = RRI.of(tokenAddress, "COOKIE");
+		var token = Rri.of(ECKeyPair.generateNew().getPublicKey(), "cfee");
 
 		switch (random.nextInt(3)) {
 			case 0:    //transfer
@@ -318,7 +317,7 @@ public class HighLevelApiHandlerTest {
 					.put("from", KNOWN_ADDRESS_STRING)
 					.put("to", toAddress.toString())
 					.put("amount", UInt256.SEVEN)
-					.put("rri", token.toSpecString());
+					.put("rri", token.toSpecString(MAGIC));
 			case 1: //stake
 				return jsonObject()
 					.put("type", ActionType.STAKE)
@@ -385,13 +384,13 @@ public class HighLevelApiHandlerTest {
 	}
 
 	private Result<TokenDefinitionRecord> buildNativeToken() {
-		return buildToken("XRD");
+		return buildToken("xrd");
 	}
 
 	private Result<TokenDefinitionRecord> buildToken(String name) {
 		return Result.ok(
 			TokenDefinitionRecord.create(
-				name, RRI.of(KNOWN_ADDRESS, name), name + " " + name, UInt384.EIGHT,
+				name, Rri.of(KNOWN_ADDRESS.getPublicKey(), name), name + " " + name, UInt384.EIGHT,
 				"http://" + name.toLowerCase() + ".icon.url", "http://" + name.toLowerCase() + "home.url",
 				false
 			));

@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -35,7 +35,7 @@ public class CreateTokenAction implements Action {
 	}
 
 	private final String name;
-	private final RRI rri;
+	private final Rri rri;
 	private final String description;
 	private final String iconUrl;
 	private final String url;
@@ -44,7 +44,7 @@ public class CreateTokenAction implements Action {
 	private final TokenSupplyType tokenSupplyType;
 
 	private CreateTokenAction(
-		RRI rri,
+		Rri rri,
 		String name,
 		String description,
 		String iconUrl,
@@ -75,7 +75,7 @@ public class CreateTokenAction implements Action {
 	}
 
 	public static CreateTokenAction create(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -84,21 +84,21 @@ public class CreateTokenAction implements Action {
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		return new CreateTokenAction(tokenRRI, name, description, iconUrl, url, initialSupply, granularity, tokenSupplyType);
+		return new CreateTokenAction(tokenRri, name, description, iconUrl, url, initialSupply, granularity, tokenSupplyType);
 	}
 
 	public static CreateTokenAction create(
-		RRI tokenRRI,
+		Rri tokenRri,
 		String name,
 		String description,
 		BigDecimal initialSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		return create(tokenRRI, name, description, null, null, initialSupply, granularity, tokenSupplyType);
+		return create(tokenRri, name, description, null, null, initialSupply, granularity, tokenSupplyType);
 	}
 
-	public RRI getRRI() {
+	public Rri getRRI() {
 		return rri;
 	}
 

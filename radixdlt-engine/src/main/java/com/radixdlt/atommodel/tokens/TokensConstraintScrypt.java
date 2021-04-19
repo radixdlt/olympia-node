@@ -28,23 +28,11 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Scrypt which defines how tokens are managed.
  */
 public class TokensConstraintScrypt implements ConstraintScrypt {
-	private final Set<String> systemNames;
-
-	public TokensConstraintScrypt(Set<String> systemNames) {
-		this.systemNames = Objects.requireNonNull(systemNames);
-	}
-
-	public TokensConstraintScrypt() {
-		this(Set.of());
-	}
-
 	@Override
 	public void main(SysCalls os) {
 		registerParticles(os);
@@ -56,8 +44,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TokenDefinitionParticle.class,
 			ParticleDefinition.<TokenDefinitionParticle>builder()
-				.staticValidation(p -> TokenDefinitionUtils.staticCheck(p, systemNames))
-				.rriMapper(TokenDefinitionParticle::getRriId)
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(TokenDefinitionParticle::getRri)
 				.build()
 		);
 
@@ -66,7 +54,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			ParticleDefinition.<TokensParticle>builder()
 				.allowTransitionsFromOutsideScrypts()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(TokensParticle::getRriId)
+				.rriMapper(TokensParticle::getRri)
 				.build()
 		);
 
@@ -92,9 +80,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			(i, o, index) -> Optional.of(i.getAddress()),
+			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> {
-				var p = (TokenDefinitionParticle) index.loadRriId(null, i.getRriId()).orElseThrow();
+				var p = (TokenDefinitionParticle) index.loadRri(null, i.getRri()).orElseThrow();
 				return new TransferToken(p.getRri(), o.getAddress(), o.getAmount()); // FIXME: This isn't 100% correct
 			}
 		));

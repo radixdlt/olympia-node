@@ -24,8 +24,8 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 public final class StakeTokens implements TxAction {
@@ -50,12 +50,12 @@ public final class StakeTokens implements TxAction {
 		var address = txBuilder.getAddressOrFail("Must have an address.");
 		txBuilder.swapFungible(
 			TokensParticle.class,
-			p -> p.getRriId().isNativeToken()
+			p -> p.getRri().isSystem()
 				&& p.getAddress().equals(address)
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, RriId.nativeToken()),
+			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));

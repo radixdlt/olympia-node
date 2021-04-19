@@ -24,23 +24,23 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.math.BigDecimal;
 import java.util.Objects;
 
 public class BurnTokensAction implements Action {
-	private final RRI rri;
+	private final Rri rri;
 	private final RadixAddress address;
 	private final BigDecimal amount;
 
-	private BurnTokensAction(RRI rri, RadixAddress address, BigDecimal amount) {
+	private BurnTokensAction(Rri rri, RadixAddress address, BigDecimal amount) {
 		this.rri = Objects.requireNonNull(rri);
 		this.address = Objects.requireNonNull(address);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
 	public static BurnTokensAction create(
-		RRI rri,
+		Rri rri,
 		RadixAddress address,
 		BigDecimal amount
 	) {
@@ -51,7 +51,7 @@ public class BurnTokensAction implements Action {
 		return address;
 	}
 
-	public RRI getRRI() {
+	public Rri getRRI() {
 		return rri;
 	}
 
