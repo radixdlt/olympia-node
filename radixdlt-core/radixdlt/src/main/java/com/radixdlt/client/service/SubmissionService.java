@@ -36,7 +36,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SubmissionService {
@@ -57,8 +57,10 @@ public class SubmissionService {
 		this.self = self;
 	}
 
-	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
-		var addresses = steps.stream().map(TransactionAction::getFrom).collect(Collectors.toSet());
+	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
+		var addresses = steps.stream().map(TransactionAction::getFrom)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
 			return Result.fail("Source addresses for all actions must be the same");
@@ -70,7 +72,6 @@ public class SubmissionService {
 			var transaction = stateComputer.getEngine()
 				.construct(address, toActions(steps))
 				.burn(nativeToken, fixedFee)
-				.message(message)
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 

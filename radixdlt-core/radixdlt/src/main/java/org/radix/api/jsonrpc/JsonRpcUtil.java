@@ -21,11 +21,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * A collection of utilities for the Json RPC API
@@ -57,8 +61,8 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static JSONObject params(JSONObject request) {
-		return request.getJSONObject("params");
+	public static JSONArray params(JSONObject request) {
+		return request.getJSONArray("params");
 	}
 
 	public static Optional<JSONObject> jsonObject(String data) {
@@ -137,61 +141,62 @@ public final class JsonRpcUtil {
 		return commonFields(request.get("id")).put("result", result);
 	}
 
+
 	public static JSONObject withRequiredStringParameter(
 		JSONObject request,
-		String name,
-		BiFunction<JSONObject, String, JSONObject> fn
+		BiFunction<JSONArray, String, JSONObject> fn
 	) {
 		return withParameters(request, params -> {
-			if (!params.has(name)) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Field '" + name + "' not present in params");
-			} else {
-				return fn.apply(params, params.getString(name));
+			if (params.length() != 1) {
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Parameter not present");
 			}
+			var str = params.getString(0);
+			return fn.apply(params, str);
 		});
 	}
 
 	public static JSONObject withRequiredArrayParameter(
 		JSONObject request,
-		String name,
-		BiFunction<JSONObject, JSONArray, JSONObject> fn
+		BiFunction<JSONArray, JSONArray, JSONObject> fn
 	) {
 		return withParameters(request, params -> {
-			if (!params.has(name)) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Field '" + name + "' not present in params");
-			} else {
-				return fn.apply(params, params.getJSONArray(name));
+			if (params.isEmpty()) {
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Parameter not present");
 			}
+
+			var arr = params.getJSONArray(0);
+			return fn.apply(params, arr);
 		});
 	}
 
 	public static JSONObject withRequiredParameters(
 		JSONObject request,
-		Set<String> required,
+		List<String> required,
 		Function<JSONObject, JSONObject> fn
 	) {
 		return withParameters(request, params -> {
-			var allPresent = required.stream().filter(params::has).count() == required.size();
-
-			if (!allPresent) {
-				return errorResponse(request, RpcError.INVALID_REQUEST, "Params misses one of fields " + required);
-			} else {
-				return fn.apply(params);
+			if (params.length() != required.size()) {
+				return errorResponse(request, RpcError.INVALID_REQUEST, "Params missing one or more fields");
 			}
+			var o = new JSONObject();
+			for (int i = 0; i < required.size(); i++) {
+				o.put(required.get(i), params.get(i));
+			}
+			return fn.apply(o);
 		});
 	}
 
-	public static JSONObject withParameters(JSONObject request, Function<JSONObject, JSONObject> fn) {
+	public static JSONObject withParameters(JSONObject request, Function<JSONArray, JSONObject> fn) {
 		if (!request.has("params")) {
 			return errorResponse(request, RpcError.INVALID_REQUEST, "'params' field is required");
 		}
 
 		final Object paramsObject = request.get("params");
 
-		if (!(paramsObject instanceof JSONObject)) {
-			return errorResponse(request, RpcError.INVALID_PARAMS, "'params' field must be a JSON object");
+		if (!(paramsObject instanceof JSONArray)) {
+			return errorResponse(request, RpcError.INVALID_PARAMS, "'params' field must be a JSON array");
 		}
 
-		return fn.apply((JSONObject) paramsObject);
+		return fn.apply((JSONArray) paramsObject);
 	}
 }

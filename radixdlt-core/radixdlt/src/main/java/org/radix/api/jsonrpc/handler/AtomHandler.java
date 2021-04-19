@@ -38,7 +38,6 @@ public class AtomHandler {
 	public JSONObject handleGetAtom(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			"aid",
 			(params, aid) -> AID.fromString(aid)
 				.flatMap(atomsService::getAtomByAtomId)
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Atom with AID '" + aid + "' not found"))

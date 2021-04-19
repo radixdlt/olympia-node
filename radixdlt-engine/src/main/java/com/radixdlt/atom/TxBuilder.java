@@ -538,9 +538,13 @@ public final class TxBuilder {
 		return this;
 	}
 
+	public TxBuilder message(byte[] message) {
+		lowLevelBuilder.message(message);
+		return this;
+	}
+
 	public TxBuilder message(Optional<String> message) {
 		message.ifPresent(lowLevelBuilder::message);
-
 		return this;
 	}
 

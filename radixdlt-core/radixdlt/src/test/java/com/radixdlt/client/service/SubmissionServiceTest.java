@@ -222,10 +222,11 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken))
+			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.msg("message")
 		);
 
-		var result = submissionService.prepareTransaction(steps, Optional.of("message"));
+		var result = submissionService.prepareTransaction(steps);
 
 		result
 			.onFailureDo(Assert::fail)
@@ -284,9 +285,10 @@ public class SubmissionServiceTest {
 		radixEngine.execute(List.of(tx));
 
 		var steps = List.of(
-			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken))
+			TransactionAction.create(ActionType.TRANSFER, ALICE, BOB, UInt256.FOUR, Optional.of(nativeToken)),
+			TransactionAction.msg("message")
 		);
 
-		return submissionService.prepareTransaction(steps, Optional.of("message"));
+		return submissionService.prepareTransaction(steps);
 	}
 }
