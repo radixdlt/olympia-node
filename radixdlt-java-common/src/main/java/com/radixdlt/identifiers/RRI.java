@@ -48,12 +48,6 @@ public final class RRI {
 		return name;
 	}
 
-	public String toSpecFormat() {
-		return getAddress()
-			.map(address -> "/" + address + "/" + name)
-			.orElse("//" + name);
-	}
-
 	public static RRI of(RadixAddress address, String name) {
 		Objects.requireNonNull(address);
 		return new RRI(address, name);
@@ -96,13 +90,34 @@ public final class RRI {
 		}
 	}
 
+	public String toSpecString() {
+		return getAddress()
+			.map(address -> "/" + address + "/" + name)
+			.orElse("//" + name);
+	}
+
+	public static Result<RRI> fromSpecString(String s) {
+		String[] split = s.split("/", 3);
+		if (split.length != 3 || split[0].length() != 0) {
+			return Result.fail("RRI has invalid format");
+		}
+
+		var name = split[2];
+
+		if (!NAME_PATTERN.matcher(name).matches()) {
+			return Result.fail("RRI name is invalid");
+		}
+
+		return RadixAddress.fromString(split[1]).map(address -> new RRI(address, name));
+	}
+
 	public byte[] toBytes() {
-		return ((address != null ? address.toString() + "." : "") + name).getBytes(RadixConstants.STANDARD_CHARSET);
+		return ((address != null ? address + "." : "") + name).getBytes(RadixConstants.STANDARD_CHARSET);
 	}
 
 	@Override
 	public String toString() {
-		return (address != null ? address.toString() + "." : "") + name;
+		return (address != null ? address + "." : "") + name;
 	}
 
 	@Override
