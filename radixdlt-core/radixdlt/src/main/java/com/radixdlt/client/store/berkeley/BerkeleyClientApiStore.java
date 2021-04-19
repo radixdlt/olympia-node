@@ -491,7 +491,6 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
-
 		reTxn.getUser().ifPresent(p -> {
 			var addr = new RadixAddress(universeMagic, p);
 			storeSingleTransaction(reTxn.getTxn().getId(), addr);
