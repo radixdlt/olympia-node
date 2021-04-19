@@ -90,7 +90,7 @@ public class StakedTokensTest {
 	public void stake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 
 		this.engine.execute(List.of(txn));
@@ -100,13 +100,13 @@ public class StakedTokensTest {
 	public void unstake_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerAddress,
-			new UnstakeTokens(this.validatorAddress, UInt256.TEN)
+			new UnstakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
@@ -115,29 +115,27 @@ public class StakedTokensTest {
 	public void unstake_partial_tokens() throws Exception {
 		var txn = engine.construct(
 			this.tokenOwnerAddress,
-			new StakeTokens(this.validatorAddress, UInt256.TEN)
+			new StakeTokens(this.validatorAddress.getPublicKey(), UInt256.TEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
 		var txn2 = engine.construct(
 			this.tokenOwnerAddress,
-			new UnstakeTokens(this.validatorAddress, UInt256.SEVEN)
+			new UnstakeTokens(this.validatorAddress.getPublicKey(), UInt256.SEVEN)
 		).signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn2));
 	}
 
 	@Test
 	public void move_staked_tokens() throws Exception {
-		var txn = this.engine.construct(this.tokenOwnerAddress, new StakeTokens(validatorAddress, UInt256.TEN))
+		var txn = this.engine.construct(this.tokenOwnerAddress, new StakeTokens(validatorAddress.getPublicKey(),
+			UInt256.TEN))
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(txn));
 
-		var atom2 = this.engine.construct(this.tokenOwnerAddress, new MoveStake(validatorAddress, newAddress(), UInt256.FIVE))
+		var atom2 = this.engine.construct(this.tokenOwnerAddress, new MoveStake(validatorAddress.getPublicKey(),
+			ECKeyPair.generateNew().getPublicKey(), UInt256.FIVE))
 			.signAndBuild(this.tokenOwnerKeyPair::sign);
 		this.engine.execute(List.of(atom2));
-	}
-
-	private RadixAddress newAddress() {
-		return new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	}
 }

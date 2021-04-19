@@ -18,7 +18,7 @@
 
 package com.radixdlt.application;
 
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Map;
@@ -26,20 +26,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 public final class StakedBalance {
-	private final Map<RadixAddress, UInt256> stakes = new ConcurrentHashMap<>();
+	private final Map<ECPublicKey, UInt256> stakes = new ConcurrentHashMap<>();
 
-	public void addStake(RadixAddress delegate, UInt256 amount) {
+	public void addStake(ECPublicKey delegate, UInt256 amount) {
 		stakes.merge(delegate, amount, UInt256::add);
 	}
 
-	public void removeStake(RadixAddress delegate, UInt256 amount) {
+	public void removeStake(ECPublicKey delegate, UInt256 amount) {
 		stakes.computeIfPresent(delegate, (d, cur) -> {
 			var newAmt = cur.subtract(amount);
 			return newAmt.isZero() ? null : newAmt;
 		});
 	}
 
-	public void forEach(BiConsumer<RadixAddress, UInt256> consumer) {
+	public void forEach(BiConsumer<ECPublicKey, UInt256> consumer) {
 		this.stakes.forEach(consumer);
 	}
 }

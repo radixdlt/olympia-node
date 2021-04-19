@@ -23,20 +23,20 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 public final class UnstakeTokens implements TxAction {
-	private final RadixAddress delegateAddress;
+	private final ECPublicKey delegateAddress;
 	private final UInt256 amount;
 
-	public UnstakeTokens(RadixAddress delegateAddress, UInt256 amount) {
+	public UnstakeTokens(ECPublicKey delegateAddress, UInt256 amount) {
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;
 	}
 
-	public RadixAddress from() {
+	public ECPublicKey from() {
 		return delegateAddress;
 	}
 

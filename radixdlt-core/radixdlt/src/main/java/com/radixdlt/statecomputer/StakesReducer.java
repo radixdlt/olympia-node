@@ -47,11 +47,11 @@ public final class StakesReducer implements StateReducer<Stakes, StakedTokensPar
 
     @Override
     public BiFunction<Stakes, StakedTokensParticle, Stakes> outputReducer() {
-        return (prev, p) -> prev.add(p.getDelegateAddress().getPublicKey(), p.getAmount());
+        return (prev, p) -> prev.add(p.getDelegateKey(), p.getAmount());
     }
 
     @Override
     public BiFunction<Stakes, StakedTokensParticle, Stakes> inputReducer() {
-        return (prev, p) -> prev.remove(p.getDelegateAddress().getPublicKey(), p.getAmount());
+        return (prev, p) -> prev.remove(p.getDelegateKey(), p.getAmount());
     }
 }

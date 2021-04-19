@@ -56,7 +56,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
-			(i, o, index) -> new StakeTokens(o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index) -> new StakeTokens(o.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Unstaking
@@ -67,7 +67,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
 			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
-			(i, o, index) -> new UnstakeTokens(i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
+			(i, o, index) -> new UnstakeTokens(i.getDelegateKey(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
 		// Stake movement

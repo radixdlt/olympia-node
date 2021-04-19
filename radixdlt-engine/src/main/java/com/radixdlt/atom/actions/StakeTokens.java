@@ -24,21 +24,21 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 public final class StakeTokens implements TxAction {
-	private final RadixAddress delegateAddress;
+	private final ECPublicKey delegateKey;
 	private final UInt256 amount;
 
-	public StakeTokens(RadixAddress delegateAddress, UInt256 amount) {
-		this.delegateAddress = delegateAddress;
+	public StakeTokens(ECPublicKey delegateKey, UInt256 amount) {
+		this.delegateKey = delegateKey;
 		this.amount = amount;
 	}
 
-	public RadixAddress to() {
-		return delegateAddress;
+	public ECPublicKey to() {
+		return delegateKey;
 	}
 
 	public UInt256 amount() {
@@ -58,6 +58,6 @@ public final class StakeTokens implements TxAction {
 			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
 			amount,
 			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
+		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));
 	}
 }

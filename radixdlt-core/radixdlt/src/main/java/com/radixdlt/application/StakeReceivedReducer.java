@@ -21,8 +21,8 @@ package com.radixdlt.application;
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.StateReducer;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -32,11 +32,11 @@ import java.util.function.Supplier;
  * Reduces radix engine to stake received
  */
 public final class StakeReceivedReducer implements StateReducer<StakeReceived, StakedTokensParticle> {
-	private final RadixAddress address;
+	private final ECPublicKey key;
 
 	@Inject
-	public StakeReceivedReducer(@Self RadixAddress address) {
-		this.address = Objects.requireNonNull(address);
+	public StakeReceivedReducer(@Self ECPublicKey key) {
+		this.key = Objects.requireNonNull(key);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public final class StakeReceivedReducer implements StateReducer<StakeReceived, S
 	@Override
 	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> outputReducer() {
 		return (stakes, p) -> {
-			if (p.getDelegateAddress().equals(address)) {
+			if (p.getDelegateKey().equals(key)) {
 				stakes.addStake(p.getAddress(), p.getAmount());
 			}
 			return stakes;
@@ -67,7 +67,7 @@ public final class StakeReceivedReducer implements StateReducer<StakeReceived, S
 	@Override
 	public BiFunction<StakeReceived, StakedTokensParticle, StakeReceived> inputReducer() {
 		return (stakes, p) -> {
-			if (p.getDelegateAddress().equals(address)) {
+			if (p.getDelegateKey().equals(key)) {
 				stakes.removeStake(p.getAddress(), p.getAmount());
 			}
 			return stakes;

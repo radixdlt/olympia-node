@@ -158,11 +158,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(validatorAddress, UInt256.FIVE);
+		return new StakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(validatorAddress, UInt256.FIVE);
+		return new UnstakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

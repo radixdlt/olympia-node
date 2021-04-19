@@ -204,13 +204,13 @@ public final class RESerializer {
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
 		serializeAddress(buf, p.getAddress());
-		serializeAddress(buf, p.getDelegateAddress());
+		serializeKey(buf, p.getDelegateKey());
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) {
+	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var address = deserializeAddress(buf);
-		var delegate = deserializeAddress(buf);
+		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
 		return new StakedTokensParticle(delegate, address, amount);
 	}

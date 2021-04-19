@@ -144,7 +144,7 @@ public final class ECPublicKey {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), toBase58());
+		return String.format("%s[%s]", getClass().getSimpleName(), toHex());
 	}
 
 	private EUID computeUID() {

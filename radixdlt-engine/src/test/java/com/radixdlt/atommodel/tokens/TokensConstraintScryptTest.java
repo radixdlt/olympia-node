@@ -23,7 +23,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.Rri;
@@ -75,7 +75,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_staked_token_with_zero_amount__result_has_error() {
 		StakedTokensParticle stakedTokensParticle = mock(StakedTokensParticle.class);
-		when(stakedTokensParticle.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(stakedTokensParticle.getDelegateKey()).thenReturn(mock(ECPublicKey.class));
 		when(stakedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(stakedTokensParticle).getErrorMessage())
 			.contains("zero");
@@ -84,7 +84,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
 		StakedTokensParticle staked = mock(StakedTokensParticle.class);
-		when(staked.getDelegateAddress()).thenReturn(null);
+		when(staked.getDelegateKey()).thenReturn(null);
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");
 	}

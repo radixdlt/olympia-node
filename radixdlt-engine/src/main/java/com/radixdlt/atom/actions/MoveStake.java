@@ -22,15 +22,15 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
 public final class MoveStake implements TxAction {
-	private final RadixAddress from;
-	private final RadixAddress to;
+	private final ECPublicKey from;
+	private final ECPublicKey to;
 	private final UInt256 amount;
 
-	public MoveStake(RadixAddress from, RadixAddress to, UInt256 amount) {
+	public MoveStake(ECPublicKey from, ECPublicKey to, UInt256 amount) {
 		this.from = from;
 		this.to = to;
 		this.amount = amount;
@@ -42,7 +42,7 @@ public final class MoveStake implements TxAction {
 
 		txBuilder.swapFungible(
 			StakedTokensParticle.class,
-			p -> p.getAddress().equals(address) && p.getDelegateAddress().equals(from),
+			p -> p.getAddress().equals(address) && p.getDelegateKey().equals(from),
 			StakedTokensParticle::getAmount,
 			amt -> new StakedTokensParticle(from, address, amt),
 			amount,

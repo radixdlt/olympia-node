@@ -25,6 +25,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 
 /**
@@ -39,6 +40,12 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 	@Provides
 	public HashSigner hashSigner(@Self ECKeyPair self) {
 		return self::sign;
+	}
+
+	@Provides
+	@Self
+	ECPublicKey radixAddress(@Self BFTNode bftNode) {
+		return bftNode.getKey();
 	}
 
 	@Provides

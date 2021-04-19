@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -44,6 +45,12 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		return new PersistedBFTKeyManager(nodeKeyPath);
+	}
+
+	@Provides
+	@Self
+	ECPublicKey radixAddress(@Self BFTNode bftNode) {
+		return bftNode.getKey();
 	}
 
 	@Provides

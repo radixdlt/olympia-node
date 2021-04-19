@@ -21,7 +21,6 @@ package com.radixdlt.atom;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -496,23 +495,6 @@ public final class TxBuilder {
 			amount,
 			"Not enough balance to for burn."
 		);
-
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder stakeTo(RadixAddress delegateAddress, UInt256 amount) throws TxBuilderException {
-		assertHasAddress("Must have an address.");
-
-		swapFungible(
-			TokensParticle.class,
-			p -> p.getRri().isSystem() && p.getAddress().equals(address),
-			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
-			amount,
-			"Not enough balance for staking."
-		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));
 
 		particleGroup();
 

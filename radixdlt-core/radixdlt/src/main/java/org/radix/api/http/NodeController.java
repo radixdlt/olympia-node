@@ -39,6 +39,8 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
@@ -47,9 +49,11 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.ImmutableIndex;
+import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import org.bitcoinj.core.Bech32;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -135,6 +139,19 @@ public final class NodeController implements Controller {
 			.put("validator", getValidator()));
 	}
 
+	private ECPublicKey parseBech32Validator(String v) {
+		var bech32Data = Bech32.decode(v);
+		if (!bech32Data.hrp.equals("vb")) {
+			throw new IllegalArgumentException();
+		}
+		var keyBytes = Bits.convertBits(bech32Data.data, 0, bech32Data.data.length, 5, 8, false);
+		try {
+			return ECPublicKey.fromBytes(keyBytes);
+		} catch (PublicKeyException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
@@ -180,24 +197,24 @@ public final class NodeController implements Controller {
 				return new BurnToken(rri, subunits);
 			}
 			case "StakeTokens": {
-				var addressString = paramsObject.getString("to");
-				var delegate = RadixAddress.from(addressString);
+				var validatorString = paramsObject.getString("to");
+				var key = parseBech32Validator(validatorString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeTokens(delegate, subunits);
+				return new StakeTokens(key, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
-				var delegate = RadixAddress.from(addressString);
+				var delegate = parseBech32Validator(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new UnstakeTokens(delegate, subunits);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
-				var fromDelegate = RadixAddress.from(fromString);
+				var fromDelegate = parseBech32Validator(fromString);
 				var toString = paramsObject.getString("to");
-				var toDelegate = RadixAddress.from(toString);
+				var toDelegate = parseBech32Validator(toString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new MoveStake(fromDelegate, toDelegate, subunits);

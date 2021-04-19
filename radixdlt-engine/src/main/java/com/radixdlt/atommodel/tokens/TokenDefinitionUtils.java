@@ -88,7 +88,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	public static Result staticCheck(StakedTokensParticle stakedParticle) {
-		if (stakedParticle.getDelegateAddress() == null) {
+		if (stakedParticle.getDelegateKey() == null) {
 			return Result.error("delegateAddress must not be null");
 		}
 		if (stakedParticle.getAmount() == null) {
