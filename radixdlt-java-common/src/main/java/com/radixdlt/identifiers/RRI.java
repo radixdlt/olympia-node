@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
@@ -45,6 +46,12 @@ public final class RRI {
 
 	public String getName() {
 		return name;
+	}
+
+	public String toSpecFormat() {
+		return getAddress()
+			.map(address -> "/" + address + "/" + name)
+			.orElse("//" + name);
 	}
 
 	public static RRI of(RadixAddress address, String name) {
@@ -87,6 +94,10 @@ public final class RRI {
 		} catch (RuntimeException e) {
 			return Result.fail("Error while parsing RRI: {0}", e.getMessage());
 		}
+	}
+
+	public byte[] toBytes() {
+		return ((address != null ? address.toString() + "." : "") + name).getBytes(RadixConstants.STANDARD_CHARSET);
 	}
 
 	@Override

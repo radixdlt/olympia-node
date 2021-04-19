@@ -143,7 +143,7 @@ public class TokenDefinitionRecord {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", rri)
+			.put("rri", rri.toSpecFormat())
 			.put("symbol", rri.getName())
 			.put("description", description)
 			.put("currentSupply", currentSupply)

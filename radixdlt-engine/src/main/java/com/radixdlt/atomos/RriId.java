@@ -73,7 +73,7 @@ public final class RriId {
 		var id = new byte[BYTES];
 		id[0] = (byte) 0;
 
-		var firstHash = HashUtils.sha256(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
+		var firstHash = HashUtils.sha256(rri.toBytes());
 		firstHash.writeBytesTo(id, 1, 32);
 		return new RriId(id);
 	}
