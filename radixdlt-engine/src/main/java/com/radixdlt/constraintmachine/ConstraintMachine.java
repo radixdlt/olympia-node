@@ -111,8 +111,7 @@ public final class ConstraintMachine {
 
 		private final Map<Integer, Particle> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
-		private final HashCode witness;
-		private final Optional<ECDSASignature> signature;
+		private final Optional<ECPublicKey> signedBy;
 		private final CMStore store;
 		private final CMStore.Transaction txn;
 		private final Predicate<Particle> virtualStoreLayer;
@@ -124,15 +123,13 @@ public final class ConstraintMachine {
 			CMStore.Transaction txn,
 			CMStore store,
 			PermissionLevel permissionLevel,
-			HashCode witness,
-			Optional<ECDSASignature> signature
+			Optional<ECPublicKey> signedBy
 		) {
 			this.virtualStoreLayer = virtualStoreLayer;
 			this.txn = txn;
 			this.store = store;
 			this.permissionLevel = permissionLevel;
-			this.witness = witness;
-			this.signature = signature;
+			this.signedBy = signedBy;
 		}
 
 		public ImmutableIndex immutableIndex() {
@@ -196,11 +193,7 @@ public final class ConstraintMachine {
 		}
 
 		private boolean verifySignedWith(ECPublicKey publicKey) {
-			if (signature.isEmpty() || witness == null) {
-				return false;
-			}
-
-			return publicKey.verify(witness, signature.get());
+			return signedBy.map(publicKey::equals).orElse(false);
 		}
 
 		Particle getCurParticle() {
@@ -297,11 +290,6 @@ public final class ConstraintMachine {
 			return Optional.of(Pair.of(CMErrorCode.MISSING_TRANSITION_PROCEDURE, "TransitionToken{" + transitionToken + "}"));
 		}
 
-		final PermissionLevel requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(inputParticle, outputParticle);
-		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
-			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
-		}
-
 		final var used = validationState.getReducerState();
 
 		// Precondition check
@@ -313,6 +301,13 @@ public final class ConstraintMachine {
 		);
 		if (preconditionCheckResult.isError()) {
 			return Optional.of(Pair.of(CMErrorCode.TRANSITION_PRECONDITION_FAILURE, preconditionCheckResult.getErrorMessage()));
+		}
+
+		final var requiredPermissionLevel = transitionProcedure.requiredPermissionLevel(
+			inputParticle, outputParticle, validationState.immutableIndex()
+		);
+		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
+			return Optional.of(Pair.of(CMErrorCode.INVALID_EXECUTION_PERMISSION, null));
 		}
 
 		var reducer = transitionProcedure.inputOutputReducer();
@@ -328,8 +323,8 @@ public final class ConstraintMachine {
 			validationState::popAndComplete
 		);
 
-		var addressMaybe = transitionProcedure.inputSignatureRequired()
-			.requiredSignature(inputParticle);
+		var addressMaybe = transitionProcedure.signatureRequired()
+			.requiredSignature(inputParticle, outputParticle, validationState.immutableIndex());
 		if (addressMaybe.isPresent()) {
 			var address = addressMaybe.get();
 			if (validationState.signatureRequired != null) {
@@ -444,6 +439,9 @@ public final class ConstraintMachine {
 			var hashToSign = HashUtils.sha256(firstHash.asBytes());
 			var pubKey = ECPublicKey.recoverFrom(hashToSign, sig)
 				.orElseThrow(() -> new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature"));
+			if (!pubKey.verify(hashToSign, sig)) {
+				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature");
+			}
 			statelessVerification.signatureData(hashToSign, sig, pubKey);
 		}
 
@@ -533,26 +531,20 @@ public final class ConstraintMachine {
 
 				parsedInstructions.add(REParsedInstruction.of(inst, substate));
 			} else if (inst.getMicroOp() == com.radixdlt.constraintmachine.REInstruction.REOp.END) {
-				final Pair<Particle, ReducerState> deallocated;
-				if (validationState.txAction == null && validationState.particleRemainingIsInput) {
-					var particle = validationState.particleRemaining;
-					var reducerState = validationState.reducerState;
+				if (validationState.txAction == null) {
 					var errMaybe = validateParticle(validationState,
-						VoidParticle.create(), false, false);
+						VoidParticle.create(), !validationState.particleRemainingIsInput, false);
 					if (errMaybe.isPresent()) {
 						return Optional.of(new CMError(instIndex,
 							errMaybe.get().getFirst(), validationState, errMaybe.get().getSecond()));
 					}
-					deallocated = Pair.of(particle, reducerState);
-				} else {
-					deallocated = null;
 				}
 
 				if (validationState.txAction == null) {
 					return Optional.of(new CMError(instIndex, CMErrorCode.UNEQUAL_INPUT_OUTPUT, validationState));
 				}
 
-				var parsedAction = REParsedAction.create(validationState.txAction, parsedInstructions, deallocated);
+				var parsedAction = REParsedAction.create(validationState.txAction, parsedInstructions);
 				parsedActions.add(parsedAction);
 				parsedInstructions = new ArrayList<>();
 				validationState.txAction = null;
@@ -578,14 +570,12 @@ public final class ConstraintMachine {
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
 		var result = this.statelessVerify(txn);
-
-		final CMValidationState validationState = new CMValidationState(
+		var validationState = new CMValidationState(
 			virtualStoreLayer,
 			dbTxn,
 			cmStore,
 			permissionLevel,
-			result.hashToSign,
-			Optional.ofNullable(result.signature)
+			Optional.ofNullable(result.publicKey)
 		);
 
 		var parsedActions = new ArrayList<REParsedAction>();

@@ -22,7 +22,6 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Objects;
@@ -58,10 +57,6 @@ public final class REParsedTxn {
 	public boolean isUserCommand() {
 		return actions.stream().flatMap(a -> a.getInstructions().stream())
 			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
-	}
-
-	public Stream<Pair<Particle, ReducerState>> deallocated() {
-		return actions.stream().flatMap(a -> a.getDeallocated().stream());
 	}
 
 	public List<REParsedInstruction> stateUpdates() {

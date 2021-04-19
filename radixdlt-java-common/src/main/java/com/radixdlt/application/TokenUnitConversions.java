@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
+import com.radixdlt.utils.UInt384;
 
 /**
  * Utility class for converting token units between UInt256 and BigDecimal
@@ -77,6 +78,11 @@ public final class TokenUnitConversions {
 	 */
 	public static BigDecimal subunitsToUnits(UInt256 subunits) {
 		return subunitsToUnits(UInt256s.toBigInteger(subunits));
+	}
+
+	public static BigDecimal subunitsToUnits(UInt384 subunits) {
+		var b =  new BigInteger(1, subunits.toByteArray());
+		return subunitsToUnits(b);
 	}
 
 	/**

@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
@@ -24,7 +25,6 @@ import org.junit.Test;
 import com.radixdlt.client.api.ActionType;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -90,15 +90,17 @@ public class TransactionParserTest {
 
 		engine = new RadixEngine<>(cm, store);
 
-		var txn1 = TxBuilder.newBuilder(tokenOwnerAddress)
-			.createMutableToken(tokDef)
-			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN)
-			.signAndBuild(tokenOwnerKeyPair::sign);
+		var txn0 = engine.construct(
+			this.tokenOwnerAddress,
+			TxActionListBuilder.create()
+				.createMutableToken(tokDef)
+				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.build()
+		).signAndBuild(this.tokenOwnerKeyPair::sign);
+		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
+		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		var txn2 = engine.construct(validatorAddress, new RegisterValidator())
-			.signAndBuild(validatorKeyPair::sign);
-
-		engine.execute(List.of(txn1, txn2));
+		engine.execute(List.of(txn0, txn1));
 	}
 
 	@Test
@@ -126,12 +128,13 @@ public class TransactionParserTest {
 	@Test
 	public void transferIsParsedCorrectly() throws Exception {
 		//Use different token
-		var txn = engine.construct(tokenOwnerAddress, List.of())
+		var txn = engine.construct(tokenOwnerAddress, TxActionListBuilder.create()
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
 			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
 			.burn(tokenRri, UInt256.FOUR)
-			.signAndBuild(tokenOwnerKeyPair::sign);
+			.build()
+		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER, ActionType.BURN), UInt256.FOUR, txn);
 	}

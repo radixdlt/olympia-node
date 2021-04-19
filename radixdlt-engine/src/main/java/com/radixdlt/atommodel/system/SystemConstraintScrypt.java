@@ -82,7 +82,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(SystemParticle i, SystemParticle o) {
+				public PermissionLevel requiredPermissionLevel(SystemParticle i, SystemParticle o, ImmutableIndex index) {
 					return PermissionLevel.SUPER_USER;
 				}
 
@@ -117,8 +117,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public SignatureValidator<SystemParticle> inputSignatureRequired() {
-					return i -> Optional.empty();
+				public SignatureValidator<SystemParticle, SystemParticle> signatureRequired() {
+					return (i, o, index) -> Optional.empty();
 				}
 			}
 		);
