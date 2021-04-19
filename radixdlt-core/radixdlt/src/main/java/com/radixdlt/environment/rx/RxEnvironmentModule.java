@@ -53,6 +53,7 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
@@ -89,6 +90,7 @@ public final class RxEnvironmentModule extends AbstractModule {
 		bind(Environment.class).to(RxEnvironment.class);
 		bind(ScheduledExecutorService.class).toInstance(ses);
 
+		bind(new TypeLiteral<Observable<MempoolAddSuccess>>() { }).toProvider(new ObservableProvider<>(MempoolAddSuccess.class));
 		bind(new TypeLiteral<Observable<MempoolAddFailure>>() { }).toProvider(new ObservableProvider<>(MempoolAddFailure.class));
 		bind(new TypeLiteral<Observable<MempoolRelayTrigger>>() { }).toProvider(new ObservableProvider<>(MempoolRelayTrigger.class));
 		bind(new TypeLiteral<Observable<ScheduledLocalTimeout>>() { }).toProvider(new ObservableProvider<>(ScheduledLocalTimeout.class));

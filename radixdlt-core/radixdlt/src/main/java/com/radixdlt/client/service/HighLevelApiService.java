@@ -67,7 +67,7 @@ public class HighLevelApiService {
 			immutableIndex.loadRri(null, Rri.ofSystem("xrd")),
 			"Unable to find native token"
 		)
-			.map(p -> (TokenDefinitionParticle) p)
+			.map(TokenDefinitionParticle.class::cast)
 			.flatMap(p ->
 				clientApiStore.getTokenSupply(p.getRri())
 					.map(supply -> TokenDefinitionRecord.from(p, supply))

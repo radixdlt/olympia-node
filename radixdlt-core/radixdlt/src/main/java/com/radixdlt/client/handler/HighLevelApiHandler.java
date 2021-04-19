@@ -78,18 +78,18 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson())
+				description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 			);
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request, "resourceIdentifier",
-			(params, tokenId) -> Rri.fromString(tokenId)
+			(params, tokenId) -> Rri.fromSpecString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson())
+					description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 				)
 		);
 	}
@@ -98,8 +98,10 @@ public class HighLevelApiHandler {
 		return withRequiredStringParameter(
 			request, "address",
 			(params, address) -> RadixAddress.fromString(address)
-				.map(radixAddress -> response(request, formatTokenBalances(request, radixAddress)))
-				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize address"))
+				.fold(
+					failure -> toErrorResponse(request, failure),
+					radixAddress -> response(request, formatTokenBalances(request, radixAddress))
+				)
 		);
 	}
 
@@ -122,7 +124,7 @@ public class HighLevelApiHandler {
 			ActionParser.parse(actions)
 				.flatMap(steps -> submissionService.prepareTransaction(steps, safeString(params, "message")))
 				.fold(
-					failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+					failure -> toErrorResponse(request, failure),
 					value -> response(request, value.asJson())
 				)
 		);
@@ -166,6 +168,7 @@ public class HighLevelApiHandler {
 	}
 
 	private JSONObject respondWithTransactionHistory(JSONObject params, JSONObject request) {
+		//TODO: switch to Result
 		return allOf(Optional.of(request), parseAddress(params), parseSize(params))
 			.map(this::formatTransactionHistory)
 			.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "One or more required parameters missing"));
@@ -290,7 +293,7 @@ public class HighLevelApiHandler {
 	}
 
 	private static Optional<RadixAddress> parseAddress(JSONObject params) {
-		return RadixAddress.fromString(params.getString("address"));
+		return RadixAddress.fromString(params.getString("address")).toOptional();
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {

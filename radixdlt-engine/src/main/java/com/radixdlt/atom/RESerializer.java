@@ -158,7 +158,7 @@ public final class RESerializer {
 		if (isSystem) {
 			return Rri.ofSystem(name);
 		} else {
-			var hash = new byte[20];
+			var hash = new byte[Rri.HASH_BYTES];
 			buf.get(hash);
 			return Rri.of(hash, name);
 		}

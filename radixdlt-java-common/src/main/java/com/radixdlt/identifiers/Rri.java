@@ -18,12 +18,11 @@
 package com.radixdlt.identifiers;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.functional.Result;
 import org.bitcoinj.core.Bech32;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -32,6 +31,7 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class Rri {
+	public static final int HASH_BYTES = 33;
 	private static final String NAME_REGEX = "[a-z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
@@ -47,6 +47,7 @@ public final class Rri {
 		this.name = name;
 	}
 
+	/*
 	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
 		var dataToHash = new byte[33 + nameBytes.length];
@@ -55,6 +56,12 @@ public final class Rri {
 		var firstHash = HashUtils.sha256(dataToHash);
 		var secondHash = HashUtils.sha256(firstHash.asBytes());
 		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
+	}
+	 */
+
+
+	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
+		return publicKey.getCompressedBytes();
 	}
 
 	public boolean ownedBy(ECPublicKey publicKey) {
@@ -106,10 +113,40 @@ public final class Rri {
 
 	public static Result<Rri> fromString(String s) {
 		try {
-			return Result.ok(fromBech32(s));
+			//return Result.ok(fromBech32(s));
+			return fromSpecString(s);
 		} catch (RuntimeException e) {
 			return Result.fail("Error while parsing RRI: {0}", e.getMessage());
 		}
+	}
+
+	public String toSpecString(byte magic) {
+		if (hash.length == 0) {
+			return "//" + name;
+		} else {
+			try {
+				var address = new RadixAddress(magic, ECPublicKey.fromBytes(hash));
+				return "/" + address + "/" + name;
+			} catch (PublicKeyException e) {
+				throw new IllegalStateException();
+			}
+		}
+	}
+
+	public static Result<Rri> fromSpecString(String s) {
+		String[] split = s.split("/", 3);
+		if (split.length != 3 || split[0].length() != 0) {
+			return Result.fail("RRI has invalid format");
+		}
+
+		var name = split[2];
+
+		if (!NAME_PATTERN.matcher(name).matches()) {
+			return Result.fail("RRI name is invalid");
+		}
+
+		return RadixAddress.fromString(split[1])
+			.map(address -> new Rri(address.getPublicKey().getCompressedBytes(), name));
 	}
 
 	@Override

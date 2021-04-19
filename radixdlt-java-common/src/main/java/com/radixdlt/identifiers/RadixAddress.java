@@ -22,10 +22,10 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Base58;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -97,12 +97,12 @@ public final class RadixAddress {
 		return from(raw);
 	}
 
-	public static Optional<RadixAddress> fromString(String address) {
+	public static Result<RadixAddress> fromString(String address) {
 		try {
 			byte[] raw = Base58.fromBase58(address);
-			return Optional.of(from(raw));
+			return Result.ok(from(raw));
 		} catch (Exception e) {
-			return Optional.empty();
+			return Result.fail(e);
 		}
 	}
 
