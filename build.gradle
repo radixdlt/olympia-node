@@ -49,7 +49,15 @@ def radixVersion() {
 }
 
 group 'com.radixdlt'
-version radixVersion()
+if (System.getenv("CI_VERSION")){
+    version  versioning.info.full
+} else {
+    version radixVersion()
+}
+
+task radixCiVersion {
+    print "radixdlt-version:$version"
+}
 
 sonarqube {
     properties {
@@ -84,6 +92,12 @@ subprojects {
             publications {
                 gpr(MavenPublication) {
                     from(components.java)
+                }
+                if(project.name == "radixdlt"){
+                    gprdist(MavenPublication) {
+                        artifactId = "radixdlt-dist"
+                        artifact distZip
+                    }
                 }
             }
         }
@@ -121,12 +135,12 @@ subprojects {
             options.compilerArgs << "-Xlint:-rawtypes"      //TODO: fix code to remove these warnings
         }
 
-        tasks.named("checkstyleMain") { 
+        tasks.named("checkstyleMain") {
             configFile = rootProject.file('config/checkstyle/checkstyle.xml')
             exclude "**/org/radix/**/*.java"
         }
 
-        tasks.named("checkstyleTest") { 
+        tasks.named("checkstyleTest") {
             configFile = rootProject.file('config/checkstyle/checkstyle_test.xml')
             exclude "**/org/radix/**/*.java"
         }
