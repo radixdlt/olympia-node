@@ -106,6 +106,9 @@ public final class RestUtils {
 	}
 
 	public static void respond(HttpServerExchange exchange, Object object) {
+		if (exchange.isComplete()) {
+			return;
+		}
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.getResponseSender().send(object.toString());
 	}
