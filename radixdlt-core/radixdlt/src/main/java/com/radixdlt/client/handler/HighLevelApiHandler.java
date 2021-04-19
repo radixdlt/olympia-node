@@ -33,7 +33,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -78,18 +78,18 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson())
+				description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 			);
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request, "resourceIdentifier",
-			(params, tokenId) -> RRI.fromSpecString(tokenId)
+			(params, tokenId) -> Rri.fromSpecString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson())
+					description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 				)
 		);
 	}

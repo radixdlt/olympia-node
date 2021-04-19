@@ -20,16 +20,16 @@ package com.radixdlt.atomos;
 import java.util.Objects;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 public final class RRIParticle implements Particle {
-	private final RRI rri;
+	private final Rri rri;
 
-	public RRIParticle(RRI rri) {
+	public RRIParticle(Rri rri) {
 		this.rri = rri;
 	}
 
-	public RRI getRri() {
+	public Rri getRri() {
 		return rri;
 	}
 

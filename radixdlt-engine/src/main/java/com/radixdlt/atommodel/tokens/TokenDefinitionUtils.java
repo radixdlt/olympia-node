@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -62,7 +61,7 @@ public final class TokenDefinitionUtils {
 	 * @return The short code of the native asset.
 	 */
 	public static String getNativeTokenShortCode() {
-		return "XRD";
+		return "xrd";
 	}
 
 	private static Result validateUrl(String url) {
@@ -76,23 +75,6 @@ public final class TokenDefinitionUtils {
 		if (!iconUrl.isEmpty() && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
 			return Result.error("Icon: not a valid URL: " + iconUrl);
 		}
-		return Result.success();
-	}
-
-	static Result validateSymbol(String symbol) {
-		if (symbol == null) {
-			return Result.error("Symbol: no symbol provided.");
-		}
-
-		if (symbol.length() < MIN_SYMBOL_LENGTH || symbol.length() > MAX_SYMBOL_LENGTH) {
-			return Result.error("Symbol: invalid length, must be between " + MIN_SYMBOL_LENGTH + " and "
-				+ MAX_SYMBOL_LENGTH + " but is " + symbol.length());
-		}
-
-		if (!symbol.chars().allMatch(VALID_CODEPOINTS::contains)) {
-			return Result.error("Symbol: can only use characters '" + VALID_SYMBOL_CHARS + "'.");
-		}
-
 		return Result.success();
 	}
 
@@ -130,16 +112,7 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
-	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle, Set<String> disallowedTokenNames) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getRri().getName());
-		if (symbolResult.isError()) {
-			return symbolResult;
-		}
-
-		if (disallowedTokenNames.contains(tokenDefParticle.getRri().getName())) {
-			return Result.error("Not allowed to use name: " + tokenDefParticle.getRri().getName());
-		}
-
+	public static Result staticCheck(TokenDefinitionParticle tokenDefParticle) {
 		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
 		if (descriptionResult.isError()) {
 			return descriptionResult;

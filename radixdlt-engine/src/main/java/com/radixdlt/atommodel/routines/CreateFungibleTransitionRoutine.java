@@ -161,7 +161,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureRequired() {
+			public SignatureValidator<I, O> signatureValidator() {
 				return signatureValidator;
 			}
 		};
@@ -203,7 +203,7 @@ public class CreateFungibleTransitionRoutine<I extends Particle, O extends Parti
 			}
 
 			@Override
-			public SignatureValidator<I, O> signatureRequired() {
+			public SignatureValidator<I, O> signatureValidator() {
 				return signatureValidator;
 			}
 		};

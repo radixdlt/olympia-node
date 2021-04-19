@@ -7,10 +7,9 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -46,7 +45,7 @@ public class TokensTest {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		RRI rri = RRI.of(address, "TEST");
+		Rri rri = Rri.of(keyPair.getPublicKey(), "test");
 		RRIParticle rriParticle = new RRIParticle(rri);
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,
@@ -59,7 +58,7 @@ public class TokensTest {
 		TokensParticle tokensParticle = new TokensParticle(
 			address,
 			UInt256.TEN,
-			RriId.fromRri(rri)
+			rri
 		);
 		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)

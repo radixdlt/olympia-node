@@ -23,10 +23,9 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -59,19 +58,18 @@ public class UniqueTest {
 	@Test
 	public void using_own_mutex_should_work() throws Exception {
 		var atom = TxBuilder.newBuilder(address)
-			.mutex("thisisauniquestring")
+			.mutex("np")
 			.signAndBuild(keyPair::sign);
 		this.engine.execute(List.of(atom));
 	}
 
 	@Test
 	public void using_someone_elses_mutex_should_fail() {
-		var otherRadixAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
-		var rri = RRI.of(otherRadixAddress, "thisisauniquestring");
+		var rri = Rri.of(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(address)
 			.toLowLevelBuilder()
 			.virtualDown(new RRIParticle(rri))
-			.up(new UniqueParticle(RriId.fromRri(rri)))
+			.up(new UniqueParticle(rri))
 			.particleGroup();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();

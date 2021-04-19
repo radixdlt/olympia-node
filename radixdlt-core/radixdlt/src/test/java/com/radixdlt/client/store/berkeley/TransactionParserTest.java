@@ -38,7 +38,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -61,19 +61,19 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "XRD");
+	private final Rri tokenRri = Rri.ofSystem("xrd");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
-		"XRD", "Test", "description", null, null
+		"xrd", "Test", "description", null, null
 	);
 
-	private final RRI tokenRriII = RRI.of(tokenOwnerAddress, "TEST2");
+	private final Rri tokenRriII = Rri.of(tokenOwnerKeyPair.getPublicKey(), "tst");
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
-		"TEST2", "Test2", "description2", null, null
+		"tst", "Test2", "description2", null, null
 	);
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri);
+	private TransactionParser parser = new TransactionParser(tokenRri, 0);
 
 	@Before
 	public void setup() throws Exception {
@@ -91,16 +91,15 @@ public class TransactionParserTest {
 		engine = new RadixEngine<>(cm, store);
 
 		var txn0 = engine.construct(
-			this.tokenOwnerAddress,
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
 				.build()
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
+		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		engine.execute(List.of(txn0, txn1));
+		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

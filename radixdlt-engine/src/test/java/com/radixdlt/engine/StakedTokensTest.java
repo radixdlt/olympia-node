@@ -24,6 +24,7 @@ import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -44,7 +45,7 @@ public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
-	private RRI tokenRri;
+	private Rri tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
@@ -52,7 +53,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = RRI.of(this.tokenOwnerAddress, "XRD");
+		this.tokenRri = Rri.ofSystem("xrd");
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
@@ -67,23 +68,22 @@ public class StakedTokensTest {
 		this.engine = new RadixEngine<>(cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
-			"XRD",
+			"xrd",
 			"Test",
 			"description",
 			null,
 			null
 		);
 		var txn0 = engine.construct(
-			this.tokenOwnerAddress,
 			TxActionListBuilder.create()
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
 				.build()
-		).signAndBuild(this.tokenOwnerKeyPair::sign);
+		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
 		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		this.engine.execute(List.of(txn0, txn1));
+		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

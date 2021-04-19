@@ -54,7 +54,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolAdd;
@@ -111,7 +111,7 @@ public class SubmissionServiceTest {
 	@Inject
 	private SubmissionService submissionService;
 
-	private RRI nativeToken;
+	private Rri nativeToken = Rri.ofSystem("xrd");
 
 	private final InMemoryEngineStore<LedgerAndBFTProof> engineStore = new InMemoryEngineStore<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
@@ -195,7 +195,6 @@ public class SubmissionServiceTest {
 		}
 
 		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
-		nativeToken = RRI.from("XRD");
 	}
 
 	@Before

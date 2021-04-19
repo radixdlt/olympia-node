@@ -21,7 +21,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Functions.FN5;
@@ -33,14 +33,14 @@ public class TransactionAction {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final UInt256 amount;
-	private final Optional<RRI> rri;
+	private final Optional<Rri> rri;
 
 	private TransactionAction(
 		ActionType actionType,
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<RRI> rri
+		Optional<Rri> rri
 	) {
 		this.actionType = actionType;
 		this.from = from;
@@ -54,7 +54,7 @@ public class TransactionAction {
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<RRI> rri
+		Optional<Rri> rri
 	) {
 		return new TransactionAction(actionType, from, to, amount, rri);
 	}
@@ -63,7 +63,7 @@ public class TransactionAction {
 		return from;
 	}
 
-	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<RRI>> mapper) {
+	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<Rri>> mapper) {
 		return mapper.apply(actionType, from, to, amount, rri);
 	}
 
@@ -79,7 +79,7 @@ public class TransactionAction {
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}
 
-	private RRI rriValue() {
+	private Rri rriValue() {
 		return rri.orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }

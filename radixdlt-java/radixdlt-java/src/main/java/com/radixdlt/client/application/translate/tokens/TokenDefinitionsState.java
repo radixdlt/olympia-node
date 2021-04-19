@@ -25,17 +25,17 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
 
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.util.Map;
 
 public class TokenDefinitionsState implements ApplicationState {
-	private final ImmutableMap<RRI, TokenState> state;
+	private final ImmutableMap<Rri, TokenState> state;
 
-	private TokenDefinitionsState(ImmutableMap<RRI, TokenState> state) {
+	private TokenDefinitionsState(ImmutableMap<Rri, TokenState> state) {
 		this.state = state;
 	}
 
-	public Map<RRI, TokenState> getState() {
+	public Map<Rri, TokenState> getState() {
 		return state;
 	}
 

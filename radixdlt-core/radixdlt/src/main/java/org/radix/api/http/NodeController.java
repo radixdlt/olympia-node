@@ -42,7 +42,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -62,7 +62,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
-	private final RRI nativeToken;
+	private final Rri nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
@@ -70,7 +70,7 @@ public final class NodeController implements Controller {
 
 	@Inject
 	public NodeController(
-		@NativeToken RRI nativeToken,
+		@NativeToken Rri nativeToken,
 		@Self RadixAddress selfAddress,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
@@ -117,15 +117,9 @@ public final class NodeController implements Controller {
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
-		var balancesJson = new JSONArray();
-		balances.forEach((rriId, balance) -> {
-			var balanceJson = new JSONObject();
-			var tokDef = (TokenDefinitionParticle) immutableIndex.loadRriId(null, rriId).orElseThrow();
-			var rri = tokDef.getRri().toString();
-			balanceJson
-				.put("balance", TokenUnitConversions.subunitsToUnits(balance))
-				.put("rri", rri);
-			balancesJson.put(balanceJson);
+		var balancesJson = new JSONObject();
+		balances.forEach((rri, balance) -> {
+			balancesJson.put(rri.toString(), TokenUnitConversions.subunitsToUnits(balance));
 		});
 
 		return new JSONObject()
@@ -164,7 +158,7 @@ public final class NodeController implements Controller {
 				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
 			}
 			case "TransferTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -172,7 +166,7 @@ public final class NodeController implements Controller {
 				return new TransferToken(rri, to, subunits);
 			}
 			case "MintTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -180,7 +174,7 @@ public final class NodeController implements Controller {
 				return new MintToken(rri, to, subunits);
 			}
 			case "BurnTokens": {
-				var rri = RRI.from(paramsObject.getString("rri"));
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new BurnToken(rri, subunits);

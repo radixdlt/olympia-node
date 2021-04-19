@@ -23,13 +23,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.StageActionException;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 /**
  * Exception thrown when information on an unknown token is requested.
  */
 public class UnknownTokenException extends StageActionException {
-	private final RRI tokenDefinitionReference;
+	private final Rri tokenDefinitionReference;
 
     /**
      * Constructs a new unknown token exception with the specified token class reference.
@@ -38,7 +38,7 @@ public class UnknownTokenException extends StageActionException {
      *     Note that {@link #getMessage()} will include the token class name
      *     in the exception detail message.
      */
-	public UnknownTokenException(RRI tokenDefinitionReference) {
+	public UnknownTokenException(Rri tokenDefinitionReference) {
 		super("Unknown token: " + tokenDefinitionReference);
 		this.tokenDefinitionReference = tokenDefinitionReference;
 	}

@@ -27,10 +27,9 @@ import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
@@ -139,12 +138,37 @@ public final class RESerializer {
 		return bytes;
 	}
 
+	public static void serializeRri(ByteBuffer buf, Rri rri) {
+		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
+		serializeString(buf, rri.getName());
+		if (!rri.isSystem()) {
+			buf.put(rri.getHash());
+		}
+	}
+
+	public static Rri deserializeRri(ByteBuffer buf) {
+		var v = buf.get(); // version
+		if (v != 0 && v != 1) {
+			throw new IllegalArgumentException();
+		}
+		var isSystem = v == 0;
+		var name = deserializeString(buf);
+		if (isSystem) {
+			return Rri.ofSystem(name);
+		} else {
+			var hash = new byte[Rri.HASH_BYTES];
+			buf.get(hash);
+			return Rri.of(hash, name);
+		}
+	}
+
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
-		serializeString(buf, rriParticle.getRri().toString());
+		var rri = rriParticle.getRri();
+		serializeRri(buf, rri);
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
-		var rri = RRI.from(deserializeString(buf));
+		var rri = deserializeRri(buf);
 		return new RRIParticle(rri);
 	}
 
@@ -163,17 +187,17 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(TokensParticle tokensParticle, ByteBuffer buf) {
-		serializeRriId(buf, tokensParticle.getRriId());
+		serializeRri(buf, tokensParticle.getRri());
 		serializeAddress(buf, tokensParticle.getAddress());
 		buf.put(tokensParticle.getAmount().toByteArray());
 	}
 
 	private static TokensParticle deserializeTokensParticle(ByteBuffer buf) {
-		var rriId = deserializeRriId(buf);
+		var rri = deserializeRri(buf);
 		var address = deserializeAddress(buf);
 		var amount = deserializeUInt256(buf);
 
-		return new TokensParticle(address, amount, rriId);
+		return new TokensParticle(address, amount, rri);
 	}
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
@@ -205,11 +229,11 @@ public final class RESerializer {
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
-		serializeRriId(buf, uniqueParticle.getRriId());
+		serializeRri(buf, uniqueParticle.getRri());
 	}
 
 	private static UniqueParticle deserializeUniqueParticle(ByteBuffer buf) {
-		var rri = deserializeRriId(buf);
+		var rri = deserializeRri(buf);
 		return new UniqueParticle(rri);
 	}
 
@@ -231,7 +255,7 @@ public final class RESerializer {
 	}
 
 	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
-		var rri = RRI.from(deserializeString(buf));
+		var rri = Rri.fromBech32(deserializeString(buf));
 		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);
@@ -256,14 +280,6 @@ public final class RESerializer {
 		var addressDest = new byte[addressLength]; // address
 		buf.get(addressDest);
 		return RadixAddress.from(addressDest);
-	}
-
-	private static void serializeRriId(ByteBuffer buf, RriId rriId) {
-		buf.put(rriId.asBytes()); // rri
-	}
-
-	private static RriId deserializeRriId(ByteBuffer buf) {
-		return RriId.readFromBuf(buf);
 	}
 
 	private static void serializeString(ByteBuffer buf, String s) {

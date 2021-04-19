@@ -27,7 +27,6 @@ import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -39,8 +38,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
@@ -96,14 +94,11 @@ public class MempoolTest {
 	}
 
 	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			var rri = RRI.of(address, "test" + i);
+			var rri = Rri.of(keyPair.getPublicKey(), "test" + (char) ('c' + i));
 			var rriParticle = new RRIParticle(rri);
-			var rriId = RriId.fromRri(rri);
-			UniqueParticle uniqueParticle = new UniqueParticle(rriId);
+			UniqueParticle uniqueParticle = new UniqueParticle(rri);
 			atomBuilder
 				.virtualDown(rriParticle)
 				.up(uniqueParticle)

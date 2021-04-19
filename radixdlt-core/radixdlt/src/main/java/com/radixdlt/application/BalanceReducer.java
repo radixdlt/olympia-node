@@ -58,7 +58,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	public BiFunction<Balances, TokensParticle, Balances> outputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address)) {
-				return balance.add(p.getRriId(), p.getAmount());
+				return balance.add(p.getRri(), p.getAmount());
 			}
 			return balance;
 		};
@@ -68,7 +68,7 @@ public final class BalanceReducer implements StateReducer<Balances, TokensPartic
 	public BiFunction<Balances, TokensParticle, Balances> inputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address)) {
-				return balance.remove(p.getRriId(), p.getAmount());
+				return balance.remove(p.getRri(), p.getAmount());
 			}
 			return balance;
 		};

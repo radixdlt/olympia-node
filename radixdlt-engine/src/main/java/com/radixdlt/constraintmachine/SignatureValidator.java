@@ -17,7 +17,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Optional;
@@ -27,5 +27,5 @@ import java.util.Optional;
  * @param <I> particle class
  */
 public interface SignatureValidator<I extends Particle, O extends Particle> {
-	Optional<RadixAddress> requiredSignature(I input, O output, ImmutableIndex immutableIndex);
+	boolean verify(I input, O output, ImmutableIndex immutableIndex, Optional<ECPublicKey> signedBy);
 }

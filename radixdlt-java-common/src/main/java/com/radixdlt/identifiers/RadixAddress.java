@@ -18,7 +18,6 @@
 package com.radixdlt.identifiers;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -85,6 +84,10 @@ public final class RadixAddress {
 		}
 	}
 
+	public boolean ownedBy(ECPublicKey ecPublicKey) {
+		return publicKey.equals(ecPublicKey);
+	}
+
 	public int getMagic() {
 		return addressBytes[0];
 	}
@@ -145,13 +148,5 @@ public final class RadixAddress {
 
 	public int getMagicByte() {
 		return magicByte;
-	}
-
-	public boolean ownsKey(ECKeyPair ecKeyPair) {
-		return this.ownsKey(ecKeyPair.getPublicKey());
-	}
-
-	public boolean ownsKey(ECPublicKey publicKey) {
-		return this.publicKey.equals(publicKey);
 	}
 }
