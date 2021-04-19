@@ -114,6 +114,8 @@ public final class RadixJsonRpcServer {
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 
 		handlers.putAll(additionalHandlers);
+
+		handlers.keySet().forEach(name -> log.debug("Registered JSON RPC method: {}", name));
 	}
 
 	/**
