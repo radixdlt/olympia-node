@@ -112,7 +112,7 @@ public final class ActionParser {
 	}
 
 	private static Result<Optional<Rri>> rri(JSONObject element) {
-		return Result.fromOptional(safeString(element, "rri"), "Field rri is missing in {0}", element)
+		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
 			.flatMap(Rri::fromSpecString)
 			.map(Optional::of);
 	}
