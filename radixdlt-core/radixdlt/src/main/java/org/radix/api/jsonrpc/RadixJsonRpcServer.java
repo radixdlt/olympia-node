@@ -175,8 +175,6 @@ public final class RadixJsonRpcServer {
 		if (!request.has("method")) {
 			log.debug("RPC: error, no method");
 			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
-		} else {
-			log.debug("RPC: methods {}", handlers.keySet());
 		}
 
 		try {
