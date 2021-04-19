@@ -78,7 +78,7 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson())
+				description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 			);
 	}
 
@@ -89,7 +89,7 @@ public class HighLevelApiHandler {
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson())
+					description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 				)
 		);
 	}

@@ -126,7 +126,7 @@ public class HighLevelApiHandlerTest {
 		when(highLevelApiService.getTokenDescription(any(Rri.class)))
 			.thenReturn(buildToken("fyy"));
 
-		var params = jsonObject().put("resourceIdentifier", Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());
+		var params = jsonObject().put("resourceIdentifier", Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toSpecString(MAGIC));
 		var response = handler.handleTokenInfo(requestWith(params));
 		assertNotNull(response);
 
@@ -316,7 +316,7 @@ public class HighLevelApiHandlerTest {
 					.put("from", KNOWN_ADDRESS_STRING)
 					.put("to", toAddress.toString())
 					.put("amount", UInt256.SEVEN)
-					.put("rri", token.toSpecString());
+					.put("rri", token.toSpecString(MAGIC));
 			case 1: //stake
 				return jsonObject()
 					.put("type", ActionType.STAKE)
