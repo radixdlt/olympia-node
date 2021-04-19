@@ -21,7 +21,6 @@ package com.radixdlt.atomos;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.utils.RadixConstants;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
@@ -73,7 +72,7 @@ public final class RriId {
 		var id = new byte[BYTES];
 		id[0] = (byte) 0;
 
-		var firstHash = HashUtils.sha256(rri.toString().getBytes(RadixConstants.STANDARD_CHARSET));
+		var firstHash = HashUtils.sha256(rri.toBytes());
 		firstHash.writeBytesTo(id, 1, 32);
 		return new RriId(id);
 	}

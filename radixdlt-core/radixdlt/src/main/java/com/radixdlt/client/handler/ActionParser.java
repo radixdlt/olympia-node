@@ -113,14 +113,13 @@ public final class ActionParser {
 
 	private static Result<Optional<RRI>> rri(JSONObject element) {
 		return Result.fromOptional(safeString(element, "rri"), "Field rri is missing in {0}", element)
-			.flatMap(RRI::fromString)
+			.flatMap(RRI::fromSpecString)
 			.map(Optional::of);
 	}
 
 	private static Result<RadixAddress> address(JSONObject element, String name) {
 		return safeString(element, name)
-			.flatMap(RadixAddress::fromString)
-			.map(Result::ok)
+			.map(RadixAddress::fromString)
 			.orElseGet(() -> fail(element, name));
 	}
 
