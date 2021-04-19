@@ -18,7 +18,6 @@
 package org.radix.api.jsonrpc.handler;
 
 import org.json.JSONObject;
-import org.radix.api.jsonrpc.AtomStatus;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 import org.radix.api.services.AtomsService;
 
@@ -26,9 +25,6 @@ import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
-import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
-import static org.radix.api.jsonrpc.JsonRpcUtil.response;
-import static org.radix.api.jsonrpc.JsonRpcUtil.withParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
 
 public class AtomHandler {
@@ -37,14 +33,6 @@ public class AtomHandler {
 	@Inject
 	public AtomHandler(AtomsService atomsService) {
 		this.atomsService = atomsService;
-	}
-
-	public JSONObject handleSubmitAtom(JSONObject request) {
-		return withParameters(request, jsonAtom ->
-			response(request, jsonObject()
-				.put("status", AtomStatus.PENDING_CM_VERIFICATION)
-				.put("aid", atomsService.submitAtom(jsonAtom))
-				.put("timestamp", System.currentTimeMillis())));
 	}
 
 	public JSONObject handleGetAtom(JSONObject request) {

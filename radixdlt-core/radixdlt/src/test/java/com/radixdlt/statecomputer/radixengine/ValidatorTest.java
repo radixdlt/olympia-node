@@ -73,13 +73,14 @@ public class ValidatorTest {
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
 		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		var atom = TxLowLevelBuilder.newBuilder()
+		var builder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(new ValidatorParticle(address, false))
 			.up(new ValidatorParticle(address, true))
-			.up(new ValidatorParticle(address, true))
-			.signAndBuild(keyPair::sign);
+			.up(new ValidatorParticle(address, true));
+		var sig = keyPair.sign(builder.hashToSign());
+		var txn = builder.sig(sig).build();
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
 }

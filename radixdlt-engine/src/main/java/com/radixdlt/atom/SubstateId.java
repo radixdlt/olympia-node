@@ -20,9 +20,7 @@ package com.radixdlt.atom;
 
 import org.bouncycastle.util.encoders.Hex;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Ints;
 
 import java.nio.ByteBuffer;
@@ -44,21 +42,9 @@ public final class SubstateId {
 		this.idBytes = Objects.requireNonNull(idBytes);
 	}
 
-	private static AID atomIdOf(Atom atom) {
-		var dson = DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.ALL);
-		return AID.from(transactionIdHash(dson).asBytes());
-	}
-
 	public static SubstateId ofSubstate(AID txId, int index) {
 		byte[] id = new byte[BYTES];
 		txId.copyTo(id, 0);
-		Ints.copyTo(index, id, AID.BYTES);
-		return new SubstateId(id);
-	}
-
-	public static SubstateId ofSubstate(Atom atom, int index) {
-		byte[] id = new byte[BYTES];
-		atomIdOf(atom).copyTo(id, 0);
 		Ints.copyTo(index, id, AID.BYTES);
 		return new SubstateId(id);
 	}

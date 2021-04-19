@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 public class LedgerServiceTest {
 	@Test
 	public void atomStatusIsStoredIfPresentInLedger() {
-		var ledger = mock(AtomIndex.class);
+		var ledger = mock(TxnIndex.class);
 		var ledgerService = new LedgerService(ledger);
 
 		var request = mock(JSONObject.class);
@@ -46,7 +46,7 @@ public class LedgerServiceTest {
 
 	@Test
 	public void atomStatusIsDoesNotExistsIfMissingInLedger() {
-		var ledger = mock(AtomIndex.class);
+		var ledger = mock(TxnIndex.class);
 		var ledgerService = new LedgerService(ledger);
 
 		var request = mock(JSONObject.class);

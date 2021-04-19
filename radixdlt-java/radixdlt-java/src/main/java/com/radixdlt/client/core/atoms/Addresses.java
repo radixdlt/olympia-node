@@ -18,8 +18,6 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.atom.Atom;
-
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.constraintmachine.Particle;

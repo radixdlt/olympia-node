@@ -20,7 +20,6 @@ package com.radix.acceptance.staking_queries;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.StakeNotPossibleException;
@@ -72,10 +71,6 @@ public class StakingQueries {
 		delegator2.discoverNodes();
 
 		this.validator.pull();
-
-		TokenUtilities.requestTokensFor(validator);
-		TokenUtilities.requestTokensFor(delegator1);
-		TokenUtilities.requestTokensFor(delegator2);
 
 		token = RRI.of(validator.getAddress(), "RPNV1");
 		validator.createFixedSupplyToken(token, "RPNV1", "TEST", SUPPLY_AMOUNT).blockUntilComplete();

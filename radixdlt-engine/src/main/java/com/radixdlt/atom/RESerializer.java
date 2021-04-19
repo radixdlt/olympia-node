@@ -29,17 +29,17 @@ import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public final class SubstateSerializer {
+public final class RESerializer {
 	private static final BiMap<Class<? extends Particle>, Byte> classToByte = HashBiMap.create(Map.of(
 		RRIParticle.class, (byte) 0,
 		SystemParticle.class, (byte) 1,
@@ -50,14 +50,35 @@ public final class SubstateSerializer {
 		UniqueParticle.class, (byte) 6
 	));
 
-	private SubstateSerializer() {
+	private RESerializer() {
 		throw new IllegalStateException("Cannot instantiate.");
+	}
+
+	public static byte[] serializeSignature(ECDSASignature signature) {
+		var buf = ByteBuffer.allocate(32 * 2 + 1);
+		buf.put(signature.getV());
+		var rArray = signature.getR().toByteArray();
+		var r = rArray.length > 32 ? UInt256.from(rArray, 1) : UInt256.from(rArray);
+		buf.put(r.toByteArray());
+		var sArray = signature.getS().toByteArray();
+		var s = sArray.length > 32 ? UInt256.from(sArray, 1) : UInt256.from(sArray);
+		buf.put(s.toByteArray());
+
+		return buf.array();
+	}
+
+	public static ECDSASignature deserializeSignature(ByteBuffer buf) {
+		var v = buf.get();
+		var rArray = new byte[32];
+		buf.get(rArray);
+		var sArray = new byte[32];
+		buf.get(sArray);
+		return ECDSASignature.deserialize(rArray, sArray, v);
 	}
 
 	public static byte classToByte(Class<? extends Particle> particleClass) {
 		return classToByte.get(particleClass);
 	}
-
 
 	public static Particle deserialize(byte[] bytes) throws DeserializeException {
 		return deserialize(ByteBuffer.wrap(bytes));
@@ -116,14 +137,6 @@ public final class SubstateSerializer {
 		buf.get(bytes);
 
 		return bytes;
-	}
-
-	public static Result<Particle> deserializeToResult(ByteBuffer buf) {
-		try {
-			return Result.ok(deserialize(buf));
-		} catch (DeserializeException e) {
-			return Result.fail("Unable to deserialize {0}", Particle.class.getSimpleName());
-		}
 	}
 
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {

@@ -19,7 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
 
@@ -35,12 +35,12 @@ public final class REInstruction {
 
 	public enum REOp {
 		UP((byte) 1, (txn, i, b) -> {
-			var p = SubstateSerializer.deserialize(b);
+			var p = RESerializer.deserialize(b);
 			return Substate.create(p, SubstateId.ofSubstate(txn.getId(), i));
 		}, Spin.NEUTRAL, Spin.UP),
 		VDOWN((byte) 2, (txn, i, b) -> {
 			int pos = b.position();
-			var p = SubstateSerializer.deserialize(b);
+			var p = RESerializer.deserialize(b);
 			int length = b.position() - pos;
 			var buf = ByteBuffer.wrap(b.array(), pos, length);
 			return Substate.create(p, SubstateId.ofVirtualSubstate(buf));
@@ -65,6 +65,9 @@ public final class REInstruction {
 			var length = Byte.toUnsignedInt(b.get());
 			b.get(new byte[length]);
 			return null;
+		}, null, null),
+		SIG((byte) 8, (txn, i, b) -> {
+			return RESerializer.deserializeSignature(b);
 		}, null, null),
 		END((byte) 0, (txn, i, b) -> null, null, null);
 

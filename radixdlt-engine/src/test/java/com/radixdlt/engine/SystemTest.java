@@ -63,7 +63,7 @@ public class SystemTest {
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		// Act
 		// Assert
@@ -82,7 +82,7 @@ public class SystemTest {
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		// Act
 		// Assert
@@ -97,7 +97,7 @@ public class SystemTest {
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class);
@@ -111,7 +111,7 @@ public class SystemTest {
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class);
@@ -121,13 +121,13 @@ public class SystemTest {
 	public void executing_system_update_with_bad_timestamp_should_fail() {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 1, -1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
-		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class);
 	}
 
@@ -152,15 +152,15 @@ public class SystemTest {
 		// Arrange
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(0, 10, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
@@ -169,13 +169,13 @@ public class SystemTest {
 	private void preconditionFailure(long epoch, long view) {
 		var systemParticle = new SystemParticle(0, 0, 0);
 		var nextSystemParticle = new SystemParticle(epoch, view, 1);
-		var atom = TxLowLevelBuilder.newBuilder()
+		var txn = TxLowLevelBuilder.newBuilder()
 			.virtualDown(systemParticle)
 			.up(nextSystemParticle)
 			.particleGroup()
-			.buildWithoutSignature();
+			.build();
 
-		assertThatThrownBy(() -> this.engine.execute(List.of(atom), null, PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.TRANSITION_PRECONDITION_FAILURE);

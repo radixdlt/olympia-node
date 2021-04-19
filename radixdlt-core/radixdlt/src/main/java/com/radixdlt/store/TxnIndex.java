@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * Index of atoms
  */
-public interface AtomIndex {
+public interface TxnIndex {
 	/**
 	 * Checks whether the given aid is contained in this view
 	 * @param aid The aid

@@ -16,16 +16,14 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.client.core.atoms;
 
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -74,15 +72,6 @@ public final class Atom {
 
 	public byte[] getUnsignedBlob() {
 		return unsignedBlob;
-	}
-
-	public static HashCode computeHashToSignFromBytes(byte[] blob) {
-		var firstHash = HashUtils.sha256(blob);
-		return HashUtils.sha256(firstHash.asBytes());
-	}
-
-	public HashCode computeHashToSign() {
-		return computeHashToSignFromBytes(unsignedBlob);
 	}
 
 	public Optional<ECDSASignature> getSignature() {

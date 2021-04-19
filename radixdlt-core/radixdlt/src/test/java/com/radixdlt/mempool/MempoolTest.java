@@ -109,7 +109,8 @@ public class MempoolTest {
 				.up(uniqueParticle)
 				.particleGroup();
 		}
-		return atomBuilder.signAndBuild(keyPair::sign);
+		var signature = keyPair.sign(atomBuilder.hashToSign());
+		return atomBuilder.sig(signature).build();
 	}
 
 	private static Txn createTxn(ECKeyPair keyPair) {

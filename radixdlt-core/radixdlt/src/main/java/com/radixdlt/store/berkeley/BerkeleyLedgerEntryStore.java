@@ -28,7 +28,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateSerializer;
+import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
@@ -45,7 +45,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.AtomIndex;
+import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
@@ -81,7 +81,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
-public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, AtomIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, TxnIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -478,7 +478,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			}
 
 			try {
-				var rawSubstate = SubstateSerializer.deserialize(value.getData());
+				var rawSubstate = RESerializer.deserialize(value.getData());
 				var substate = Substate.create(rawSubstate, SubstateId.fromBytes(substateIdBytes.getData()));
 				status = cursor.getNextDup(index, substateIdBytes, value, null);
 				return substate;
@@ -490,7 +490,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	@Override
 	public SubstateCursor openIndexedCursor(Class<? extends Particle> particleClass) {
-		final byte[] indexableBytes = new byte[] {SubstateSerializer.classToByte(particleClass)};
+		final byte[] indexableBytes = new byte[] {RESerializer.classToByte(particleClass)};
 		var cursor = new BerkeleySubstateCursor(upParticleDatabase, indexableBytes);
 		cursor.open();
 		return cursor;
@@ -501,7 +501,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		V initial,
 		BiFunction<V, U, V> outputReducer
 	) {
-		final byte[] indexableBytes = new byte[] {SubstateSerializer.classToByte(particleClass)};
+		final byte[] indexableBytes = new byte[] {RESerializer.classToByte(particleClass)};
 
 		V v = initial;
 		try (var particleCursor = upParticleDatabase.openCursor(null, null)) {
@@ -511,7 +511,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			while (status == SUCCESS) {
 				U particle;
 				try {
-					particle = (U) SubstateSerializer.deserialize(value.getData());
+					particle = (U) RESerializer.deserialize(value.getData());
 				} catch (DeserializeException e) {
 					throw new IllegalStateException();
 				}
@@ -567,7 +567,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
-			return Optional.of(SubstateSerializer.deserialize(e.getData()));
+			return Optional.of(RESerializer.deserialize(e.getData()));
 		} catch (DeserializeException ex) {
 			throw new IllegalStateException("Unable to deserialize particle");
 		}

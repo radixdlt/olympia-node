@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 
 import java.util.stream.Stream;
 

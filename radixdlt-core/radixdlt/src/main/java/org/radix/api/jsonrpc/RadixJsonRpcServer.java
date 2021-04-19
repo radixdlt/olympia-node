@@ -106,7 +106,6 @@ public final class RadixJsonRpcServer {
 
 		//Atom submission/retrieval
 		//TODO: check and fix method naming?
-		handlers.put("Atoms.submitAtom", atomHandler::handleSubmitAtom);
 		handlers.put("Ledger.getAtom", atomHandler::handleGetAtom);
 
 		//Ledger

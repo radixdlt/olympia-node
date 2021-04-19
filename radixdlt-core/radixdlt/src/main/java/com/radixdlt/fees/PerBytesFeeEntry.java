@@ -20,7 +20,7 @@ package com.radixdlt.fees;
 import java.util.Objects;
 import java.util.Set;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -64,7 +64,7 @@ public final class PerBytesFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(Atom a, int feeSize, Set<Particle> outputs) {
+	public UInt256 feeFor(Txn txn, int feeSize, Set<Particle> outputs) {
 		long numberOfUnits = feeSize / this.units;
 		if (numberOfUnits <= this.threshold) {
 			return UInt256.ZERO;

@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.identifiers.RadixAddress;

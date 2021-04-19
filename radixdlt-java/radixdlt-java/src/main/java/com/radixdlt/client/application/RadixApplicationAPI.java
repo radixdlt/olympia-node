@@ -25,7 +25,7 @@ package com.radixdlt.client.application;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;

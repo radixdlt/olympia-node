@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.identity;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.Single;

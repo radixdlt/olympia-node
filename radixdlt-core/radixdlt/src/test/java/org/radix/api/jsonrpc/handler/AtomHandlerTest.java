@@ -27,23 +27,11 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.radix.api.jsonrpc.AtomStatus.PENDING_CM_VERIFICATION;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class AtomHandlerTest {
 	private static final AtomsService atomsService = mock(AtomsService.class);
 	private static final AtomHandler atomHandler = new AtomHandler(atomsService);
-
-	@Test
-	public void testHandleSubmitAtom() {
-		var jsonAtom = jsonObject();
-		var request = jsonObject().put("id", 124).put("params", jsonAtom);
-
-		var response = atomHandler.handleSubmitAtom(request);
-
-		assertEquals(PENDING_CM_VERIFICATION, response.getJSONObject("result").get("status"));
-		assertEquals(124, response.getInt("id"));
-	}
 
 	@Test
 	public void testHandleGetAtom() {

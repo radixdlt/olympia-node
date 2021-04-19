@@ -43,7 +43,7 @@ public class PersistenceModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO: should be singletons?
-		bind(AtomIndex.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+		bind(TxnIndex.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(ImmutableIndex.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);

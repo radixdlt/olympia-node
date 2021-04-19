@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.atom.Atom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Observable;
 

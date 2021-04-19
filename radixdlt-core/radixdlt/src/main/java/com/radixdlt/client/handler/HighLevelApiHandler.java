@@ -17,13 +17,13 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
@@ -205,7 +205,7 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<ECDSASignature> toRecoverable(byte[] blob, ECDSASignature signature, ECPublicKey publicKey) {
-		return ECKeyUtils.toRecoverable(signature, Atom.computeHashToSignFromBytes(blob).asBytes(), publicKey);
+		return ECKeyUtils.toRecoverable(signature, ConstraintMachine.computeHashToSignFromBytes(blob).asBytes(), publicKey);
 	}
 
 	private Result<byte[]> parseBlob(JSONObject request) {

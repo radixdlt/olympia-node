@@ -107,7 +107,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 			private void syncTo(LedgerProof proof) {
 				var txns = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
-					.peek(v -> logger.info("{} {}", v, sharedCommittedCommands.get(v)))
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));

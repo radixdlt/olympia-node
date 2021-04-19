@@ -22,7 +22,9 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atom.Atom;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -44,7 +45,6 @@ import com.radixdlt.constraintmachine.REParsedInstruction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -131,6 +131,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final byte universeMagic;
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
+	private final ConstraintMachine constraintMachine;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -140,6 +141,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
+		ConstraintMachine constraintMachine,
 		TxnParser txnParser,
 		BerkeleyLedgerEntryStore store,
 		Serialization serialization,
@@ -150,6 +152,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		@Named("magic") int universeMagic
 	) {
 		this.dbEnv = dbEnv;
+		this.constraintMachine = constraintMachine;
 		this.txnParser = txnParser;
 		this.store = store;
 		this.serialization = serialization;
@@ -490,8 +493,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private void processRETransaction(REParsedTxn reTxn) {
 		extractTimestamp(reTxn.upSubstates());
 
-		extractCreator(reTxn.getTxn(), universeMagic)
-			.ifPresent(creator -> storeSingleTransaction(reTxn.getTxn().getId(), creator));
+		storeSingleTransaction(reTxn.getTxn().getId(), reTxn.getUser());
 
 		reTxn.getActions()
 			.forEach(a -> storeAction(reTxn.getUser(), a));
@@ -575,11 +577,12 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private Optional<RadixAddress> extractCreator(Txn tx, byte universeMagic) {
-		return restore(serialization, tx.getPayload(), Atom.class)
-			.toOptional()
-			.flatMap(atom -> atom.getSignature()
-				.flatMap(signature -> ECPublicKey.recoverFrom(atom.computeHashToSign(), signature))
-				.map(publicKey -> new RadixAddress(universeMagic, publicKey)));
+		try {
+			var result = constraintMachine.statelessVerify(tx);
+			return result.getRecovered().map(pk -> new RadixAddress(universeMagic, pk));
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException();
+		}
 	}
 
 	private void storeSingleTransaction(AID id, RadixAddress creator) {
