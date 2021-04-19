@@ -172,16 +172,21 @@ public final class JsonRpcUtil {
 	public static JSONObject withRequiredParameters(
 		JSONObject request,
 		List<String> required,
+		List<String> optional,
 		Function<JSONObject, JSONObject> fn
 	) {
 		return withParameters(request, params -> {
-			if (params.length() != required.size()) {
+			if (params.length() < required.size()) {
 				return errorResponse(request, RpcError.INVALID_REQUEST, "Params missing one or more fields");
 			}
 			var o = new JSONObject();
 			for (int i = 0; i < required.size(); i++) {
 				o.put(required.get(i), params.get(i));
 			}
+			for (int j = 0; j < params.length() - required.size(); j++) {
+				o.put(optional.get(j), params.get(required.size() + j));
+			}
+
 			return fn.apply(o);
 		});
 	}

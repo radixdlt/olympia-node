@@ -142,6 +142,7 @@ public class HighLevelApiHandler {
 		return withRequiredParameters(
 			request,
 			List.of("address", "size"),
+			List.of("cursor"),
 			params -> respondWithTransactionHistory(params, request)
 		);
 	}
@@ -150,6 +151,7 @@ public class HighLevelApiHandler {
 		return withRequiredParameters(
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
+			List.of(),
 			params -> respondFinalizationResult(params, request)
 		);
 	}
@@ -158,6 +160,7 @@ public class HighLevelApiHandler {
 		return withRequiredParameters(
 			request,
 			List.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
+			List.of(),
 			params -> respondSubmissionResult(params, request)
 		);
 	}
