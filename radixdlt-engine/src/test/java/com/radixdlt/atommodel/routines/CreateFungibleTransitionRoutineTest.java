@@ -67,7 +67,7 @@ public class CreateFungibleTransitionRoutineTest {
 		}
 	}
 
-	interface SignatureValidatorFungible extends SignatureValidator<Fungible> {
+	interface SignatureValidatorFungible extends SignatureValidator<Fungible, Fungible> {
 		// Empty
 	}
 

@@ -249,7 +249,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private void storeCollected() {
 		synchronized (txCollector) {
-			log.debug("Storing collected transactions started");
+			log.trace("Storing collected transactions started");
 
 			var count = withTime(
 				() -> txCollector.consumeCollected(this::storeTransactionBatch),
@@ -259,7 +259,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			inputCounter.addAndGet(-count);
 
-			log.debug("Storing collected transactions finished. {} transactions processed", count);
+			log.trace("Storing collected transactions finished. {} transactions processed", count);
 		}
 	}
 

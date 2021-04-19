@@ -475,19 +475,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder mint(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		final var rriId = RriId.fromRri(rri);
-		read(
-			TokenDefinitionParticle.class,
-			p -> p.getRriId().equals(rriId),
-			"Could not find mutable token rri " + rri
-		);
-		up(new TokensParticle(to, amount, rriId));
-		particleGroup();
-
-		return this;
-	}
-
 	public TxBuilder transfer(RRI rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
 		final var rriId = RriId.fromRri(rri);
 		swapFungible(

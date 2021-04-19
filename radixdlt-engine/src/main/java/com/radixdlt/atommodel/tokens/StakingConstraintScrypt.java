@@ -56,7 +56,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index) -> Optional.of(i.getAddress()),
 			(i, o, index) -> new StakeTokens(o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
@@ -67,7 +67,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index) -> Optional.of(i.getAddress()),
 			(i, o, index) -> new UnstakeTokens(i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
@@ -82,7 +82,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index) -> Optional.of(i.getAddress()),
 			(i, o, index) -> Unknown.create()
 		));
 	}
