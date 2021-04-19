@@ -114,6 +114,8 @@ public final class RadixJsonRpcServer {
 		handlers.put("Atoms.getAtomStatus", ledgerHandler::handleGetAtomStatus);
 
 		handlers.putAll(additionalHandlers);
+
+		handlers.keySet().forEach(name -> log.debug("Registered JSON RPC method: {}", name));
 	}
 
 	/**
@@ -173,6 +175,8 @@ public final class RadixJsonRpcServer {
 		if (!request.has("method")) {
 			log.debug("RPC: error, no method");
 			return errorResponse(RpcError.INVALID_PARAMS, "method missing");
+		} else {
+			log.debug("RPC: methods {}", handlers.keySet());
 		}
 
 		try {
