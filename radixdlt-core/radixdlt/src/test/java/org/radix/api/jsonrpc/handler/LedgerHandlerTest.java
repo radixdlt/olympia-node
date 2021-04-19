@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public class LedgerHandlerTest {
@@ -33,7 +34,7 @@ public class LedgerHandlerTest {
 
 	@Test
 	public void testHandleGetAtomStatus() {
-		var jsonAtom = jsonObject().put("aid", AID.ZERO.toString());
+		var jsonAtom = jsonArray().put(AID.ZERO.toString());
 		var request = jsonObject().put("id", 124).put("params", jsonAtom);
 		when(ledgerService.getAtomStatus(any(), any())).thenReturn(jsonObject().put("content", "abc"));
 

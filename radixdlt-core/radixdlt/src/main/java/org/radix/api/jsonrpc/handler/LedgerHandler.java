@@ -33,6 +33,6 @@ public class LedgerHandler {
 	}
 
 	public JSONObject handleGetAtomStatus(JSONObject request) {
-		return withRequiredStringParameter(request, "aid", (params, aid) -> ledgerService.getAtomStatus(request, aid));
+		return withRequiredStringParameter(request, (params, aid) -> ledgerService.getAtomStatus(request, aid));
 	}
 }
