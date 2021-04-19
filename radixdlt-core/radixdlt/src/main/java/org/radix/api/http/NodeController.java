@@ -36,8 +36,8 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.Address;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -71,17 +71,20 @@ public final class NodeController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
+	private final ECPublicKey bftKey;
 
 	@Inject
 	public NodeController(
 		@NativeToken Rri nativeToken,
 		@Self RadixAddress selfAddress,
+		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
 		this.selfAddress = selfAddress;
+		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.immutableIndex = immutableIndex;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
@@ -91,6 +94,7 @@ public final class NodeController implements Controller {
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/node/execute", this::handleExecute);
 		handler.get("/node", this::respondWithNode);
+		handler.post("/node/validator", this::respondWithValidator);
 	}
 
 	private JSONObject getValidator() {
@@ -105,6 +109,7 @@ public final class NodeController implements Controller {
 			);
 		});
 		return new JSONObject()
+			.put("address", Address.ofValidator(bftKey))
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
@@ -135,7 +140,12 @@ public final class NodeController implements Controller {
 	void respondWithNode(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
-			.put("balance", getBalance())
+			.put("balance", getBalance()));
+	}
+
+	@VisibleForTesting
+	void respondWithValidator(HttpServerExchange exchange) {
+		respond(exchange, jsonObject()
 			.put("validator", getValidator()));
 	}
 
