@@ -154,7 +154,7 @@ public final class ConstraintMachine {
 
 		public Optional<CMErrorCode> virtualShutdown(Substate substate) {
 			if (remoteDownParticles.contains(substate.getId())) {
-				return Optional.of(CMErrorCode.SPIN_CONFLICT);
+				return Optional.of(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
 
 			if (!virtualStoreLayer.test(substate.getParticle())) {
@@ -162,7 +162,7 @@ public final class ConstraintMachine {
 			}
 
 			if (store.isVirtualDown(txn, substate.getId())) {
-				return Optional.of(CMErrorCode.SPIN_CONFLICT);
+				return Optional.of(CMErrorCode.SUBSTATE_NOT_FOUND);
 			}
 
 			remoteDownParticles.add(substate.getId());
@@ -485,7 +485,7 @@ public final class ConstraintMachine {
 					SubstateId substateId = inst.getData();
 					var maybeParticle = validationState.shutdown(substateId);
 					if (maybeParticle.isEmpty()) {
-						return Optional.of(new CMError(instIndex, CMErrorCode.SPIN_CONFLICT, validationState));
+						return Optional.of(new CMError(instIndex, CMErrorCode.SUBSTATE_NOT_FOUND, validationState));
 					}
 					nextParticle = maybeParticle.get();
 					substate = Substate.create(nextParticle, substateId);
