@@ -25,11 +25,16 @@ import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -73,13 +78,17 @@ public final class FaucetController implements Controller {
 				.burn(nativeToken, FEE)
 				.build();
 
-			var request = NodeApplicationRequest.create(
-				actions,
-				(txn, aid) -> respond(exchange, jsonObject().put("result", aid.toString())),
-				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
-			);
+			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 
+			var request = NodeApplicationRequest.create(actions, completableFuture);
 			faucetRequestDispatcher.dispatch(request);
+
+			try {
+				var success = completableFuture.get();
+				respond(exchange, jsonObject().put("result", success.getTxn().toString()));
+			} catch (ExecutionException e) {
+				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
+			}
 		});
 	}
 }
