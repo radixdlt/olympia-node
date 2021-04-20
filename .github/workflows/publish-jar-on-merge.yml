@@ -43,7 +43,7 @@ jobs:
             echo "Workflow triggered by Git tag creation. It should be a release"
           else
             echo "Workflow triggered by PR"
-            export CI_VERSION=true
+            echo "export CI_VERSION=true"
           fi
           ./gradlew build -x test
       - name: Archive radixdlt-core build distributions
@@ -92,7 +92,7 @@ jobs:
               echo "Workflow triggered by Git tag creation. It should be a release"
           else
             echo "Workflow triggered by PR"
-            export CI_VERSION=true
+            echo "export CI_VERSION=true"
           fi
           ./gradlew publish
         env:
