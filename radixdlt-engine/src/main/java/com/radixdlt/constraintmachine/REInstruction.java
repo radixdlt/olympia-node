@@ -154,6 +154,6 @@ public final class REInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s", operation);
+		return String.format("%s %s", operation, data);
 	}
 }

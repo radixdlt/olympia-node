@@ -21,6 +21,7 @@ package com.radixdlt.api.construction;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REParsedTxn;
+import com.radixdlt.engine.RadixEngineException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import org.bouncycastle.util.encoders.Hex;
@@ -48,10 +49,16 @@ public final class ConstructionController implements Controller {
 		withBody(exchange, values -> {
 			var transactionHex = values.getString("transaction");
 			var transactionBytes = Hex.decode(transactionHex);
-			REParsedTxn parsedTxn = txnParser.parse(Txn.create(transactionBytes));
+			REParsedTxn parsedTxn;
+			try {
+				parsedTxn = txnParser.parse(Txn.create(transactionBytes));
+			} catch (RadixEngineException e) {
+				respond(exchange, jsonObject().put("error", e.getMessage()));
+				return;
+			}
+
 			var ops = jsonArray();
 			var response = jsonObject().put("operations", ops);
-
 			parsedTxn.instructions().forEach(i -> {
 				var jsonOp = jsonObject()
 					.put("type", i.getInstruction().getMicroOp())

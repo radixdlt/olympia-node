@@ -344,8 +344,10 @@ public final class ConstraintMachine {
 		private ECDSASignature signature;
 		private HashCode hashToSign;
 		private ECPublicKey publicKey;
+		private final Txn txn;
 
-		StatelessVerificationResult() {
+		StatelessVerificationResult(Txn txn) {
+			this.txn = txn;
 			this.instructions = new ArrayList<>();
 		}
 
@@ -362,13 +364,20 @@ public final class ConstraintMachine {
 		public Optional<ECPublicKey> getRecovered() {
 			return Optional.ofNullable(publicKey);
 		}
+
+		private int index() {
+			return instructions.size();
+		}
+
+		public RadixEngineException exception(String message) {
+			return new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, message + "@" + index() + " parsed: " + instructions);
+		}
 	}
 
 	public StatelessVerificationResult statelessVerify(Txn txn) throws RadixEngineException {
-		var statelessVerification = new StatelessVerificationResult();
+		var verifierState = new StatelessVerificationResult(txn);
 
 		long particleIndex = 0;
-		int instIndex = 0;
 		int numMessages = 0;
 		ECDSASignature sig = null;
 		int sigPosition = 0;
@@ -376,17 +385,17 @@ public final class ConstraintMachine {
 		var buf = ByteBuffer.wrap(txn.getPayload());
 		while (buf.hasRemaining()) {
 			if (sig != null) {
-				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": signature must be last");
+				throw verifierState.exception("Signature must be last");
 			}
 
 			int curPos = buf.position();
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(txn, instIndex, buf);
+				inst = REInstruction.readFrom(txn, verifierState.index(), buf);
 			} catch (DeserializeException e) {
-				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Could not read instruction");
+				throw verifierState.exception("Could not read instruction");
 			}
-			statelessVerification.addParsed(inst);
+			verifierState.addParsed(inst);
 
 			if (inst.hasSubstate()) {
 				var data = inst.getData();
@@ -395,7 +404,8 @@ public final class ConstraintMachine {
 					final Result staticCheckResult = particleStaticCheck.apply(substate.getParticle());
 					if (staticCheckResult.isError()) {
 						var errMsg = staticCheckResult.getErrorMessage();
-						throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": " + errMsg);
+
+						throw verifierState.exception(errMsg);
 					}
 				}
 				particleIndex++;
@@ -403,26 +413,23 @@ public final class ConstraintMachine {
 			} else if (inst.getMicroOp() == REInstruction.REOp.MSG) {
 				numMessages++;
 				if (numMessages > MAX_NUM_MESSAGES) {
-					throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Too many messages.");
+					throw verifierState.exception("Too many messages");
 				}
 			} else if (inst.getMicroOp() == REInstruction.REOp.END) {
 				if (particleIndex == 0) {
-					throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Empty group.");
+					throw verifierState.exception("Empty group");
 				}
 				particleIndex = 0;
 			} else if (inst.getMicroOp() == REInstruction.REOp.SIG) {
 				sigPosition = curPos;
 				sig = inst.getData();
 			} else {
-				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR,
-					instIndex + ": Unknown CM Operation " + inst.getMicroOp());
+				throw verifierState.exception("Unknown CM Op " + inst.getMicroOp());
 			}
-
-			instIndex++;
 		}
 
 		if (particleIndex != 0) {
-			throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, instIndex + ": Missing group");
+			throw verifierState.exception("Missing group");
 		}
 
 		if (sig != null) {
@@ -431,12 +438,12 @@ public final class ConstraintMachine {
 			var pubKey = ECPublicKey.recoverFrom(hashToSign, sig)
 				.orElseThrow(() -> new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature"));
 			if (!pubKey.verify(hashToSign, sig)) {
-				throw new RadixEngineException(txn, RadixEngineErrorCode.TXN_ERROR, "Invalid signature");
+				throw verifierState.exception("Invalid signature");
 			}
-			statelessVerification.signatureData(hashToSign, sig, pubKey);
+			verifierState.signatureData(hashToSign, sig, pubKey);
 		}
 
-		return statelessVerification;
+		return verifierState;
 	}
 
 	/**
