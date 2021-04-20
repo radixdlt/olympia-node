@@ -125,13 +125,12 @@ public class HighLevelApiHandler {
 	public JSONObject handleBuildTransaction(JSONObject request) {
 		return withRequiredArrayParameter(request, (params, actions) ->
 			ActionParser.parse(actions)
-				.map(steps -> {
-					var msg = params.optString(1);
-					return msg == null ? steps : ImmutableList.<TransactionAction>builder()
+				.map(steps ->
+					params.length() == 1 ? steps : ImmutableList.<TransactionAction>builder()
 						.addAll(steps)
-						.add(TransactionAction.msg(msg))
-						.build();
-				})
+						.add(TransactionAction.msg(params.getString(1)))
+						.build()
+				)
 				.flatMap(submissionService::prepareTransaction)
 				.fold(
 					failure -> toErrorResponse(request, failure),
