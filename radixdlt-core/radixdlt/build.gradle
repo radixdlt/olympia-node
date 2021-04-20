@@ -204,6 +204,7 @@ task generateDevUniverse(type: Exec) {
         "--validator-count=${validators}",
         "--include-private-keys",
         "--no-json-output",
+        "-- issue-default-tokens",
         "--helm-configuration=${helmConfig}",
         "--helm-output-directory=${helmConfigOut}",
         "--enable-aws-secrets=${enableAWSSecret}",
