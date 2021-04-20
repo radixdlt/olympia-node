@@ -153,6 +153,7 @@ public final class Rri {
 
 	public static Result<Rri> fromSpecString(String s) {
 		var split = s.split("/", 3);
+
 		if (split.length != 3 || split[0].length() != 0) {
 			return Result.fail("RRI has invalid format");
 		}
