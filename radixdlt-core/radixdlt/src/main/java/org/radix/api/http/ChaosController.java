@@ -25,6 +25,7 @@ import com.radixdlt.client.Address;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 
+import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
@@ -99,6 +100,10 @@ public final class ChaosController implements Controller {
 	}
 
 	private static BFTNode createNodeByKey(final String nodeAddress) {
-		return BFTNode.create(Address.parseValidatorAddress(nodeAddress));
+		try {
+			return BFTNode.create(Address.parseValidatorAddress(nodeAddress));
+		} catch (DeserializeException e) {
+			throw new IllegalArgumentException();
+		}
 	}
 }

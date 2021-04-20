@@ -47,6 +47,7 @@ import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
@@ -149,7 +150,7 @@ public final class NodeController implements Controller {
 			.put("validator", getValidator()));
 	}
 
-	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {
+	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException, DeserializeException {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
 		switch (actionString) {

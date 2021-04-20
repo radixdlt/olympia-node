@@ -17,61 +17,80 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.RadixAddress;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Wrapper class for registered validators
  */
 public final class RegisteredValidators {
-    private final ImmutableSet<ECPublicKey> validators;
+    private final Map<ECPublicKey, ValidatorDetails> validators;
 
-    private RegisteredValidators(ImmutableSet<ECPublicKey> validators) {
+    private RegisteredValidators(Map<ECPublicKey, ValidatorDetails> validators) {
         this.validators = validators;
     }
 
     public static RegisteredValidators create() {
-        return new RegisteredValidators(ImmutableSet.of());
+        return new RegisteredValidators(Map.of());
     }
 
     public RegisteredValidators combine(RegisteredValidators v) {
-        return new RegisteredValidators(
-            ImmutableSet.<ECPublicKey>builder()
-                .addAll(this.validators)
-                .addAll(v.validators)
-                .build()
-        );
+        var map = ImmutableMap.<ECPublicKey, ValidatorDetails>builder()
+            .putAll(validators)
+            .putAll(v.validators)
+            .build();
+
+        return new RegisteredValidators(map);
     }
 
-    public RegisteredValidators add(ECPublicKey validator) {
-        if (validators.contains(validator)) {
+    public RegisteredValidators add(ValidatorParticle particle) {
+        var validator = particle.getKey();
+
+        if (validators.containsKey(validator)) {
+            //TODO: should we merge details???
+            return this;
+        }
+
+        var map = ImmutableMap.<ECPublicKey, ValidatorDetails>builder()
+            .putAll(validators)
+            .put(particle.getKey(), ValidatorDetails.fromParticle(particle))
+            .build();
+
+        return new RegisteredValidators(map);
+    }
+
+    public RegisteredValidators remove(ValidatorParticle particle) {
+        var validator = particle.getKey();
+
+        if (!validators.containsKey(validator)) {
             return this;
         }
 
         return new RegisteredValidators(
-            ImmutableSet.<ECPublicKey>builder()
-                .addAll(validators)
-                .add(validator)
-                .build()
+            validators.entrySet().stream()
+                .filter(e -> !e.getKey().equals(validator))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
         );
     }
 
-    public RegisteredValidators remove(ECPublicKey validator) {
-        if (!validators.contains(validator)) {
-            return this;
-        }
-
-        return new RegisteredValidators(
-            validators.stream()
-                .filter(e -> !e.equals(validator))
-                .collect(ImmutableSet.toImmutableSet())
-        );
+    public Set<ECPublicKey> toSet() {
+        return Set.copyOf(validators.keySet());
     }
 
-    public ImmutableSet<ECPublicKey> toSet() {
-        return validators;
+    public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
+        return validators.entrySet()
+            .stream()
+            .map(entry -> mapper.apply(entry.getKey(), entry.getValue()))
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -85,7 +104,7 @@ public final class RegisteredValidators {
             return false;
         }
 
-        RegisteredValidators other = (RegisteredValidators) o;
+        var other = (RegisteredValidators) o;
         return Objects.equals(this.validators, other.validators);
     }
 }

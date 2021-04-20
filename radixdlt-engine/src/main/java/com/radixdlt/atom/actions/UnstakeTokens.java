@@ -54,6 +54,6 @@ public final class UnstakeTokens implements TxAction {
 			amt -> new StakedTokensParticle(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")));
+		).with(amt -> new TokensParticle(address, amt, Rri.NATIVE_TOKEN));
 	}
 }

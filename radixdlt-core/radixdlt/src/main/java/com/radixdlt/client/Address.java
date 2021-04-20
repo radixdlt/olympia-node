@@ -20,7 +20,9 @@ package com.radixdlt.client;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 public class Address {
@@ -34,16 +36,21 @@ public class Address {
 		return Bech32.encode("vb", convert);
 	}
 
-	public static ECPublicKey parseValidatorAddress(String v) {
-		var bech32Data = Bech32.decode(v);
+	public static ECPublicKey parseValidatorAddress(String v) throws DeserializeException {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(v);
+		} catch (AddressFormatException e) {
+			throw new DeserializeException("Could not decode string: " + v, e);
+		}
 		if (!bech32Data.hrp.equals("vb")) {
-			throw new IllegalArgumentException();
+			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
 		var keyBytes = Bits.convertBits(bech32Data.data, 0, bech32Data.data.length, 5, 8, false);
 		try {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException e) {
-			throw new IllegalStateException();
+			throw new DeserializeException("Invalid bytes in validator address: " + v);
 		}
 	}
 }

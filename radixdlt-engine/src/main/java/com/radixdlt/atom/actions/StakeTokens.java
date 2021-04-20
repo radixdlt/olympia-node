@@ -55,7 +55,7 @@ public final class StakeTokens implements TxAction {
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
+			amt -> new TokensParticle(address, amt, Rri.NATIVE_TOKEN),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));

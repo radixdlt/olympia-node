@@ -213,7 +213,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			return restore(serialization, data.getData(), BalanceEntry.class)
-				.onSuccess(entry -> log.debug("Stored token supply balance: {}", entry))
+				.onSuccess(entry -> log.trace("Stored token supply balance: {}", entry))
 				.map(BalanceEntry::getAmount);
 		}
 	}

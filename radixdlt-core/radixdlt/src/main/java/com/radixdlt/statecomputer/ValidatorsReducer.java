@@ -50,9 +50,9 @@ public final class ValidatorsReducer implements StateReducer<RegisteredValidator
     public BiFunction<RegisteredValidators, ValidatorParticle, RegisteredValidators> outputReducer() {
         return (prev, p) -> {
             if (p.isRegisteredForNextEpoch()) {
-                return prev.add(p.getKey());
+                return prev.add(p);
             } else {
-                return prev.remove(p.getKey());
+                return prev.remove(p);
             }
         };
     }

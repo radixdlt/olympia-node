@@ -31,34 +31,32 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class Rri {
-	public static final int HASH_BYTES = 33;
-	private static final String NAME_REGEX = "[a-z0-9]+";
+	private static final String NAME_REGEX = "[A-Z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+
+	public static final Rri NATIVE_TOKEN;
+	public static final int HASH_BYTES = 33;
+
+	static {
+		 NATIVE_TOKEN = ofSystem("XRD");
+	}
 
 	private final byte[] hash;
 	private final String name;
 
 	Rri(byte[] hash, String name) {
-		if (!NAME_PATTERN.matcher(name).matches()) {
-			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
-		}
-
 		this.hash = hash;
 		this.name = name;
 	}
 
-	/*
-	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
-		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
-		var dataToHash = new byte[33 + nameBytes.length];
-		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
-		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
-		var firstHash = HashUtils.sha256(dataToHash);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
-	}
-	 */
+	private static Rri create(byte[] hash, String name) {
+		if (!NAME_PATTERN.matcher(name).matches()) {
+			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
+		}
+		Objects.requireNonNull(hash);
 
+		return new Rri(hash, name);
+	}
 
 	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		return publicKey.getCompressedBytes();
@@ -85,17 +83,16 @@ public final class Rri {
 	}
 
 	public static Rri of(byte[] hash, String name) {
-		Objects.requireNonNull(hash);
-		return new Rri(hash, name);
+		return create(hash, name.toUpperCase());
 	}
 
 	public static Rri of(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
-		return new Rri(pkToHash(name, key), name);
+		return create(pkToHash(name, key), name.toUpperCase());
 	}
 
 	public static Rri ofSystem(String name) {
-		return new Rri(new byte[0], name);
+		return create(new byte[0], name.toUpperCase());
 	}
 
 	public static Rri fromBech32(String s) {
@@ -107,26 +104,17 @@ public final class Rri {
 		if (!d.hrp.endsWith("_rr")) {
 			throw new IllegalArgumentException("Rri must end in _rr");
 		}
-		return new Rri(hash, d.hrp.substring(0, d.hrp.length() - 3));
+		return create(hash, d.hrp.substring(0, d.hrp.length() - 3).toUpperCase());
 	}
 
-
-	public static Result<Rri> fromString(String s) {
-		try {
-			//return Result.ok(fromBech32(s));
-			return fromSpecString(s);
-		} catch (RuntimeException e) {
-			return Result.fail("Error while parsing RRI: {0}", e.getMessage());
-		}
-	}
 
 	public String toSpecString(byte magic) {
 		if (hash.length == 0) {
-			return "//" + name.toUpperCase();
+			return "//" + name;
 		} else {
 			try {
 				var address = new RadixAddress(magic, ECPublicKey.fromBytes(hash));
-				return "/" + address + "/" + name.toUpperCase();
+				return "/" + address + "/" + name;
 			} catch (PublicKeyException e) {
 				throw new IllegalStateException();
 			}
@@ -134,12 +122,13 @@ public final class Rri {
 	}
 
 	public static Result<Rri> fromSpecString(String s) {
-		String[] split = s.split("/", 3);
+		var split = s.split("/", 3);
+
 		if (split.length != 3 || split[0].length() != 0) {
 			return Result.fail("RRI has invalid format");
 		}
 
-		var name = split[2].toLowerCase();
+		var name = split[2];
 
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			return Result.fail("RRI name is invalid");
@@ -149,7 +138,7 @@ public final class Rri {
 			return Result.ok(Rri.ofSystem(name));
 		} else {
 			return RadixAddress.fromString(split[1])
-				.map(address -> new Rri(address.getPublicKey().getCompressedBytes(), name));
+				.map(address -> create(address.getPublicKey().getCompressedBytes(), name));
 		}
 	}
 
@@ -161,7 +150,7 @@ public final class Rri {
 		} else {
 			convert = hash;
 		}
-		return Bech32.encode(name + "_rr", convert);
+		return Bech32.encode(name.toLowerCase() + "_rr", convert);
 	}
 
 	@Override
@@ -170,7 +159,7 @@ public final class Rri {
 			return false;
 		}
 
-		Rri rri = (Rri) o;
+		var rri = (Rri) o;
 		return Arrays.equals(rri.hash, hash)
 			&& Objects.equals(rri.name, name);
 	}
