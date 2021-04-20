@@ -26,6 +26,8 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -135,8 +137,11 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return point.multiply(scalarFromPrivateKey).normalize();
 	}
 
+	private static final Logger log = LogManager.getLogger();
+
 	@Override
 	public ECDSASignature sign(byte[] hash) {
+		log.info("About to sign data with eckeypair");
 		return ECKeyUtils.keyHandler.sign(hash, privateKey, publicKey.getBytes());
 	}
 

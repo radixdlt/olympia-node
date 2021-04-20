@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -40,6 +42,8 @@ import java.security.KeyFactory;
 
 @SecurityCritical({SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.SIG_VERIFY})
 final class BouncyCastleKeyHandler implements KeyHandler {
+	private static final Logger log = LogManager.getLogger();
+
 	private final BigInteger curveOrder;
 	private final BigInteger halfCurveOrder;
 	private final ECDomainParameters domain;
@@ -68,6 +72,7 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 			s = s.compareTo(this.halfCurveOrder) <= 0 ? s : curveOrder.subtract(s);
 		}
 
+		log.info("About to sign in bouncy key handler, v = " + ECKeyUtils.calculateV(r, s, publicKey, hash));
 		return ECDSASignature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
 	}
 

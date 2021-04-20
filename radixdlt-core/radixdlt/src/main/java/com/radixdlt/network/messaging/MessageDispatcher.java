@@ -21,6 +21,7 @@ import com.radixdlt.consensus.HashSigner;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import com.radixdlt.crypto.Hasher;
 
@@ -37,6 +38,8 @@ import com.radixdlt.utils.Compress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
+import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.SignedMessage;
 
@@ -83,14 +86,30 @@ class MessageDispatcher {
 		}
 
 		if (message instanceof SignedMessage) {
+			log.info("About to send a signed message of type " + message.getClass().getSimpleName());
 			SignedMessage signedMessage = (SignedMessage) message;
 			if (signedMessage.getSignature() == null) {
 				byte[] hash = hasher.hash(signedMessage).asBytes();
-				signedMessage.setSignature(hashSigner.sign(hash));
+				final var sign = hashSigner.sign(hash);
+				log.info("Signed message needs signing, got a hash of: " + Hex.toHexString(hash) + " and a signature: " + sign);
+				signedMessage.setSignature(sign);
+			} else {
+				log.info("Signed message is already signed, no need to sign in dispatcher, signature is: " + signedMessage.getSignature());
 			}
 		}
 
+		if (message instanceof PeerPingMessage) {
+			final var ping = (PeerPingMessage) message;
+			log.info("About to send a ping message that should already be signed: " + ping.getSignature() + ", transports = " + ping.getSystem().supportedTransports().collect(Collectors.toList()));
+			log.info("Is ping a signed message " + (message instanceof SignedMessage));
+		}
+
+		log.info("Got a final message (after signing): " + message);
 		byte[] bytes = serialize(message);
+
+		final var ss = new String(bytes);
+		log.info("Serialized message = " + ss);
+
 		return findTransportAndOpenConnection(transportManager, peer, bytes)
 			.thenCompose(conn -> send(conn, message, bytes))
 			.thenApply(this::updateStatistics)
