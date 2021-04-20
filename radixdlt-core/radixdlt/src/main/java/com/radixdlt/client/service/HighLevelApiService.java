@@ -39,6 +39,8 @@ import java.util.Optional;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class HighLevelApiService {
+	private static final Rri NATIVE_TOKEN_RRI = Rri.ofSystem("xrd");
+
 	private final Universe universe;
 	private final ClientApiStore clientApiStore;
 	private final ImmutableIndex immutableIndex;
@@ -64,7 +66,7 @@ public class HighLevelApiService {
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		return Result.fromOptional(
-			immutableIndex.loadRri(null, Rri.ofSystem("xrd")),
+			immutableIndex.loadRri(null, NATIVE_TOKEN_RRI),
 			"Unable to find native token"
 		)
 			.map(TokenDefinitionParticle.class::cast)
@@ -75,6 +77,10 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
+		if (rri.equals(NATIVE_TOKEN_RRI)) {
+			return getNativeTokenDescription();
+		}
+
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(rri, definition));
 	}
