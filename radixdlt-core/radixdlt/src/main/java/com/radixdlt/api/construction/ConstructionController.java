@@ -27,7 +27,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.radix.api.http.Controller;
 
 import static org.radix.api.http.RestUtils.respond;
-import static org.radix.api.http.RestUtils.withBodyAsync;
+import static org.radix.api.http.RestUtils.withBody;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
@@ -45,7 +45,7 @@ public final class ConstructionController implements Controller {
 	}
 
 	void handleParse(HttpServerExchange exchange) {
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			var transactionHex = values.getString("transaction");
 			var transactionBytes = Hex.decode(transactionHex);
 			REParsedTxn parsedTxn = txnParser.parse(Txn.create(transactionBytes));
@@ -63,5 +63,4 @@ public final class ConstructionController implements Controller {
 			respond(exchange, response);
 		});
 	}
-
 }

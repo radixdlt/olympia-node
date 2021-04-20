@@ -25,7 +25,6 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.universe.Universe;
 
 import java.util.Optional;
 

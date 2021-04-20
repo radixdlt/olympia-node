@@ -89,7 +89,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	}
 
 	public interface StateComputer {
-		void addToMempool(Txn txn, BFTNode origin);
+		void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 		List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared);
 		StateComputerResult prepare(List<PreparedTxn> previous, List<Txn> next, long epoch, View view, long timestamp);
 		void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -132,7 +132,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
 		return (node, mempoolAdd) -> {
 			synchronized (lock) {
-				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, node));
+				stateComputer.addToMempool(mempoolAdd, node);
 			}
 		};
 	}
@@ -140,7 +140,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
 		return mempoolAdd -> {
 			synchronized (lock) {
-				mempoolAdd.getTxns().forEach(txn -> stateComputer.addToMempool(txn, null));
+				stateComputer.addToMempool(mempoolAdd, null);
 			}
 		};
 	}

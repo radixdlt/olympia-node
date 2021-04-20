@@ -30,6 +30,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.Rri;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -92,7 +93,7 @@ public class SubmissionService {
 		var txn = TxLowLevelBuilder.newBuilder(blob).sig(recoverable).build();
 		return Result.ok(txn)
 			.filter(t -> t.getId().equals(txId), "Provided txID does not match provided transaction")
-			.onSuccess(t -> stateComputer.addToMempool(txn, self)).map(Txn::getId);
+			.onSuccess(t -> stateComputer.addToMempool(MempoolAdd.create(txn), self)).map(Txn::getId);
 	}
 
 	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {

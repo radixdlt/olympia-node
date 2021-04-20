@@ -100,6 +100,6 @@ public final class MempoolRunnerTest {
 		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
 		verify(stateComputer, timeout(1000).times(1))
-			.addToMempool(eq(mempoolAdd.getTxns().get(0)), isNull());
+			.addToMempool(eq(mempoolAdd), isNull());
 	}
 }

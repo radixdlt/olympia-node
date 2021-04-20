@@ -91,6 +91,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
@@ -126,7 +127,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public void addToMempool(Txn txn, @Nullable BFTNode origin) {
+		public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
 			// No-op
 		}
 

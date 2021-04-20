@@ -30,6 +30,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.SimpleMempool;
 import com.radixdlt.mempool.Mempool;
@@ -69,13 +70,15 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 	private StateComputerLedger.StateComputer stateComputer(Mempool<Txn> mempool, SystemCounters counters) {
 		return new StateComputerLedger.StateComputer() {
 			@Override
-			public void addToMempool(Txn txn, @Nullable BFTNode origin) {
-				try {
-					mempool.add(txn);
-					counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
-				} catch (MempoolRejectedException e) {
-					log.error(e);
-				}
+			public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+				mempoolAdd.getTxns().forEach(txn -> {
+					try {
+						mempool.add(txn);
+						counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+					} catch (MempoolRejectedException e) {
+						log.error(e);
+					}
+				});
 			}
 
 			@Override

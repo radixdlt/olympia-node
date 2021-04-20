@@ -25,7 +25,6 @@ import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -62,7 +61,7 @@ public final class FaucetController implements Controller {
 	@VisibleForTesting
 	void handleFaucetRequest(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			var params = values.getJSONObject("params");
 			var addressString = params.getString("address");
 			final RadixAddress address;

@@ -42,8 +42,12 @@ public final class RestUtils {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static void withBodyAsync(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
-		exchange.dispatch(() -> handleBody(exchange, bodyHandler));
+	public static void withBody(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(() -> handleBody(exchange, bodyHandler));
+		} else {
+			handleBody(exchange, bodyHandler);
+		}
 	}
 
 	public static void withBodyAsyncAndDefaultResponse(HttpServerExchange exchange, ThrowingConsumer<JSONObject> bodyHandler) {
