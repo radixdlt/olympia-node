@@ -30,7 +30,6 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
-import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
@@ -173,7 +172,7 @@ public class HighLevelApiHandler {
 	private JSONObject respondWithTransactionLookupResult(JSONObject request, AID txId) {
 		return highLevelApiService.getTransaction(txId)
 			.fold(
-				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				failure -> toErrorResponse(request, failure),
 				value -> response(request, value.asJson())
 			);
 	}
@@ -202,7 +201,7 @@ public class HighLevelApiHandler {
 						 toRecoverable(blob, signature, publicKey)
 							 .flatMap(recoverable -> submissionService.calculateTxId(blob, recoverable)))
 			.fold(
-				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				failure -> toErrorResponse(request, failure),
 				txId -> response(request, jsonObject().put("txID", txId.toString()))
 			);
 	}
@@ -213,7 +212,7 @@ public class HighLevelApiHandler {
 						 toRecoverable(blob, signature, publicKey)
 							 .flatMap(recoverable -> submissionService.submitTx(blob, recoverable, txId)))
 			.fold(
-				failure -> errorResponse(request, RpcError.INVALID_PARAMS, failure.message()),
+				failure -> toErrorResponse(request, failure),
 				txId -> response(request, jsonObject().put("txID", txId.toString()))
 			);
 	}
@@ -307,12 +306,14 @@ public class HighLevelApiHandler {
 	}
 
 	private JSONObject formatTokenBalances(JSONObject request, RadixAddress radixAddress) {
+		var magic = (byte) highLevelApiService.getUniverseMagic();
+
 		return highLevelApiService.getTokenBalances(radixAddress)
 			.fold(
 				failure -> toErrorResponse(request, failure),
 				list -> jsonObject()
 					.put("owner", radixAddress.toString())
-					.put("tokenBalances", fromList(list, TokenBalance::asJson))
+					.put("tokenBalances", fromList(list, v -> v.asJson(magic)))
 			);
 	}
 
