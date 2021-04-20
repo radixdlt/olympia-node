@@ -62,7 +62,7 @@ public class ValidatorInfoService {
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getValidatorAddress));
 
 		var paged = cursor
-			.map(address -> FunctionalUtils.skipUntil(result, v -> v.getValidatorKey().equals(address)))
+			.map(key -> FunctionalUtils.skipUntil(result, v -> v.getValidatorKey().equals(key)))
 			.orElse(result);
 
 		var list = paged.stream().limit(size).collect(Collectors.toList());

@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.List;
 import java.util.Map;
