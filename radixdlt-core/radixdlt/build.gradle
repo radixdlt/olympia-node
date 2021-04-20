@@ -208,7 +208,7 @@ task generateDevUniverse(type: Exec) {
         "--helm-output-directory=${helmConfigOut}",
         "--enable-aws-secrets=${enableAWSSecret}",
         "--recreate-aws-secrets=${recreateAWSSecret}",
-        "--network-name=${networkName}"
+        "--network-name=${networkName}",
         "--issue-default-tokens"
 }
 
