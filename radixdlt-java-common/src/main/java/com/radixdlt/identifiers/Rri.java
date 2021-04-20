@@ -152,11 +152,11 @@ public final class Rri {
 
 	public String toSpecString(byte magic) {
 		if (hash.length == 0) {
-			return "//" + name;
+			return "//" + name.toUpperCase();
 		} else {
 			try {
 				var address = new RadixAddress(magic, ECPublicKey.fromBytes(hash));
-				return "/" + address + "/" + name;
+				return "/" + address + "/" + name.toUpperCase();
 			} catch (PublicKeyException e) {
 				throw new IllegalStateException();
 			}
@@ -169,14 +169,18 @@ public final class Rri {
 			return Result.fail("RRI has invalid format");
 		}
 
-		var name = split[2];
+		var name = split[2].toLowerCase();
 
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			return Result.fail("RRI name is invalid");
 		}
 
-		return RadixAddress.fromString(split[1])
-			.map(address -> new Rri(address.getPublicKey().getCompressedBytes(), name));
+		if (split[1].length() == 0) {
+			return Result.ok(Rri.ofSystem(name));
+		} else {
+			return RadixAddress.fromString(split[1])
+				.map(address -> new Rri(address.getPublicKey().getCompressedBytes(), name));
+		}
 	}
 
 	@Override
