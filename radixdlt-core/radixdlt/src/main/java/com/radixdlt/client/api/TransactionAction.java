@@ -18,6 +18,7 @@
 package com.radixdlt.client.api;
 
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.IncludeMessage;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -26,6 +27,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Functions.FN5;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 public class TransactionAction {
@@ -34,19 +36,26 @@ public class TransactionAction {
 	private final RadixAddress to;
 	private final UInt256 amount;
 	private final Optional<Rri> rri;
+	private final byte[] data;
 
 	private TransactionAction(
 		ActionType actionType,
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<Rri> rri
+		Optional<Rri> rri,
+		byte[] data
 	) {
 		this.actionType = actionType;
 		this.from = from;
 		this.to = to;
 		this.amount = amount;
 		this.rri = rri;
+		this.data = data;
+	}
+
+	public static TransactionAction msg(String msg) {
+		return new TransactionAction(ActionType.MSG, null, null, null, null, msg.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static TransactionAction create(
@@ -56,7 +65,18 @@ public class TransactionAction {
 		UInt256 amount,
 		Optional<Rri> rri
 	) {
-		return new TransactionAction(actionType, from, to, amount, rri);
+		return new TransactionAction(actionType, from, to, amount, rri, null);
+	}
+
+	public static TransactionAction create(
+		ActionType actionType,
+		RadixAddress from,
+		RadixAddress to,
+		UInt256 amount,
+		Optional<Rri> rri,
+		byte[] data
+	) {
+		return new TransactionAction(actionType, from, to, amount, rri, data);
 	}
 
 	public RadixAddress getFrom() {
@@ -69,6 +89,8 @@ public class TransactionAction {
 
 	public TxAction toAction() {
 		switch (actionType) {
+			case MSG:
+				return new IncludeMessage(data);
 			case TRANSFER:
 				return new TransferToken(rriValue(), to, amount);
 			case STAKE:

@@ -46,6 +46,7 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
@@ -57,6 +58,8 @@ import org.json.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -233,21 +236,24 @@ public final class NodeController implements Controller {
 				actions.add(txAction);
 			}
 			actions.add(new BurnToken(nativeToken, FEE));
-			var request = NodeApplicationRequest.create(
-				actions,
-				(txn, aid) -> respond(exchange, jsonObject()
-					.put("result", jsonObject()
-						.put("transaction", Hex.toHexString(txn.getPayload()))
-						.put("transaction_identifier", aid.toString())
-					)
-				),
-				(txn, error) -> respond(exchange, jsonObject().put("error", jsonObject()
-					.put("message", error)
-					.put("transaction", txn == null ? null : Hex.toHexString(txn.getPayload()))
-				))
-			);
-
+			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+			var request = NodeApplicationRequest.create(actions, completableFuture);
 			nodeApplicationRequestEventDispatcher.dispatch(request);
+
+			try {
+				var success = completableFuture.get();
+				respond(exchange, jsonObject()
+					.put("result", jsonObject()
+						.put("transaction", Hex.toHexString(success.getTxn().getPayload()))
+						.put("transaction_identifier", success.getTxn().getId().toString())
+					)
+				);
+			} catch (ExecutionException e) {
+				respond(exchange, jsonObject()
+					.put("error", jsonObject()
+					.put("message", e.getCause().getMessage()))
+				);
+			}
 		});
 	}
 }
