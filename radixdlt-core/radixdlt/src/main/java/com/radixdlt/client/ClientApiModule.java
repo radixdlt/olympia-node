@@ -106,6 +106,7 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleSubmitTransaction;
 	}
 
+	@ProvidesIntoMap
 	@StringMapKey("radix.validators")
 	public JsonRpcHandler validators(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleValidators;
