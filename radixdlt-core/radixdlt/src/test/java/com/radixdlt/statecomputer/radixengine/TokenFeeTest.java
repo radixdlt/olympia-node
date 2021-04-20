@@ -27,8 +27,8 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -123,9 +123,8 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
-		var atom = TxBuilder.newBuilder(address, engineStore)
+		var atom = sut.construct(address, new BurnToken(nativeToken, fee))
 			.mutex("test")
-			.burn(nativeToken, fee)
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(atom));
@@ -140,8 +139,7 @@ public class TokenFeeTest {
 
 	@Test
 	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() throws Exception {
-		var txn = TxBuilder.newBuilder(address, engineStore)
-			.burn(nativeToken, fee)
+		var txn = sut.construct(address, new BurnToken(nativeToken, fee))
 			.signAndBuild(ecKeyPair::sign);
 
 		sut.execute(List.of(txn));

@@ -471,36 +471,6 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder transfer(Rri rri, RadixAddress to, UInt256 amount) throws TxBuilderException {
-		swapFungible(
-			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(address),
-			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, rri),
-			amount,
-			"Not enough balance for transfer."
-		).with(amt -> new TokensParticle(to, amount, rri));
-
-		particleGroup();
-
-		return this;
-	}
-
-	public TxBuilder burn(Rri rri, UInt256 amount) throws TxBuilderException {
-		deallocateFungible(
-			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(address),
-			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, rri),
-			amount,
-			"Not enough balance to for burn."
-		);
-
-		particleGroup();
-
-		return this;
-	}
-
 	public TxBuilder message(byte[] message) {
 		lowLevelBuilder.message(message);
 		return this;
