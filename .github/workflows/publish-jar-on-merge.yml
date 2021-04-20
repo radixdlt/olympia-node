@@ -39,12 +39,14 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build radixdlt
         run: |
-          if [[ "$GITHUB_REF" == *"refs/release"* ]]; then
-            echo "Workflow triggered by Git tag creation. It should be a release"
+          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
+              echo "Workflow triggered by on a release branch"
           else
-            echo "Workflow triggered by PR"
+            echo "Workflow triggered by on a rc branch"
             export CI_VERSION=true
           fi
+          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+          echo "Version: $version"
           ./gradlew build -x test
       - name: Archive radixdlt-core build distributions
         uses: actions/upload-artifact@v2
@@ -88,12 +90,14 @@ jobs:
           name: build-libraries
       - name: Publish radixdlt-core
         run: |
-          if [[ "$GITHUB_REF" == *"refs/release"* ]]; then
-              echo "Workflow triggered by Git tag creation. It should be a release"
+          if [[ "$GITHUB_REF" == *"refs/heads/release"* ]]; then
+              echo "Workflow triggered by on a release branch"
           else
-            echo "Workflow triggered by PR"
+            echo "Workflow triggered by on a rc branch"
             export CI_VERSION=true
           fi
+          version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
+          echo "Version: $version"
           ./gradlew publish
         env:
           GPR_USER: ${{ secrets.GPR_USER }}
