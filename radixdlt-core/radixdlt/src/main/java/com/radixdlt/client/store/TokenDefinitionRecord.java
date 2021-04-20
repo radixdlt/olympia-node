@@ -144,7 +144,7 @@ public class TokenDefinitionRecord {
 		return jsonObject()
 			.put("name", name)
 			.put("rri", rri.toSpecString(magic))
-			.put("symbol", rri.getName())
+			.put("symbol", rri.getName().toUpperCase())
 			.put("description", description)
 			.put("currentSupply", currentSupply)
 			.put("iconUrl", iconUrl)
