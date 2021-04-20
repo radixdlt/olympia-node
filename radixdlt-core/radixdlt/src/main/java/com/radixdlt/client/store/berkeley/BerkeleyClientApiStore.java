@@ -161,7 +161,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public void storeCollectedParticles() {
 		synchronized (particleCollector) {
-			log.debug("Storing collected particles started");
+			log.trace("Storing collected particles started");
 
 			var count = withTime(
 				() -> particleCollector.consumeCollected(this::storeSingleParticle),
@@ -171,7 +171,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 			inputCounter.addAndGet(-count);
 
-			log.debug("Storing collected particles finished. {} particles processed", count);
+			log.trace("Storing collected particles finished. {} particles processed", count);
 		}
 	}
 
