@@ -32,7 +32,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build deb file
         run: |
-          echo "export CI_VERSION=true"
+          export CI_VERSION=true
           cd radixdlt-core/radixdlt
           ../../gradlew deb4docker
           cd ../..
@@ -77,7 +77,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Set Environment Variables
         run: |
-          echo "export CI_VERSION=true"
+          export CI_VERSION=true
           version=$(./gradlew radixCiVersion | grep radixdlt-version | cut -d: -f2)
           echo "Version: $version"
           TAG=$(echo $version | sed 's/~/-/g')
