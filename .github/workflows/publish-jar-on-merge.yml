@@ -2,12 +2,12 @@ name: radixdlt-core-publish-jar
 
 on:
   create:
-    tags:
+    branches:
+      - release\/*
   push:
     branches:
-#      - rc\/*
-#      - release\/*
-      - ci/artifact-distribution
+      - rc\/*
+      - release\/*
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -39,11 +39,11 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build radixdlt
         run: |
-          if [[ "$GITHUB_REF" == *"refs/tags"* ]]; then
+          if [[ "$GITHUB_REF" == *"refs/release"* ]]; then
             echo "Workflow triggered by Git tag creation. It should be a release"
           else
             echo "Workflow triggered by PR"
-            echo "export CI_VERSION=true"
+            export CI_VERSION=true
           fi
           ./gradlew build -x test
       - name: Archive radixdlt-core build distributions
@@ -88,11 +88,11 @@ jobs:
           name: build-libraries
       - name: Publish radixdlt-core
         run: |
-          if [[ "$GITHUB_REF" == *"refs/tags"* ]]; then
+          if [[ "$GITHUB_REF" == *"refs/release"* ]]; then
               echo "Workflow triggered by Git tag creation. It should be a release"
           else
             echo "Workflow triggered by PR"
-            echo "export CI_VERSION=true"
+            export CI_VERSION=true
           fi
           ./gradlew publish
         env:
