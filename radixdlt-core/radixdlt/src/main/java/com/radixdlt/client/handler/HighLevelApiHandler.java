@@ -17,29 +17,27 @@
 
 package com.radixdlt.client.handler;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.client.api.TransactionAction;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
 import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
 import com.radixdlt.client.service.TransactionStatusService;
 import com.radixdlt.client.service.ValidatorInfoService;
-import com.radixdlt.client.store.TokenBalance;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -221,11 +219,13 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<JSONObject> formatTokenBalances(RadixAddress radixAddress) {
+		var magic = (byte) highLevelApiService.getUniverseMagic();
+
 		return highLevelApiService.getTokenBalances(radixAddress)
 			.map(
 				list -> jsonObject()
 					.put("owner", radixAddress.toString())
-					.put("tokenBalances", fromList(list, TokenBalance::asJson))
+					.put("tokenBalances", fromList(list, v -> v.asJson(magic)))
 			);
 	}
 
