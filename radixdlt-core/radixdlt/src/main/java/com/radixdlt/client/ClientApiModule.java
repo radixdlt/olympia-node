@@ -94,11 +94,13 @@ public class ClientApiModule extends AbstractModule {
 		return highLevelApiHandler::handleBuildTransaction;
 	}
 
+	@ProvidesIntoMap
 	@StringMapKey("radix.finalizeTransaction")
 	public JsonRpcHandler finalizeTransaction(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleFinalizeTransaction;
 	}
 
+	@ProvidesIntoMap
 	@StringMapKey("radix.submitTransaction")
 	public JsonRpcHandler submitTransaction(HighLevelApiHandler highLevelApiHandler) {
 		return highLevelApiHandler::handleSubmitTransaction;
