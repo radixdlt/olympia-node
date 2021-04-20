@@ -25,6 +25,7 @@ import com.radixdlt.ledger.MockPrepared;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -36,7 +37,7 @@ public final class MockedStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
+	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
 	}
 
 	@Override

@@ -22,6 +22,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.RESerializer;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DeserializeException;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 
@@ -63,8 +64,9 @@ public final class REInstruction {
 		}, Spin.UP, Spin.UP),
 		MSG((byte) 7, (txn, i, b) -> {
 			var length = Byte.toUnsignedInt(b.get());
-			b.get(new byte[length]);
-			return null;
+			var bytes = new byte[length];
+			b.get(bytes);
+			return Hex.toHexString(bytes);
 		}, null, null),
 		SIG((byte) 8, (txn, i, b) -> {
 			return RESerializer.deserializeSignature(b);
@@ -154,6 +156,6 @@ public final class REInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s", operation);
+		return String.format("%s %s", operation, data);
 	}
 }

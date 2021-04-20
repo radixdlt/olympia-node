@@ -36,7 +36,6 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
@@ -216,7 +215,7 @@ public final class NodeController implements Controller {
 
 	void handleExecute(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			var actionsArray = values.getJSONArray("actions");
 			var actions = new ArrayList<TxAction>();
 			for (int i = 0; i < actionsArray.length(); i++) {

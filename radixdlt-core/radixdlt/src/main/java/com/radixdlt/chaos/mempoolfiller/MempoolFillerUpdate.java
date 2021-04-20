@@ -20,7 +20,7 @@ package com.radixdlt.chaos.mempoolfiller;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * An update event to the mempool filler
@@ -28,61 +28,56 @@ import java.util.function.Consumer;
 public final class MempoolFillerUpdate {
     private final int parallelTransactions;
     private final boolean sendToSelf;
-    private final Runnable onSuccess;
-    private final Consumer<String> onError;
+    private final CompletableFuture<Void> completableFuture;
 
     private MempoolFillerUpdate(
         int parallelTransactions,
         boolean sendToSelf,
-        Runnable onSuccess,
-        Consumer<String> onError
+		CompletableFuture<Void> completableFuture
     ) {
         this.parallelTransactions = parallelTransactions;
         this.sendToSelf = sendToSelf;
-        this.onSuccess = onSuccess;
-        this.onError = onError;
+        this.completableFuture = completableFuture;
     }
 
     public static MempoolFillerUpdate enable(
         int parallelTransactions,
         boolean sendToSelf
     ) {
-    	return enable(parallelTransactions, sendToSelf, () -> { }, s -> { });
+    	return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
     }
 
     public static MempoolFillerUpdate enable(
         int parallelTransactions,
         boolean sendToSelf,
-        Runnable onSuccess,
-        Consumer<String> onError
+        CompletableFuture<Void> completableFuture
     ) {
     	if (parallelTransactions < 0) {
     	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
         }
-    	Objects.requireNonNull(onSuccess);
-        Objects.requireNonNull(onError);
-        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, onSuccess, onError);
+    	Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
     }
 
     public static MempoolFillerUpdate disable() {
-    	return disable(() -> { }, s -> { });
+    	return new MempoolFillerUpdate(-1, false, null);
 	}
 
-    public static MempoolFillerUpdate disable(
-        Runnable onSuccess,
-        Consumer<String> onError
-    ) {
-        Objects.requireNonNull(onSuccess);
-        Objects.requireNonNull(onError);
-        return new MempoolFillerUpdate(-1, false, onSuccess, onError);
+    public static MempoolFillerUpdate disable(CompletableFuture<Void> completableFuture) {
+        Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(-1, false, completableFuture);
     }
 
     public void onSuccess() {
-        this.onSuccess.run();
+        if (completableFuture != null) {
+            completableFuture.complete(null);
+        }
     }
 
     public void onError(String error) {
-        this.onError.accept(error);
+        if (completableFuture != null) {
+            completableFuture.completeExceptionally(new RuntimeException(error));
+        }
     }
 
     public boolean enabled() {

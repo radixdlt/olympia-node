@@ -30,7 +30,7 @@ public enum CMErrorCode {
 	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),
 	UNKNOWN_OP("Unknown op"),
-	SPIN_CONFLICT("Spin conflict"),
+	SUBSTATE_NOT_FOUND("Substate not found"),
 	READ_FAILURE("Substate read fail (does not exist)"),
 	LOCAL_NONEXISTENT("Local non-existent"),
 	INVALID_PARTICLE("Invalid particle"),

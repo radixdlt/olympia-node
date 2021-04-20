@@ -118,7 +118,7 @@ public class DispatcherModule extends AbstractModule {
 							return CounterType.MEMPOOL_ERRORS_HOOK;
 						} else if (e.getException().getErrorCode().equals(RadixEngineErrorCode.CM_ERROR)) {
 							var errorCode = e.getException().getCmError().getErrorCode();
-							if (errorCode == CMErrorCode.SPIN_CONFLICT) {
+							if (errorCode == CMErrorCode.SUBSTATE_NOT_FOUND) {
 								return CounterType.MEMPOOL_ERRORS_CONFLICT;
 							}
 						}

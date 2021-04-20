@@ -130,6 +130,10 @@ public class SubmissionServiceTest {
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 	private static final UInt256 BIG_AMOUNT = UInt256.TEN.pow(20);
 
+	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher() {
+		return add -> add.onSuccess(MempoolAddSuccess.create(add.getTxns().get(0)));
+	}
+
 	private Module localModule() {
 		return new AbstractModule() {
 
@@ -161,7 +165,7 @@ public class SubmissionServiceTest {
 				bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
-					.toInstance(TypedMocks.rmock(EventDispatcher.class));
+					.toInstance(mempoolAddEventDispatcher());
 
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 
