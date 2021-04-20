@@ -29,6 +29,9 @@ import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -80,22 +83,23 @@ public final class ChaosController implements Controller {
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			MempoolFillerUpdate update;
-			if (values.getBoolean("enabled")) {
-				update = MempoolFillerUpdate.enable(
-					100,
-					true,
-					()-> respond(exchange, jsonObject().put("result", "enabled")),
-					error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
-				);
+			var completableFuture = new CompletableFuture<Void>();
+			var enable = values.getBoolean("enabled");
+			if (enable) {
+				update = MempoolFillerUpdate.enable(100, true, completableFuture);
 			} else {
-				update = MempoolFillerUpdate.disable(
-					()-> respond(exchange, jsonObject().put("result", "disabled")),
-					error -> respond(exchange, jsonObject().put("error", jsonObject().put("message", error)))
-				);
+				update = MempoolFillerUpdate.disable(completableFuture);
 			}
 			mempoolDispatcher.dispatch(update);
+
+			try {
+				completableFuture.get();
+				respond(exchange, jsonObject().put("result", enable ? "enabled" : "disabled"));
+			} catch (ExecutionException e) {
+				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
+			}
 		});
 	}
 

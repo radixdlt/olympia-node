@@ -82,22 +82,4 @@ public final class NodeApplicationModule extends AbstractModule {
 			nodeApplication.requestEventProcessor()
 		);
 	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddSuccess(NodeApplication nodeApplication) {
-		return new EventProcessorOnRunner<>(
-			"application",
-			MempoolAddSuccess.class,
-			nodeApplication.mempoolAddSuccessEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailure(NodeApplication nodeApplication) {
-		return new EventProcessorOnRunner<>(
-			"application",
-			MempoolAddFailure.class,
-			nodeApplication.mempoolAddFailureEventProcessor()
-		);
-	}
 }

@@ -19,10 +19,12 @@
 package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
+import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.identifiers.Rri;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
@@ -74,11 +76,14 @@ public final class LogCMStore implements CMStore {
 					try {
 						var i = REInstruction.readFrom(txn, cur, buf);
 						if (cur == index) {
-							Particle p = i.getData();
-							return Optional.of(p);
+							if (i.getMicroOp() != REInstruction.REOp.UP) {
+								return Optional.empty();
+							}
+							Substate s = i.getData();
+							return Optional.of(s.getParticle());
 						}
-					} catch (Exception e) {
-						return Optional.empty();
+					} catch (DeserializeException e) {
+						throw new IllegalStateException("Cannot deserialize instruction@" + cur, e);
 					}
 					cur++;
 				}

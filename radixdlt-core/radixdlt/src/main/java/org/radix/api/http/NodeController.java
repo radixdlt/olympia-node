@@ -228,7 +228,7 @@ public final class NodeController implements Controller {
 
 	void handleExecute(HttpServerExchange exchange) {
 		// TODO: implement JSON-RPC 2.0 specification
-		withBodyAsync(exchange, values -> {
+		withBody(exchange, values -> {
 			var actionsArray = values.getJSONArray("actions");
 			var actions = new ArrayList<TxAction>();
 			for (int i = 0; i < actionsArray.length(); i++) {

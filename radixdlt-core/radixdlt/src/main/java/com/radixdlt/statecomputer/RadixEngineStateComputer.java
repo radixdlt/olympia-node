@@ -38,6 +38,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -100,10 +101,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
-	public RadixEngine<LedgerAndBFTProof> getEngine() {
-		return radixEngine;
-	}
-
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
 		private final REParsedTxn transaction;
@@ -126,22 +123,27 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void addToMempool(Txn txn, @Nullable BFTNode origin) {
-		try {
-			mempool.add(txn);
-			systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
-		} catch (MempoolDuplicateException e) {
-			var failure = MempoolAddFailure.create(txn, e);
-			// Idempotent commands
-			log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
-			return;
-		} catch (MempoolRejectedException e) {
-			var failure = MempoolAddFailure.create(txn, e);
-			mempoolAddFailureEventDispatcher.dispatch(failure);
-			return;
-		}
+	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+		mempoolAdd.getTxns().forEach(txn -> {
+			try {
+				mempool.add(txn);
+				systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+			} catch (MempoolDuplicateException e) {
+				var failure = MempoolAddFailure.create(txn, e);
+				// Idempotent commands
+				log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
+				return;
+			} catch (MempoolRejectedException e) {
+				var failure = MempoolAddFailure.create(txn, e);
+				mempoolAddFailureEventDispatcher.dispatch(failure);
+				mempoolAdd.onFailure(e); // Required for blocking web apis
+				return;
+			}
 
-		mempoolAddSuccessEventDispatcher.dispatch(MempoolAddSuccess.create(txn, origin));
+			var success = MempoolAddSuccess.create(txn, origin);
+			mempoolAdd.onSuccess(success); // Required for blocking web apis
+			mempoolAddSuccessEventDispatcher.dispatch(success);
+		});
 	}
 
 	@Override
