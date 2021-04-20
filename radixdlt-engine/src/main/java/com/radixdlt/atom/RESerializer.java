@@ -142,10 +142,10 @@ public final class RESerializer {
 
 	public static void serializeRri(ByteBuffer buf, Rri rri) {
 		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
-		serializeString(buf, rri.getName());
 		if (!rri.isSystem()) {
 			buf.put(rri.getHash());
 		}
+		serializeString(buf, rri.getName());
 	}
 
 	public static Rri deserializeRri(ByteBuffer buf) {
@@ -154,12 +154,13 @@ public final class RESerializer {
 			throw new IllegalArgumentException();
 		}
 		var isSystem = v == 0;
-		var name = deserializeString(buf);
 		if (isSystem) {
+			var name = deserializeString(buf);
 			return Rri.ofSystem(name);
 		} else {
 			var hash = new byte[Rri.HASH_BYTES];
 			buf.get(hash);
+			var name = deserializeString(buf);
 			return Rri.of(hash, name);
 		}
 	}
