@@ -209,6 +209,7 @@ task generateDevUniverse(type: Exec) {
         "--enable-aws-secrets=${enableAWSSecret}",
         "--recreate-aws-secrets=${recreateAWSSecret}",
         "--network-name=${networkName}"
+        "--issue-default-tokens"
 }
 
 task generateJsonUniverse(type: Exec) {
