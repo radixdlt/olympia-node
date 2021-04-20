@@ -104,8 +104,10 @@ public final class SubmissionService {
 		try {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn().getId());
-		} catch (ExecutionException | InterruptedException e) {
+		} catch (ExecutionException e) {
 			return Result.fail(e);
+		} catch (InterruptedException e) {
+			throw new IllegalStateException(e);
 		}
 	}
 
