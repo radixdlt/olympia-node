@@ -23,10 +23,10 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -49,7 +49,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getRriId()).thenReturn(mock(RriId.class));
+		when(tokensParticle.getRri()).thenReturn(mock(Rri.class));
 		when(tokensParticle.getAmount()).thenReturn(null);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("null");
@@ -66,7 +66,7 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TokensParticle tokensParticle = mock(TokensParticle.class);
-		when(tokensParticle.getRriId()).thenReturn(mock(RriId.class));
+		when(tokensParticle.getRri()).thenReturn(mock(Rri.class));
 		when(tokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(tokensParticle).getErrorMessage())
 			.contains("zero");

@@ -22,31 +22,40 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.Rri;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 import java.util.Optional;
 
-public final class CreateMutableToken implements TxAction {
+public class CreateFixedToken implements TxAction {
 	private final String symbol;
 	private final String name;
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
+	private final UInt256 supply;
 
-	public CreateMutableToken(
+	public CreateFixedToken(
 		String symbol,
 		String name,
 		String description,
 		String iconUrl,
-		String tokenUrl
+		String tokenUrl,
+		UInt256 supply
 	) {
-		this.symbol = symbol.toLowerCase();
+		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
+		this.supply = Objects.requireNonNull(supply);
+	}
+
+	public UInt256 getSupply() {
+		return supply;
 	}
 
 	public String getSymbol() {
@@ -71,22 +80,22 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var tokenRRI = txBuilder.getAddress().map(a -> Rri.of(a.getPublicKey(), symbol))
-			.orElse(Rri.ofSystem(symbol));
-
+		final var address = txBuilder.getAddressOrFail("Required address for fixed token.");
+		final var tokenRri = Rri.of(address.getPublicKey(), symbol);
 		txBuilder.down(
 			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			p -> p.getRri().equals(tokenRri),
+			Optional.of(new RRIParticle(tokenRri)),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			tokenRRI,
+			tokenRri,
 			name,
 			getDescription(),
 			getIconUrl(),
 			getTokenUrl(),
-			null
+			supply
 		));
+		txBuilder.up(new TokensParticle(address, supply, tokenRri));
 	}
 }

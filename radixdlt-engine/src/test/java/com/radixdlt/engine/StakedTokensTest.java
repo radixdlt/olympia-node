@@ -18,12 +18,13 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -44,7 +45,7 @@ public class StakedTokensTest {
 	private static final byte MAGIC = (byte) 0;
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
-	private RRI tokenRri;
+	private Rri tokenRri;
 	private ECKeyPair tokenOwnerKeyPair = ECKeyPair.generateNew();
 	private RadixAddress tokenOwnerAddress = new RadixAddress(MAGIC, this.tokenOwnerKeyPair.getPublicKey());
 	private ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
@@ -52,7 +53,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = RRI.of(this.tokenOwnerAddress, "XRD");
+		this.tokenRri = Rri.ofSystem("xrd");
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());
@@ -67,21 +68,22 @@ public class StakedTokensTest {
 		this.engine = new RadixEngine<>(cm, this.store);
 
 		var tokDef = new MutableTokenDefinition(
-			"XRD",
+			"xrd",
 			"Test",
 			"description",
 			null,
 			null
 		);
-		var tokDefBuilder = TxBuilder.newBuilder(this.tokenOwnerAddress)
-			.createMutableToken(tokDef)
-			.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN);
-		var atom0 = tokDefBuilder.signAndBuild(this.tokenOwnerKeyPair::sign);
-
+		var txn0 = engine.construct(
+			TxActionListBuilder.create()
+				.createMutableToken(tokDef)
+				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.build()
+		).buildWithoutSignature();
 		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
-		var atom1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
+		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		this.engine.execute(List.of(atom0, atom1));
+		this.engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

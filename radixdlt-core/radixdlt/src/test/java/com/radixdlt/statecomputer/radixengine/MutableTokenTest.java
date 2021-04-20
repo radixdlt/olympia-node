@@ -25,19 +25,23 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.UInt256;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,6 +61,11 @@ public class MutableTokenTest {
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> sut;
+
+	// FIXME: Hack, need this in order to cause provider for genesis to be stored
+	@Inject
+	@LastStoredProof
+	private LedgerProof ledgerProof;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
@@ -79,18 +88,29 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			"XRD",
+			"xrd",
 			"XRD",
 			"XRD",
 			null,
 			null
 		);
-		var atom = TxBuilder.newBuilder(address)
+		var txn = TxBuilder.newBuilder(address)
 			.createMutableToken(tokDef)
 			.signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		assertThatThrownBy(() -> sut.execute(List.of(atom))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
+	public void cannot_mint_xrd_token() throws Exception {
+		// Arrange
+		createInjector().injectMembers(this);
+
+		// Act/Assert
+		var txn = sut.construct(address, List.of(new MintToken(Rri.ofSystem("xrd"), address, UInt256.SEVEN)))
+			.signAndBuild(keyPair::sign);
+		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test
@@ -98,20 +118,22 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			"TEST",
+			"test",
 			"test",
 			"desc",
 			null,
 			null
 		);
-		var atom = TxBuilder.newBuilder(address)
+
+		var txn = sut.construct(address, TxActionListBuilder.create()
 			.createMutableToken(tokDef)
-			.mint(RRI.of(address, "TEST"), address, UInt256.SEVEN)
-			.transfer(RRI.of(address, "TEST"), address, UInt256.FIVE)
-			.signAndBuild(keyPair::sign);
+			.mint(Rri.of(address.getPublicKey(), "test"), address, UInt256.SEVEN)
+			.transfer(Rri.of(address.getPublicKey(), "test"), address, UInt256.FIVE)
+			.build()
+		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		sut.execute(List.of(atom));
+		sut.execute(List.of(txn));
 	}
 
 	@Test
@@ -119,7 +141,7 @@ public class MutableTokenTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			"TEST",
+			"test",
 			"test",
 			null,
 			null,

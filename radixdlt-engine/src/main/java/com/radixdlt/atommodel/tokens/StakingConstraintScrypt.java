@@ -25,11 +25,10 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.atomos.SysCalls;
+import com.radixdlt.identifiers.Rri;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -40,7 +39,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> RriId.nativeToken())
+				.rriMapper(p -> Rri.ofSystem("xrd"))
 				.build()
 		);
 
@@ -56,7 +55,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			TokensParticle::getAmount,
 			StakedTokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> new StakeTokens(o.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
@@ -67,7 +66,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle::getAmount,
 			TokensParticle::getAmount,
 			(i, o) -> Result.success(),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> new UnstakeTokens(i.getDelegateAddress(), o.getAmount()) // FIXME: this isn't 100% correct
 		));
 
@@ -82,7 +81,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getAddress,
 				"Can't send staked tokens to another address."
 			),
-			i -> Optional.of(i.getAddress()),
+			(i, o, index, pubKey) -> pubKey.map(i.getAddress()::ownedBy).orElse(false),
 			(i, o, index) -> Unknown.create()
 		));
 	}

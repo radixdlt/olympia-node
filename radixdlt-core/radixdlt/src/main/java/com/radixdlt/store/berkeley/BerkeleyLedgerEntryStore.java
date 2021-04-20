@@ -18,7 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atomos.RriId;
+import com.radixdlt.identifiers.Rri;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -580,10 +580,13 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			if (inst.getParticle() instanceof TokenDefinitionParticle) {
 				var p = (TokenDefinitionParticle) inst.getParticle();
-				var rriId = p.getRriId();
+				var rri = p.getRri();
 				var buf2 = inst.getInstruction().getDataByteBuffer();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-				rriDatabase.putNoOverwrite(txn, entry(rriId.asBytes()), value);
+				var rriBuf = ByteBuffer.allocate(128);
+				RESerializer.serializeRri(rriBuf, rri);
+				var pos = rriBuf.position();
+				rriDatabase.putNoOverwrite(txn, new DatabaseEntry(rriBuf.array(), 0, pos), value);
 			}
 		} else if (inst.isShutDown()) {
 			if (inst.getSubstate().getId().isVirtual()) {
@@ -695,8 +698,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<Particle> loadRriId(Transaction tx, RriId rriId) {
-		var key = entry(rriId.asBytes());
+	public Optional<Particle> loadRri(Transaction tx, Rri rri) {
+		var buf = ByteBuffer.allocate(128);
+		RESerializer.serializeRri(buf, rri);
+		var pos = buf.position();
+		var key = new DatabaseEntry(buf.array(), 0, pos);
 		var value = entry();
 		var status = rriDatabase.get(unwrap(tx), key, value, DEFAULT);
 		if (status != SUCCESS) {

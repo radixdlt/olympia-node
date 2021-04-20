@@ -18,8 +18,8 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.Rri;
 
 import java.util.Optional;
 
@@ -27,5 +27,5 @@ import java.util.Optional;
  * Index into immutable substates
  */
 public interface ImmutableIndex {
-	Optional<Particle> loadRriId(CMStore.Transaction dbTxn, RriId rriId);
+	Optional<Particle> loadRri(CMStore.Transaction dbTxn, Rri rri);
 }

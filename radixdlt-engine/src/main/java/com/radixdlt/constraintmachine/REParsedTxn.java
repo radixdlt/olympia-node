@@ -21,11 +21,11 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,17 +34,17 @@ import java.util.stream.Stream;
  */
 public final class REParsedTxn {
 	private final Txn txn;
-	private final RadixAddress user;
 	private final List<REParsedAction> actions;
+	private final Optional<ECPublicKey> signedBy;
 
-	public REParsedTxn(Txn txn, RadixAddress user, List<REParsedAction> actions) {
+	public REParsedTxn(Txn txn, Optional<ECPublicKey> signedBy, List<REParsedAction> actions) {
 		this.txn = txn;
-		this.user = user;
+		this.signedBy = signedBy;
 		this.actions = actions;
 	}
 
-	public RadixAddress getUser() {
-		return user;
+	public Optional<ECPublicKey> getUser() {
+		return signedBy;
 	}
 
 	public List<REParsedAction> getActions() {
@@ -58,10 +58,6 @@ public final class REParsedTxn {
 	public boolean isUserCommand() {
 		return actions.stream().flatMap(a -> a.getInstructions().stream())
 			.noneMatch(i -> i.getSubstate().getParticle() instanceof SystemParticle);
-	}
-
-	public Stream<Pair<Particle, ReducerState>> deallocated() {
-		return actions.stream().flatMap(a -> a.getDeallocated().stream());
 	}
 
 	public List<REParsedInstruction> stateUpdates() {

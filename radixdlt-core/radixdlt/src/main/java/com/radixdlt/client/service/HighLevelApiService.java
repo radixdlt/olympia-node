@@ -19,12 +19,11 @@ package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.client.api.TxHistoryEntry;
@@ -65,7 +64,7 @@ public class HighLevelApiService {
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		return Result.fromOptional(
-			immutableIndex.loadRriId(null, RriId.nativeToken()),
+			immutableIndex.loadRri(null, Rri.ofSystem("xrd")),
 			"Unable to find native token"
 		)
 			.map(TokenDefinitionParticle.class::cast)
@@ -75,7 +74,7 @@ public class HighLevelApiService {
 			);
 	}
 
-	public Result<TokenDefinitionRecord> getTokenDescription(RRI rri) {
+	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(rri, definition));
 	}
@@ -101,7 +100,7 @@ public class HighLevelApiService {
 		return second;
 	}
 
-	private Result<TokenDefinitionRecord> withSupply(RRI rri, TokenDefinitionRecord definition) {
+	private Result<TokenDefinitionRecord> withSupply(Rri rri, TokenDefinitionRecord definition) {
 		return definition.isMutable()
 			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
 			   : Result.ok(definition);

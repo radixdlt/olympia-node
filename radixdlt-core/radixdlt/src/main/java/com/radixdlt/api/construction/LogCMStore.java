@@ -20,9 +20,9 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.ImmutableIndex;
@@ -58,8 +58,8 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public Optional<Particle> loadRriId(Transaction tx, RriId rriId) {
-		return immutableIndex.loadRriId(tx, rriId);
+	public Optional<Particle> loadRri(Transaction tx, Rri rri) {
+		return immutableIndex.loadRri(tx, rri);
 	}
 
 	@Override

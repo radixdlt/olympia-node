@@ -70,7 +70,7 @@ public final class NodeApplicationModule extends AbstractModule {
 	private SubstateCacheRegister<?> registeredSubstate(@Self RadixAddress self) {
 		return new SubstateCacheRegister<>(
 			TokensParticle.class,
-			p -> p.getAddress().equals(self) && p.getRriId().isNativeToken()
+			p -> p.getAddress().equals(self) && p.getRri().isSystem()
 		);
 	}
 

@@ -61,7 +61,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	private final Class<V> outputClass1;
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
-	private final SignatureValidator<I> inputSignatureValidator;
+	private final SignatureValidator<I, O> signatureValidator;
 	private final Predicate<O> includeSecondClass;
 
 	public CreateCombinedTransitionRoutine(
@@ -71,7 +71,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		Class<V> outputClass1,
 		Predicate<O> includeSecondClass,
 		BiFunction<O, V, Result> combinedCheck,
-		SignatureValidator<I> inputSignatureValidator
+		SignatureValidator<I, O> signatureValidator
 	) {
 		this.inputClass = inputClass;
 		this.outputClass0 = outputClass0;
@@ -81,7 +81,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
 		this.combinedCheck = combinedCheck;
-		this.inputSignatureValidator = inputSignatureValidator;
+		this.signatureValidator = signatureValidator;
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	public TransitionProcedure<I, O, VoidReducerState> getProcedure0() {
 		return new TransitionProcedure<I, O, VoidReducerState>() {
 			@Override
-			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle) {
+			public PermissionLevel requiredPermissionLevel(I inputParticle, O outputParticle, ImmutableIndex index) {
 				return permissionLevel.apply(inputParticle, outputParticle);
 			}
 
@@ -118,8 +118,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
+			public SignatureValidator<I, O> signatureValidator() {
+				return signatureValidator;
 			}
 		};
 	}
@@ -137,8 +137,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public SignatureValidator<I> inputSignatureRequired() {
-				return inputSignatureValidator;
+			public SignatureValidator<I, V> signatureValidator() {
+				return (i, o, index, pubKey) -> true;
 			}
 		};
 	}

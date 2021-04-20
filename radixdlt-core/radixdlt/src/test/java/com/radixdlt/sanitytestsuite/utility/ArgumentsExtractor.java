@@ -18,7 +18,7 @@
 package com.radixdlt.sanitytestsuite.utility;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -98,8 +98,8 @@ public final class ArgumentsExtractor {
 		return extractAndMap(named, UInt256::from);
 	}
 
-	public RRI asRRI(String named) {
-		return extractAndMap(named, RRI::from);
+	public Rri asRRI(String named) {
+		return extractAndMap(named, Rri::fromBech32);
 	}
 
 	public RadixAddress asRadixAddress(String named) {

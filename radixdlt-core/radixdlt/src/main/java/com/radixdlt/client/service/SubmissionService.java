@@ -30,25 +30,25 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
 
-	private final RRI nativeToken;
+	private final Rri nativeToken;
 	private final RadixEngineStateComputer stateComputer;
 	private final BFTNode self;
 
 	@Inject
 	public SubmissionService(
-		@NativeToken RRI nativeToken,
+		@NativeToken Rri nativeToken,
 		RadixEngineStateComputer stateComputer,
 		@Self BFTNode self
 	) {
@@ -57,8 +57,10 @@ public class SubmissionService {
 		this.self = self;
 	}
 
-	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps, Optional<String> message) {
-		var addresses = steps.stream().map(TransactionAction::getFrom).collect(Collectors.toSet());
+	public Result<PreparedTransaction> prepareTransaction(List<TransactionAction> steps) {
+		var addresses = steps.stream().map(TransactionAction::getFrom)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toSet());
 
 		if (addresses.size() != 1) {
 			return Result.fail("Source addresses for all actions must be the same");
@@ -70,7 +72,6 @@ public class SubmissionService {
 			var transaction = stateComputer.getEngine()
 				.construct(address, toActions(steps))
 				.burn(nativeToken, fixedFee)
-				.message(message)
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 

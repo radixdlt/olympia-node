@@ -17,9 +17,9 @@
 
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
@@ -28,17 +28,17 @@ import java.util.Objects;
  *  owned by some key owner and stored in an account.
  */
 public final class TokensParticle implements Particle {
-	private final RriId rriId;
+	private final Rri rri;
 	private final RadixAddress address;
 	private final UInt256 amount;
 
 	public TokensParticle(
 		RadixAddress address,
 		UInt256 amount,
-		RriId rriId
+		Rri	rri
 	) {
 		this.address = Objects.requireNonNull(address);
-		this.rriId = Objects.requireNonNull(rriId);
+		this.rri = Objects.requireNonNull(rri);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
@@ -46,15 +46,15 @@ public final class TokensParticle implements Particle {
 		return this.address;
 	}
 
-	public RriId getRriId() {
-		return this.rriId;
+	public Rri getRri() {
+		return this.rri;
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(),
-			rriId,
+			rri,
 			amount,
 			address
 		);
@@ -74,12 +74,12 @@ public final class TokensParticle implements Particle {
 		}
 		TokensParticle that = (TokensParticle) o;
 		return Objects.equals(address, that.address)
-			&& Objects.equals(rriId, that.rriId)
+			&& Objects.equals(rri, that.rri)
 			&& Objects.equals(amount, that.amount);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, rriId, amount);
+		return Objects.hash(address, rri, amount);
 	}
 }

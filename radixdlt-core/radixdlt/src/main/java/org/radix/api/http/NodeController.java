@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.application.Balances;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.StakeReceived;
 import com.radixdlt.application.StakedBalance;
@@ -26,19 +27,26 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.application.ValidatorInfo;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.MoveStake;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -53,22 +61,25 @@ import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
-	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
-	private final RRI nativeToken;
+	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
+	private final Rri nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 
 	@Inject
 	public NodeController(
-		@NativeToken RRI nativeToken,
+		@NativeToken Rri nativeToken,
 		@Self RadixAddress selfAddress,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
+		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
 		this.selfAddress = selfAddress;
 		this.radixEngine = radixEngine;
+		this.immutableIndex = immutableIndex;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
 	}
 
@@ -96,7 +107,7 @@ public final class NodeController implements Controller {
 	}
 
 	private JSONObject getBalance() {
-		var spendable = radixEngine.getComputedState(UInt256.class);
+		var balances = radixEngine.getComputedState(Balances.class);
 		var stakedBalance = radixEngine.getComputedState(StakedBalance.class);
 		var stakeTo = new JSONArray();
 		stakedBalance.forEach((addr, amt) ->
@@ -106,8 +117,13 @@ public final class NodeController implements Controller {
 					.put("amount", TokenUnitConversions.subunitsToUnits(amt))
 			)
 		);
+		var balancesJson = new JSONObject();
+		balances.forEach((rri, balance) -> {
+			balancesJson.put(rri.toString(), TokenUnitConversions.subunitsToUnits(balance));
+		});
+
 		return new JSONObject()
-			.put("spendable", TokenUnitConversions.subunitsToUnits(spendable))
+			.put("balances", balancesJson)
 			.put("staked", stakeTo);
 	}
 
@@ -123,6 +139,46 @@ public final class NodeController implements Controller {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
 		switch (actionString) {
+			case "CreateMutableToken": {
+				var symbol = paramsObject.getString("symbol");
+				var name = paramsObject.getString("name");
+				var description = paramsObject.getString("description");
+				var iconUrl = paramsObject.getString("iconUrl");
+				var url = paramsObject.getString("url");
+				return new CreateMutableToken(symbol, name, description, iconUrl, url);
+			}
+			case "CreateFixedToken": {
+				var symbol = paramsObject.getString("symbol");
+				var name = paramsObject.getString("name");
+				var description = paramsObject.getString("description");
+				var iconUrl = paramsObject.getString("iconUrl");
+				var url = paramsObject.getString("url");
+				var supplyInteger = paramsObject.getBigInteger("supply");
+				var supply = TokenUnitConversions.unitsToSubunits(new BigDecimal(supplyInteger));
+				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
+			}
+			case "TransferTokens": {
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var addressString = paramsObject.getString("to");
+				var to = RadixAddress.from(addressString);
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new TransferToken(rri, to, subunits);
+			}
+			case "MintTokens": {
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var addressString = paramsObject.getString("to");
+				var to = RadixAddress.from(addressString);
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new MintToken(rri, to, subunits);
+			}
+			case "BurnTokens": {
+				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new BurnToken(rri, subunits);
+			}
 			case "StakeTokens": {
 				var addressString = paramsObject.getString("to");
 				var delegate = RadixAddress.from(addressString);
@@ -136,6 +192,15 @@ public final class NodeController implements Controller {
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new UnstakeTokens(delegate, subunits);
+			}
+			case "MoveStake": {
+				var fromString = paramsObject.getString("from");
+				var fromDelegate = RadixAddress.from(fromString);
+				var toString = paramsObject.getString("to");
+				var toDelegate = RadixAddress.from(toString);
+				var amountBigInt = paramsObject.getBigInteger("amount");
+				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
+				return new MoveStake(fromDelegate, toDelegate, subunits);
 			}
 			case "RegisterAsValidator":
 				return new RegisterValidator();

@@ -22,7 +22,7 @@ import org.json.JSONObject;
 
 import com.radixdlt.client.api.ActionType;
 import com.radixdlt.client.api.TransactionAction;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -36,7 +36,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class ActionParser {
-	private static final Result<Optional<RRI>> EMPTY_RESULT = Result.ok(Optional.empty());
+	private static final Result<Optional<Rri>> EMPTY_RESULT = Result.ok(Optional.empty());
 
 	private ActionParser() { }
 
@@ -111,9 +111,9 @@ public final class ActionParser {
 			.orElseGet(() -> fail(element, "amount"));
 	}
 
-	private static Result<Optional<RRI>> rri(JSONObject element) {
-		return Result.fromOptional(safeString(element, "rri"), "Field rri is missing in {0}", element)
-			.flatMap(RRI::fromSpecString)
+	private static Result<Optional<Rri>> rri(JSONObject element) {
+		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
+			.flatMap(Rri::fromSpecString)
 			.map(Optional::of);
 	}
 

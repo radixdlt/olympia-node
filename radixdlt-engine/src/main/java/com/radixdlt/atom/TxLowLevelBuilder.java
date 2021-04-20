@@ -92,10 +92,14 @@ public final class TxLowLevelBuilder {
 		this.instructionIndex++;
 	}
 
-	public TxLowLevelBuilder message(String message) {
-		var bytes = message.getBytes(StandardCharsets.UTF_8);
+	public TxLowLevelBuilder message(byte[] bytes) {
 		instruction(REInstruction.REOp.MSG, varLengthData(bytes));
 		return this;
+	}
+
+	public TxLowLevelBuilder message(String message) {
+		var bytes = message.getBytes(StandardCharsets.UTF_8);
+		return message(bytes);
 	}
 
 	public TxLowLevelBuilder up(Particle particle) {

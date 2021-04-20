@@ -54,7 +54,7 @@ import com.radixdlt.client.fees.FeeTable;
 import com.radixdlt.client.fees.PerBytesFeeEntry;
 import com.radixdlt.client.fees.PerParticleFeeEntry;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 
 import java.util.List;
 import java.util.Set;
@@ -160,12 +160,12 @@ public final class RadixUniverse {
 
 	private final AtomStore atomStore;
 
-	private final RRI nativeToken;
+	private final Rri nativeToken;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = RRI.from("XRD");
+		this.nativeToken = Rri.ofSystem("XRD");
 		this.atomStore = atomStore;
 		this.puller = new RadixAtomPuller(networkController);
 	}
@@ -174,7 +174,7 @@ public final class RadixUniverse {
 		return networkController;
 	}
 
-	public RRI getNativeToken() {
+	public Rri getNativeToken() {
 		return nativeToken;
 	}
 

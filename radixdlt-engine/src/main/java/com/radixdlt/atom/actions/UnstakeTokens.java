@@ -23,8 +23,8 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.utils.UInt256;
 
 public final class UnstakeTokens implements TxAction {
@@ -54,6 +54,6 @@ public final class UnstakeTokens implements TxAction {
 			amt -> new StakedTokensParticle(delegateAddress, address, amt),
 			amount,
 			"Not enough staked."
-		).with(amt -> new TokensParticle(address, amt, RriId.nativeToken()));
+		).with(amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")));
 	}
 }

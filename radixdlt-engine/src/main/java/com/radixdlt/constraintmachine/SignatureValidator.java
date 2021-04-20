@@ -17,14 +17,15 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.store.ImmutableIndex;
 
 import java.util.Optional;
 
 /**
  * Validates whether a specific transition procedure is permissible
- * @param <P> particle class
+ * @param <I> particle class
  */
-public interface SignatureValidator<P extends Particle> {
-	Optional<RadixAddress> requiredSignature(P particle);
+public interface SignatureValidator<I extends Particle, O extends Particle> {
+	boolean verify(I input, O output, ImmutableIndex immutableIndex, Optional<ECPublicKey> signedBy);
 }

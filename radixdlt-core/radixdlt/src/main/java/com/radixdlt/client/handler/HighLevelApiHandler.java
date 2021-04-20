@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.handler;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.api.TransactionAction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
@@ -33,21 +35,20 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.radix.api.jsonrpc.JsonRpcUtil.errorResponse;
 import static org.radix.api.jsonrpc.JsonRpcUtil.fromList;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static org.radix.api.jsonrpc.JsonRpcUtil.response;
 import static org.radix.api.jsonrpc.JsonRpcUtil.safeInteger;
-import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredArrayParameter;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredParameters;
 import static org.radix.api.jsonrpc.JsonRpcUtil.withRequiredStringParameter;
@@ -78,25 +79,25 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson())
+				description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 			);
 	}
 
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
-			request, "resourceIdentifier",
-			(params, tokenId) -> RRI.fromSpecString(tokenId)
+			request,
+			(params, tokenId) -> Rri.fromSpecString(tokenId)
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson())
+					description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
 				)
 		);
 	}
 
 	public JSONObject handleTokenBalances(JSONObject request) {
 		return withRequiredStringParameter(
-			request, "address",
+			request,
 			(params, address) -> RadixAddress.fromString(address)
 				.fold(
 					failure -> toErrorResponse(request, failure),
@@ -106,23 +107,30 @@ public class HighLevelApiHandler {
 	}
 
 	public JSONObject handleTransactionStatus(JSONObject request) {
-		return withRequiredStringParameter(request, "txID", (params, idString) ->
+		return withRequiredStringParameter(request, (params, idString) ->
 			AID.fromString(idString)
 				.map(txId -> response(request, formatTransactionStatus(txId)))
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {
-		return withRequiredStringParameter(request, "txID", (params, idString) ->
+		return withRequiredStringParameter(request, (params, idString) ->
 			AID.fromString(idString)
 				.map(txId -> respondWithTransactionLookupResult(request, txId))
 				.orElseGet(() -> errorResponse(request, RpcError.INVALID_PARAMS, "Unable to recognize transaction ID")));
 	}
 
 	public JSONObject handleBuildTransaction(JSONObject request) {
-		return withRequiredArrayParameter(request, "actions", (params, actions) ->
+		return withRequiredArrayParameter(request, (params, actions) ->
 			ActionParser.parse(actions)
-				.flatMap(steps -> submissionService.prepareTransaction(steps, safeString(params, "message")))
+				.map(steps -> {
+					var msg = params.optString(1);
+					return msg == null ? steps : ImmutableList.<TransactionAction>builder()
+						.addAll(steps)
+						.add(TransactionAction.msg(msg))
+						.build();
+				})
+				.flatMap(submissionService::prepareTransaction)
 				.fold(
 					failure -> toErrorResponse(request, failure),
 					value -> response(request, value.asJson())
@@ -133,7 +141,8 @@ public class HighLevelApiHandler {
 	public JSONObject handleTransactionHistory(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			Set.of("address", "size"),
+			List.of("address", "size"),
+			List.of("cursor"),
 			params -> respondWithTransactionHistory(params, request)
 		);
 	}
@@ -141,7 +150,8 @@ public class HighLevelApiHandler {
 	public JSONObject handleFinalizeTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			Set.of("transaction", "signatureDER", "publicKeyOfSigner"),
+			List.of("transaction", "signatureDER", "publicKeyOfSigner"),
+			List.of(),
 			params -> respondFinalizationResult(params, request)
 		);
 	}
@@ -149,7 +159,8 @@ public class HighLevelApiHandler {
 	public JSONObject handleSubmitTransaction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			Set.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
+			List.of("transaction", "signatureDER", "publicKeyOfSigner", "txID"),
+			List.of(),
 			params -> respondSubmissionResult(params, request)
 		);
 	}
@@ -255,10 +266,9 @@ public class HighLevelApiHandler {
 
 	private static Optional<Instant> parseCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
-
-		return !params.has("cursor")
+		return params.isEmpty()
 			   ? Optional.empty()
-			   : Optional.of(params.getString("cursor")).flatMap(HighLevelApiHandler::instantFromString);
+			   : Optional.of(params.getString(0)).flatMap(HighLevelApiHandler::instantFromString);
 	}
 
 	private static Optional<Instant> instantFromString(String source) {

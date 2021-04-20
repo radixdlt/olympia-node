@@ -46,7 +46,7 @@ public final class CMAtomOS {
 
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
 		.staticValidation(rri -> Result.success())
-		.rriMapper(r -> RriId.fromRri(r.getRri()))
+		.rriMapper(RRIParticle::getRri)
 		.virtualizeUp(v -> true)
 		.allowTransitionsFromOutsideScrypts()
 		.build();

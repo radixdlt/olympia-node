@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import java.math.BigDecimal;
 import org.junit.Test;
 import com.radixdlt.utils.RadixConstants;
@@ -37,7 +37,7 @@ public class TokenTransferTest {
 	public void testNoAttachment() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		RRI token = mock(RRI.class);
+		Rri token = mock(Rri.class);
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, null);
 		assertThat(tokenTransfer.toString()).isNotNull();
 		assertThat(tokenTransfer.getAttachment()).isNotPresent();
@@ -48,7 +48,7 @@ public class TokenTransferTest {
 	public void testWithAttachment() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		RRI token = mock(RRI.class);
+		Rri token = mock(Rri.class);
 		byte[] attachment = "Hello".getBytes(RadixConstants.STANDARD_CHARSET);
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, attachment);
 		assertThat(tokenTransfer.toString()).isNotNull();

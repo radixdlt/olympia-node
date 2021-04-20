@@ -21,25 +21,23 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.atomos.RriId;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 public final class MintToken implements TxAction {
-	private final RRI rri;
+	private final Rri rri;
 	private final RadixAddress to;
 	private final UInt256 amount;
 
-	public MintToken(RRI rri, RadixAddress to, UInt256 amount) {
+	public MintToken(Rri rri, RadixAddress to, UInt256 amount) {
 		this.rri = rri;
 		this.to = to;
 		this.amount = amount;
 	}
 
-	public RRI rri() {
+	public Rri rri() {
 		return rri;
 	}
 
@@ -53,12 +51,6 @@ public final class MintToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var rriId = RriId.fromRri(rri);
-		txBuilder.read(
-			TokenDefinitionParticle.class,
-			p -> p.getRriId().equals(rriId),
-			"Could not find mutable token rri " + rriId
-		);
-		txBuilder.up(new TokensParticle(to, amount, rriId));
+		txBuilder.up(new TokensParticle(to, amount, rri));
 	}
 }

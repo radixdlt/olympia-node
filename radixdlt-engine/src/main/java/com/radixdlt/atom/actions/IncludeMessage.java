@@ -21,38 +21,16 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.identifiers.Rri;
-import com.radixdlt.utils.UInt256;
 
-public final class BurnToken implements TxAction {
-	private final Rri rri;
-	private final UInt256 amount;
+public final class IncludeMessage implements TxAction {
+	private final byte[] data;
 
-	public BurnToken(Rri rri, UInt256 amount) {
-		this.rri = rri;
-		this.amount = amount;
-	}
-
-	public Rri rri() {
-		return rri;
-	}
-
-	public UInt256 amount() {
-		return amount;
+	public IncludeMessage(byte[] data) {
+		this.data = data;
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var user = txBuilder.getAddressOrFail("Must have an address to burn.");
-		txBuilder.deallocateFungible(
-			TokensParticle.class,
-			p -> p.getRri().equals(rri) && p.getAddress().equals(user),
-			TokensParticle::getAmount,
-			amt -> new TokensParticle(user, amt, rri),
-			amount,
-			"Not enough balance to for fee burn."
-		);
+		txBuilder.message(data);
 	}
 }
-

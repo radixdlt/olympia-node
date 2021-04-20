@@ -136,9 +136,8 @@ final class ConstraintScryptEnv implements SysCalls {
 			new TransitionToken<>(RRIParticle.class, particleClass, TypeToken.of(VoidReducerState.class)),
 			new TransitionProcedure<>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle) {
-					return systemNames.contains(inputParticle.getRri().getName())
-						|| inputParticle.getRri().getAddress().isEmpty()
+				public PermissionLevel requiredPermissionLevel(RRIParticle inputParticle, O outputParticle, ImmutableIndex index) {
+					return systemNames.contains(inputParticle.getRri().getName()) || inputParticle.getRri().isSystem()
 						? PermissionLevel.SYSTEM : PermissionLevel.USER;
 				}
 
@@ -152,13 +151,14 @@ final class ConstraintScryptEnv implements SysCalls {
 					return Result.success();
 				}
 
+				@Override
 				public InputOutputReducer<RRIParticle, O, VoidReducerState> inputOutputReducer() {
 					return (input, output, index, outputUsed) -> ReducerResult.complete(Unknown.create());
 				}
 
 				@Override
-				public SignatureValidator<RRIParticle> inputSignatureRequired() {
-					return rri -> rri.getRri().getAddress();
+				public SignatureValidator<RRIParticle, O> signatureValidator() {
+					return (rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false);
 				}
 			}
 		);
@@ -183,13 +183,12 @@ final class ConstraintScryptEnv implements SysCalls {
 		var createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
 			RRIParticle.class,
 			particleClass0,
-			(rri, p) -> systemNames.contains(rri.getRri().getName())
-				|| rri.getRri().getAddress().isEmpty()
+			(rri, p) -> systemNames.contains(rri.getRri().getName()) || rri.getRri().isSystem()
 				? PermissionLevel.SYSTEM : PermissionLevel.USER,
 			particleClass1,
 			includeSecondClass,
 			combinedCheck,
-			in -> in.getRri().getAddress()
+			(rri, o, index, pubKey) -> pubKey.map(p -> rri.getRri().ownedBy(p)).orElse(false)
 		);
 
 		this.executeRoutine(createCombinedTransitionRoutine);
@@ -210,8 +209,8 @@ final class ConstraintScryptEnv implements SysCalls {
 		final TransitionProcedure<Particle, Particle, ReducerState> transformedProcedure
 			= new TransitionProcedure<Particle, Particle, ReducerState>() {
 				@Override
-				public PermissionLevel requiredPermissionLevel(Particle i, Particle o) {
-					return procedure.requiredPermissionLevel((I) i, (O) o);
+				public PermissionLevel requiredPermissionLevel(Particle i, Particle o, ImmutableIndex index) {
+					return procedure.requiredPermissionLevel((I) i, (O) o, index);
 				}
 
 				@Override
@@ -240,8 +239,8 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public SignatureValidator<Particle> inputSignatureRequired() {
-					return i -> procedure.inputSignatureRequired().requiredSignature((I) i);
+				public SignatureValidator<Particle, Particle> signatureValidator() {
+					return (i, o, index, pubKey) -> procedure.signatureValidator().verify((I) i, (O) o, index, pubKey);
 				}
 			};
 

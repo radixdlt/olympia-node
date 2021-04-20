@@ -17,18 +17,15 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Rri;
 
-public class RRITest extends SerializeValue<RRI> {
-	public RRITest() {
-		super(RRI.class, RRITest::get);
+public class RriTest extends SerializeValue<Rri> {
+	public RriTest() {
+		super(Rri.class, RriTest::get);
 	}
 
-	private static RRI get() {
-		return RRI.of(
-			RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"),
-			"JOSH"
-		);
+	private static Rri get() {
+		return Rri.of(ECKeyPair.generateNew().getPublicKey(), "jsh");
 	}
 }

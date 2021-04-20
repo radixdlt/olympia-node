@@ -17,24 +17,25 @@
 
 package com.radixdlt.atommodel.unique;
 
-import com.radixdlt.atomos.RriId;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.Rri;
+
 import java.util.Objects;
 
 public final class UniqueParticle implements Particle {
-	private final RriId rriId;
+	private final Rri rri;
 
-	public UniqueParticle(RriId rriId) {
-		this.rriId = Objects.requireNonNull(rriId);
+	public UniqueParticle(Rri rri) {
+		this.rri = Objects.requireNonNull(rri);
 	}
 
-	public RriId getRriId() {
-		return rriId;
+	public Rri getRri() {
+		return rri;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.rriId);
+		return Objects.hash(this.rri);
 	}
 
 	@Override
@@ -43,11 +44,11 @@ public final class UniqueParticle implements Particle {
 			return false;
 		}
 		final var that = (UniqueParticle) obj;
-		return Objects.equals(this.rriId, that.rriId);
+		return Objects.equals(this.rri, that.rri);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), rriId);
+		return String.format("%s[%s]", getClass().getSimpleName(), rri);
 	}
 }

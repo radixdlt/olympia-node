@@ -16,6 +16,7 @@
  */
 package com.radixdlt.client.store.berkeley;
 
+import com.radixdlt.atom.TxActionListBuilder;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
@@ -24,7 +25,6 @@ import org.junit.Test;
 import com.radixdlt.client.api.ActionType;
 
 import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -38,7 +38,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -61,19 +61,19 @@ public class TransactionParserTest {
 	private final RadixAddress otherAddress = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final EngineStore<Void> store = new InMemoryEngineStore<>();
 
-	private final RRI tokenRri = RRI.of(tokenOwnerAddress, "XRD");
+	private final Rri tokenRri = Rri.ofSystem("xrd");
 	private final MutableTokenDefinition tokDef = new MutableTokenDefinition(
-		"XRD", "Test", "description", null, null
+		"xrd", "Test", "description", null, null
 	);
 
-	private final RRI tokenRriII = RRI.of(tokenOwnerAddress, "TEST2");
+	private final Rri tokenRriII = Rri.of(tokenOwnerKeyPair.getPublicKey(), "tst");
 	private final MutableTokenDefinition tokDefII = new MutableTokenDefinition(
-		"TEST2", "Test2", "description2", null, null
+		"tst", "Test2", "description2", null, null
 	);
 
 	private RadixEngine<Void> engine;
 
-	private TransactionParser parser = new TransactionParser(tokenRri);
+	private TransactionParser parser = new TransactionParser(tokenRri, 0);
 
 	@Before
 	public void setup() throws Exception {
@@ -90,15 +90,16 @@ public class TransactionParserTest {
 
 		engine = new RadixEngine<>(cm, store);
 
-		var txn1 = TxBuilder.newBuilder(tokenOwnerAddress)
-			.createMutableToken(tokDef)
-			.mint(tokenRri, tokenOwnerAddress, UInt256.TEN)
-			.signAndBuild(tokenOwnerKeyPair::sign);
+		var txn0 = engine.construct(
+			TxActionListBuilder.create()
+				.createMutableToken(tokDef)
+				.mint(this.tokenRri, this.tokenOwnerAddress, UInt256.TEN)
+				.build()
+		).buildWithoutSignature();
+		var validatorBuilder = this.engine.construct(this.validatorAddress, new RegisterValidator());
+		var txn1 = validatorBuilder.signAndBuild(this.validatorKeyPair::sign);
 
-		var txn2 = engine.construct(validatorAddress, new RegisterValidator())
-			.signAndBuild(validatorKeyPair::sign);
-
-		engine.execute(List.of(txn1, txn2));
+		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
@@ -126,12 +127,13 @@ public class TransactionParserTest {
 	@Test
 	public void transferIsParsedCorrectly() throws Exception {
 		//Use different token
-		var txn = engine.construct(tokenOwnerAddress, List.of())
+		var txn = engine.construct(tokenOwnerAddress, TxActionListBuilder.create()
 			.createMutableToken(tokDefII)
 			.mint(tokenRriII, tokenOwnerAddress, UInt256.TEN)
 			.transfer(tokenRriII, otherAddress, UInt256.FIVE)
 			.burn(tokenRri, UInt256.FOUR)
-			.signAndBuild(tokenOwnerKeyPair::sign);
+			.build()
+		).signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNKNOWN, ActionType.UNKNOWN, ActionType.TRANSFER, ActionType.BURN), UInt256.FOUR, txn);
 	}

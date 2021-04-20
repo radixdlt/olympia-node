@@ -18,6 +18,7 @@
 package com.radixdlt.client.store;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -27,7 +28,7 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.constraintmachine.REParsedTxn;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
@@ -36,11 +37,16 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 
 public final class TransactionParser {
-	private final RRI nativeToken;
+	private final Rri nativeToken;
+	private final int magic;
 
 	@Inject
-	public TransactionParser(@NativeToken RRI nativeToken) {
+	public TransactionParser(
+		@NativeToken Rri nativeToken,
+		@Named("magic") int magic
+	) {
 		this.nativeToken = nativeToken;
+		this.magic = magic;
 	}
 
 	private UInt256 computeFeePaid(REParsedTxn radixEngineTxn) {
@@ -75,7 +81,7 @@ public final class TransactionParser {
 		var fee = computeFeePaid(parsedTxn);
 
 		var actions = parsedTxn.getActions().stream()
-			.map(a -> mapToEntry(parsedTxn.getUser(), a.getTxAction()))
+			.map(a -> mapToEntry(parsedTxn.getUser().map(u -> new RadixAddress((byte) magic, u)).orElse(null), a.getTxAction()))
 			.collect(Collectors.toList());
 
 		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, null, actions));
