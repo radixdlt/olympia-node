@@ -16,6 +16,7 @@
  */
 package org.radix.api.http;
 
+import com.radixdlt.client.ValidatorAddress;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -24,7 +25,6 @@ import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.utils.Base58;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -67,10 +67,10 @@ public class ChaosControllerTest {
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
-		String nodeKey = Base58.toBase58(ECKeyPair.generateNew().getPublicKey().getBytes());
+		var nodeAddress = ValidatorAddress.of(ECKeyPair.generateNew().getPublicKey());
 		var exchange = createExchange(
-			"{ \"enabled\" : true, \"data\" : { \"nodeKey\" : \""
-				+ nodeKey
+			"{ \"enabled\" : true, \"data\" : { \"nodeAddress\" : \""
+				+ nodeAddress
 				+ "\", \"messagesPerSec\" : 10, \"commandSize\" : 123 }}",
 			invocation -> {
 				arg.set(invocation.getArgument(0, String.class));

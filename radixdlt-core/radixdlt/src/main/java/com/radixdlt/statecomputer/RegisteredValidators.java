@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.List;
 import java.util.Map;
@@ -33,9 +32,9 @@ import java.util.stream.Collectors;
  * Wrapper class for registered validators
  */
 public final class RegisteredValidators {
-    private final Map<RadixAddress, ValidatorDetails> validators;
+    private final Map<ECPublicKey, ValidatorDetails> validators;
 
-    private RegisteredValidators(Map<RadixAddress, ValidatorDetails> validators) {
+    private RegisteredValidators(Map<ECPublicKey, ValidatorDetails> validators) {
         this.validators = validators;
     }
 
@@ -44,7 +43,7 @@ public final class RegisteredValidators {
     }
 
     public RegisteredValidators combine(RegisteredValidators v) {
-        var map = ImmutableMap.<RadixAddress, ValidatorDetails>builder()
+        var map = ImmutableMap.<ECPublicKey, ValidatorDetails>builder()
             .putAll(validators)
             .putAll(v.validators)
             .build();
@@ -53,23 +52,23 @@ public final class RegisteredValidators {
     }
 
     public RegisteredValidators add(ValidatorParticle particle) {
-        var validator = particle.getAddress();
+        var validator = particle.getKey();
 
         if (validators.containsKey(validator)) {
             //TODO: should we merge details???
             return this;
         }
 
-        var map = ImmutableMap.<RadixAddress, ValidatorDetails>builder()
+        var map = ImmutableMap.<ECPublicKey, ValidatorDetails>builder()
             .putAll(validators)
-            .put(particle.getAddress(), ValidatorDetails.fromParticle(particle))
+            .put(particle.getKey(), ValidatorDetails.fromParticle(particle))
             .build();
 
         return new RegisteredValidators(map);
     }
 
     public RegisteredValidators remove(ValidatorParticle particle) {
-        var validator = particle.getAddress();
+        var validator = particle.getKey();
 
         if (!validators.containsKey(validator)) {
             return this;
@@ -83,10 +82,10 @@ public final class RegisteredValidators {
     }
 
     public Set<ECPublicKey> toSet() {
-        return validators.keySet().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
+        return Set.copyOf(validators.keySet());
     }
 
-    public <T> List<T> map(BiFunction<RadixAddress, ValidatorDetails, T> mapper) {
+    public <T> List<T> map(BiFunction<ECPublicKey, ValidatorDetails, T> mapper) {
         return validators.entrySet()
             .stream()
             .map(entry -> mapper.apply(entry.getKey(), entry.getValue()))

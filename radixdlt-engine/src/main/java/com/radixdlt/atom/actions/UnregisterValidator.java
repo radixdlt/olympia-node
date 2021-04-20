@@ -27,13 +27,14 @@ public final class UnregisterValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have address");
+		var key = address.getPublicKey();
 
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getAddress().equals(address) && p.isRegisteredForNextEpoch(),
+			p -> p.getKey().equals(key) && p.isRegisteredForNextEpoch(),
 			"Already unregistered."
 		).with(
-			substateDown -> new ValidatorParticle(address, false, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(key, false, substateDown.getName(), substateDown.getUrl())
 		);
 	}
 }

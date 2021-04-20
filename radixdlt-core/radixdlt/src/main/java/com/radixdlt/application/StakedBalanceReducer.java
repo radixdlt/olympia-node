@@ -55,7 +55,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, S
 	public BiFunction<StakedBalance, StakedTokensParticle, StakedBalance> outputReducer() {
 		return (stakes, p) -> {
 			if (p.getAddress().equals(address)) {
-				stakes.addStake(p.getDelegateAddress(), p.getAmount());
+				stakes.addStake(p.getDelegateKey(), p.getAmount());
 			}
 			return stakes;
 		};
@@ -65,7 +65,7 @@ public final class StakedBalanceReducer implements StateReducer<StakedBalance, S
 	public BiFunction<StakedBalance, StakedTokensParticle, StakedBalance> inputReducer() {
 		return (balance, p) -> {
 			if (p.getAddress().equals(address)) {
-				balance.removeStake(p.getDelegateAddress(), p.getAmount());
+				balance.removeStake(p.getDelegateKey(), p.getAmount());
 			}
 			return balance;
 		};

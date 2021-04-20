@@ -17,6 +17,7 @@
 package com.radixdlt.client.store.berkeley;
 
 import com.radixdlt.atom.TxActionListBuilder;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atommodel.tokens.StakingConstraintScrypt;
 import org.junit.Assert;
@@ -104,8 +105,7 @@ public class TransactionParserTest {
 
 	@Test
 	public void stakeIsParsedCorrectly() throws Exception {
-		var txn = engine.construct(tokenOwnerAddress, nativeStake())
-			.burn(tokenRri, UInt256.TWO)
+		var txn = engine.construct(tokenOwnerAddress, List.of(nativeStake(), new BurnToken(tokenRri, UInt256.TWO)))
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.STAKE, ActionType.BURN), UInt256.TWO, txn);
@@ -117,8 +117,7 @@ public class TransactionParserTest {
 			.signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
 
-		var txn2 = engine.construct(tokenOwnerAddress, nativeUnstake())
-			.burn(tokenRri, UInt256.FOUR)
+		var txn2 = engine.construct(tokenOwnerAddress, List.of(nativeUnstake(), new BurnToken(tokenRri, UInt256.FOUR)))
 			.signAndBuild(tokenOwnerKeyPair::sign);
 
 		executeAndDecode(List.of(ActionType.UNSTAKE, ActionType.BURN), UInt256.FOUR, txn2);
@@ -158,11 +157,11 @@ public class TransactionParserTest {
 	}
 
 	private StakeTokens nativeStake() {
-		return new StakeTokens(validatorAddress, UInt256.FIVE);
+		return new StakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private UnstakeTokens nativeUnstake() {
-		return new UnstakeTokens(validatorAddress, UInt256.FIVE);
+		return new UnstakeTokens(validatorKeyPair.getPublicKey(), UInt256.FIVE);
 	}
 
 	private List<ActionType> toActionTypes(TxHistoryEntry txEntry) {

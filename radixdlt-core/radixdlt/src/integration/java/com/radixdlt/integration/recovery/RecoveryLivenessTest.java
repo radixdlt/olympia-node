@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -74,7 +75,6 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.utils.Base58;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -194,7 +194,7 @@ public class RecoveryLivenessTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + Base58.toBase58(ecKeyPair.getPublicKey().getBytes()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}
 			}
 		);

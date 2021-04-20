@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.api;
 
+import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONObject;
 
 import com.radixdlt.identifiers.RadixAddress;
@@ -27,7 +29,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 import static java.util.Objects.requireNonNull;
 
 public class ValidatorInfoDetails {
-	private final RadixAddress address;
+	private final ECPublicKey validator;
 	private final RadixAddress owner;
 	private final String name;
 	private final String infoUrl;
@@ -36,7 +38,7 @@ public class ValidatorInfoDetails {
 	private final boolean externalStakesAllowed;
 
 	private ValidatorInfoDetails(
-		RadixAddress address,
+		ECPublicKey validator,
 		RadixAddress owner,
 		String name,
 		String infoUrl,
@@ -44,7 +46,7 @@ public class ValidatorInfoDetails {
 		UInt256 ownerStake,
 		boolean externalStakesAllowed
 	) {
-		this.address = address;
+		this.validator = validator;
 		this.owner = owner;
 		this.name = name;
 		this.infoUrl = infoUrl;
@@ -54,7 +56,7 @@ public class ValidatorInfoDetails {
 	}
 
 	public static ValidatorInfoDetails create(
-		RadixAddress address,
+		ECPublicKey validator,
 		RadixAddress owner,
 		String name,
 		String infoUrl,
@@ -62,22 +64,26 @@ public class ValidatorInfoDetails {
 		UInt256 ownerStake,
 		boolean externalStakesAllowed
 	) {
-		requireNonNull(address);
+		requireNonNull(validator);
 		requireNonNull(owner);
 		requireNonNull(name);
 		requireNonNull(totalStake);
 		requireNonNull(ownerStake);
 
-		return new ValidatorInfoDetails(address, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
+		return new ValidatorInfoDetails(validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed);
 	}
 
-	public RadixAddress getAddress() {
-		return address;
+	public String getValidatorAddress() {
+		return ValidatorAddress.of(validator);
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validator;
 	}
 
 	public JSONObject asJson() {
 		return jsonObject()
-			.put("address", address)
+			.put("address", getValidatorAddress())
 			.put("ownerAddress", owner)
 			.put("name", name)
 			.put("infoURL", infoUrl)

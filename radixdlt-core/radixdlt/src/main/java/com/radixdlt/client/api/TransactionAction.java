@@ -94,9 +94,9 @@ public class TransactionAction {
 			case TRANSFER:
 				return new TransferToken(rriValue(), to, amount);
 			case STAKE:
-				return new StakeTokens(to, amount);
+				return new StakeTokens(to.getPublicKey(), amount);
 			case UNSTAKE:
-				return new UnstakeTokens(to, amount);
+				return new UnstakeTokens(to.getPublicKey(), amount);
 		}
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}

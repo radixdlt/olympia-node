@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -72,11 +71,10 @@ public class ValidatorTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var keyPair = ECKeyPair.generateNew();
-		var address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		var builder = TxLowLevelBuilder.newBuilder()
-			.virtualDown(new ValidatorParticle(address, false))
-			.up(new ValidatorParticle(address, true))
-			.up(new ValidatorParticle(address, true));
+			.virtualDown(new ValidatorParticle(keyPair.getPublicKey(), false))
+			.up(new ValidatorParticle(keyPair.getPublicKey(), true))
+			.up(new ValidatorParticle(keyPair.getPublicKey(), true));
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 

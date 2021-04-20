@@ -18,25 +18,25 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atommodel.validators.ValidatorParticle;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
 
-public class ValidatorDetails {
-	private final RadixAddress address;
+public final class ValidatorDetails {
+	private final ECPublicKey key;
 	private final String name;
 	private final String url;
 
-	private ValidatorDetails(RadixAddress address, String name, String url) {
-		this.address = address;
+	private ValidatorDetails(ECPublicKey key, String name, String url) {
+		this.key = key;
 		this.name = name;
 		this.url = url;
 	}
 
 	public static ValidatorDetails fromParticle(ValidatorParticle particle) {
-		return new ValidatorDetails(particle.getAddress(), particle.getName(), particle.getUrl());
+		return new ValidatorDetails(particle.getKey(), particle.getName(), particle.getUrl());
 	}
 
-	public RadixAddress getAddress() {
-		return address;
+	public ECPublicKey getKey() {
+		return key;
 	}
 
 	public String getName() {

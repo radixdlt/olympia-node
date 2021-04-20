@@ -29,14 +29,15 @@ public final class RegisterValidator implements TxAction {
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 		var address = txBuilder.getAddressOrFail("Must have an address to register.");
+		var key = address.getPublicKey();
 
 		txBuilder.swap(
 			ValidatorParticle.class,
-			p -> p.getAddress().equals(address) && !p.isRegisteredForNextEpoch(),
-			Optional.of(new ValidatorParticle(address, false)),
+			p -> p.getKey().equals(key) && !p.isRegisteredForNextEpoch(),
+			Optional.of(new ValidatorParticle(key, false)),
 			"Already a validator"
 		).with(
-			substateDown -> new ValidatorParticle(address, true, substateDown.getName(), substateDown.getUrl())
+			substateDown -> new ValidatorParticle(key, true, substateDown.getName(), substateDown.getUrl())
 		);
 	}
 }

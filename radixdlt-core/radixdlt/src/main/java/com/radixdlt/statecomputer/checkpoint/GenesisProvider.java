@@ -136,8 +136,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			// Initial stakes
 			for (var stakeDelegation : stakeDelegations) {
 				var stakerAddress = new RadixAddress(magic, stakeDelegation.staker().getPublicKey());
-				var delegateAddress = new RadixAddress(magic, stakeDelegation.delegate());
-				var stakerTxn = branch.construct(stakerAddress, new StakeTokens(delegateAddress, stakeDelegation.amount()))
+				var stakerTxn = branch.construct(stakerAddress, new StakeTokens(stakeDelegation.delegate(), stakeDelegation.amount()))
 					.signAndBuild(stakeDelegation.staker()::sign);
 				branch.execute(List.of(stakerTxn), PermissionLevel.SYSTEM);
 				genesisTxns.add(stakerTxn);

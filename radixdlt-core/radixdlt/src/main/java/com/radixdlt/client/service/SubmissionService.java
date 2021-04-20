@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.client.api.PreparedTransaction;
 import com.radixdlt.client.api.TransactionAction;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class SubmissionService {
 	private final UInt256 fixedFee = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(50));
@@ -69,8 +71,7 @@ public final class SubmissionService {
 
 		try {
 			var transaction = radixEngine
-				.construct(address, toActions(steps))
-				.burn(Rri.NATIVE_TOKEN, fixedFee)
+				.construct(address, toActionsAndFee(steps))
 				.buildForExternalSign()
 				.map(this::toPreparedTx);
 
@@ -80,10 +81,11 @@ public final class SubmissionService {
 		}
 	}
 
-	private List<TxAction> toActions(List<TransactionAction> steps) {
-		return steps.stream()
-			.map(TransactionAction::toAction)
-			.collect(Collectors.toList());
+	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
+		return Stream.concat(
+			steps.stream().map(TransactionAction::toAction),
+			Stream.of(new BurnToken(Rri.NATIVE_TOKEN, fixedFee))
+		).collect(Collectors.toList());
 	}
 
 	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {

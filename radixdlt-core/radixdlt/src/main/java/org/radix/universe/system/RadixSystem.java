@@ -17,7 +17,6 @@
 
 package org.radix.universe.system;
 
-import com.radixdlt.utils.Base58;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -26,6 +25,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.TransportInfo;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 
@@ -129,13 +129,13 @@ public class RadixSystem extends BasicContainer {
 	@JsonProperty("key")
 	@DsonOutput(Output.ALL)
 	String getJsonKey() {
-		return (key == null) ? null : Base58.toBase58(key.getBytes());
+		return (key == null) ? null : Hex.toHexString(key.getBytes());
 	}
 
 	@JsonProperty("key")
 	void setJsonKey(String newKey) throws DeserializeException {
 		try {
-			key = ECPublicKey.fromBytes(Base58.fromBase58(newKey));
+			key = ECPublicKey.fromBytes(Hex.decode(newKey));
 		} catch (PublicKeyException cex) {
 			throw new DeserializeException("Invalid key", cex);
 		}

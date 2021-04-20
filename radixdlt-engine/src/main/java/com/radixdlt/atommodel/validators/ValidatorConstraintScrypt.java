@@ -31,6 +31,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.InputOutputReducer;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.SignatureValidator;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.ImmutableIndex;
 
@@ -51,8 +52,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(ValidatorParticle.class, ParticleDefinition.<ValidatorParticle>builder()
-			.staticValidation(checkAddressAndUrl(ValidatorParticle::getAddress,
-				ValidatorParticle::getUrl))
+			.staticValidation(checkAddressAndUrl(ValidatorParticle::getUrl))
 			.virtualizeUp(p -> !p.isRegisteredForNextEpoch() && p.getUrl().isEmpty() && p.getName().isEmpty())
 			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt
 			.build()
@@ -60,18 +60,18 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		createTransition(os,
 			ValidatorParticle.class,
-			ValidatorParticle::getAddress,
+			ValidatorParticle::getKey,
 			ValidatorParticle.class,
-			ValidatorParticle::getAddress
+			ValidatorParticle::getKey
 		);
 	}
 
 	private <I extends Particle, O extends Particle> void createTransition(
 		SysCalls os,
 		Class<I> inputParticle,
-		Function<I, RadixAddress> inputAddressMapper,
+		Function<I, ECPublicKey> inputAddressMapper,
 		Class<O> outputParticle,
-		Function<O, RadixAddress> outputAddressMapper
+		Function<O, ECPublicKey> outputAddressMapper
 	) {
 		os.createTransition(
 			new TransitionToken<>(inputParticle, outputParticle, TypeToken.of(VoidReducerState.class)),
@@ -85,14 +85,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
 	);
 
-	private static <I> Function<I, Result> checkAddressAndUrl(
-		Function<I, RadixAddress> addressMapper,
-		Function<I, String> urlMapper
-	) {
+	private static <I> Function<I, Result> checkAddressAndUrl(Function<I, String> urlMapper) {
 		return particle -> {
-			if (addressMapper.apply(particle) == null) {
-				return Result.error("address is null");
-			}
 			String url = urlMapper.apply(particle);
 			if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 				return Result.error("url is not a valid URL: " + url);
@@ -116,12 +110,12 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@VisibleForTesting
 	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
 		implements TransitionProcedure<I, O, VoidReducerState> {
-		private final Function<I, RadixAddress> inputAddressMapper;
-		private final Function<O, RadixAddress> outputAddressMapper;
+		private final Function<I, ECPublicKey> inputAddressMapper;
+		private final Function<O, ECPublicKey> outputAddressMapper;
 
 		ValidatorTransitionProcedure(
-			Function<I, RadixAddress> inputAddressMapper,
-			Function<O, RadixAddress> outputAddressMapper
+			Function<I, ECPublicKey> inputAddressMapper,
+			Function<O, ECPublicKey> outputAddressMapper
 		) {
 			this.inputAddressMapper = inputAddressMapper;
 			this.outputAddressMapper = outputAddressMapper;
@@ -129,8 +123,8 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 		@Override
 		public Result precondition(I inputParticle, O outputParticle, VoidReducerState outputUsed, ImmutableIndex index) {
-			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
-			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
+			var inputAddress = inputAddressMapper.apply(inputParticle);
+			var outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address
 			if (!Objects.equals(inputAddress, outputAddress)) {
 				return Result.error(String.format(
@@ -150,7 +144,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		@Override
 		public SignatureValidator<I, O> signatureValidator() {
 			// verify that the transition was authenticated by the validator address in question
-			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i)::ownedBy).orElse(false);
+			return (i, o, index, pubKey) -> pubKey.map(inputAddressMapper.apply(i)::equals).orElse(false);
 		}
 	}
 }

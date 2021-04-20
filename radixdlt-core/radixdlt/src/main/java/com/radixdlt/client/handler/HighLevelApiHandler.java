@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.ValidatorAddress;
+import com.radixdlt.serialization.DeserializeException;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -248,7 +250,7 @@ public class HighLevelApiHandler {
 			.getValidators(size, parseAddressCursor(request))
 			.map(
 				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
-					.put("cursor", cursor.map(RadixAddress::toString).orElse(""))
+					.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
 					.put("validators", fromList(transactions, ValidatorInfoDetails::asJson))))
 			);
 	}
@@ -299,13 +301,19 @@ public class HighLevelApiHandler {
 		return "" + instant.getEpochSecond() + ":" + instant.getNano();
 	}
 
-	private static Optional<RadixAddress> parseAddressCursor(JSONObject request) {
+	private static Optional<ECPublicKey> parseAddressCursor(JSONObject request) {
 		var params = JsonRpcUtil.params(request);
 
 		return params.isEmpty()
-			   ? Optional.empty()
-			   : Optional.of(params.getString(0))
-				   .flatMap(address -> RadixAddress.fromString(address).toOptional());
+			? Optional.empty()
+			: Optional.of(params.getString(0))
+				.flatMap(address -> {
+					try {
+						return Optional.of(ValidatorAddress.parse(address));
+					} catch (DeserializeException e) {
+						return Optional.empty();
+					}
+				});
 	}
 
 	private static Optional<Instant> parseInstantCursor(JSONObject request) {

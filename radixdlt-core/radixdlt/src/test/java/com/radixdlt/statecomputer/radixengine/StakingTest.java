@@ -27,7 +27,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
@@ -106,12 +106,10 @@ public class StakingTest {
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
 		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
-		var delegateAddress = new RadixAddress((byte) magic, self.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
 
 		// Act
-		var atom = TxBuilder.newBuilder(stakerAddress, engineStore)
-			.stakeTo(delegateAddress, UInt256.FIVE)
+		var atom = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(atom));
 
@@ -127,17 +125,15 @@ public class StakingTest {
 		createInjector().injectMembers(this);
 		var stakes = sut.getComputedState(Stakes.class);
 		var stakerAddress = new RadixAddress((byte) magic, staker.getPublicKey());
-		var delegateAddress = new RadixAddress((byte) magic, self.getPublicKey());
 		var staked = stakes.toMap().get(self.getPublicKey());
-		var txn = TxBuilder.newBuilder(stakerAddress, engineStore)
-			.stakeTo(delegateAddress, UInt256.FIVE)
+		var txn = sut.construct(stakerAddress, new StakeTokens(self.getPublicKey(), UInt256.FIVE))
 			.signAndBuild(staker::sign);
 		sut.execute(List.of(txn));
 
 		// Act
 		var nextTxn = sut.construct(
 			stakerAddress,
-			new UnstakeTokens(delegateAddress, UInt256.THREE)
+			new UnstakeTokens(self.getPublicKey(), UInt256.THREE)
 		).signAndBuild(staker::sign);
 		sut.execute(List.of(nextTxn));
 

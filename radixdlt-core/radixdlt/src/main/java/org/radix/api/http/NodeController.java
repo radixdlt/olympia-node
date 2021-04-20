@@ -37,7 +37,9 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
@@ -45,6 +47,7 @@ import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
@@ -69,17 +72,20 @@ public final class NodeController implements Controller {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
 	private final EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
+	private final ECPublicKey bftKey;
 
 	@Inject
 	public NodeController(
 		@NativeToken Rri nativeToken,
 		@Self RadixAddress selfAddress,
+		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ImmutableIndex immutableIndex,
 		EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher
 	) {
 		this.nativeToken = nativeToken;
 		this.selfAddress = selfAddress;
+		this.bftKey = bftKey;
 		this.radixEngine = radixEngine;
 		this.immutableIndex = immutableIndex;
 		this.nodeApplicationRequestEventDispatcher = nodeApplicationRequestEventDispatcher;
@@ -89,6 +95,7 @@ public final class NodeController implements Controller {
 	public void configureRoutes(final RoutingHandler handler) {
 		handler.post("/node/execute", this::handleExecute);
 		handler.get("/node", this::respondWithNode);
+		handler.post("/node/validator", this::respondWithValidator);
 	}
 
 	private JSONObject getValidator() {
@@ -103,6 +110,7 @@ public final class NodeController implements Controller {
 			);
 		});
 		return new JSONObject()
+			.put("address", ValidatorAddress.of(bftKey))
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
@@ -133,11 +141,16 @@ public final class NodeController implements Controller {
 	void respondWithNode(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
 			.put("address", selfAddress)
-			.put("balance", getBalance())
+			.put("balance", getBalance()));
+	}
+
+	@VisibleForTesting
+	void respondWithValidator(HttpServerExchange exchange) {
+		respond(exchange, jsonObject()
 			.put("validator", getValidator()));
 	}
 
-	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException {
+	private TxAction parseAction(JSONObject actionObject) throws IllegalArgumentException, DeserializeException {
 		var actionString = actionObject.getString("action");
 		var paramsObject = actionObject.getJSONObject("params");
 		switch (actionString) {
@@ -182,24 +195,24 @@ public final class NodeController implements Controller {
 				return new BurnToken(rri, subunits);
 			}
 			case "StakeTokens": {
-				var addressString = paramsObject.getString("to");
-				var delegate = RadixAddress.from(addressString);
+				var validatorString = paramsObject.getString("to");
+				var key = ValidatorAddress.parse(validatorString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
-				return new StakeTokens(delegate, subunits);
+				return new StakeTokens(key, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
-				var delegate = RadixAddress.from(addressString);
+				var delegate = ValidatorAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new UnstakeTokens(delegate, subunits);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
-				var fromDelegate = RadixAddress.from(fromString);
+				var fromDelegate = ValidatorAddress.parse(fromString);
 				var toString = paramsObject.getString("to");
-				var toDelegate = RadixAddress.from(toString);
+				var toDelegate = ValidatorAddress.parse(toString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new MoveStake(fromDelegate, toDelegate, subunits);

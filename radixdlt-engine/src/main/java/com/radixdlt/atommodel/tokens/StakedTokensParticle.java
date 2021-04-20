@@ -18,6 +18,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
@@ -28,22 +29,22 @@ import java.util.Objects;
  *  owned by some key owner, stored in an account and staked to a delegate address.
  */
 public final class StakedTokensParticle implements Particle {
-	private final RadixAddress delegateAddress;
+	private final ECPublicKey delegateKey;
 	private final RadixAddress address;
 	private final UInt256 amount;
 
 	public StakedTokensParticle(
-		RadixAddress delegateAddress,
+		ECPublicKey delegateKey,
 		RadixAddress address,
 		UInt256 amount
 	) {
-		this.delegateAddress = Objects.requireNonNull(delegateAddress);
+		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.address = Objects.requireNonNull(address);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public RadixAddress getDelegateAddress() {
-		return delegateAddress;
+	public ECPublicKey getDelegateKey() {
+		return delegateKey;
 	}
 
 	public RadixAddress getAddress() {
@@ -56,7 +57,7 @@ public final class StakedTokensParticle implements Particle {
 			getClass().getSimpleName(),
 			amount,
 			address,
-			delegateAddress
+			delegateKey
 		);
 	}
 
@@ -73,7 +74,7 @@ public final class StakedTokensParticle implements Particle {
 			return false;
 		}
 		StakedTokensParticle that = (StakedTokensParticle) o;
-		return Objects.equals(delegateAddress, that.delegateAddress)
+		return Objects.equals(delegateKey, that.delegateKey)
 			&& Objects.equals(address, that.address)
 			&& Objects.equals(amount, that.amount);
 	}
@@ -81,7 +82,7 @@ public final class StakedTokensParticle implements Particle {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-			delegateAddress,
+			delegateKey,
 			address,
 			amount
 		);

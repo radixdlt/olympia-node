@@ -71,7 +71,7 @@ public final class MockedGenesisModule extends AbstractModule {
 			tokenIssuanceSet.stream(),
 			initialValidators.stream().map(v -> TokenIssuance.of(v.getPublicKey(), UInt256.ONE))
 		)
-			.sorted(Comparator.comparing(t -> t.receiver().toBase58()))
+			.sorted(Comparator.comparing(t -> t.receiver().toBase64()))
 			.collect(ImmutableList.toImmutableList());
 	}
 }

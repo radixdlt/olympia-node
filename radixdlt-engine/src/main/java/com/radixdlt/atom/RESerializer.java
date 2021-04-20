@@ -29,8 +29,10 @@ import com.radixdlt.atommodel.validators.ValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.Rri;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
@@ -140,10 +142,10 @@ public final class RESerializer {
 
 	public static void serializeRri(ByteBuffer buf, Rri rri) {
 		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
-		serializeString(buf, rri.getName());
 		if (!rri.isSystem()) {
 			buf.put(rri.getHash());
 		}
+		serializeString(buf, rri.getName());
 	}
 
 	public static Rri deserializeRri(ByteBuffer buf) {
@@ -152,12 +154,13 @@ public final class RESerializer {
 			throw new IllegalArgumentException();
 		}
 		var isSystem = v == 0;
-		var name = deserializeString(buf);
 		if (isSystem) {
+			var name = deserializeString(buf);
 			return Rri.ofSystem(name);
 		} else {
 			var hash = new byte[Rri.HASH_BYTES];
 			buf.get(hash);
+			var name = deserializeString(buf);
 			return Rri.of(hash, name);
 		}
 	}
@@ -202,30 +205,30 @@ public final class RESerializer {
 
 	private static void serializeData(StakedTokensParticle p, ByteBuffer buf) {
 		serializeAddress(buf, p.getAddress());
-		serializeAddress(buf, p.getDelegateAddress());
+		serializeKey(buf, p.getDelegateKey());
 		buf.put(p.getAmount().toByteArray());
 	}
 
-	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) {
+	private static StakedTokensParticle deserializeStakedTokensParticle(ByteBuffer buf) throws DeserializeException {
 		var address = deserializeAddress(buf);
-		var delegate = deserializeAddress(buf);
+		var delegate = deserializeKey(buf);
 		var amount = deserializeUInt256(buf);
 		return new StakedTokensParticle(delegate, address, amount);
 	}
 
 	private static void serializeData(ValidatorParticle p, ByteBuffer buf) {
-		serializeAddress(buf, p.getAddress());
+		serializeKey(buf, p.getKey());
 		buf.put((byte) (p.isRegisteredForNextEpoch() ? 1 : 0)); // isRegistered
 		serializeString(buf, p.getName());
 		serializeString(buf, p.getUrl());
 	}
 
-	private static ValidatorParticle deserializeValidatorParticle(ByteBuffer buf) {
-		var address = deserializeAddress(buf);
+	private static ValidatorParticle deserializeValidatorParticle(ByteBuffer buf) throws DeserializeException {
+		var key = deserializeKey(buf);
 		var isRegistered = buf.get() != 0; // isRegistered
 		var name = deserializeString(buf);
 		var url = deserializeString(buf);
-		return new ValidatorParticle(address, isRegistered, name, url);
+		return new ValidatorParticle(key, isRegistered, name, url);
 	}
 
 	private static void serializeData(UniqueParticle uniqueParticle, ByteBuffer buf) {
@@ -269,6 +272,21 @@ public final class RESerializer {
 		buf.get(amountDest);
 		return UInt256.from(amountDest);
 	}
+
+	private static void serializeKey(ByteBuffer buf, ECPublicKey key) {
+		buf.put(key.getCompressedBytes()); // address
+	}
+
+	private static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
+		try {
+			var keyBytes = new byte[33];
+			buf.get(keyBytes);
+			return ECPublicKey.fromBytes(keyBytes);
+		} catch (PublicKeyException e) {
+			throw new DeserializeException("Could not deserialize key");
+		}
+	}
+
 
 	private static void serializeAddress(ByteBuffer buf, RadixAddress address) {
 		buf.put((byte) address.toByteArray().length); // address length

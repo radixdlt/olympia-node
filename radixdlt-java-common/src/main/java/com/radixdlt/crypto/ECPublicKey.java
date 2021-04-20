@@ -28,7 +28,6 @@ import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.utils.Base58;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
@@ -70,12 +69,13 @@ public final class ECPublicKey {
 	}
 
 	@JsonCreator
-	public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
-		return fromBytes(Bytes.fromBase64String(base64));
+	public static ECPublicKey fromHex(String hex) throws PublicKeyException {
+		return fromBytes(Bytes.fromHexString(hex));
 	}
 
-	public static ECPublicKey fromBase58(String base58) throws PublicKeyException {
-		return fromBytes(Base58.fromBase58(base58));
+	@JsonCreator
+	public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
+		return fromBytes(Bytes.fromBase64String(base64));
 	}
 
 	public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
@@ -113,10 +113,6 @@ public final class ECPublicKey {
 		return ECIES.encrypt(data, this);
 	}
 
-	public String toBase58() {
-		return Base58.toBase58(getBytes());
-	}
-
 	public String toBase64() {
 		return Bytes.toBase64String(getBytes());
 	}
@@ -144,7 +140,7 @@ public final class ECPublicKey {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), toBase58());
+		return String.format("%s[%s]", getClass().getSimpleName(), toHex());
 	}
 
 	private EUID computeUID() {
