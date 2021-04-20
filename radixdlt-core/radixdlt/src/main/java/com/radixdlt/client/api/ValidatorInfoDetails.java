@@ -17,7 +17,7 @@
 
 package com.radixdlt.client.api;
 
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import org.json.JSONObject;
 
@@ -74,7 +74,7 @@ public class ValidatorInfoDetails {
 	}
 
 	public String getValidatorAddress() {
-		return Address.ofValidator(validator);
+		return ValidatorAddress.of(validator);
 	}
 
 	public ECPublicKey getValidatorKey() {

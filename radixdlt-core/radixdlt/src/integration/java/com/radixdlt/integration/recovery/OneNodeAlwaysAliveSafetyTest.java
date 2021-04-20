@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -213,7 +213,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(10L, 10L));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + Address.ofValidator(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}
 
 				@ProvidesIntoSet

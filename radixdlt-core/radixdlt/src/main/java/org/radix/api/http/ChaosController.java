@@ -21,7 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 
@@ -101,7 +101,7 @@ public final class ChaosController implements Controller {
 
 	private static BFTNode createNodeByKey(final String nodeAddress) {
 		try {
-			return BFTNode.create(Address.parseValidatorAddress(nodeAddress));
+			return BFTNode.create(ValidatorAddress.parse(nodeAddress));
 		} catch (DeserializeException e) {
 			throw new IllegalArgumentException();
 		}

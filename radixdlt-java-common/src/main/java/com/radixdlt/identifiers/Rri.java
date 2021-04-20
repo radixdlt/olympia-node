@@ -31,14 +31,14 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class Rri {
-	private static final String NAME_REGEX = "[A-Z0-9]+";
+	private static final String NAME_REGEX = "[a-z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
 	public static final Rri NATIVE_TOKEN;
 	public static final int HASH_BYTES = 33;
 
 	static {
-		 NATIVE_TOKEN = ofSystem("XRD");
+		 NATIVE_TOKEN = ofSystem("xrd");
 	}
 
 	private final byte[] hash;
@@ -57,6 +57,19 @@ public final class Rri {
 
 		return new Rri(hash, name);
 	}
+
+	// TODO: reenable this code when rri bech32 supported
+	/*
+	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
+		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
+		var dataToHash = new byte[33 + nameBytes.length];
+		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
+		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
+		var firstHash = HashUtils.sha256(dataToHash);
+		var secondHash = HashUtils.sha256(firstHash.asBytes());
+		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
+	}
+	 */
 
 	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		return publicKey.getCompressedBytes();
@@ -83,16 +96,16 @@ public final class Rri {
 	}
 
 	public static Rri of(byte[] hash, String name) {
-		return create(hash, name.toUpperCase());
+		return create(hash, name);
 	}
 
 	public static Rri of(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
-		return create(pkToHash(name, key), name.toUpperCase());
+		return create(pkToHash(name, key), name);
 	}
 
 	public static Rri ofSystem(String name) {
-		return create(new byte[0], name.toUpperCase());
+		return create(new byte[0], name);
 	}
 
 	public static Rri fromBech32(String s) {
@@ -104,23 +117,24 @@ public final class Rri {
 		if (!d.hrp.endsWith("_rr")) {
 			throw new IllegalArgumentException("Rri must end in _rr");
 		}
-		return create(hash, d.hrp.substring(0, d.hrp.length() - 3).toUpperCase());
+		return create(hash, d.hrp.substring(0, d.hrp.length() - 3));
 	}
 
-
+	// TODO: remove
 	public String toSpecString(byte magic) {
 		if (hash.length == 0) {
-			return "//" + name;
+			return "//" + name.toUpperCase();
 		} else {
 			try {
 				var address = new RadixAddress(magic, ECPublicKey.fromBytes(hash));
-				return "/" + address + "/" + name;
+				return "/" + address + "/" + name.toUpperCase();
 			} catch (PublicKeyException e) {
 				throw new IllegalStateException();
 			}
 		}
 	}
 
+	// TODO: remove
 	public static Result<Rri> fromSpecString(String s) {
 		var split = s.split("/", 3);
 
@@ -128,7 +142,7 @@ public final class Rri {
 			return Result.fail("RRI has invalid format");
 		}
 
-		var name = split[2];
+		var name = split[2].toLowerCase();
 
 		if (!NAME_PATTERN.matcher(name).matches()) {
 			return Result.fail("RRI name is invalid");

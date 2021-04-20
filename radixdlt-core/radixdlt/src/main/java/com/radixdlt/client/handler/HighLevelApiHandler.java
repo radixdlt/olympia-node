@@ -17,7 +17,7 @@
 
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.serialization.DeserializeException;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
@@ -251,7 +251,7 @@ public class HighLevelApiHandler {
 			.getValidators(size, parseAddressCursor(request))
 			.map(
 				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
-					.put("cursor", cursor.map(Address::ofValidator).orElse(""))
+					.put("cursor", cursor.map(ValidatorAddress::of).orElse(""))
 					.put("validators", fromList(transactions, ValidatorInfoDetails::asJson))))
 			);
 	}
@@ -310,7 +310,7 @@ public class HighLevelApiHandler {
 			: Optional.of(params.getString(0))
 				.flatMap(address -> {
 					try {
-						return Optional.of(Address.parseValidatorAddress(address));
+						return Optional.of(ValidatorAddress.parse(address));
 					} catch (DeserializeException e) {
 						return Optional.empty();
 					}

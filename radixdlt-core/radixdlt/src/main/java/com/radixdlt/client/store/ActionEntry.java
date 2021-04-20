@@ -19,7 +19,7 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import org.json.JSONObject;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -65,11 +65,11 @@ public class ActionEntry {
 	}
 
 	public static ActionEntry stake(RadixAddress user, StakeTokens stakeToken, Rri nativeToken) {
-		return create(ActionType.STAKE, user.toString(), Address.ofValidator(stakeToken.to()), stakeToken.amount(), nativeToken);
+		return create(ActionType.STAKE, user.toString(), ValidatorAddress.of(stakeToken.to()), stakeToken.amount(), nativeToken);
 	}
 
 	public static ActionEntry unstake(RadixAddress user, UnstakeTokens unstakeToken, Rri nativeToken) {
-		return create(ActionType.UNSTAKE, Address.ofValidator(unstakeToken.from()), user.toString(), unstakeToken.amount(), nativeToken);
+		return create(ActionType.UNSTAKE, ValidatorAddress.of(unstakeToken.from()), user.toString(), unstakeToken.amount(), nativeToken);
 	}
 
 	public static ActionEntry unknown() {

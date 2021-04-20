@@ -25,8 +25,8 @@ import com.radixdlt.utils.Bits;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-public final class Address {
-	private Address() {
+public final class ValidatorAddress {
+	private ValidatorAddress() {
 		throw new IllegalStateException();
 	}
 
@@ -38,13 +38,13 @@ public final class Address {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static String ofValidator(ECPublicKey key) {
+	public static String of(ECPublicKey key) {
 		var bytes = key.getCompressedBytes();
 		var convert = toBech32Data(bytes);
 		return Bech32.encode("vb", convert);
 	}
 
-	public static ECPublicKey parseValidatorAddress(String v) throws DeserializeException {
+	public static ECPublicKey parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);

@@ -26,12 +26,12 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class AddressTest {
+public class ValidatorAddressTest {
 	@Test
 	public void test_validator_address_serialization() {
 		var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString("deadbeef"));
 		var publicKey = keyPair.getPublicKey();
-		var validatorAddress = Address.ofValidator(publicKey);
+		var validatorAddress = ValidatorAddress.of(publicKey);
 		var expectedValidatorAddressString = "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazy";
 		assertThat(validatorAddress).isEqualTo(expectedValidatorAddressString);
 	}
@@ -42,19 +42,19 @@ public class AddressTest {
 		var publicKey = keyPair.getPublicKey();
 		var addr = "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazy";
 
-		var publicKeyFromValidatorAddress = Address.parseValidatorAddress(addr);
+		var publicKeyFromValidatorAddress = ValidatorAddress.parse(addr);
 		assertThat(publicKey).isEqualTo(publicKeyFromValidatorAddress);
 	}
 
 	@Test
 	public void test_invalid_checksum_of_validator_address_deserialization() {
 		var addr = "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazz";
-		assertThatThrownBy(() -> Address.parseValidatorAddress(addr)).isInstanceOf(DeserializeException.class);
+		assertThatThrownBy(() -> ValidatorAddress.parse(addr)).isInstanceOf(DeserializeException.class);
 	}
 
 	@Test
 	public void test_invalid_hrp_of_validator_address_deserialization() {
 		var addr = "xrd_rr1gd5j68";
-		assertThatThrownBy(() -> Address.parseValidatorAddress(addr)).isInstanceOf(DeserializeException.class);
+		assertThatThrownBy(() -> ValidatorAddress.parse(addr)).isInstanceOf(DeserializeException.class);
 	}
 }

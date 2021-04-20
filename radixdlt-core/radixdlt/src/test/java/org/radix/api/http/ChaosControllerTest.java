@@ -16,7 +16,7 @@
  */
 package org.radix.api.http;
 
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -67,7 +67,7 @@ public class ChaosControllerTest {
 		var latch = new CountDownLatch(1);
 		var arg = new AtomicReference<String>();
 
-		var nodeAddress = Address.ofValidator(ECKeyPair.generateNew().getPublicKey());
+		var nodeAddress = ValidatorAddress.of(ECKeyPair.generateNew().getPublicKey());
 		var exchange = createExchange(
 			"{ \"enabled\" : true, \"data\" : { \"nodeAddress\" : \""
 				+ nodeAddress

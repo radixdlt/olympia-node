@@ -37,7 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -110,7 +110,7 @@ public final class NodeController implements Controller {
 			);
 		});
 		return new JSONObject()
-			.put("address", Address.ofValidator(bftKey))
+			.put("address", ValidatorAddress.of(bftKey))
 			.put("registered", validatorInfo.isRegistered())
 			.put("totalStake", TokenUnitConversions.subunitsToUnits(stakeReceived.getTotal()))
 			.put("stakes", stakeFrom);
@@ -196,23 +196,23 @@ public final class NodeController implements Controller {
 			}
 			case "StakeTokens": {
 				var validatorString = paramsObject.getString("to");
-				var key = Address.parseValidatorAddress(validatorString);
+				var key = ValidatorAddress.parse(validatorString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new StakeTokens(key, subunits);
 			}
 			case "UnstakeTokens": {
 				var addressString = paramsObject.getString("from");
-				var delegate = Address.parseValidatorAddress(addressString);
+				var delegate = ValidatorAddress.parse(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new UnstakeTokens(delegate, subunits);
 			}
 			case "MoveStake": {
 				var fromString = paramsObject.getString("from");
-				var fromDelegate = Address.parseValidatorAddress(fromString);
+				var fromDelegate = ValidatorAddress.parse(fromString);
 				var toString = paramsObject.getString("to");
-				var toDelegate = Address.parseValidatorAddress(toString);
+				var toDelegate = ValidatorAddress.parse(toString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new MoveStake(fromDelegate, toDelegate, subunits);

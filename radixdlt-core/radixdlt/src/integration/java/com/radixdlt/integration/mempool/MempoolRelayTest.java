@@ -21,7 +21,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.client.Address;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -193,7 +193,7 @@ public class MempoolRelayTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 					bind(MempoolConfig.class).toInstance(MempoolConfig.of(100L, 100L, 10L, 10L, 10));
 					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + Address.ofValidator(ecKeyPair.getPublicKey()));
+						.to(folder.getRoot().getAbsolutePath() + "/" + ValidatorAddress.of(ecKeyPair.getPublicKey()));
 				}
 			}
 		);
