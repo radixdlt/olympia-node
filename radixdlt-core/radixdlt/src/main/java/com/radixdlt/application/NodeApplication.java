@@ -70,14 +70,15 @@ public class NodeApplication {
 			if (this.inflightRequests.containsKey(txn.getId())) {
 				// TODO: use mempool to prevent double spending of substates so
 				// TODO: that this occurs less frequently
-				request.onFailure(txn, "Transaction already in flight.");
+				request.completableFuture()
+					.ifPresent(c -> c.completeExceptionally(new RuntimeException("Transaction already in flight")));
 				return;
 			}
 			this.inflightRequests.put(txn.getId(), request);
 			this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
 		} catch (TxBuilderException e) {
 			log.error("Failed to fulfil request {} reason: {}", request, e.getMessage());
-			request.onFailure(null, e.getMessage());
+			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));
 		}
 	}
 
@@ -88,7 +89,7 @@ public class NodeApplication {
 				return;
 			}
 
-			req.onSuccess(mempoolAddSuccess.getTxn(), mempoolAddSuccess.getTxn().getId());
+			req.completableFuture().ifPresent(c -> c.complete(mempoolAddSuccess));
 		};
 	}
 
@@ -99,7 +100,7 @@ public class NodeApplication {
 				return;
 			}
 
-			req.onFailure(failure.getTxn(), failure.getException().getMessage());
+			req.completableFuture().ifPresent(c -> c.completeExceptionally(failure.getException()));
 		};
 	}
 

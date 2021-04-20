@@ -19,26 +19,23 @@
 package com.radixdlt.application;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public final class NodeApplicationRequest {
 	private final List<TxAction> actions;
-	private final BiConsumer<Txn, AID> onSuccess;
-	private final BiConsumer<Txn, String> onError;
+	private final CompletableFuture<MempoolAddSuccess> completableFuture;
 
 	private NodeApplicationRequest(
 		List<TxAction> actions,
-		BiConsumer<Txn, AID> onSuccess,
-		BiConsumer<Txn, String> onError
+		CompletableFuture<MempoolAddSuccess> completableFuture
 	) {
 		this.actions = actions;
-		this.onSuccess = onSuccess;
-		this.onError = onError;
+		this.completableFuture = completableFuture;
 	}
 
 	public static NodeApplicationRequest create(TxAction action) {
@@ -46,30 +43,23 @@ public final class NodeApplicationRequest {
 	}
 
 	public static NodeApplicationRequest create(List<TxAction> actions) {
-		return create(actions, (txn, aid) -> { }, (txn, error) -> { });
+		return create(actions, null);
 	}
 
 	public static NodeApplicationRequest create(
 		List<TxAction> actions,
-		BiConsumer<Txn, AID> onSuccess,
-		BiConsumer<Txn, String> onError
+		CompletableFuture<MempoolAddSuccess> completableFuture
 	) {
 		Objects.requireNonNull(actions);
-		Objects.requireNonNull(onSuccess);
-		Objects.requireNonNull(onError);
-		return new NodeApplicationRequest(actions, onSuccess, onError);
+		return new NodeApplicationRequest(actions, completableFuture);
 	}
 
 	public List<TxAction> getActions() {
 		return actions;
 	}
 
-	public void onSuccess(Txn txn, AID aid) {
-		onSuccess.accept(txn, aid);
-	}
-
-	public void onFailure(Txn txn, String errorMessage) {
-		onError.accept(txn, errorMessage);
+	public Optional<CompletableFuture<MempoolAddSuccess>> completableFuture() {
+		return Optional.ofNullable(completableFuture);
 	}
 
 	@Override

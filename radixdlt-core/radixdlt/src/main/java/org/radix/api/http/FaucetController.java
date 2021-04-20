@@ -28,6 +28,7 @@ import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.Rri;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.utils.UInt256;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -77,20 +78,16 @@ public final class FaucetController implements Controller {
 				.burn(nativeToken, FEE)
 				.build();
 
-			var success = new CompletableFuture<AID>();
+			var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 
-			var request = NodeApplicationRequest.create(
-				actions,
-				(txn, aid) -> success.complete(aid),
-				(txn, error) -> success.completeExceptionally(new RuntimeException(error))
-			);
-
+			var request = NodeApplicationRequest.create(actions, completableFuture);
 			faucetRequestDispatcher.dispatch(request);
+
 			try {
-				var aid = success.get();
-				respond(exchange, jsonObject().put("result", aid.toString()));
+				var success = completableFuture.get();
+				respond(exchange, jsonObject().put("result", success.getTxn().toString()));
 			} catch (ExecutionException e) {
-				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getMessage())));
+				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
 			}
 		});
 	}
