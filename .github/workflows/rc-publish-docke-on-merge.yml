@@ -1,13 +1,9 @@
 name: radixdlt-publish-docker-on-merge
 
 on:
-  create:
-    branches:
-      - release\/*
   push:
     branches:
       - rc\/*
-      - release\/*
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
