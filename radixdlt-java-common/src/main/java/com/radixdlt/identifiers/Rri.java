@@ -32,7 +32,9 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class Rri {
+	public static final Rri NATIVE_TOKEN = ofSystem("XRD");
 	public static final int HASH_BYTES = 33;
+
 	private static final String NAME_REGEX = "[a-z0-9]+";
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
@@ -47,19 +49,6 @@ public final class Rri {
 		this.hash = hash;
 		this.name = name;
 	}
-
-	/*
-	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
-		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
-		var dataToHash = new byte[33 + nameBytes.length];
-		System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
-		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
-		var firstHash = HashUtils.sha256(dataToHash);
-		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
-	}
-	 */
-
 
 	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		return publicKey.getCompressedBytes();

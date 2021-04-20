@@ -509,7 +509,7 @@ public final class TxBuilder {
 			TokensParticle.class,
 			p -> p.getRri().isSystem() && p.getAddress().equals(address),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, Rri.ofSystem("xrd")),
+			amt -> new TokensParticle(address, amt, Rri.NATIVE_TOKEN),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateAddress, address, amt));

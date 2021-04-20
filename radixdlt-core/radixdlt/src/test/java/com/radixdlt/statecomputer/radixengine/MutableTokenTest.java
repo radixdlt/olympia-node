@@ -108,7 +108,7 @@ public class MutableTokenTest {
 		createInjector().injectMembers(this);
 
 		// Act/Assert
-		var txn = sut.construct(address, List.of(new MintToken(Rri.ofSystem("xrd"), address, UInt256.SEVEN)))
+		var txn = sut.construct(address, List.of(new MintToken(Rri.NATIVE_TOKEN, address, UInt256.SEVEN)))
 			.signAndBuild(keyPair::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
 	}
