@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.client.Address;
 import org.json.JSONObject;
 import org.radix.universe.system.LocalSystem;
 
@@ -91,9 +92,7 @@ public class NetworkService {
 	public List<JSONObject> getLivePeers() {
 		return selfAndOthers(this.addressBook.recentPeers())
 			.map(peer -> {
-				var json = jsonObject()
-					.put("key", peer.getSystem().getKey().toBase58());
-
+				var json = jsonObject().put("address", Address.ofValidator(peer.getSystem().getKey()));
 				peer.getSystem().supportedTransports().filter(t -> t.name().equals("TCP")).forEach(t -> {
 					String port = t.metadata().get("port");
 					String host = t.metadata().get("host");

@@ -28,7 +28,6 @@ import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.utils.Base58;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
@@ -74,10 +73,6 @@ public final class ECPublicKey {
 		return fromBytes(Bytes.fromBase64String(base64));
 	}
 
-	public static ECPublicKey fromBase58(String base58) throws PublicKeyException {
-		return fromBytes(Base58.fromBase58(base58));
-	}
-
 	public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
 		return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
 			.map(ECPublicKey::new);
@@ -111,10 +106,6 @@ public final class ECPublicKey {
 
 	public byte[] encrypt(byte[] data) throws ECIESException {
 		return ECIES.encrypt(data, this);
-	}
-
-	public String toBase58() {
-		return Base58.toBase58(getBytes());
 	}
 
 	public String toBase64() {

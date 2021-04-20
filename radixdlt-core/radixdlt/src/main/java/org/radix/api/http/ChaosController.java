@@ -21,15 +21,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.client.Address;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 
-import static com.radixdlt.crypto.ECPublicKey.fromBytes;
-import static com.radixdlt.utils.Base58.fromBase58;
 import static org.radix.api.http.RestUtils.*;
 import static org.radix.api.http.RestUtils.respond;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
@@ -61,8 +59,8 @@ public final class ChaosController implements Controller {
 			if (values.getBoolean("enabled")) {
 				var data = values.getJSONObject("data");
 
-				if (data.has("nodeKey")) {
-					update = update.bftNode(createNodeByKey(data.getString("nodeKey")));
+				if (data.has("nodeAddress")) {
+					update = update.bftNode(createNodeByKey(data.getString("nodeAddress")));
 				}
 
 				if (data.has("messagesPerSec")) {
@@ -100,7 +98,7 @@ public final class ChaosController implements Controller {
 		});
 	}
 
-	private static BFTNode createNodeByKey(final String nodeKeyBase58) throws PublicKeyException {
-		return BFTNode.create(fromBytes(fromBase58(nodeKeyBase58)));
+	private static BFTNode createNodeByKey(final String nodeAddress) {
+		return BFTNode.create(Address.parseValidatorAddress(nodeAddress));
 	}
 }

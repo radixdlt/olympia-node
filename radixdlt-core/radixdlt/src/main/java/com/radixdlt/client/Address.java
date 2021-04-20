@@ -19,6 +19,7 @@
 package com.radixdlt.client;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bits;
 import org.bitcoinj.core.Bech32;
 
@@ -31,5 +32,18 @@ public class Address {
 		var bytes = key.getCompressedBytes();
 		var convert = Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
 		return Bech32.encode("vb", convert);
+	}
+
+	public static ECPublicKey parseValidatorAddress(String v) {
+		var bech32Data = Bech32.decode(v);
+		if (!bech32Data.hrp.equals("vb")) {
+			throw new IllegalArgumentException();
+		}
+		var keyBytes = Bits.convertBits(bech32Data.data, 0, bech32Data.data.length, 5, 8, false);
+		try {
+			return ECPublicKey.fromBytes(keyBytes);
+		} catch (PublicKeyException e) {
+			throw new IllegalStateException();
+		}
 	}
 }
