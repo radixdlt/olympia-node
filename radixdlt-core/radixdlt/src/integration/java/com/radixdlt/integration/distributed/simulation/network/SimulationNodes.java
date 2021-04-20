@@ -37,6 +37,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -91,6 +92,12 @@ public class SimulationNodes {
 				@Self
 				private BFTNode self() {
 					return BFTNode.create(self.getPublicKey());
+				}
+
+				@Provides
+				@Self
+				private ECPublicKey key() {
+					return self.getPublicKey();
 				}
 
 				@Provides
