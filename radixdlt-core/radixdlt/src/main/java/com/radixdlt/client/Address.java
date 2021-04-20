@@ -25,14 +25,22 @@ import com.radixdlt.utils.Bits;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-public class Address {
+public final class Address {
 	private Address() {
 		throw new IllegalStateException();
 	}
 
+	private static byte[] toBech32Data(byte[] bytes) {
+		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
+	}
+
+	private static byte[] fromBech32Data(byte[] bytes) {
+		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
+	}
+
 	public static String ofValidator(ECPublicKey key) {
 		var bytes = key.getCompressedBytes();
-		var convert = Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
+		var convert = toBech32Data(bytes);
 		return Bech32.encode("vb", convert);
 	}
 
@@ -43,10 +51,11 @@ public class Address {
 		} catch (AddressFormatException e) {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
+
 		if (!bech32Data.hrp.equals("vb")) {
 			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
 		}
-		var keyBytes = Bits.convertBits(bech32Data.data, 0, bech32Data.data.length, 5, 8, false);
+		var keyBytes = fromBech32Data(bech32Data.data);
 		try {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException e) {
