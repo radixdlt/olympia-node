@@ -17,6 +17,8 @@
 
 package org.radix.api.http;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -36,6 +38,7 @@ import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 
 public final class RestUtils {
+	private static final Logger logger = LogManager.getLogger();
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
 	private RestUtils() {
@@ -107,8 +110,19 @@ public final class RestUtils {
 
 	public static void respond(HttpServerExchange exchange, Object object) {
 		if (exchange.isComplete()) {
+			logger.warn("Exchange already complete.");
 			return;
 		}
+
+		if (exchange.isResponseStarted()) {
+			logger.warn("Response already started.");
+			return;
+		}
+
+		if (!exchange.isResponseChannelAvailable()) {
+			logger.warn("Response channel not available.");
+		}
+
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.getResponseSender().send(object.toString());
 	}
