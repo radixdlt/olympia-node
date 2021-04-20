@@ -47,8 +47,8 @@ public class TxActionListBuilder {
 			def.getSymbol(),
 			def.getName(),
 			def.getDescription(),
-			def.getTokenUrl(),
-			def.getIconUrl()
+			def.getIconUrl(),
+			def.getTokenUrl()
 		);
 		actions.add(action);
 		return this;
