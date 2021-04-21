@@ -129,7 +129,7 @@ public class HighLevelApiHandlerTest {
 		when(highLevelApiService.getTokenDescription(any(Rri.class)))
 			.thenReturn(buildToken("fyy"));
 
-		var params = jsonArray().put(Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toSpecString(MAGIC));
+		var params = jsonArray().put(Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());
 		var response = handler.handleTokenInfo(requestWith(params));
 		assertNotNull(response);
 
@@ -319,7 +319,7 @@ public class HighLevelApiHandlerTest {
 					.put("from", KNOWN_ADDRESS_STRING)
 					.put("to", toAddress.toString())
 					.put("amount", UInt256.SEVEN)
-					.put("tokenIdentifier", token.toSpecString(MAGIC));
+					.put("tokenIdentifier", token.toString());
 			case 1: //stake
 				return jsonObject()
 					.put("type", ActionType.STAKE)
@@ -359,7 +359,7 @@ public class HighLevelApiHandlerTest {
 	private void validateHistoryEntry(TxHistoryEntry entry, JSONObject historyEntry) {
 		assertEquals(UInt256.ONE, historyEntry.get("fee"));
 		assertEquals(DateTimeFormatter.ISO_INSTANT.format(entry.timestamp()), historyEntry.getString("sentAt"));
-		assertEquals(entry.getTxId(), historyEntry.get("txId"));
+		assertEquals(entry.getTxId(), historyEntry.get("txID"));
 
 		assertTrue(historyEntry.has("actions"));
 		var actions = historyEntry.getJSONArray("actions");

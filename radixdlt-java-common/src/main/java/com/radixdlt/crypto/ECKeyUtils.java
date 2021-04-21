@@ -212,13 +212,10 @@ public class ECKeyUtils {
 	 * @return recoverable signature
 	 */
 	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-		try {
+		return Result.wrap(() -> {
 			var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-
-			return Result.ok(ECDSASignature.create(signature.getR(), signature.getS(), v));
-		} catch (IllegalStateException e) {
-			return Result.fail(e);
-		}
+			return ECDSASignature.create(signature.getR(), signature.getS(), v);
+		});
 	}
 
 	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {

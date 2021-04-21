@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
@@ -86,7 +87,7 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson(magic))
+				description -> response(request, description.asJson())
 			);
 	}
 
@@ -97,7 +98,7 @@ public class HighLevelApiHandler {
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson(magic))
+					description -> response(request, description.asJson())
 				)
 		);
 	}
@@ -182,7 +183,7 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getTransaction(txId)
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				value -> response(request, value.asJson(magic))
+				value -> response(request, value.asJson())
 			);
 	}
 
@@ -225,7 +226,7 @@ public class HighLevelApiHandler {
 			.map(
 				list -> jsonObject()
 					.put("owner", radixAddress.toString())
-					.put("tokenBalances", fromList(list, v -> v.asJson(magic)))
+					.put("tokenBalances", fromList(list, v -> v.asJson()))
 			);
 	}
 
@@ -240,7 +241,7 @@ public class HighLevelApiHandler {
 			.map(
 				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
 					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
-					.put("transactions", fromList(transactions, entry -> entry.asJson(magic)))))
+					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
 			);
 	}
 

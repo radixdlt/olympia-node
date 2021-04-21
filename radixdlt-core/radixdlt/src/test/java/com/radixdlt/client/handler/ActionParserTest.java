@@ -44,7 +44,7 @@ public class ActionParserTest {
 	@Test
 	public void transferActionIsParsedCorrectly() {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"tokenIdentifier\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri.toSpecString(MAGIC))).orElseThrow();
+		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
 		ActionParser.parse(actions)
 			.onFailure(this::fail)

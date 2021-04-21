@@ -17,11 +17,11 @@
 
 package com.radixdlt.identifiers;
 
+import org.bitcoinj.core.Bech32;
+
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Bits;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.functional.Result;
-import org.bitcoinj.core.Bech32;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -120,40 +120,8 @@ public final class Rri {
 		return create(hash, d.hrp.substring(0, d.hrp.length() - 3));
 	}
 
-	// TODO: remove
-	public String toSpecString(byte magic) {
-		if (hash.length == 0) {
-			return "//" + name.toUpperCase();
-		} else {
-			try {
-				var address = new RadixAddress(magic, ECPublicKey.fromBytes(hash));
-				return "/" + address + "/" + name.toUpperCase();
-			} catch (PublicKeyException e) {
-				throw new IllegalStateException();
-			}
-		}
-	}
-
-	// TODO: remove
 	public static Result<Rri> fromSpecString(String s) {
-		var split = s.split("/", 3);
-
-		if (split.length != 3 || split[0].length() != 0) {
-			return Result.fail("RRI has invalid format");
-		}
-
-		var name = split[2].toLowerCase();
-
-		if (!NAME_PATTERN.matcher(name).matches()) {
-			return Result.fail("RRI name is invalid");
-		}
-
-		if (split[1].length() == 0) {
-			return Result.ok(Rri.ofSystem(name));
-		} else {
-			return RadixAddress.fromString(split[1])
-				.map(address -> create(address.getPublicKey().getCompressedBytes(), name));
-		}
+		return Result.wrap(() -> fromBech32(s));
 	}
 
 	@Override

@@ -230,12 +230,23 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				ELAPSED_APIDB_TOKEN_READ
 			);
 
-			if (status != OperationStatus.SUCCESS) {
-				return Result.fail("Unknown RRI " + rri.toString());
-			}
+			do {
+				if (status != OperationStatus.SUCCESS) {
+					return Result.fail("Unknown RRI " + rri.toString());
+				}
 
-			return restore(serialization, data.getData(), TokenDefinitionRecord.class);
+				var definition = restore(serialization, data.getData(), TokenDefinitionRecord.class)
+					.filter(def -> def.getName().equals(rri.getName()), "Name not matched");
+
+				if (definition.isSuccess()) {
+					return definition;
+				}
+
+				status = cursor.getNext(key, data, null);
+			} while (status == OperationStatus.SUCCESS);
 		}
+
+		return Result.fail("Unknown RRI " + rri.toString());
 	}
 
 	@Override
@@ -612,7 +623,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error while storing token definition {}", tokenDefinition.asJson(universeMagic));
+			log.error("Error while storing token definition {}", tokenDefinition.asJson());
 		}
 	}
 

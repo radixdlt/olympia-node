@@ -98,12 +98,7 @@ public final class RadixAddress {
 	}
 
 	public static Result<RadixAddress> fromString(String address) {
-		try {
-			byte[] raw = Base58.fromBase58(address);
-			return Result.ok(from(raw));
-		} catch (Exception e) {
-			return Result.fail(e);
-		}
+		return Result.wrap(() -> from(Base58.fromBase58(address)));
 	}
 
 	public byte[] toByteArray() {

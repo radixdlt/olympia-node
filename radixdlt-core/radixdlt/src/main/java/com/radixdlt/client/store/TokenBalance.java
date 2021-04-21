@@ -98,7 +98,7 @@ public class TokenBalance {
 		return rri + " = " + amount;
 	}
 
-	public JSONObject asJson(byte magic) {
-		return jsonObject().put("rri", rri.toSpecString(magic)).put("amount", amount.toString());
+	public JSONObject asJson() {
+		return jsonObject().put("rri", rri.toString()).put("amount", amount.toString());
 	}
 }
