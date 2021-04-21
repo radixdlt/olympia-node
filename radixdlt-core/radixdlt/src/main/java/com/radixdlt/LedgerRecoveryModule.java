@@ -33,7 +33,9 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.AtomsCommittedToLedger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
@@ -54,11 +56,15 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	LedgerProof lastStoredProof(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		CommittedReader committedReader,
-		@Genesis VerifiedTxnsAndProof genesis
+		@Genesis VerifiedTxnsAndProof genesis,
+		EventDispatcher<AtomsCommittedToLedger> committedDispatcher // FIXME: this is hack so client can get genesis
 	) {
 		return committedReader.getLastProof().orElseGet(() -> {
+			var txns = genesis.getTxns();
+			var proof = LedgerAndBFTProof.create(genesis.getProof());
 			try {
-				radixEngine.execute(genesis.getTxns(), LedgerAndBFTProof.create(genesis.getProof()), PermissionLevel.SYSTEM);
+				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
+				committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, parsed));
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException();
 			}
