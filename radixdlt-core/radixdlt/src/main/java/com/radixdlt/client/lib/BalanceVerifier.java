@@ -17,6 +17,8 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt384;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -74,12 +76,12 @@ public class BalanceVerifier {
 		client.callTokenBalances(key).onSuccess(balances -> printBalances(key, balances));
 	}
 
-	private void printBalances(ECPublicKey publicKey, List<TokenBalance> balances) {
+	private void printBalances(ECPublicKey publicKey, List<Pair<String, UInt384>> balances) {
 		System.out.println("Owner: " + publicKey.toString());
 		if (balances.isEmpty()) {
 			System.out.println("(empty balances)");
 		} else {
-			balances.forEach(balance -> System.out.printf("    %s : %s", balance.getRri(), balance.getAmount()));
+			balances.forEach(balance -> System.out.printf("    %s : %s", balance.getFirst(), balance.getSecond()));
 		}
 		System.out.println();
 	}

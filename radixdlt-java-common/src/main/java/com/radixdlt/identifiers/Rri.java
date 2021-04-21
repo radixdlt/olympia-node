@@ -107,10 +107,6 @@ public final class Rri {
 		return create(hash, d.hrp.substring(0, d.hrp.length() - 3));
 	}
 
-	public static Result<Rri> fromSpecString(String s) {
-		return Result.wrap(() -> fromBech32(s));
-	}
-
 	@Override
 	public String toString() {
 		final byte[] convert;

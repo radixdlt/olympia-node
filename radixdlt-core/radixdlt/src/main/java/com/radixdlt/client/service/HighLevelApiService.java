@@ -18,6 +18,9 @@
 package com.radixdlt.client.service;
 
 import com.google.inject.Inject;
+import com.radixdlt.client.api.ActionType;
+import com.radixdlt.client.api.TransactionAction;
+import com.radixdlt.client.handler.ActionParser;
 import com.radixdlt.client.store.ClientApiStore;
 import com.radixdlt.client.store.TokenBalance;
 import com.radixdlt.client.store.TokenDefinitionRecord;
@@ -30,12 +33,16 @@ import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static com.radixdlt.utils.functional.Tuple.tuple;
+import static org.radix.api.jsonrpc.JsonRpcUtil.safeString;
 
 public class HighLevelApiService {
 
@@ -65,6 +72,10 @@ public class HighLevelApiService {
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
 		return clientApiStore.getTokenDefinition(Rri.NATIVE_TOKEN)
 			.flatMap(r -> clientApiStore.getTokenSupply(Rri.NATIVE_TOKEN).map(r::withSupply));
+	}
+
+	public Result<List<TransactionAction>> parse(JSONArray actions) {
+		return ActionParser.parse(actions, clientApiStore);
 	}
 
 	public Result<TokenDefinitionRecord> getTokenDescription(String rri) {

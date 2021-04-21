@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.lib;
 
+import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -85,7 +86,7 @@ public class NodeClient {
 		return Result.ok(new NodeClient(baseUrl)).flatMap(NodeClient::tryConnect);
 	}
 
-	public Result<List<TokenBalance>> callTokenBalances(ECPublicKey publicKey) {
+	public Result<List<Pair<String, UInt384>>> callTokenBalances(ECPublicKey publicKey) {
 		var params = jsonArray().put(toAddress(publicKey).toString());
 
 		return call("tokenBalances", params)
@@ -121,21 +122,21 @@ public class NodeClient {
 			.put("params", params);
 	}
 
-	private List<TokenBalance> parseTokenBalances(JSONObject json) {
+	private List<Pair<String, UInt384>> parseTokenBalances(JSONObject json) {
 		return ofNullable(json.optJSONArray("tokenBalances"))
 			.map(this::parseTokenBalanceEntries)
 			.orElseGet(List::of);
 	}
 
-	private List<TokenBalance> parseTokenBalanceEntries(JSONArray array) {
-		var list = new ArrayList<TokenBalance>();
+	private List<Pair<String, UInt384>> parseTokenBalanceEntries(JSONArray array) {
+		var list = new ArrayList<Pair<String, UInt384>>();
 
 		array.forEach(
 			obj ->
 				ifIsA(
 					obj, JSONObject.class,
 					object -> allOf(rri(object), uint384(object, "amount"))
-						.map(TokenBalance::create).ifPresent(list::add)
+						.map(Pair::of).ifPresent(list::add)
 				)
 		);
 
@@ -156,8 +157,8 @@ public class NodeClient {
 		return ofNullable(object.optString(name));
 	}
 
-	private static Optional<Rri> rri(JSONObject object) {
-		return string(object, "rri").flatMap(value -> Rri.fromSpecString(value).toOptional());
+	private static Optional<String> rri(JSONObject object) {
+		return string(object, "rri");
 	}
 
 	private static Optional<UInt384> uint384(JSONObject object, String name) {

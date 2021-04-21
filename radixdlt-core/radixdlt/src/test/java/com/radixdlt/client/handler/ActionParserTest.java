@@ -17,7 +17,10 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.store.ClientApiStore;
+import com.radixdlt.utils.functional.Result;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECKeyPair;
@@ -29,6 +32,9 @@ import com.radixdlt.utils.functional.Failure;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.radix.api.jsonrpc.JsonRpcUtil.jsonArray;
 
 import static com.radixdlt.client.api.ActionType.STAKE;
@@ -40,13 +46,20 @@ public class ActionParserTest {
 	private final RadixAddress from = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final RadixAddress to = new RadixAddress(MAGIC, ECKeyPair.generateNew().getPublicKey());
 	private final Rri rri = Rri.of(ECKeyPair.generateNew().getPublicKey(), "ckee");
+	private ClientApiStore clientApiStore;
+
+	@Before
+	public void setup() {
+		this.clientApiStore = mock(ClientApiStore.class);
+		when(clientApiStore.parseRri(any())).thenReturn(Result.ok(rri));
+	}
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"tokenIdentifier\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -67,8 +80,7 @@ public class ActionParserTest {
 	public void stakeActionIsParsedCorrectly() {
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
-
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -89,7 +101,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -110,7 +122,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"MintTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}
@@ -120,7 +132,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"CreateTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}
@@ -130,7 +142,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"abc%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri)).orElseThrow();
 
-		ActionParser.parse(actions)
+		ActionParser.parse(actions, clientApiStore)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}

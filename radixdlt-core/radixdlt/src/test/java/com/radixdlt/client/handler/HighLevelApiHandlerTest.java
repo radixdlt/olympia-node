@@ -192,33 +192,6 @@ public class HighLevelApiHandlerTest {
 	}
 
 	@Test
-	public void testBuildTransaction() {
-		when(submissionService.prepareTransaction(any()))
-			.thenReturn(Result.ok(PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.EIGHT)));
-
-		var actions = jsonArray().put(randomAction()).put(randomAction()).put(randomAction());
-		var params = jsonArray().put(actions).put("message text");
-		var request = requestWith(params);
-
-		var response = handler.handleBuildTransaction(request);
-
-		assertNotNull(response);
-		assertTrue(response.has("result"));
-
-		var result = response.getJSONObject("result");
-
-		assertTrue(result.has("fee"));
-		assertEquals("8", result.get("fee"));
-
-		assertTrue(result.has("transaction"));
-
-		var transaction = result.getJSONObject("transaction");
-
-		assertTrue(transaction.has("blob"));
-		assertTrue(transaction.has("hashOfBlobToSign"));
-	}
-
-	@Test
 	public void testFinalizeTransaction() {
 		var aid = AID.from(randomBytes());
 

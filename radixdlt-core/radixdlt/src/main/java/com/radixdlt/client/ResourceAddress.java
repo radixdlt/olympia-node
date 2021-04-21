@@ -25,7 +25,20 @@ import com.radixdlt.utils.functional.Result;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-public class ResourceAddress {
+public final class ResourceAddress {
+	public static Rri parseUnchecked(String rri) {
+		var data = Bech32.decode(rri);
+		if (!data.hrp.endsWith("_rr")) {
+			throw new IllegalArgumentException();
+		}
+		var hash = data.data;
+		if (hash.length > 0) {
+			hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
+		}
+		var symbol = data.hrp.substring(0, data.hrp.length() - 3);
+		return Rri.of(hash, symbol);
+	}
+
 	public static Result<Pair<String, Rri>> parse(String rri) {
 		try {
 			var data = Bech32.decode(rri);

@@ -127,7 +127,7 @@ public class HighLevelApiHandler {
 
 	public JSONObject handleBuildTransaction(JSONObject request) {
 		return withRequiredArrayParameter(request, (params, actions) ->
-			ActionParser.parse(actions)
+			highLevelApiService.parse(actions)
 				.map(steps ->
 					params.length() == 1 ? steps : ImmutableList.<TransactionAction>builder()
 						.addAll(steps)

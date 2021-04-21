@@ -17,6 +17,7 @@
 
 package com.radixdlt.client.handler;
 
+import com.radixdlt.client.store.ClientApiStore;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -40,7 +41,7 @@ public final class ActionParser {
 
 	private ActionParser() { }
 
-	public static Result<List<TransactionAction>> parse(JSONArray actions) {
+	public static Result<List<TransactionAction>> parse(JSONArray actions, ClientApiStore clientApiStore) {
 		var list = new ArrayList<TransactionAction>();
 
 		for (var o : actions) {
@@ -55,7 +56,7 @@ public final class ActionParser {
 					.flatMap(ActionType::fromString),
 				"Action type is missing or can not be parsed in {0}", element
 			)
-				.flatMap(type -> parseByType(type, element))
+				.flatMap(type -> parseByType(type, element, clientApiStore))
 				.onSuccess(list::add);
 
 			if (!result.isSuccess()) {
@@ -65,7 +66,7 @@ public final class ActionParser {
 		return Result.ok(list);
 	}
 
-	private static Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
+	private static Result<TransactionAction> parseByType(ActionType type, JSONObject element, ClientApiStore clientApiStore) {
 		var typeResult = Result.ok(type);
 
 		switch (type) {
@@ -75,7 +76,7 @@ public final class ActionParser {
 					from(element),
 					to(element),
 					amount(element),
-					rri(element)
+					rri(element, clientApiStore)
 				).map(TransactionAction::create);
 
 			case UNSTAKE:
@@ -111,9 +112,9 @@ public final class ActionParser {
 			.orElseGet(() -> fail(element, "amount"));
 	}
 
-	private static Result<Optional<Rri>> rri(JSONObject element) {
+	private static Result<Optional<Rri>> rri(JSONObject element, ClientApiStore clientApiStore) {
 		return Result.fromOptional(safeString(element, "tokenIdentifier"), "Field tokenIdentifier is missing in {0}", element)
-			.flatMap(Rri::fromSpecString)
+			.flatMap(clientApiStore::parseRri)
 			.map(Optional::of);
 	}
 

@@ -37,6 +37,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.client.ResourceAddress;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -173,7 +174,7 @@ public final class NodeController implements Controller {
 				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
 			}
 			case "TransferTokens": {
-				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -181,7 +182,7 @@ public final class NodeController implements Controller {
 				return new TransferToken(rri, to, subunits);
 			}
 			case "MintTokens": {
-				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -189,7 +190,7 @@ public final class NodeController implements Controller {
 				return new MintToken(rri, to, subunits);
 			}
 			case "BurnTokens": {
-				var rri = Rri.fromBech32(paramsObject.getString("rri"));
+				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new BurnToken(rri, subunits);
