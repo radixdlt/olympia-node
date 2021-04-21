@@ -17,12 +17,14 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.crypto.HashUtils;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -35,7 +37,7 @@ public final class Rri {
 	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
 	public static final Rri NATIVE_TOKEN;
-	public static final int HASH_BYTES = 33;
+	public static final int HASH_BYTES = 26;
 
 	static {
 		 NATIVE_TOKEN = ofSystem("xrd");
@@ -58,8 +60,6 @@ public final class Rri {
 		return new Rri(hash, name);
 	}
 
-	// TODO: reenable this code when rri bech32 supported
-	/*
 	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
 		var nameBytes = name.getBytes(StandardCharsets.UTF_8);
 		var dataToHash = new byte[33 + nameBytes.length];
@@ -67,12 +67,7 @@ public final class Rri {
 		System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
 		var firstHash = HashUtils.sha256(dataToHash);
 		var secondHash = HashUtils.sha256(firstHash.asBytes());
-		return Arrays.copyOfRange(secondHash.asBytes(), 12, 32);
-	}
-	 */
-
-	private static byte[] pkToHash(String name, ECPublicKey publicKey) {
-		return publicKey.getCompressedBytes();
+		return Arrays.copyOfRange(secondHash.asBytes(), 32 - HASH_BYTES, 32);
 	}
 
 	public boolean ownedBy(ECPublicKey publicKey) {
