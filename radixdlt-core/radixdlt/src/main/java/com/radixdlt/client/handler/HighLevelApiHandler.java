@@ -17,8 +17,6 @@
 
 package com.radixdlt.client.handler;
 
-import com.radixdlt.client.ValidatorAddress;
-import com.radixdlt.serialization.DeserializeException;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 import org.radix.api.jsonrpc.JsonRpcUtil;
@@ -26,8 +24,8 @@ import org.radix.api.jsonrpc.JsonRpcUtil.RpcError;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.client.api.TransactionAction;
-import com.radixdlt.client.api.TxHistoryEntry;
 import com.radixdlt.client.api.ValidatorInfoDetails;
 import com.radixdlt.client.service.HighLevelApiService;
 import com.radixdlt.client.service.SubmissionService;
@@ -40,6 +38,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.Rri;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -63,6 +62,7 @@ public class HighLevelApiHandler {
 	private final TransactionStatusService transactionStatusService;
 	private final SubmissionService submissionService;
 	private final ValidatorInfoService validatorInfoService;
+	private final byte magic;
 
 	@Inject
 	public HighLevelApiHandler(
@@ -75,17 +75,18 @@ public class HighLevelApiHandler {
 		this.transactionStatusService = transactionStatusService;
 		this.submissionService = submissionService;
 		this.validatorInfoService = validatorInfoService;
+		this.magic = (byte) highLevelApiService.getUniverseMagic();
 	}
 
 	public JSONObject handleUniverseMagic(JSONObject request) {
-		return response(request, jsonObject().put("networkId", highLevelApiService.getUniverseMagic()));
+		return response(request, jsonObject().put("networkId", magic));
 	}
 
 	public JSONObject handleNativeToken(JSONObject request) {
 		return highLevelApiService.getNativeTokenDescription()
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
+				description -> response(request, description.asJson(magic))
 			);
 	}
 
@@ -96,7 +97,7 @@ public class HighLevelApiHandler {
 				.flatMap(highLevelApiService::getTokenDescription)
 				.fold(
 					failure -> toErrorResponse(request, failure),
-					description -> response(request, description.asJson((byte) highLevelApiService.getUniverseMagic()))
+					description -> response(request, description.asJson(magic))
 				)
 		);
 	}
@@ -181,7 +182,7 @@ public class HighLevelApiHandler {
 		return highLevelApiService.getTransaction(txId)
 			.fold(
 				failure -> toErrorResponse(request, failure),
-				value -> response(request, value.asJson())
+				value -> response(request, value.asJson(magic))
 			);
 	}
 
@@ -220,8 +221,6 @@ public class HighLevelApiHandler {
 	}
 
 	private Result<JSONObject> formatTokenBalances(RadixAddress radixAddress) {
-		var magic = (byte) highLevelApiService.getUniverseMagic();
-
 		return highLevelApiService.getTokenBalances(radixAddress)
 			.map(
 				list -> jsonObject()
@@ -241,7 +240,7 @@ public class HighLevelApiHandler {
 			.map(
 				tuple -> tuple.map((cursor, transactions) -> response(request, jsonObject()
 					.put("cursor", cursor.map(HighLevelApiHandler::asCursor).orElse(""))
-					.put("transactions", fromList(transactions, TxHistoryEntry::asJson))))
+					.put("transactions", fromList(transactions, entry -> entry.asJson(magic)))))
 			);
 	}
 
