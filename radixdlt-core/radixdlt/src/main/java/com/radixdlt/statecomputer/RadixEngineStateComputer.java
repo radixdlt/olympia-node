@@ -296,11 +296,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 
-		// Don't send event on genesis
-		// TODO: this is a bit hacky
-		if (verifiedTxnsAndProof.getProof().getStateVersion() > 0) {
-			var txns = verifiedTxnsAndProof.getTxns();
-			committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, txCommitted));
-		}
+		var txns = verifiedTxnsAndProof.getTxns();
+		committedDispatcher.dispatch(AtomsCommittedToLedger.create(txns, txCommitted));
 	}
 }
