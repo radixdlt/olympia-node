@@ -34,9 +34,10 @@ public final class ResourceAddress {
 		var hash = data.data;
 		if (hash.length > 0) {
 			hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
+		} else {
+			return Rri.ofNativeToken();
 		}
-		var symbol = data.hrp.substring(0, data.hrp.length() - 3);
-		return Rri.of(hash, symbol);
+		return Rri.of(hash);
 	}
 
 	public static Result<Pair<String, Rri>> parse(String rri) {
@@ -50,7 +51,7 @@ public final class ResourceAddress {
 				hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
 			}
 			var symbol = data.hrp.substring(0, data.hrp.length() - 3);
-			return Result.ok(Pair.of(symbol, Rri.of(hash, symbol)));
+			return Result.ok(Pair.of(symbol, Rri.of(hash)));
 		} catch (AddressFormatException e) {
 			return Result.fail(e);
 		}

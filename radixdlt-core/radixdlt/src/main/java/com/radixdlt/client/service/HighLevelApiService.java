@@ -70,8 +70,8 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return clientApiStore.getTokenDefinition(Rri.NATIVE_TOKEN)
-			.flatMap(r -> clientApiStore.getTokenSupply(Rri.NATIVE_TOKEN).map(r::withSupply));
+		return clientApiStore.getTokenDefinition(Rri.ofNativeToken())
+			.flatMap(r -> clientApiStore.getTokenSupply(Rri.ofNativeToken()).map(r::withSupply));
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {

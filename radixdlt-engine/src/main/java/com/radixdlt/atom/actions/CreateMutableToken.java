@@ -77,17 +77,17 @@ public final class CreateMutableToken implements TxAction {
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		final var tokenRRI = txBuilder.getAddress().map(a -> Rri.of(a.getPublicKey(), symbol))
-			.orElse(Rri.ofSystem(symbol));
+		final var reAddress = txBuilder.getAddress().map(a -> Rri.of(a.getPublicKey(), symbol))
+			.orElse(Rri.ofNativeToken());
 
 		txBuilder.down(
 			RRIParticle.class,
-			p -> p.getRri().equals(tokenRRI),
-			Optional.of(new RRIParticle(tokenRRI)),
+			p -> p.getRri().equals(reAddress),
+			Optional.of(new RRIParticle(reAddress, symbol)),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(
-			tokenRRI,
+			reAddress,
 			name,
 			getDescription(),
 			getIconUrl(),

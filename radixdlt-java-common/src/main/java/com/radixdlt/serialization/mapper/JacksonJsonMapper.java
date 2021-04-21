@@ -43,6 +43,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -108,7 +109,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addSerializer(Rri.class, new JacksonJsonObjectStringSerializer<>(
 				Rri.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				Rri::toString
+				rri -> Hex.toHexString(rri.getHash())
 		));
 		jsonModule.addSerializer(AID.class, new JacksonJsonObjectStringSerializer<>(
 				AID.class,
@@ -150,7 +151,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addDeserializer(Rri.class, new JacksonJsonObjectStringDeserializer<>(
 				Rri.class,
 				JacksonCodecConstants.RRI_STR_VALUE,
-				Rri::fromBech32
+				s -> Rri.of(Hex.decode(s))
 		));
 		jsonModule.addDeserializer(AID.class, new JacksonJsonObjectStringDeserializer<>(
 				AID.class,

@@ -26,9 +26,11 @@ import com.radixdlt.identifiers.Rri;
 
 public final class RRIParticle implements Particle {
 	private final Rri rri;
+	private final String name;
 
-	public RRIParticle(Rri rri) {
+	public RRIParticle(Rri rri, String name) {
 		this.rri = rri;
+		this.name = name;
 	}
 
 	public Rri getRri() {
@@ -36,7 +38,7 @@ public final class RRIParticle implements Particle {
 	}
 
 	public String getName() {
-		return rri.getName();
+		return name;
 	}
 
 	public boolean ownedBy(ECPublicKey publicKey) {
@@ -44,7 +46,7 @@ public final class RRIParticle implements Particle {
 			return false;
 		}
 
-		return Arrays.equals(rri.getHash(), Rri.pkToHash(rri.getName(), publicKey));
+		return Arrays.equals(rri.getHash(), Rri.pkToHash(name, publicKey));
 	}
 
 	@Override
@@ -58,12 +60,13 @@ public final class RRIParticle implements Particle {
 			return false;
 		}
 		final var that = (RRIParticle) obj;
-		return Objects.equals(this.rri, that.rri);
+		return Objects.equals(this.rri, that.rri)
+			&& Objects.equals(this.name, that.name);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s)]",
-			getClass().getSimpleName(), rri);
+		return String.format("%s[(%s)(%s)]",
+			getClass().getSimpleName(), rri, name);
 	}
 }

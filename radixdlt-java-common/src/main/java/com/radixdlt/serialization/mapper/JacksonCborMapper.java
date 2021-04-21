@@ -110,7 +110,7 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addSerializer(Rri.class, new JacksonCborObjectBytesSerializer<>(
 				Rri.class,
 				JacksonCodecConstants.RRI_VALUE,
-				id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
+				Rri::getHash
 		));
 		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<>(
 				AID.class,
@@ -164,7 +164,7 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addDeserializer(Rri.class, new JacksonCborObjectBytesDeserializer<>(
 				Rri.class,
 				JacksonCodecConstants.RRI_VALUE,
-				b -> Rri.fromBech32(new String(b, RadixConstants.STANDARD_CHARSET))
+				Rri::of
 		));
 		cborModule.addDeserializer(AID.class, new JacksonCborObjectBytesDeserializer<>(
 				AID.class,

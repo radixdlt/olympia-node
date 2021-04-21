@@ -165,7 +165,7 @@ public final class RadixUniverse {
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-		this.nativeToken = Rri.ofSystem("XRD");
+		this.nativeToken = Rri.ofNativeToken();
 		this.atomStore = atomStore;
 		this.puller = new RadixAtomPuller(networkController);
 	}

@@ -53,7 +53,7 @@ public class StakedTokensTest {
 
 	@Before
 	public void setup() throws Exception {
-		this.tokenRri = Rri.ofSystem("xrd");
+		this.tokenRri = Rri.ofNativeToken();
 
 		final var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new ValidatorConstraintScrypt());

@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.client.ResourceAddress;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -440,16 +441,16 @@ public final class GenerateUniverses {
 		final Serialization serialization = DefaultSerialization.getInstance();
 		if (!suppressDson) {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			Rri tokenRri = Rri.ofSystem(TokenDefinitionUtils.getNativeTokenShortCode());
+			var xrd = ResourceAddress.of("xrd", Rri.ofNativeToken());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
-				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
+				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", xrd);
 				System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
 			} else if (isHelmOrAwsOutuput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				Map<String, Map<String, Object>> config = new HashMap<>();
 				Map<String, Object> universe = new HashMap<>();
 				universe.put("type", type);
-				universe.put("token", tokenRri.toString());
+				universe.put("token", xrd);
 
 				JSONObject universeJson = new JSONObject(serialization.toJson(u, Output.WIRE));
 				universe.put("value", universeJson.toString());

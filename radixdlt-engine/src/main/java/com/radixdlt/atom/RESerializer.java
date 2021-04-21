@@ -145,7 +145,6 @@ public final class RESerializer {
 		if (!rri.isSystem()) {
 			buf.put(rri.getHash());
 		}
-		serializeString(buf, rri.getName());
 	}
 
 	public static Rri deserializeRri(ByteBuffer buf) {
@@ -155,24 +154,24 @@ public final class RESerializer {
 		}
 		var isSystem = v == 0;
 		if (isSystem) {
-			var name = deserializeString(buf);
-			return Rri.ofSystem(name);
+			return Rri.ofNativeToken();
 		} else {
 			var hash = new byte[Rri.HASH_BYTES];
 			buf.get(hash);
-			var name = deserializeString(buf);
-			return Rri.of(hash, name);
+			return Rri.of(hash);
 		}
 	}
 
 	private static void serializeData(RRIParticle rriParticle, ByteBuffer buf) {
 		var rri = rriParticle.getRri();
 		serializeRri(buf, rri);
+		serializeString(buf, rriParticle.getName());
 	}
 
 	private static RRIParticle deserializeRRIParticle(ByteBuffer buf) {
 		var rri = deserializeRri(buf);
-		return new RRIParticle(rri);
+		var name = deserializeString(buf);
+		return new RRIParticle(rri, name);
 	}
 
 	private static void serializeData(SystemParticle systemParticle, ByteBuffer buf) {

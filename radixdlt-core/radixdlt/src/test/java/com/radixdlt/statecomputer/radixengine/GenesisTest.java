@@ -80,7 +80,7 @@ public class GenesisTest {
 		// Arrange
 		createInjector().injectMembers(this);
 
-		var p = immutableIndex.loadRri(null, Rri.NATIVE_TOKEN);
+		var p = immutableIndex.loadRri(null, Rri.ofNativeToken());
 		assertThat(p)
 			.hasValueSatisfying(particle -> {
 				var tok = (TokenDefinitionParticle) particle;

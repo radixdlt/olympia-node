@@ -19,6 +19,7 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.client.ResourceAddress;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
@@ -132,7 +133,7 @@ public class TokenDefinitionRecord {
 		if (user != null) {
 			rri = Rri.of(user.getPublicKey(), createFixedToken.getSymbol());
 		} else {
-			rri = Rri.ofSystem(createFixedToken.getSymbol());
+			rri = Rri.ofNativeToken();
 		}
 		return create(
 			createFixedToken.getSymbol(),
@@ -151,7 +152,7 @@ public class TokenDefinitionRecord {
 		if (user != null) {
 			rri = Rri.of(user.getPublicKey(), createMutableToken.getSymbol());
 		} else {
-			rri = Rri.ofSystem(createMutableToken.getSymbol());
+			rri = Rri.ofNativeToken();
 		}
 		return create(
 			createMutableToken.getSymbol(),
@@ -168,7 +169,7 @@ public class TokenDefinitionRecord {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", rri.toString())
+			.put("rri", ResourceAddress.of(symbol, rri))
 			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)

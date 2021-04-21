@@ -97,8 +97,9 @@ public class MempoolTest {
 	private static Txn createTxn(ECKeyPair keyPair, int numParticles) {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
-			var rri = Rri.of(keyPair.getPublicKey(), "test" + (char) ('c' + i));
-			var rriParticle = new RRIParticle(rri);
+			var symbol = "test" + (char) ('c' + i);
+			var rri = Rri.of(keyPair.getPublicKey(), symbol);
+			var rriParticle = new RRIParticle(rri, symbol);
 			UniqueParticle uniqueParticle = new UniqueParticle(rri);
 			atomBuilder
 				.virtualDown(rriParticle)

@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import com.radixdlt.constraintmachine.Particle;
+
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +39,8 @@ import java.util.stream.Collectors;
 // FIXME: rawtypes
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
+	private static final String NAME_REGEX = "[a-z0-9]+";
+	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
 		.staticValidation(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
@@ -45,7 +49,12 @@ public final class CMAtomOS {
 		.build();
 
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
-		.staticValidation(rri -> Result.success())
+		.staticValidation(rri -> {
+			if (!NAME_PATTERN.matcher(rri.getName()).matches()) {
+				return Result.error("invalid rri name");
+			}
+			return Result.success();
+		})
 		.rriMapper(RRIParticle::getRri)
 		.virtualizeUp(v -> true)
 		.allowTransitionsFromOutsideScrypts()

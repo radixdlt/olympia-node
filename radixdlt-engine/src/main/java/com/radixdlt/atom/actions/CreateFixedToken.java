@@ -90,7 +90,7 @@ public class CreateFixedToken implements TxAction {
 		txBuilder.down(
 			RRIParticle.class,
 			p -> p.getRri().equals(tokenRri),
-			Optional.of(new RRIParticle(tokenRri)),
+			Optional.of(new RRIParticle(tokenRri, symbol.toLowerCase())),
 			"RRI not available"
 		);
 		txBuilder.up(new TokenDefinitionParticle(

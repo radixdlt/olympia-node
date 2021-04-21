@@ -39,7 +39,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> Rri.NATIVE_TOKEN)
+				.rriMapper(p -> Rri.ofNativeToken())
 				.build()
 		);
 

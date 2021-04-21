@@ -404,7 +404,7 @@ public final class TxBuilder {
 		swap(
 			RRIParticle.class,
 			p -> p.getRri().equals(rri),
-			Optional.of(new RRIParticle(rri)),
+			Optional.of(new RRIParticle(rri, id)),
 			"RRI not available"
 		).with(r -> new UniqueParticle(rri));
 

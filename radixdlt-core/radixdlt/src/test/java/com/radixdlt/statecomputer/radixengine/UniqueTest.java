@@ -71,7 +71,7 @@ public final class UniqueTest {
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
 		var rri = Rri.of(keyPair.getPublicKey(), "test");
-		var rriParticle = new RRIParticle(rri);
+		var rriParticle = new RRIParticle(rri, "test");
 		var uniqueParticle = new UniqueParticle(rri);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()
 			.virtualDown(rriParticle)

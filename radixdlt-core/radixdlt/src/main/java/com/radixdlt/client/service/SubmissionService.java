@@ -84,7 +84,7 @@ public final class SubmissionService {
 	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
 		return Stream.concat(
 			steps.stream().map(TransactionAction::toAction),
-			Stream.of(new BurnToken(Rri.NATIVE_TOKEN, fixedFee))
+			Stream.of(new BurnToken(Rri.ofNativeToken(), fixedFee))
 		).collect(Collectors.toList());
 	}
 

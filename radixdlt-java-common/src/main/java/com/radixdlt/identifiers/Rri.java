@@ -23,6 +23,7 @@ import org.bitcoinj.core.Bech32;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.functional.Result;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -33,31 +34,15 @@ import java.util.regex.Pattern;
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class Rri {
-	private static final String NAME_REGEX = "[a-z0-9]+";
-	private static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
-
-	public static final Rri NATIVE_TOKEN;
 	public static final int HASH_BYTES = 26;
-
-	static {
-		 NATIVE_TOKEN = ofSystem("xrd");
-	}
-
 	private final byte[] hash;
-	private final String name;
 
-	Rri(byte[] hash, String name) {
+	Rri(byte[] hash) {
 		this.hash = hash;
-		this.name = name;
 	}
 
-	private static Rri create(byte[] hash, String name) {
-		if (!NAME_PATTERN.matcher(name).matches()) {
-			throw new IllegalArgumentException("RRI name invalid, must match regex '" + NAME_REGEX + "': " + name);
-		}
-		Objects.requireNonNull(hash);
-
-		return new Rri(hash, name);
+	private static Rri create(byte[] hash) {
+		return new Rri(hash);
 	}
 
 	public static byte[] pkToHash(String name, ECPublicKey publicKey) {
@@ -78,44 +63,22 @@ public final class Rri {
 		return hash;
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public static Rri of(byte[] hash, String name) {
-		return create(hash, name);
+	public static Rri of(byte[] hash) {
+		return new Rri(hash);
 	}
 
 	public static Rri of(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
-		return create(pkToHash(name, key), name);
+		return create(pkToHash(name, key));
 	}
 
-	public static Rri ofSystem(String name) {
-		return create(new byte[0], name);
-	}
-
-	public static Rri fromBech32(String s) {
-		var d = Bech32.decode(s);
-		var hash = d.data;
-		if (hash.length > 0) {
-			hash = Bits.convertBits(hash, 0, hash.length, 5, 8, false);
-		}
-		if (!d.hrp.endsWith("_rr")) {
-			throw new IllegalArgumentException("Rri must end in _rr");
-		}
-		return create(hash, d.hrp.substring(0, d.hrp.length() - 3));
+	public static Rri ofNativeToken() {
+		return create(new byte[0]);
 	}
 
 	@Override
 	public String toString() {
-		final byte[] convert;
-		if (hash.length != 0) {
-			convert = Bits.convertBits(hash, 0, hash.length, 8, 5, true);
-		} else {
-			convert = hash;
-		}
-		return Bech32.encode(name.toLowerCase() + "_rr", convert);
+		return Hex.toHexString(this.hash);
 	}
 
 	@Override
@@ -125,12 +88,11 @@ public final class Rri {
 		}
 
 		var rri = (Rri) o;
-		return Arrays.equals(rri.hash, hash)
-			&& Objects.equals(rri.name, name);
+		return Arrays.equals(rri.hash, hash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(hash), name);
+		return Arrays.hashCode(hash);
 	}
 }
