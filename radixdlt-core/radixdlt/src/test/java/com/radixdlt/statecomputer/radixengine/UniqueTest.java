@@ -40,7 +40,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
@@ -70,7 +70,7 @@ public final class UniqueTest {
 	}
 
 	private Txn uniqueTxn(ECKeyPair keyPair) {
-		var rri = Rri.of(keyPair.getPublicKey(), "test");
+		var rri = REAddr.of(keyPair.getPublicKey(), "test");
 		var rriParticle = new RRIParticle(rri, "test");
 		var uniqueParticle = new UniqueParticle(rri);
 		var atomBuilder = TxLowLevelBuilder.newBuilder()

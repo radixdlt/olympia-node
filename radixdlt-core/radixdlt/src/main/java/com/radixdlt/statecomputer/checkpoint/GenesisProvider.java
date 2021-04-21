@@ -36,7 +36,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -110,7 +110,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 		var branch = radixEngine.transientBranch();
 		var genesisTxns = new ArrayList<Txn>();
-		var rri = Rri.ofNativeToken();
+		var rri = REAddr.ofNativeToken();
 		try {
 			// Network token
 			var createTokenActions = TxActionListBuilder.create()

@@ -24,7 +24,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -47,7 +47,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
+		REAddr token = REAddr.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createMultiIssuanceToken(
 			token,
 			"RLAU Token Name",
@@ -78,7 +78,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
+		REAddr token = REAddr.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createFixedSupplyToken(
 			token,
 			"RLAU Token Name",
@@ -111,7 +111,7 @@ public class IconUrlTest {
 			.firstOrError()
 			.subscribe(testObserver);
 
-		Rri token = Rri.of(api.getAddress().getPublicKey(), "RLAU");
+		REAddr token = REAddr.of(api.getAddress().getPublicKey(), "RLAU");
 		Result result0 = api.createToken(
 			token,
 			"RLAU Token Name",

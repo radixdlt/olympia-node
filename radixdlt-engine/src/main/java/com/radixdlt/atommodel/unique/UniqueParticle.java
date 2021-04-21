@@ -18,18 +18,18 @@
 package com.radixdlt.atommodel.unique;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
 public final class UniqueParticle implements Particle {
-	private final Rri rri;
+	private final REAddr rri;
 
-	public UniqueParticle(Rri rri) {
+	public UniqueParticle(REAddr rri) {
 		this.rri = Objects.requireNonNull(rri);
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return rri;
 	}
 

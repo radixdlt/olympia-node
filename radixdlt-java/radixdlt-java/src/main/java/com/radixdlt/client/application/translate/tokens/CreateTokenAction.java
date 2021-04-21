@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -35,7 +35,7 @@ public class CreateTokenAction implements Action {
 	}
 
 	private final String name;
-	private final Rri rri;
+	private final REAddr rri;
 	private final String description;
 	private final String iconUrl;
 	private final String url;
@@ -44,7 +44,7 @@ public class CreateTokenAction implements Action {
 	private final TokenSupplyType tokenSupplyType;
 
 	private CreateTokenAction(
-		Rri rri,
+		REAddr rri,
 		String name,
 		String description,
 		String iconUrl,
@@ -75,7 +75,7 @@ public class CreateTokenAction implements Action {
 	}
 
 	public static CreateTokenAction create(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		String iconUrl,
@@ -88,7 +88,7 @@ public class CreateTokenAction implements Action {
 	}
 
 	public static CreateTokenAction create(
-		Rri tokenRri,
+		REAddr tokenRri,
 		String name,
 		String description,
 		BigDecimal initialSupply,
@@ -98,7 +98,7 @@ public class CreateTokenAction implements Action {
 		return create(tokenRri, name, description, null, null, initialSupply, granularity, tokenSupplyType);
 	}
 
-	public Rri getRRI() {
+	public REAddr getRRI() {
 		return rri;
 	}
 

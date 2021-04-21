@@ -37,14 +37,14 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.client.ResourceAddress;
+import com.radixdlt.client.Rri;
 import com.radixdlt.client.ValidatorAddress;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.fees.NativeToken;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -68,7 +68,7 @@ import static org.radix.api.jsonrpc.JsonRpcUtil.jsonObject;
 
 public final class NodeController implements Controller {
 	private static final UInt256 FEE = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(1000));
-	private final Rri nativeToken;
+	private final REAddr nativeToken;
 	private final RadixAddress selfAddress;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ImmutableIndex immutableIndex;
@@ -77,7 +77,7 @@ public final class NodeController implements Controller {
 
 	@Inject
 	public NodeController(
-		@NativeToken Rri nativeToken,
+		@NativeToken REAddr nativeToken,
 		@Self RadixAddress selfAddress,
 		@Self ECPublicKey bftKey,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
@@ -174,7 +174,7 @@ public final class NodeController implements Controller {
 				return new CreateFixedToken(symbol, name, description, iconUrl, url, supply);
 			}
 			case "TransferTokens": {
-				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -182,7 +182,7 @@ public final class NodeController implements Controller {
 				return new TransferToken(rri, to, subunits);
 			}
 			case "MintTokens": {
-				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
 				var addressString = paramsObject.getString("to");
 				var to = RadixAddress.from(addressString);
 				var amountBigInt = paramsObject.getBigInteger("amount");
@@ -190,7 +190,7 @@ public final class NodeController implements Controller {
 				return new MintToken(rri, to, subunits);
 			}
 			case "BurnTokens": {
-				var rri = ResourceAddress.parseUnchecked(paramsObject.getString("rri"));
+				var rri = Rri.parseUnchecked(paramsObject.getString("rri"));
 				var amountBigInt = paramsObject.getBigInteger("amount");
 				var subunits = TokenUnitConversions.unitsToSubunits(new BigDecimal(amountBigInt));
 				return new BurnToken(rri, subunits);

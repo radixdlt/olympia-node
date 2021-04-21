@@ -30,7 +30,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -84,7 +84,7 @@ public final class SubmissionService {
 	private List<TxAction> toActionsAndFee(List<TransactionAction> steps) {
 		return Stream.concat(
 			steps.stream().map(TransactionAction::toAction),
-			Stream.of(new BurnToken(Rri.ofNativeToken(), fixedFee))
+			Stream.of(new BurnToken(REAddr.ofNativeToken(), fixedFee))
 		).collect(Collectors.toList());
 	}
 

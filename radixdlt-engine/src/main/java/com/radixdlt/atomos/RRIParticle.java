@@ -22,18 +22,18 @@ import java.util.Objects;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 public final class RRIParticle implements Particle {
-	private final Rri rri;
+	private final REAddr rri;
 	private final String name;
 
-	public RRIParticle(Rri rri, String name) {
+	public RRIParticle(REAddr rri, String name) {
 		this.rri = rri;
 		this.name = name;
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return rri;
 	}
 
@@ -46,7 +46,7 @@ public final class RRIParticle implements Particle {
 			return false;
 		}
 
-		return Arrays.equals(rri.getHash(), Rri.pkToHash(name, publicKey));
+		return Arrays.equals(rri.getHash(), REAddr.pkToHash(name, publicKey));
 	}
 
 	@Override

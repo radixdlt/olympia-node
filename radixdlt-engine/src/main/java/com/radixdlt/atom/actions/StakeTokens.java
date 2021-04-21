@@ -25,7 +25,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensParticle;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class StakeTokens implements TxAction {
@@ -55,7 +55,7 @@ public final class StakeTokens implements TxAction {
 				&& (amount.compareTo(TokenUnitConversions.SUB_UNITS) < 0
 				|| p.getAmount().compareTo(TokenUnitConversions.unitsToSubunits(1)) >= 0),
 			TokensParticle::getAmount,
-			amt -> new TokensParticle(address, amt, Rri.ofNativeToken()),
+			amt -> new TokensParticle(address, amt, REAddr.ofNativeToken()),
 			amount,
 			"Not enough balance for staking."
 		).with(amt -> new StakedTokensParticle(delegateKey, address, amt));

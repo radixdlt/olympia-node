@@ -38,7 +38,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.addressbook.PeersView;
@@ -98,7 +98,7 @@ public class MempoolTest {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder();
 		for (int i = 0; i < numParticles; i++) {
 			var symbol = "test" + (char) ('c' + i);
-			var rri = Rri.of(keyPair.getPublicKey(), symbol);
+			var rri = REAddr.of(keyPair.getPublicKey(), symbol);
 			var rriParticle = new RRIParticle(rri, symbol);
 			UniqueParticle uniqueParticle = new UniqueParticle(rri);
 			atomBuilder

@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import java.math.BigDecimal;
 
 import org.junit.Test;
@@ -40,7 +40,7 @@ public class TransferTokensActionTest {
 	public void testBadBigDecimalScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		Rri rri = mock(Rri.class);
+		REAddr rri = mock(REAddr.class);
 
 		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenUnitConversions.getTokenScale() + 1);
 
@@ -52,7 +52,7 @@ public class TransferTokensActionTest {
 	public void testSmallestAllowedAmount() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		Rri rri = mock(Rri.class);
+		REAddr rri = mock(REAddr.class);
 
 		assertThat(TransferTokensAction.create(rri, from, to, new BigDecimal("0.00001")).toString()).isNotNull();
 	}
@@ -61,7 +61,7 @@ public class TransferTokensActionTest {
 	public void testSmallestAllowedAmountLargeScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		Rri rri = mock(Rri.class);
+		REAddr rri = mock(REAddr.class);
 
 		assertThat(TransferTokensAction.create(rri, from, to, new BigDecimal("0.000010000")).toString()).isNotNull();
 	}

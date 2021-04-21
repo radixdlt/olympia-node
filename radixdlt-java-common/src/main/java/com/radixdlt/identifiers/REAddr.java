@@ -18,31 +18,27 @@
 package com.radixdlt.identifiers;
 
 import com.radixdlt.crypto.HashUtils;
-import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.functional.Result;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 /**
  * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
-public final class Rri {
+public final class REAddr {
 	public static final int HASH_BYTES = 26;
 	private final byte[] hash;
 
-	Rri(byte[] hash) {
+	REAddr(byte[] hash) {
 		this.hash = hash;
 	}
 
-	private static Rri create(byte[] hash) {
-		return new Rri(hash);
+	private static REAddr create(byte[] hash) {
+		return new REAddr(hash);
 	}
 
 	public static byte[] pkToHash(String name, ECPublicKey publicKey) {
@@ -63,16 +59,16 @@ public final class Rri {
 		return hash;
 	}
 
-	public static Rri of(byte[] hash) {
-		return new Rri(hash);
+	public static REAddr of(byte[] hash) {
+		return new REAddr(hash);
 	}
 
-	public static Rri of(ECPublicKey key, String name) {
+	public static REAddr of(ECPublicKey key, String name) {
 		Objects.requireNonNull(key);
 		return create(pkToHash(name, key));
 	}
 
-	public static Rri ofNativeToken() {
+	public static REAddr ofNativeToken() {
 		return create(new byte[0]);
 	}
 
@@ -83,11 +79,11 @@ public final class Rri {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Rri)) {
+		if (!(o instanceof REAddr)) {
 			return false;
 		}
 
-		var rri = (Rri) o;
+		var rri = (REAddr) o;
 		return Arrays.equals(rri.hash, hash);
 	}
 

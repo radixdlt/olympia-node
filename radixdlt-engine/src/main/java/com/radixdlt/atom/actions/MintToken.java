@@ -22,22 +22,22 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atommodel.tokens.TokensParticle;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 public final class MintToken implements TxAction {
-	private final Rri rri;
+	private final REAddr rri;
 	private final RadixAddress to;
 	private final UInt256 amount;
 
-	public MintToken(Rri rri, RadixAddress to, UInt256 amount) {
+	public MintToken(REAddr rri, RadixAddress to, UInt256 amount) {
 		this.rri = rri;
 		this.to = to;
 		this.amount = amount;
 	}
 
-	public Rri rri() {
+	public REAddr rri() {
 		return rri;
 	}
 

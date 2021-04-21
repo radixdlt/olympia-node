@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -29,7 +29,7 @@ import java.util.Optional;
  * Particle representing a fixed supply token definition
  */
 public final class TokenDefinitionParticle implements Particle {
-	private final Rri rri;
+	private final REAddr rri;
 	private final String name;
 	private final String description;
 	private final String iconUrl;
@@ -38,7 +38,7 @@ public final class TokenDefinitionParticle implements Particle {
 	private final UInt256 supply;
 
 	public TokenDefinitionParticle(
-		Rri rri,
+		REAddr rri,
 		String name,
 		String description,
 		String iconUrl,
@@ -61,7 +61,7 @@ public final class TokenDefinitionParticle implements Particle {
 	}
 
 	public TokenDefinitionParticle(
-		Rri rri,
+		REAddr rri,
 		String name,
 		String description,
 		String iconUrl,
@@ -72,7 +72,7 @@ public final class TokenDefinitionParticle implements Particle {
 	}
 
 	public TokenDefinitionParticle(
-		Rri rri,
+		REAddr rri,
 		String name,
 		String description,
 		String iconUrl,
@@ -90,7 +90,7 @@ public final class TokenDefinitionParticle implements Particle {
 		return this.supply == null;
 	}
 
-	public Rri getRri() {
+	public REAddr getRri() {
 		return rri;
 	}
 

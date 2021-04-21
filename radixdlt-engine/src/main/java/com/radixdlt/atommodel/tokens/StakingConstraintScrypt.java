@@ -26,7 +26,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -39,7 +39,7 @@ public final class StakingConstraintScrypt implements ConstraintScrypt {
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
 				.staticValidation(TokenDefinitionUtils::staticCheck)
-				.rriMapper(p -> Rri.ofNativeToken())
+				.rriMapper(p -> REAddr.ofNativeToken())
 				.build()
 		);
 

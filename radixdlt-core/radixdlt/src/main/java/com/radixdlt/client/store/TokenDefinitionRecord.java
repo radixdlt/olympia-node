@@ -19,14 +19,14 @@ package com.radixdlt.client.store;
 
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.client.ResourceAddress;
+import com.radixdlt.client.Rri;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -52,7 +52,7 @@ public class TokenDefinitionRecord {
 
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Rri rri;
+	private final REAddr rri;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -77,7 +77,7 @@ public class TokenDefinitionRecord {
 	private TokenDefinitionRecord(
 		String symbol,
 		String name,
-		Rri rri,
+		REAddr rri,
 		String description,
 		UInt384 currentSupply,
 		String iconUrl,
@@ -98,7 +98,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord create(
 		@JsonProperty("symbol") String symbol,
 		@JsonProperty("name") String name,
-		@JsonProperty("rri") Rri rri,
+		@JsonProperty("rri") REAddr rri,
 		@JsonProperty("description") String description,
 		@JsonProperty("currentSupply") UInt384 currentSupply,
 		@JsonProperty("iconUrl") String iconUrl,
@@ -119,7 +119,7 @@ public class TokenDefinitionRecord {
 	public static TokenDefinitionRecord create(
 		String symbol,
 		String name,
-		Rri rri,
+		REAddr rri,
 		String description,
 		String iconUrl,
 		String url,
@@ -129,11 +129,11 @@ public class TokenDefinitionRecord {
 	}
 
 	public static TokenDefinitionRecord from(RadixAddress user, CreateFixedToken createFixedToken) {
-		final Rri rri;
+		final REAddr rri;
 		if (user != null) {
-			rri = Rri.of(user.getPublicKey(), createFixedToken.getSymbol());
+			rri = REAddr.of(user.getPublicKey(), createFixedToken.getSymbol());
 		} else {
-			rri = Rri.ofNativeToken();
+			rri = REAddr.ofNativeToken();
 		}
 		return create(
 			createFixedToken.getSymbol(),
@@ -148,11 +148,11 @@ public class TokenDefinitionRecord {
 	}
 
 	public static TokenDefinitionRecord from(RadixAddress user, CreateMutableToken createMutableToken) {
-		final Rri rri;
+		final REAddr rri;
 		if (user != null) {
-			rri = Rri.of(user.getPublicKey(), createMutableToken.getSymbol());
+			rri = REAddr.of(user.getPublicKey(), createMutableToken.getSymbol());
 		} else {
-			rri = Rri.ofNativeToken();
+			rri = REAddr.ofNativeToken();
 		}
 		return create(
 			createMutableToken.getSymbol(),
@@ -169,7 +169,7 @@ public class TokenDefinitionRecord {
 	public JSONObject asJson() {
 		return jsonObject()
 			.put("name", name)
-			.put("rri", ResourceAddress.of(symbol, rri))
+			.put("rri", Rri.of(symbol, rri))
 			.put("symbol", symbol)
 			.put("description", description)
 			.put("currentSupply", currentSupply)
@@ -190,7 +190,7 @@ public class TokenDefinitionRecord {
 		return mutable;
 	}
 
-	public Rri rri() {
+	public REAddr rri() {
 		return rri;
 	}
 

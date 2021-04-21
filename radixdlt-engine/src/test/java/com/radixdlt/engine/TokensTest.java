@@ -9,7 +9,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -45,8 +45,8 @@ public class TokensTest {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		Rri rri = Rri.of(keyPair.getPublicKey(), "test");
-		RRIParticle rriParticle = new RRIParticle(rri);
+		REAddr rri = REAddr.of(keyPair.getPublicKey(), "test");
+		RRIParticle rriParticle = new RRIParticle(rri, "test");
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
 			rri,
 			"TEST",

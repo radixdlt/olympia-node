@@ -32,7 +32,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
@@ -140,25 +140,25 @@ public final class RESerializer {
 		return bytes;
 	}
 
-	public static void serializeRri(ByteBuffer buf, Rri rri) {
+	public static void serializeRri(ByteBuffer buf, REAddr rri) {
 		buf.put((byte) (rri.isSystem() ? 0 : 1)); // version
 		if (!rri.isSystem()) {
 			buf.put(rri.getHash());
 		}
 	}
 
-	public static Rri deserializeRri(ByteBuffer buf) {
+	public static REAddr deserializeRri(ByteBuffer buf) {
 		var v = buf.get(); // version
 		if (v != 0 && v != 1) {
 			throw new IllegalArgumentException();
 		}
 		var isSystem = v == 0;
 		if (isSystem) {
-			return Rri.ofNativeToken();
+			return REAddr.ofNativeToken();
 		} else {
-			var hash = new byte[Rri.HASH_BYTES];
+			var hash = new byte[REAddr.HASH_BYTES];
 			buf.get(hash);
-			return Rri.of(hash);
+			return REAddr.of(hash);
 		}
 	}
 

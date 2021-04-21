@@ -23,7 +23,7 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.client.ResourceAddress;
+import com.radixdlt.client.Rri;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.engine.RadixEngineException;
@@ -48,7 +48,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.AtomsCommittedToLedger;
@@ -165,8 +165,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<Rri> parseRri(String rri) {
-		return ResourceAddress.parse(rri)
+	public Result<REAddr> parseRri(String rri) {
+		return Rri.parse(rri)
 			.flatMap(p -> getTokenDefinition(p.getSecond())
 				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
 			);
@@ -205,7 +205,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<UInt384> getTokenSupply(Rri rri) {
+	public Result<UInt384> getTokenSupply(REAddr rri) {
 		try (var cursor = supplyBalances.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -227,7 +227,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(Rri rri) {
+	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr rri) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asKey(rri);
 			var data = entry();
@@ -671,7 +671,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		return entry(buf);
 	}
 
-	private static DatabaseEntry asKey(Rri rri) {
+	private static DatabaseEntry asKey(REAddr rri) {
 		return entry(rri.toString().getBytes(StandardCharsets.UTF_8));
 	}
 

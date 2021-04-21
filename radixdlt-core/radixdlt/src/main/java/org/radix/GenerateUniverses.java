@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.client.ResourceAddress;
+import com.radixdlt.client.Rri;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -55,7 +55,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -441,7 +441,7 @@ public final class GenerateUniverses {
 		final Serialization serialization = DefaultSerialization.getInstance();
 		if (!suppressDson) {
 			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
-			var xrd = ResourceAddress.of("xrd", Rri.ofNativeToken());
+			var xrd = Rri.of("xrd", REAddr.ofNativeToken());
 			if (isStdOutput(helmUniverseOutput, awsSecretsOutputOptions)) {
 				System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 				System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", xrd);

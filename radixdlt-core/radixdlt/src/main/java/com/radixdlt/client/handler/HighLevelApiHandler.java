@@ -38,7 +38,6 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;

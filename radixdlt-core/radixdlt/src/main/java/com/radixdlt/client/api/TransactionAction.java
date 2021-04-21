@@ -22,7 +22,7 @@ import com.radixdlt.atom.actions.IncludeMessage;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Functions.FN5;
@@ -35,7 +35,7 @@ public class TransactionAction {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final UInt256 amount;
-	private final Optional<Rri> rri;
+	private final Optional<REAddr> rri;
 	private final byte[] data;
 
 	private TransactionAction(
@@ -43,7 +43,7 @@ public class TransactionAction {
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<Rri> rri,
+		Optional<REAddr> rri,
 		byte[] data
 	) {
 		this.actionType = actionType;
@@ -63,7 +63,7 @@ public class TransactionAction {
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<Rri> rri
+		Optional<REAddr> rri
 	) {
 		return new TransactionAction(actionType, from, to, amount, rri, null);
 	}
@@ -73,7 +73,7 @@ public class TransactionAction {
 		RadixAddress from,
 		RadixAddress to,
 		UInt256 amount,
-		Optional<Rri> rri,
+		Optional<REAddr> rri,
 		byte[] data
 	) {
 		return new TransactionAction(actionType, from, to, amount, rri, data);
@@ -83,7 +83,7 @@ public class TransactionAction {
 		return from;
 	}
 
-	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<Rri>> mapper) {
+	public <T> T map(FN5<T, ActionType, RadixAddress, RadixAddress, UInt256, Optional<REAddr>> mapper) {
 		return mapper.apply(actionType, from, to, amount, rri);
 	}
 
@@ -101,7 +101,7 @@ public class TransactionAction {
 		throw new IllegalStateException("Unsupported action type " + actionType);
 	}
 
-	private Rri rriValue() {
+	private REAddr rriValue() {
 		return rri.orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }

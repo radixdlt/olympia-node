@@ -23,23 +23,23 @@
 package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public class PutUniqueIdAction implements Action {
-	private final Rri rri;
+	private final REAddr rri;
 
-	private PutUniqueIdAction(Rri rri) {
+	private PutUniqueIdAction(REAddr rri) {
 		Objects.requireNonNull(rri);
 
 		this.rri = rri;
 	}
 
-	public static PutUniqueIdAction create(Rri rri) {
+	public static PutUniqueIdAction create(REAddr rri) {
 		return new PutUniqueIdAction(rri);
 	}
 
-	public Rri getRRI() {
+	public REAddr getRRI() {
 		return rri;
 	}
 

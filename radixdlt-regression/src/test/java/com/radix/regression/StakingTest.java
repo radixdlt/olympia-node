@@ -27,7 +27,7 @@ import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import org.junit.Ignore;
@@ -50,7 +50,7 @@ public class StakingTest {
 		delegator1.discoverNodes();
 		delegator2.discoverNodes();
 
-		Rri token = Rri.of(delegate.getAddress().getPublicKey(), "COOKIE");
+		REAddr token = REAddr.of(delegate.getAddress().getPublicKey(), "COOKIE");
 		RadixNode originNode = delegate.getNetworkState()
 			.map(RadixNetworkState::getNodes)
 			.filter(s -> !s.isEmpty())

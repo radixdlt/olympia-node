@@ -23,25 +23,25 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.Rri;
+import com.radixdlt.identifiers.REAddr;
 import java.math.BigDecimal;
 import java.util.Objects;
 
 import com.radixdlt.client.application.translate.Action;
 
 public final class MintTokensAction implements Action {
-	private final Rri rri;
+	private final REAddr rri;
 	private final RadixAddress address;
 	private final BigDecimal amount;
 
-	private MintTokensAction(Rri rri, RadixAddress address, BigDecimal amount) {
+	private MintTokensAction(REAddr rri, RadixAddress address, BigDecimal amount) {
 		this.rri = Objects.requireNonNull(rri);
 		this.address = Objects.requireNonNull(address);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
 	public static MintTokensAction create(
-		Rri tokenDefRef,
+		REAddr tokenDefRef,
 		RadixAddress address,
 		BigDecimal amount
 	) {
@@ -52,7 +52,7 @@ public final class MintTokensAction implements Action {
 		return address;
 	}
 
-	public Rri getRRI() {
+	public REAddr getRRI() {
 		return rri;
 	}
 
