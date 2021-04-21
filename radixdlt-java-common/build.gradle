@@ -15,13 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 tasks.withType(GenerateModuleMetadata) {
     enabled = false
 }
 
+dependencyManagement {
+    imports {
+        // the Maven BOM which contains a coherent set of module versions
+        // for Vaadin dependencies
+        mavenBom ('software.amazon.awssdk:bom:2.16.3')
+//        mavenBom ('software.amazon.awssdk:secretsmanager:2.16.3')
+//                {
+//                    exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+//                }
+    }
+}
 
 dependencies {
     api 'org.apache.logging.log4j:log4j-api'
@@ -38,7 +48,6 @@ dependencies {
     api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
     api 'com.google.guava:guava'
     api 'com.github.bitcoinj:bitcoinj'
-    implementation platform('software.amazon.awssdk:bom:2.16.3')
     implementation('software.amazon.awssdk:secretsmanager:2.16.3')
             {
                 exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
