@@ -94,8 +94,7 @@ public class HighLevelApiHandler {
 	public JSONObject handleTokenInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			(params, tokenId) -> Rri.fromSpecString(tokenId)
-				.flatMap(highLevelApiService::getTokenDescription)
+			(params, tokenId) -> highLevelApiService.getTokenDescription(tokenId)
 				.fold(
 					failure -> toErrorResponse(request, failure),
 					description -> response(request, description.asJson())

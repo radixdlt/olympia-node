@@ -177,6 +177,10 @@ public class TokenDefinitionRecord {
 			.put("mutable", mutable);
 	}
 
+	public String getSymbol() {
+		return symbol;
+	}
+
 	public String getName() {
 		return name;
 	}

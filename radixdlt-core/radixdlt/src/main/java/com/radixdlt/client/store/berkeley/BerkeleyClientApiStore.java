@@ -23,6 +23,7 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.client.ResourceAddress;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.REParsedAction;
 import com.radixdlt.engine.RadixEngineException;
@@ -161,6 +162,14 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.transactionParser = transactionParser;
 
 		open();
+	}
+
+	@Override
+	public Result<Rri> parseRri(String rri) {
+		return ResourceAddress.parse(rri)
+			.flatMap(p -> getTokenDefinition(p.getSecond())
+				.flatMap(t -> Result.ok(p.getSecond()).filter(i -> t.getSymbol().equals(p.getFirst()), "symbol does not match"))
+			);
 	}
 
 	@Override

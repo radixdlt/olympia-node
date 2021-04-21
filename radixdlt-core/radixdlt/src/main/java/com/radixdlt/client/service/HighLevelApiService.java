@@ -63,11 +63,13 @@ public class HighLevelApiService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		return getTokenDescription(Rri.NATIVE_TOKEN);
+		return clientApiStore.getTokenDefinition(Rri.NATIVE_TOKEN)
+			.flatMap(r -> clientApiStore.getTokenSupply(Rri.NATIVE_TOKEN).map(r::withSupply));
 	}
 
-	public Result<TokenDefinitionRecord> getTokenDescription(Rri rri) {
-		return clientApiStore.getTokenDefinition(rri)
+	public Result<TokenDefinitionRecord> getTokenDescription(String rri) {
+		return clientApiStore.parseRri(rri)
+			.flatMap(clientApiStore::getTokenDefinition)
 			.flatMap(definition -> withSupply(rri, definition));
 	}
 
@@ -92,9 +94,9 @@ public class HighLevelApiService {
 		return second;
 	}
 
-	private Result<TokenDefinitionRecord> withSupply(Rri rri, TokenDefinitionRecord definition) {
+	private Result<TokenDefinitionRecord> withSupply(String rri, TokenDefinitionRecord definition) {
 		return definition.isMutable()
-			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
+			   ? clientApiStore.parseRri(rri).flatMap(clientApiStore::getTokenSupply).map(definition::withSupply)
 			   : Result.ok(definition);
 	}
 }

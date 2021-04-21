@@ -126,7 +126,7 @@ public class HighLevelApiHandlerTest {
 
 	@Test
 	public void testTokenInfo() {
-		when(highLevelApiService.getTokenDescription(any(Rri.class)))
+		when(highLevelApiService.getTokenDescription(any(String.class)))
 			.thenReturn(buildToken("fyy"));
 
 		var params = jsonArray().put(Rri.of(KNOWN_ADDRESS.getPublicKey(), "fyy").toString());

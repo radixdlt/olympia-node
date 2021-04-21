@@ -18,6 +18,7 @@ package com.radixdlt.client.service;
 
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.ResourceAddress;
 import com.radixdlt.store.ImmutableIndex;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -46,6 +47,7 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -112,12 +114,15 @@ public class HighLevelApiServiceTest {
 		var token = Rri.of(TOKEN_ADDRESS.getPublicKey(), "fff");
 		var definition = TokenDefinitionRecord.from(TOKEN_ADDRESS, mutableTokenDef("fff"));
 
+		when(clientApiStore.parseRri(any()))
+			.thenReturn(Result.ok(token));;
 		when(clientApiStore.getTokenDefinition(token))
 			.thenReturn(Result.ok(definition));
 		when(clientApiStore.getTokenSupply(token))
 			.thenReturn(Result.ok(UInt384.NINE));
 
-		highLevelApiService.getTokenDescription(token)
+		var rri = ResourceAddress.of("fff", token);
+		highLevelApiService.getTokenDescription(rri)
 			.onSuccess(description -> assertEquals(token, description.rri()))
 			.onSuccess(description -> assertEquals(UInt384.NINE, description.currentSupply()))
 			.onFailureDo(Assert::fail);

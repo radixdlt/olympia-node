@@ -44,6 +44,8 @@ public interface ClientApiStore {
 	 */
 	Result<List<TokenBalance>> getTokenBalances(RadixAddress address);
 
+	Result<Rri> parseRri(String rri);
+
 	/**
 	 * Get current supply of the specified token.
 	 *
