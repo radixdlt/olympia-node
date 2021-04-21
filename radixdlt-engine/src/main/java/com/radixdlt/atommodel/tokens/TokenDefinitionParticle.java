@@ -37,7 +37,7 @@ public final class TokenDefinitionParticle implements Particle {
 	private final ECPublicKey minter;
 	private final UInt256 supply;
 
-	private TokenDefinitionParticle(
+	public TokenDefinitionParticle(
 		Rri rri,
 		String name,
 		String description,
@@ -68,7 +68,7 @@ public final class TokenDefinitionParticle implements Particle {
 		String url,
 		UInt256 supply
 	) {
-		this(rri, name, description, iconUrl, url, supply, null);
+		this(rri, name, description, iconUrl, url, Objects.requireNonNull(supply), null);
 	}
 
 	public TokenDefinitionParticle(

@@ -61,7 +61,7 @@ public class HighLevelApiServiceTest {
 	@Before
 	public void setup() {
 		var nativeTokenParticle = new TokenDefinitionParticle(
-			TOKEN, "XRD", "XRD XRD", "", "", null
+			TOKEN, "XRD", "XRD XRD", "", "", null, null
 		);
 		ImmutableIndex immutableIndex = (dbTxn, rriId) -> Optional.of(nativeTokenParticle);
 		highLevelApiService = new HighLevelApiService(universe, clientApiStore, immutableIndex);
@@ -167,7 +167,8 @@ public class HighLevelApiServiceTest {
 			description(symbol),
 			iconUrl(symbol),
 			homeUrl(symbol),
-			null
+			null,
+			TOKEN_ADDRESS.getPublicKey()
 		);
 	}
 

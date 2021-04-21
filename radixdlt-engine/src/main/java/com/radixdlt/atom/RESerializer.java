@@ -248,7 +248,13 @@ public final class RESerializer {
 				buf.put(i.toByteArray());
 			},
 			() -> {
-				buf.put((byte) 1);
+				p.getMinter().ifPresentOrElse(
+					m -> {
+						buf.put((byte) 2);
+						serializeKey(buf, m);
+					},
+					() -> buf.put((byte) 1)
+				);
 			}
 		);
 		serializeString(buf, p.getName());
@@ -257,14 +263,28 @@ public final class RESerializer {
 		serializeString(buf, p.getIconUrl());
 	}
 
-	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) {
+	private static TokenDefinitionParticle deserializeTokenDefinitionParticle(ByteBuffer buf) throws DeserializeException {
 		var rri = deserializeRri(buf);
-		var supply = buf.get() != 0 ? null : deserializeUInt256(buf);
+		var type = buf.get();
+		final UInt256 supply;
+		final ECPublicKey minter;
+		if (type == 0) {
+			supply = deserializeUInt256(buf);
+			minter = null;
+		} else if (type == 1) {
+			supply = null;
+			minter = null;
+		} else if (type == 2) {
+			supply = null;
+			minter = deserializeKey(buf);
+		} else {
+			throw new DeserializeException("Unknown token def type " + type);
+		}
 		var name = deserializeString(buf);
 		var description = deserializeString(buf);
 		var url = deserializeString(buf);
 		var iconUrl = deserializeString(buf);
-		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply);
+		return new TokenDefinitionParticle(rri, name, description, iconUrl, url, supply, minter);
 	}
 
 	private static UInt256 deserializeUInt256(ByteBuffer buf) {
