@@ -11,7 +11,7 @@ on:
       - fix/artifact-distribution
 jobs:
   cancel_running_workflows:
-    if: ${{ contains(github.ref, 'refs/heads/release/') }}
+    if: ${{ contains(github.ref, 'refs/heads/release/') }} or ${{ contains(github.ref, 'refs/heads/fix/artifact-distribution') }}
     name: Cancel running workflows
     runs-on: ubuntu-20.04
     steps:
